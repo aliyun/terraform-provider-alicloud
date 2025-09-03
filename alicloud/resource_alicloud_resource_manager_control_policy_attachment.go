@@ -1,8 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -38,20 +40,27 @@ func resourceAliCloudResourceManagerControlPolicyAttachment() *schema.Resource {
 }
 
 func resourceAliCloudResourceManagerControlPolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "AttachControlPolicy"
-	request := make(map[string]interface{})
-	var err error
 
-	request["PolicyId"] = d.Get("policy_id")
-	request["TargetId"] = d.Get("target_id")
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "AttachControlPolicy"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("target_id"); ok {
+		request["TargetId"] = v
+	}
+	if v, ok := d.GetOk("policy_id"); ok {
+		request["PolicyId"] = v
+	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -67,52 +76,54 @@ func resourceAliCloudResourceManagerControlPolicyAttachmentCreate(d *schema.Reso
 
 	d.SetId(fmt.Sprintf("%v:%v", request["PolicyId"], request["TargetId"]))
 
+	resourceManagerServiceV2 := ResourceManagerServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Custom"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, resourceManagerServiceV2.ResourceManagerControlPolicyAttachmentStateRefreshFunc(d.Id(), "$.PolicyType", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAliCloudResourceManagerControlPolicyAttachmentRead(d, meta)
 }
 
 func resourceAliCloudResourceManagerControlPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	resourcemanagerService := ResourcemanagerService{client}
+	resourceManagerServiceV2 := ResourceManagerServiceV2{client}
 
-	object, err := resourcemanagerService.DescribeResourceManagerControlPolicyAttachment(d.Id())
+	objectRaw, err := resourceManagerServiceV2.DescribeResourceManagerControlPolicyAttachment(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_resource_manager_control_policy_attachment resourcemanagerService.DescribeResourceManagerControlPolicyAttachment Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_resource_manager_control_policy_attachment DescribeResourceManagerControlPolicyAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	d.Set("policy_id", objectRaw["PolicyId"])
 
-	d.Set("policy_id", object["PolicyId"])
+	parts := strings.Split(d.Id(), ":")
 	d.Set("target_id", parts[1])
 
 	return nil
 }
 
 func resourceAliCloudResourceManagerControlPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
 	action := "DetachControlPolicy"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
+	request["TargetId"] = parts[1]
+	request["PolicyId"] = parts[0]
 
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	request := map[string]interface{}{
-		"PolicyId": parts[0],
-		"TargetId": parts[1],
-	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()

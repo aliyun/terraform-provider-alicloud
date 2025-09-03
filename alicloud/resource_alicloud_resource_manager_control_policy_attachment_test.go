@@ -275,3 +275,73 @@ func TestUnitAliCloudResourceManagerControlPolicyAttachment(t *testing.T) {
 	}
 
 }
+
+// Test ResourceManager ControlPolicyAttachment. >>> Resource test cases, automatically generated.
+// Case ControlPolicyAttachment-资源用例 11253
+func TestAccAliCloudResourceManagerControlPolicyAttachment_basic11253(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_control_policy_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudResourceManagerControlPolicyAttachmentMap11253)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerControlPolicyAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerControlPolicyAttachmentBasicDependence11253)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_id": "${alicloud_resource_manager_control_policy.CP创建.id}",
+					"target_id": "${alicloud_resource_manager_folder.Folder创建.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_id": CHECKSET,
+						"target_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudResourceManagerControlPolicyAttachmentMap11253 = map[string]string{}
+
+func AlicloudResourceManagerControlPolicyAttachmentBasicDependence11253(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_resource_manager_control_policy" "CP创建" {
+  description         = "资源测试"
+  policy_document     = "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
+  control_policy_name = "1756884774"
+  effect_scope        = "RAM"
+}
+
+resource "alicloud_resource_manager_folder" "Folder创建" {
+  folder_name = "1756884774"
+}
+
+
+`, name)
+}
+
+// Test ResourceManager ControlPolicyAttachment. <<< Resource test cases, automatically generated.
