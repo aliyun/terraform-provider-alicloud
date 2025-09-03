@@ -175,6 +175,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_sls_machine_groups":                       dataSourceAliCloudSlsMachineGroups(),
 			"alicloud_sls_logtail_configs":                      dataSourceAliCloudSlsLogtailConfigs(),
 			"alicloud_sls_etls":                                 dataSourceAliCloudSlsEtls(),
 			"alicloud_arms_addon_releases":                      dataSourceAliCloudArmsAddonReleases(),
@@ -911,6 +912,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_sls_machine_group":                                    resourceAliCloudSlsMachineGroup(),
 			"alicloud_cloud_sso_delegate_account":                           resourceAliCloudCloudSSODelegateAccount(),
 			"alicloud_dms_enterprise_workspace":                             resourceAliCloudDmsEnterpriseWorkspace(),
 			"alicloud_eflo_er":                                              resourceAliCloudEfloEr(),
