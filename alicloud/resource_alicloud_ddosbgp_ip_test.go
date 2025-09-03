@@ -19,101 +19,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudDdosbgpIp_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ddosbgp_ip.default"
-	checkoutSupportedRegions(t, true, connectivity.DdosBgpSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudDdosbgpIpMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosbgpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDdosbgpIp")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sddosbgpip%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosbgpIpBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DdosBgpRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ip":                "${alicloud_eip_address.default.ip_address}",
-					"instance_id":       "${local.instance_id}",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"member_uid":        "${data.alicloud_account.current.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ip":          CHECKSET,
-						"instance_id": CHECKSET,
-						"member_uid":  CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
-}
-
-var AlicloudDdosbgpIpMap0 = map[string]string{
-	"status":      CHECKSET,
-	"ip":          CHECKSET,
-	"instance_id": CHECKSET,
-}
-
-func AlicloudDdosbgpIpBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {}
-data "alicloud_account" "current" {}
-
-resource "alicloud_eip_address" "default" {
-	address_name = var.name
-}
-
-data "alicloud_ddosbgp_instances" default {}
-
-locals {
-  instance_id = length(data.alicloud_ddosbgp_instances.default.ids) > 0 ? data.alicloud_ddosbgp_instances.default.ids.0 : concat(alicloud_ddosbgp_instance.default.*.id, [""])[0]
-}
-
-resource "alicloud_ddosbgp_instance" "default" {
-  count = length(data.alicloud_ddosbgp_instances.default.ids) > 0 ? 0 : 1
-  name             = var.name
-  base_bandwidth   = 20
-  bandwidth        = -1
-  ip_count         = 100
-  ip_type          = "IPv4"
-  normal_bandwidth = 100
-  type             = "Enterprise"
-}
-
-`, name)
-}
-
-func TestUnitAccAlicloudDdosbgpIp(t *testing.T) {
+func TestUnitAccAliCloudDdosBgpIp(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ddosbgp_ip"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ddosbgp_ip"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"ip":                "CreateDdosbgpIpValue",
-		"instance_id":       "CreateDdosbgpIpValue",
-		"resource_group_id": "CreateDdosbgpIpValue",
+		"ip":                "CreateDdosBgpIpValue",
+		"instance_id":       "CreateDdosBgpIpValue",
+		"resource_group_id": "CreateDdosBgpIpValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -136,8 +50,8 @@ func TestUnitAccAlicloudDdosbgpIp(t *testing.T) {
 		"IpList": []interface{}{
 			map[string]interface{}{
 				"Status":  "normal",
-				"Ip":      "CreateDdosbgpIpValue",
-				"Product": "CreateDdosbgpIpValue",
+				"Ip":      "CreateDdosBgpIpValue",
+				"Product": "CreateDdosBgpIpValue",
 			},
 		},
 	}
@@ -169,7 +83,7 @@ func TestUnitAccAlicloudDdosbgpIp(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDdosbgpIpCreate(dInit, rawClient)
+	err = resourceAliCloudDdosBgpIpCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -192,7 +106,7 @@ func TestUnitAccAlicloudDdosbgpIp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdosbgpIpCreate(dInit, rawClient)
+		err := resourceAliCloudDdosBgpIpCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -237,7 +151,7 @@ func TestUnitAccAlicloudDdosbgpIp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdosbgpIpRead(dExisted, rawClient)
+		err := resourceAliCloudDdosBgpIpRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -256,7 +170,7 @@ func TestUnitAccAlicloudDdosbgpIp(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDdosbgpIpDelete(dExisted, rawClient)
+	err = resourceAliCloudDdosBgpIpDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -284,7 +198,7 @@ func TestUnitAccAlicloudDdosbgpIp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdosbgpIpDelete(dExisted, rawClient)
+		err := resourceAliCloudDdosBgpIpDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -294,3 +208,127 @@ func TestUnitAccAlicloudDdosbgpIp(t *testing.T) {
 		}
 	}
 }
+
+// Test DdosBgp Ip. >>> Resource test cases, automatically generated.
+// Case IP用例 11365
+func TestAccAliCloudDdosBgpIp_basic11365(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ddosbgp_ip.default"
+	ra := resourceAttrInit(resourceId, AliCloudDdosBgpIpMap11365)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdosBgpIp")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccddosbgp%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosBgpIpBasicDependence11365)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": "${alicloud_ddosbgp_instance.default.id}",
+					"ip":          "${alicloud_eip_address.default.ip_address}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": CHECKSET,
+						"ip":          CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudDdosBgpIp_basic11365_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ddosbgp_ip.default"
+	ra := resourceAttrInit(resourceId, AliCloudDdosBgpIpMap11365)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdosBgpIp")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccddosbgp%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosBgpIpBasicDependence11365)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": "${alicloud_ddosbgp_instance.default.id}",
+					"ip":          "${alicloud_eip_address.default.ip_address}",
+					"member_uid":  "${data.alicloud_account.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": CHECKSET,
+						"ip":          CHECKSET,
+						"member_uid":  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AliCloudDdosBgpIpMap11365 = map[string]string{
+	"status":     CHECKSET,
+	"member_uid": CHECKSET,
+}
+
+func AliCloudDdosBgpIpBasicDependence11365(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_account" "default" {
+}
+
+resource "alicloud_ddosbgp_instance" "default" {
+  normal_bandwidth = "300"
+  ip_count         = "100"
+  type             = "Enterprise"
+  base_bandwidth   = "20"
+  ip_type          = "IPv4"
+  bandwidth        = "-1"
+  period           = "12"
+}
+
+resource "alicloud_eip_address" "default" {
+	address_name = var.name
+}
+
+
+`, name)
+}
+
+// Test DdosBgp Ip. <<< Resource test cases, automatically generated.
