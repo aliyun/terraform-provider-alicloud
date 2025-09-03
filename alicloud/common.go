@@ -1902,3 +1902,70 @@ func compressIPv6OrCIDR(input string) (string, error) {
 func randIntRange(min int, max int) int {
 	return min + acctest.RandIntRange(min, max)
 }
+
+func NormalizeMap(data map[string]interface{}) map[string]interface{} {
+	if data == nil {
+		return nil
+	}
+	result := make(map[string]interface{})
+	for k, v := range data {
+		normalizedValue, err := normalizeValue(v)
+		if err != nil {
+			result[k] = v
+		} else {
+			result[k] = normalizedValue
+		}
+	}
+	return result
+}
+
+func normalizeValue(value interface{}) (interface{}, error) {
+	switch val := value.(type) {
+	case string:
+		trimmed := strings.TrimSpace(val)
+		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			var arr []interface{}
+			if err := json.Unmarshal([]byte(val), &arr); err == nil {
+				result := make([]interface{}, len(arr))
+				for i, item := range arr {
+					normalizedItem, err := normalizeValue(item)
+					if err != nil {
+						return nil, err
+					}
+					result[i] = normalizedItem
+				}
+				return result, nil
+			}
+		}
+
+		if val == "true" {
+			return true, nil
+		} else if val == "false" {
+			return false, nil
+		}
+
+		if num, err := strconv.Atoi(val); err == nil {
+			return num, nil
+		}
+
+		return val, nil
+
+	case map[string]interface{}:
+		normalizedMap := NormalizeMap(val)
+		return normalizedMap, nil
+
+	case []interface{}:
+		result := make([]interface{}, len(val))
+		for i, item := range val {
+			normalizedItem, err := normalizeValue(item)
+			if err != nil {
+				return nil, err
+			}
+			result[i] = normalizedItem
+		}
+		return result, nil
+
+	default:
+		return val, nil
+	}
+}

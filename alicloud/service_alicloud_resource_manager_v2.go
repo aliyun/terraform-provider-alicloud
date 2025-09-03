@@ -774,56 +774,81 @@ func (s *ResourceManagerServiceV2) ResourceManagerSharedTargetStateRefreshFunc(i
 }
 
 // DescribeResourceManagerSharedTarget >>> Encapsulated.
-// DescribeResourceManagerHandshake <<< Encapsulated get interface for ResourceManager Handshake.
 
-func (s *ResourceManagerServiceV2) DescribeResourceManagerHandshake(id string) (object map[string]interface{}, err error) {
+// DescribeResourceManagerSharedResource <<< Encapsulated get interface for ResourceManager SharedResource.
+
+func (s *ResourceManagerServiceV2) DescribeResourceManagerSharedResource(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["HandshakeId"] = id
+	request["ResourceId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	request["AssociationType"] = "Resource"
+	request["ResourceShareIds"] = []string{parts[0]}
+	request["MaxResults"] = PageSizeLarge
 
-	action := "GetHandshake"
+	action := "ListResourceShareAssociations"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+	idExist := false
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
 
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExists.Handshake"}) {
-			return object, WrapErrorf(NotFoundErr("Handshake", id), NotFoundMsg, response)
+
+		resp, err := jsonpath.Get("$.ResourceShareAssociations", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ResourceShareAssociations", response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(NotFoundErr("SharedResource", id), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["ResourceShareId"]) == parts[0] && fmt.Sprint(v.(map[string]interface{})["EntityId"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["EntityType"]) == parts[2] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
 	}
 
-	v, err := jsonpath.Get("$.Handshake", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Handshake", response)
+	if !idExist {
+		return object, WrapErrorf(NotFoundErr("SharedResource", id), NotFoundWithResponse, response)
 	}
 
-	currentStatus := v.(map[string]interface{})["Status"]
-	if fmt.Sprint(currentStatus) == "Cancelled" {
-		return object, WrapErrorf(NotFoundErr("Handshake", id), NotFoundMsg, response)
-	}
-
-	return v.(map[string]interface{}), nil
+	return object, nil
 }
 
-func (s *ResourceManagerServiceV2) ResourceManagerHandshakeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ResourceManagerServiceV2) ResourceManagerSharedResourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeResourceManagerHandshake(id)
+		object, err := s.DescribeResourceManagerSharedResource(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
@@ -850,4 +875,4 @@ func (s *ResourceManagerServiceV2) ResourceManagerHandshakeStateRefreshFunc(id s
 	}
 }
 
-// DescribeResourceManagerHandshake >>> Encapsulated.
+// DescribeResourceManagerSharedResource >>> Encapsulated.
