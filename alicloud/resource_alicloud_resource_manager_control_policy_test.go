@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerControlPolicy_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerControlPolicy_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_control_policy.default"
 	ra := resourceAttrInit(resourceId, AlicloudResourceManagerControlPolicyMap0)
@@ -118,7 +118,7 @@ variable "name" {
 `, name)
 }
 
-func TestUnitAlicloudResourceManagerControlPolicy(t *testing.T) {
+func TestUnitAliCloudResourceManagerControlPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_control_policy"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_control_policy"].Schema).Data(nil, nil)
@@ -188,7 +188,7 @@ func TestUnitAlicloudResourceManagerControlPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerControlPolicyCreate(dInit, rawClient)
+	err = resourceAliCloudResourceManagerControlPolicyCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -216,7 +216,7 @@ func TestUnitAlicloudResourceManagerControlPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerControlPolicyCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerControlPolicyCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -243,7 +243,7 @@ func TestUnitAlicloudResourceManagerControlPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerControlPolicyUpdate(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerControlPolicyUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateControlPolicy
@@ -283,7 +283,7 @@ func TestUnitAlicloudResourceManagerControlPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerControlPolicyUpdate(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerControlPolicyUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -322,7 +322,7 @@ func TestUnitAlicloudResourceManagerControlPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerControlPolicyRead(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerControlPolicyRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -341,7 +341,7 @@ func TestUnitAlicloudResourceManagerControlPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerControlPolicyDelete(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerControlPolicyDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -363,7 +363,7 @@ func TestUnitAlicloudResourceManagerControlPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerControlPolicyDelete(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerControlPolicyDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -374,3 +374,136 @@ func TestUnitAlicloudResourceManagerControlPolicy(t *testing.T) {
 	}
 
 }
+
+// Test ResourceManager ControlPolicy. >>> Resource test cases, automatically generated.
+// Case ControlPolicy资源用例 11248
+func TestAccAliCloudResourceManagerControlPolicy_basic11248(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_control_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudResourceManagerControlPolicyMap11248)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerControlPolicyBasicDependence11248)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":         "资源测试",
+					"policy_document":     "{\\\"Version\\\":\\\"1\\\",\\\"Statement\\\":[{\\\"Effect\\\":\\\"Allow\\\",\\\"Action\\\":\\\"*\\\",\\\"Resource\\\":\\\"*\\\"}]}",
+					"control_policy_name": name,
+					"effect_scope":        "RAM",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":         "资源测试",
+						"policy_document":     CHECKSET,
+						"control_policy_name": name,
+						"effect_scope":        "RAM",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":         "资源测试update",
+					"policy_document":     "{\\\"Version\\\":\\\"1\\\",\\\"Statement\\\":[{\\\"Effect\\\":\\\"Allow\\\",\\\"Action\\\":\\\"1\\\",\\\"Resource\\\":\\\"*\\\"}]}",
+					"control_policy_name": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":         "资源测试update",
+						"policy_document":     CHECKSET,
+						"control_policy_name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudResourceManagerControlPolicyMap11248 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudResourceManagerControlPolicyBasicDependence11248(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test ResourceManager ControlPolicy. <<< Resource test cases, automatically generated.

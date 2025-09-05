@@ -1569,7 +1569,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_auto_snapshot_policy":                              resourceAliCloudEcsAutoSnapshotPolicy(),
 			"alicloud_rds_parameter_group":                                   resourceAlicloudRdsParameterGroup(),
 			"alicloud_ecs_launch_template":                                   resourceAliCloudEcsLaunchTemplate(),
-			"alicloud_resource_manager_control_policy":                       resourceAlicloudResourceManagerControlPolicy(),
+			"alicloud_resource_manager_control_policy":                       resourceAliCloudResourceManagerControlPolicy(),
 			"alicloud_resource_manager_control_policy_attachment":            resourceAliCloudResourceManagerControlPolicyAttachment(),
 			"alicloud_rds_account":                                           resourceAlicloudRdsAccount(),
 			"alicloud_rds_db_node":                                           resourceAlicloudRdsDBNode(),
