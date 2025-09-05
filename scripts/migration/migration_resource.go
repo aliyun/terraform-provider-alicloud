@@ -99,6 +99,21 @@ var specialResourceMap = map[string]map[string]string{
 		"bandwidth_package_attachment": "cen_bandwidth_package_attachment",
 		"instance":                     "cen_instance",
 	},
+	"vpn_gateway": {
+		"vpn_gateway":          "vpn_gateway",
+		"vpn_customer_gateway": "vpn_customer_gateway",
+		"vpn_route_entry":      "vpn_route_entry",
+		"vpn_connection":       "vpn_connection",
+		"vpn_ipsec_server":     "vpn_ipsec_server",
+		"vpn_pbr_route_entry":  "vpn_pbr_route_entry",
+	},
+	"redis": {
+		"instance":         "kvstore_instance",
+		"backup_policy":    "kvstore_backup_policy",
+		"account":          "kvstore_account",
+		"connection":       "kvstore_connection",
+		"audit_log_config": "kvstore_audit_log_config",
+	},
 }
 
 var specialDataSourceMap = map[string]map[string]string{
@@ -160,6 +175,23 @@ var specialDataSourceMap = map[string]map[string]string{
 		"instance":                          "cen_instances",
 		"transit_router_available_resource": "cen_transit_router_available_resources",
 		"transit_router_service":            "cen_transit_router_service",
+	},
+	"vpn_gateway": {
+		"vpn_gateway":          "vpn_gateways",
+		"vpn_customer_gateway": "vpn_customer_gateways",
+		"vpn_route_entry":      "vpn_route_entry",
+		"vpn_connection":       "vpn_connections",
+		"vpn_ipsec_server":     "vpn_ipsec_servers",
+		"vpn_pbr_route_entry":  "vpn_pbr_route_entries",
+	},
+	"redis": {
+		"instance":         "instances",
+		"zones":            "kvstore_zones",
+		"permission":       "kvstore_permission",
+		"instance_classes": "kvstore_instance_classes",
+		"instance_engines": "kvstore_instance_engines",
+		"accounts":         "kvstore_accounts",
+		"connections":      "kvstore_connections",
 	},
 }
 
@@ -291,7 +323,6 @@ func migrateServiceFunction(namespace *string) error {
 		version string
 	}{
 		{fmt.Sprintf("service_alicloud_%s.go", *namespace), "v1"},
-		// {fmt.Sprintf("service_alicloud_%s_v2.go", *namespace), "v2"},
 	}
 
 	for _, sf := range serviceFiles {
@@ -888,6 +919,8 @@ func commonReplaces(line string) string {
 	line = strings.ReplaceAll(line, "convertStringToBool", "helper.ConvertStringToBool")
 	line = strings.ReplaceAll(line, "convertMapFloat64ToJsonString", "helper.ConvertMapFloat64ToJsonString")
 	line = strings.ReplaceAll(line, "convertJsonStringToList", "helper.ConvertJsonStringToList")
+	line = strings.ReplaceAll(line, "convertChargeTypeToPaymentType", "helper.ConvertChargeTypeToPaymentType")
+	line = strings.ReplaceAll(line, "convertPaymentTypeToChargeType", "helper.ConvertPaymentTypeToChargeType")
 	line = strings.ReplaceAll(line, "normalizeYamlString", "helper.NormalizeYamlString")
 	line = strings.ReplaceAll(line, "compareYamlTemplateAreEquivalent", "helper.CompareYamlTemplateAreEquivalent")
 	line = strings.ReplaceAll(line, "compareArrayJsonTemplateAreEquivalent", "helper.CompareArrayJsonTemplateAreEquivalent")
@@ -1104,10 +1137,6 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		if strings.Contains(line, "Removed:") {
 			continue
 		}
-
-		//if strings.Contains(line, "Deprecated:") {
-		//	continue
-		//}
 
 		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace)
 		line = strings.ReplaceAll(line, "import (", imports)
