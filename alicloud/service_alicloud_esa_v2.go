@@ -3506,6 +3506,7 @@ func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFunc(id string, field stri
 }
 
 // DescribeEsaOriginProtection >>> Encapsulated.
+
 // DescribeEsaRoutineRelatedRecord <<< Encapsulated get interface for Esa RoutineRelatedRecord.
 
 func (s *EsaServiceV2) DescribeEsaRoutineRelatedRecord(id string) (object map[string]interface{}, err error) {
@@ -3538,6 +3539,9 @@ func (s *EsaServiceV2) DescribeEsaRoutineRelatedRecord(id string) (object map[st
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"RoutineNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("RoutineRelatedRecord", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -3696,7 +3700,7 @@ func (s *EsaServiceV2) DescribeEsaKvAccount(id string) (object map[string]interf
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidAccount.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidAccount.NotFound	"}) {
 			return object, WrapErrorf(NotFoundErr("KvAccount", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
