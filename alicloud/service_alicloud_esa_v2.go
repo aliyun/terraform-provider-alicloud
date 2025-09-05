@@ -3595,6 +3595,7 @@ func (s *EsaServiceV2) EsaRoutineRelatedRecordStateRefreshFunc(id string, field 
 }
 
 // DescribeEsaRoutineRelatedRecord >>> Encapsulated.
+
 // DescribeEsaUrlObservation <<< Encapsulated get interface for Esa UrlObservation.
 
 func (s *EsaServiceV2) DescribeEsaUrlObservation(id string) (object map[string]interface{}, err error) {
