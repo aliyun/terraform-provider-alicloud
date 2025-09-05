@@ -1224,12 +1224,13 @@ func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
 					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
-					"spot_duration":     "0",
+					"spot_duration":     "1",
+					"spot_strategy":     "SpotWithPriceLimit",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"password_inherit": "false",
-						"spot_duration":    "0",
+						"spot_duration":    "1",
 					}),
 				),
 			},
@@ -1259,22 +1260,20 @@ func TestAccAliCloudEssScalingConfiguration_Enchance(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"deletion_protection": "false",
-					"spot_strategy":       "SpotWithPriceLimit",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deletion_protection": "false",
-						"spot_strategy":       "SpotWithPriceLimit",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"spot_duration": "1",
+					"spot_duration": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_duration": "1",
+						"spot_duration": "0",
 					}),
 				),
 			},
