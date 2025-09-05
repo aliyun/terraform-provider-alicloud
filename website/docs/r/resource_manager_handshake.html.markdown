@@ -2,25 +2,23 @@
 subcategory: "Resource Manager"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_resource_manager_handshake"
-sidebar_current: "docs-alicloud-resource-resource-manager-handshake"
 description: |-
-  Provides a Resource Manager handshake resource.
+  Provides a Alicloud Resource Manager Handshake resource.
 ---
 
-# alicloud\_resource\_manager\_handshake
+# alicloud_resource_manager_handshake
 
-Provides a Resource Manager handshake resource. You can invite accounts to join a resource directory for unified management.
-For information about Resource Manager handshake and how to use it, see [What is Resource Manager handshake](https://www.alibabacloud.com/help/en/doc-detail/135287.htm).
+Provides a Resource Manager Handshake resource.
 
--> **NOTE:** Available in v1.82.0+.
+
+
+For information about Resource Manager Handshake and how to use it, see [What is Handshake](https://www.alibabacloud.com/help/en/doc-detail/135287.htm).
+
+-> **NOTE:** Available since v1.259.0.
 
 ## Example Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_resource_manager_handshake&exampleId=aea74528-14cd-e81f-3ec6-fdaf94242ab7d88cb50a&activeTab=example&spm=docs.r.resource_manager_handshake.0.aea7452814&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
+Basic Usage
 
 ```terraform
 # Add a Resource Manager handshake.
@@ -30,30 +28,40 @@ resource "alicloud_resource_manager_handshake" "example" {
   note          = "test resource manager handshake"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
+* `note` - (Optional, ForceNew) The description of the invitation.
+The description can be up to 1,024 characters in length.
+* `target_entity` - (Required, ForceNew) The ID or logon email address of the account that you want to invite.
+* `target_type` - (Required, ForceNew) The type of the invited account. Valid values:
 
-* `target_entity` - (Required, ForceNew) Invited account ID or login email.
-* `target_type` - (Required, ForceNew) Type of account being invited. Valid values: `Account`, `Email`.
-* `note` - (Optional, ForceNew) Remarks. The maximum length is 1024 characters.
+  - Account: indicates the ID of the account.
+  - Email: indicates the logon email address of the account.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - The time when the invitation was created. The time is displayed in UTC.
+* `expire_time` - The time when the invitation expires. The time is displayed in UTC.
+* `master_account_id` - The ID of the management account of the resource directory.
+* `master_account_name` - The name of the management account of the resource directory.
+* `modify_time` - The time when the invitation was modified. The time is displayed in UTC.
+* `resource_directory_id` - The ID of the resource directory.
+* `status` - The status of the invitation. 
 
-* `id` - This ID of Resource Manager handshake.  
-* `expire_time` - The expiration time of the invitation.
-* `master_account_id` - Resource account master account ID.
-* `master_account_name` - The name of the main account of the resource directory.
-* `modify_time` - The modification time of the invitation.
-* `resource_directory_id` - Resource directory ID.
-* `status` - Invitation status. Valid values: `Pending` waiting for confirmation, `Accepted`, `Cancelled`, `Declined`, `Expired`. 
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Handshake.
+* `delete` - (Defaults to 5 mins) Used when delete the Handshake.
 
 ## Import
 
-Resource Manager handshake can be imported using the id, e.g.
+Resource Manager Handshake can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_resource_manager_handshake.example h-QmdexeFm1kE*****
+$ terraform import alicloud_resource_manager_handshake.example <id>
 ```
