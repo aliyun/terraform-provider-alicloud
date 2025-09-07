@@ -20,6 +20,12 @@ For information about VPC Ha Vip and how to use it, see [What is Ha Vip](https:/
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_ha_vip&exampleId=02b304c1-2253-1cf3-d880-36fca9b32972866b9cfe&activeTab=example&spm=docs.r.vpc_ha_vip.0.02b304c122&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "tf-example"

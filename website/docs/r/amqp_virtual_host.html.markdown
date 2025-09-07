@@ -21,7 +21,7 @@ For information about RabbitMQ (AMQP) Virtual Host and how to use it, see [What 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_virtual_host&exampleId=76e02692-42f8-7c52-e927-859a9352ba925dbeb20f&activeTab=example&spm=docs.r.amqp_virtual_host.0.76e0269242&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_amqp_virtual_host&exampleId=0c5d3ca0-1f47-0ae9-52d4-ac24dd5c02ff258f5cea&activeTab=example&spm=docs.r.amqp_virtual_host.0.0c5d3ca01f&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

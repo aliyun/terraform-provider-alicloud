@@ -494,7 +494,7 @@ Set bucket redundancy type
   </a>
 </div></div>
 
-```terraform0
+```terraform
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -516,7 +516,7 @@ Set bucket accelerate configuration
   </a>
 </div></div>
 
-```terraform1
+```terraform
 resource "random_integer" "default" {
   max = 99999
   min = 10000

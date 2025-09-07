@@ -1,49 +1,50 @@
-## 1.259.0 (Unreleased)
+## 1.260.0 (Unreleased)
+## 1.259.0 (September 08, 2025)
 
-- **New Resource:** `alicloud_dms_enterprise_workspace` [GH-8918]
-- **New Resource:** `alicloud_cloud_sso_delegate_account` [GH-8922]
-- **New Resource:** `alicloud_sls_logtail_config` [GH-8952]
-- **New Resource:** `alicloud_sls_machine_group` [GH-8963]
-- **New Resource:** `alicloud_resource_manager_message_contact` [GH-8965]
-- **New Resource:** `alicloud_esa_kv_account` [GH-8967]
-- **New Resource:** `alicloud_esa_routine_related_record` [GH-8968]
-- **New Resource:** `alicloud_esa_url_observation` [GH-8969]
-- **New Data Source:** `alicloud_sls_logtail_configs` [GH-8952]
-- **New Data Source:** `alicloud_sls_machine_groups` [GH-8963]
+- **New Resource:** `alicloud_dms_enterprise_workspace` ([#8918](https://github.com/aliyun/terraform-provider-alicloud/issues/8918))
+- **New Resource:** `alicloud_cloud_sso_delegate_account` ([#8922](https://github.com/aliyun/terraform-provider-alicloud/issues/8922))
+- **New Resource:** `alicloud_sls_logtail_config` ([#8952](https://github.com/aliyun/terraform-provider-alicloud/issues/8952))
+- **New Resource:** `alicloud_sls_machine_group` ([#8963](https://github.com/aliyun/terraform-provider-alicloud/issues/8963))
+- **New Resource:** `alicloud_resource_manager_message_contact` ([#8965](https://github.com/aliyun/terraform-provider-alicloud/issues/8965))
+- **New Resource:** `alicloud_esa_kv_account` ([#8967](https://github.com/aliyun/terraform-provider-alicloud/issues/8967))
+- **New Resource:** `alicloud_esa_routine_related_record` ([#8968](https://github.com/aliyun/terraform-provider-alicloud/issues/8968))
+- **New Resource:** `alicloud_esa_url_observation` ([#8969](https://github.com/aliyun/terraform-provider-alicloud/issues/8969))
+- **New Data Source:** `alicloud_sls_logtail_configs` ([#8952](https://github.com/aliyun/terraform-provider-alicloud/issues/8952))
+- **New Data Source:** `alicloud_sls_machine_groups` ([#8963](https://github.com/aliyun/terraform-provider-alicloud/issues/8963))
 
 ENHANCEMENTS:
 
-- client: Fixes the credential bug when using CloudSSO profile. [GH-8919]
-- resource/alicloud_ddosbgp_instance: Refactored the resource alicloud_ddosbgp_instance; Added the field instance_name, resource_group_id, tags, status; Deprecated the field name. [GH-8920]
-- resource/alicloud_hologram_instance: Refactored the resource alicloud_hologram_instance; Added the field region_id; Supported instance_type set to Serverless. [GH-8921]
-- resource/alicloud_resource_manager_resource_directory: Add new attribute member_account_display_name_sync_status. [GH-8925]
-- resource/alicloud_esa_record: Added retry strategy for error code Site.ServiceBusy, TooManyRequests. [GH-8928]
-- resource/alicloud_resource_manager_account: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_delegated_administrator: Added retry strategy for error code ConcurrentCallNotSupported. [GH-8930]
-- resource/alicloud_nlb_server_group_server_attachment: Add retry codes. [GH-8931]
-- resource/alicloud_click_house_db_cluster: add support for cluster version 25.3. [GH-8934]
-- resource/alicloud_amqp_virtual_host: Refactored the resource alicloud_amqp_virtual_host; Added expected error code InstanceNotExist, InstanceIdNotExist. [GH-8938]
-- resource/alicloud_mongodb_sharding_instance: Added the field backup_retention_period, enable_backup_log, log_backup_retention_period, ssl_action, maintain_start_time, maintain_end_time, ssl_status. [GH-8941]
-- resource/alicloud_kms_instance: Added the field tags. [GH-8943]
-- resource/alicloud_cs_kubernetes_node_pool: add Custom image_type. [GH-8946]
-- resource/alicloud_eflo_node: Add new attribute install_pai. [GH-8949]
-- resource/alicloud_resource_manager_folder: Refactored the resource alicloud_resource_manager_folder; Added the field tags, create_time. [GH-8950]
-- resource/alicloud_resource_manager_delegated_administrator: Refactored the resource alicloud_resource_manager_delegated_administrator; Added retry strategy for error code RegisterDelegatedAdministrator. [GH-8951]
-- resource/alicloud_resource_manager_shared_target: Refactored the resource alicloud_resource_manager_shared_target; Added the field create_time. [GH-8953]
-- resource/alicloud_resource_manager_shared_resource: Refactored the resource alicloud_resource_manager_shared_resource; Added the field create_time. [GH-8955]
-- resource/alicloud_resource_manager_delegated_administrator: Removed retry strategy for error code RegisterDelegatedAdministrator. [GH-8957]
-- resource/alicloud_ddosbgp_ip: Refactored the resource alicloud_ddosbgp_ip; Deprecated the field resource_group_id. [GH-8961]
-- data-source/alicloud_resource_manager_accounts: Added the field tags; Improved alicloud_resource_manager_accounts testcase and document. [GH-8923]
-- docs: Improves document for vpc_dhcp_options_set, havip_attachment, network_acl, etc. [GH-8929]
-- docs: Improves description for nlb_server_group. [GH-8932]
-- docs: switch the official website reference for fc_service. [GH-8935]
-- docs: Deprecated resource log_oss_export. [GH-8945]
-- docs: Improves description for privatelink_vpc_endpoint. [GH-8970]
+- client: Fixes the credential bug when using CloudSSO profile. ([#8919](https://github.com/aliyun/terraform-provider-alicloud/issues/8919))
+- resource/alicloud_ddosbgp_instance: Refactored the resource alicloud_ddosbgp_instance; Added the field instance_name, resource_group_id, tags, status; Deprecated the field name. ([#8920](https://github.com/aliyun/terraform-provider-alicloud/issues/8920))
+- resource/alicloud_hologram_instance: Refactored the resource alicloud_hologram_instance; Added the field region_id; Supported instance_type set to Serverless. ([#8921](https://github.com/aliyun/terraform-provider-alicloud/issues/8921))
+- resource/alicloud_resource_manager_resource_directory: Add new attribute member_account_display_name_sync_status. ([#8925](https://github.com/aliyun/terraform-provider-alicloud/issues/8925))
+- resource/alicloud_esa_record: Added retry strategy for error code Site.ServiceBusy, TooManyRequests. ([#8928](https://github.com/aliyun/terraform-provider-alicloud/issues/8928))
+- resource/alicloud_resource_manager_account: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_delegated_administrator: Added retry strategy for error code ConcurrentCallNotSupported. ([#8930](https://github.com/aliyun/terraform-provider-alicloud/issues/8930))
+- resource/alicloud_nlb_server_group_server_attachment: Add retry codes. ([#8931](https://github.com/aliyun/terraform-provider-alicloud/issues/8931))
+- resource/alicloud_click_house_db_cluster: add support for cluster version 25.3. ([#8934](https://github.com/aliyun/terraform-provider-alicloud/issues/8934))
+- resource/alicloud_amqp_virtual_host: Refactored the resource alicloud_amqp_virtual_host; Added expected error code InstanceNotExist, InstanceIdNotExist. ([#8938](https://github.com/aliyun/terraform-provider-alicloud/issues/8938))
+- resource/alicloud_mongodb_sharding_instance: Added the field backup_retention_period, enable_backup_log, log_backup_retention_period, ssl_action, maintain_start_time, maintain_end_time, ssl_status. ([#8941](https://github.com/aliyun/terraform-provider-alicloud/issues/8941))
+- resource/alicloud_kms_instance: Added the field tags. ([#8943](https://github.com/aliyun/terraform-provider-alicloud/issues/8943))
+- resource/alicloud_cs_kubernetes_node_pool: add Custom image_type. ([#8946](https://github.com/aliyun/terraform-provider-alicloud/issues/8946))
+- resource/alicloud_eflo_node: Add new attribute install_pai. ([#8949](https://github.com/aliyun/terraform-provider-alicloud/issues/8949))
+- resource/alicloud_resource_manager_folder: Refactored the resource alicloud_resource_manager_folder; Added the field tags, create_time. ([#8950](https://github.com/aliyun/terraform-provider-alicloud/issues/8950))
+- resource/alicloud_resource_manager_delegated_administrator: Refactored the resource alicloud_resource_manager_delegated_administrator; Added retry strategy for error code RegisterDelegatedAdministrator. ([#8951](https://github.com/aliyun/terraform-provider-alicloud/issues/8951))
+- resource/alicloud_resource_manager_shared_target: Refactored the resource alicloud_resource_manager_shared_target; Added the field create_time. ([#8953](https://github.com/aliyun/terraform-provider-alicloud/issues/8953))
+- resource/alicloud_resource_manager_shared_resource: Refactored the resource alicloud_resource_manager_shared_resource; Added the field create_time. ([#8955](https://github.com/aliyun/terraform-provider-alicloud/issues/8955))
+- resource/alicloud_resource_manager_delegated_administrator: Removed retry strategy for error code RegisterDelegatedAdministrator. ([#8957](https://github.com/aliyun/terraform-provider-alicloud/issues/8957))
+- resource/alicloud_ddosbgp_ip: Refactored the resource alicloud_ddosbgp_ip; Deprecated the field resource_group_id. ([#8961](https://github.com/aliyun/terraform-provider-alicloud/issues/8961))
+- data-source/alicloud_resource_manager_accounts: Added the field tags; Improved alicloud_resource_manager_accounts testcase and document. ([#8923](https://github.com/aliyun/terraform-provider-alicloud/issues/8923))
+- docs: Improves document for vpc_dhcp_options_set, havip_attachment, network_acl, etc. ([#8929](https://github.com/aliyun/terraform-provider-alicloud/issues/8929))
+- docs: Improves description for nlb_server_group. ([#8932](https://github.com/aliyun/terraform-provider-alicloud/issues/8932))
+- docs: switch the official website reference for fc_service. ([#8935](https://github.com/aliyun/terraform-provider-alicloud/issues/8935))
+- docs: Deprecated resource log_oss_export. ([#8945](https://github.com/aliyun/terraform-provider-alicloud/issues/8945))
+- docs: Improves description for privatelink_vpc_endpoint. ([#8970](https://github.com/aliyun/terraform-provider-alicloud/issues/8970))
 
 BUG FIXES:
 
-- resource/alicloud_polardb_cluster: fix ip array diff crash issue. [GH-8876]
-- resource/alicloud_alb_server_group: Fixed the diff error caused by setting server_group_type to Fc. [GH-8924]
-- data-source/alicloud_amqp_instances: Fixed the read error. [GH-8936]
+- resource/alicloud_polardb_cluster: fix ip array diff crash issue. ([#8876](https://github.com/aliyun/terraform-provider-alicloud/issues/8876))
+- resource/alicloud_alb_server_group: Fixed the diff error caused by setting server_group_type to Fc. ([#8924](https://github.com/aliyun/terraform-provider-alicloud/issues/8924))
+- data-source/alicloud_amqp_instances: Fixed the read error. ([#8936](https://github.com/aliyun/terraform-provider-alicloud/issues/8936))
 
 ## 1.258.0 (August 15, 2025)
 

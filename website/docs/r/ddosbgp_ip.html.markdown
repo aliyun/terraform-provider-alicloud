@@ -21,7 +21,7 @@ For information about Anti-DDoS Pro (DdosBgp) Ip and how to use it, see [What is
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ddosbgp_ip&exampleId=c68b456c-68bc-362a-1369-f2de392cfc0d379785d5&activeTab=example&spm=docs.r.ddosbgp_ip.0.c68b456c68&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ddosbgp_ip&exampleId=433d254e-336e-5cd4-88cb-d22de747f1c33e84df1b&activeTab=example&spm=docs.r.ddosbgp_ip.0.433d254e33&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
