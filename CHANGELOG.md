@@ -33,6 +33,7 @@ ENHANCEMENTS:
 - resource/alicloud_resource_manager_shared_resource: Refactored the resource alicloud_resource_manager_shared_resource; Added the field create_time. ([#8955](https://github.com/aliyun/terraform-provider-alicloud/issues/8955))
 - resource/alicloud_resource_manager_delegated_administrator: Removed retry strategy for error code RegisterDelegatedAdministrator. ([#8957](https://github.com/aliyun/terraform-provider-alicloud/issues/8957))
 - resource/alicloud_ddosbgp_ip: Refactored the resource alicloud_ddosbgp_ip; Deprecated the field resource_group_id. ([#8961](https://github.com/aliyun/terraform-provider-alicloud/issues/8961))
+- resource/alicloud_message_service_subscription: add attribute sts_role_arn. ([#8975](https://github.com/aliyun/terraform-provider-alicloud/issues/8975))
 - data-source/alicloud_resource_manager_accounts: Added the field tags; Improved alicloud_resource_manager_accounts testcase and document. ([#8923](https://github.com/aliyun/terraform-provider-alicloud/issues/8923))
 - docs: Improves document for vpc_dhcp_options_set, havip_attachment, network_acl, etc. ([#8929](https://github.com/aliyun/terraform-provider-alicloud/issues/8929))
 - docs: Improves description for nlb_server_group. ([#8932](https://github.com/aliyun/terraform-provider-alicloud/issues/8932))
