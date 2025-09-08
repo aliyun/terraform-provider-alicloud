@@ -648,7 +648,7 @@ func (s *OssServiceV2) OssBucketTransferAccelerationStateRefreshFunc(id string, 
 
 // DescribeOssBucketTransferAcceleration >>> Encapsulated.
 
-// DescribeOssBucketAccessMonitor
+// DescribeOssBucketAccessMonitor <<< Encapsulated get interface for Oss BucketAccessMonitor.
 func (s *OssServiceV2) DescribeOssBucketAccessMonitor(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
