@@ -4,9 +4,10 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -53,6 +54,11 @@ func resourceAliCloudMessageServiceSubscription() *schema.Resource {
 			"endpoint": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+			},
+			"sts_role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
 				ForceNew: true,
 			},
 			"filter_tag": {
@@ -112,6 +118,9 @@ func resourceAliCloudMessageServiceSubscriptionCreate(d *schema.ResourceData, me
 		request["MessageTag"] = v
 	}
 	request["Endpoint"] = d.Get("endpoint")
+	if v, ok := d.GetOk("sts_role_arn"); ok {
+		request["StsRoleArn"] = v
+	}
 	request["PushType"] = d.Get("push_type")
 	objectDataLocalMap := make(map[string]interface{})
 
