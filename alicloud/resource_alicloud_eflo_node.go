@@ -355,6 +355,16 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 		installPai = true
 	}
 
+	if !installPai {
+		installPai, err = isInstallPai(d.Id(), d.Timeout(schema.TimeoutDelete), client)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	request["ImmediatelyRelease"] = "1"
 	var endpoint string
 	request["ProductCode"] = "bccluster"
@@ -411,4 +421,59 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 	}
 
 	return nil
+}
+
+func getProductCodeAndType(instanceID string, timeout time.Duration, client *connectivity.AliyunClient) (string, string, error) {
+	var productCode, productType string
+
+	request := map[string]interface{}{"InstanceIDs": instanceID}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+
+	err := resource.Retry(timeout, func() *resource.RetryError {
+		response, err := client.RpcPostWithEndpoint(
+			"BssOpenApi", "2017-12-14", "QueryAvailableInstances",
+			map[string]interface{}{}, request, true, "",
+		)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		instances, ok := getInstanceList(response)
+		if !ok || len(instances) == 0 {
+			return resource.NonRetryableError(WrapErrorf(NotFoundErr("Node", instanceID), NotFoundMsg, response))
+		}
+
+		instance, ok := instances[0].(map[string]interface{})
+		if !ok {
+			return resource.NonRetryableError(fmt.Errorf("unexpected instance format for id %s", instanceID))
+		}
+		productCode, _ = instance["ProductCode"].(string)
+		productType, _ = instance["ProductType"].(string)
+		return nil
+	})
+
+	return productCode, productType, err
+}
+
+// getInstanceList extracts the instance list from the response.
+// Returns (list, true) if found, otherwise (nil, false).
+func getInstanceList(response interface{}) ([]interface{}, bool) {
+	instancesI, err := jsonpath.Get("$.Data.InstanceList", response)
+	if err != nil {
+		return nil, false
+	}
+	instances, ok := instancesI.([]interface{})
+	return instances, ok
+}
+
+func isInstallPai(instanceId string, timeout time.Duration, client *connectivity.AliyunClient) (bool, error) {
+	productCode, _, err := getProductCodeAndType(instanceId, timeout, client)
+	if err != nil {
+		return false, err
+	}
+	return productCode == "learn", nil
 }
