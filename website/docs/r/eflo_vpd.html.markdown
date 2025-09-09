@@ -2,7 +2,6 @@
 subcategory: "Eflo"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_eflo_vpd"
-sidebar_current: "docs-alicloud-resource-eflo-vpd"
 description: |-
   Provides a Alicloud Eflo Vpd resource.
 ---
@@ -10,6 +9,8 @@ description: |-
 # alicloud_eflo_vpd
 
 Provides a Eflo Vpd resource.
+
+Lingjun Network Segment.
 
 For information about Eflo Vpd and how to use it, see [What is Vpd](https://www.alibabacloud.com/help/en/pai/user-guide/overview-of-intelligent-computing-lingjun).
 
@@ -27,13 +28,11 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
-provider "alicloud" {
-  region = "cn-wulanchabu"
+data "alicloud_resource_manager_resource_groups" "default" {
 }
-data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_eflo_vpd" "default" {
   cidr              = "10.0.0.0/8"
@@ -46,15 +45,18 @@ resource "alicloud_eflo_vpd" "default" {
 
 The following arguments are supported:
 * `cidr` - (Required, ForceNew) CIDR network segment.
-* `resource_group_id` - (Optional, ForceNew) The Resource group id.
+* `resource_group_id` - (Optional) The Resource group id. **NOTE:** From version 1.260.0, `resource_group_id` can be modified.
+* `secondary_cidr_blocks` - (Optional, List, Available since v1.260.0) List of additional network segment information.
+* `tags` - (Optional, Map, Available since v1.260.0) The tag of the resource.
 * `vpd_name` - (Required) The Name of the VPD.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The `key` of the resource supplied above.
-* `create_time` - The creation time of the resource
-* `gmt_modified` - Modification time
+* `id` - The ID of the resource supplied above.
+* `create_time` - The creation time of the resource.
+* `gmt_modified` - Modification time.
+* `region_id` - (Available since v1.260.0) Region.
 * `status` - The Vpd status.
 
 ## Timeouts
