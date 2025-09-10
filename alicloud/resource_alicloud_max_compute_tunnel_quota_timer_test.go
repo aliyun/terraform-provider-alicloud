@@ -11,10 +11,11 @@ import (
 
 // Test MaxCompute TunnelQuotaTimer. >>> Resource test cases, automatically generated.
 // Case TunnelQuotaTimer_terraform测试 9976
-func TestAccAliCloudMaxComputeTunnelQuotaTimer_basic9976(t *testing.T) {
+// Deprecated alicloud_max_compute_tunnel_quota_timer
+func SkipTestAccAliCloudMaxComputeTunnelQuotaTimer_basic9976(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_max_compute_tunnel_quota_timer.default"
-	ra := resourceAttrInit(resourceId, AlicloudMaxComputeTunnelQuotaTimerMap9976)
+	ra := resourceAttrInit(resourceId, AliCloudMaxComputeTunnelQuotaTimerMap9976)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMaxComputeTunnelQuotaTimer")
@@ -22,7 +23,7 @@ func TestAccAliCloudMaxComputeTunnelQuotaTimer_basic9976(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%smaxcomputetunnelquotatimer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeTunnelQuotaTimerBasicDependence9976)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxComputeTunnelQuotaTimerBasicDependence9976)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -212,9 +213,9 @@ func TestAccAliCloudMaxComputeTunnelQuotaTimer_basic9976(t *testing.T) {
 	})
 }
 
-var AlicloudMaxComputeTunnelQuotaTimerMap9976 = map[string]string{}
+var AliCloudMaxComputeTunnelQuotaTimerMap9976 = map[string]string{}
 
-func AlicloudMaxComputeTunnelQuotaTimerBasicDependence9976(name string) string {
+func AliCloudMaxComputeTunnelQuotaTimerBasicDependence9976(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
