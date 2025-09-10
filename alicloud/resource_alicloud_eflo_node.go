@@ -444,7 +444,6 @@ func getProductCodeAndType(instanceID string, timeout time.Duration, client *con
 
 		instances, ok := getInstanceList(response)
 		if !ok || len(instances) == 0 {
-			wait()
 			return resource.NonRetryableError(WrapErrorf(NotFoundErr("Node", instanceID), NotFoundMsg, response))
 		}
 
