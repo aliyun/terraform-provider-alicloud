@@ -442,8 +442,7 @@ func (s *MongoDBService) ModifyMongodbShardingInstanceNode(d *schema.ResourceDat
 		state := stateList[key].(map[string]interface{})
 		diff := diffList[key].(map[string]interface{})
 
-		if state["node_class"] != diff["node_class"] ||
-			state["node_storage"] != diff["node_storage"] {
+		if state["node_class"] != diff["node_class"] || state["node_storage"] != diff["node_storage"] || state["readonly_replicas"] != diff["readonly_replicas"] {
 			var response map[string]interface{}
 			action := "ModifyNodeSpec"
 			request := make(map[string]interface{})
@@ -461,6 +460,11 @@ func (s *MongoDBService) ModifyMongodbShardingInstanceNode(d *schema.ResourceDat
 			if nodeType == MongoDBShardingNodeShard {
 				request["NodeStorage"] = diff["node_storage"].(int)
 			}
+
+			if diff["readonly_replicas"] != nil {
+				request["ReadonlyReplicas"] = requests.NewInteger(diff["readonly_replicas"].(int))
+			}
+
 			request["NodeId"] = state["node_id"].(string)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
