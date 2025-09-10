@@ -358,6 +358,9 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 	if !installPai {
 		installPai, err = isInstallPai(d.Id(), d.Timeout(schema.TimeoutDelete), client)
 		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
@@ -442,7 +445,7 @@ func getProductCodeAndType(instanceID string, timeout time.Duration, client *con
 		instances, ok := getInstanceList(response)
 		if !ok || len(instances) == 0 {
 			wait()
-			return resource.RetryableError(fmt.Errorf("no instance found for id %s", instanceID))
+			return resource.NonRetryableError(WrapErrorf(NotFoundErr("Node", instanceID), NotFoundMsg, response))
 		}
 
 		instance, ok := instances[0].(map[string]interface{})
