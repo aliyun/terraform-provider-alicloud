@@ -14,7 +14,9 @@ Provides a Max Compute Tunnel Quota Timer resource.
 
 For information about Max Compute Tunnel Quota Timer and how to use it, see [What is Tunnel Quota Timer](https://www.alibabacloud.com/help/en/).
 
--> **NOTE:** Available since v1.242.0.
+-> **DEPRECATED:**  This resource has been deprecated from version `1.260.0`.
+
+-> **NOTE:** Deprecated since v1.260.0.
 
 ## Example Usage
 
