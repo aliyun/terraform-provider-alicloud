@@ -1741,3 +1741,105 @@ func TestUnitCommonNormalizeAndMarshal(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitCommonConvertToJsonWithoutEscapeHTML(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]interface{}
+		expected string
+		hasError bool
+	}{
+		{
+			name: "simple map",
+			input: map[string]interface{}{
+				"key": "value",
+			},
+			expected: "{\"key\":\"value\"}\n",
+			hasError: false,
+		},
+		{
+			name: "map with html characters",
+			input: map[string]interface{}{
+				"html": "<div>Hello & World</div>",
+			},
+			expected: "{\"html\":\"<div>Hello & World</div>\"}\n",
+			hasError: false,
+		},
+		{
+			name: "map with special characters",
+			input: map[string]interface{}{
+				"special": "<>&",
+			},
+			expected: "{\"special\":\"<>&\"}\n",
+			hasError: false,
+		},
+		{
+			name: "nested map",
+			input: map[string]interface{}{
+				"user": map[string]interface{}{
+					"name": "john",
+					"profile": map[string]interface{}{
+						"description": "<p>This is a <b>bold</b> statement</p>",
+					},
+				},
+			},
+			expected: "{\"user\":{\"name\":\"john\",\"profile\":{\"description\":\"<p>This is a <b>bold</b> statement</p>\"}}}\n",
+			hasError: false,
+		},
+		{
+			name: "map with array",
+			input: map[string]interface{}{
+				"items": []interface{}{"<item1>", "<item2>", "& special chars"},
+			},
+			expected: "{\"items\":[\"<item1>\",\"<item2>\",\"& special chars\"]}\n",
+			hasError: false,
+		},
+		{
+			name: "empty map",
+			input: map[string]interface{}{},
+			expected: "{}\n",
+			hasError: false,
+		},
+		{
+			name: "nil map",
+			input: nil,
+			expected: "null\n",
+			hasError: false,
+		},
+		{
+			name: "map with various data types",
+			input: map[string]interface{}{
+				"string": "text",
+				"int":    42,
+				"float":  3.14,
+				"bool":   true,
+				"nil":    nil,
+			},
+			expected: "{\"bool\":true,\"float\":3.14,\"int\":42,\"nil\":null,\"string\":\"text\"}\n",
+			hasError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := convertToJsonWithoutEscapeHTML(tt.input)
+			
+			if tt.hasError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+			
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+			
+			// Compare the results
+			if result != tt.expected {
+				t.Errorf("Expected: %s, Got: %s", tt.expected, result)
+			}
+		})
+	}
+}

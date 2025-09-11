@@ -1969,3 +1969,13 @@ func normalizeValue(value interface{}) (interface{}, error) {
 		return val, nil
 	}
 }
+
+func convertToJsonWithoutEscapeHTML(m map[string]interface{}) (string, error) {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(m); err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
+}
