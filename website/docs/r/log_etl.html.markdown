@@ -13,6 +13,9 @@ The data transformation of the log service is a hosted, highly available, and sc
 which is widely applicable to scenarios such as data regularization, enrichment, distribution, aggregation, and index reconstruction.
 [Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/125384.htm).
 
+-> **NOTE:** This resource is no longer maintained. It is recommended to use the new resource alicloud_sls_etl.
+[Refer to details](https://help.aliyun.com/zh/terraform/alicloud-sls-etl).
+
 -> **NOTE:** Available since v1.120.0.
 
 ## Example Usage
