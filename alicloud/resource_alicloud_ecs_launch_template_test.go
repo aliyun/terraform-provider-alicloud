@@ -852,6 +852,39 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"http_endpoint": "enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"http_endpoint":         "enabled",
+						"latest_version_number": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"http_tokens": "optional",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"http_tokens":           "optional",
+						"latest_version_number": "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"http_put_response_hop_limit": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"http_put_response_hop_limit": "3",
+						"latest_version_number":       "5",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -980,23 +1013,26 @@ func TestAccAliCloudECSLaunchTemplateBasic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"launch_template_name":   name,
-						"description":            name,
-						"host_name":              name,
-						"instance_name":          name,
-						"key_pair_name":          name,
-						"ram_role_name":          name,
-						"auto_release_time":      CHECKSET,
-						"deployment_set_id":      CHECKSET,
-						"enable_vm_os_config":    CHECKSET,
-						"image_owner_alias":      CHECKSET,
-						"period":                 "1",
-						"private_ip_address":     CHECKSET,
-						"version_description":    name,
-						"data_disks.#":           "4",
-						"network_interfaces.#":   "1",
-						"latest_version_number":  "1",
-						"default_version_number": "1",
+						"launch_template_name":        name,
+						"description":                 name,
+						"host_name":                   name,
+						"instance_name":               name,
+						"key_pair_name":               name,
+						"ram_role_name":               name,
+						"auto_release_time":           CHECKSET,
+						"deployment_set_id":           CHECKSET,
+						"enable_vm_os_config":         CHECKSET,
+						"image_owner_alias":           CHECKSET,
+						"period":                      "1",
+						"private_ip_address":          CHECKSET,
+						"version_description":         name,
+						"http_endpoint":               "enabled",
+						"http_tokens":                 "optional",
+						"http_put_response_hop_limit": "3",
+						"data_disks.#":                "4",
+						"network_interfaces.#":        "1",
+						"latest_version_number":       "1",
+						"default_version_number":      "1",
 					}),
 				),
 			},

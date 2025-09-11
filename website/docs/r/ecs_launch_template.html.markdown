@@ -174,10 +174,12 @@ The following arguments are supported:
 * `http_endpoint` - (Optional, ForceNew) Whether to enable access to instance metadata. Valid values:
   - enabled: Enabled.
   - disabled: Disabled.
+**NOTE:** From version 1.260.0, `http_endpoint` can be modified.
 * `http_tokens` - (Optional, ForceNew) Whether to use the hardened mode (IMDSv2) when accessing instance metadata. Valid values:
   - optional: Not mandatory.
   - required: Mandatory. After this value is set, the normal mode cannot access instance metadata.
-* `http_put_response_hop_limit` - (Optional, ForceNew) The HTTP PUT response hop limit required for instance metadata requests.
+**NOTE:** From version 1.260.0, `http_tokens` can be modified.
+* `http_put_response_hop_limit` - (Optional, ForceNew) The HTTP PUT response hop limit required for instance metadata requests. **NOTE:** From version 1.260.0, `http_put_response_hop_limit` can be modified.
 * `tags` - (Optional) A mapping of tags to assign to instance, block storage, and elastic network.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.

@@ -60,7 +60,7 @@ The following arguments are supported:
   - `MPush Format`: An AppKey.
   - `Sms Format`: A mobile number
   - `Email Format`: An email address.
-* `sts_role_arn` - (Optional, ForceNew) The STS RoleArn.
+* `sts_role_arn` - (Optional, ForceNew, Available since v1.259.0) The STS RoleArn.
 * `push_type` - (Required, ForceNew) The Push type of Subscription. The Valid values: `http`, `queue`, `mpush`, `alisms` and `email`.
 * `filter_tag` - (Optional, ForceNew) The tag that is used to filter messages. Only the messages that have the same tag can be pushed. A tag is a string that can be up to 16 characters in length. By default, no tag is specified to filter messages.
 * `notify_content_format` - (Optional, Computed, ForceNew) The NotifyContentFormat attribute of Subscription. This attribute specifies the content format of the messages pushed to users. Valid values: `XML`, `JSON` and `SIMPLIFIED`. Default value: `XML`.

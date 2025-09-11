@@ -391,19 +391,16 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 			"http_endpoint": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"http_tokens": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"http_put_response_hop_limit": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"image_options": {
@@ -739,13 +736,16 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 			request["ZoneId"] = vsw["ZoneId"]
 		}
 	}
+
 	if v, ok := d.GetOk("http_endpoint"); ok {
 		request["HttpEndpoint"] = v
 	}
+
 	if v, ok := d.GetOk("http_tokens"); ok {
 		request["HttpTokens"] = v
 	}
-	if v, ok := d.GetOk("http_put_response_hop_limit"); ok {
+
+	if v, ok := d.GetOkExists("http_put_response_hop_limit"); ok {
 		request["HttpPutResponseHopLimit"] = v
 	}
 
@@ -1304,6 +1304,27 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 	}
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
+	}
+
+	if d.HasChange("http_endpoint") {
+		update = true
+	}
+	if v, ok := d.GetOk("http_endpoint"); ok {
+		request["HttpEndpoint"] = v
+	}
+
+	if d.HasChange("http_tokens") {
+		update = true
+	}
+	if v, ok := d.GetOk("http_tokens"); ok {
+		request["HttpTokens"] = v
+	}
+
+	if d.HasChange("http_put_response_hop_limit") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("http_put_response_hop_limit"); ok {
+		request["HttpPutResponseHopLimit"] = v
 	}
 
 	if d.HasChange("image_options") {
