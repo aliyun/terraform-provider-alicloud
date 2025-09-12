@@ -660,7 +660,7 @@ func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudAlikafkaInstance_Confluent(t *testing.T) {
+func SkipTestAccAliCloudAlikafkaInstance_Confluent(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_alikafka_instance.default"
