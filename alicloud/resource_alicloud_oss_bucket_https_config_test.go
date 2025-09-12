@@ -130,16 +130,28 @@ func TestAccAliCloudOssBucketHttpsConfig_basic6361_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tls_versions": []string{
-						"TLSv1.1", "TLSv1.2", "TLSv1.3"},
 					"bucket": "${alicloud_oss_bucket.CreateBucket.bucket}",
 					"enable": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tls_versions.#": "3",
+						"bucket": CHECKSET,
+						"enable": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tls_versions": []string{
+						"TLSv1.2"},
+					"bucket": "${alicloud_oss_bucket.CreateBucket.bucket}",
+					"enable": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tls_versions.#": "1",
 						"bucket":         CHECKSET,
-						"enable":         "false",
+						"enable":         "true",
 					}),
 				),
 			},
