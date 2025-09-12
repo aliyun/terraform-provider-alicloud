@@ -187,9 +187,65 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"PrePaid", "PostPaid"}, false),
 			},
-			"instance_types": {
+			"instance_patterns": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cores": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"cpu_architectures": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"max_cpu_cores": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"memory": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+						},
+						"instance_categories": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"instance_family_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"max_memory_size": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+						},
+						"min_cpu_cores": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"min_memory_size": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+						},
+						"excluded_instance_types": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"instance_type_families": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
+			"instance_types": {
+				Type:     schema.TypeList,
+				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"internet_charge_type": {
@@ -731,6 +787,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 			"system_disk_encrypt_algorithm": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"aes-256"}, false),
 			},
 			"system_disk_encrypted": {
@@ -822,8 +879,24 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 			},
 			"vswitch_ids": {
 				Type:     schema.TypeList,
-				Optional: true,
+				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"auto_mode": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
 			},
 			"name": {
 				Type:       schema.TypeString,
@@ -908,37 +981,6 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		objectDataLocalMap["resource_group_id"] = v
-	}
-
-	objectDataLocalMap["name"] = d.Get("name")
-	if v, ok := d.GetOk("node_pool_name"); ok {
-		objectDataLocalMap["name"] = v
-	}
-	if v, ok := d.GetOk("type"); ok {
-		objectDataLocalMap["type"] = v
-	}
-
-	request["nodepool_info"] = objectDataLocalMap
-
-	objectDataLocalMap1 := make(map[string]interface{})
-
-	if v, ok := d.GetOk("node_count"); ok {
-		request["count"] = v
-	}
-	if v, ok := d.GetOk("security_group_ids"); ok {
-		objectDataLocalMap1["security_group_ids"] = v.(*schema.Set).List()
-	}
-
-	if v, ok := d.GetOk("period"); ok {
-		objectDataLocalMap1["period"] = v
-	}
-
-	if v, ok := d.GetOk("platform"); ok {
-		objectDataLocalMap1["platform"] = v
-	}
-
 	if v := d.Get("data_disks"); !IsNil(v) {
 		if v, ok := d.GetOk("data_disks"); ok {
 			localData, err := jsonpath.Get("$", v)
@@ -952,125 +994,40 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 					dataLoopTmp = dataLoop.(map[string]interface{})
 				}
 				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["category"] = dataLoopTmp["category"]
-				if dataLoopMap["category"] == "cloud_auto" {
-					dataLoopMap["bursting_enabled"] = dataLoopTmp["bursting_enabled"]
-				}
-				dataLoopMap["performance_level"] = dataLoopTmp["performance_level"]
-				dataLoopMap["auto_snapshot_policy_id"] = dataLoopTmp["auto_snapshot_policy_id"]
-				if dataLoopTmp["provisioned_iops"].(int) > 0 {
-					dataLoopMap["provisioned_iops"] = dataLoopTmp["provisioned_iops"]
-				}
-				dataLoopMap["encrypted"] = dataLoopTmp["encrypted"]
-				if dataLoopTmp["size"].(int) > 0 {
-					dataLoopMap["size"] = dataLoopTmp["size"]
-				}
-				dataLoopMap["kms_key_id"] = dataLoopTmp["kms_key_id"]
 				dataLoopMap["disk_name"] = dataLoopTmp["name"]
-				dataLoopMap["device"] = dataLoopTmp["device"]
-				dataLoopMap["snapshot_id"] = dataLoopTmp["snapshot_id"]
+				dataLoopMap["auto_snapshot_policy_id"] = dataLoopTmp["auto_snapshot_policy_id"]
+				dataLoopMap["file_system"] = dataLoopTmp["file_system"]
+				dataLoopMap["kms_key_id"] = dataLoopTmp["kms_key_id"]
 
 				if autoFormatRaw, ok := dataLoopTmp["auto_format"]; ok && autoFormatRaw != "" {
 					autoFormat, _ := strconv.ParseBool(autoFormatRaw.(string))
 					dataLoopMap["auto_format"] = autoFormat
 
 				}
-				dataLoopMap["file_system"] = dataLoopTmp["file_system"]
+				dataLoopMap["category"] = dataLoopTmp["category"]
+				if dataLoopTmp["size"].(int) > 0 {
+					dataLoopMap["size"] = dataLoopTmp["size"]
+				}
+				dataLoopMap["device"] = dataLoopTmp["device"]
+				if dataLoopTmp["provisioned_iops"].(int) > 0 {
+					dataLoopMap["provisioned_iops"] = dataLoopTmp["provisioned_iops"]
+				}
+				dataLoopMap["snapshot_id"] = dataLoopTmp["snapshot_id"]
+				dataLoopMap["performance_level"] = dataLoopTmp["performance_level"]
+				dataLoopMap["encrypted"] = dataLoopTmp["encrypted"]
+				if dataLoopMap["category"] == "cloud_auto" {
+					dataLoopMap["bursting_enabled"] = dataLoopTmp["bursting_enabled"]
+				}
 				dataLoopMap["mount_target"] = dataLoopTmp["mount_target"]
 				localMaps = append(localMaps, dataLoopMap)
 			}
-			objectDataLocalMap1["data_disks"] = localMaps
+			objectDataLocalMap["data_disks"] = localMaps
 		}
 
 	}
 
-	if v, ok := d.GetOk("deployment_set_id"); ok {
-		objectDataLocalMap1["deploymentset_id"] = v
-	}
-
-	if v, ok := d.GetOk("compensate_with_on_demand"); ok {
-		objectDataLocalMap1["compensate_with_on_demand"] = v
-	}
-
-	if v, ok := d.GetOk("auto_renew"); ok {
-		objectDataLocalMap1["auto_renew"] = v
-	}
-
-	if v, ok := d.GetOk("auto_renew_period"); ok {
-		objectDataLocalMap1["auto_renew_period"] = v
-	}
-
-	if v, ok := d.GetOk("desired_size"); ok {
-		if v != nil && v != "" {
-			desiredSize, _ := strconv.ParseInt(v.(string), 10, 64)
-			objectDataLocalMap1["desired_size"] = desiredSize
-		}
-	}
-
-	if v, ok := d.GetOk("image_id"); ok {
-		objectDataLocalMap1["image_id"] = v
-	}
-
-	if v, ok := d.GetOk("image_type"); ok {
-		objectDataLocalMap1["image_type"] = v
-	}
-
-	if v, ok := d.GetOk("instance_charge_type"); ok {
-		objectDataLocalMap1["instance_charge_type"] = v
-	}
-
-	if v, ok := d.GetOk("internet_charge_type"); ok {
-		objectDataLocalMap1["internet_charge_type"] = v
-	}
-
-	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
-		objectDataLocalMap1["internet_max_bandwidth_out"] = v
-	}
-
-	if v, ok := d.GetOk("key_name"); ok {
-		objectDataLocalMap1["key_pair"] = v
-	}
-
-	if v, ok := d.GetOk("multi_az_policy"); ok {
-		objectDataLocalMap1["multi_az_policy"] = v
-	}
-
-	if v, ok := d.GetOk("on_demand_base_capacity"); ok {
-		if v != nil && v != "" {
-			onDemandBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
-			objectDataLocalMap1["on_demand_base_capacity"] = onDemandBaseCapacity
-		}
-	}
-
-	if v, ok := d.GetOk("on_demand_percentage_above_base_capacity"); ok {
-		if v != nil && v != "" {
-			onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
-			objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
-		}
-	}
-
-	if v, ok := d.GetOk("period_unit"); ok {
-		objectDataLocalMap1["period_unit"] = v
-	}
-
-	if v, ok := d.GetOk("scaling_policy"); ok {
-		objectDataLocalMap1["scaling_policy"] = v
-	}
-
-	if v, ok := d.GetOk("security_group_id"); ok {
-		objectDataLocalMap1["security_group_id"] = v
-	}
-
-	if v, ok := d.GetOk("spot_instance_pools"); ok {
-		objectDataLocalMap1["spot_instance_pools"] = v
-	}
-
-	if v, ok := d.GetOk("spot_instance_remedy"); ok {
-		objectDataLocalMap1["spot_instance_remedy"] = v
-	}
-
-	if v := d.Get("spot_price_limit"); !IsNil(v) {
-		if v, ok := d.GetOk("spot_price_limit"); ok {
+	if v := d.Get("instance_patterns"); !IsNil(v) {
+		if v, ok := d.GetOk("instance_patterns"); ok {
 			localData1, err := jsonpath.Get("$", v)
 			if err != nil {
 				localData1 = make([]interface{}, 0)
@@ -1082,67 +1039,45 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 					dataLoop1Tmp = dataLoop1.(map[string]interface{})
 				}
 				dataLoop1Map := make(map[string]interface{})
-				dataLoop1Map["instance_type"] = dataLoop1Tmp["instance_type"]
-				dataLoop1Map["price_limit"] = dataLoop1Tmp["price_limit"]
+				dataLoop1Map["instance_family_level"] = dataLoop1Tmp["instance_family_level"]
+				dataLoop1Map["max_cpu_cores"] = dataLoop1Tmp["max_cpu_cores"]
+				dataLoop1Map["cpu_architectures"] = dataLoop1Tmp["cpu_architectures"]
+				dataLoop1Map["instance_type_families"] = dataLoop1Tmp["instance_type_families"]
+				dataLoop1Map["instance_categories"] = dataLoop1Tmp["instance_categories"]
+				dataLoop1Map["min_cpu_cores"] = dataLoop1Tmp["min_cpu_cores"]
+				dataLoop1Map["max_memory_size"] = dataLoop1Tmp["max_memory_size"]
+				dataLoop1Map["min_memory_size"] = dataLoop1Tmp["min_memory_size"]
+				dataLoop1Map["excluded_instance_types"] = dataLoop1Tmp["excluded_instance_types"]
+				dataLoop1Map["memory"] = dataLoop1Tmp["memory"]
+				dataLoop1Map["cores"] = dataLoop1Tmp["cores"]
 				localMaps1 = append(localMaps1, dataLoop1Map)
 			}
-			objectDataLocalMap1["spot_price_limit"] = localMaps1
+			objectDataLocalMap["instance_patterns"] = localMaps1
 		}
 
 	}
 
-	if v, ok := d.GetOk("spot_strategy"); ok {
-		objectDataLocalMap1["spot_strategy"] = v
+	if v, ok := d.GetOk("security_group_id"); ok {
+		objectDataLocalMap["security_group_id"] = v
 	}
 
-	if v, ok := d.GetOk("system_disk_bursting_enabled"); ok {
-		objectDataLocalMap1["system_disk_bursting_enabled"] = v
+	if v, ok := d.GetOk("soc_enabled"); ok {
+		objectDataLocalMap["soc_enabled"] = v
+	}
+
+	if v, ok := d.GetOk("node_count"); ok {
+		request["count"] = v
+	}
+	if v, ok := d.GetOk("security_group_ids"); ok {
+		objectDataLocalMap["security_group_ids"] = v.(*schema.Set).List()
+	}
+
+	if v, ok := d.GetOk("key_name"); ok {
+		objectDataLocalMap["key_pair"] = v
 	}
 
 	if v, ok := d.GetOk("system_disk_category"); ok {
-		objectDataLocalMap1["system_disk_category"] = v
-	}
-
-	if v, ok := d.GetOk("system_disk_performance_level"); ok {
-		objectDataLocalMap1["system_disk_performance_level"] = v
-	}
-
-	if v, ok := d.GetOk("vswitch_ids"); ok {
-		vswitchIds, _ := jsonpath.Get("$", v)
-		if vswitchIds != nil && vswitchIds != "" {
-			objectDataLocalMap1["vswitch_ids"] = vswitchIds
-		}
-	}
-
-	if v := d.Get("tags"); !IsNil(v) {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		objectDataLocalMap1["tags"] = tagsMap
-	}
-
-	if v, ok := d.GetOk("system_disk_size"); ok {
-		objectDataLocalMap1["system_disk_size"] = v
-	}
-
-	if v, ok := d.GetOk("system_disk_provisioned_iops"); ok {
-		objectDataLocalMap1["system_disk_provisioned_iops"] = v
-	}
-
-	if v, ok := d.GetOk("password"); ok {
-		objectDataLocalMap1["login_password"] = v
-	}
-
-	if v := d.Get("private_pool_options"); !IsNil(v) {
-		private_pool_options := make(map[string]interface{})
-		privatePoolOptionsMatchCriteria, _ := jsonpath.Get("$[0].private_pool_options_match_criteria", v)
-		if privatePoolOptionsMatchCriteria != nil && privatePoolOptionsMatchCriteria != "" {
-			private_pool_options["match_criteria"] = privatePoolOptionsMatchCriteria
-		}
-		privatePoolOptionsId, _ := jsonpath.Get("$[0].private_pool_options_id", v)
-		if privatePoolOptionsId != nil && privatePoolOptionsId != "" {
-			private_pool_options["id"] = privatePoolOptionsId
-		}
-
-		objectDataLocalMap1["private_pool_options"] = private_pool_options
+		objectDataLocalMap["system_disk_category"] = v
 	}
 
 	password := d.Get("password").(string)
@@ -1153,96 +1088,133 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 			if err != nil {
 				return WrapError(err)
 			}
-			objectDataLocalMap1["login_password"] = decryptResp
+			objectDataLocalMap["login_password"] = decryptResp
 		}
 	}
 	if v, ok := d.GetOk("cis_enabled"); ok {
-		objectDataLocalMap1["cis_enabled"] = v
+		objectDataLocalMap["cis_enabled"] = v
 	}
 
-	if v, ok := d.GetOk("soc_enabled"); ok {
-		objectDataLocalMap1["soc_enabled"] = v
+	if v, ok := d.GetOk("security_hardening_os"); ok {
+		objectDataLocalMap["security_hardening_os"] = v
 	}
 
-	if v, ok := d.GetOk("system_disk_encrypt_algorithm"); ok {
-		objectDataLocalMap1["system_disk_encrypt_algorithm"] = v
-	}
-
-	if v, ok := d.GetOk("login_as_non_root"); ok {
-		objectDataLocalMap1["login_as_non_root"] = v
+	if v, ok := d.GetOk("system_disk_kms_key"); ok {
+		objectDataLocalMap["system_disk_kms_key_id"] = v
 	}
 
 	if v, ok := d.GetOk("system_disk_encrypted"); ok {
-		objectDataLocalMap1["system_disk_encrypted"] = v
+		objectDataLocalMap["system_disk_encrypted"] = v
 	}
 
-	if v, ok := d.GetOk("system_disk_categories"); ok {
-		systemDiskCategories, _ := jsonpath.Get("$", v)
-		if systemDiskCategories != nil && systemDiskCategories != "" {
-			objectDataLocalMap1["system_disk_categories"] = systemDiskCategories
-		}
+	if v, ok := d.GetOk("instance_charge_type"); ok {
+		objectDataLocalMap["instance_charge_type"] = v
 	}
 
 	if v, ok := d.GetOk("instance_types"); ok {
 		instanceTypes, _ := jsonpath.Get("$", v)
 		if instanceTypes != nil && instanceTypes != "" {
-			objectDataLocalMap1["instance_types"] = instanceTypes
+			objectDataLocalMap["instance_types"] = instanceTypes
 		}
 	}
 
-	if v, ok := d.GetOk("rds_instances"); ok {
-		rdsInstances, _ := jsonpath.Get("$", v)
-		if rdsInstances != nil && rdsInstances != "" {
-			objectDataLocalMap1["rds_instances"] = rdsInstances
-		}
-	}
-
-	if v, ok := d.GetOk("system_disk_kms_key"); ok {
-		objectDataLocalMap1["system_disk_kms_key_id"] = v
+	if v, ok := d.GetOk("platform"); ok {
+		objectDataLocalMap["platform"] = v
 	}
 
 	if v, ok := d.GetOk("system_disk_snapshot_policy_id"); ok {
-		objectDataLocalMap1["worker_system_disk_snapshot_policy_id"] = v
+		objectDataLocalMap["worker_system_disk_snapshot_policy_id"] = v
 	}
 
-	if v, ok := d.GetOk("security_hardening_os"); ok {
-		objectDataLocalMap1["security_hardening_os"] = v
+	if v, ok := d.GetOk("compensate_with_on_demand"); ok {
+		objectDataLocalMap["compensate_with_on_demand"] = v
 	}
 
-	if v, ok := d.GetOk("ram_role_name"); ok {
-		objectDataLocalMap1["ram_role_name"] = v
+	if v, ok := d.GetOk("password"); ok {
+		objectDataLocalMap["login_password"] = v
 	}
 
-	request["scaling_group"] = objectDataLocalMap1
-
-	objectDataLocalMap2 := make(map[string]interface{})
-
-	if v, ok := d.GetOk("cpu_policy"); ok {
-		objectDataLocalMap2["cpu_policy"] = v
-	}
-
-	if v, ok := d.GetOk("install_cloud_monitor"); ok {
-		objectDataLocalMap2["cms_enabled"] = v
-	}
-
-	if v, ok := d.GetOk("runtime_version"); ok {
-		objectDataLocalMap2["runtime_version"] = v
-	}
-
-	if v, ok := d.GetOk("user_data"); ok {
-		objectDataLocalMap2["user_data"] = v
-		if v := d.Get("user_data").(string); v != "" {
-			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
-			if base64DecodeError == nil {
-				objectDataLocalMap2["user_data"] = tea.String(v)
-			} else {
-				objectDataLocalMap2["user_data"] = tea.String(base64.StdEncoding.EncodeToString([]byte(v)))
-			}
+	if v, ok := d.GetOk("on_demand_base_capacity"); ok {
+		if v != nil && v != "" {
+			onDemandBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
+			objectDataLocalMap["on_demand_base_capacity"] = onDemandBaseCapacity
 		}
 	}
 
-	if v := d.Get("taints"); !IsNil(v) {
-		if v, ok := d.GetOk("taints"); ok {
+	if v, ok := d.GetOk("system_disk_provisioned_iops"); ok {
+		objectDataLocalMap["system_disk_provisioned_iops"] = v
+	}
+
+	if v := d.Get("tags"); !IsNil(v) {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		objectDataLocalMap["tags"] = tagsMap
+	}
+
+	if v, ok := d.GetOk("multi_az_policy"); ok {
+		objectDataLocalMap["multi_az_policy"] = v
+	}
+
+	if v, ok := d.GetOk("desired_size"); ok {
+		if v != nil && v != "" {
+			desiredSize, _ := strconv.ParseInt(v.(string), 10, 64)
+			objectDataLocalMap["desired_size"] = desiredSize
+		}
+	}
+
+	if v, ok := d.GetOk("vswitch_ids"); ok {
+		vswitchIds, _ := jsonpath.Get("$", v)
+		if vswitchIds != nil && vswitchIds != "" {
+			objectDataLocalMap["vswitch_ids"] = vswitchIds
+		}
+	}
+
+	if v := d.Get("private_pool_options"); !IsNil(v) {
+		private_pool_options := make(map[string]interface{})
+		privatePoolOptionsId, _ := jsonpath.Get("$[0].private_pool_options_id", v)
+		if privatePoolOptionsId != nil && privatePoolOptionsId != "" {
+			private_pool_options["id"] = privatePoolOptionsId
+		}
+		privatePoolOptionsMatchCriteria, _ := jsonpath.Get("$[0].private_pool_options_match_criteria", v)
+		if privatePoolOptionsMatchCriteria != nil && privatePoolOptionsMatchCriteria != "" {
+			private_pool_options["match_criteria"] = privatePoolOptionsMatchCriteria
+		}
+
+		objectDataLocalMap["private_pool_options"] = private_pool_options
+	}
+
+	if v, ok := d.GetOk("system_disk_size"); ok {
+		objectDataLocalMap["system_disk_size"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_performance_level"); ok {
+		objectDataLocalMap["system_disk_performance_level"] = v
+	}
+
+	if v, ok := d.GetOk("on_demand_percentage_above_base_capacity"); ok {
+		if v != nil && v != "" {
+			onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(v.(string), 10, 64)
+			objectDataLocalMap["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
+		}
+	}
+
+	if v, ok := d.GetOk("internet_charge_type"); ok {
+		objectDataLocalMap["internet_charge_type"] = v
+	}
+
+	if v, ok := d.GetOk("spot_strategy"); ok {
+		objectDataLocalMap["spot_strategy"] = v
+	}
+
+	if v, ok := d.GetOk("auto_renew"); ok {
+		objectDataLocalMap["auto_renew"] = v
+	}
+
+	if v, ok := d.GetOk("image_id"); ok {
+		objectDataLocalMap["image_id"] = v
+	}
+
+	if v := d.Get("spot_price_limit"); !IsNil(v) {
+		if v, ok := d.GetOk("spot_price_limit"); ok {
 			localData3, err := jsonpath.Get("$", v)
 			if err != nil {
 				localData3 = make([]interface{}, 0)
@@ -1254,31 +1226,93 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 					dataLoop3Tmp = dataLoop3.(map[string]interface{})
 				}
 				dataLoop3Map := make(map[string]interface{})
-				dataLoop3Map["key"] = dataLoop3Tmp["key"]
-				dataLoop3Map["effect"] = dataLoop3Tmp["effect"]
-				dataLoop3Map["value"] = dataLoop3Tmp["value"]
+				dataLoop3Map["price_limit"] = dataLoop3Tmp["price_limit"]
+				dataLoop3Map["instance_type"] = dataLoop3Tmp["instance_type"]
 				localMaps3 = append(localMaps3, dataLoop3Map)
 			}
-			objectDataLocalMap2["taints"] = localMaps3
+			objectDataLocalMap["spot_price_limit"] = localMaps3
 		}
 
 	}
 
-	if v, ok := d.GetOk("node_name_mode"); ok {
-		objectDataLocalMap2["node_name_mode"] = v
+	if v, ok := d.GetOk("system_disk_categories"); ok {
+		systemDiskCategories, _ := jsonpath.Get("$", v)
+		if systemDiskCategories != nil && systemDiskCategories != "" {
+			objectDataLocalMap["system_disk_categories"] = systemDiskCategories
+		}
 	}
 
-	if v, ok := d.GetOk("unschedulable"); ok {
-		objectDataLocalMap2["unschedulable"] = v
+	if v, ok := d.GetOk("period"); ok {
+		objectDataLocalMap["period"] = v
 	}
 
-	if v, ok := d.GetOk("runtime_name"); ok {
-		objectDataLocalMap2["runtime"] = v
+	if v, ok := d.GetOk("image_type"); ok {
+		objectDataLocalMap["image_type"] = v
 	}
 
-	if v := d.Get("labels"); !IsNil(v) {
-		if v, ok := d.GetOk("labels"); ok {
-			localData4, err := jsonpath.Get("$", v)
+	if v, ok := d.GetOk("period_unit"); ok {
+		objectDataLocalMap["period_unit"] = v
+	}
+
+	if v, ok := d.GetOk("rds_instances"); ok {
+		rdsInstances, _ := jsonpath.Get("$", v)
+		if rdsInstances != nil && rdsInstances != "" {
+			objectDataLocalMap["rds_instances"] = rdsInstances
+		}
+	}
+
+	if v, ok := d.GetOk("login_as_non_root"); ok {
+		objectDataLocalMap["login_as_non_root"] = v
+	}
+
+	if v, ok := d.GetOk("auto_renew_period"); ok {
+		objectDataLocalMap["auto_renew_period"] = v
+	}
+
+	if v, ok := d.GetOk("deployment_set_id"); ok {
+		objectDataLocalMap["deploymentset_id"] = v
+	}
+
+	if v, ok := d.GetOk("spot_instance_remedy"); ok {
+		objectDataLocalMap["spot_instance_remedy"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_encrypt_algorithm"); ok {
+		objectDataLocalMap["system_disk_encrypt_algorithm"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_bursting_enabled"); ok {
+		objectDataLocalMap["system_disk_bursting_enabled"] = v
+	}
+
+	if v, ok := d.GetOk("scaling_policy"); ok {
+		objectDataLocalMap["scaling_policy"] = v
+	}
+
+	if v, ok := d.GetOk("spot_instance_pools"); ok {
+		objectDataLocalMap["spot_instance_pools"] = v
+	}
+
+	if v, ok := d.GetOk("ram_role_name"); ok {
+		objectDataLocalMap["ram_role_name"] = v
+	}
+
+	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
+		objectDataLocalMap["internet_max_bandwidth_out"] = v
+	}
+
+	request["scaling_group"] = objectDataLocalMap
+
+	objectDataLocalMap1 := make(map[string]interface{})
+
+	if v := d.Get("kubelet_configuration"); !IsNil(v) {
+		kubelet_configuration := make(map[string]interface{})
+		memoryManagerPolicy1, _ := jsonpath.Get("$[0].memory_manager_policy", v)
+		if memoryManagerPolicy1 != nil && memoryManagerPolicy1 != "" {
+			kubelet_configuration["memoryManagerPolicy"] = memoryManagerPolicy1
+		}
+		if v, ok := d.GetOk("kubelet_configuration"); ok {
+			localData4, err := jsonpath.Get("$[0].reserved_memory", v)
 			if err != nil {
 				localData4 = make([]interface{}, 0)
 			}
@@ -1289,100 +1323,285 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 					dataLoop4Tmp = dataLoop4.(map[string]interface{})
 				}
 				dataLoop4Map := make(map[string]interface{})
-				dataLoop4Map["key"] = dataLoop4Tmp["key"]
-				dataLoop4Map["value"] = dataLoop4Tmp["value"]
+				dataLoop4Map["numaNode"] = dataLoop4Tmp["numa_node"]
+				dataLoop4Map["limits"] = dataLoop4Tmp["limits"]
 				localMaps4 = append(localMaps4, dataLoop4Map)
 			}
-			objectDataLocalMap2["labels"] = localMaps4
+			kubelet_configuration["reservedMemory"] = localMaps4
 		}
 
+		allowedUnsafeSysctls1, _ := jsonpath.Get("$[0].allowed_unsafe_sysctls", v)
+		if allowedUnsafeSysctls1 != nil && allowedUnsafeSysctls1 != "" {
+			kubelet_configuration["allowedUnsafeSysctls"] = allowedUnsafeSysctls1
+		}
+		evictionSoft1, _ := jsonpath.Get("$[0].eviction_soft", v)
+		if evictionSoft1 != nil && evictionSoft1 != "" {
+			kubelet_configuration["evictionSoft"] = evictionSoft1
+		}
+		containerLogMaxWorkers1Raw, _ := jsonpath.Get("$[0].container_log_max_workers", v)
+		if containerLogMaxWorkers1Raw != nil && containerLogMaxWorkers1Raw != "" {
+			containerLogMaxWorkers1, _ := strconv.ParseInt(containerLogMaxWorkers1Raw.(string), 10, 64)
+			kubelet_configuration["containerLogMaxWorkers"] = containerLogMaxWorkers1
+		}
+		kubeApiBurstRaw, _ := jsonpath.Get("$[0].kube_api_burst", v)
+		if kubeApiBurstRaw != nil && kubeApiBurstRaw != "" {
+			kubeApiBurst, _ := strconv.ParseInt(kubeApiBurstRaw.(string), 10, 64)
+			kubelet_configuration["kubeAPIBurst"] = kubeApiBurst
+		}
+		registryPullQpsRaw, _ := jsonpath.Get("$[0].registry_pull_qps", v)
+		if registryPullQpsRaw != nil && registryPullQpsRaw != "" {
+			registryPullQps, _ := strconv.ParseInt(registryPullQpsRaw.(string), 10, 64)
+			kubelet_configuration["registryPullQPS"] = registryPullQps
+		}
+		readOnlyPort1Raw, _ := jsonpath.Get("$[0].read_only_port", v)
+		if readOnlyPort1Raw != nil && readOnlyPort1Raw != "" {
+			readOnlyPort1, _ := strconv.ParseInt(readOnlyPort1Raw.(string), 10, 64)
+			kubelet_configuration["readOnlyPort"] = readOnlyPort1
+		}
+		cpuCfsQuotaPeriod, _ := jsonpath.Get("$[0].cpu_cfs_quota_period", v)
+		if cpuCfsQuotaPeriod != nil && cpuCfsQuotaPeriod != "" {
+			kubelet_configuration["cpuCFSQuotaPeriod"] = cpuCfsQuotaPeriod
+		}
+		evictionSoftGracePeriod1, _ := jsonpath.Get("$[0].eviction_soft_grace_period", v)
+		if evictionSoftGracePeriod1 != nil && evictionSoftGracePeriod1 != "" {
+			kubelet_configuration["evictionSoftGracePeriod"] = evictionSoftGracePeriod1
+		}
+		kubeReserved1, _ := jsonpath.Get("$[0].kube_reserved", v)
+		if kubeReserved1 != nil && kubeReserved1 != "" {
+			kubelet_configuration["kubeReserved"] = kubeReserved1
+		}
+		cpuCfsQuotaRaw, _ := jsonpath.Get("$[0].cpu_cfs_quota", v)
+		if cpuCfsQuotaRaw != nil && cpuCfsQuotaRaw != "" {
+			cpuCfsQuota, _ := strconv.ParseBool(cpuCfsQuotaRaw.(string))
+			kubelet_configuration["cpuCFSQuota"] = cpuCfsQuota
+		}
+		topologyManagerPolicy1, _ := jsonpath.Get("$[0].topology_manager_policy", v)
+		if topologyManagerPolicy1 != nil && topologyManagerPolicy1 != "" {
+			kubelet_configuration["topologyManagerPolicy"] = topologyManagerPolicy1
+		}
+		featureGates1, _ := jsonpath.Get("$[0].feature_gates", v)
+		if featureGates1 != nil && featureGates1 != "" {
+			kubelet_configuration["featureGates"] = featureGates1
+		}
+		podPidsLimit1Raw, _ := jsonpath.Get("$[0].pod_pids_limit", v)
+		if podPidsLimit1Raw != nil && podPidsLimit1Raw != "" {
+			podPidsLimit1, _ := strconv.ParseInt(podPidsLimit1Raw.(string), 10, 64)
+			kubelet_configuration["podPidsLimit"] = podPidsLimit1
+		}
+		clusterDns, _ := jsonpath.Get("$[0].cluster_dns", v)
+		if clusterDns != nil && clusterDns != "" {
+			kubelet_configuration["clusterDNS"] = clusterDns
+		}
+		cpuManagerPolicy1, _ := jsonpath.Get("$[0].cpu_manager_policy", v)
+		if cpuManagerPolicy1 != nil && cpuManagerPolicy1 != "" {
+			kubelet_configuration["cpuManagerPolicy"] = cpuManagerPolicy1
+		}
+		systemReserved1, _ := jsonpath.Get("$[0].system_reserved", v)
+		if systemReserved1 != nil && systemReserved1 != "" {
+			kubelet_configuration["systemReserved"] = systemReserved1
+		}
+		containerLogMonitorInterval1, _ := jsonpath.Get("$[0].container_log_monitor_interval", v)
+		if containerLogMonitorInterval1 != nil && containerLogMonitorInterval1 != "" {
+			kubelet_configuration["containerLogMonitorInterval"] = containerLogMonitorInterval1
+		}
+		imageGcLowThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_low_threshold_percent", v)
+		if imageGcLowThresholdPercentRaw != nil && imageGcLowThresholdPercentRaw != "" {
+			imageGcLowThresholdPercent, _ := strconv.ParseInt(imageGcLowThresholdPercentRaw.(string), 10, 64)
+			kubelet_configuration["imageGCLowThresholdPercent"] = imageGcLowThresholdPercent
+		}
+		eventBurst1Raw, _ := jsonpath.Get("$[0].event_burst", v)
+		if eventBurst1Raw != nil && eventBurst1Raw != "" {
+			eventBurst1, _ := strconv.ParseInt(eventBurst1Raw.(string), 10, 64)
+			kubelet_configuration["eventBurst"] = eventBurst1
+		}
+		maxPods1Raw, _ := jsonpath.Get("$[0].max_pods", v)
+		if maxPods1Raw != nil && maxPods1Raw != "" {
+			maxPods1, _ := strconv.ParseInt(maxPods1Raw.(string), 10, 64)
+			kubelet_configuration["maxPods"] = maxPods1
+		}
+		imageGcHighThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_high_threshold_percent", v)
+		if imageGcHighThresholdPercentRaw != nil && imageGcHighThresholdPercentRaw != "" {
+			imageGcHighThresholdPercent, _ := strconv.ParseInt(imageGcHighThresholdPercentRaw.(string), 10, 64)
+			kubelet_configuration["imageGCHighThresholdPercent"] = imageGcHighThresholdPercent
+		}
+		tracing := make(map[string]interface{})
+		samplingRatePerMillion1Raw, _ := jsonpath.Get("$[0].tracing[0].sampling_rate_per_million", v)
+		if samplingRatePerMillion1Raw != nil && samplingRatePerMillion1Raw != "" {
+			samplingRatePerMillion1, _ := strconv.ParseInt(samplingRatePerMillion1Raw.(string), 10, 64)
+			tracing["samplingRatePerMillion"] = samplingRatePerMillion1
+		}
+		endpoint1, _ := jsonpath.Get("$[0].tracing[0].endpoint", v)
+		if endpoint1 != nil && endpoint1 != "" {
+			tracing["endpoint"] = endpoint1
+		}
+
+		kubelet_configuration["tracing"] = tracing
+		eventRecordQpsRaw, _ := jsonpath.Get("$[0].event_record_qps", v)
+		if eventRecordQpsRaw != nil && eventRecordQpsRaw != "" {
+			eventRecordQps, _ := strconv.ParseInt(eventRecordQpsRaw.(string), 10, 64)
+			kubelet_configuration["eventRecordQPS"] = eventRecordQps
+		}
+		containerLogMaxFiles1Raw, _ := jsonpath.Get("$[0].container_log_max_files", v)
+		if containerLogMaxFiles1Raw != nil && containerLogMaxFiles1Raw != "" {
+			containerLogMaxFiles1, _ := strconv.ParseInt(containerLogMaxFiles1Raw.(string), 10, 64)
+			kubelet_configuration["containerLogMaxFiles"] = containerLogMaxFiles1
+		}
+		evictionHard1, _ := jsonpath.Get("$[0].eviction_hard", v)
+		if evictionHard1 != nil && evictionHard1 != "" {
+			kubelet_configuration["evictionHard"] = evictionHard1
+		}
+		registryBurst1Raw, _ := jsonpath.Get("$[0].registry_burst", v)
+		if registryBurst1Raw != nil && registryBurst1Raw != "" {
+			registryBurst1, _ := strconv.ParseInt(registryBurst1Raw.(string), 10, 64)
+			kubelet_configuration["registryBurst"] = registryBurst1
+		}
+		serializeImagePulls1Raw, _ := jsonpath.Get("$[0].serialize_image_pulls", v)
+		if serializeImagePulls1Raw != nil && serializeImagePulls1Raw != "" {
+			serializeImagePulls1, _ := strconv.ParseBool(serializeImagePulls1Raw.(string))
+			kubelet_configuration["serializeImagePulls"] = serializeImagePulls1
+		}
+		containerLogMaxSize1, _ := jsonpath.Get("$[0].container_log_max_size", v)
+		if containerLogMaxSize1 != nil && containerLogMaxSize1 != "" {
+			kubelet_configuration["containerLogMaxSize"] = containerLogMaxSize1
+		}
+		kubeApiQpsRaw, _ := jsonpath.Get("$[0].kube_api_qps", v)
+		if kubeApiQpsRaw != nil && kubeApiQpsRaw != "" {
+			kubeApiQps, _ := strconv.ParseInt(kubeApiQpsRaw.(string), 10, 64)
+			kubelet_configuration["kubeAPIQPS"] = kubeApiQps
+		}
+
+		objectDataLocalMap1["kubelet_configuration"] = kubelet_configuration
+
+		request["node_config"] = objectDataLocalMap1
 	}
 
-	if v, ok := d.GetOk("pre_user_data"); ok {
-		objectDataLocalMap2["pre_user_data"] = v
-	}
-
-	request["kubernetes_config"] = objectDataLocalMap2
-
-	objectDataLocalMap3 := make(map[string]interface{})
+	objectDataLocalMap2 := make(map[string]interface{})
 
 	if v := d.Get("scaling_config"); !IsNil(v) {
 		type1, _ := jsonpath.Get("$[0].type", v)
 		if type1 != nil && type1 != "" {
-			objectDataLocalMap3["type"] = type1
-		}
-		maxSize, _ := jsonpath.Get("$[0].max_size", v)
-		if maxSize != nil && maxSize != "" {
-			objectDataLocalMap3["max_instances"] = maxSize
-		}
-		minSize, _ := jsonpath.Get("$[0].min_size", v)
-		if minSize != nil && minSize != "" {
-			objectDataLocalMap3["min_instances"] = minSize
-		}
-		isBondEip, _ := jsonpath.Get("$[0].is_bond_eip", v)
-		if isBondEip != nil && isBondEip != "" {
-			objectDataLocalMap3["is_bond_eip"] = isBondEip
-		}
-		enable1, _ := jsonpath.Get("$[0].enable", v)
-		if enable1 != nil && enable1 != "" {
-			objectDataLocalMap3["enable"] = enable1
+			objectDataLocalMap2["type"] = type1
 		}
 		eipInternetChargeType, _ := jsonpath.Get("$[0].eip_internet_charge_type", v)
 		if eipInternetChargeType != nil && eipInternetChargeType != "" {
-			objectDataLocalMap3["eip_internet_charge_type"] = eipInternetChargeType
+			objectDataLocalMap2["eip_internet_charge_type"] = eipInternetChargeType
 		}
 		eipBandwidth, _ := jsonpath.Get("$[0].eip_bandwidth", v)
 		if eipBandwidth != nil && eipBandwidth != "" && eipBandwidth.(int) > 0 {
-			objectDataLocalMap3["eip_bandwidth"] = eipBandwidth
+			objectDataLocalMap2["eip_bandwidth"] = eipBandwidth
+		}
+		maxSize, _ := jsonpath.Get("$[0].max_size", v)
+		if maxSize != nil && maxSize != "" {
+			objectDataLocalMap2["max_instances"] = maxSize
+		}
+		minSize, _ := jsonpath.Get("$[0].min_size", v)
+		if minSize != nil && minSize != "" {
+			objectDataLocalMap2["min_instances"] = minSize
+		}
+		isBondEip, _ := jsonpath.Get("$[0].is_bond_eip", v)
+		if isBondEip != nil && isBondEip != "" {
+			objectDataLocalMap2["is_bond_eip"] = isBondEip
+		}
+		enable1, _ := jsonpath.Get("$[0].enable", v)
+		if enable1 != nil && enable1 != "" {
+			objectDataLocalMap2["enable"] = enable1
 		}
 
-		request["auto_scaling"] = objectDataLocalMap3
+		request["auto_scaling"] = objectDataLocalMap2
 	}
+
+	objectDataLocalMap3 := make(map[string]interface{})
+
+	if v, ok := d.GetOk("runtime_version"); ok {
+		objectDataLocalMap3["runtime_version"] = v
+	}
+
+	if v, ok := d.GetOk("runtime_name"); ok {
+		objectDataLocalMap3["runtime"] = v
+	}
+
+	if v := d.Get("labels"); !IsNil(v) {
+		if v, ok := d.GetOk("labels"); ok {
+			localData5, err := jsonpath.Get("$", v)
+			if err != nil {
+				localData5 = make([]interface{}, 0)
+			}
+			localMaps5 := make([]interface{}, 0)
+			for _, dataLoop5 := range localData5.([]interface{}) {
+				dataLoop5Tmp := make(map[string]interface{})
+				if dataLoop5 != nil {
+					dataLoop5Tmp = dataLoop5.(map[string]interface{})
+				}
+				dataLoop5Map := make(map[string]interface{})
+				dataLoop5Map["value"] = dataLoop5Tmp["value"]
+				dataLoop5Map["key"] = dataLoop5Tmp["key"]
+				localMaps5 = append(localMaps5, dataLoop5Map)
+			}
+			objectDataLocalMap3["labels"] = localMaps5
+		}
+
+	}
+
+	if v, ok := d.GetOk("user_data"); ok {
+		objectDataLocalMap3["user_data"] = v
+		if v := d.Get("user_data").(string); v != "" {
+			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+			if base64DecodeError == nil {
+				objectDataLocalMap3["user_data"] = tea.String(v)
+			} else {
+				objectDataLocalMap3["user_data"] = tea.String(base64.StdEncoding.EncodeToString([]byte(v)))
+			}
+		}
+	}
+
+	if v, ok := d.GetOk("unschedulable"); ok {
+		objectDataLocalMap3["unschedulable"] = v
+	}
+
+	if v, ok := d.GetOk("cpu_policy"); ok {
+		objectDataLocalMap3["cpu_policy"] = v
+	}
+
+	if v := d.Get("taints"); !IsNil(v) {
+		if v, ok := d.GetOk("taints"); ok {
+			localData6, err := jsonpath.Get("$", v)
+			if err != nil {
+				localData6 = make([]interface{}, 0)
+			}
+			localMaps6 := make([]interface{}, 0)
+			for _, dataLoop6 := range localData6.([]interface{}) {
+				dataLoop6Tmp := make(map[string]interface{})
+				if dataLoop6 != nil {
+					dataLoop6Tmp = dataLoop6.(map[string]interface{})
+				}
+				dataLoop6Map := make(map[string]interface{})
+				dataLoop6Map["value"] = dataLoop6Tmp["value"]
+				dataLoop6Map["key"] = dataLoop6Tmp["key"]
+				dataLoop6Map["effect"] = dataLoop6Tmp["effect"]
+				localMaps6 = append(localMaps6, dataLoop6Map)
+			}
+			objectDataLocalMap3["taints"] = localMaps6
+		}
+
+	}
+
+	if v, ok := d.GetOk("install_cloud_monitor"); ok {
+		objectDataLocalMap3["cms_enabled"] = v
+	}
+
+	if v, ok := d.GetOk("pre_user_data"); ok {
+		objectDataLocalMap3["pre_user_data"] = v
+	}
+
+	if v, ok := d.GetOk("node_name_mode"); ok {
+		objectDataLocalMap3["node_name_mode"] = v
+	}
+
+	request["kubernetes_config"] = objectDataLocalMap3
 
 	objectDataLocalMap4 := make(map[string]interface{})
 
 	if v := d.Get("management"); !IsNil(v) {
-		enable3, _ := jsonpath.Get("$[0].enable", v)
-		if enable3 != nil && enable3 != "" {
-			objectDataLocalMap4["enable"] = enable3
-		}
-		autoRepair, _ := jsonpath.Get("$[0].auto_repair", v)
-		if autoRepair != nil && autoRepair != "" {
-			objectDataLocalMap4["auto_repair"] = autoRepair
-		}
-		auto_repair_policy := make(map[string]interface{})
-		restartNode, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", v)
-		if restartNode != nil && restartNode != "" {
-			auto_repair_policy["restart_node"] = restartNode
-		}
-
-		objectDataLocalMap4["auto_repair_policy"] = auto_repair_policy
-		autoVulFix, _ := jsonpath.Get("$[0].auto_vul_fix", v)
-		if autoVulFix != nil && autoVulFix != "" {
-			objectDataLocalMap4["auto_vul_fix"] = autoVulFix
-		}
-		auto_vul_fix_policy := make(map[string]interface{})
-		restartNode1, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].restart_node", v)
-		if restartNode1 != nil && restartNode1 != "" {
-			auto_vul_fix_policy["restart_node"] = restartNode1
-		}
-		vulLevel, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].vul_level", v)
-		if vulLevel != nil && vulLevel != "" {
-			auto_vul_fix_policy["vul_level"] = vulLevel
-		}
-
-		objectDataLocalMap4["auto_vul_fix_policy"] = auto_vul_fix_policy
-		autoUpgrade, _ := jsonpath.Get("$[0].auto_upgrade", v)
-		if autoUpgrade != nil && autoUpgrade != "" {
-			objectDataLocalMap4["auto_upgrade"] = autoUpgrade
-		}
-		auto_upgrade_policy := make(map[string]interface{})
-		autoUpgradeKubelet, _ := jsonpath.Get("$[0].auto_upgrade_policy[0].auto_upgrade_kubelet", v)
-		if autoUpgradeKubelet != nil && autoUpgradeKubelet != "" {
-			auto_upgrade_policy["auto_upgrade_kubelet"] = autoUpgradeKubelet
-		}
-
-		objectDataLocalMap4["auto_upgrade_policy"] = auto_upgrade_policy
 		upgrade_config := make(map[string]interface{})
 		surge1, _ := jsonpath.Get("$[0].surge", v)
 		if surge1 != nil && surge1 != "" {
@@ -1398,191 +1617,77 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		}
 
 		objectDataLocalMap4["upgrade_config"] = upgrade_config
+		auto_upgrade_policy := make(map[string]interface{})
+		autoUpgradeKubelet, _ := jsonpath.Get("$[0].auto_upgrade_policy[0].auto_upgrade_kubelet", v)
+		if autoUpgradeKubelet != nil && autoUpgradeKubelet != "" {
+			auto_upgrade_policy["auto_upgrade_kubelet"] = autoUpgradeKubelet
+		}
+
+		objectDataLocalMap4["auto_upgrade_policy"] = auto_upgrade_policy
+		autoUpgrade, _ := jsonpath.Get("$[0].auto_upgrade", v)
+		if autoUpgrade != nil && autoUpgrade != "" {
+			objectDataLocalMap4["auto_upgrade"] = autoUpgrade
+		}
+		autoRepair, _ := jsonpath.Get("$[0].auto_repair", v)
+		if autoRepair != nil && autoRepair != "" {
+			objectDataLocalMap4["auto_repair"] = autoRepair
+		}
+		enable3, _ := jsonpath.Get("$[0].enable", v)
+		if enable3 != nil && enable3 != "" {
+			objectDataLocalMap4["enable"] = enable3
+		}
+		autoVulFix, _ := jsonpath.Get("$[0].auto_vul_fix", v)
+		if autoVulFix != nil && autoVulFix != "" {
+			objectDataLocalMap4["auto_vul_fix"] = autoVulFix
+		}
+		auto_vul_fix_policy := make(map[string]interface{})
+		vulLevel, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].vul_level", v)
+		if vulLevel != nil && vulLevel != "" {
+			auto_vul_fix_policy["vul_level"] = vulLevel
+		}
+		restartNode, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].restart_node", v)
+		if restartNode != nil && restartNode != "" {
+			auto_vul_fix_policy["restart_node"] = restartNode
+		}
+
+		objectDataLocalMap4["auto_vul_fix_policy"] = auto_vul_fix_policy
+		auto_repair_policy := make(map[string]interface{})
+		restartNode1, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", v)
+		if restartNode1 != nil && restartNode1 != "" {
+			auto_repair_policy["restart_node"] = restartNode1
+		}
+
+		objectDataLocalMap4["auto_repair_policy"] = auto_repair_policy
 
 		request["management"] = objectDataLocalMap4
 	}
 
 	objectDataLocalMap5 := make(map[string]interface{})
 
-	if v := d.Get("tee_config"); !IsNil(v) {
-		teeEnable, _ := jsonpath.Get("$[0].tee_enable", v)
-		if teeEnable != nil && teeEnable != "" {
-			objectDataLocalMap5["tee_enable"] = teeEnable
-		}
-
-		request["tee_config"] = objectDataLocalMap5
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		objectDataLocalMap5["resource_group_id"] = v
 	}
+
+	objectDataLocalMap5["name"] = d.Get("name")
+	if v, ok := d.GetOk("node_pool_name"); ok {
+		objectDataLocalMap5["name"] = v
+	}
+
+	if v, ok := d.GetOk("type"); ok {
+		objectDataLocalMap5["type"] = v
+	}
+
+	request["nodepool_info"] = objectDataLocalMap5
 
 	objectDataLocalMap6 := make(map[string]interface{})
 
-	if v := d.Get("kubelet_configuration"); !IsNil(v) {
-		kubelet_configuration := make(map[string]interface{})
-		registryPullQpsRaw, _ := jsonpath.Get("$[0].registry_pull_qps", v)
-		if registryPullQpsRaw != nil && registryPullQpsRaw != "" {
-			registryPullQps, _ := strconv.ParseInt(registryPullQpsRaw.(string), 10, 64)
-			kubelet_configuration["registryPullQPS"] = registryPullQps
-		}
-		registryBurst1Raw, _ := jsonpath.Get("$[0].registry_burst", v)
-		if registryBurst1Raw != nil && registryBurst1Raw != "" {
-			registryBurst1, _ := strconv.ParseInt(registryBurst1Raw.(string), 10, 64)
-			kubelet_configuration["registryBurst"] = registryBurst1
-		}
-		eventRecordQpsRaw, _ := jsonpath.Get("$[0].event_record_qps", v)
-		if eventRecordQpsRaw != nil && eventRecordQpsRaw != "" {
-			eventRecordQps, _ := strconv.ParseInt(eventRecordQpsRaw.(string), 10, 64)
-			kubelet_configuration["eventRecordQPS"] = eventRecordQps
-		}
-		eventBurst1Raw, _ := jsonpath.Get("$[0].event_burst", v)
-		if eventBurst1Raw != nil && eventBurst1Raw != "" {
-			eventBurst1, _ := strconv.ParseInt(eventBurst1Raw.(string), 10, 64)
-			kubelet_configuration["eventBurst"] = eventBurst1
-		}
-		kubeApiQpsRaw, _ := jsonpath.Get("$[0].kube_api_qps", v)
-		if kubeApiQpsRaw != nil && kubeApiQpsRaw != "" {
-			kubeApiQps, _ := strconv.ParseInt(kubeApiQpsRaw.(string), 10, 64)
-			kubelet_configuration["kubeAPIQPS"] = kubeApiQps
-		}
-		serializeImagePulls1Raw, _ := jsonpath.Get("$[0].serialize_image_pulls", v)
-		if serializeImagePulls1Raw != nil && serializeImagePulls1Raw != "" {
-			serializeImagePulls1, _ := strconv.ParseBool(serializeImagePulls1Raw.(string))
-			kubelet_configuration["serializeImagePulls"] = serializeImagePulls1
-		}
-		cpuManagerPolicy1, _ := jsonpath.Get("$[0].cpu_manager_policy", v)
-		if cpuManagerPolicy1 != nil && cpuManagerPolicy1 != "" {
-			kubelet_configuration["cpuManagerPolicy"] = cpuManagerPolicy1
-		}
-		allowedUnsafeSysctls1, _ := jsonpath.Get("$[0].allowed_unsafe_sysctls", v)
-		if allowedUnsafeSysctls1 != nil && allowedUnsafeSysctls1 != "" {
-			kubelet_configuration["allowedUnsafeSysctls"] = allowedUnsafeSysctls1
-		}
-		featureGates1, _ := jsonpath.Get("$[0].feature_gates", v)
-		if featureGates1 != nil && featureGates1 != "" {
-			kubelet_configuration["featureGates"] = featureGates1
-		}
-		containerLogMaxFiles1Raw, _ := jsonpath.Get("$[0].container_log_max_files", v)
-		if containerLogMaxFiles1Raw != nil && containerLogMaxFiles1Raw != "" {
-			containerLogMaxFiles1, _ := strconv.ParseInt(containerLogMaxFiles1Raw.(string), 10, 64)
-			kubelet_configuration["containerLogMaxFiles"] = containerLogMaxFiles1
-		}
-		containerLogMaxSize1, _ := jsonpath.Get("$[0].container_log_max_size", v)
-		if containerLogMaxSize1 != nil && containerLogMaxSize1 != "" {
-			kubelet_configuration["containerLogMaxSize"] = containerLogMaxSize1
-		}
-		maxPods1Raw, _ := jsonpath.Get("$[0].max_pods", v)
-		if maxPods1Raw != nil && maxPods1Raw != "" {
-			maxPods1, _ := strconv.ParseInt(maxPods1Raw.(string), 10, 64)
-			kubelet_configuration["maxPods"] = maxPods1
-		}
-		readOnlyPort1Raw, _ := jsonpath.Get("$[0].read_only_port", v)
-		if readOnlyPort1Raw != nil && readOnlyPort1Raw != "" {
-			readOnlyPort1, _ := strconv.ParseInt(readOnlyPort1Raw.(string), 10, 64)
-			kubelet_configuration["readOnlyPort"] = readOnlyPort1
-		}
-		kubeReserved1, _ := jsonpath.Get("$[0].kube_reserved", v)
-		if kubeReserved1 != nil && kubeReserved1 != "" {
-			kubelet_configuration["kubeReserved"] = kubeReserved1
-		}
-		systemReserved1, _ := jsonpath.Get("$[0].system_reserved", v)
-		if systemReserved1 != nil && systemReserved1 != "" {
-			kubelet_configuration["systemReserved"] = systemReserved1
-		}
-		evictionSoftGracePeriod1, _ := jsonpath.Get("$[0].eviction_soft_grace_period", v)
-		if evictionSoftGracePeriod1 != nil && evictionSoftGracePeriod1 != "" {
-			kubelet_configuration["evictionSoftGracePeriod"] = evictionSoftGracePeriod1
-		}
-		evictionSoft1, _ := jsonpath.Get("$[0].eviction_soft", v)
-		if evictionSoft1 != nil && evictionSoft1 != "" {
-			kubelet_configuration["evictionSoft"] = evictionSoft1
-		}
-		evictionHard1, _ := jsonpath.Get("$[0].eviction_hard", v)
-		if evictionHard1 != nil && evictionHard1 != "" {
-			kubelet_configuration["evictionHard"] = evictionHard1
-		}
-		kubeApiBurstRaw, _ := jsonpath.Get("$[0].kube_api_burst", v)
-		if kubeApiBurstRaw != nil && kubeApiBurstRaw != "" {
-			kubeApiBurst, _ := strconv.ParseInt(kubeApiBurstRaw.(string), 10, 64)
-			kubelet_configuration["kubeAPIBurst"] = kubeApiBurst
-		}
-		cpuCfsQuotaRaw, _ := jsonpath.Get("$[0].cpu_cfs_quota", v)
-		if cpuCfsQuotaRaw != nil && cpuCfsQuotaRaw != "" {
-			cpuCfsQuota, _ := strconv.ParseBool(cpuCfsQuotaRaw.(string))
-			kubelet_configuration["cpuCFSQuota"] = cpuCfsQuota
-		}
-		cpuCfsQuotaPeriod, _ := jsonpath.Get("$[0].cpu_cfs_quota_period", v)
-		if cpuCfsQuotaPeriod != nil && cpuCfsQuotaPeriod != "" {
-			kubelet_configuration["cpuCFSQuotaPeriod"] = cpuCfsQuotaPeriod
-		}
-		imageGcHighThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_high_threshold_percent", v)
-		if imageGcHighThresholdPercentRaw != nil && imageGcHighThresholdPercentRaw != "" {
-			imageGcHighThresholdPercent, _ := strconv.ParseInt(imageGcHighThresholdPercentRaw.(string), 10, 64)
-			kubelet_configuration["imageGCHighThresholdPercent"] = imageGcHighThresholdPercent
-		}
-		imageGcLowThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_low_threshold_percent", v)
-		if imageGcLowThresholdPercentRaw != nil && imageGcLowThresholdPercentRaw != "" {
-			imageGcLowThresholdPercent, _ := strconv.ParseInt(imageGcLowThresholdPercentRaw.(string), 10, 64)
-			kubelet_configuration["imageGCLowThresholdPercent"] = imageGcLowThresholdPercent
-		}
-		podPidsLimit1Raw, _ := jsonpath.Get("$[0].pod_pids_limit", v)
-		if podPidsLimit1Raw != nil && podPidsLimit1Raw != "" {
-			podPidsLimit1, _ := strconv.ParseInt(podPidsLimit1Raw.(string), 10, 64)
-			kubelet_configuration["podPidsLimit"] = podPidsLimit1
-		}
-		topologyManagerPolicy1, _ := jsonpath.Get("$[0].topology_manager_policy", v)
-		if topologyManagerPolicy1 != nil && topologyManagerPolicy1 != "" {
-			kubelet_configuration["topologyManagerPolicy"] = topologyManagerPolicy1
-		}
-		clusterDns, _ := jsonpath.Get("$[0].cluster_dns", v)
-		if clusterDns != nil && clusterDns != "" {
-			kubelet_configuration["clusterDNS"] = clusterDns
-		}
-		memoryManagerPolicy1, _ := jsonpath.Get("$[0].memory_manager_policy", v)
-		if memoryManagerPolicy1 != nil && memoryManagerPolicy1 != "" {
-			kubelet_configuration["memoryManagerPolicy"] = memoryManagerPolicy1
-		}
-		if v, ok := d.GetOk("kubelet_configuration"); ok {
-			localData5, err := jsonpath.Get("$[0].reserved_memory", v)
-			if err != nil {
-				localData5 = make([]interface{}, 0)
-			}
-			localMaps5 := make([]interface{}, 0)
-			for _, dataLoop5 := range localData5.([]interface{}) {
-				dataLoop5Tmp := make(map[string]interface{})
-				if dataLoop5 != nil {
-					dataLoop5Tmp = dataLoop5.(map[string]interface{})
-				}
-				dataLoop5Map := make(map[string]interface{})
-				dataLoop5Map["limits"] = dataLoop5Tmp["limits"]
-				dataLoop5Map["numaNode"] = dataLoop5Tmp["numa_node"]
-				localMaps5 = append(localMaps5, dataLoop5Map)
-			}
-			kubelet_configuration["reservedMemory"] = localMaps5
+	if v := d.Get("tee_config"); !IsNil(v) {
+		teeEnable, _ := jsonpath.Get("$[0].tee_enable", v)
+		if teeEnable != nil && teeEnable != "" {
+			objectDataLocalMap6["tee_enable"] = teeEnable
 		}
 
-		containerLogMaxWorkers1Raw, _ := jsonpath.Get("$[0].container_log_max_workers", v)
-		if containerLogMaxWorkers1Raw != nil && containerLogMaxWorkers1Raw != "" {
-			containerLogMaxWorkers1, _ := strconv.ParseInt(containerLogMaxWorkers1Raw.(string), 10, 64)
-			kubelet_configuration["containerLogMaxWorkers"] = containerLogMaxWorkers1
-		}
-		containerLogMonitorInterval1, _ := jsonpath.Get("$[0].container_log_monitor_interval", v)
-		if containerLogMonitorInterval1 != nil && containerLogMonitorInterval1 != "" {
-			kubelet_configuration["containerLogMonitorInterval"] = containerLogMonitorInterval1
-		}
-		tracing := make(map[string]interface{})
-		endpoint1, _ := jsonpath.Get("$[0].tracing[0].endpoint", v)
-		if endpoint1 != nil && endpoint1 != "" {
-			tracing["endpoint"] = endpoint1
-		}
-		samplingRatePerMillion1Raw, _ := jsonpath.Get("$[0].tracing[0].sampling_rate_per_million", v)
-		if samplingRatePerMillion1Raw != nil && samplingRatePerMillion1Raw != "" {
-			samplingRatePerMillion1, _ := strconv.ParseInt(samplingRatePerMillion1Raw.(string), 10, 64)
-			tracing["samplingRatePerMillion"] = samplingRatePerMillion1
-		}
-
-		kubelet_configuration["tracing"] = tracing
-
-		objectDataLocalMap6["kubelet_configuration"] = kubelet_configuration
-
-		request["node_config"] = objectDataLocalMap6
+		request["tee_config"] = objectDataLocalMap6
 	}
 
 	objectDataLocalMap7 := make(map[string]interface{})
@@ -1598,6 +1703,17 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		}
 
 		request["eflo_node_group"] = objectDataLocalMap7
+	}
+
+	objectDataLocalMap8 := make(map[string]interface{})
+
+	if v := d.Get("auto_mode"); !IsNil(v) {
+		enable5, _ := jsonpath.Get("$[0].enable", v)
+		if enable5 != nil && enable5 != "" {
+			objectDataLocalMap8["enable"] = enable5
+		}
+
+		request["auto_mode"] = objectDataLocalMap8
 	}
 
 	body = request
@@ -1763,6 +1879,34 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 	if err := d.Set("data_disks", dataDisksMaps); err != nil {
+		return err
+	}
+	instance_patternsRaw, _ := jsonpath.Get("$.scaling_group.instance_patterns", objectRaw)
+	instancePatternsMaps := make([]map[string]interface{}, 0)
+	if instance_patternsRaw != nil {
+		for _, instance_patternsChildRaw := range instance_patternsRaw.([]interface{}) {
+			instancePatternsMap := make(map[string]interface{})
+			instance_patternsChildRaw := instance_patternsChildRaw.(map[string]interface{})
+			instancePatternsMap["cores"] = instance_patternsChildRaw["cores"]
+			instancePatternsMap["instance_family_level"] = instance_patternsChildRaw["instance_family_level"]
+			instancePatternsMap["max_cpu_cores"] = instance_patternsChildRaw["max_cpu_cores"]
+			instancePatternsMap["max_memory_size"] = instance_patternsChildRaw["max_memory_size"]
+			instancePatternsMap["memory"] = instance_patternsChildRaw["memory"]
+			instancePatternsMap["min_cpu_cores"] = instance_patternsChildRaw["min_cpu_cores"]
+			instancePatternsMap["min_memory_size"] = instance_patternsChildRaw["min_memory_size"]
+
+			cpu_architecturesRaw, _ := jsonpath.Get("$.cpu_architectures", instance_patternsChildRaw)
+			instancePatternsMap["cpu_architectures"] = cpu_architecturesRaw
+			excluded_instance_typesRaw, _ := jsonpath.Get("$.excluded_instance_types", instance_patternsChildRaw)
+			instancePatternsMap["excluded_instance_types"] = excluded_instance_typesRaw
+			instance_categoriesRaw, _ := jsonpath.Get("$.instance_categories", instance_patternsChildRaw)
+			instancePatternsMap["instance_categories"] = instance_categoriesRaw
+			instance_type_familiesRaw, _ := jsonpath.Get("$.instance_type_families", instance_patternsChildRaw)
+			instancePatternsMap["instance_type_families"] = instance_type_familiesRaw
+			instancePatternsMaps = append(instancePatternsMaps, instancePatternsMap)
+		}
+	}
+	if err := d.Set("instance_patterns", instancePatternsMaps); err != nil {
 		return err
 	}
 	instance_typesRaw, _ := jsonpath.Get("$.scaling_group.instance_types", objectRaw)
@@ -2056,6 +2200,20 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	}
 	vswitch_idsRaw, _ := jsonpath.Get("$.scaling_group.vswitch_ids", objectRaw)
 	d.Set("vswitch_ids", vswitch_idsRaw)
+	auto_modeMaps := make([]map[string]interface{}, 0)
+	auto_modeMap := make(map[string]interface{})
+	auto_modeRaw := make(map[string]interface{})
+	if objectRaw["auto_mode"] != nil {
+		auto_modeRaw = objectRaw["auto_mode"].(map[string]interface{})
+	}
+	if len(auto_modeRaw) > 0 {
+		auto_modeMap["enable"] = auto_modeRaw["enable"]
+
+		auto_modeMaps = append(auto_modeMaps, auto_modeMap)
+	}
+	if err := d.Set("auto_mode", auto_modeMaps); err != nil {
+		return err
+	}
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("cluster_id", parts[0])
@@ -2084,35 +2242,6 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 	objectDataLocalMap := make(map[string]interface{})
 
-	if d.HasChange("resource_group_id") {
-		update = true
-		objectDataLocalMap["resource_group_id"] = d.Get("resource_group_id")
-	}
-
-	if d.HasChange("name") {
-		update = true
-		objectDataLocalMap["name"] = d.Get("name")
-	}
-
-	if d.HasChange("node_pool_name") {
-		update = true
-		objectDataLocalMap["name"] = d.Get("node_pool_name")
-	}
-
-	request["nodepool_info"] = objectDataLocalMap
-
-	objectDataLocalMap1 := make(map[string]interface{})
-
-	if d.HasChange("period") {
-		update = true
-		objectDataLocalMap1["period"] = d.Get("period")
-	}
-
-	if d.HasChange("platform") {
-		update = true
-		objectDataLocalMap1["platform"] = d.Get("platform")
-	}
-
 	if d.HasChange("data_disks") {
 		update = true
 		if v := d.Get("data_disks"); v != nil {
@@ -2128,171 +2257,155 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 						dataLoopTmp = dataLoop.(map[string]interface{})
 					}
 					dataLoopMap := make(map[string]interface{})
-					dataLoopMap["category"] = dataLoopTmp["category"]
-					if dataLoopMap["category"] == "cloud_auto" {
-						dataLoopMap["bursting_enabled"] = dataLoopTmp["bursting_enabled"]
-					}
-					dataLoopMap["performance_level"] = dataLoopTmp["performance_level"]
-					dataLoopMap["auto_snapshot_policy_id"] = dataLoopTmp["auto_snapshot_policy_id"]
-					if dataLoopTmp["provisioned_iops"].(int) > 0 {
-						dataLoopMap["provisioned_iops"] = dataLoopTmp["provisioned_iops"]
-					}
-					dataLoopMap["encrypted"] = dataLoopTmp["encrypted"]
-					if dataLoopTmp["size"].(int) > 0 {
-						dataLoopMap["size"] = dataLoopTmp["size"]
-					}
-					dataLoopMap["kms_key_id"] = dataLoopTmp["kms_key_id"]
-					dataLoopMap["device"] = dataLoopTmp["device"]
-					dataLoopMap["snapshot_id"] = dataLoopTmp["snapshot_id"]
 					dataLoopMap["disk_name"] = dataLoopTmp["name"]
+					dataLoopMap["auto_snapshot_policy_id"] = dataLoopTmp["auto_snapshot_policy_id"]
+					dataLoopMap["file_system"] = dataLoopTmp["file_system"]
+					dataLoopMap["kms_key_id"] = dataLoopTmp["kms_key_id"]
 
 					if autoFormatRaw, ok := dataLoopTmp["auto_format"]; ok && autoFormatRaw != "" {
 						autoFormat, _ := strconv.ParseBool(autoFormatRaw.(string))
 						dataLoopMap["auto_format"] = autoFormat
 
 					}
-					dataLoopMap["file_system"] = dataLoopTmp["file_system"]
+					dataLoopMap["category"] = dataLoopTmp["category"]
+					if dataLoopTmp["size"].(int) > 0 {
+						dataLoopMap["size"] = dataLoopTmp["size"]
+					}
+					dataLoopMap["device"] = dataLoopTmp["device"]
+					if dataLoopTmp["provisioned_iops"].(int) > 0 {
+						dataLoopMap["provisioned_iops"] = dataLoopTmp["provisioned_iops"]
+					}
+					dataLoopMap["snapshot_id"] = dataLoopTmp["snapshot_id"]
+					dataLoopMap["performance_level"] = dataLoopTmp["performance_level"]
+					dataLoopMap["encrypted"] = dataLoopTmp["encrypted"]
+					if dataLoopMap["category"] == "cloud_auto" {
+						dataLoopMap["bursting_enabled"] = dataLoopTmp["bursting_enabled"]
+					}
 					dataLoopMap["mount_target"] = dataLoopTmp["mount_target"]
 					localMaps = append(localMaps, dataLoopMap)
 				}
-				objectDataLocalMap1["data_disks"] = localMaps
+				objectDataLocalMap["data_disks"] = localMaps
 			}
 
+		}
+	}
+
+	if d.HasChange("instance_patterns") {
+		update = true
+		if v := d.Get("instance_patterns"); v != nil {
+			if v, ok := d.GetOk("instance_patterns"); ok {
+				localData1, err := jsonpath.Get("$", v)
+				if err != nil {
+					localData1 = make([]interface{}, 0)
+				}
+				localMaps1 := make([]interface{}, 0)
+				for _, dataLoop1 := range localData1.([]interface{}) {
+					dataLoop1Tmp := make(map[string]interface{})
+					if dataLoop1 != nil {
+						dataLoop1Tmp = dataLoop1.(map[string]interface{})
+					}
+					dataLoop1Map := make(map[string]interface{})
+					dataLoop1Map["instance_family_level"] = dataLoop1Tmp["instance_family_level"]
+					dataLoop1Map["max_cpu_cores"] = dataLoop1Tmp["max_cpu_cores"]
+					dataLoop1Map["cpu_architectures"] = dataLoop1Tmp["cpu_architectures"]
+					dataLoop1Map["instance_type_families"] = dataLoop1Tmp["instance_type_families"]
+					dataLoop1Map["instance_categories"] = dataLoop1Tmp["instance_categories"]
+					dataLoop1Map["min_cpu_cores"] = dataLoop1Tmp["min_cpu_cores"]
+					dataLoop1Map["max_memory_size"] = dataLoop1Tmp["max_memory_size"]
+					dataLoop1Map["min_memory_size"] = dataLoop1Tmp["min_memory_size"]
+					dataLoop1Map["excluded_instance_types"] = dataLoop1Tmp["excluded_instance_types"]
+					dataLoop1Map["memory"] = dataLoop1Tmp["memory"]
+					dataLoop1Map["cores"] = dataLoop1Tmp["cores"]
+					localMaps1 = append(localMaps1, dataLoop1Map)
+				}
+				objectDataLocalMap["instance_patterns"] = localMaps1
+			}
+
+		}
+	}
+
+	if d.HasChange("key_name") {
+		update = true
+		if v, ok := d.GetOk("key_name"); ok {
+			objectDataLocalMap["key_pair"] = v
+		}
+	}
+
+	if d.HasChange("system_disk_category") {
+		update = true
+		if v, ok := d.GetOk("system_disk_category"); ok {
+			objectDataLocalMap["system_disk_category"] = v
+		}
+	}
+
+	if d.HasChange("system_disk_kms_key") {
+		update = true
+		if v, ok := d.GetOk("system_disk_kms_key"); ok {
+			objectDataLocalMap["system_disk_kms_key_id"] = v
+		}
+	}
+
+	if d.HasChange("system_disk_encrypted") {
+		update = true
+		objectDataLocalMap["system_disk_encrypted"] = d.Get("system_disk_encrypted")
+	}
+
+	if d.HasChange("instance_charge_type") {
+		update = true
+		if v, ok := d.GetOk("instance_charge_type"); ok {
+			objectDataLocalMap["instance_charge_type"] = v
+		}
+	}
+
+	if d.HasChange("instance_types") {
+		update = true
+		instanceTypes, _ := jsonpath.Get("$", d.Get("instance_types"))
+		if instanceTypes != nil && instanceTypes != "" {
+			objectDataLocalMap["instance_types"] = instanceTypes
+		}
+	}
+
+	if d.HasChange("platform") {
+		update = true
+		if v, ok := d.GetOk("platform"); ok {
+			objectDataLocalMap["platform"] = v
+		}
+	}
+
+	if d.HasChange("system_disk_snapshot_policy_id") {
+		update = true
+		if v, ok := d.GetOk("system_disk_snapshot_policy_id"); ok {
+			objectDataLocalMap["worker_system_disk_snapshot_policy_id"] = v
 		}
 	}
 
 	if d.HasChange("compensate_with_on_demand") {
 		update = true
-		objectDataLocalMap1["compensate_with_on_demand"] = d.Get("compensate_with_on_demand")
-	}
-
-	if d.HasChange("auto_renew") {
-		update = true
-		objectDataLocalMap1["auto_renew"] = d.Get("auto_renew")
-	}
-
-	if d.HasChange("auto_renew_period") {
-		update = true
-		objectDataLocalMap1["auto_renew_period"] = d.Get("auto_renew_period")
-	}
-
-	if d.HasChange("desired_size") {
-		if d.Get("desired_size") != nil && d.Get("desired_size") != "" {
-			update = true
-			desiredSize, _ := strconv.ParseInt(d.Get("desired_size").(string), 10, 64)
-			objectDataLocalMap1["desired_size"] = desiredSize
+		if v, ok := d.GetOk("compensate_with_on_demand"); ok {
+			objectDataLocalMap["compensate_with_on_demand"] = v
 		}
 	}
 
-	if d.HasChange("image_id") {
+	if d.HasChange("password") {
 		update = true
-		objectDataLocalMap1["image_id"] = d.Get("image_id")
-	}
-
-	if d.HasChange("instance_charge_type") {
-		update = true
-		objectDataLocalMap1["instance_charge_type"] = d.Get("instance_charge_type")
-	}
-
-	if d.HasChange("internet_charge_type") {
-		update = true
-		objectDataLocalMap1["internet_charge_type"] = d.Get("internet_charge_type")
-	}
-
-	if d.HasChange("internet_max_bandwidth_out") {
-		update = true
-		objectDataLocalMap1["internet_max_bandwidth_out"] = d.Get("internet_max_bandwidth_out")
-	}
-
-	if d.HasChange("key_name") {
-		update = true
-		objectDataLocalMap1["key_pair"] = d.Get("key_name")
-	}
-
-	if d.HasChange("multi_az_policy") {
-		update = true
-		objectDataLocalMap1["multi_az_policy"] = d.Get("multi_az_policy")
+		if v, ok := d.GetOk("password"); ok {
+			objectDataLocalMap["login_password"] = v
+		}
 	}
 
 	if d.HasChange("on_demand_base_capacity") {
+		update = true
 		if d.Get("on_demand_base_capacity") != nil && d.Get("on_demand_base_capacity") != "" {
 			update = true
 			onDemandBaseCapacity, _ := strconv.ParseInt(d.Get("on_demand_base_capacity").(string), 10, 64)
-			objectDataLocalMap1["on_demand_base_capacity"] = onDemandBaseCapacity
+			objectDataLocalMap["on_demand_base_capacity"] = onDemandBaseCapacity
 		}
 	}
 
-	if d.HasChange("on_demand_percentage_above_base_capacity") {
-		if d.Get("on_demand_percentage_above_base_capacity") != nil && d.Get("on_demand_percentage_above_base_capacity") != "" {
-			update = true
-			onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(d.Get("on_demand_percentage_above_base_capacity").(string), 10, 64)
-			objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
-		}
-	}
-
-	if d.HasChange("period_unit") {
+	if d.HasChange("system_disk_provisioned_iops") {
 		update = true
-		objectDataLocalMap1["period_unit"] = d.Get("period_unit")
-	}
-
-	if d.HasChange("scaling_policy") {
-		update = true
-		objectDataLocalMap1["scaling_policy"] = d.Get("scaling_policy")
-	}
-
-	if d.HasChange("spot_instance_pools") {
-		update = true
-		objectDataLocalMap1["spot_instance_pools"] = d.Get("spot_instance_pools")
-	}
-
-	if d.HasChange("spot_instance_remedy") {
-		update = true
-		objectDataLocalMap1["spot_instance_remedy"] = d.Get("spot_instance_remedy")
-	}
-
-	if d.HasChange("spot_price_limit") {
-		update = true
-		if v := d.Get("spot_price_limit"); v != nil {
-			localData1, err := jsonpath.Get("$", v)
-			if err != nil {
-				localData1 = make([]interface{}, 0)
-			}
-			localMaps1 := make([]interface{}, 0)
-			for _, dataLoop1 := range localData1.([]interface{}) {
-				dataLoop1Tmp := make(map[string]interface{})
-				if dataLoop1 != nil {
-					dataLoop1Tmp = dataLoop1.(map[string]interface{})
-				}
-				dataLoop1Map := make(map[string]interface{})
-				dataLoop1Map["instance_type"] = dataLoop1Tmp["instance_type"]
-				dataLoop1Map["price_limit"] = dataLoop1Tmp["price_limit"]
-				localMaps1 = append(localMaps1, dataLoop1Map)
-			}
-			objectDataLocalMap1["spot_price_limit"] = localMaps1
-
-		}
-	}
-
-	if d.HasChange("spot_strategy") {
-		update = true
-		objectDataLocalMap1["spot_strategy"] = d.Get("spot_strategy")
-	}
-
-	if d.HasChange("system_disk_category") {
-		update = true
-		objectDataLocalMap1["system_disk_category"] = d.Get("system_disk_category")
-	}
-
-	if d.HasChange("system_disk_performance_level") {
-		update = true
-		objectDataLocalMap1["system_disk_performance_level"] = d.Get("system_disk_performance_level")
-	}
-
-	if d.HasChange("vswitch_ids") {
-		update = true
-		vswitchIds, _ := jsonpath.Get("$", d.Get("vswitch_ids"))
-		if vswitchIds != nil && vswitchIds != "" {
-			objectDataLocalMap1["vswitch_ids"] = vswitchIds
+		if v, ok := d.GetOk("system_disk_provisioned_iops"); ok {
+			objectDataLocalMap["system_disk_provisioned_iops"] = v
 		}
 	}
 
@@ -2300,18 +2413,32 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 		if v := d.Get("tags"); v != nil {
 			tagsMap := ConvertTags(v.(map[string]interface{}))
-			objectDataLocalMap1["tags"] = tagsMap
+			objectDataLocalMap["tags"] = tagsMap
 		}
 	}
 
-	if d.HasChange("system_disk_size") {
+	if d.HasChange("multi_az_policy") {
 		update = true
-		objectDataLocalMap1["system_disk_size"] = d.Get("system_disk_size")
+		if v, ok := d.GetOk("multi_az_policy"); ok {
+			objectDataLocalMap["multi_az_policy"] = v
+		}
 	}
 
-	if d.HasChange("password") {
+	if d.HasChange("desired_size") {
 		update = true
-		objectDataLocalMap1["login_password"] = d.Get("password")
+		if d.Get("desired_size") != nil && d.Get("desired_size") != "" {
+			update = true
+			desiredSize, _ := strconv.ParseInt(d.Get("desired_size").(string), 10, 64)
+			objectDataLocalMap["desired_size"] = desiredSize
+		}
+	}
+
+	if d.HasChange("vswitch_ids") {
+		update = true
+		vswitchIds, _ := jsonpath.Get("$", d.Get("vswitch_ids"))
+		if vswitchIds != nil && vswitchIds != "" {
+			objectDataLocalMap["vswitch_ids"] = vswitchIds
+		}
 	}
 
 	password := d.Get("password").(string)
@@ -2322,64 +2449,128 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 			if err != nil {
 				return WrapError(err)
 			}
-			objectDataLocalMap1["login_password"] = decryptResp
+			objectDataLocalMap["login_password"] = decryptResp
 		}
 	}
 	if d.HasChange("private_pool_options") {
 		update = true
 		if v := d.Get("private_pool_options"); v != nil {
 			private_pool_options := make(map[string]interface{})
-			privatePoolOptionsMatchCriteria, _ := jsonpath.Get("$[0].private_pool_options_match_criteria", v)
-			if privatePoolOptionsMatchCriteria != nil && privatePoolOptionsMatchCriteria != "" {
-				private_pool_options["match_criteria"] = privatePoolOptionsMatchCriteria
-			}
 			privatePoolOptionsId, _ := jsonpath.Get("$[0].private_pool_options_id", v)
 			if privatePoolOptionsId != nil && privatePoolOptionsId != "" {
 				private_pool_options["id"] = privatePoolOptionsId
 			}
+			privatePoolOptionsMatchCriteria, _ := jsonpath.Get("$[0].private_pool_options_match_criteria", v)
+			if privatePoolOptionsMatchCriteria != nil && privatePoolOptionsMatchCriteria != "" {
+				private_pool_options["match_criteria"] = privatePoolOptionsMatchCriteria
+			}
 
-			objectDataLocalMap1["private_pool_options"] = private_pool_options
+			objectDataLocalMap["private_pool_options"] = private_pool_options
 		}
 	}
 
-	if d.HasChange("system_disk_provisioned_iops") {
+	if d.HasChange("system_disk_size") {
 		update = true
-		objectDataLocalMap1["system_disk_provisioned_iops"] = d.Get("system_disk_provisioned_iops")
+		if v, ok := d.GetOk("system_disk_size"); ok {
+			objectDataLocalMap["system_disk_size"] = v
+		}
 	}
 
-	if d.HasChange("system_disk_bursting_enabled") {
+	if d.HasChange("system_disk_performance_level") {
 		update = true
-		objectDataLocalMap1["system_disk_bursting_enabled"] = d.Get("system_disk_bursting_enabled")
+		if v, ok := d.GetOk("system_disk_performance_level"); ok {
+			objectDataLocalMap["system_disk_performance_level"] = v
+		}
 	}
 
-	if d.HasChange("system_disk_encrypted") {
+	if d.HasChange("on_demand_percentage_above_base_capacity") {
 		update = true
-		objectDataLocalMap1["system_disk_encrypted"] = d.Get("system_disk_encrypted")
+		if d.Get("on_demand_percentage_above_base_capacity") != nil && d.Get("on_demand_percentage_above_base_capacity") != "" {
+			update = true
+			onDemandPercentageAboveBaseCapacity, _ := strconv.ParseInt(d.Get("on_demand_percentage_above_base_capacity").(string), 10, 64)
+			objectDataLocalMap["on_demand_percentage_above_base_capacity"] = onDemandPercentageAboveBaseCapacity
+		}
+	}
+
+	if d.HasChange("internet_charge_type") {
+		update = true
+		if v, ok := d.GetOk("internet_charge_type"); ok {
+			objectDataLocalMap["internet_charge_type"] = v
+		}
+	}
+
+	if d.HasChange("spot_strategy") {
+		update = true
+		if v, ok := d.GetOk("spot_strategy"); ok {
+			objectDataLocalMap["spot_strategy"] = v
+		}
+	}
+
+	if d.HasChange("auto_renew") {
+		update = true
+		if v, ok := d.GetOk("auto_renew"); ok {
+			objectDataLocalMap["auto_renew"] = v
+		}
+	}
+
+	if d.HasChange("image_id") {
+		update = true
+		if v, ok := d.GetOk("image_id"); ok {
+			objectDataLocalMap["image_id"] = v
+		}
+	}
+
+	if d.HasChange("spot_price_limit") {
+		update = true
+		if v := d.Get("spot_price_limit"); v != nil {
+			if v, ok := d.GetOk("spot_price_limit"); ok {
+				localData3, err := jsonpath.Get("$", v)
+				if err != nil {
+					localData3 = make([]interface{}, 0)
+				}
+				localMaps3 := make([]interface{}, 0)
+				for _, dataLoop3 := range localData3.([]interface{}) {
+					dataLoop3Tmp := make(map[string]interface{})
+					if dataLoop3 != nil {
+						dataLoop3Tmp = dataLoop3.(map[string]interface{})
+					}
+					dataLoop3Map := make(map[string]interface{})
+					dataLoop3Map["price_limit"] = dataLoop3Tmp["price_limit"]
+					dataLoop3Map["instance_type"] = dataLoop3Tmp["instance_type"]
+					localMaps3 = append(localMaps3, dataLoop3Map)
+				}
+				objectDataLocalMap["spot_price_limit"] = localMaps3
+			}
+
+		}
 	}
 
 	if d.HasChange("system_disk_categories") {
 		update = true
 		systemDiskCategories, _ := jsonpath.Get("$", d.Get("system_disk_categories"))
 		if systemDiskCategories != nil && systemDiskCategories != "" {
-			objectDataLocalMap1["system_disk_categories"] = systemDiskCategories
+			objectDataLocalMap["system_disk_categories"] = systemDiskCategories
 		}
 	}
 
-	if d.HasChange("system_disk_encrypt_algorithm") {
+	if d.HasChange("period") {
 		update = true
-		objectDataLocalMap1["system_disk_encrypt_algorithm"] = d.Get("system_disk_encrypt_algorithm")
+		if v, ok := d.GetOk("period"); ok {
+			objectDataLocalMap["period"] = v
+		}
 	}
 
 	if d.HasChange("image_type") {
 		update = true
-		objectDataLocalMap1["image_type"] = d.Get("image_type")
+		if v, ok := d.GetOk("image_type"); ok {
+			objectDataLocalMap["image_type"] = v
+		}
 	}
 
-	if d.HasChange("instance_types") {
+	if d.HasChange("period_unit") {
 		update = true
-		instanceTypes, _ := jsonpath.Get("$", d.Get("instance_types"))
-		if instanceTypes != nil && instanceTypes != "" {
-			objectDataLocalMap1["instance_types"] = instanceTypes
+		if v, ok := d.GetOk("period_unit"); ok {
+			objectDataLocalMap["period_unit"] = v
 		}
 	}
 
@@ -2387,199 +2578,216 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 		rdsInstances, _ := jsonpath.Get("$", d.Get("rds_instances"))
 		if rdsInstances != nil && rdsInstances != "" {
-			objectDataLocalMap1["rds_instances"] = rdsInstances
+			objectDataLocalMap["rds_instances"] = rdsInstances
 		}
 	}
 
-	if d.HasChange("system_disk_kms_key") {
+	if d.HasChange("auto_renew_period") {
 		update = true
-		objectDataLocalMap1["system_disk_kms_key_id"] = d.Get("system_disk_kms_key")
+		if v, ok := d.GetOk("auto_renew_period"); ok {
+			objectDataLocalMap["auto_renew_period"] = v
+		}
 	}
 
-	if d.HasChange("system_disk_snapshot_policy_id") {
+	if d.HasChange("spot_instance_remedy") {
 		update = true
-		objectDataLocalMap1["worker_system_disk_snapshot_policy_id"] = d.Get("system_disk_snapshot_policy_id")
+		if v, ok := d.GetOk("spot_instance_remedy"); ok {
+			objectDataLocalMap["spot_instance_remedy"] = v
+		}
 	}
 
-	request["scaling_group"] = objectDataLocalMap1
+	if d.HasChange("system_disk_encrypt_algorithm") {
+		update = true
+		if v, ok := d.GetOk("system_disk_encrypt_algorithm"); ok {
+			objectDataLocalMap["system_disk_encrypt_algorithm"] = v
+		}
+	}
+
+	if d.HasChange("system_disk_bursting_enabled") {
+		update = true
+		if v, ok := d.GetOk("system_disk_bursting_enabled"); ok {
+			objectDataLocalMap["system_disk_bursting_enabled"] = v
+		}
+	}
+
+	if d.HasChange("scaling_policy") {
+		update = true
+		if v, ok := d.GetOk("scaling_policy"); ok {
+			objectDataLocalMap["scaling_policy"] = v
+		}
+	}
+
+	if d.HasChange("spot_instance_pools") {
+		update = true
+		if v, ok := d.GetOk("spot_instance_pools"); ok {
+			objectDataLocalMap["spot_instance_pools"] = v
+		}
+	}
+
+	if d.HasChange("internet_max_bandwidth_out") {
+		update = true
+		if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
+			objectDataLocalMap["internet_max_bandwidth_out"] = v
+		}
+	}
+
+	request["scaling_group"] = objectDataLocalMap
+
+	if !d.IsNewResource() && d.HasChange("scaling_config") {
+		update = true
+		objectDataLocalMap1 := make(map[string]interface{})
+
+		if v := d.Get("scaling_config"); v != nil {
+			type1, _ := jsonpath.Get("$[0].type", v)
+			if type1 != nil && type1 != "" {
+				objectDataLocalMap1["type"] = type1
+			}
+			eipInternetChargeType, _ := jsonpath.Get("$[0].eip_internet_charge_type", v)
+			if eipInternetChargeType != nil && eipInternetChargeType != "" {
+				objectDataLocalMap1["eip_internet_charge_type"] = eipInternetChargeType
+			}
+			eipBandwidth, _ := jsonpath.Get("$[0].eip_bandwidth", v)
+			if eipBandwidth != nil && eipBandwidth != "" && eipBandwidth.(int) > 0 {
+				objectDataLocalMap1["eip_bandwidth"] = eipBandwidth
+			}
+			maxSize, _ := jsonpath.Get("$[0].max_size", v)
+			if maxSize != nil && maxSize != "" {
+				objectDataLocalMap1["max_instances"] = maxSize
+			}
+			minSize, _ := jsonpath.Get("$[0].min_size", v)
+			if minSize != nil && minSize != "" {
+				objectDataLocalMap1["min_instances"] = minSize
+			}
+			isBondEip, _ := jsonpath.Get("$[0].is_bond_eip", v)
+			if isBondEip != nil && isBondEip != "" {
+				objectDataLocalMap1["is_bond_eip"] = isBondEip
+			}
+			enable1, _ := jsonpath.Get("$[0].enable", v)
+			if enable1 != nil && enable1 != "" {
+				objectDataLocalMap1["enable"] = enable1
+			}
+
+			request["auto_scaling"] = objectDataLocalMap1
+		}
+	}
 
 	objectDataLocalMap2 := make(map[string]interface{})
 
-	if d.HasChange("cpu_policy") {
-		update = true
-		objectDataLocalMap2["cpu_policy"] = d.Get("cpu_policy")
-	}
-
-	if d.HasChange("install_cloud_monitor") {
-		update = true
-		objectDataLocalMap2["cms_enabled"] = d.Get("install_cloud_monitor")
-	}
-
 	if d.HasChange("runtime_version") {
 		update = true
-		objectDataLocalMap2["runtime_version"] = d.Get("runtime_version")
+		if v, ok := d.GetOk("runtime_version"); ok {
+			objectDataLocalMap2["runtime_version"] = v
+		}
+	}
+
+	if d.HasChange("runtime_name") {
+		update = true
+		if v, ok := d.GetOk("runtime_name"); ok {
+			objectDataLocalMap2["runtime"] = v
+		}
+	}
+
+	if d.HasChange("labels") {
+		update = true
+		if v := d.Get("labels"); v != nil {
+			if v, ok := d.GetOk("labels"); ok {
+				localData4, err := jsonpath.Get("$", v)
+				if err != nil {
+					localData4 = make([]interface{}, 0)
+				}
+				localMaps4 := make([]interface{}, 0)
+				for _, dataLoop4 := range localData4.([]interface{}) {
+					dataLoop4Tmp := make(map[string]interface{})
+					if dataLoop4 != nil {
+						dataLoop4Tmp = dataLoop4.(map[string]interface{})
+					}
+					dataLoop4Map := make(map[string]interface{})
+					dataLoop4Map["value"] = dataLoop4Tmp["value"]
+					dataLoop4Map["key"] = dataLoop4Tmp["key"]
+					localMaps4 = append(localMaps4, dataLoop4Map)
+				}
+				objectDataLocalMap2["labels"] = localMaps4
+			}
+
+		}
 	}
 
 	if d.HasChange("user_data") {
 		update = true
-		objectDataLocalMap2["user_data"] = d.Get("user_data")
-		if v := d.Get("user_data").(string); v != "" {
-			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
-			if base64DecodeError == nil {
-				objectDataLocalMap2["user_data"] = tea.String(v)
-			} else {
-				objectDataLocalMap2["user_data"] = tea.String(base64.StdEncoding.EncodeToString([]byte(v)))
+		if v, ok := d.GetOk("user_data"); ok {
+			objectDataLocalMap2["user_data"] = v
+			if v := d.Get("user_data").(string); v != "" {
+				_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+				if base64DecodeError == nil {
+					objectDataLocalMap2["user_data"] = tea.String(v)
+				} else {
+					objectDataLocalMap2["user_data"] = tea.String(base64.StdEncoding.EncodeToString([]byte(v)))
+				}
 			}
+		}
+	}
+
+	if d.HasChange("unschedulable") {
+		update = true
+		if v, ok := d.GetOk("unschedulable"); ok {
+			objectDataLocalMap2["unschedulable"] = v
+		}
+	}
+
+	if d.HasChange("cpu_policy") {
+		update = true
+		if v, ok := d.GetOk("cpu_policy"); ok {
+			objectDataLocalMap2["cpu_policy"] = v
 		}
 	}
 
 	if d.HasChange("taints") {
 		update = true
 		if v := d.Get("taints"); v != nil {
-			localData3, err := jsonpath.Get("$", v)
-			if err != nil {
-				localData3 = make([]interface{}, 0)
-			}
-			localMaps3 := make([]interface{}, 0)
-			for _, dataLoop3 := range localData3.([]interface{}) {
-				dataLoop3Tmp := make(map[string]interface{})
-				if dataLoop3 != nil {
-					dataLoop3Tmp = dataLoop3.(map[string]interface{})
+			if v, ok := d.GetOk("taints"); ok {
+				localData5, err := jsonpath.Get("$", v)
+				if err != nil {
+					localData5 = make([]interface{}, 0)
 				}
-				dataLoop3Map := make(map[string]interface{})
-				dataLoop3Map["key"] = dataLoop3Tmp["key"]
-				dataLoop3Map["effect"] = dataLoop3Tmp["effect"]
-				dataLoop3Map["value"] = dataLoop3Tmp["value"]
-				localMaps3 = append(localMaps3, dataLoop3Map)
+				localMaps5 := make([]interface{}, 0)
+				for _, dataLoop5 := range localData5.([]interface{}) {
+					dataLoop5Tmp := make(map[string]interface{})
+					if dataLoop5 != nil {
+						dataLoop5Tmp = dataLoop5.(map[string]interface{})
+					}
+					dataLoop5Map := make(map[string]interface{})
+					dataLoop5Map["value"] = dataLoop5Tmp["value"]
+					dataLoop5Map["key"] = dataLoop5Tmp["key"]
+					dataLoop5Map["effect"] = dataLoop5Tmp["effect"]
+					localMaps5 = append(localMaps5, dataLoop5Map)
+				}
+				objectDataLocalMap2["taints"] = localMaps5
 			}
-			objectDataLocalMap2["taints"] = localMaps3
 
 		}
 	}
 
-	if d.HasChange("runtime_name") {
+	if d.HasChange("install_cloud_monitor") {
 		update = true
-		objectDataLocalMap2["runtime"] = d.Get("runtime_name")
-	}
-
-	if d.HasChange("labels") {
-		update = true
-		if v := d.Get("labels"); v != nil {
-			localData4, err := jsonpath.Get("$", v)
-			if err != nil {
-				localData4 = make([]interface{}, 0)
-			}
-			localMaps4 := make([]interface{}, 0)
-			for _, dataLoop4 := range localData4.([]interface{}) {
-				dataLoop4Tmp := make(map[string]interface{})
-				if dataLoop4 != nil {
-					dataLoop4Tmp = dataLoop4.(map[string]interface{})
-				}
-				dataLoop4Map := make(map[string]interface{})
-				dataLoop4Map["key"] = dataLoop4Tmp["key"]
-				dataLoop4Map["value"] = dataLoop4Tmp["value"]
-				localMaps4 = append(localMaps4, dataLoop4Map)
-			}
-			objectDataLocalMap2["labels"] = localMaps4
+		if v, ok := d.GetOk("install_cloud_monitor"); ok {
+			objectDataLocalMap2["cms_enabled"] = v
 		}
-	}
-
-	if d.HasChange("unschedulable") {
-		update = true
-		objectDataLocalMap2["unschedulable"] = d.Get("unschedulable")
 	}
 
 	if d.HasChange("pre_user_data") {
 		update = true
-		objectDataLocalMap2["pre_user_data"] = d.Get("pre_user_data")
+		if v, ok := d.GetOk("pre_user_data"); ok {
+			objectDataLocalMap2["pre_user_data"] = v
+		}
 	}
 
 	request["kubernetes_config"] = objectDataLocalMap2
 
-	if d.HasChange("scaling_config") {
+	if d.HasChange("management") {
 		update = true
 		objectDataLocalMap3 := make(map[string]interface{})
 
-		if v := d.Get("scaling_config"); v != nil {
-			type1, _ := jsonpath.Get("$[0].type", v)
-			if type1 != nil && type1 != "" {
-				objectDataLocalMap3["type"] = type1
-			}
-			enable1, _ := jsonpath.Get("$[0].enable", v)
-			if enable1 != nil && enable1 != "" {
-				objectDataLocalMap3["enable"] = enable1
-			}
-			maxSize, _ := jsonpath.Get("$[0].max_size", v)
-			if maxSize != nil && maxSize != "" {
-				objectDataLocalMap3["max_instances"] = maxSize
-			}
-			minSize, _ := jsonpath.Get("$[0].min_size", v)
-			if minSize != nil && minSize != "" {
-				objectDataLocalMap3["min_instances"] = minSize
-			}
-			eipBandwidth, _ := jsonpath.Get("$[0].eip_bandwidth", v)
-			if eipBandwidth != nil && eipBandwidth != "" && eipBandwidth.(int) > 0 {
-				objectDataLocalMap3["eip_bandwidth"] = eipBandwidth
-			}
-			eipInternetChargeType, _ := jsonpath.Get("$[0].eip_internet_charge_type", v)
-			if eipInternetChargeType != nil && eipInternetChargeType != "" {
-				objectDataLocalMap3["eip_internet_charge_type"] = eipInternetChargeType
-			}
-			isBondEip, _ := jsonpath.Get("$[0].is_bond_eip", v)
-			if isBondEip != nil && isBondEip != "" {
-				objectDataLocalMap3["is_bond_eip"] = isBondEip
-			}
-
-			request["auto_scaling"] = objectDataLocalMap3
-		}
-	}
-
-	if d.HasChange("management") {
-		update = true
-		objectDataLocalMap4 := make(map[string]interface{})
-
 		if v := d.Get("management"); v != nil {
-			enable3, _ := jsonpath.Get("$[0].enable", v)
-			if enable3 != nil && enable3 != "" {
-				objectDataLocalMap4["enable"] = enable3
-			}
-			autoRepair, _ := jsonpath.Get("$[0].auto_repair", v)
-			if autoRepair != nil && autoRepair != "" {
-				objectDataLocalMap4["auto_repair"] = autoRepair
-			}
-			auto_repair_policy := make(map[string]interface{})
-			restartNode, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", v)
-			if restartNode != nil && restartNode != "" {
-				auto_repair_policy["restart_node"] = restartNode
-			}
-
-			objectDataLocalMap4["auto_repair_policy"] = auto_repair_policy
-			autoVulFix, _ := jsonpath.Get("$[0].auto_vul_fix", v)
-			if autoVulFix != nil && autoVulFix != "" {
-				objectDataLocalMap4["auto_vul_fix"] = autoVulFix
-			}
-			auto_vul_fix_policy := make(map[string]interface{})
-			restartNode1, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].restart_node", v)
-			if restartNode1 != nil && restartNode1 != "" {
-				auto_vul_fix_policy["restart_node"] = restartNode1
-			}
-			vulLevel, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].vul_level", v)
-			if vulLevel != nil && vulLevel != "" {
-				auto_vul_fix_policy["vul_level"] = vulLevel
-			}
-
-			objectDataLocalMap4["auto_vul_fix_policy"] = auto_vul_fix_policy
-			autoUpgrade, _ := jsonpath.Get("$[0].auto_upgrade", v)
-			if autoUpgrade != nil && autoUpgrade != "" {
-				objectDataLocalMap4["auto_upgrade"] = autoUpgrade
-			}
-			auto_upgrade_policy := make(map[string]interface{})
-			autoUpgradeKubelet, _ := jsonpath.Get("$[0].auto_upgrade_policy[0].auto_upgrade_kubelet", v)
-			if autoUpgradeKubelet != nil && autoUpgradeKubelet != "" {
-				auto_upgrade_policy["auto_upgrade_kubelet"] = autoUpgradeKubelet
-			}
-
-			objectDataLocalMap4["auto_upgrade_policy"] = auto_upgrade_policy
 			upgrade_config := make(map[string]interface{})
 			surge1, _ := jsonpath.Get("$[0].surge", v)
 			if surge1 != nil && surge1 != "" {
@@ -2594,11 +2802,75 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 				upgrade_config["max_unavailable"] = maxUnavailable
 			}
 
-			objectDataLocalMap4["upgrade_config"] = upgrade_config
+			objectDataLocalMap3["upgrade_config"] = upgrade_config
+			auto_upgrade_policy := make(map[string]interface{})
+			autoUpgradeKubelet, _ := jsonpath.Get("$[0].auto_upgrade_policy[0].auto_upgrade_kubelet", v)
+			if autoUpgradeKubelet != nil && autoUpgradeKubelet != "" {
+				auto_upgrade_policy["auto_upgrade_kubelet"] = autoUpgradeKubelet
+			}
 
-			request["management"] = objectDataLocalMap4
+			objectDataLocalMap3["auto_upgrade_policy"] = auto_upgrade_policy
+			autoUpgrade, _ := jsonpath.Get("$[0].auto_upgrade", v)
+			if autoUpgrade != nil && autoUpgrade != "" {
+				objectDataLocalMap3["auto_upgrade"] = autoUpgrade
+			}
+			autoRepair, _ := jsonpath.Get("$[0].auto_repair", v)
+			if autoRepair != nil && autoRepair != "" {
+				objectDataLocalMap3["auto_repair"] = autoRepair
+			}
+			enable3, _ := jsonpath.Get("$[0].enable", v)
+			if enable3 != nil && enable3 != "" {
+				objectDataLocalMap3["enable"] = enable3
+			}
+			autoVulFix, _ := jsonpath.Get("$[0].auto_vul_fix", v)
+			if autoVulFix != nil && autoVulFix != "" {
+				objectDataLocalMap3["auto_vul_fix"] = autoVulFix
+			}
+			auto_vul_fix_policy := make(map[string]interface{})
+			vulLevel, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].vul_level", v)
+			if vulLevel != nil && vulLevel != "" {
+				auto_vul_fix_policy["vul_level"] = vulLevel
+			}
+			restartNode, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].restart_node", v)
+			if restartNode != nil && restartNode != "" {
+				auto_vul_fix_policy["restart_node"] = restartNode
+			}
+
+			objectDataLocalMap3["auto_vul_fix_policy"] = auto_vul_fix_policy
+			auto_repair_policy := make(map[string]interface{})
+			restartNode1, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", v)
+			if restartNode1 != nil && restartNode1 != "" {
+				auto_repair_policy["restart_node"] = restartNode1
+			}
+
+			objectDataLocalMap3["auto_repair_policy"] = auto_repair_policy
+
+			request["management"] = objectDataLocalMap3
 		}
 	}
+
+	objectDataLocalMap4 := make(map[string]interface{})
+
+	if d.HasChange("resource_group_id") {
+		update = true
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			objectDataLocalMap4["resource_group_id"] = v
+		}
+	}
+
+	if d.HasChange("name") {
+		update = true
+		objectDataLocalMap4["name"] = d.Get("name")
+	}
+
+	if d.HasChange("node_pool_name") {
+		update = true
+		if v, ok := d.GetOk("node_pool_name"); ok {
+			objectDataLocalMap4["name"] = v
+		}
+	}
+
+	request["nodepool_info"] = objectDataLocalMap4
 
 	if v, ok := d.GetOk("update_nodes"); ok {
 		request["update_nodes"] = v
@@ -2662,96 +2934,36 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		objectDataLocalMap := make(map[string]interface{})
 
 		if v := d.Get("kubelet_configuration"); v != nil {
-			registryBurst1Raw, _ := jsonpath.Get("$[0].registry_burst", v)
-			if registryBurst1Raw != nil && registryBurst1Raw != "" {
-				registryBurst1, _ := strconv.ParseInt(registryBurst1Raw.(string), 10, 64)
-				objectDataLocalMap["registryBurst"] = registryBurst1
+			memoryManagerPolicy1, _ := jsonpath.Get("$[0].memory_manager_policy", v)
+			if memoryManagerPolicy1 != nil && memoryManagerPolicy1 != "" {
+				objectDataLocalMap["memoryManagerPolicy"] = memoryManagerPolicy1
 			}
 			registryPullQpsRaw, _ := jsonpath.Get("$[0].registry_pull_qps", v)
 			if registryPullQpsRaw != nil && registryPullQpsRaw != "" {
 				registryPullQps, _ := strconv.ParseInt(registryPullQpsRaw.(string), 10, 64)
 				objectDataLocalMap["registryPullQPS"] = registryPullQps
 			}
+			tracing := make(map[string]interface{})
+			samplingRatePerMillion1Raw, _ := jsonpath.Get("$[0].tracing[0].sampling_rate_per_million", v)
+			if samplingRatePerMillion1Raw != nil && samplingRatePerMillion1Raw != "" {
+				samplingRatePerMillion1, _ := strconv.ParseInt(samplingRatePerMillion1Raw.(string), 10, 64)
+				tracing["samplingRatePerMillion"] = samplingRatePerMillion1
+			}
+			endpoint1, _ := jsonpath.Get("$[0].tracing[0].endpoint", v)
+			if endpoint1 != nil && endpoint1 != "" {
+				tracing["endpoint"] = endpoint1
+			}
+
+			objectDataLocalMap["tracing"] = tracing
 			eventRecordQpsRaw, _ := jsonpath.Get("$[0].event_record_qps", v)
 			if eventRecordQpsRaw != nil && eventRecordQpsRaw != "" {
 				eventRecordQps, _ := strconv.ParseInt(eventRecordQpsRaw.(string), 10, 64)
 				objectDataLocalMap["eventRecordQPS"] = eventRecordQps
 			}
-			eventBurst1Raw, _ := jsonpath.Get("$[0].event_burst", v)
-			if eventBurst1Raw != nil && eventBurst1Raw != "" {
-				eventBurst1, _ := strconv.ParseInt(eventBurst1Raw.(string), 10, 64)
-				objectDataLocalMap["eventBurst"] = eventBurst1
-			}
-			kubeApiQpsRaw, _ := jsonpath.Get("$[0].kube_api_qps", v)
-			if kubeApiQpsRaw != nil && kubeApiQpsRaw != "" {
-				kubeApiQps, _ := strconv.ParseInt(kubeApiQpsRaw.(string), 10, 64)
-				objectDataLocalMap["kubeAPIQPS"] = kubeApiQps
-			}
-			serializeImagePulls1Raw, _ := jsonpath.Get("$[0].serialize_image_pulls", v)
-			if serializeImagePulls1Raw != nil && serializeImagePulls1Raw != "" {
-				serializeImagePulls1, _ := strconv.ParseBool(serializeImagePulls1Raw.(string))
-				objectDataLocalMap["serializeImagePulls"] = serializeImagePulls1
-			}
-			cpuManagerPolicy1, _ := jsonpath.Get("$[0].cpu_manager_policy", v)
-			if cpuManagerPolicy1 != nil && cpuManagerPolicy1 != "" {
-				objectDataLocalMap["cpuManagerPolicy"] = cpuManagerPolicy1
-			}
-			evictionHard1, _ := jsonpath.Get("$[0].eviction_hard", v)
-			if evictionHard1 != nil && evictionHard1 != "" {
-				objectDataLocalMap["evictionHard"] = evictionHard1
-			}
-			evictionSoft1, _ := jsonpath.Get("$[0].eviction_soft", v)
-			if evictionSoft1 != nil && evictionSoft1 != "" {
-				objectDataLocalMap["evictionSoft"] = evictionSoft1
-			}
-			evictionSoftGracePeriod1, _ := jsonpath.Get("$[0].eviction_soft_grace_period", v)
-			if evictionSoftGracePeriod1 != nil && evictionSoftGracePeriod1 != "" {
-				objectDataLocalMap["evictionSoftGracePeriod"] = evictionSoftGracePeriod1
-			}
-			systemReserved1, _ := jsonpath.Get("$[0].system_reserved", v)
-			if systemReserved1 != nil && systemReserved1 != "" {
-				objectDataLocalMap["systemReserved"] = systemReserved1
-			}
-			kubeReserved1, _ := jsonpath.Get("$[0].kube_reserved", v)
-			if kubeReserved1 != nil && kubeReserved1 != "" {
-				objectDataLocalMap["kubeReserved"] = kubeReserved1
-			}
-			readOnlyPort1Raw, _ := jsonpath.Get("$[0].read_only_port", v)
-			if readOnlyPort1Raw != nil && readOnlyPort1Raw != "" {
-				readOnlyPort1, _ := strconv.ParseInt(readOnlyPort1Raw.(string), 10, 64)
-				objectDataLocalMap["readOnlyPort"] = readOnlyPort1
-			}
-			maxPods1Raw, _ := jsonpath.Get("$[0].max_pods", v)
-			if maxPods1Raw != nil && maxPods1Raw != "" {
-				maxPods1, _ := strconv.ParseInt(maxPods1Raw.(string), 10, 64)
-				objectDataLocalMap["maxPods"] = maxPods1
-			}
-			containerLogMaxSize1, _ := jsonpath.Get("$[0].container_log_max_size", v)
-			if containerLogMaxSize1 != nil && containerLogMaxSize1 != "" {
-				objectDataLocalMap["containerLogMaxSize"] = containerLogMaxSize1
-			}
 			containerLogMaxFiles1Raw, _ := jsonpath.Get("$[0].container_log_max_files", v)
 			if containerLogMaxFiles1Raw != nil && containerLogMaxFiles1Raw != "" {
 				containerLogMaxFiles1, _ := strconv.ParseInt(containerLogMaxFiles1Raw.(string), 10, 64)
 				objectDataLocalMap["containerLogMaxFiles"] = containerLogMaxFiles1
-			}
-			featureGates1, _ := jsonpath.Get("$[0].feature_gates", v)
-			if featureGates1 != nil && featureGates1 != "" {
-				objectDataLocalMap["featureGates"] = featureGates1
-			}
-			allowedUnsafeSysctls1, _ := jsonpath.Get("$[0].allowed_unsafe_sysctls", d.Get("kubelet_configuration"))
-			if allowedUnsafeSysctls1 != nil && allowedUnsafeSysctls1 != "" {
-				objectDataLocalMap["allowedUnsafeSysctls"] = allowedUnsafeSysctls1
-			}
-			kubeApiBurstRaw, _ := jsonpath.Get("$[0].kube_api_burst", v)
-			if kubeApiBurstRaw != nil && kubeApiBurstRaw != "" {
-				kubeApiBurst, _ := strconv.ParseInt(kubeApiBurstRaw.(string), 10, 64)
-				objectDataLocalMap["kubeAPIBurst"] = kubeApiBurst
-			}
-			cpuCfsQuotaRaw, _ := jsonpath.Get("$[0].cpu_cfs_quota", v)
-			if cpuCfsQuotaRaw != nil && cpuCfsQuotaRaw != "" {
-				cpuCfsQuota, _ := strconv.ParseBool(cpuCfsQuotaRaw.(string))
-				objectDataLocalMap["cpuCFSQuota"] = cpuCfsQuota
 			}
 			if v, ok := d.GetOk("kubelet_configuration"); ok {
 				localData, err := jsonpath.Get("$[0].reserved_memory", v)
@@ -2765,71 +2977,131 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 						dataLoopTmp = dataLoop.(map[string]interface{})
 					}
 					dataLoopMap := make(map[string]interface{})
-					dataLoopMap["numaNode"] = dataLoopTmp["numa_node"]
 					dataLoopMap["limits"] = dataLoopTmp["limits"]
+					dataLoopMap["numaNode"] = dataLoopTmp["numa_node"]
 					localMaps = append(localMaps, dataLoopMap)
 				}
 				objectDataLocalMap["reservedMemory"] = localMaps
 			}
 
+			allowedUnsafeSysctls1, _ := jsonpath.Get("$[0].allowed_unsafe_sysctls", d.Get("kubelet_configuration"))
+			if allowedUnsafeSysctls1 != nil && allowedUnsafeSysctls1 != "" {
+				objectDataLocalMap["allowedUnsafeSysctls"] = allowedUnsafeSysctls1
+			}
+			readOnlyPort1Raw, _ := jsonpath.Get("$[0].read_only_port", v)
+			if readOnlyPort1Raw != nil && readOnlyPort1Raw != "" {
+				readOnlyPort1, _ := strconv.ParseInt(readOnlyPort1Raw.(string), 10, 64)
+				objectDataLocalMap["readOnlyPort"] = readOnlyPort1
+			}
 			cpuCfsQuotaPeriod, _ := jsonpath.Get("$[0].cpu_cfs_quota_period", v)
 			if cpuCfsQuotaPeriod != nil && cpuCfsQuotaPeriod != "" {
 				objectDataLocalMap["cpuCFSQuotaPeriod"] = cpuCfsQuotaPeriod
 			}
-			imageGcHighThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_high_threshold_percent", v)
-			if imageGcHighThresholdPercentRaw != nil && imageGcHighThresholdPercentRaw != "" {
-				imageGcHighThresholdPercent, _ := strconv.ParseInt(imageGcHighThresholdPercentRaw.(string), 10, 64)
-				objectDataLocalMap["imageGCHighThresholdPercent"] = imageGcHighThresholdPercent
+			evictionSoftGracePeriod1, _ := jsonpath.Get("$[0].eviction_soft_grace_period", v)
+			if evictionSoftGracePeriod1 != nil && evictionSoftGracePeriod1 != "" {
+				objectDataLocalMap["evictionSoftGracePeriod"] = evictionSoftGracePeriod1
+			}
+			evictionSoft1, _ := jsonpath.Get("$[0].eviction_soft", v)
+			if evictionSoft1 != nil && evictionSoft1 != "" {
+				objectDataLocalMap["evictionSoft"] = evictionSoft1
+			}
+			containerLogMonitorInterval1, _ := jsonpath.Get("$[0].container_log_monitor_interval", v)
+			if containerLogMonitorInterval1 != nil && containerLogMonitorInterval1 != "" {
+				objectDataLocalMap["containerLogMonitorInterval"] = containerLogMonitorInterval1
+			}
+			evictionHard1, _ := jsonpath.Get("$[0].eviction_hard", v)
+			if evictionHard1 != nil && evictionHard1 != "" {
+				objectDataLocalMap["evictionHard"] = evictionHard1
+			}
+			kubeReserved1, _ := jsonpath.Get("$[0].kube_reserved", v)
+			if kubeReserved1 != nil && kubeReserved1 != "" {
+				objectDataLocalMap["kubeReserved"] = kubeReserved1
+			}
+			registryBurst1Raw, _ := jsonpath.Get("$[0].registry_burst", v)
+			if registryBurst1Raw != nil && registryBurst1Raw != "" {
+				registryBurst1, _ := strconv.ParseInt(registryBurst1Raw.(string), 10, 64)
+				objectDataLocalMap["registryBurst"] = registryBurst1
 			}
 			imageGcLowThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_low_threshold_percent", v)
 			if imageGcLowThresholdPercentRaw != nil && imageGcLowThresholdPercentRaw != "" {
 				imageGcLowThresholdPercent, _ := strconv.ParseInt(imageGcLowThresholdPercentRaw.(string), 10, 64)
 				objectDataLocalMap["imageGCLowThresholdPercent"] = imageGcLowThresholdPercent
 			}
-			clusterDns, _ := jsonpath.Get("$[0].cluster_dns", d.Get("kubelet_configuration"))
-			if clusterDns != nil && clusterDns != "" {
-				objectDataLocalMap["clusterDNS"] = clusterDns
+			eventBurst1Raw, _ := jsonpath.Get("$[0].event_burst", v)
+			if eventBurst1Raw != nil && eventBurst1Raw != "" {
+				eventBurst1, _ := strconv.ParseInt(eventBurst1Raw.(string), 10, 64)
+				objectDataLocalMap["eventBurst"] = eventBurst1
 			}
-			memoryManagerPolicy1, _ := jsonpath.Get("$[0].memory_manager_policy", v)
-			if memoryManagerPolicy1 != nil && memoryManagerPolicy1 != "" {
-				objectDataLocalMap["memoryManagerPolicy"] = memoryManagerPolicy1
+			serializeImagePulls1Raw, _ := jsonpath.Get("$[0].serialize_image_pulls", v)
+			if serializeImagePulls1Raw != nil && serializeImagePulls1Raw != "" {
+				serializeImagePulls1, _ := strconv.ParseBool(serializeImagePulls1Raw.(string))
+				objectDataLocalMap["serializeImagePulls"] = serializeImagePulls1
 			}
-			tracing := make(map[string]interface{})
-			endpoint1, _ := jsonpath.Get("$[0].tracing[0].endpoint", v)
-			if endpoint1 != nil && endpoint1 != "" {
-				tracing["endpoint"] = endpoint1
+			cpuCfsQuotaRaw, _ := jsonpath.Get("$[0].cpu_cfs_quota", v)
+			if cpuCfsQuotaRaw != nil && cpuCfsQuotaRaw != "" {
+				cpuCfsQuota, _ := strconv.ParseBool(cpuCfsQuotaRaw.(string))
+				objectDataLocalMap["cpuCFSQuota"] = cpuCfsQuota
 			}
-			samplingRatePerMillion1Raw, _ := jsonpath.Get("$[0].tracing[0].sampling_rate_per_million", v)
-			if samplingRatePerMillion1Raw != nil && samplingRatePerMillion1Raw != "" {
-				samplingRatePerMillion1, _ := strconv.ParseInt(samplingRatePerMillion1Raw.(string), 10, 64)
-				tracing["samplingRatePerMillion"] = samplingRatePerMillion1
-			}
-
-			objectDataLocalMap["tracing"] = tracing
-			containerLogMaxWorkers1Raw, _ := jsonpath.Get("$[0].container_log_max_workers", v)
-			if containerLogMaxWorkers1Raw != nil && containerLogMaxWorkers1Raw != "" {
-				containerLogMaxWorkers1, _ := strconv.ParseInt(containerLogMaxWorkers1Raw.(string), 10, 64)
-				objectDataLocalMap["containerLogMaxWorkers"] = containerLogMaxWorkers1
-			}
-			containerLogMonitorInterval1, _ := jsonpath.Get("$[0].container_log_monitor_interval", v)
-			if containerLogMonitorInterval1 != nil && containerLogMonitorInterval1 != "" {
-				objectDataLocalMap["containerLogMonitorInterval"] = containerLogMonitorInterval1
+			containerLogMaxSize1, _ := jsonpath.Get("$[0].container_log_max_size", v)
+			if containerLogMaxSize1 != nil && containerLogMaxSize1 != "" {
+				objectDataLocalMap["containerLogMaxSize"] = containerLogMaxSize1
 			}
 			topologyManagerPolicy1, _ := jsonpath.Get("$[0].topology_manager_policy", v)
 			if topologyManagerPolicy1 != nil && topologyManagerPolicy1 != "" {
 				objectDataLocalMap["topologyManagerPolicy"] = topologyManagerPolicy1
+			}
+			maxPods1Raw, _ := jsonpath.Get("$[0].max_pods", v)
+			if maxPods1Raw != nil && maxPods1Raw != "" {
+				maxPods1, _ := strconv.ParseInt(maxPods1Raw.(string), 10, 64)
+				objectDataLocalMap["maxPods"] = maxPods1
+			}
+			featureGates1, _ := jsonpath.Get("$[0].feature_gates", v)
+			if featureGates1 != nil && featureGates1 != "" {
+				objectDataLocalMap["featureGates"] = featureGates1
 			}
 			podPidsLimit1Raw, _ := jsonpath.Get("$[0].pod_pids_limit", v)
 			if podPidsLimit1Raw != nil && podPidsLimit1Raw != "" {
 				podPidsLimit1, _ := strconv.ParseInt(podPidsLimit1Raw.(string), 10, 64)
 				objectDataLocalMap["podPidsLimit"] = podPidsLimit1
 			}
+			kubeApiQpsRaw, _ := jsonpath.Get("$[0].kube_api_qps", v)
+			if kubeApiQpsRaw != nil && kubeApiQpsRaw != "" {
+				kubeApiQps, _ := strconv.ParseInt(kubeApiQpsRaw.(string), 10, 64)
+				objectDataLocalMap["kubeAPIQPS"] = kubeApiQps
+			}
+			imageGcHighThresholdPercentRaw, _ := jsonpath.Get("$[0].image_gc_high_threshold_percent", v)
+			if imageGcHighThresholdPercentRaw != nil && imageGcHighThresholdPercentRaw != "" {
+				imageGcHighThresholdPercent, _ := strconv.ParseInt(imageGcHighThresholdPercentRaw.(string), 10, 64)
+				objectDataLocalMap["imageGCHighThresholdPercent"] = imageGcHighThresholdPercent
+			}
+			clusterDns, _ := jsonpath.Get("$[0].cluster_dns", d.Get("kubelet_configuration"))
+			if clusterDns != nil && clusterDns != "" {
+				objectDataLocalMap["clusterDNS"] = clusterDns
+			}
+			containerLogMaxWorkers1Raw, _ := jsonpath.Get("$[0].container_log_max_workers", v)
+			if containerLogMaxWorkers1Raw != nil && containerLogMaxWorkers1Raw != "" {
+				containerLogMaxWorkers1, _ := strconv.ParseInt(containerLogMaxWorkers1Raw.(string), 10, 64)
+				objectDataLocalMap["containerLogMaxWorkers"] = containerLogMaxWorkers1
+			}
+			kubeApiBurstRaw, _ := jsonpath.Get("$[0].kube_api_burst", v)
+			if kubeApiBurstRaw != nil && kubeApiBurstRaw != "" {
+				kubeApiBurst, _ := strconv.ParseInt(kubeApiBurstRaw.(string), 10, 64)
+				objectDataLocalMap["kubeAPIBurst"] = kubeApiBurst
+			}
+			cpuManagerPolicy1, _ := jsonpath.Get("$[0].cpu_manager_policy", v)
+			if cpuManagerPolicy1 != nil && cpuManagerPolicy1 != "" {
+				objectDataLocalMap["cpuManagerPolicy"] = cpuManagerPolicy1
+			}
+			systemReserved1, _ := jsonpath.Get("$[0].system_reserved", v)
+			if systemReserved1 != nil && systemReserved1 != "" {
+				objectDataLocalMap["systemReserved"] = systemReserved1
+			}
 
 			request["kubelet_config"] = objectDataLocalMap
 		}
 	}
 
-	objectDataLocalMap1 = make(map[string]interface{})
+	objectDataLocalMap1 := make(map[string]interface{})
 
 	if v := d.Get("rolling_policy"); v != nil {
 		maxParallelism, _ := jsonpath.Get("$[0].max_parallelism", v)
