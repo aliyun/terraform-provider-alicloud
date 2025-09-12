@@ -1,9 +1,7 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
-	"hash/crc32"
 	"log"
 	"time"
 
@@ -168,9 +166,6 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 				ForceNew: true,
 			},
 			"zone_mappings": {
-				Set: func(v interface{}) int {
-					return int(crc32.ChecksumIEEE([]byte(v.(map[string]interface{})["zone_id"].(string))))
-				},
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Resource{
