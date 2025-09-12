@@ -366,18 +366,16 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListTransitRouterVpcAttachments"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	parts, err1 := ParseResourceId(id, 2)
 	if err1 != nil {
 		return nil, WrapError(err1)
 	}
-	query["TransitRouterAttachmentId"] = parts[1]
-	query["RegionId"] = client.RegionId
+	request["TransitRouterAttachmentId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	action := "ListTransitRouterVpcAttachments"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
@@ -389,12 +387,12 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"IllegalParam.Region"}) {
-			return object, WrapErrorf(NotFoundErr("Cen:TransitRouterVpcAttachment", id), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("TransitRouterVpcAttachment", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -408,15 +406,7 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 		return object, WrapErrorf(NotFoundErr("TransitRouterVpcAttachment", id), NotFoundMsg, response)
 	}
 
-	result, _ := v.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		if fmt.Sprint(item["TransitRouterAttachmentId"]) != parts[1] {
-			continue
-		}
-		return item, nil
-	}
-	return object, WrapErrorf(NotFoundErr("TransitRouterVpcAttachment", id), NotFoundMsg, response)
+	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
 func (s *CenServiceV2) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -431,6 +421,13 @@ func (s *CenServiceV2) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, 
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

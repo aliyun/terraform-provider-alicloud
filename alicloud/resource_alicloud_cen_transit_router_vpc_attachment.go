@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -22,9 +21,9 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(42 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"auto_publish_route_enabled": {
@@ -54,6 +53,10 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
 			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -62,6 +65,10 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 			"transit_router_attachment_description": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"transit_router_id": {
 				Type:     schema.TypeString,
@@ -72,13 +79,13 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 			"transit_router_vpc_attachment_name": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				Computed:      true,
 				ConflictsWith: []string{"transit_router_attachment_name"},
+				Computed:      true,
 			},
 			"transit_router_vpc_attachment_options": {
 				Type:     schema.TypeMap,
-				Computed: true,
 				Optional: true,
+				Computed: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -86,7 +93,7 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 				ForceNew: true,
 			},
 			"vpc_owner_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
@@ -106,10 +113,6 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 						},
 					},
 				},
-			},
-			"transit_router_attachment_id": {
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 			"resource_type": {
 				Type:         schema.TypeString,
@@ -148,22 +151,30 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["RegionId"] = client.RegionId
+	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOk("cen_id"); ok {
 		request["CenId"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["ChargeType"] = convertCenTransitRouterVpcAttachmentChargeTypeRequest(v.(string))
+	}
 	if v, ok := d.GetOk("zone_mappings"); ok {
-		zoneMappingsMaps := make([]interface{}, 0)
-		for _, dataLoop := range v.(*schema.Set).List() {
-			dataLoopTmp := dataLoop.(map[string]interface{})
-			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["ZoneId"] = dataLoopTmp["zone_id"]
-			dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
-			zoneMappingsMaps = append(zoneMappingsMaps, dataLoopMap)
+		zoneMappingsMapsArray := make([]interface{}, 0)
+		for _, dataLoop1 := range v.(*schema.Set).List() {
+			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Map := make(map[string]interface{})
+			dataLoop1Map["ZoneId"] = dataLoop1Tmp["zone_id"]
+			dataLoop1Map["VSwitchId"] = dataLoop1Tmp["vswitch_id"]
+			zoneMappingsMapsArray = append(zoneMappingsMapsArray, dataLoop1Map)
 		}
-		request["ZoneMappings"] = zoneMappingsMaps
+		request["ZoneMappings"] = zoneMappingsMapsArray
 	}
 
 	if v, ok := d.GetOk("resource_type"); ok {
@@ -172,21 +183,15 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("transit_router_id"); ok {
 		request["TransitRouterId"] = v
 	}
-	request["VpcId"] = d.Get("vpc_id")
-	if v, ok := d.GetOk("transit_router_attachment_description"); ok {
-		request["TransitRouterAttachmentDescription"] = v
-	}
-	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
-	}
-
 	if v, ok := d.GetOk("transit_router_attachment_name"); ok || d.HasChange("transit_router_attachment_name") {
 		request["TransitRouterAttachmentName"] = v
 	}
 
 	if v, ok := d.GetOk("transit_router_vpc_attachment_name"); ok {
 		request["TransitRouterAttachmentName"] = v
+	}
+	if v, ok := d.GetOk("vpc_owner_id"); ok {
+		request["VpcOwnerId"] = v
 	}
 	if v, ok := d.GetOkExists("auto_publish_route_enabled"); ok {
 		request["AutoPublishRouteEnabled"] = v
@@ -195,12 +200,11 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 		options, _ := convertMaptoJsonString(v.(map[string]interface{}))
 		request["TransitRouterVPCAttachmentOptions"] = options
 	}
-	if v, ok := d.GetOk("payment_type"); ok {
-		request["ChargeType"] = convertCenTransitRouterVpcAttachmentChargeTypeRequest(v.(string))
+	request["VpcId"] = d.Get("vpc_id")
+	if v, ok := d.GetOk("transit_router_attachment_description"); ok {
+		request["TransitRouterAttachmentDescription"] = v
 	}
-	if v, ok := d.GetOk("vpc_owner_id"); ok {
-		request["VpcOwnerId"] = v
-	}
+
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
@@ -211,22 +215,19 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	if v, ok := d.GetOkExists("route_table_propagation_enabled"); ok {
 		request["RouteTablePropagationEnabled"] = v
 	}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Attachment", "IncorrectStatus.VpcOrVswitch", "InstanceStatus.NotSupport", "IncorrectStatus.Status", "IncorrectStatus.VpcResource", "IncorrectStatus.VpcRouteTable", "IncorrectStatus.VpcSwitch"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.VpcRouteTable", "IncorrectStatus.VpcSwitch", "IncorrectStatus.VpcOrVswitch", "InstanceStatus.NotSupport", "IncorrectStatus.Attachment", "IncorrectStatus.VpcResource"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_vpc_attachment", action, AlibabaCloudSdkGoERROR)
@@ -240,7 +241,7 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d, meta)
+	return resourceAliCloudCenTransitRouterVpcAttachmentRead(d, meta)
 }
 
 func resourceAliCloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, meta interface{}) error {
@@ -257,61 +258,41 @@ func resourceAliCloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 
-	if objectRaw["AutoPublishRouteEnabled"] != nil {
-		d.Set("auto_publish_route_enabled", objectRaw["AutoPublishRouteEnabled"])
-	}
-	if objectRaw["CreationTime"] != nil {
-		d.Set("create_time", objectRaw["CreationTime"])
-	}
-	if convertCenTransitRouterVpcAttachmentTransitRouterAttachmentsChargeTypeResponse(objectRaw["ChargeType"]) != nil {
-		d.Set("payment_type", convertCenTransitRouterVpcAttachmentTransitRouterAttachmentsChargeTypeResponse(objectRaw["ChargeType"]))
-	}
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
-	if objectRaw["TransitRouterAttachmentDescription"] != nil {
-		d.Set("transit_router_attachment_description", objectRaw["TransitRouterAttachmentDescription"])
-	}
-	if objectRaw["TransitRouterId"] != nil {
-		d.Set("transit_router_id", objectRaw["TransitRouterId"])
-	}
-	if objectRaw["TransitRouterAttachmentName"] != nil {
-		d.Set("transit_router_vpc_attachment_name", objectRaw["TransitRouterAttachmentName"])
-	}
-	if objectRaw["TransitRouterVPCAttachmentOptions"] != nil {
-		d.Set("transit_router_vpc_attachment_options", objectRaw["TransitRouterVPCAttachmentOptions"])
-	}
-	if objectRaw["VpcId"] != nil {
-		d.Set("vpc_id", objectRaw["VpcId"])
-	}
-	if objectRaw["VpcOwnerId"] != nil {
-		d.Set("vpc_owner_id", objectRaw["VpcOwnerId"])
-	}
+	d.Set("auto_publish_route_enabled", objectRaw["AutoPublishRouteEnabled"])
+	d.Set("create_time", objectRaw["CreationTime"])
+	d.Set("payment_type", convertCenTransitRouterVpcAttachmentTransitRouterAttachmentsChargeTypeResponse(objectRaw["ChargeType"]))
+	d.Set("region_id", objectRaw["VpcRegionId"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("transit_router_attachment_description", objectRaw["TransitRouterAttachmentDescription"])
+	d.Set("transit_router_id", objectRaw["TransitRouterId"])
+	d.Set("transit_router_vpc_attachment_name", objectRaw["TransitRouterAttachmentName"])
+	d.Set("transit_router_vpc_attachment_options", objectRaw["TransitRouterVPCAttachmentOptions"])
+	d.Set("vpc_id", objectRaw["VpcId"])
+	d.Set("vpc_owner_id", fmt.Sprint(objectRaw["VpcOwnerId"]))
 	d.Set("transit_router_attachment_id", objectRaw["TransitRouterAttachmentId"])
 	d.Set("resource_type", objectRaw["ResourceType"])
 	d.Set("cen_id", objectRaw["CenId"])
 
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
-	zoneMappings1Raw := objectRaw["ZoneMappings"]
+	zoneMappingsRaw := objectRaw["ZoneMappings"]
 	zoneMappingsMaps := make([]map[string]interface{}, 0)
-	if zoneMappings1Raw != nil {
-		for _, zoneMappingsChild1Raw := range zoneMappings1Raw.([]interface{}) {
+	if zoneMappingsRaw != nil {
+		for _, zoneMappingsChildRaw := range zoneMappingsRaw.([]interface{}) {
 			zoneMappingsMap := make(map[string]interface{})
-			zoneMappingsChild1Raw := zoneMappingsChild1Raw.(map[string]interface{})
-			zoneMappingsMap["vswitch_id"] = zoneMappingsChild1Raw["VSwitchId"]
-			zoneMappingsMap["zone_id"] = zoneMappingsChild1Raw["ZoneId"]
+			zoneMappingsChildRaw := zoneMappingsChildRaw.(map[string]interface{})
+			zoneMappingsMap["vswitch_id"] = zoneMappingsChildRaw["VSwitchId"]
+			zoneMappingsMap["zone_id"] = zoneMappingsChildRaw["ZoneId"]
 
 			zoneMappingsMaps = append(zoneMappingsMaps, zoneMappingsMap)
 		}
 	}
-	if objectRaw["ZoneMappings"] != nil {
-		if err := d.Set("zone_mappings", zoneMappingsMaps); err != nil {
-			return err
-		}
+	if err := d.Set("zone_mappings", zoneMappingsMaps); err != nil {
+		return err
 	}
 
-	d.Set("transit_router_attachment_name", d.Get("transit_router_vpc_attachment_name"))
+	d.Set("transit_router_attachment_name", objectRaw["TransitRouterAttachmentName"])
+
 	return nil
 }
 
@@ -321,35 +302,21 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "UpdateTransitRouterVpcAttachmentAttribute"
+
 	var err error
-	parts, _ := ParseResourceId(d.Id(), 2)
+	action := "UpdateTransitRouterVpcAttachmentAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["TransitRouterAttachmentId"] = parts[1]
+	parts, _ := ParseResourceId(d.Id(), 2)
+	request["TransitRouterAttachmentId"] = parts[1]
 
 	request["ClientToken"] = buildClientToken(action)
-	if !d.IsNewResource() && d.HasChange("transit_router_attachment_description") {
-		update = true
-		request["TransitRouterAttachmentDescription"] = d.Get("transit_router_attachment_description")
-	}
-
-	if !d.IsNewResource() && d.HasChange("transit_router_attachment_name") {
-		update = true
-		request["TransitRouterAttachmentName"] = d.Get("transit_router_attachment_name")
-	}
-
-	if !d.IsNewResource() && d.HasChange("transit_router_vpc_attachment_name") {
-		update = true
-		request["TransitRouterAttachmentName"] = d.Get("transit_router_vpc_attachment_name")
-	}
-
-	if !d.IsNewResource() && d.HasChange("auto_publish_route_enabled") {
+	if d.HasChange("auto_publish_route_enabled") {
 		update = true
 		request["AutoPublishRouteEnabled"] = d.Get("auto_publish_route_enabled")
 	}
 
-	if !d.IsNewResource() && d.HasChange("transit_router_vpc_attachment_options") {
+	if d.HasChange("transit_router_vpc_attachment_options") {
 		update = true
 		options, _ := convertMaptoJsonString(d.Get("transit_router_vpc_attachment_options").(map[string]interface{}))
 		request["TransitRouterVPCAttachmentOptions"] = options
@@ -358,22 +325,36 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+
+	if d.HasChange("transit_router_attachment_name") {
+		update = true
+		request["TransitRouterAttachmentName"] = d.Get("transit_router_attachment_name")
+	}
+
+	if d.HasChange("transit_router_vpc_attachment_name") {
+		update = true
+		request["TransitRouterAttachmentName"] = d.Get("transit_router_vpc_attachment_name")
+	}
+
+	if d.HasChange("transit_router_attachment_description") {
+		update = true
+		request["TransitRouterAttachmentDescription"] = d.Get("transit_router_attachment_description")
+	}
+
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status", "IncorrectStatus.Vpc", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment", "IncorrectStatus.Vpc"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -424,22 +405,19 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 			}
 			request["AddZoneMappings"] = addZoneMappingsMaps
 		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.Vpc", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment", "IncorrectStatus.Vpc"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -452,7 +430,7 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 	}
 	if d.HasChange("tags") {
 		cbnService := CbnService{client}
-		if err := cbnService.SetResourceTags(d, "TransitRouterVpcAttachment"); err != nil {
+		if err := cbnService.SetResourceTags(d, "TRANSITROUTERVPCATTACHMENT"); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -467,37 +445,37 @@ func resourceAliCloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData,
 	var response map[string]interface{}
 	query := make(map[string]interface{})
 	var err error
-	parts, _ := ParseResourceId(d.Id(), 2)
 	request = make(map[string]interface{})
-	query["TransitRouterAttachmentId"] = parts[1]
+	parts, _ := ParseResourceId(d.Id(), 2)
+	request["TransitRouterAttachmentId"] = parts[1]
 
 	request["ClientToken"] = buildClientToken(action)
 
-	if v, ok := d.GetOkExists("dry_run"); ok {
-		request["DryRun"] = v
-	}
 	if v, ok := d.GetOkExists("force_delete"); ok {
 		request["Force"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "InstanceStatus.NotSupport", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment", "IncorrectStatus.Status", "IncorrectStatus.VpcRouteEntry", "IncorrectStatus.Vpc", "IncorrectStatus.VpcRouteTable", "TokenProcessing", "IncorrectStatus.VpcSwitch"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "TokenProcessing", "IncorrectStatus.VpcRouteTable", "IncorrectStatus.VpcSwitch", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.VpcRouteEntry", "InstanceStatus.NotSupport", "IncorrectStatus.Attachment", "IncorrectStatus.Vpc"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -527,6 +505,7 @@ func convertCenTransitRouterVpcAttachmentPaymentTypeRequest(source string) strin
 }
 
 func convertCenTransitRouterVpcAttachmentTransitRouterAttachmentsChargeTypeResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
 	switch source {
 	case "POSTPAY":
 		return "PayAsYouGo"
@@ -534,6 +513,7 @@ func convertCenTransitRouterVpcAttachmentTransitRouterAttachmentsChargeTypeRespo
 	return source
 }
 func convertCenTransitRouterVpcAttachmentChargeTypeRequest(source interface{}) interface{} {
+	source = fmt.Sprint(source)
 	switch source {
 	case "PayAsYouGo":
 		return "POSTPAY"
