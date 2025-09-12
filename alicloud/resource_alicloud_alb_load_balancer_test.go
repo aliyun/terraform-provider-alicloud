@@ -536,8 +536,33 @@ func TestAccAliCloudAlbLoadBalancer_basic1(t *testing.T) {
 							"vswitch_id":       "${alicloud_vswitch.zone_c.id}",
 							"zone_id":          "${alicloud_vswitch.zone_c.zone_id}",
 							"eip_type":         "Common",
-							"allocation_id":    "${alicloud_eip.zone_b.id}",
+							"allocation_id":    "${alicloud_eip.zone_c.id}",
 							"intranet_address": "192.168.192.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id":       "${alicloud_vswitch.zone_b.id}",
+							"zone_id":          "${alicloud_vswitch.zone_b.zone_id}",
+							"eip_type":         "Common",
+							"allocation_id":    "${alicloud_eip.zone_b.id}",
+							"intranet_address": "192.168.176.169",
+						},
+						{
+							"vswitch_id":       "${alicloud_vswitch.zone_a.id}",
+							"zone_id":          "${alicloud_vswitch.zone_a.zone_id}",
+							"eip_type":         "Common",
+							"allocation_id":    "${alicloud_eip.zone_a.id}",
+							"intranet_address": "192.168.10.1",
 						},
 					},
 				}),
@@ -560,6 +585,39 @@ func TestAccAliCloudAlbLoadBalancer_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"address_type": "Intranet",
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id":       "${alicloud_vswitch.zone_a.id}",
+							"zone_id":          "${alicloud_vswitch.zone_a.zone_id}",
+							"intranet_address": "192.168.10.1",
+						},
+						{
+							"vswitch_id":       "${alicloud_vswitch.zone_c.id}",
+							"zone_id":          "${alicloud_vswitch.zone_c.zone_id}",
+							"intranet_address": "192.168.192.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_type": "Intranet",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"address_type": "Intranet",
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id":       "${alicloud_vswitch.zone_a.id}",
+							"zone_id":          "${alicloud_vswitch.zone_a.zone_id}",
+							"intranet_address": "192.168.10.1",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.zone_b.id}",
+							"zone_id":    "${alicloud_vswitch.zone_b.zone_id}",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -917,6 +975,11 @@ func AliCloudAlbLoadBalancerBasicDependence1(name string) string {
 	}
 
 	resource "alicloud_eip" "zone_b" {
+	  bandwidth            = "10"
+	  internet_charge_type = "PayByTraffic"
+	}
+
+	resource "alicloud_eip" "zone_c" {
 	  bandwidth            = "10"
 	  internet_charge_type = "PayByTraffic"
 	}
