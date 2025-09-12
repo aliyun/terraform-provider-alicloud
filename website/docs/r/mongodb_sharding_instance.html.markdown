@@ -107,6 +107,8 @@ The following arguments are supported:
 * `account_password` - (Optional, Sensitive) Password of the root account. It is a string of 6 to 32 characters and is composed of letters, numbers, and underlines.
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to a instance. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `encrypted` - (Optional, ForceNew, Bool, Available since v1.260.0) Whether to enable cloud disk encryption. Default value: `false`. Valid values: `true`, `false`.
+* `cloud_disk_encryption_key` - (Optional, ForceNew, Available since v1.260.0) The ID of the encryption key.
 * `resource_group_id` - (Optional, Available since v1.161.0) The ID of the Resource Group.
 * `auto_renew` - (Optional, Bool, Available since v1.141.0) Auto renew for prepaid. Default value: `false`. Valid values: `true`, `false`.
 * `backup_time` - (Optional, Available since v1.42.0) Sharding Instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
@@ -130,6 +132,9 @@ The following arguments are supported:
 * `maintain_start_time` - (Optional, Available since v1.259.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available since v1.259.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
+* `encryptor_name` - (Optional, Available since v1.260.0) The encryption method. **NOTE:** `encryptor_name` is valid only when `tde_status` is set to `enabled`.
+* `encryption_key` - (Optional, Available since v1.260.0) The ID of the custom key.
+* `role_arn` - (Optional, Available since v1.260.0) The Alibaba Cloud Resource Name (ARN) of the specified Resource Access Management (RAM) role.
 * `db_instance_release_protection` - (Optional, Bool, Available since v1.253.0) Indicates whether release protection is enabled for the instance. Valid values: `true`, `false`.
 * `global_security_group_list` - (Optional, List, Available since v1.258.0) The list of Global Security Group Ids.
 * `mongo_list` - (Required, Set) The Mongo nodes of the instance. The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.

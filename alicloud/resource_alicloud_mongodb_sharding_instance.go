@@ -136,6 +136,16 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
 			},
+			"encrypted": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cloud_disk_encryption_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -205,12 +215,30 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Computed: true,
 			},
 			"tde_status": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"encrypted", "cloud_disk_encryption_key"},
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("engine_version").(string) < "4.0"
 				},
+			},
+			"encryptor_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"encrypted", "cloud_disk_encryption_key"},
+			},
+			"encryption_key": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"encrypted", "cloud_disk_encryption_key"},
+			},
+			"role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"db_instance_release_protection": {
 				Type:     schema.TypeBool,
@@ -448,6 +476,14 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		request["AccountPassword"] = decryptResp
 	}
 
+	if v, ok := d.GetOkExists("encrypted"); ok {
+		request["Encrypted"] = v
+	}
+
+	if v, ok := d.GetOk("cloud_disk_encryption_key"); ok {
+		request["EncryptionKey"] = v
+	}
+
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
@@ -610,12 +646,20 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
 	d.Set("backup_interval", backupPolicy["BackupInterval"])
 
-	tdeInfo, err := ddsService.DescribeMongoDBShardingTDEInfo(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
+	if object["KindCode"] == "0" || object["StorageType"] == "local_ssd" {
+		tdeInfo, err := ddsService.DescribeMongoDBShardingTDEInfo(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
 
-	d.Set("tde_status", tdeInfo["TDEStatus"])
+		d.Set("tde_status", tdeInfo["TDEStatus"])
+		d.Set("encryptor_name", tdeInfo["EncryptorName"])
+		d.Set("encryption_key", tdeInfo["EncryptionKey"])
+		d.Set("role_arn", tdeInfo["RoleARN"])
+	} else {
+		d.Set("encrypted", object["Encrypted"])
+		d.Set("cloud_disk_encryption_key", object["EncryptionKey"])
+	}
 
 	sslAction, err := ddsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil {
@@ -1174,14 +1218,39 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		d.SetPartial("maintain_end_time")
 	}
 
-	if d.HasChange("tde_status") {
+	if d.HasChange("tde_status") || d.HasChange("encryptor_name") || d.HasChange("encryption_key") {
 		action := "ModifyDBInstanceTDE"
+
 		modifyDBInstanceTDEReq := map[string]interface{}{
 			"DBInstanceId": d.Id(),
 		}
 
-		if v, ok := d.GetOk("tde_status"); ok {
-			modifyDBInstanceTDEReq["TDEStatus"] = v
+		if d.HasChange("tde_status") {
+
+			if v, ok := d.GetOk("tde_status"); ok {
+				modifyDBInstanceTDEReq["TDEStatus"] = v
+			}
+		}
+
+		if d.HasChange("encryptor_name") {
+
+			if v, ok := d.GetOk("encryptor_name"); ok {
+				modifyDBInstanceTDEReq["EncryptorName"] = v
+			}
+		}
+
+		if d.HasChange("encryption_key") {
+
+			if v, ok := d.GetOk("encryption_key"); ok {
+				modifyDBInstanceTDEReq["EncryptionKey"] = v
+			}
+		}
+
+		if d.HasChange("role_arn") {
+
+			if v, ok := d.GetOk("role_arn"); ok {
+				modifyDBInstanceTDEReq["RoleARN"] = v
+			}
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -1208,6 +1277,8 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 
 		d.SetPartial("tde_status")
+		d.SetPartial("encryptor_name")
+		d.SetPartial("encryption_key")
 	}
 
 	if d.HasChange("db_instance_release_protection") {
