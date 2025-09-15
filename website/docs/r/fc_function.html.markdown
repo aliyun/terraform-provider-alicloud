@@ -45,8 +45,8 @@ resource "alicloud_log_store" "default" {
 }
 
 resource "alicloud_ram_role" "default" {
-  name        = "fcservicerole-${random_integer.default.result}"
-  document    = <<EOF
+  role_name                   = "fcservicerole-${random_integer.default.result}"
+  assume_role_policy_document = <<EOF
   {
       "Statement": [
         {
@@ -62,12 +62,12 @@ resource "alicloud_ram_role" "default" {
       "Version": "1"
   }
   EOF
-  description = "this is a example"
-  force       = true
+  description                 = "this is a example"
+  force                       = true
 }
 
 resource "alicloud_ram_role_policy_attachment" "default" {
-  role_name   = alicloud_ram_role.default.name
+  role_name   = alicloud_ram_role.default.role_name
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
@@ -84,14 +84,27 @@ resource "alicloud_fc_service" "default" {
   }
 }
 
+resource "local_file" "default" {
+  content  = "import logging \ndef handler(event, context): \n  logger = logging.getLogger() \n  logger.info('hello world') \n  return 'hello world'"
+  filename = "${path.module}/index.py"
+}
+
+
+data "archive_file" "code_package" {
+  type        = "zip"
+  source_file = local_file.default.filename
+  output_path = "${path.module}/code.zip"
+}
+
 resource "alicloud_oss_bucket" "default" {
   bucket = "terraform-example-${random_integer.default.result}"
 }
 # If you upload the function by OSS Bucket, you need to specify path can't upload by content.
 resource "alicloud_oss_bucket_object" "default" {
-  bucket  = alicloud_oss_bucket.default.id
-  key     = "index.py"
-  content = "import logging \ndef handler(event, context): \nlogger = logging.getLogger() \nlogger.info('hello world') \nreturn 'hello world'"
+  bucket       = alicloud_oss_bucket.default.id
+  key          = "index.zip"
+  source       = data.archive_file.code_package.output_path
+  content_type = "application/zip"
 }
 
 resource "alicloud_fc_function" "foo" {
@@ -102,7 +115,7 @@ resource "alicloud_fc_function" "foo" {
   oss_key     = alicloud_oss_bucket_object.default.key
   memory_size = "512"
   runtime     = "python3.10"
-  handler     = "hello.handler"
+  handler     = "index.handler"
   environment_variables = {
     prefix = "terraform"
   }
