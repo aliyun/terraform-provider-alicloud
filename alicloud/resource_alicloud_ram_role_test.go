@@ -143,7 +143,7 @@ func TestAccAliCloudRamRole_basic5886(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"assume_role_policy_document": `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"apigateway.aliyuncs.com\",\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
+					"assume_role_policy_document": `{\"Statement\": [{\"Action\": [\"sts:AssumeRole\",\"sts:SetSourceIdentity\"],\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"apigateway.aliyuncs.com\",\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -246,7 +246,7 @@ func TestAccAliCloudRamRole_basic5886_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"role_name":                   name,
-					"assume_role_policy_document": `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
+					"assume_role_policy_document": `{\"Statement\": [{\"Action\": [\"sts:AssumeRole\",\"sts:SetSourceIdentity\"],\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"apigateway.aliyuncs.com\",\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
 					"description":                 name,
 					"max_session_duration":        "6000",
 					"tags": map[string]string{
