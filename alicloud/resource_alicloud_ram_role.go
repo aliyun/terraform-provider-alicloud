@@ -228,17 +228,26 @@ func resourceAliCloudRamRoleRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("name", objectRaw["RoleName"])
 	d.Set("document", objectRaw["AssumeRolePolicyDocument"])
 
-	rolePolicy, err := ramServiceV2.ParseRolePolicyDocument(objectRaw["AssumeRolePolicyDocument"].(string))
-	if err != nil {
-		return WrapError(err)
-	}
+	if v, ok := objectRaw["AssumeRolePolicyDocument"].(string); ok && v != "" {
+		assumeRolePolicyDocumentArg, err := convertJsonStringToMap(v)
+		if err != nil {
+			return WrapError(err)
+		}
 
-	d.Set("version", rolePolicy.Version)
+		if version, ok := assumeRolePolicyDocumentArg["Version"]; ok {
+			d.Set("version", version)
+		}
 
-	if len(rolePolicy.Statement) > 0 {
-		principal := rolePolicy.Statement[0].Principal
-		d.Set("ram_users", principal.RAM)
-		d.Set("services", principal.Service)
+		if statement, ok := assumeRolePolicyDocumentArg["Statement"]; ok {
+			statementList := statement.([]interface{})
+			if len(statementList) > 0 {
+				if principal, ok := statementList[0].(map[string]interface{})["Principal"]; ok {
+					principalArg := principal.(map[string]interface{})
+					d.Set("ram_users", principalArg["RAM"])
+					d.Set("services", principalArg["Service"])
+				}
+			}
+		}
 	}
 
 	objectRaw, err = ramServiceV2.DescribeRoleListTagResources(d.Id())
