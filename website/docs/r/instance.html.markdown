@@ -172,7 +172,7 @@ The following arguments are supported:
   From version 1.60.0, it can be updated in-place. If updated, the instance will reboot to make the change take effect.
   Note: Not all changes will take effect, and it depends on [cloud-init module type](https://cloudinit.readthedocs.io/en/latest/topics/modules.html).
 * `key_name` - (Optional, ForceNew) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
-* `role_name` - (Optional, ForceNew) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
+* `role_name` - (Optional, ForceNew) The name of the Resource Access Management (RAM) role. **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment).
 * `include_data_disks` - (Optional) Whether to change instance disks charge type when changing instance charge type.
 * `dry_run` - (Optional) Specifies whether to send a dry-run request. Default to false.
   - true: Only a dry-run request is sent and no instance is created. The system checks whether the required parameters are set, and validates the request format, service permissions, and available ECS instances. If the validation fails, the corresponding error code is returned. If the validation succeeds, the `DryRunOperation` error code is returned.
