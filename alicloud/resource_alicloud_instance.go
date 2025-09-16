@@ -1,23 +1,20 @@
 package alicloud
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/common"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
-	"encoding/base64"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAliCloudInstance() *schema.Resource {
@@ -1191,7 +1188,15 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_instance", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["InstanceIdSets"].(map[string]interface{})["InstanceIdSet"].([]interface{})[0]))
+	if instanceIdSets, ok := response["InstanceIdSets"].(map[string]interface{}); ok {
+		if instanceIdSet, ok := instanceIdSets["InstanceIdSet"].([]interface{}); ok && len(instanceIdSet) > 0 {
+			d.SetId(fmt.Sprint(instanceIdSet[0]))
+		} else {
+			return WrapErrorf(err, IdMsg, "alicloud_instance")
+		}
+	} else {
+		return WrapErrorf(err, IdMsg, "alicloud_instance")
+	}
 
 	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{"Stopping"}))
 	if _, err := stateConf.WaitForState(); err != nil {
@@ -1389,7 +1394,14 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 			networkInterfaceMap["vswitch_id"] = object["VSwitchId"]
 			networkInterfaceMap["network_interface_traffic_mode"] = object["NetworkInterfaceTrafficMode"]
 			networkInterfaceMap["queue_pair_number"] = object["QueuePairNumber"]
-			networkInterfaceMap["security_group_ids"] = object["SecurityGroupIds"].(map[string]interface{})["SecurityGroupId"]
+
+			if securityGroupIds, ok := object["SecurityGroupIds"]; ok {
+				securityGroupIdsArg := securityGroupIds.(map[string]interface{})
+
+				if securityGroupId, ok := securityGroupIdsArg["SecurityGroupId"]; ok {
+					networkInterfaceMap["security_group_ids"] = securityGroupId
+				}
+			}
 
 			if attachment, ok := object["Attachment"]; ok {
 				attachmentArg := attachment.(map[string]interface{})
@@ -1402,52 +1414,77 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 			networkInterfaceMaps = append(networkInterfaceMaps, networkInterfaceMap)
 		}
 	}
+
 	d.Set("network_interfaces", networkInterfaceMaps)
 
 	if len(networkInterfaceId) != 0 {
+		d.Set("network_interface_id", networkInterfaceId)
+
 		object, err := ecsService.DescribeEcsNetworkInterface(networkInterfaceId)
 		if err != nil {
 			return WrapError(err)
 		}
-		secondaryPrivateIpsSli := make([]interface{}, 0, len(object["PrivateIpSets"].(map[string]interface{})["PrivateIpSet"].([]interface{})))
-		for _, v := range object["PrivateIpSets"].(map[string]interface{})["PrivateIpSet"].([]interface{}) {
-			if !v.(map[string]interface{})["Primary"].(bool) {
-				secondaryPrivateIpsSli = append(secondaryPrivateIpsSli, v.(map[string]interface{})["PrivateIpAddress"])
+
+		if privateIpSets, ok := object["PrivateIpSets"].(map[string]interface{}); ok {
+			if privateIpSetList, ok := privateIpSets["PrivateIpSet"].([]interface{}); ok {
+				secondaryPrivateIpsSli := make([]interface{}, 0, len(privateIpSetList))
+
+				for _, privateIpSet := range privateIpSetList {
+					if privateIpSetArg, ok := privateIpSet.(map[string]interface{}); ok {
+						if !privateIpSetArg["Primary"].(bool) {
+							secondaryPrivateIpsSli = append(secondaryPrivateIpsSli, privateIpSetArg["PrivateIpAddress"])
+						}
+					}
+				}
+
+				d.Set("secondary_private_ips", secondaryPrivateIpsSli)
+				d.Set("secondary_private_ip_address_count", len(secondaryPrivateIpsSli))
 			}
 		}
-		ipv6SetList := make([]interface{}, 0)
-		for _, v := range object["Ipv6Sets"].(map[string]interface{})["Ipv6Set"].([]interface{}) {
-			ipv6Set := v.(map[string]interface{})
-			ipv6SetList = append(ipv6SetList, ipv6Set["Ipv6Address"])
-		}
 
-		d.Set("network_interface_id", networkInterfaceId)
-		d.Set("ipv6_addresses", ipv6SetList)
-		d.Set("ipv6_address_count", len(ipv6SetList))
-		d.Set("secondary_private_ips", secondaryPrivateIpsSli)
-		d.Set("secondary_private_ip_address_count", len(secondaryPrivateIpsSli))
+		if ipv6Sets, ok := object["Ipv6Sets"].(map[string]interface{}); ok {
+			if ipv6SetList, ok := ipv6Sets["Ipv6Set"].([]interface{}); ok {
+				ipv6AddressesSli := make([]interface{}, 0)
+
+				for _, ipv6Set := range ipv6SetList {
+					ipv6SetArg := ipv6Set.(map[string]interface{})
+					ipv6AddressesSli = append(ipv6AddressesSli, ipv6SetArg["Ipv6Address"])
+				}
+
+				d.Set("ipv6_addresses", ipv6AddressesSli)
+				d.Set("ipv6_address_count", len(ipv6AddressesSli))
+			}
+		}
 	}
 
 	maintenanceAttribute, err := ecsService.DescribeInstanceMaintenanceAttribute(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := maintenanceAttribute["MaintenanceWindows"]; ok {
-		maintenanceWindowsMaps := make([]map[string]interface{}, 0)
-		maintenanceWindowsList := v.(map[string]interface{})["MaintenanceWindow"].([]interface{})
-		maintenanceWindowsMap := make(map[string]interface{})
-		for _, maintenanceWindowsItem := range maintenanceWindowsList {
-			if maintenanceWindowsItemArg, ok := maintenanceWindowsItem.(map[string]interface{}); ok {
-				maintenanceWindowsMap["start_time"] = maintenanceWindowsItemArg["StartTime"]
-				maintenanceWindowsMap["end_time"] = maintenanceWindowsItemArg["EndTime"]
-				maintenanceWindowsMaps = append(maintenanceWindowsMaps, maintenanceWindowsMap)
+
+	if maintenanceWindows, ok := maintenanceAttribute["MaintenanceWindows"].(map[string]interface{}); ok {
+		if maintenanceWindowsList, ok := maintenanceWindows["MaintenanceWindow"].([]interface{}); ok {
+			maintenanceWindowsMaps := make([]map[string]interface{}, 0)
+			maintenanceWindowsMap := make(map[string]interface{})
+
+			for _, maintenanceWindowsItem := range maintenanceWindowsList {
+				if maintenanceWindowsItemArg, ok := maintenanceWindowsItem.(map[string]interface{}); ok {
+					maintenanceWindowsMap["start_time"] = maintenanceWindowsItemArg["StartTime"]
+					maintenanceWindowsMap["end_time"] = maintenanceWindowsItemArg["EndTime"]
+					maintenanceWindowsMaps = append(maintenanceWindowsMaps, maintenanceWindowsMap)
+				}
 			}
+
+			d.Set("maintenance_time", maintenanceWindowsMaps)
 		}
-		d.Set("maintenance_time", maintenanceWindowsMaps)
 	}
 
-	if v, ok := maintenanceAttribute["ActionOnMaintenance"]; ok {
-		d.Set("maintenance_action", v.(map[string]interface{})["Value"])
+	if actionOnMaintenance, ok := maintenanceAttribute["ActionOnMaintenance"]; ok {
+		actionOnMaintenanceArg := actionOnMaintenance.(map[string]interface{})
+
+		if value, ok := actionOnMaintenanceArg["Value"]; ok {
+			d.Set("maintenance_action", value)
+		}
 	}
 
 	d.Set("maintenance_notify", maintenanceAttribute["NotifyOnMaintenance"])
@@ -1515,6 +1552,10 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		//	d.Set("period", period)
 		//}
 		d.Set("period_unit", periodUnit)
+	} else {
+		d.Set("renewal_status", nil)
+		d.Set("auto_renew_period", nil)
+		d.Set("period_unit", nil)
 	}
 
 	instanceAttachmentAttribute, err := ecsService.DescribeInstanceAttachmentAttribute(d.Id())
@@ -2266,10 +2307,9 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if !d.IsNewResource() && d.HasChange("private_pool_options_id") {
 		update = true
-
-		if v, ok := d.GetOk("private_pool_options_id"); ok {
-			modifyInstanceAttachmentAttributesReq["PrivatePoolOptions.Id"] = v
-		}
+	}
+	if v, ok := d.GetOk("private_pool_options_id"); ok && fmt.Sprint(modifyInstanceAttachmentAttributesReq["PrivatePoolOptions.MatchCriteria"]) != "None" {
+		modifyInstanceAttachmentAttributesReq["PrivatePoolOptions.Id"] = v
 	}
 
 	if update {
@@ -2877,15 +2917,41 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 			}
 
 			if time.Now().After(deadline) {
-				return WrapError(Error(`wait for internet update timeout! expect internet_charge_type value %s, get %s
-					expect internet_max_bandwidth_out value %d, get %d,`,
+				return WrapError(Error(`Wait for internet update timeout! Expected internet_charge_type value %s, get %s
+					expect internet_max_bandwidth_out value %d, get %d`,
 					d.Get("internet_charge_type").(string), instance.InternetChargeType, d.Get("internet_max_bandwidth_out").(int),
 					instance.InternetMaxBandwidthOut))
 			}
+
 			time.Sleep(1 * time.Second)
 		}
 
-		if allocate {
+		// For PrePaid instance modify internet_max_bandwidth_out
+		deadline = time.Now().Add(DefaultTimeout * time.Second)
+		if d.Get("instance_charge_type").(string) == string(PrePaid) && d.Get("internet_max_bandwidth_out").(int) > 0 {
+			for {
+				instance, err := ecsService.DescribeInstance(d.Id())
+				if err != nil {
+					return WrapError(err)
+				}
+
+				if len(instance.PublicIpAddress.IpAddress) > 0 {
+					break
+				}
+
+				if time.Now().After(deadline) {
+					return WrapError(Error(`Wait for PrePaid internet update timeout! Expected public_ip's length %d, got %d`, 1, len(instance.PublicIpAddress.IpAddress)))
+				}
+
+				time.Sleep(1 * time.Second)
+			}
+		}
+
+		/**
+		Only PostPaid Instance need to call AllocatePublicIpAddress
+		https://www.alibabacloud.com/help/en/ecs/developer-reference/api-ecs-2014-05-26-modifyinstancenetworkspec
+		*/
+		if allocate && d.Get("instance_charge_type").(string) == string(PostPaid) {
 			request := ecs.CreateAllocatePublicIpAddressRequest()
 			request.InstanceId = d.Id()
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
