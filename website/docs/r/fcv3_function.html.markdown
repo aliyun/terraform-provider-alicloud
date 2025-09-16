@@ -138,8 +138,9 @@ The following arguments are supported:
 * `memory_size` - (Optional, Computed, Int) The memory specification of the function. The unit is MB. The memory size is a multiple of 64MB. The minimum value is 128MB and the maximum value is 32GB. At the same time, the ratio of cpu to memorySize (calculated by GB) should be between 1:1 and 1:4.
 * `nas_config` - (Optional, Computed, List) NAS configuration. After this parameter is configured, the function can access the specified NAS resource. See [`nas_config`](#nas_config) below.
 * `oss_mount_config` - (Optional, Computed, List) OSS mount configuration See [`oss_mount_config`](#oss_mount_config) below.
+* `resource_group_id` - (Optional, Computed, Available since v1.260.0) Resource Group ID.
 * `role` - (Optional) The user is authorized to the RAM role of function compute. After the configuration, function compute will assume this role to generate temporary access credentials. In the function, you can use the temporary access credentials of the role to access the specified Alibaba cloud service, such as OSS and OTS
-* `runtime` - (Required) Function runtime type
+* `runtime` - (Required) Function runtime type.
 * `session_affinity` - (Optional, Available since v1.256.0) The affinity policy of the function compute call request. To implement the request affinity of the MCP SSE protocol, set it to MCP_SSE. If Cookie affinity is used, it can be set to GENERATED_COOKIE. If Header affinity is used, it can be set to HEADER_FIELD. If it is not set or set to NONE, the affinity effect is not set, and the request is routed according to the default scheduling policy of the function calculation system.
 * `session_affinity_config` - (Optional, Available since v1.256.0) When you set the sessionAffinity affinity type, you need to set the relevant affinity configuration. For example, the MCP_SSE affinity needs to fill in the mcpssessionaffinityconfig configuration. The Cookie affinity needs to be filled with the CookieSessionAffinityConfig configuration, and the Header Field affinity needs to be filled with the HeaderFieldSessionAffinityConfig configuration.
 * `tags` - (Optional, Map, Available since v1.242.0) The tag of the resource
@@ -224,6 +225,7 @@ The instance_lifecycle_config supports the following:
 ### `instance_lifecycle_config-initializer`
 
 The instance_lifecycle_config-initializer supports the following:
+* `command` - (Optional, List, Available since v1.260.0) Lifecycle Initialization Phase Callback Instructions.
 * `handler` - (Optional) The execution entry of the callback method, which is similar to the request handler.
 * `timeout` - (Optional, Int) The timeout time of the callback method, in seconds.
 
