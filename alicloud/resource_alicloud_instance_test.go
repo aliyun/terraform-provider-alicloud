@@ -558,17 +558,18 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"renewal_status": NOSET,
+						"renewal_status": "",
 					}),
 				),
 			},
+			// renew will be ignored for post paid
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_renew_period": "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"auto_renew_period": NOSET,
+						"auto_renew_period": "0",
 					}),
 				),
 			},
@@ -980,6 +981,7 @@ func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1032,6 +1034,9 @@ func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 						"instance_charge_type": "PostPaid",
 						"status":               "Stopped",
 						"stopped_mode":         "StopCharging",
+						"period_unit":          "",
+						"renewal_status":       "",
+						"auto_renew_period":    "0",
 					}),
 				),
 			},
@@ -1047,6 +1052,7 @@ func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 					testAccCheck(map[string]string{
 						"period":               "1",
 						"period_unit":          "Month",
+						"renewal_status":       CHECKSET,
 						"instance_charge_type": "PrePaid",
 						"status":               "Running",
 						"stopped_mode":         "Not-applicable",
@@ -1369,6 +1375,7 @@ func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1376,10 +1383,9 @@ func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id":        "${data.alicloud_images.default.images.0.id}",
-					"security_groups": []string{"${alicloud_security_group.default.0.id}"},
-					"instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
-
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
 					"system_disk_category":          "cloud_efficiency",
 					"instance_name":                 "${var.name}",
@@ -1396,10 +1402,9 @@ func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name": name,
-						"key_name":      name,
-						"role_name":     name,
-
+						"instance_name":        name,
+						"key_name":             name,
+						"role_name":            name,
 						"instance_charge_type": "PrePaid",
 						"period":               "1",
 						"period_unit":          "Month",
@@ -1408,6 +1413,34 @@ func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
 						"force_delete":         "false",
 						"include_data_disks":   "true",
 						"dry_run":              "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PostPaid",
+						"period_unit":          "",
+						"renewal_status":       "",
+						"auto_renew_period":    "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PrePaid",
+					"renewal_status":       "AutoRenewal",
+					"auto_renew_period":    "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PrePaid",
+						"renewal_status":       "AutoRenewal",
+						"auto_renew_period":    "1",
+						"period_unit":          "Month",
 					}),
 				),
 			},
@@ -1489,6 +1522,7 @@ func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1703,6 +1737,7 @@ func TestAccAliCloudECSInstanceMulti(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1882,6 +1917,7 @@ func TestAccAliCloudECSInstanceSecondaryIps(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1964,6 +2000,7 @@ func TestAccAliCloudECSInstanceSecondaryIpCount(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2067,10 +2104,10 @@ func TestAccAliCloudECSInstance_DeploymentSetID(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAcc%sEcsInstanceHpcCluster%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcDeploymentSetIDDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2082,7 +2119,7 @@ func TestAccAliCloudECSInstance_DeploymentSetID(t *testing.T) {
 					"security_groups":               []string{"${alicloud_security_group.default.id}"},
 					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
-					"system_disk_category":          "cloud_essd",
+					"system_disk_category":          "cloud_efficiency",
 					"instance_name":                 "${var.name}",
 					"spot_strategy":                 "NoSpot",
 					"spot_price_limit":              "0",
@@ -2094,7 +2131,7 @@ func TestAccAliCloudECSInstance_DeploymentSetID(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name":        name,
-						"system_disk_category": "cloud_essd",
+						"system_disk_category": "cloud_efficiency",
 						"deployment_set_id":    CHECKSET,
 					}),
 				),
@@ -2160,6 +2197,7 @@ func TestAccAliCloudECSInstance_StatusUpdated(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2260,6 +2298,7 @@ func TestAccAliCloudECSInstanceMetadataOptions(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2363,6 +2402,7 @@ func TestAccAliCloudECSInstanceIpv6AddressesCount(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2437,6 +2477,7 @@ func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2516,18 +2557,13 @@ func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 
 func resourceInstanceIpv6Dependence(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_zones" default {
-  available_disk_category     = "cloud_efficiency"
-  available_resource_creation = "VSwitch"
-}
-
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
-  owners     = "system"
-}
+	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent = true
+  		owners      = "system"
+	}
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
   image_id          = data.alicloud_images.default.images.0.id
   system_disk_category              = "cloud_efficiency"
   cpu_core_count                    = 4
@@ -2543,7 +2579,7 @@ resource "alicloud_vpc" "vpc" {
 resource "alicloud_vswitch" "vswitch" {
   vswitch_name = var.name
   cidr_block   = "172.16.0.0/21"
-  zone_id      = data.alicloud_zones.default.zones.0.id
+  zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   vpc_id       = alicloud_vpc.vpc.id
   ipv6_cidr_block_mask = "22"
 }
@@ -2562,20 +2598,14 @@ variable "name" {
 
 func resourceInstanceMetadataOptionsDependence(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_zones" default {
-  available_resource_creation = "Instance"
-}
-
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
-  owners     = "system"
-}
+	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent = true
+  		owners      = "system"
+	}
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
   image_id          = data.alicloud_images.default.images.0.id
-  cpu_core_count       = 2
-  memory_size          = 8
   instance_type_family = "ecs.g6"
 }
 
@@ -2587,7 +2617,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-  zone_id           = data.alicloud_zones.default.zones.0.id
+  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   vswitch_name      = var.name
 }
 
@@ -2609,21 +2639,14 @@ func resourceInstanceVpcDeploymentSetIDDependence(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_zones" "default" {
-		available_disk_category     = "cloud_essd"
-  		available_resource_creation = "VSwitch"
-	}
+data "alicloud_instance_types" "default" {
+	instance_type_family = "ecs.sn1ne"
+}
 
 	data "alicloud_images" "default" {
   		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
   		owners      = "system"
-	}
-
-	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		image_id             = data.alicloud_images.default.images.0.id
-		system_disk_category = "cloud_essd"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -2634,7 +2657,7 @@ func resourceInstanceVpcDeploymentSetIDDependence(name string) string {
 	resource "alicloud_vswitch" "default" {
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-  		zone_id      = data.alicloud_zones.default.zones.0.id
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   		vswitch_name = var.name
 	}
 
@@ -2791,10 +2814,6 @@ func resourceECSInstanceVpcDependence(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_zones" "default" {
-  		available_resource_creation = "VSwitch"
-	}
-
 	data "alicloud_images" "default" {
   		name_regex = "^ubuntu_18.*64"
   		owners     = "system"
@@ -2802,7 +2821,6 @@ func resourceECSInstanceVpcDependence(name string) string {
 
 	data "alicloud_instance_types" "default" {
   		image_id          = data.alicloud_images.default.images.0.id
-  		availability_zone = data.alicloud_zones.default.zones.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -2813,7 +2831,7 @@ func resourceECSInstanceVpcDependence(name string) string {
 	resource "alicloud_vswitch" "default" {
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-  		zone_id      = data.alicloud_zones.default.zones.0.id
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   		vswitch_name = var.name
 	}
 
@@ -2836,7 +2854,7 @@ func resourceECSInstanceVpcDependence(name string) string {
 	resource "alicloud_vswitch" "vswitchUpdate" {
   		cidr_block = "10.1.0.0/16"
   		vpc_id     = alicloud_vpc.vpcUpdate.id
-  		zone_id    = data.alicloud_zones.default.zones.0.id
+  		zone_id    = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 	}
 
 	resource "alicloud_security_group" "vpcUpdateSg" {
@@ -2888,17 +2906,12 @@ func resourceInstancePrePaidConfigDependence(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_zones" "default" {
-  		available_resource_creation = "VSwitch"
-	}
-
 	data "alicloud_images" "default" {
   		name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		owners     = "system"
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
   		image_id             = data.alicloud_images.default.images.0.id
   		instance_charge_type = "PrePaid"
 	}
@@ -3068,9 +3081,6 @@ var testAccInstanceCheckMap = map[string]string{
 	"instance_charge_type":       "PostPaid",
 	// the attributes of below are suppressed  when the value of instance_charge_type is `PostPaid`
 	"period":             NOSET,
-	"period_unit":        NOSET,
-	"renewal_status":     NOSET,
-	"auto_renew_period":  NOSET,
 	"force_delete":       NOSET,
 	"include_data_disks": NOSET,
 	"dry_run":            "false",
@@ -3099,6 +3109,7 @@ func TestAccAliCloudECSInstance_OperatorType(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -3240,6 +3251,7 @@ func TestAccAliCloudECSInstance_AutoSnapshotPolicyId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -3337,15 +3349,16 @@ func resourceInstanceAutoSnapshotPolicyIdDependence(name string) string {
   		default = "%s"
 	}
 
+	data "alicloud_instance_types" "default" {
+		system_disk_category = "cloud_auto"
+		instance_type_family = "ecs.g8a"
+	}
+
 	data "alicloud_images" "default" {
   		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
   		owners      = "system"
-	}
-
-	data "alicloud_instance_types" "default" {
-  		image_id             = data.alicloud_images.default.images.0.id
-		system_disk_category = "cloud_auto"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -3691,6 +3704,7 @@ func TestAccAliCloudECSInstance_LaunchTemplate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -4177,6 +4191,7 @@ func TestAccAliCloudECSInstancePrivatePool(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
