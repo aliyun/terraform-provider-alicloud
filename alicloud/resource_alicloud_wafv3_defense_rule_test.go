@@ -10,6 +10,155 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// Case DefenseRule__longitude_header_test 12001
+func TestAccAliCloudWafv3DefenseRule_longitude12001(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_wafv3_defense_rule.this"
+	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseRuleMapLongitude12001)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeWafv3DefenseRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccwafv3%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DefenseRuleBasicDependenceLongitude12001)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":    "${data.alicloud_wafv3_instances.default.ids.0}",
+					"defense_origin": "custom",
+					"defense_scene":  "custom_acl",
+					"defense_type":   "template",
+					"rule_name":      "longitude",
+					"rule_status":    "0",
+					"template_id":    "${alicloud_wafv3_defense_template.defaultfIoHt5-hf.defense_template_id}",
+					"config": []map[string]interface{}{
+						{
+							"mode":        "0",
+							"cc_effect":   "service",
+							"cc_status":   "0",
+							"rule_action": "monitor",
+							"conditions": []map[string]interface{}{
+								{
+									"key":      "Header",
+									"op_value": "none",
+									"sub_key":  "alicdn-viewer-longitude",
+								},
+							},
+							"rate_limit": []map[string]interface{}{
+								{
+									"interval":  "0",
+									"threshold": "0",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":    CHECKSET,
+						"defense_origin": "custom",
+						"defense_scene":  "custom_acl",
+						"defense_type":   "template",
+						"rule_name":      "longitude",
+						"rule_status":    "0",
+						"template_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_status": "1",
+					"rule_name":   "longitude-updated",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_status": "1",
+						"rule_name":   "longitude-updated",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_status": "0",
+					"rule_name":   "longitude-final",
+					"config": []map[string]interface{}{
+						{
+							"cc_effect":   "service",
+							"cc_status":   "0",
+							"rule_action": "js",
+							"conditions": []map[string]interface{}{
+								{
+									"key":      "Header",
+									"op_value": "none",
+									"sub_key":  "alicdn-viewer-longitude",
+								},
+							},
+							"rate_limit": []map[string]interface{}{
+								{
+									"interval":  "0",
+									"threshold": "0",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_status": "0",
+						"rule_name":   "longitude-final",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudWafv3DefenseRuleMapLongitude12001 = map[string]string{
+	"rule_id": CHECKSET,
+}
+
+func AlicloudWafv3DefenseRuleBasicDependenceLongitude12001(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-hangzhou"
+}
+
+data "alicloud_wafv3_instances" "default" {
+}
+
+resource "alicloud_wafv3_defense_template" "defaultfIoHt5-hf" {
+  instance_id           = data.alicloud_wafv3_instances.default.ids.0
+  template_origin       = "custom"
+  defense_template_name = "1754448878"
+  defense_scene         = "custom_acl"
+  template_type         = "user_custom"
+  status                = "1"
+  description           = "testCreate"
+}
+
+`, name)
+}
+
 // Test Wafv3 DefenseRule. >>> Resource test cases, automatically generated.
 // Case  DefenseRule-20250715_resource 11029
 func TestAccAliCloudWafv3DefenseRule_basic11029(t *testing.T) {
@@ -39,7 +188,7 @@ func TestAccAliCloudWafv3DefenseRule_basic11029(t *testing.T) {
 					"defense_type":   "resource",
 					"defense_scene":  "account_identifier",
 					"rule_status":    "1",
-					"resource":       "${alicloud_wafv3_domain.default.domain_id}",
+					"resource":       "${alicloud_wafv3_domain.defaultICMRhk.domain_id}",
 					"defense_origin": "custom",
 					"config": []map[string]interface{}{
 						{
@@ -118,63 +267,20 @@ variable "region_id" {
 data "alicloud_wafv3_instances" "default" {
 }
 
-resource "alicloud_wafv3_domain" "default" {
+resource "alicloud_wafv3_domain" "defaultICMRhk" {
+  redirect {
+    loadbalance = "iphash"
+    backends    = ["39.98.217.197"]
+    connect_timeout = 5
+    read_timeout    = 120
+    write_timeout   = 120
+  }
+  domain      = "testfromtftest01.wafqax.top"
+  access_type = "share"
   instance_id = data.alicloud_wafv3_instances.default.ids.0
   listen {
-    protection_resource = "share"
-    http_ports = [
-      "81",
-      "82",
-      "83"
-    ]
-    https_ports = [
-
-    ]
-    xff_header_mode = "2"
-    xff_headers = [
-      "testa",
-      "testb",
-      "testc"
-    ]
-    custom_ciphers = [
-
-    ]
-    ipv6_enabled = "true"
+    http_ports = ["80"]
   }
-
-  redirect {
-    keepalive_timeout = "15"
-    backends = [
-      "1.1.1.1",
-      "3.3.3.3",
-      "2.2.2.2"
-    ]
-    write_timeout      = "5"
-    keepalive_requests = "1000"
-    request_headers {
-      key   = "testkey1"
-      value = "testValue1"
-    }
-    request_headers {
-      key   = "key1"
-      value = "value1"
-    }
-    request_headers {
-      key   = "key22"
-      value = "value22"
-    }
-
-    loadbalance        = "iphash"
-    focus_http_backend = "false"
-    sni_enabled        = "false"
-    connect_timeout    = "5"
-    read_timeout       = "5"
-    keepalive          = "true"
-    retry              = "true"
-  }
-
-  domain                             = "zctest_250746.wafqax.top"
-  access_type                        = "share"
 }
 
 
@@ -223,7 +329,7 @@ func TestAccAliCloudWafv3DefenseRule_basic11017(t *testing.T) {
 								},
 								{
 									"op_value": "contain",
-									"values":   "1.1.1.1",
+									"values":   "1.1.1.2",
 									"key":      "IP",
 								},
 							},
@@ -239,7 +345,6 @@ func TestAccAliCloudWafv3DefenseRule_basic11017(t *testing.T) {
 										{
 											"code":  "414",
 											"count": "333",
-											"ratio": "39",
 										},
 									},
 									"sub_key": "testky1",
@@ -289,7 +394,6 @@ func TestAccAliCloudWafv3DefenseRule_basic11017(t *testing.T) {
 									"status": []map[string]interface{}{
 										{
 											"code":  "404",
-											"count": "2",
 											"ratio": "34",
 										},
 									},
@@ -318,13 +422,6 @@ func TestAccAliCloudWafv3DefenseRule_basic11017(t *testing.T) {
 									"values":   "123",
 									"key":      "Header",
 									"sub_key":  "test",
-								},
-							},
-							"rate_limit": []map[string]interface{}{
-								{
-									"status": []map[string]interface{}{
-										{},
-									},
 								},
 							},
 						},
@@ -366,69 +463,10 @@ variable "region_id" {
 data "alicloud_wafv3_instances" "default" {
 }
 
-resource "alicloud_wafv3_domain" "default" {
-  instance_id = data.alicloud_wafv3_instances.default.ids.0
-  listen {
-    protection_resource = "share"
-    http_ports = [
-      "81",
-      "82",
-      "83"
-    ]
-    https_ports = [
-
-    ]
-    xff_header_mode = "2"
-    xff_headers = [
-      "testa",
-      "testb",
-      "testc"
-    ]
-    custom_ciphers = [
-
-    ]
-    ipv6_enabled = "true"
-  }
-
-  redirect {
-    keepalive_timeout = "15"
-    backends = [
-      "1.1.1.1",
-      "3.3.3.3",
-      "2.2.2.2"
-    ]
-    write_timeout      = "5"
-    keepalive_requests = "1000"
-    request_headers {
-      key   = "testkey1"
-      value = "testValue1"
-    }
-    request_headers {
-      key   = "key1"
-      value = "value1"
-    }
-    request_headers {
-      key   = "key22"
-      value = "value22"
-    }
-
-    loadbalance        = "iphash"
-    focus_http_backend = "false"
-    sni_enabled        = "false"
-    connect_timeout    = "5"
-    read_timeout       = "5"
-    keepalive          = "true"
-    retry              = "true"
-  }
-
-  domain                             = "zctest_250746.wafqax.top"
-  access_type                        = "share"
-}
-
 resource "alicloud_wafv3_defense_template" "defaultfIoHt5" {
   instance_id           = data.alicloud_wafv3_instances.default.ids.0
   template_origin       = "custom"
-  defense_template_name = "1754361191"
+  defense_template_name = "1758078439"
   defense_scene         = "custom_acl"
   template_type         = "user_custom"
   status                = "1"
@@ -595,69 +633,10 @@ variable "region_id" {
 data "alicloud_wafv3_instances" "default" {
 }
 
-resource "alicloud_wafv3_domain" "default" {
-  instance_id = data.alicloud_wafv3_instances.default.ids.0
-  listen {
-    protection_resource = "share"
-    http_ports = [
-      "81",
-      "82",
-      "83"
-    ]
-    https_ports = [
-
-    ]
-    xff_header_mode = "2"
-    xff_headers = [
-      "testa",
-      "testb",
-      "testc"
-    ]
-    custom_ciphers = [
-
-    ]
-    ipv6_enabled = "true"
-  }
-
-  redirect {
-    keepalive_timeout = "15"
-    backends = [
-      "1.1.1.1",
-      "3.3.3.3",
-      "2.2.2.2"
-    ]
-    write_timeout      = "5"
-    keepalive_requests = "1000"
-    request_headers {
-      key   = "testkey1"
-      value = "testValue1"
-    }
-    request_headers {
-      key   = "key1"
-      value = "value1"
-    }
-    request_headers {
-      key   = "key22"
-      value = "value22"
-    }
-
-    loadbalance        = "iphash"
-    focus_http_backend = "false"
-    sni_enabled        = "false"
-    connect_timeout    = "5"
-    read_timeout       = "5"
-    keepalive          = "true"
-    retry              = "true"
-  }
-
-  domain                             = "zctest_250746.wafqax.top"
-  access_type                        = "share"
-}
-
 resource "alicloud_wafv3_defense_template" "defaultZmPPmw" {
   instance_id           = data.alicloud_wafv3_instances.default.ids.0
   template_origin       = "custom"
-  defense_template_name = "1754448729"
+  defense_template_name = "1758078467"
   defense_scene         = "whitelist"
   template_type         = "user_custom"
   status                = "1"
@@ -765,69 +744,10 @@ variable "region_id" {
 data "alicloud_wafv3_instances" "default" {
 }
 
-resource "alicloud_wafv3_domain" "default" {
-  instance_id = data.alicloud_wafv3_instances.default.ids.0
-  listen {
-    protection_resource = "share"
-    http_ports = [
-      "81",
-      "82",
-      "83"
-    ]
-    https_ports = [
-
-    ]
-    xff_header_mode = "2"
-    xff_headers = [
-      "testa",
-      "testb",
-      "testc"
-    ]
-    custom_ciphers = [
-
-    ]
-    ipv6_enabled = "true"
-  }
-
-  redirect {
-    keepalive_timeout = "15"
-    backends = [
-      "1.1.1.1",
-      "3.3.3.3",
-      "2.2.2.2"
-    ]
-    write_timeout      = "5"
-    keepalive_requests = "1000"
-    request_headers {
-      key   = "testkey1"
-      value = "testValue1"
-    }
-    request_headers {
-      key   = "key1"
-      value = "value1"
-    }
-    request_headers {
-      key   = "key22"
-      value = "value22"
-    }
-
-    loadbalance        = "iphash"
-    focus_http_backend = "false"
-    sni_enabled        = "false"
-    connect_timeout    = "5"
-    read_timeout       = "5"
-    keepalive          = "true"
-    retry              = "true"
-  }
-
-  domain                             = "zctest_250746.wafqax.top"
-  access_type                        = "share"
-}
-
 resource "alicloud_wafv3_defense_template" "defaultZmPPmw-ipblack" {
   instance_id           = data.alicloud_wafv3_instances.default.ids.0
   template_origin       = "custom"
-  defense_template_name = "1754448758"
+  defense_template_name = "1758078494"
   defense_scene         = "ip_blacklist"
   template_type         = "user_custom"
   status                = "1"
@@ -959,69 +879,10 @@ variable "region_id" {
 data "alicloud_wafv3_instances" "default" {
 }
 
-resource "alicloud_wafv3_domain" "default" {
-  instance_id = data.alicloud_wafv3_instances.default.ids.0
-  listen {
-    protection_resource = "share"
-    http_ports = [
-      "81",
-      "82",
-      "83"
-    ]
-    https_ports = [
-
-    ]
-    xff_header_mode = "2"
-    xff_headers = [
-      "testa",
-      "testb",
-      "testc"
-    ]
-    custom_ciphers = [
-
-    ]
-    ipv6_enabled = "true"
-  }
-
-  redirect {
-    keepalive_timeout = "15"
-    backends = [
-      "1.1.1.1",
-      "3.3.3.3",
-      "2.2.2.2"
-    ]
-    write_timeout      = "5"
-    keepalive_requests = "1000"
-    request_headers {
-      key   = "testkey1"
-      value = "testValue1"
-    }
-    request_headers {
-      key   = "key1"
-      value = "value1"
-    }
-    request_headers {
-      key   = "key22"
-      value = "value22"
-    }
-
-    loadbalance        = "iphash"
-    focus_http_backend = "false"
-    sni_enabled        = "false"
-    connect_timeout    = "5"
-    read_timeout       = "5"
-    keepalive          = "true"
-    retry              = "true"
-  }
-
-  domain                             = "zctest_250746.wafqax.top"
-  access_type                        = "share"
-}
-
 resource "alicloud_wafv3_defense_template" "defaultZmPPmw-dlp" {
   instance_id           = data.alicloud_wafv3_instances.default.ids.0
   template_origin       = "custom"
-  defense_template_name = "1754448788"
+  defense_template_name = "1758078522"
   defense_scene         = "dlp"
   template_type         = "user_custom"
   status                = "1"
@@ -1129,69 +990,10 @@ variable "region_id" {
 data "alicloud_wafv3_instances" "default" {
 }
 
-resource "alicloud_wafv3_domain" "default" {
-  instance_id = data.alicloud_wafv3_instances.default.ids.0
-  listen {
-    protection_resource = "share"
-    http_ports = [
-      "81",
-      "82",
-      "83"
-    ]
-    https_ports = [
-
-    ]
-    xff_header_mode = "2"
-    xff_headers = [
-      "testa",
-      "testb",
-      "testc"
-    ]
-    custom_ciphers = [
-
-    ]
-    ipv6_enabled = "true"
-  }
-
-  redirect {
-    keepalive_timeout = "15"
-    backends = [
-      "1.1.1.1",
-      "3.3.3.3",
-      "2.2.2.2"
-    ]
-    write_timeout      = "5"
-    keepalive_requests = "1000"
-    request_headers {
-      key   = "testkey1"
-      value = "testValue1"
-    }
-    request_headers {
-      key   = "key1"
-      value = "value1"
-    }
-    request_headers {
-      key   = "key22"
-      value = "value22"
-    }
-
-    loadbalance        = "iphash"
-    focus_http_backend = "false"
-    sni_enabled        = "false"
-    connect_timeout    = "5"
-    read_timeout       = "5"
-    keepalive          = "true"
-    retry              = "true"
-  }
-
-  domain                             = "zctest_250746.wafqax.top"
-  access_type                        = "share"
-}
-
 resource "alicloud_wafv3_defense_template" "defaultZmPPmw-fcg" {
   instance_id           = data.alicloud_wafv3_instances.default.ids.0
   template_origin       = "custom"
-  defense_template_name = "1754448817"
+  defense_template_name = "1758078550"
   defense_scene         = "tamperproof"
   template_type         = "user_custom"
   status                = "1"
@@ -1357,69 +1159,10 @@ variable "region_id" {
 data "alicloud_wafv3_instances" "default" {
 }
 
-resource "alicloud_wafv3_domain" "default" {
-  instance_id = data.alicloud_wafv3_instances.default.ids.0
-  listen {
-    protection_resource = "share"
-    http_ports = [
-      "81",
-      "82",
-      "83"
-    ]
-    https_ports = [
-
-    ]
-    xff_header_mode = "2"
-    xff_headers = [
-      "testa",
-      "testb",
-      "testc"
-    ]
-    custom_ciphers = [
-
-    ]
-    ipv6_enabled = "true"
-  }
-
-  redirect {
-    keepalive_timeout = "15"
-    backends = [
-      "1.1.1.1",
-      "3.3.3.3",
-      "2.2.2.2"
-    ]
-    write_timeout      = "5"
-    keepalive_requests = "1000"
-    request_headers {
-      key   = "testkey1"
-      value = "testValue1"
-    }
-    request_headers {
-      key   = "key1"
-      value = "value1"
-    }
-    request_headers {
-      key   = "key22"
-      value = "value22"
-    }
-
-    loadbalance        = "iphash"
-    focus_http_backend = "false"
-    sni_enabled        = "false"
-    connect_timeout    = "5"
-    read_timeout       = "5"
-    keepalive          = "true"
-    retry              = "true"
-  }
-
-  domain                             = "zctest_250746.wafqax.top"
-  access_type                        = "share"
-}
-
 resource "alicloud_wafv3_defense_template" "defaultBQg9ZY" {
   instance_id           = data.alicloud_wafv3_instances.default.ids.0
   template_origin       = "custom"
-  defense_template_name = "1754448848"
+  defense_template_name = "1758078580"
   defense_scene         = "whitelist"
   template_type         = "user_custom"
   status                = "1"
@@ -1558,69 +1301,10 @@ variable "region_id" {
 data "alicloud_wafv3_instances" "default" {
 }
 
-resource "alicloud_wafv3_domain" "default" {
-  instance_id = data.alicloud_wafv3_instances.default.ids.0
-  listen {
-    protection_resource = "share"
-    http_ports = [
-      "81",
-      "82",
-      "83"
-    ]
-    https_ports = [
-
-    ]
-    xff_header_mode = "2"
-    xff_headers = [
-      "testa",
-      "testb",
-      "testc"
-    ]
-    custom_ciphers = [
-
-    ]
-    ipv6_enabled = "true"
-  }
-
-  redirect {
-    keepalive_timeout = "15"
-    backends = [
-      "1.1.1.1",
-      "3.3.3.3",
-      "2.2.2.2"
-    ]
-    write_timeout      = "5"
-    keepalive_requests = "1000"
-    request_headers {
-      key   = "testkey1"
-      value = "testValue1"
-    }
-    request_headers {
-      key   = "key1"
-      value = "value1"
-    }
-    request_headers {
-      key   = "key22"
-      value = "value22"
-    }
-
-    loadbalance        = "iphash"
-    focus_http_backend = "false"
-    sni_enabled        = "false"
-    connect_timeout    = "5"
-    read_timeout       = "5"
-    keepalive          = "true"
-    retry              = "true"
-  }
-
-  domain                             = "zctest_250746.wafqax.top"
-  access_type                        = "share"
-}
-
 resource "alicloud_wafv3_defense_template" "defaultfIoHt5-hf" {
   instance_id           = data.alicloud_wafv3_instances.default.ids.0
   template_origin       = "custom"
-  defense_template_name = "1754448878"
+  defense_template_name = "1758078609"
   defense_scene         = "spike_throttle"
   template_type         = "user_custom"
   status                = "1"
