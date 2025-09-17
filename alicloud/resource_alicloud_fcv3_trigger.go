@@ -123,7 +123,9 @@ func resourceAliCloudFcv3TriggerCreate(d *schema.ResourceData, meta interface{})
 	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["triggerName"] = d.Get("trigger_name")
+	if v, ok := d.GetOk("trigger_name"); ok {
+		request["triggerName"] = v
+	}
 
 	if v, ok := d.GetOk("invocation_role"); ok {
 		request["invocationRole"] = v
@@ -158,6 +160,12 @@ func resourceAliCloudFcv3TriggerCreate(d *schema.ResourceData, meta interface{})
 
 	d.SetId(fmt.Sprintf("%v:%v", functionName, response["triggerName"]))
 
+	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 1, fcv3ServiceV2.Fcv3TriggerStateRefreshFunc(d.Id(), "#triggerId", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAliCloudFcv3TriggerRead(d, meta)
 }
 
@@ -175,52 +183,28 @@ func resourceAliCloudFcv3TriggerRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	if objectRaw["createdTime"] != nil {
-		d.Set("create_time", objectRaw["createdTime"])
-	}
-	if objectRaw["description"] != nil {
-		d.Set("description", objectRaw["description"])
-	}
-	if objectRaw["invocationRole"] != nil {
-		d.Set("invocation_role", objectRaw["invocationRole"])
-	}
-	if objectRaw["lastModifiedTime"] != nil {
-		d.Set("last_modified_time", objectRaw["lastModifiedTime"])
-	}
-	if objectRaw["qualifier"] != nil {
-		d.Set("qualifier", objectRaw["qualifier"])
-	}
-	if objectRaw["sourceArn"] != nil {
-		d.Set("source_arn", objectRaw["sourceArn"])
-	}
-	if objectRaw["status"] != nil {
-		d.Set("status", objectRaw["status"])
-	}
-	if objectRaw["targetArn"] != nil {
-		d.Set("target_arn", objectRaw["targetArn"])
-	}
-	if objectRaw["triggerConfig"] != nil {
-		d.Set("trigger_config", objectRaw["triggerConfig"])
-	}
-	if objectRaw["triggerId"] != nil {
-		d.Set("trigger_id", objectRaw["triggerId"])
-	}
-	if objectRaw["triggerType"] != nil {
-		d.Set("trigger_type", objectRaw["triggerType"])
-	}
-	if objectRaw["triggerName"] != nil {
-		d.Set("trigger_name", objectRaw["triggerName"])
-	}
+	d.Set("create_time", objectRaw["createdTime"])
+	d.Set("description", objectRaw["description"])
+	d.Set("invocation_role", objectRaw["invocationRole"])
+	d.Set("last_modified_time", objectRaw["lastModifiedTime"])
+	d.Set("qualifier", objectRaw["qualifier"])
+	d.Set("source_arn", objectRaw["sourceArn"])
+	d.Set("status", objectRaw["status"])
+	d.Set("target_arn", objectRaw["targetArn"])
+	d.Set("trigger_config", objectRaw["triggerConfig"])
+	d.Set("trigger_id", objectRaw["triggerId"])
+	d.Set("trigger_type", objectRaw["triggerType"])
+	d.Set("trigger_name", objectRaw["triggerName"])
 
 	httpTriggerMaps := make([]map[string]interface{}, 0)
 	httpTriggerMap := make(map[string]interface{})
-	httpTrigger1Raw := make(map[string]interface{})
+	httpTriggerRaw := make(map[string]interface{})
 	if objectRaw["httpTrigger"] != nil {
-		httpTrigger1Raw = objectRaw["httpTrigger"].(map[string]interface{})
+		httpTriggerRaw = objectRaw["httpTrigger"].(map[string]interface{})
 	}
-	if len(httpTrigger1Raw) > 0 {
-		httpTriggerMap["url_internet"] = httpTrigger1Raw["urlInternet"]
-		httpTriggerMap["url_intranet"] = httpTrigger1Raw["urlIntranet"]
+	if len(httpTriggerRaw) > 0 {
+		httpTriggerMap["url_internet"] = httpTriggerRaw["urlInternet"]
+		httpTriggerMap["url_intranet"] = httpTriggerRaw["urlIntranet"]
 
 		httpTriggerMaps = append(httpTriggerMaps, httpTriggerMap)
 	}
@@ -244,11 +228,11 @@ func resourceAliCloudFcv3TriggerUpdate(d *schema.ResourceData, meta interface{})
 	var body map[string]interface{}
 	update := false
 
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	functionName := parts[0]
 	triggerName := parts[1]
 	action := fmt.Sprintf("/2023-03-30/functions/%s/triggers/%s", functionName, triggerName)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
