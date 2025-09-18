@@ -31,13 +31,13 @@ resource "alicloud_message_service_service" "default" {
 }
 ```
 
+### Creating `alicloud_message_service_service`
+
+Creating `alicloud_message_service_service` multiple times will not create multiple resource instances. For the same account, creating the resource multiple times will actually only activate it once.
+
 ### Deleting `alicloud_message_service_service` or removing it from your configuration
 
 Terraform cannot destroy resource `alicloud_message_service_service`. Terraform will remove this resource from the state file, however resources may remain.
-
-## Argument Reference
-
-The following arguments are supported:
 
 ## Attributes Reference
 
