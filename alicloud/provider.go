@@ -913,6 +913,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_sls_index":                                            resourceAliCloudSlsIndex(),
+			"alicloud_dms_airflow":                                          resourceAliCloudDmsAirflow(),
 			"alicloud_lindorm_instance_v2":                                  resourceAliCloudLindormInstanceV2(),
 			"alicloud_cloud_sso_user_provisioning":                          resourceAliCloudCloudSSOUserProvisioning(),
 			"alicloud_cloud_firewall_threat_intelligence_switch":            resourceAliCloudCloudFirewallThreatIntelligenceSwitch(),
