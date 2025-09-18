@@ -33,7 +33,7 @@ resource "alicloud_message_service_service" "default" {
 
 ### Creating `alicloud_message_service_service`
 
-Creating `alicloud_message_service_service` multiple times will not create multiple resource instances. For the same account, creating the resource multiple times will actually only activate it once.
+The `alicloud_message_service_service` resource is unique per account; repeated creation attempts to activate only one instance.
 
 ### Deleting `alicloud_message_service_service` or removing it from your configuration
 
