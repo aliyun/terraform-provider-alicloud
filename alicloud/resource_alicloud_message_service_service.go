@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -77,7 +76,7 @@ func resourceAliCloudMessageServiceServiceCreate(d *schema.ResourceData, meta in
 	})
 	addDebug(action, response, request)
 
-	if err != nil {
+	if err != nil && !IsExpectedErrors(err, []string{"INSTANCE_ID_IS_NOT_UNIQUE"}) {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_message_service_service", action, AlibabaCloudSdkGoERROR)
 	}
 
