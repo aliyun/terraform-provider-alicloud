@@ -369,11 +369,13 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 
 * `vpc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom VPC and VPN endpoints.
 
-* `cbn` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CEN endpoints.
-
 * `ess` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Autoscaling endpoints.
 
 * `oss` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom OSS endpoints.
+
+* `ons` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Ons endpoints.
+
+* `alikafka` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom AliKafka endpoints.
 
 * `dns` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DNS endpoints.
 
@@ -405,6 +407,8 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 
 * `kvstore` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom R-KVStore endpoints.
 
+* `polardb` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom PolarDB endpoints.
+
 * `fc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Function Computing endpoints.
 
 * `apigateway` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Api Gateway endpoints.
@@ -413,19 +417,33 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 
 * `mns` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MNS endpoints.
 
-* `location` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Location Service endpoints.",
+* `location` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Location Service endpoints.
 
-* `nas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom nas Service endpoints.",
+* `elasticsearch` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elasticsearch endpoints.
 
-* `actiontrail` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom actiontrail Service endpoints.",
+* `nas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom nas Service endpoints.
 
-* `cas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CAS endpoints.
+* `actiontrail` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom actiontrail Service endpoints.
 
 * `bssopenapi` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom BSSOPENAPI endpoints.
 
-* `ddoscoo` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom BGP-Line Anti-DDoS Pro endpoints.
+* `ddoscoo` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Anti-DDoS Pro (DdosCoo) endpoints.
+
+* `ddosbgp` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Anti-DDoS Pro (DdosBgp) endpoints.
+
+* `emr` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom E-MapReduce (EMR) endpoints.
+
+* `cas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CAS endpoints.
 
 * `market` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Market endpoints.
+
+* `adb` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom AnalyticDB for MySQL (ADB) endpoints.
+
+* `cbn` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CEN endpoints.
+
+* `maxcompute` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Max Compute endpoints.
+
+* `dms_enterprise` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DMS Enterprise endpoints.
 
 * `cddc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ApsaraDB for MyBase endpoints.
 
@@ -486,7 +504,10 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 * `cloudsso` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud SSO endpoints.
 
 * `edas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom EDAS endpoints.
+
 * `dmsenterprise` - - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DMS Enterprise endpoints.
+  
+* `servicemesh` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Service Mesh endpoints.
 
 ## Testing
 
