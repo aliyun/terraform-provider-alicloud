@@ -1667,7 +1667,13 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			request := map[string]interface{}{
 				"RegionId": client.RegionId,
 			}
-			request["autoSnapshotPolicyId"] = d.Get("system_disk_auto_snapshot_policy_id")
+			autoSnapshotPolicyId : = d.Get("system_disk_auto_snapshot_policy_id")
+			if autoSnapshotPolicyId  == "" {
+				action = "CancelAutoSnapshotPolicy"
+			} else {
+				request["autoSnapshotPolicyId"]  = autoSnapshotPolicyId
+			}
+
 			request["diskIds"] = convertListToJsonString([]interface{}{disk["DiskId"]})
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
