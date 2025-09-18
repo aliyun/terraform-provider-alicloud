@@ -1,4 +1,42 @@
 ## 1.260.0 (Unreleased)
+
+- **New Resource:** `alicloud_lindorm_instance_v2` [GH-8982]
+- **New Resource:** `alicloud_sls_index` [GH-8990]
+- **New Resource:** `alicloud_cloud_firewall_threat_intelligence_switch` [GH-8991]
+- **New Resource:** `alicloud_cloud_sso_user_provisioning` [GH-9008]
+- **New Resource:** `alicloud_dms_airflow` [GH-9011]
+
+ENHANCEMENTS:
+
+- service: Fix comments for oss service. [GH-8977]
+- resource/alicloud_resource_manager_control_policy_attachment: add test cases. [GH-8960]
+- resource/alicloud_resource_manager_handshake: add new attributes create_time. [GH-8962]
+- resource/alicloud_eflo_node: handle node unsubscription exception. [GH-8980]
+- resource/alicloud_mongodb_sharding_instance: Added the field encrypted, cloud_disk_encryption_key, encryptor_name, encryption_key, role_arn. [GH-8981]
+- resource/alicloud_ecs_launch_template: Removed the ForceNew for field http_endpoint, http_tokens, http_put_response_hop_limit. [GH-8983]
+- resource/alicloud_max_compute_tunnel_quota_timer: Deprecated resource alicloud_max_compute_tunnel_quota_timer. [GH-8985]
+- resource/alicloud_nlb_server_group_server_attachment: Add retry codes. [GH-8993]
+- resource/alicloud_cen_transit_router_vpc_attachment: Refactored the resource alicloud_cen_transit_router_vpc_attachment; Added the field region_id. [GH-8997]
+- resource/alicloud_fcv3_function: Refactored the resource alicloud_fcv3_function; Added the field resource_group_id, instance_lifecycle_config.initializer.command; Supported runtime set to python3.12, custom.debian11, custom.debian12. [GH-9002]
+- resource/alicloud_emrv2_cluster: Optimize the emr cluster bootstrap scripts management. [GH-9006]
+- resource/alicloud_fcv3_trigger: Optimize creating oss trigger. [GH-9007]
+- resource/alicloud_message_service_service: Support repeated creation without error. [GH-9012]
+- data-source/alicloud_alikafka_sasl_users: Refactored the data source alicloud_alikafka_sasl_users; Added the field users.id, users.type. [GH-8979]
+- docs: Improved the document message_service_subscription. [GH-8976]
+- docs: Deprecated resource log_etl. [GH-8989]
+- docs: improve example for alicloud_fc_function. [GH-9001]
+- docs: Improved the document index. [GH-9009]
+- docs: Improved the document update version. [GH-9010]
+- docs: Improves description for message_service_service. [GH-9013]
+
+BUG FIXES:
+
+- resource/alicloud_alikafka_instance: Fixed the import error caused by field config. [GH-8940]
+- resource/alicloud_alb_load_balancer: Fixed bug while modify zone_mappings.intranet_address not effective. [GH-8984]
+- resource/alicloud_oss_bucket_https_config: Fixed bug while create without tls_versions. [GH-8992]
+- resource/alicloud_ram_role: Fixed the read error in field assume_role_policy_document. [GH-8999]
+- resource/alicloud_wafv3_defense_rule: Fixed bug while create with rule_status valued 0. [GH-9005]
+
 ## 1.259.0 (September 08, 2025)
 
 - **New Resource:** `alicloud_dms_enterprise_workspace` ([#8918](https://github.com/aliyun/terraform-provider-alicloud/issues/8918))
