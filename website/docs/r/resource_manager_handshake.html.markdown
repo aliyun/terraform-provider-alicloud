@@ -14,7 +14,7 @@ Provides a Resource Manager Handshake resource.
 
 For information about Resource Manager Handshake and how to use it, see [What is Handshake](https://www.alibabacloud.com/help/en/doc-detail/135287.htm).
 
--> **NOTE:** Available since v1.259.0.
+-> **NOTE:** Available since v1.82.0.
 
 ## Example Usage
 
