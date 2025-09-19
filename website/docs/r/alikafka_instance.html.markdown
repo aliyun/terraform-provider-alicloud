@@ -28,7 +28,7 @@ For information about Kafka instance and how to use it, see [What is alikafka in
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_alikafka_instance&exampleId=5e353142-9caa-4f03-436d-fad8a0e042b719460d1f&activeTab=example&spm=docs.r.alikafka_instance.0.5e3531429c&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_alikafka_instance&exampleId=f7709657-0cac-41e4-4be6-a2fa41c5f6aa311c0b20&activeTab=example&spm=docs.r.alikafka_instance.0.f77096570c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

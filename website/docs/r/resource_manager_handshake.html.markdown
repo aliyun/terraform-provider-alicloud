@@ -20,6 +20,12 @@ For information about Resource Manager Handshake and how to use it, see [What is
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_resource_manager_handshake&exampleId=aea74528-14cd-e81f-3ec6-fdaf94242ab7d88cb50a&activeTab=example&spm=docs.r.resource_manager_handshake.0.aea7452814&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 # Add a Resource Manager handshake.
 resource "alicloud_resource_manager_handshake" "example" {
