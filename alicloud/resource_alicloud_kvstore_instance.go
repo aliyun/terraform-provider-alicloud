@@ -437,6 +437,7 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 	request := make(map[string]interface{})
 
 	request["RegionId"] = client.RegionId
+	request["Token"] = buildClientToken(action)
 	request["NetworkType"] = "CLASSIC"
 
 	if v, ok := d.GetOkExists("auto_renew"); ok {
@@ -993,6 +994,8 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		request.InstanceId = d.Id()
 		request.RegionId = client.RegionId
 		request.ResourceGroupId = d.Get("resource_group_id").(string)
+		request.ClientToken = buildClientToken(request.GetActionName())
+
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.ModifyResourceGroup(request)
 		})
@@ -1249,6 +1252,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		"AutoPay":    true,
 		"InstanceId": d.Id(),
 	}
+
 	if !d.IsNewResource() && d.HasChange("instance_class") {
 		update = true
 	}
@@ -1288,6 +1292,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		action := "ModifyInstanceSpec"
+		modifyInstanceSpecReq["ClientToken"] = buildClientToken(action)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, modifyInstanceSpecReq, false)
@@ -1336,6 +1341,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		delete(modifyInstanceSpecReq, "ReadOnlyCount")
 
 		action := "ModifyInstanceSpec"
+		modifyInstanceSpecReq["ClientToken"] = buildClientToken(action)
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
@@ -1571,12 +1577,10 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			action := "AddShardingNode"
 			request := make(map[string]interface{})
 			request["InstanceId"] = d.Id()
-			request["ClientToken"] = buildClientToken(action)
 			request["ShardCount"] = added
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
-				request["ClientToken"] = buildClientToken(action)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

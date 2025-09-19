@@ -124,7 +124,8 @@ func testSweepKVStoreInstances(region string) error {
 	return nil
 }
 
-func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
+// engine_version 4.0 has been offline from July 31, 2025
+func SkipTestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
@@ -632,18 +633,19 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"maintain_start_time": "02:00Z",
-					"maintain_end_time":   "03:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maintain_start_time": "02:00Z",
-						"maintain_end_time":   "03:00Z",
-					}),
-				),
-			},
+			// There is an OpenAPI bug in eu-central-1
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"maintain_start_time": "02:00Z",
+			//		"maintain_end_time":   "03:00Z",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"maintain_start_time": "02:00Z",
+			//			"maintain_end_time":   "03:00Z",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"backup_period": []string{"Tuesday", "Wednesday"},
@@ -749,11 +751,12 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":             "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id":   REMOVEKEY,
-					"maintain_start_time": "04:00Z",
-					"maintain_end_time":   "06:00Z",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id": REMOVEKEY,
+					// There is an OpenAPI bug in eu-central-1
+					//"maintain_start_time": "04:00Z",
+					//"maintain_end_time":   "06:00Z",
 					// There is an OpenAPI bug
 					//"backup_period":             []string{"Wednesday"},
 					//"backup_time":               "11:00Z-12:00Z",
@@ -784,8 +787,8 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 						"zone_id":                       CHECKSET,
 						"vswitch_id":                    CHECKSET,
 						"secondary_zone_id":             REMOVEKEY,
-						"maintain_start_time":           "04:00Z",
-						"maintain_end_time":             "06:00Z",
+						//"maintain_start_time":           "04:00Z",
+						//"maintain_end_time":             "06:00Z",
 						//"backup_period.#":               "1",
 						//"backup_time":                   "11:00Z-12:00Z",
 						"private_connection_port":   "4011",
@@ -952,18 +955,19 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"maintain_start_time": "02:00Z",
-					"maintain_end_time":   "03:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maintain_start_time": "02:00Z",
-						"maintain_end_time":   "03:00Z",
-					}),
-				),
-			},
+			// There is an OpenAPI bug in eu-central-1
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"maintain_start_time": "02:00Z",
+			//		"maintain_end_time":   "03:00Z",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"maintain_start_time": "02:00Z",
+			//			"maintain_end_time":   "03:00Z",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"backup_period": []string{"Tuesday", "Wednesday"},
@@ -1050,8 +1054,9 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"maintain_start_time": "04:00Z",
-					"maintain_end_time":   "06:00Z",
+					// There is an OpenAPI bug in eu-central-1
+					//"maintain_start_time": "04:00Z",
+					//"maintain_end_time":   "06:00Z",
 					// There is an OpenAPI bug
 					//"backup_period":             []string{"Wednesday"},
 					//"backup_time":               "11:00Z-12:00Z",
@@ -1080,8 +1085,8 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.For":                      "acceptance test",
-						"maintain_start_time":           "04:00Z",
-						"maintain_end_time":             "06:00Z",
+						//"maintain_start_time":           "04:00Z",
+						//"maintain_end_time":             "06:00Z",
 						//"backup_period.#":               "1",
 						//"backup_time":                   "11:00Z-12:00Z",
 						"private_connection_port":   "4011",
@@ -1279,18 +1284,19 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"maintain_start_time": "02:00Z",
-					"maintain_end_time":   "03:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maintain_start_time": "02:00Z",
-						"maintain_end_time":   "03:00Z",
-					}),
-				),
-			},
+			// There is an OpenAPI bug in eu-central-1
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"maintain_start_time": "02:00Z",
+			//		"maintain_end_time":   "03:00Z",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"maintain_start_time": "02:00Z",
+			//			"maintain_end_time":   "03:00Z",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"backup_period": []string{"Tuesday", "Wednesday"},
@@ -1375,11 +1381,12 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":             "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id":   "${data.alicloud_kvstore_zones.default.zones.1.id}",
-					"maintain_start_time": "04:00Z",
-					"maintain_end_time":   "06:00Z",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					// There is an OpenAPI bug in eu-central-1
+					//"maintain_start_time": "04:00Z",
+					//"maintain_end_time":   "06:00Z",
 					// There is an OpenAPI bug
 					//"backup_period":             []string{"Wednesday"},
 					//"backup_time":               "11:00Z-12:00Z",
@@ -1409,8 +1416,8 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 						"zone_id":                       CHECKSET,
 						"vswitch_id":                    CHECKSET,
 						"secondary_zone_id":             CHECKSET,
-						"maintain_start_time":           "04:00Z",
-						"maintain_end_time":             "06:00Z",
+						//"maintain_start_time":           "04:00Z",
+						//"maintain_end_time":             "06:00Z",
 						//"backup_period.#":               "1",
 						//"backup_time":                   "11:00Z-12:00Z",
 						"private_connection_port":   "4011",
@@ -1422,7 +1429,8 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
+// engine_version 4.0 has been offline from July 31, 2025
+func SkipTestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
@@ -1643,18 +1651,19 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"maintain_start_time": "02:00Z",
-					"maintain_end_time":   "03:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maintain_start_time": "02:00Z",
-						"maintain_end_time":   "03:00Z",
-					}),
-				),
-			},
+			// There is an OpenAPI bug in eu-central-1
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"maintain_start_time": "02:00Z",
+			//		"maintain_end_time":   "03:00Z",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"maintain_start_time": "02:00Z",
+			//			"maintain_end_time":   "03:00Z",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"backup_period": []string{"Tuesday", "Wednesday"},
@@ -1713,11 +1722,12 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":             "${data.alicloud_kvstore_zones.default.zones[0].id}",
-					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id":   REMOVEKEY,
-					"maintain_start_time": "04:00Z",
-					"maintain_end_time":   "06:00Z",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[0].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id": REMOVEKEY,
+					// There is an OpenAPI bug in eu-central-1
+					//"maintain_start_time": "04:00Z",
+					//"maintain_end_time":   "06:00Z",
 					// There is an OpenAPI bug
 					//"backup_period":             []string{"Wednesday"},
 					//"backup_time":               "11:00Z-12:00Z",
@@ -1746,8 +1756,8 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 						"zone_id":                       CHECKSET,
 						"vswitch_id":                    CHECKSET,
 						"secondary_zone_id":             REMOVEKEY,
-						"maintain_start_time":           "04:00Z",
-						"maintain_end_time":             "06:00Z",
+						//"maintain_start_time":           "04:00Z",
+						//"maintain_end_time":             "06:00Z",
 						//"backup_period.#":               "1",
 						//"backup_time":                   "11:00Z-12:00Z",
 						"private_connection_port":   "4011",
@@ -2002,18 +2012,19 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 			//		}),
 			//	),
 			//},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"maintain_start_time": "02:00Z",
-					"maintain_end_time":   "03:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maintain_start_time": "02:00Z",
-						"maintain_end_time":   "03:00Z",
-					}),
-				),
-			},
+			// There is an OpenAPI bug in eu-central-1
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"maintain_start_time": "02:00Z",
+			//		"maintain_end_time":   "03:00Z",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"maintain_start_time": "02:00Z",
+			//			"maintain_end_time":   "03:00Z",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"backup_period": []string{"Tuesday", "Wednesday"},
@@ -2074,11 +2085,12 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id":         REMOVEKEY,
-					"maintain_start_time":       "04:00Z",
-					"maintain_end_time":         "06:00Z",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id": REMOVEKEY,
+					// There is an OpenAPI bug in eu-central-1
+					//"maintain_start_time":       "04:00Z",
+					//"maintain_end_time":         "06:00Z",
 					"backup_period":             []string{"Wednesday"},
 					"backup_time":               "11:00Z-12:00Z",
 					"private_connection_prefix": fmt.Sprintf("privateprefixupdate%d", rand),
@@ -2108,12 +2120,12 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 						"zone_id":                       CHECKSET,
 						"vswitch_id":                    CHECKSET,
 						"secondary_zone_id":             REMOVEKEY,
-						"maintain_start_time":           "04:00Z",
-						"maintain_end_time":             "06:00Z",
-						"backup_period.#":               "1",
-						"backup_time":                   "11:00Z-12:00Z",
-						"private_connection_port":       "4011",
-						"private_connection_prefix":     CHECKSET,
+						//"maintain_start_time":           "04:00Z",
+						//"maintain_end_time":             "06:00Z",
+						"backup_period.#":           "1",
+						"backup_time":               "11:00Z-12:00Z",
+						"private_connection_port":   "4011",
+						"private_connection_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -2292,18 +2304,19 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 			//		}),
 			//	),
 			//},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"maintain_start_time": "02:00Z",
-					"maintain_end_time":   "03:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maintain_start_time": "02:00Z",
-						"maintain_end_time":   "03:00Z",
-					}),
-				),
-			},
+			// There is an OpenAPI bug in eu-central-1
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"maintain_start_time": "02:00Z",
+			//		"maintain_end_time":   "03:00Z",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"maintain_start_time": "02:00Z",
+			//			"maintain_end_time":   "03:00Z",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"backup_period": []string{"Tuesday", "Wednesday"},
@@ -2386,10 +2399,11 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
-					"maintain_start_time":       "04:00Z",
-					"maintain_end_time":         "06:00Z",
+					"zone_id":    "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
+					// There is an OpenAPI bug in eu-central-1
+					//"maintain_start_time":       "04:00Z",
+					//"maintain_end_time":         "06:00Z",
 					"backup_period":             []string{"Wednesday"},
 					"backup_time":               "11:00Z-12:00Z",
 					"private_connection_prefix": fmt.Sprintf("privateprefixupdate%d", rand),
@@ -2418,12 +2432,12 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 						"tags.For":                      "acceptance test",
 						"zone_id":                       CHECKSET,
 						"vswitch_id":                    CHECKSET,
-						"maintain_start_time":           "04:00Z",
-						"maintain_end_time":             "06:00Z",
-						"backup_period.#":               "1",
-						"backup_time":                   "11:00Z-12:00Z",
-						"private_connection_port":       "4011",
-						"private_connection_prefix":     CHECKSET,
+						//"maintain_start_time":           "04:00Z",
+						//"maintain_end_time":             "06:00Z",
+						"backup_period.#":           "1",
+						"backup_time":               "11:00Z-12:00Z",
+						"private_connection_port":   "4011",
+						"private_connection_prefix": CHECKSET,
 					}),
 				),
 			},
