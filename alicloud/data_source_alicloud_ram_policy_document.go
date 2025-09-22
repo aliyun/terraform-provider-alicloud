@@ -128,7 +128,7 @@ func AssembleDataSourcePolicyDocument(statements []interface{}, version string) 
 	for _, v := range statements {
 		statementMap := v.(map[string]interface{})
 
-		actions, err := getOneStringOrAllStringSlice(statementMap["action"].([]interface{}), "action")
+		actions, err := getOneStringOrAllStringSlice(statementMap["action"].([]interface{}), "action", false)
 		if err != nil {
 			return "", WrapError(err)
 		}
@@ -139,7 +139,7 @@ func AssembleDataSourcePolicyDocument(statements []interface{}, version string) 
 		}
 
 		if resources := statementMap["resource"].([]interface{}); len(resources) > 0 {
-			resource, err := getOneStringOrAllStringSlice(resources, "resource")
+			resource, err := getOneStringOrAllStringSlice(resources, "resource", false)
 			if err != nil {
 				return "", WrapError(err)
 			}
@@ -172,7 +172,7 @@ func AssembleDataSourcePolicyDocument(statements []interface{}, version string) 
 
 				conditionObject.Operator = conditionArg["operator"].(string)
 				conditionObject.Variable = conditionArg["variable"].(string)
-				values, err := getOneStringOrAllStringSlice(conditionArg["values"].([]interface{}), "values")
+				values, err := getOneStringOrAllStringSlice(conditionArg["values"].([]interface{}), "values", false)
 				if err != nil {
 					return "", WrapError(err)
 				}

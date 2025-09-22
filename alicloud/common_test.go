@@ -3,13 +3,14 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -1566,51 +1567,65 @@ func TestUnitCommonInArray(t *testing.T) {
 
 func TestUnitGetOneStringOrAllStringSlice(t *testing.T) {
 	tests := []struct {
-		name        string
-		input       []interface{}
-		expected    interface{}
-		expectError bool
+		name         	string
+		input           []interface{}
+		skipUniqueSlice bool
+		expected    	interface{}
+		expectError     bool
 	}{
 		{
 			"one string",
 			[]interface{}{"a"},
+			false,
 			"a",
+			false,
+		},
+		{
+			"one string",
+			[]interface{}{"a"},
+			true,
+			[]string{"a"},
 			false,
 		},
 		{
 			"string slice",
 			[]interface{}{"a", "b", "c"},
+			false,
 			[]string{"a", "b", "c"},
 			false,
 		},
 		{
 			"contain empty strings",
 			[]interface{}{""},
+			false,
 			nil,
 			true,
 		},
 		{
 			"contain empty strings",
 			[]interface{}{"   "},
+			false,
 			nil,
 			true,
 		},
 		{
 			"contain empty strings",
 			[]interface{}{"a", "", "c"},
+			false,
 			nil,
 			true,
 		},
 		{
 			"contain empty strings",
 			[]interface{}{"a", "    ", "c"},
+			false,
 			nil,
 			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := getOneStringOrAllStringSlice(tt.input, tt.name)
+			result, err := getOneStringOrAllStringSlice(tt.input, tt.name, tt.skipUniqueSlice)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -1795,14 +1810,14 @@ func TestUnitCommonConvertToJsonWithoutEscapeHTML(t *testing.T) {
 			hasError: false,
 		},
 		{
-			name: "empty map",
-			input: map[string]interface{}{},
+			name:     "empty map",
+			input:    map[string]interface{}{},
 			expected: "{}\n",
 			hasError: false,
 		},
 		{
-			name: "nil map",
-			input: nil,
+			name:     "nil map",
+			input:    nil,
 			expected: "null\n",
 			hasError: false,
 		},
@@ -1823,19 +1838,19 @@ func TestUnitCommonConvertToJsonWithoutEscapeHTML(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := convertToJsonWithoutEscapeHTML(tt.input)
-			
+
 			if tt.hasError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			// Compare the results
 			if result != tt.expected {
 				t.Errorf("Expected: %s, Got: %s", tt.expected, result)

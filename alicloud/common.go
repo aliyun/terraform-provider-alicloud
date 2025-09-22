@@ -1620,8 +1620,8 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	return reflect.DeepEqual(y1, y2), nil
 }
 
-func getOneStringOrAllStringSlice(stringSli []interface{}, fieldName string) (interface{}, error) {
-	if len(stringSli) == 1 {
+func getOneStringOrAllStringSlice(stringSli []interface{}, fieldName string, skipUniqueSlice bool) (interface{}, error) {
+	if len(stringSli) == 1 && !skipUniqueSlice {
 		if Trim(fmt.Sprint(stringSli[0])) == "" || IsNil(stringSli[0]) {
 			return nil, WrapError(fmt.Errorf("[ERROR] Field \"%s\" cannot contain empty strings(\"\") ! ", fieldName))
 		}
