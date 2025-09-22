@@ -1847,6 +1847,19 @@ func expandTagsToMap(originMap map[string]interface{}, tags []map[string]interfa
 	return originMap
 }
 
+func expandTagsToMapWithTags(originMap map[string]interface{}, tags []map[string]interface{}) map[string]interface{} {
+	for i, tag := range tags {
+		for key, value := range tag {
+			if key == "Key" || key == "Value" {
+				newKey := "Tags" + "." + strconv.Itoa(i+1) + "." + key
+				originMap[newKey] = fmt.Sprintf("%v", value)
+			}
+		}
+	}
+
+	return originMap
+}
+
 func convertChargeTypeToPaymentType(source interface{}) interface{} {
 	switch source {
 	case "PostPaid", "Postpaid":
