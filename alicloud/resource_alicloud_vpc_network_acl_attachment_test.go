@@ -93,6 +93,91 @@ func resourceAlicloudVpcNetworkAclAttachmentBasicDependence(name string) string 
 `, name)
 }
 
+func TestAccAliCloudVpcNetworkAclAttachment_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_network_acl_attachment.default"
+	ra := resourceAttrInit(resourceId, resourceAlicloudVpcNetworkAclAttachmentMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcNetworkAclAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccVpcNetworkAclAttachment-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudVpcNetworkAclAttachmentBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_acl_id": "${alicloud_network_acl.default.id}",
+					"resource_id":    "${alicloud_vswitch.default.id}",
+					"resource_type":  "VSwitch",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_acl_id": CHECKSET,
+						"resource_id":    CHECKSET,
+						"resource_type":  "VSwitch",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var resourceAlicloudVpcNetworkAclAttachmentMap1 = map[string]string{
+	"status": CHECKSET,
+}
+
+func resourceAlicloudVpcNetworkAclAttachmentBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vpc_id     = alicloud_vpc.default.id
+  		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  		zone_id    = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_vswitch" "default1" {
+  		vpc_id     = alicloud_vpc.default.id
+  		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 3)
+  		zone_id    = data.alicloud_zones.default.zones.1.id
+	}
+
+	resource "alicloud_network_acl" "default" {
+  		vpc_id = alicloud_vswitch.default.vpc_id
+	}
+
+	resource "alicloud_vpc_network_acl_attachment" "default1" {
+	  network_acl_id = alicloud_network_acl.default.id
+	  resource_id    = alicloud_vswitch.default1.id
+	  resource_type  = "VSwitch"
+	}
+`, name)
+}
+
 func TestUnitAlicloudVpcNetworkAclAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpc_network_acl_attachment"].Schema).Data(nil, nil)
