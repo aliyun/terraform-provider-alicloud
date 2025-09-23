@@ -1701,7 +1701,8 @@ func (s *VpcServiceV2) DescribeVpcNetworkAclAttachment(id string) (object map[st
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["NetworkAclId"] = parts[0]
-	query["ResourceId"] = parts[1]
+	// For VSwitch resource type, we need to filter by VSwitchId instead of ResourceId
+	query["ResourceType"] = "VSwitch"
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
@@ -1737,12 +1738,20 @@ func (s *VpcServiceV2) DescribeVpcNetworkAclAttachment(id string) (object map[st
 		return object, WrapErrorf(NotFoundErr("NetworkAclAttachment", id), NotFoundMsg, response)
 	}
 
-	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
-	if currentStatus == "UNBINDING" {
-		return object, WrapErrorf(NotFoundErr("NetworkAclAttachment", id), NotFoundMsg, response)
+	// Filter by VSwitchId (ResourceId) since the API might return multiple resources
+	resources := v.([]interface{})
+	for _, r := range resources {
+		resourceMap := r.(map[string]interface{})
+		if resourceMap["ResourceId"] == parts[1] {
+			currentStatus := resourceMap["Status"]
+			if currentStatus == "UNBINDING" {
+				return object, WrapErrorf(NotFoundErr("NetworkAclAttachment", id), NotFoundMsg, response)
+			}
+			return resourceMap, nil
+		}
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return object, WrapErrorf(NotFoundErr("NetworkAclAttachment", id), NotFoundMsg, response)
 }
 
 func (s *VpcServiceV2) VpcNetworkAclAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
