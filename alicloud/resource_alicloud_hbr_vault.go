@@ -299,7 +299,7 @@ func resourceAliCloudHbrVaultDelete(d *schema.ResourceData, meta interface{}) er
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"CannotDeleteReplicationSourceVault"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"CannotDeleteReplicationSourceVault", "VaultBoundPolicyCannotBeDeleted"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

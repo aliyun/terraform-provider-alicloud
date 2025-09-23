@@ -119,11 +119,10 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
-			addDebug(action, response, request)
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 
@@ -172,6 +171,13 @@ func (s *HbrServiceV2) HbrPolicyBindingStateRefreshFunc(id string, field string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
