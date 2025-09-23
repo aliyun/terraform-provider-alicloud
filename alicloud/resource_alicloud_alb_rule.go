@@ -1506,7 +1506,7 @@ func resourceAliCloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) err
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.Rule", "SystemBusy", "-21013"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.Rule", "SystemBusy", "-21013", "ResourceInConfiguring.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
