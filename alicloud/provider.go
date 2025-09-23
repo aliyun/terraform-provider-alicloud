@@ -1983,6 +1983,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_event_bridge_api_destination":                          resourceAliCloudEventBridgeApiDestination(),
 			"alicloud_cloud_monitor_service_monitoring_agent_process":        resourceAliCloudCloudMonitorServiceMonitoringAgentProcess(),
 			"alicloud_cloud_monitor_service_group_monitoring_agent_process":  resourceAliCloudCloudMonitorServiceGroupMonitoringAgentProcess(),
+			"alicloud_polardb_on_ens_cluster":                                resourceAliCloudPolarDbOnENSCluster(),
+			"alicloud_polardb_on_ens_endpoint":                               resourceAlicloudPolarDBOnENSEndpoint(),
+			"alicloud_polardb_on_ens_account":                                resourceAlicloudPolarDBOnEnsAccount(),
+			"alicloud_polardb_on_ens_account_privilege":                      resourceAlicloudPolarDBOnENSAccountPrivilege(),
+			"alicloud_polardb_on_ens_database":                               resourceAlicloudPolarDBOnENSDatabase(),
 		},
 	}
 	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
