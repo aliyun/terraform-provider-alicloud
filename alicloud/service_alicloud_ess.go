@@ -551,6 +551,41 @@ func (s *EssService) DescribeEssScalingRule(id string) (object map[string]interf
 	return object, nil
 }
 
+func (s *EssService) DescribeEssInstanceRefresh(id string) (object map[string]interface{}, err error) {
+
+	var response map[string]interface{}
+	client := s.client
+	strs, _ := ParseResourceId(id, 2)
+	scalingGroupId, instanceRefreshTaskId := strs[0], strs[1]
+
+	request := map[string]interface{}{
+		"InstanceRefreshTaskId.1": instanceRefreshTaskId,
+		"RegionId":                s.client.RegionId,
+		"ScalingGroupId":          scalingGroupId,
+	}
+
+	response, err = client.RpcPost("Ess", "2014-08-28", "DescribeInstanceRefreshes", nil, request, true)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeInstanceRefreshes", AlibabaCloudSdkGoERROR)
+	}
+	addDebug("DescribeInstanceRefreshes", response, request)
+
+	get, err := jsonpath.Get("$.InstanceRefreshTasks", response)
+	if err != nil || get == nil {
+		return object, WrapErrorf(NotFoundErr("InstanceRefreshTasks", id), NotFoundMsg, ProviderERROR)
+	}
+	v, err := jsonpath.Get("$.InstanceRefreshTasks.InstanceRefreshTask", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceRefreshTasks.InstanceRefreshTask", response)
+	}
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("InstanceRefreshTasks", id), NotFoundMsg, ProviderERROR)
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
 func (s *EssService) DescribeEssScalingRuleWithAlarm(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
