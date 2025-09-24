@@ -101,6 +101,9 @@ func (s *AmqpOpenService) DescribeAmqpQueue(id string) (object map[string]interf
 		})
 		addDebug(action, response, request)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"InstanceNotExist", "InstanceIdNotExist"}) {
+				return object, WrapErrorf(NotFoundErr("Queue", id), NotFoundMsg, response)
+			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.Data.Queues", response)
@@ -108,7 +111,7 @@ func (s *AmqpOpenService) DescribeAmqpQueue(id string) (object map[string]interf
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.Queues", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(NotFoundErr("Amqp", id), NotFoundWithResponse, response)
+			return object, WrapErrorf(NotFoundErr("Queue", id), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Name"]) == parts[2] {
