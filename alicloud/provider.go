@@ -1595,7 +1595,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eip_address":                                           resourceAliCloudEipAddress(),
 			"alicloud_event_bridge_event_bus":                                resourceAlicloudEventBridgeEventBus(),
 			"alicloud_amqp_virtual_host":                                     resourceAliCloudAmqpVirtualHost(),
-			"alicloud_amqp_queue":                                            resourceAlicloudAmqpQueue(),
+			"alicloud_amqp_queue":                                            resourceAliCloudAmqpQueue(),
 			"alicloud_amqp_exchange":                                         resourceAliCloudAmqpExchange(),
 			"alicloud_cassandra_backup_plan":                                 resourceAlicloudCassandraBackupPlan(),
 			"alicloud_cen_transit_router_peer_attachment":                    resourceAliCloudCenTransitRouterPeerAttachment(),

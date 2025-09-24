@@ -18,8 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAmqpQueue_basic(t *testing.T) {
-
+func TestAccAliCloudAmqpQueue_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_queue.default"
 	ra := resourceAttrInit(resourceId, AmqpQueueBasicMap)
@@ -28,17 +27,14 @@ func TestAccAlicloudAmqpQueue_basic(t *testing.T) {
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
-
 	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-AmqpQueuebasic%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpQueueConfigDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -102,7 +98,7 @@ func resourceAmqpQueueConfigDependence(name string) string {
 
 var AmqpQueueBasicMap = map[string]string{}
 
-func TestUnitAlicloudAmqpQueue(t *testing.T) {
+func TestUnitAliCloudAmqpQueue(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_queue"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_amqp_queue"].Schema).Data(nil, nil)
@@ -195,7 +191,7 @@ func TestUnitAlicloudAmqpQueue(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudAmqpQueueCreate(d, rawClient)
+		err := resourceAliCloudAmqpQueueCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -212,7 +208,7 @@ func TestUnitAlicloudAmqpQueue(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudAmqpQueueCreate(d, rawClient)
+		err := resourceAliCloudAmqpQueueCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -229,7 +225,7 @@ func TestUnitAlicloudAmqpQueue(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudAmqpQueueCreate(dCreate, rawClient)
+		err := resourceAliCloudAmqpQueueCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -247,7 +243,7 @@ func TestUnitAlicloudAmqpQueue(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudAmqpQueueDelete(d, rawClient)
+		err := resourceAliCloudAmqpQueueDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -264,7 +260,7 @@ func TestUnitAlicloudAmqpQueue(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudAmqpQueueDelete(d, rawClient)
+		err := resourceAliCloudAmqpQueueDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -281,7 +277,7 @@ func TestUnitAlicloudAmqpQueue(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudAmqpQueueDelete(d, rawClient)
+		err := resourceAliCloudAmqpQueueDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -298,7 +294,7 @@ func TestUnitAlicloudAmqpQueue(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudAmqpQueueRead(d, rawClient)
+		err := resourceAliCloudAmqpQueueRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -314,7 +310,7 @@ func TestUnitAlicloudAmqpQueue(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudAmqpQueueRead(d, rawClient)
+		err := resourceAliCloudAmqpQueueRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
