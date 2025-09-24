@@ -6,7 +6,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudPvtzServiceDataSource(t *testing.T) {
+func TestAccAliCloudPvtzServiceDataSource(t *testing.T) {
+	resourceId := "data.alicloud_pvtz_service.default"
+	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -14,19 +16,49 @@ func TestAccAlicloudPvtzServiceDataSource(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudPvtzServiceDataSource,
+				Config: testAccCheckAliCloudPvtzServiceDataSourceNil,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_pvtz_service.current"),
-					resource.TestCheckResourceAttrSet("data.alicloud_pvtz_service.current", "id"),
-					resource.TestCheckResourceAttr("data.alicloud_pvtz_service.current", "status", "Opened"),
+					testAccCheck(map[string]string{
+						"id":     "PvtzServiceHasNotBeenOpened",
+						"status": "",
+					}),
+				),
+			},
+			{
+				Config: testAccCheckAliCloudPvtzServiceDataSourceWithOff,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"id":     "PvtzServiceHasNotBeenOpened",
+						"status": "",
+					}),
+				),
+			},
+			{
+				Config: testAccCheckAliCloudPvtzServiceDataSourceWithOn,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"id":     CHECKSET,
+						"status": "Opened",
+					}),
 				),
 			},
 		},
 	})
 }
 
-const testAccCheckAlicloudPvtzServiceDataSource = `
-data "alicloud_pvtz_service" "current" {
-	enable = "On"
-}
+const testAccCheckAliCloudPvtzServiceDataSourceNil = `
+	data "alicloud_pvtz_service" "default" {
+	}
+`
+
+const testAccCheckAliCloudPvtzServiceDataSourceWithOff = `
+	data "alicloud_pvtz_service" "default" {
+  		enable = "Off"
+	}
+`
+
+const testAccCheckAliCloudPvtzServiceDataSourceWithOn = `
+	data "alicloud_pvtz_service" "default" {
+  		enable = "On"
+	}
 `
