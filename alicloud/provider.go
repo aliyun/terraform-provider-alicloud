@@ -910,6 +910,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_monitor_service_hybrid_double_writes":       dataSourceAliCloudCloudMonitorServiceHybridDoubleWrites(),
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
+			"alicloud_max_compute_role_policy_document":				 dataSourceAliCloudMaxComputeRolePolicyDocument(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_esa_transport_layer_application":                      resourceAliCloudEsaTransportLayerApplication(),
