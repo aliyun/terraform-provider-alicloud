@@ -71,7 +71,7 @@ The description must be 1 to 1,024 characters in length. The description can con
 The document can be a maximum of 4,096 characters in length.
 For more information about the languages of access control policies, see [Languages of access control policies](https://www.alibabacloud.com/help/en/doc-detail/179096.html).
 For more information about the examples of access control policies, see [Examples of custom access control policies](https://www.alibabacloud.com/help/en/doc-detail/181474.html).
-* `tags` - (Optional, Map, Available since v1.260.0) The tags.
+* `tags` - (Optional, Map, Available since v1.261.0) The tags.
 You can specify a maximum of 20 tags.
 
 ## Attributes Reference
