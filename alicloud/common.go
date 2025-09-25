@@ -1992,3 +1992,28 @@ func convertToJsonWithoutEscapeHTML(m map[string]interface{}) (string, error) {
 	}
 	return buffer.String(), nil
 }
+
+func convertToInterfaceArray(v interface{}) []interface{} {
+	if v == nil {
+		return []interface{}{}
+	}
+
+	if set, ok := v.(*schema.Set); ok {
+		return set.List()
+	}
+
+	if array, ok := v.([]interface{}); ok {
+		return array
+	}
+
+	val := reflect.ValueOf(v)
+	if val.Kind() == reflect.Slice {
+		result := make([]interface{}, val.Len())
+		for i := 0; i < val.Len(); i++ {
+			result[i] = val.Index(i).Interface()
+		}
+		return result
+	}
+
+	return []interface{}{v}
+}

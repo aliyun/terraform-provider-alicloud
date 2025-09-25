@@ -2,7 +2,6 @@
 subcategory: "Tair (Redis OSS-Compatible) And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_account"
-sidebar_current: "docs-alicloud-resource-kvstore-account"
 description: |-
   Provides a Alicloud Tair (Redis OSS-Compatible) And Memcache (KVStore) Account resource.
 ---
@@ -11,6 +10,8 @@ description: |-
 
 Provides a Tair (Redis OSS-Compatible) And Memcache (KVStore) Account resource.
 
+
+
 For information about Tair (Redis OSS-Compatible) And Memcache (KVStore) Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/redis/developer-reference/api-r-kvstore-2015-01-01-createaccount-redis).
 
 -> **NOTE:** Available since v1.66.0.
@@ -18,12 +19,6 @@ For information about Tair (Redis OSS-Compatible) And Memcache (KVStore) Account
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_kvstore_account&exampleId=2debea4c-9da4-77c8-78e6-ad3dd92814f2a421dbc5&activeTab=example&spm=docs.r.kvstore_account.0.2debea4c9d&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -102,16 +97,14 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available since v1.102.0.
-
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
 * `create` - (Defaults to 6 mins) Used when create the Account.
-* `update` - (Defaults to 6 mins) Used when update the Account.
+* `delete` - (Defaults to 5 mins) Used when delete the Account.
+* `update` - (Defaults to 7 mins) Used when update the Account.
 
 ## Import
 
-Tair (Redis OSS-Compatible) And Memcache (KVStore) account can be imported using the id, e.g.
+Tair (Redis OSS-Compatible) And Memcache (KVStore) Account can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_kvstore_account.example <instance_id>:<account_name>
