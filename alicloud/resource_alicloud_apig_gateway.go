@@ -22,9 +22,9 @@ func resourceAliCloudApigGateway() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(11 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(15 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"create_time": {
@@ -34,6 +34,12 @@ func resourceAliCloudApigGateway() *schema.Resource {
 			"gateway_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"gateway_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"log_config": {
 				Type:     schema.TypeList,
@@ -144,6 +150,30 @@ func resourceAliCloudApigGateway() *schema.Resource {
 					},
 				},
 			},
+			"zones": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"zone_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -160,30 +190,60 @@ func resourceAliCloudApigGatewayCreate(d *schema.ResourceData, meta interface{})
 	var err error
 	request = make(map[string]interface{})
 
-	if v, ok := d.GetOk("spec"); ok {
-		request["spec"] = v
+	if v, ok := d.GetOk("vpc"); ok {
+		vpcVpcIdJsonPath, err := jsonpath.Get("$[0].vpc_id", v)
+		if err == nil && vpcVpcIdJsonPath != "" {
+			request["vpcId"] = vpcVpcIdJsonPath
+		}
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["resourceGroupId"] = v
+	}
+	request["chargeType"] = convertApigGatewaychargeTypeRequest(d.Get("payment_type").(string))
+	dataList := make(map[string]interface{})
+
+	if v := d.Get("zones"); !IsNil(v) {
+		if v, ok := d.GetOk("zones"); ok {
+			localData, err := jsonpath.Get("$", v)
+			if err != nil {
+				localData = make([]interface{}, 0)
+			}
+			localMaps := make([]interface{}, 0)
+			for _, dataLoop := range localData.([]interface{}) {
+				dataLoopTmp := make(map[string]interface{})
+				if dataLoop != nil {
+					dataLoopTmp = dataLoop.(map[string]interface{})
+				}
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["zoneId"] = dataLoopTmp["zone_id"]
+				dataLoopMap["vSwitchId"] = dataLoopTmp["vswitch_id"]
+				localMaps = append(localMaps, dataLoopMap)
+			}
+			dataList["zones"] = localMaps
+		}
+
+	}
+
+	if v, ok := d.GetOk("zone_config"); ok {
+		selectOption1, _ := jsonpath.Get("$[0].select_option", v)
+		if selectOption1 != nil && selectOption1 != "" {
+			dataList["selectOption"] = selectOption1
+		}
+	}
+
+	if v, ok := d.GetOk("vswitch"); ok {
+		vSwitchId3, _ := jsonpath.Get("$[0].vswitch_id", v)
+		if vSwitchId3 != nil && vSwitchId3 != "" {
+			dataList["vSwitchId"] = vSwitchId3
+		}
+	}
+
+	request["zoneConfig"] = dataList
+
 	if v, ok := d.GetOk("gateway_name"); ok {
 		request["name"] = v
 	}
-	if v, ok := d.GetOk("vpc"); ok {
-		jsonPathResult2, err := jsonpath.Get("$[0].vpc_id", v)
-		if err == nil && jsonPathResult2 != "" {
-			request["vpcId"] = jsonPathResult2
-		}
-	}
-	objectDataLocalMap := make(map[string]interface{})
-
-	if v := d.Get("network_access_config"); !IsNil(v) {
-		type1, _ := jsonpath.Get("$[0].type", v)
-		if type1 != nil && type1 != "" {
-			objectDataLocalMap["type"] = type1
-		}
-
-		request["networkAccessConfig"] = objectDataLocalMap
-	}
-
-	objectDataLocalMap1 := make(map[string]interface{})
+	dataList1 := make(map[string]interface{})
 
 	if v := d.Get("log_config"); !IsNil(v) {
 		sls := make(map[string]interface{})
@@ -192,32 +252,28 @@ func resourceAliCloudApigGatewayCreate(d *schema.ResourceData, meta interface{})
 			sls["enable"] = enable1
 		}
 
-		objectDataLocalMap1["sls"] = sls
+		dataList1["sls"] = sls
 
-		request["logConfig"] = objectDataLocalMap1
+		request["logConfig"] = dataList1
 	}
 
-	objectDataLocalMap2 := make(map[string]interface{})
+	if v, ok := d.GetOk("spec"); ok {
+		request["spec"] = v
+	}
+	if v, ok := d.GetOk("gateway_type"); ok {
+		request["gatewayType"] = v
+	}
+	dataList2 := make(map[string]interface{})
 
-	if v, ok := d.GetOk("zone_config"); ok {
-		selectOption1, _ := jsonpath.Get("$[0].select_option", v)
-		if selectOption1 != nil && selectOption1 != "" {
-			objectDataLocalMap2["selectOption"] = selectOption1
+	if v := d.Get("network_access_config"); !IsNil(v) {
+		type1, _ := jsonpath.Get("$[0].type", v)
+		if type1 != nil && type1 != "" {
+			dataList2["type"] = type1
 		}
+
+		request["networkAccessConfig"] = dataList2
 	}
 
-	if v, ok := d.GetOk("vswitch"); ok {
-		vSwitchId1, _ := jsonpath.Get("$[0].vswitch_id", v)
-		if vSwitchId1 != nil && vSwitchId1 != "" {
-			objectDataLocalMap2["vSwitchId"] = vSwitchId1
-		}
-	}
-
-	request["zoneConfig"] = objectDataLocalMap2
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["resourceGroupId"] = v
-	}
-	request["chargeType"] = convertApigGatewaychargeTypeRequest(d.Get("payment_type").(string))
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -263,62 +319,68 @@ func resourceAliCloudApigGatewayRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	if objectRaw["createTimestamp"] != nil {
-		d.Set("create_time", objectRaw["createTimestamp"])
-	}
-	if objectRaw["name"] != nil {
-		d.Set("gateway_name", objectRaw["name"])
-	}
-	if objectRaw["chargeType"] != nil {
-		d.Set("payment_type", convertApigGatewaydatachargeTypeResponse(objectRaw["chargeType"]))
-	}
-	if objectRaw["resourceGroupId"] != nil {
-		d.Set("resource_group_id", objectRaw["resourceGroupId"])
-	}
-	if objectRaw["spec"] != nil {
-		d.Set("spec", objectRaw["spec"])
-	}
-	if objectRaw["status"] != nil {
-		d.Set("status", objectRaw["status"])
-	}
+	d.Set("create_time", objectRaw["createTimestamp"])
+	d.Set("gateway_name", objectRaw["name"])
+	d.Set("gateway_type", objectRaw["gatewayType"])
+	d.Set("payment_type", convertApigGatewaydatachargeTypeResponse(objectRaw["chargeType"]))
+	d.Set("resource_group_id", objectRaw["resourceGroupId"])
+	d.Set("spec", objectRaw["spec"])
+	d.Set("status", objectRaw["status"])
 
 	tagsMaps := objectRaw["tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 	vSwitchMaps := make([]map[string]interface{}, 0)
 	vSwitchMap := make(map[string]interface{})
-	vSwitch1Raw := make(map[string]interface{})
+	vSwitchRaw := make(map[string]interface{})
 	if objectRaw["vSwitch"] != nil {
-		vSwitch1Raw = objectRaw["vSwitch"].(map[string]interface{})
+		vSwitchRaw = objectRaw["vSwitch"].(map[string]interface{})
 	}
-	if len(vSwitch1Raw) > 0 {
-		vSwitchMap["name"] = vSwitch1Raw["name"]
-		vSwitchMap["vswitch_id"] = vSwitch1Raw["vSwitchId"]
+	if len(vSwitchRaw) > 0 {
+		vSwitchMap["name"] = vSwitchRaw["name"]
+		vSwitchMap["vswitch_id"] = vSwitchRaw["vSwitchId"]
 
 		vSwitchMaps = append(vSwitchMaps, vSwitchMap)
 	}
-	if objectRaw["vSwitch"] != nil {
-		if err := d.Set("vswitch", vSwitchMaps); err != nil {
-			return err
-		}
+	if err := d.Set("vswitch", vSwitchMaps); err != nil {
+		return err
 	}
 	vpcMaps := make([]map[string]interface{}, 0)
 	vpcMap := make(map[string]interface{})
-	vpc1Raw := make(map[string]interface{})
+	vpcRaw := make(map[string]interface{})
 	if objectRaw["vpc"] != nil {
-		vpc1Raw = objectRaw["vpc"].(map[string]interface{})
+		vpcRaw = objectRaw["vpc"].(map[string]interface{})
 	}
-	if len(vpc1Raw) > 0 {
-		vpcMap["name"] = vpc1Raw["name"]
-		vpcMap["vpc_id"] = vpc1Raw["vpcId"]
+	if len(vpcRaw) > 0 {
+		vpcMap["name"] = vpcRaw["name"]
+		vpcMap["vpc_id"] = vpcRaw["vpcId"]
 
 		vpcMaps = append(vpcMaps, vpcMap)
 	}
-	if objectRaw["vpc"] != nil {
-		if err := d.Set("vpc", vpcMaps); err != nil {
+	if err := d.Set("vpc", vpcMaps); err != nil {
+		return err
+	}
+
+	zonesRaw := objectRaw["zones"]
+	zonesMaps := make([]map[string]interface{}, 0)
+	if zonesRaw != nil {
+		for _, zonesChildRaw := range zonesRaw.([]interface{}) {
+			zonesMap := make(map[string]interface{})
+			zonesChildRaw := zonesChildRaw.(map[string]interface{})
+			zonesMap["name"] = zonesChildRaw["name"]
+			zonesMap["zone_id"] = zonesChildRaw["zoneId"]
+
+			if v, ok := zonesChildRaw["vSwitch"]; ok {
+				vSwitchArg := v.(map[string]interface{})
+
+				zonesMap["vswitch_id"] = vSwitchArg["vSwitchId"]
+			}
+
+			zonesMaps = append(zonesMaps, zonesMap)
+		}
+		if err := d.Set("zones", zonesMaps); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -331,9 +393,9 @@ func resourceAliCloudApigGatewayUpdate(d *schema.ResourceData, meta interface{})
 	update := false
 	d.Partial(true)
 
+	var err error
 	gatewayId := d.Id()
 	action := fmt.Sprintf("/v1/gateways/%s/name", gatewayId)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -379,6 +441,7 @@ func resourceAliCloudApigGatewayUpdate(d *schema.ResourceData, meta interface{})
 		query["ResourceGroupId"] = StringPointer(v.(string))
 	}
 
+	query["Service"] = StringPointer("APIG")
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
