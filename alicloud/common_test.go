@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"os"
 	"reflect"
@@ -1795,14 +1796,14 @@ func TestUnitCommonConvertToJsonWithoutEscapeHTML(t *testing.T) {
 			hasError: false,
 		},
 		{
-			name: "empty map",
-			input: map[string]interface{}{},
+			name:     "empty map",
+			input:    map[string]interface{}{},
 			expected: "{}\n",
 			hasError: false,
 		},
 		{
-			name: "nil map",
-			input: nil,
+			name:     "nil map",
+			input:    nil,
 			expected: "null\n",
 			hasError: false,
 		},
@@ -1823,22 +1824,152 @@ func TestUnitCommonConvertToJsonWithoutEscapeHTML(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := convertToJsonWithoutEscapeHTML(tt.input)
-			
+
 			if tt.hasError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			// Compare the results
 			if result != tt.expected {
 				t.Errorf("Expected: %s, Got: %s", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertToInterfaceArray(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected []interface{}
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: []interface{}{},
+		},
+		{
+			name:     "already []interface{}",
+			input:    []interface{}{"a", "b", "c"},
+			expected: []interface{}{"a", "b", "c"},
+		},
+		{
+			name:     "string slice",
+			input:    []string{"a", "b", "c"},
+			expected: []interface{}{"a", "b", "c"},
+		},
+		{
+			name:     "int slice",
+			input:    []int{1, 2, 3},
+			expected: []interface{}{1, 2, 3},
+		},
+		{
+			name:     "mixed type slice",
+			input:    []interface{}{1, "two", 3.0, true},
+			expected: []interface{}{1, "two", 3.0, true},
+		},
+		{
+			name:     "single value",
+			input:    "single",
+			expected: []interface{}{"single"},
+		},
+		{
+			name:     "single int",
+			input:    42,
+			expected: []interface{}{42},
+		},
+		{
+			name:     "empty slice",
+			input:    []string{},
+			expected: []interface{}{},
+		},
+		{
+			name:     "bool slice",
+			input:    []bool{true, false, true},
+			expected: []interface{}{true, false, true},
+		},
+		{
+			name:     "float slice",
+			input:    []float64{1.1, 2.2, 3.3},
+			expected: []interface{}{1.1, 2.2, 3.3},
+		},
+		{
+			name:     "single value",
+			input:    "single",
+			expected: []interface{}{"single"},
+		},
+		{
+			name:     "single int",
+			input:    42,
+			expected: []interface{}{42},
+		},
+		{
+			name:     "empty slice",
+			input:    []string{},
+			expected: []interface{}{},
+		},
+		{
+			name:     "bool slice",
+			input:    []bool{true, false, true},
+			expected: []interface{}{true, false, true},
+		},
+		{
+			name:     "float slice",
+			input:    []float64{1.1, 2.2, 3.3},
+			expected: []interface{}{1.1, 2.2, 3.3},
+		},
+		{
+			name:     "schema.Set with strings",
+			input:    func() *schema.Set { s := schema.NewSet(schema.HashString, []interface{}{"a", "b", "c"}); return s }(),
+			expected: []interface{}{"a", "b", "c"},
+		},
+		{
+			name: "schema.Set with ints",
+			input: func() *schema.Set {
+				s := schema.NewSet(func(i interface{}) int { return schema.HashString(fmt.Sprintf("%v", i)) }, []interface{}{1, 2, 3})
+				return s
+			}(),
+			expected: []interface{}{1, 2, 3},
+		},
+		{
+			name:     "empty schema.Set",
+			input:    func() *schema.Set { s := schema.NewSet(schema.HashString, []interface{}{}); return s }(),
+			expected: []interface{}{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := convertToInterfaceArray(tt.input)
+			if tt.name == "schema.Set with strings" || tt.name == "schema.Set with ints" {
+				// For schema.Set, we need to compare elements regardless of order
+				if len(result) != len(tt.expected) {
+					t.Errorf("convertToInterfaceArray(%v) = %v (len %d), want %v (len %d)", tt.input, result, len(result), tt.expected, len(tt.expected))
+				}
+				// Create maps to count occurrences
+				resultMap := make(map[interface{}]int)
+				expectedMap := make(map[interface{}]int)
+				for _, v := range result {
+					resultMap[v]++
+				}
+				for _, v := range tt.expected {
+					expectedMap[v]++
+				}
+				if !reflect.DeepEqual(resultMap, expectedMap) {
+					t.Errorf("convertToInterfaceArray(%v) = %v, want %v (elements mismatch)", tt.input, result, tt.expected)
+				}
+			} else {
+				if !reflect.DeepEqual(result, tt.expected) {
+					t.Errorf("convertToInterfaceArray(%v) = %v, want %v", tt.input, result, tt.expected)
+				}
 			}
 		})
 	}
