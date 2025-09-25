@@ -80,7 +80,7 @@ func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 			"lang": {
 				Type:       schema.TypeString,
 				Optional:   true,
-				Deprecated: "Field 'lang' has been deprecated from provider version 1.261.0 and it will be removed in the future version.",
+				Deprecated: "Field 'lang' has been deprecated from provider version 1.260.1 and it will be removed in the future version.",
 			},
 		},
 	}
