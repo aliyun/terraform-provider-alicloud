@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -20,6 +21,7 @@ func resourceAliCloudMessageServiceService() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"status": {
@@ -43,31 +45,48 @@ func resourceAliCloudMessageServiceServiceCreate(d *schema.ResourceData, meta in
 
 	request["ClientToken"] = buildClientToken(action)
 
-	request["ProductCode"] = "mns"
 	request["SubscriptionType"] = "PayAsYouGo"
+	dataList := make(map[string]interface{})
 
-	objectDataLocalMap := make(map[string]interface{})
-	objectDataLocalMap["Code"] = "commodity_type"
-
-	if client.IsInternationalAccount() {
-		objectDataLocalMap["Value"] = "mns"
-	} else {
-		objectDataLocalMap["Value"] = "commodity_type:mns"
-
+	if v, ok := d.GetOk("code"); ok {
+		dataList["Code"] = v
 	}
 
+	if v, ok := d.GetOk("value"); ok {
+		dataList["Value"] = v
+	}
+
+	dataList["Code"] = "commodity_type"
+	if client.IsInternationalAccount() {
+		dataList["Value"] = "mns"
+	} else {
+		dataList["Value"] = "commodity_type:mns"
+	}
 	ParameterMap := make([]interface{}, 0)
-	ParameterMap = append(ParameterMap, objectDataLocalMap)
+	ParameterMap = append(ParameterMap, dataList)
 	request["Parameter"] = ParameterMap
 
 	var endpoint string
-
+	request["ProductCode"] = "mns"
+	request["ProductType"] = ""
+	if client.IsInternationalAccount() {
+		request["ProductType"] = ""
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"INSTANCE_ID_IS_NOT_UNIQUE", "ORDER.OPEND"}) {
+				return nil
+			}
 			if NeedRetry(err) {
 				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "mns"
+				request["ProductType"] = ""
+				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -76,14 +95,11 @@ func resourceAliCloudMessageServiceServiceCreate(d *schema.ResourceData, meta in
 	})
 	addDebug(action, response, request)
 
-	if err != nil && !IsExpectedErrors(err, []string{"INSTANCE_ID_IS_NOT_UNIQUE"}) {
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_message_service_service", action, AlibabaCloudSdkGoERROR)
 	}
 
 	accountId, err := client.AccountId()
-	if err != nil {
-		return err
-	}
 	d.SetId(accountId)
 
 	return resourceAliCloudMessageServiceServiceRead(d, meta)
@@ -106,7 +122,7 @@ func resourceAliCloudMessageServiceServiceRead(d *schema.ResourceData, meta inte
 	instanceListRawArrayObj, _ := jsonpath.Get("$.Data.InstanceList[*]", objectRaw)
 	instanceListRawArray := make([]interface{}, 0)
 	if instanceListRawArrayObj != nil {
-		instanceListRawArray = instanceListRawArrayObj.([]interface{})
+		instanceListRawArray = convertToInterfaceArray(instanceListRawArrayObj)
 	}
 	instanceListRaw := make(map[string]interface{})
 	if len(instanceListRawArray) > 0 {

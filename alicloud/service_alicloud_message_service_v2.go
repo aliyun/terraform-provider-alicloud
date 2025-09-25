@@ -456,7 +456,10 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceService(id string) (obje
 	request["SubscriptionType"] = "PayAsYouGo"
 	var endpoint string
 	request["ProductCode"] = "mns"
-
+	request["ProductType"] = ""
+	if client.IsInternationalAccount() {
+		request["ProductType"] = ""
+	}
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -468,16 +471,54 @@ func (s *MessageServiceServiceV2) DescribeMessageServiceService(id string) (obje
 				wait()
 				return resource.RetryableError(err)
 			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "mns"
+				request["ProductType"] = ""
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(err)
 		}
 		return nil
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"Expired"}) {
+			return object, WrapErrorf(NotFoundErr("Service", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
+}
+
+func (s *MessageServiceServiceV2) MessageServiceServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeMessageServiceService(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
 }
 
 // DescribeMessageServiceService >>> Encapsulated.
