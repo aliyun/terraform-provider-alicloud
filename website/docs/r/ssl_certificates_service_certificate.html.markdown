@@ -97,15 +97,15 @@ The following arguments are supported:
 
 * `cert` - (Optional, ForceNew) The content of a non-SM certificate in PEM format.
 * `key` - (Optional, ForceNew) The private key of a non-SM certificate in PEM format.
-* `encrypt_cert` - (Optional, ForceNew, Available since v1.261.0) The content of an SM encryption certificate in PEM format.
-* `encrypt_private_key` - (Optional, ForceNew, Available since v1.261.0) The private key of an SM encryption certificate in PEM format.
-* `sign_cert` - (Optional, ForceNew, Available since v1.261.0) The content of an SM signing certificate in PEM format.
-* `sign_private_key` - (Optional, ForceNew, Available since v1.261.0) The private key of an SM signing certificate in PEM format.
-* `certificate_name` - (Optional) A custom name for the certificate. The name can be up to 64 characters long and can contain any character type, such as letters, numbers, and underscores. **NOTE:** From version 1.261.0, `certificate_name` can be modified.
-* `resource_group_id` - (Optional, Available since v1.261.0) The ID of the resource group.
-* `tags` - (Optional, Map, Available since v1.261.0) The tag of the resource.
+* `encrypt_cert` - (Optional, ForceNew, Available since v1.260.1) The content of an SM encryption certificate in PEM format.
+* `encrypt_private_key` - (Optional, ForceNew, Available since v1.260.1) The private key of an SM encryption certificate in PEM format.
+* `sign_cert` - (Optional, ForceNew, Available since v1.260.1) The content of an SM signing certificate in PEM format.
+* `sign_private_key` - (Optional, ForceNew, Available since v1.260.1) The private key of an SM signing certificate in PEM format.
+* `certificate_name` - (Optional) A custom name for the certificate. The name can be up to 64 characters long and can contain any character type, such as letters, numbers, and underscores. **NOTE:** From version 1.260.1, `certificate_name` can be modified.
+* `resource_group_id` - (Optional, Available since v1.260.1) The ID of the resource group.
+* `tags` - (Optional, Map, Available since v1.260.1) The tag of the resource.
 * `name` - (Optional, Deprecated since v1.129.0) Field `name` has been deprecated from provider version 1.129.0 and it will be removed in the future version. Please use the new attribute `certificate_name` instead.
-* `lang` - (Deprecated since v1.261.0) Field `lang` has been deprecated from provider version 1.261.0 and it will be removed in the future version.
+* `lang` - (Deprecated since v1.260.1) Field `lang` has been deprecated from provider version 1.260.1 and it will be removed in the future version.
 
 ## Attributes Reference
 
@@ -114,7 +114,7 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available since 1.261.0.
+-> **NOTE:** Available since 1.260.1.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Certificate.

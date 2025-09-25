@@ -1,4 +1,24 @@
-## 1.261.0 (Unreleased)
+## 1.260.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- service: Fix bug for DescribeAckNodepool panic when input is invalid. [GH-8988]
+- resource/alicloud_resource_manager_control_policy: add test cases. [GH-8972]
+- resource/alicloud_kvstore_instance: Supported action setting Token or ClientToken. [GH-9000]
+- resource/alicloud_ssl_certificates_service_certificate: Refactored the resource alicloud_ssl_certificates_service_certificate; Added the field encrypt_cert, encrypt_private_key, sign_cert, sign_private_key, resource_group_id, tags; Deprecated the field lang; Removed the ForceNew for field certificate_name, name. [GH-9016]
+- resource/alicloud_hbr_policy_binding: Supported source_type set to OTS; resource/alicloud_hbr_vault: Added retry strategy for error code VaultBoundPolicyCannotBeDeleted. [GH-9018]
+- resource/alicloud_alb_rule: Added retry strategy for error code ResourceInConfiguring.Listener. [GH-9021]
+- resource/alicloud_amqp_queue: Added expected error code InstanceNotExist, InstanceIdNotExist. [GH-9024]
+- resource/alicloud_kvstore_account: refactoring implement and fix testcase. [GH-9026]
+- resource/alicloud_vpc_bgp_network: Refactored the resource alicloud_vpc_bgp_network; Added the field vpc_id. [GH-9027]
+- docs: Improved the document update version. [GH-9028]
+
+BUG FIXES:
+
+- resource/alicloud_instance: Fixed the update invalid error caused by renewal_status, auto_renew_period. [GH-9003]
+- resource/alicloud_vpc_network_acl_attachment: Fixed bug while creating multiple resources. [GH-9019]
+- data-source/alicloud_pvtz_service: Fixed the read error caused by state refresh. [GH-9022]
+
 ## 1.260.0 (September 19, 2025)
 
 - **New Resource:** `alicloud_lindorm_instance_v2` ([#8982](https://github.com/aliyun/terraform-provider-alicloud/issues/8982))
@@ -35,6 +55,7 @@ ENHANCEMENTS:
 BUG FIXES:
 
 - resource/alicloud_alikafka_instance: Fixed the import error caused by field config. ([#8940](https://github.com/aliyun/terraform-provider-alicloud/issues/8940))
+- resource/alicloud_ess_scaling_configuration: fix spot_duration set zero invalid. ([#8966](https://github.com/aliyun/terraform-provider-alicloud/issues/8966))
 - resource/alicloud_alb_load_balancer: Fixed bug while modify zone_mappings.intranet_address not effective. ([#8984](https://github.com/aliyun/terraform-provider-alicloud/issues/8984))
 - resource/alicloud_oss_bucket_https_config: Fixed bug while create without tls_versions. ([#8992](https://github.com/aliyun/terraform-provider-alicloud/issues/8992))
 - resource/alicloud_ram_role: Fixed the read error in field assume_role_policy_document. ([#8999](https://github.com/aliyun/terraform-provider-alicloud/issues/8999))

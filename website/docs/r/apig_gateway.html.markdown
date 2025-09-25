@@ -83,7 +83,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 
 The following arguments are supported:
 * `gateway_name` - (Optional) The name of the resource
-* `gateway_type` - (Optional, ForceNew, Available since v1.261.0) Describes the gateway type, which is categorized into the following two types:
+* `gateway_type` - (Optional, ForceNew, Available since v1.260.1) Describes the gateway type, which is categorized into the following two types:
   - API: indicates an API gateway
   - AI: Indicates an AI gateway
 * `log_config` - (Optional, List) Log Configuration See [`log_config`](#log_config) below.
@@ -95,7 +95,7 @@ The following arguments are supported:
 * `vswitch` - (Optional, ForceNew, List) The virtual switch associated with the Gateway. See [`vswitch`](#vswitch) below.
 * `vpc` - (Optional, ForceNew, List) The VPC associated with the Gateway. See [`vpc`](#vpc) below.
 * `zone_config` - (Required, List) Availability Zone Configuration See [`zone_config`](#zone_config) below.
-* `zones` - (Optional, ForceNew, List, Available since v1.261.0) The List of zones associated with the Gateway. See [`zones`](#zones) below.
+* `zones` - (Optional, ForceNew, List, Available since v1.260.1) The List of zones associated with the Gateway. See [`zones`](#zones) below.
 
 ### `log_config`
 
@@ -149,7 +149,7 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Gateway.
+* `create` - (Defaults to 11 mins) Used when create the Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Gateway.
 * `update` - (Defaults to 5 mins) Used when update the Gateway.
 

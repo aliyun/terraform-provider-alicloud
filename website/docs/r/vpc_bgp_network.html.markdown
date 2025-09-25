@@ -63,7 +63,7 @@ resource "alicloud_vpc_bgp_network" "default" {
 The following arguments are supported:
 * `dst_cidr_block` - (Required, ForceNew) The CIDR block of the virtual private cloud (VPC) or vSwitch that you want to connect to a data center.
 * `router_id` - (Required, ForceNew) The region ID of the virtual border router (VBR) group.
-* `vpc_id` - (Optional, ForceNew, Available since v1.261.0) The ID of the VPC.
+* `vpc_id` - (Optional, ForceNew, Available since v1.260.1) The ID of the VPC.
 
 ## Attributes Reference
 
