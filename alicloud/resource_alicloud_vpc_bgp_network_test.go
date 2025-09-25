@@ -18,80 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVPCBgpNetwork_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
-	var v map[string]interface{}
-	resourceId := "alicloud_vpc_bgp_network.default"
-	ra := resourceAttrInit(resourceId, AlicloudVPCBgpNetworkMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpcBgpNetwork")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcbgpnetwork%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCBgpNetworkBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"dst_cidr_block": "192.168.0.0/24",
-					"router_id":      "${alicloud_express_connect_virtual_border_router.default.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dst_cidr_block": "192.168.0.0/24",
-						"router_id":      CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AlicloudVPCBgpNetworkMap0 = map[string]string{
-	"router_id":      CHECKSET,
-	"status":         CHECKSET,
-	"dst_cidr_block": CHECKSET,
-}
-
-func AlicloudVPCBgpNetworkBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-
-data "alicloud_express_connect_physical_connections" "default" {
-	name_regex = "^preserved-NODELETING"
-}
-
-resource "alicloud_express_connect_virtual_border_router" "default" {
-  local_gateway_ip           = "10.0.0.1"
-  peer_gateway_ip            = "10.0.0.2"
-  peering_subnet_mask        = "255.255.255.252"
-  physical_connection_id     = data.alicloud_express_connect_physical_connections.default.connections.0.id
-  virtual_border_router_name = var.name
-  vlan_id                    = %d
-  min_rx_interval            = 1000
-  min_tx_interval            = 1000
-  detect_multiplier          = 10
-}
-
-`, name, acctest.RandIntRange(1, 2999))
-}
-
-func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
+func TestUnitAliCloudExpressConnectBgpNetwork(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_bgp_network"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_bgp_network"].Schema).Data(nil, nil)
@@ -167,7 +94,7 @@ func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVpcBgpNetworkCreate(d, rawClient)
+		err := resourceAliCloudExpressConnectBgpNetworkCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -184,7 +111,7 @@ func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpNetworkCreate(d, rawClient)
+		err := resourceAliCloudExpressConnectBgpNetworkCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -201,7 +128,7 @@ func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpNetworkCreate(dCreate, rawClient)
+		err := resourceAliCloudExpressConnectBgpNetworkCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -219,7 +146,7 @@ func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVpcBgpNetworkDelete(d, rawClient)
+		err := resourceAliCloudExpressConnectBgpNetworkDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -237,7 +164,7 @@ func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpNetworkDelete(d, rawClient)
+		err := resourceAliCloudExpressConnectBgpNetworkDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -252,12 +179,12 @@ func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		patchDescribeVpcBgpNetwork := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "DescribeVpcBgpNetwork", func(*VpcService, string) (map[string]interface{}, error) {
+		patchDescribeExpressConnectBgpNetwork := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "DescribeExpressConnectBgpNetwork", func(*VpcService, string) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
-		err := resourceAlicloudVpcBgpNetworkDelete(d, rawClient)
+		err := resourceAliCloudExpressConnectBgpNetworkDelete(d, rawClient)
 		patches.Reset()
-		patchDescribeVpcBgpNetwork.Reset()
+		patchDescribeExpressConnectBgpNetwork.Reset()
 		assert.NotNil(t, err)
 	})
 	t.Run("DeleteNonRetryableError", func(t *testing.T) {
@@ -272,13 +199,13 @@ func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpNetworkDelete(d, rawClient)
+		err := resourceAliCloudExpressConnectBgpNetworkDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
 
 	//Read
-	t.Run("ReadDescribeVpcBgpNetworkNotFound", func(t *testing.T) {
+	t.Run("ReadDescribeExpressConnectBgpNetworkNotFound", func(t *testing.T) {
 		patchRequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			NotFoundFlag := true
 			noRetryFlag := false
@@ -289,11 +216,11 @@ func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpNetworkRead(d, rawClient)
+		err := resourceAliCloudExpressConnectBgpNetworkRead(d, rawClient)
 		patchRequest.Reset()
 		assert.Nil(t, err)
 	})
-	t.Run("ReadDescribeVpcBgpNetworkAbnormal", func(t *testing.T) {
+	t.Run("ReadDescribeExpressConnectBgpNetworkAbnormal", func(t *testing.T) {
 		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			retryFlag := false
 			noRetryFlag := true
@@ -304,8 +231,116 @@ func TestUnitAlicloudVPCBgpNetwork(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpNetworkRead(d, rawClient)
+		err := resourceAliCloudExpressConnectBgpNetworkRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test ExpressConnect BgpNetwork. >>> Resource test cases, automatically generated.
+// Case BGP Network V1 11500
+func TestAccAliCloudExpressConnectBgpNetwork_basic11500(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_bgp_network.default"
+	ra := resourceAttrInit(resourceId, AliCloudExpressConnectBgpNetworkMap11500)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ExpressConnectServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeExpressConnectBgpNetwork")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccexpressconnect%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudExpressConnectBgpNetworkBasicDependence11500)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dst_cidr_block": "192.168.0.0/16",
+					"router_id":      "${data.alicloud_express_connect_router_interfaces.default.interfaces.0.router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dst_cidr_block": "192.168.0.0/16",
+						"router_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudExpressConnectBgpNetwork_basic11500_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_bgp_network.default"
+	ra := resourceAttrInit(resourceId, AliCloudExpressConnectBgpNetworkMap11500)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ExpressConnectServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeExpressConnectBgpNetwork")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccexpressconnect%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudExpressConnectBgpNetworkBasicDependence11500)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dst_cidr_block": "192.168.0.0/16",
+					"router_id":      "${data.alicloud_express_connect_router_interfaces.default.interfaces.0.router_id}",
+					"vpc_id":         "${data.alicloud_express_connect_router_interfaces.default.interfaces.0.opposite_vpc_instance_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dst_cidr_block": "192.168.0.0/16",
+						"router_id":      CHECKSET,
+						"vpc_id":         CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AliCloudExpressConnectBgpNetworkMap11500 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AliCloudExpressConnectBgpNetworkBasicDependence11500(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_express_connect_router_interfaces" "default" {
+  		name_regex = "^default-NODELETING-VBR$"
+	}
+`, name)
+}
+
+// Test ExpressConnect BgpNetwork. <<< Resource test cases, automatically generated.
