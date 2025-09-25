@@ -171,10 +171,11 @@ func (s *ApigServiceV2) DescribeApigGateway(id string) (object map[string]interf
 	var response map[string]interface{}
 	var query map[string]*string
 	gatewayId := id
-	action := fmt.Sprintf("/v1/gateways/%s", gatewayId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["gatewayId"] = id
+
+	action := fmt.Sprintf("/v1/gateways/%s", gatewayId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
