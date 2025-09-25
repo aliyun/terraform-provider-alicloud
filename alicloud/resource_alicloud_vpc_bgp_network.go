@@ -1,8 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -10,17 +12,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudVpcBgpNetwork() *schema.Resource {
+func resourceAliCloudExpressConnectBgpNetwork() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudVpcBgpNetworkCreate,
-		Read:   resourceAlicloudVpcBgpNetworkRead,
-		Delete: resourceAlicloudVpcBgpNetworkDelete,
+		Create: resourceAliCloudExpressConnectBgpNetworkCreate,
+		Read:   resourceAliCloudExpressConnectBgpNetworkRead,
+		Delete: resourceAliCloudExpressConnectBgpNetworkDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"dst_cidr_block": {
@@ -37,23 +39,36 @@ func resourceAlicloudVpcBgpNetwork() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
 
-func resourceAlicloudVpcBgpNetworkCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudExpressConnectBgpNetworkCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "AddBgpNetwork"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
 	request["DstCidrBlock"] = d.Get("dst_cidr_block")
-	request["RegionId"] = client.RegionId
 	request["RouterId"] = d.Get("router_id")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("AddBgpNetwork")
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -64,55 +79,63 @@ func resourceAlicloudVpcBgpNetworkCreate(d *schema.ResourceData, meta interface{
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_bgp_network", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["RouterId"], ":", request["DstCidrBlock"]))
-	vpcService := VpcService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcBgpNetworkStateRefreshFunc(d.Id(), []string{}))
+	d.SetId(fmt.Sprintf("%v:%v", request["RouterId"], request["DstCidrBlock"]))
+
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectServiceV2.ExpressConnectBgpNetworkStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudVpcBgpNetworkRead(d, meta)
+	return resourceAliCloudExpressConnectBgpNetworkRead(d, meta)
 }
-func resourceAlicloudVpcBgpNetworkRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudExpressConnectBgpNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	object, err := vpcService.DescribeVpcBgpNetwork(d.Id())
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+
+	objectRaw, err := expressConnectServiceV2.DescribeExpressConnectBgpNetwork(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_vpc_bgp_network vpcService.DescribeVpcBgpNetwork Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpc_bgp_network DescribeExpressConnectBgpNetwork Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("dst_cidr_block", object["DstCidrBlock"])
-	d.Set("router_id", object["RouterId"])
-	d.Set("status", object["Status"])
+
+	d.Set("status", objectRaw["Status"])
+	d.Set("vpc_id", objectRaw["VpcId"])
+	d.Set("dst_cidr_block", objectRaw["DstCidrBlock"])
+	d.Set("router_id", objectRaw["RouterId"])
+
 	return nil
 }
-func resourceAlicloudVpcBgpNetworkDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	vpcService := VpcService{client}
-	action := "DeleteBgpNetwork"
-	var response map[string]interface{}
-	request := map[string]interface{}{
-		"DstCidrBlock": parts[1],
-		"RouterId":     parts[0],
-	}
 
+func resourceAliCloudExpressConnectBgpNetworkDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteBgpNetwork"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["DstCidrBlock"] = parts[1]
+	request["RouterId"] = parts[0]
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = buildClientToken(action)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("DeleteBgpNetwork")
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -123,12 +146,19 @@ func resourceAlicloudVpcBgpNetworkDelete(d *schema.ResourceData, meta interface{
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpcBgpNetworkStateRefreshFunc(d.Id(), []string{}))
+
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, expressConnectServiceV2.ExpressConnectBgpNetworkStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
