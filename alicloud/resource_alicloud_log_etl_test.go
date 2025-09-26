@@ -44,8 +44,9 @@ func TestAccAlicloudLogETL_basic(t *testing.T) {
 					},
 					"access_key_id":     "access_key_id_test",
 					"access_key_secret": "access_key_secret_test",
-					"script":            "e_set('new','test')",
+					"script":            "",
 					"logstore":          "${alicloud_log_store.default.name}",
+					"lang":              "SPL",
 					"etl_sinks": []map[string]interface{}{
 						{
 							"access_key_id":     "test1",
@@ -54,6 +55,7 @@ func TestAccAlicloudLogETL_basic(t *testing.T) {
 							"name":              "target_name",
 							"project":           "${alicloud_log_project.default.name}",
 							"logstore":          "${alicloud_log_store.default1.name}",
+							"datasets":          []string{"__UNNAMED__"},
 						},
 						{
 							"access_key_id":     "test1",
@@ -62,6 +64,7 @@ func TestAccAlicloudLogETL_basic(t *testing.T) {
 							"name":              "target_name_2",
 							"project":           "${alicloud_log_project.default.name}",
 							"logstore":          "${alicloud_log_store.default2.name}",
+							"datasets":          []string{"__UNNAMED__"},
 						},
 					},
 				}),
@@ -74,6 +77,7 @@ func TestAccAlicloudLogETL_basic(t *testing.T) {
 						"etl_sinks.#":      "2",
 						"parameters.%":     "1",
 						"parameters.test1": "test2",
+						"lang":             "SPL",
 					}),
 				),
 			},
@@ -107,12 +111,13 @@ func TestAccAlicloudLogETL_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"script": "e_set('new','new_value')",
+					"script": "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"status": "STOPPED",
-						"script": "e_set('new','new_value')",
+						"script": "",
+						"lang":   "SPL",
 					}),
 				),
 			},
@@ -128,10 +133,11 @@ func TestAccAlicloudLogETL_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"script": "e_set('aliyun','aliyun')",
+					"script": "",
 					"parameters": map[string]string{
 						"update": "update",
 					},
+					"lang": "SPL",
 					"etl_sinks": []map[string]interface{}{
 						{
 							"access_key_id":     "test1",
@@ -140,16 +146,18 @@ func TestAccAlicloudLogETL_basic(t *testing.T) {
 							"name":              "target_name",
 							"project":           "${alicloud_log_project.default.name}",
 							"logstore":          "${alicloud_log_store.default1.name}",
+							"datasets":          []string{"__UNNAMED__"},
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"status":            "RUNNING",
-						"script":            "e_set('aliyun','aliyun')",
+						"script":            "",
 						"parameters.update": "update",
 						"parameters.test1":  REMOVEKEY,
 						"etl_sinks.#":       "1",
+						"lang":              "SPL",
 					}),
 				),
 			},
