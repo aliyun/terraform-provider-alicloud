@@ -21,7 +21,7 @@ For information about SSL Certificates Certificate and how to use it, see [What 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ssl_certificates_service_certificate&exampleId=b3b447a7-c0fb-b119-a4f1-651e813e56a6b471ff7f&activeTab=example&spm=docs.r.ssl_certificates_service_certificate.0.b3b447a7c0&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ssl_certificates_service_certificate&exampleId=484f1229-91fa-a3e8-ded0-68c2f1583a7561832250&activeTab=example&spm=docs.r.ssl_certificates_service_certificate.0.484f122991&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

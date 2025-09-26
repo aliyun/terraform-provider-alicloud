@@ -1,23 +1,24 @@
-## 1.260.1 (Unreleased)
+## 1.261.0 (Unreleased)
+## 1.260.1 (September 26, 2025)
 
 ENHANCEMENTS:
 
-- service: Fix bug for DescribeAckNodepool panic when input is invalid. [GH-8988]
-- resource/alicloud_resource_manager_control_policy: add test cases. [GH-8972]
-- resource/alicloud_kvstore_instance: Supported action setting Token or ClientToken. [GH-9000]
-- resource/alicloud_ssl_certificates_service_certificate: Refactored the resource alicloud_ssl_certificates_service_certificate; Added the field encrypt_cert, encrypt_private_key, sign_cert, sign_private_key, resource_group_id, tags; Deprecated the field lang; Removed the ForceNew for field certificate_name, name. [GH-9016]
-- resource/alicloud_hbr_policy_binding: Supported source_type set to OTS; resource/alicloud_hbr_vault: Added retry strategy for error code VaultBoundPolicyCannotBeDeleted. [GH-9018]
-- resource/alicloud_alb_rule: Added retry strategy for error code ResourceInConfiguring.Listener. [GH-9021]
-- resource/alicloud_amqp_queue: Added expected error code InstanceNotExist, InstanceIdNotExist. [GH-9024]
-- resource/alicloud_kvstore_account: refactoring implement and fix testcase. [GH-9026]
-- resource/alicloud_vpc_bgp_network: Refactored the resource alicloud_vpc_bgp_network; Added the field vpc_id. [GH-9027]
-- docs: Improved the document update version. [GH-9028]
+- service: Fix bug for DescribeAckNodepool panic when input is invalid. ([#8988](https://github.com/aliyun/terraform-provider-alicloud/issues/8988))
+- resource/alicloud_resource_manager_control_policy: add test cases. ([#8972](https://github.com/aliyun/terraform-provider-alicloud/issues/8972))
+- resource/alicloud_kvstore_instance: Supported action setting Token or ClientToken. ([#9000](https://github.com/aliyun/terraform-provider-alicloud/issues/9000))
+- resource/alicloud_ssl_certificates_service_certificate: Refactored the resource alicloud_ssl_certificates_service_certificate; Added the field encrypt_cert, encrypt_private_key, sign_cert, sign_private_key, resource_group_id, tags; Deprecated the field lang; Removed the ForceNew for field certificate_name, name. ([#9016](https://github.com/aliyun/terraform-provider-alicloud/issues/9016))
+- resource/alicloud_hbr_policy_binding: Supported source_type set to OTS; resource/alicloud_hbr_vault: Added retry strategy for error code VaultBoundPolicyCannotBeDeleted. ([#9018](https://github.com/aliyun/terraform-provider-alicloud/issues/9018))
+- resource/alicloud_alb_rule: Added retry strategy for error code ResourceInConfiguring.Listener. ([#9021](https://github.com/aliyun/terraform-provider-alicloud/issues/9021))
+- resource/alicloud_amqp_queue: Added expected error code InstanceNotExist, InstanceIdNotExist. ([#9024](https://github.com/aliyun/terraform-provider-alicloud/issues/9024))
+- resource/alicloud_kvstore_account: refactoring implement and fix testcase. ([#9026](https://github.com/aliyun/terraform-provider-alicloud/issues/9026))
+- resource/alicloud_vpc_bgp_network: Refactored the resource alicloud_vpc_bgp_network; Added the field vpc_id. ([#9027](https://github.com/aliyun/terraform-provider-alicloud/issues/9027))
+- docs: Improved the document update version. ([#9028](https://github.com/aliyun/terraform-provider-alicloud/issues/9028))
 
 BUG FIXES:
 
-- resource/alicloud_instance: Fixed the update invalid error caused by renewal_status, auto_renew_period. [GH-9003]
-- resource/alicloud_vpc_network_acl_attachment: Fixed bug while creating multiple resources. [GH-9019]
-- data-source/alicloud_pvtz_service: Fixed the read error caused by state refresh. [GH-9022]
+- resource/alicloud_instance: Fixed the update invalid error caused by renewal_status, auto_renew_period. ([#9003](https://github.com/aliyun/terraform-provider-alicloud/issues/9003))
+- resource/alicloud_vpc_network_acl_attachment: Fixed bug while creating multiple resources. ([#9019](https://github.com/aliyun/terraform-provider-alicloud/issues/9019))
+- data-source/alicloud_pvtz_service: Fixed the read error caused by state refresh. ([#9022](https://github.com/aliyun/terraform-provider-alicloud/issues/9022))
 
 ## 1.260.0 (September 19, 2025)
 

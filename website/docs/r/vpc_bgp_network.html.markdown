@@ -21,7 +21,7 @@ For information about Express Connect Bgp Network and how to use it, see [What i
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_bgp_network&exampleId=7e2fe32d-0fc7-43d0-03af-5b8de718bb3db4437e83&activeTab=example&spm=docs.r.vpc_bgp_network.0.7e2fe32d0f&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_bgp_network&exampleId=26b2e425-a7df-d13c-9a59-b23e7398f7dffb7a6a06&activeTab=example&spm=docs.r.vpc_bgp_network.0.26b2e425a7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
