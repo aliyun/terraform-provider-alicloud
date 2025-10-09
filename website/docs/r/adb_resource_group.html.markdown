@@ -2,7 +2,6 @@
 subcategory: "AnalyticDB for MySQL (ADB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_adb_resource_group"
-sidebar_current: "docs-alicloud-resource-adb-resource-group"
 description: |-
   Provides a Alicloud AnalyticDB for MySQL (ADB) Resource Group resource.
 ---
@@ -27,7 +26,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf_example"
+  default = "terraform-example"
 }
 
 data "alicloud_adb_zones" "default" {
@@ -80,10 +79,17 @@ resource "alicloud_adb_resource_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
+* `cluster_mode` - (Optional, Available since v1.261.0) The working mode of the resource group. Default value: `Disable`. Valid values: `Disable`, `AutoScale`.
+* `cluster_size_resource` - (Optional, Available since v1.261.0) The resource specifications of a single compute cluster. Unit: ACU.
 * `db_cluster_id` - (Required, ForceNew) The ID of the DBCluster.
+* `engine` - (Optional, ForceNew, Available since v1.261.0) The engine of the resource group. Default value: `AnalyticDB`. Valid values: `AnalyticDB`, `SparkWarehouse`.
+* `engine_params` - (Optional, Map, Available since v1.261.0) The Spark application configuration parameters that can be applied to all Spark jobs executed in the resource group.
 * `group_name` - (Required, ForceNew) The name of the resource group. The `group_name` can be up to 255 characters in length and can contain digits, uppercase letters, hyphens (-), and underscores (_). It must start with a digit or uppercase letter.
 * `group_type` - (Optional) The query execution mode. Default value: `interactive`. Valid values: `interactive`, `batch`.
+* `max_cluster_count` - (Optional, Int, Available since v1.261.0) The maximum number of compute clusters that are allowed in the resource group.
+* `max_compute_resource` - (Optional, Available since v1.261.0) The maximum amount of reserved computing resources, which refers to the amount of resources that are not allocated in the cluster.
+* `min_cluster_count` - (Optional, Int, Available since v1.261.0) The minimum number of compute clusters that are required in the resource group.
+* `min_compute_resource` - (Optional, Available since v1.261.0) The minimum amount of reserved computing resources. Unit: AnalyticDB compute unit (ACU).
 * `node_num` - (Optional, Int) The number of nodes.
 * `users` - (Optional, List, Available since v1.227.0) The database accounts with which to associate the resource group.
 
@@ -93,16 +99,18 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Resource Group. It formats as `<db_cluster_id>:<group_name>`.
 * `user` - The database accounts that are associated with the resource group.
+* `port` - (Available since v1.261.0) The port number of the resource group.
+* `connection_string` - (Available since v1.261.0) The endpoint of the resource group.
 * `create_time` - The time when the resource group was created.
 * `update_time` - The time when the resource group was updated.
+* `status` - (Available since v1.261.0) The status of the resource group.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 5 mins) Used when create the Resource Group.
-* `update` - (Defaults to 5 mins) Used when update the Resource Group.
-* `delete` - (Defaults to 1 mins) Used when delete the Resource Group.
+* `create` - (Defaults to 31 mins) Used when create the Resource Group.
+* `delete` - (Defaults to 31 mins) Used when delete the Resource Group.
+* `update` - (Defaults to 31 mins) Used when update the Resource Group.
 
 ## Import
 
