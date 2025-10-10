@@ -79,9 +79,9 @@ resource "alicloud_kvstore_account" "default" {
 The following arguments are supported:
 
 * `account_name` - (Required, ForceNew) The name of the account. The name must meet the following requirements:
-  * The name can contain lowercase letters, digits, and hyphens (-), and must start with a lowercase letter.
+  * The name must start with a lowercase letter and can contain lowercase letters, digits, and underscores (_).
   * The name can be up to 100 characters in length.
-  * The name cannot be one of the reserved words in the [Reserved words for Redis account names](https://www.alibabacloud.com/help/en/redis/user-guide/create-and-manage-database-accounts) section.
+  * The name cannot be one of the reserved words listed in the [Reserved words for Redis account names](https://www.alibabacloud.com/help/en/redis/user-guide/create-and-manage-database-accounts) section.
 * `account_password` - (Optional, Sensitive) The password of the account. The password must be 8 to 32 characters in length. It must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include `!@ # $ % ^ & * ( ) _ + - =`. You have to specify one of `account_password` and `kms_encrypted_password` fields.
 * `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
 * `instance_id` - (Required, ForceNew) The Id of instance in which account belongs (The engine version of instance must be 4.0 or 4.0+).
