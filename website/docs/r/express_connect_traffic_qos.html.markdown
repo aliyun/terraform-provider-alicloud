@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_express_connect_traffic_qos
 
-Provides a Express Connect Traffic Qos resource. Express Connect Traffic QoS Policy.
+Provides a Express Connect Traffic Qos resource.
+
+Express Connect Traffic QoS Policy.
 
 For information about Express Connect Traffic Qos and how to use it, see [What is Traffic Qos](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/CreateExpressConnectTrafficQos).
 
@@ -29,40 +31,34 @@ variable "name" {
   default = "terraform-example"
 }
 
-provider "alicloud" {
-  region = "cn-shanghai"
-}
-
-
-data "alicloud_express_connect_physical_connections" "default" {
-  name_regex = "preserved-NODELETING"
-}
-
 resource "alicloud_express_connect_traffic_qos" "createQos" {
   qos_name        = var.name
-  qos_description = "terraform-example"
+  qos_description = var.name
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `qos_description` - (Optional) The description of the QoS policy.  The length is **0** to **256** characters and cannot start with 'http:// 'or 'https.
-* `qos_name` - (Optional) The name of the QoS policy.  The length is **0** to **128** characters and cannot start with 'http:// 'or 'https.
+* `qos_description` - (Optional) The description of the QoS policy.
+  The length is `0` to `256` characters and cannot start with 'http:// 'or 'https.
+* `qos_name` - (Optional) The name of the QoS policy.
+  The length is `0` to `128` characters and cannot start with 'http:// 'or 'https.
+* `resource_group_id` - (Optional, Available since v1.261.0) The ID of the resource group.
+* `tags` - (Optional, Map, Available since v1.261.0) The tag of the resource.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `status` - The status of the QoS policy. Value:
--> **NOTE:**  QoS in the configuration state will restrict the creation, update, and deletion of most QoS policies, QoS queues, and QoS rules.
+* `status` - The status of the QoS policy.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Traffic Qos.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Qos.
-* `update` - (Defaults to 5 mins) Used when update the Traffic Qos.
+* `update` - (Defaults to 8 mins) Used when update the Traffic Qos.
 
 ## Import
 

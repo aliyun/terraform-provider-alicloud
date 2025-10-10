@@ -10,19 +10,19 @@ import (
 )
 
 // Test ExpressConnect TrafficQos. >>> Resource test cases, automatically generated.
-// Case QoS策略用例-线上 6829
-func TestAccAliCloudExpressConnectTrafficQos_basic6829(t *testing.T) {
+// Case QoS策略用例 6535
+func TestAccAliCloudExpressConnectTrafficQos_basic6535(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_traffic_qos.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectTrafficQosMap6829)
+	ra := resourceAttrInit(resourceId, AliCloudExpressConnectTrafficQosMap6535)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ExpressConnectServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeExpressConnectTrafficQos")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sexpressconnecttrafficqos%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectTrafficQosBasicDependence6829)
+	name := fmt.Sprintf("tfaccexpressconnect%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudExpressConnectTrafficQosBasicDependence6535)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -32,54 +32,80 @@ func TestAccAliCloudExpressConnectTrafficQos_basic6829(t *testing.T) {
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"qos_name": "meijian-test",
+					"qos_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"qos_name": "meijian-test",
+						"qos_name": name,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"qos_description": "meijian-test",
+					"qos_description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"qos_description": "meijian-test",
+						"qos_description": name,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"qos_name": "meijian-test-1",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"qos_name": "meijian-test-1",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"qos_description": "meijian-test-1",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"qos_description": "meijian-test-1",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"qos_name":        "meijian-test",
-					"qos_description": "meijian-test",
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"qos_name":        "meijian-test",
-						"qos_description": "meijian-test",
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -93,117 +119,72 @@ func TestAccAliCloudExpressConnectTrafficQos_basic6829(t *testing.T) {
 	})
 }
 
-var AlicloudExpressConnectTrafficQosMap6829 = map[string]string{
-	"status": CHECKSET,
+func TestAccAliCloudExpressConnectTrafficQos_basic6535_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_express_connect_traffic_qos.default"
+	ra := resourceAttrInit(resourceId, AliCloudExpressConnectTrafficQosMap6535)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ExpressConnectServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeExpressConnectTrafficQos")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccexpressconnect%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudExpressConnectTrafficQosBasicDependence6535)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"qos_name":          name,
+					"qos_description":   name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"qos_name":          name,
+						"qos_description":   name,
+						"resource_group_id": CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
 }
 
-func AlicloudExpressConnectTrafficQosBasicDependence6829(name string) string {
+var AliCloudExpressConnectTrafficQosMap6535 = map[string]string{
+	"status":            CHECKSET,
+	"resource_group_id": CHECKSET,
+}
+
+func AliCloudExpressConnectTrafficQosBasicDependence6535(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {}
+
 
 `, name)
-}
-
-// Case QoS策略用例-线上 6829  twin
-func TestAccAliCloudExpressConnectTrafficQos_basic6829_twin(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_express_connect_traffic_qos.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectTrafficQosMap6829)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ExpressConnectServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeExpressConnectTrafficQos")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sexpressconnecttrafficqos%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectTrafficQosBasicDependence6829)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"qos_name":        "meijian-test",
-					"qos_description": "meijian-test",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"qos_name":        "meijian-test",
-						"qos_description": "meijian-test",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
-}
-
-// Case QoS策略用例-线上 6829  raw
-func TestAccAliCloudExpressConnectTrafficQos_basic6829_raw(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_express_connect_traffic_qos.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectTrafficQosMap6829)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ExpressConnectServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeExpressConnectTrafficQos")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sexpressconnecttrafficqos%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectTrafficQosBasicDependence6829)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"qos_name":        "meijian-test",
-					"qos_description": "meijian-test",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"qos_name":        "meijian-test",
-						"qos_description": "meijian-test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"qos_name":        "meijian-test-1",
-					"qos_description": "meijian-test-1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"qos_name":        "meijian-test-1",
-						"qos_description": "meijian-test-1",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
 }
 
 // Test ExpressConnect TrafficQos. <<< Resource test cases, automatically generated.
