@@ -427,6 +427,14 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					},
 				},
 			},
+			"dedicated_host_cluster_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"http_endpoint": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"instance_pattern_info": {
 				Optional: true,
 				Type:     schema.TypeSet,
@@ -466,6 +474,46 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						},
 						"max_price": {
 							Type:     schema.TypeFloat,
+							Optional: true,
+						},
+						"minimum_cpu_core_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"maximum_cpu_core_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"minimum_memory_size": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+						},
+						"maximum_memory_size": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+						},
+						"minimum_eni_quantity": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"minimum_eni_private_ip_address_quantity": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"minimum_eni_ipv6_address_quantity": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"minimum_baseline_credit": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"minimum_gpu_amount": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"maximum_gpu_amount": {
+							Type:     schema.TypeInt,
 							Optional: true,
 						},
 					},
@@ -630,7 +678,12 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("spot_strategy"); ok && v.(string) != "" {
 		request["SpotStrategy"] = v
 	}
-
+	if v, ok := d.GetOk("dedicated_host_cluster_id"); ok && v.(string) != "" {
+		request["DedicatedHostClusterId"] = v
+	}
+	if v, ok := d.GetOk("http_endpoint"); ok && v.(string) != "" {
+		request["HttpEndpoint"] = v
+	}
 	if v, ok := d.GetOk("user_data"); ok {
 		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
 		if base64DecodeError == nil {
@@ -714,11 +767,46 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			if burstablePerformance, ok := item["burstable_performance"].(string); ok && burstablePerformance != "" {
 				instancePatternInfosMap["BurstablePerformance"] = burstablePerformance
 			}
-			instancePatternInfosMap["Memory"] = strconv.FormatFloat(item["memory"].(float64), 'f', 2, 64)
+			if item["memory"].(float64) != 0 {
+				instancePatternInfosMap["Memory"] = strconv.FormatFloat(item["memory"].(float64), 'f', 2, 64)
+			}
 			if item["max_price"].(float64) != 0 {
 				instancePatternInfosMap["MaxPrice"] = strconv.FormatFloat(item["max_price"].(float64), 'f', 2, 64)
 			}
-			instancePatternInfosMap["Cores"] = item["cores"].(int)
+			if item["cores"] != 0 {
+				instancePatternInfosMap["Cores"] = item["cores"].(int)
+			}
+			if item["minimum_cpu_core_count"] != 0 {
+				instancePatternInfosMap["MinimumCpuCoreCount"] = item["minimum_cpu_core_count"].(int)
+			}
+			if item["minimum_memory_size"] != 0 {
+				instancePatternInfosMap["MinimumMemorySize"] = strconv.FormatFloat(item["minimum_memory_size"].(float64), 'f', 2, 64)
+			}
+			if item["maximum_memory_size"] != 0 {
+				instancePatternInfosMap["MaximumMemorySize"] = strconv.FormatFloat(item["maximum_memory_size"].(float64), 'f', 2, 64)
+			}
+			if item["minimum_eni_quantity"] != 0 {
+				instancePatternInfosMap["MinimumEniQuantity"] = item["minimum_eni_quantity"].(int)
+			}
+			if item["minimum_eni_private_ip_address_quantity"] != 0 {
+				instancePatternInfosMap["MinimumEniPrivateIpAddressQuantity"] = item["minimum_eni_private_ip_address_quantity"].(int)
+			}
+			if item["minimum_eni_ipv6_address_quantity"] != 0 {
+				instancePatternInfosMap["MinimumEniIpv6AddressQuantity"] = item["minimum_eni_ipv6_address_quantity"].(int)
+			}
+			if item["minimum_baseline_credit"] != 0 {
+				instancePatternInfosMap["MinimumBaselineCredit"] = item["minimum_baseline_credit"].(int)
+			}
+			if item["minimum_gpu_amount"] != 0 {
+				instancePatternInfosMap["MinimumGpuAmount"] = item["minimum_gpu_amount"].(int)
+			}
+			if item["maximum_gpu_amount"] != 0 {
+				instancePatternInfosMap["MaximumGpuAmount"] = item["maximum_gpu_amount"].(int)
+			}
+
+			if item["maximum_cpu_core_count"] != 0 {
+				instancePatternInfosMap["MaximumCpuCoreCount"] = item["maximum_cpu_core_count"].(int)
+			}
 			instancePatternInfosMap["Architectures"] = item["architectures"]
 			instancePatternInfosMap["ExcludedInstanceTypes"] = item["excluded_instance_types"]
 
@@ -971,6 +1059,16 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		update = true
 	}
 
+	if d.HasChange("dedicated_host_cluster_id") {
+		request["DedicatedHostClusterId"] = d.Get("dedicated_host_cluster_id")
+		update = true
+	}
+
+	if d.HasChange("http_endpoint") {
+		request["HttpEndpoint"] = d.Get("http_endpoint")
+		update = true
+	}
+
 	hasChangeInstanceType := d.HasChange("instance_type")
 	hasChangeInstanceTypes := d.HasChange("instance_types")
 	hasChangeInstanceTypeOverrides := d.HasChange("instance_type_override")
@@ -1109,12 +1207,48 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				architectures := toStringArray(architecturesFormat)
 				instancePatternInfo := map[string]interface{}{
 					"InstanceFamilyLevel":  pack["instance_family_level"].(string),
-					"Memory":               strconv.FormatFloat(pack["memory"].(float64), 'f', 2, 64),
-					"Cores":                strconv.Itoa(pack["cores"].(int)),
 					"BurstablePerformance": pack["burstable_performance"].(string),
 					"ExcludedInstanceType": &excludedInstancezTypes,
 					"Architecture":         &architectures,
 				}
+				if pack["memory"].(float64) != 0 {
+					instancePatternInfo["Memory"] = strconv.FormatFloat(pack["memory"].(float64), 'f', 2, 64)
+				}
+				if pack["cores"] != 0 {
+					instancePatternInfo["Cores"] = strconv.Itoa(pack["cores"].(int))
+				}
+				if pack["minimum_cpu_core_count"] != 0 {
+					instancePatternInfo["MinimumCpuCoreCount"] = strconv.Itoa(pack["minimum_cpu_core_count"].(int))
+				}
+				if pack["minimum_memory_size"].(float64) != 0 {
+					instancePatternInfo["MinimumMemorySize"] = strconv.FormatFloat(pack["minimum_memory_size"].(float64), 'f', 2, 64)
+				}
+				if pack["maximum_memory_size"].(float64) != 0 {
+					instancePatternInfo["MaximumMemorySize"] = strconv.FormatFloat(pack["maximum_memory_size"].(float64), 'f', 2, 64)
+				}
+				if pack["minimum_eni_quantity"] != 0 {
+					instancePatternInfo["MinimumEniQuantity"] = pack["minimum_eni_quantity"].(int)
+				}
+				if pack["minimum_eni_private_ip_address_quantity"] != 0 {
+					instancePatternInfo["MinimumEniPrivateIpAddressQuantity"] = pack["minimum_eni_private_ip_address_quantity"].(int)
+				}
+				if pack["minimum_eni_ipv6_address_quantity"] != 0 {
+					instancePatternInfo["MinimumEniIpv6AddressQuantity"] = pack["minimum_eni_ipv6_address_quantity"].(int)
+				}
+				if pack["minimum_baseline_credit"] != 0 {
+					instancePatternInfo["MinimumBaselineCredit"] = pack["minimum_baseline_credit"].(int)
+				}
+				if pack["minimum_gpu_amount"] != 0 {
+					instancePatternInfo["MinimumGpuAmount"] = pack["minimum_gpu_amount"].(int)
+				}
+				if pack["maximum_gpu_amount"] != 0 {
+					instancePatternInfo["MaximumGpuAmount"] = pack["maximum_gpu_amount"].(int)
+				}
+
+				if pack["maximum_cpu_core_count"] != 0 {
+					instancePatternInfo["MaximumCpuCoreCount"] = strconv.Itoa(pack["maximum_cpu_core_count"].(int))
+				}
+
 				if pack["max_price"].(float64) != 0 {
 					instancePatternInfo["MaxPrice"] = strconv.FormatFloat(pack["max_price"].(float64), 'f', 2, 64)
 				}
@@ -1338,6 +1472,8 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 
 	d.Set("host_name", response["HostName"])
 	d.Set("spot_strategy", response["SpotStrategy"])
+	d.Set("dedicated_host_cluster_id", response["DedicatedHostClusterId"])
+	d.Set("http_endpoint", response["HttpEndpoint"])
 
 	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
 		d.Set("security_group_id", response["SecurityGroupId"])
@@ -1446,11 +1582,45 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			}
 			l := map[string]interface{}{
 				"instance_family_level":   r["InstanceFamilyLevel"],
-				"memory":                  r["Memory"],
-				"cores":                   r["Cores"],
 				"excluded_instance_types": &arr,
 				"architectures":           &arr1,
 				"burstable_performance":   r["BurstablePerformance"],
+			}
+			if r["Memory"] != nil {
+				l["memory"] = r["Memory"]
+			}
+			if r["MinimumEniQuantity"] != nil {
+				l["minimum_eni_quantity"] = r["MinimumEniQuantity"]
+			}
+			if r["MinimumEniPrivateIpAddressQuantity"] != nil {
+				l["minimum_eni_private_ip_address_quantity"] = r["MinimumEniPrivateIpAddressQuantity"]
+			}
+			if r["MinimumEniIpv6AddressQuantity"] != nil {
+				l["minimum_eni_ipv6_address_quantity"] = r["MinimumEniIpv6AddressQuantity"]
+			}
+			if r["MinimumBaselineCredit"] != nil {
+				l["minimum_baseline_credit"] = r["MinimumBaselineCredit"]
+			}
+			if r["MinimumGpuAmount"] != nil {
+				l["minimum_gpu_amount"] = r["MinimumGpuAmount"]
+			}
+			if r["MaximumGpuAmount"] != nil {
+				l["maximum_gpu_amount"] = r["MaximumGpuAmount"]
+			}
+			if r["Cores"] != nil {
+				l["cores"] = r["Cores"]
+			}
+			if r["MinimumCpuCoreCount"] != nil {
+				l["minimum_cpu_core_count"] = r["MinimumCpuCoreCount"]
+			}
+			if r["MinimumMemorySize"] != nil {
+				l["minimum_memory_size"] = r["MinimumMemorySize"]
+			}
+			if r["MaximumMemorySize"] != nil {
+				l["maximum_memory_size"] = r["MaximumMemorySize"]
+			}
+			if r["MaximumCpuCoreCount"] != nil {
+				l["maximum_cpu_core_count"] = r["MaximumCpuCoreCount"]
 			}
 			if r["MaxPrice"] != nil {
 				f, _ := r["MaxPrice"].(json.Number).Float64()
