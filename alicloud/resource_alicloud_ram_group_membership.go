@@ -100,8 +100,11 @@ func resourceAlicloudRamGroupMembershipRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 	var users []string
+	localUsers := expandStringList(d.Get("user_names").(*schema.Set).List())
 	for _, v := range object.Users.User {
-		users = append(users, v.UserName)
+		if InArray(v.UserName, localUsers) {
+			users = append(users, v.UserName)
+		}
 	}
 	d.Set("group_name", d.Id())
 	if err := d.Set("user_names", users); err != nil {
