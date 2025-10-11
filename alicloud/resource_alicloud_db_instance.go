@@ -1911,7 +1911,12 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("create_time", instance["CreationTime"])
 	d.Set("bursting_enabled", instance["BurstingEnabled"])
 	d.Set("pg_bouncer_enabled", instance["PGBouncerEnabled"])
-	d.Set("optimized_writes", ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(instance["OptimizedWritesInfo"])))
+	if v, ok := instance["OptimizedWritesInfo"]; ok {
+		value := ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(v))
+		if value != "" {
+			d.Set("optimized_writes", value)
+		}
+	}
 	if val, exists := instance["ColdDataEnabled"]; exists && val != nil {
 		d.Set("cold_data_enabled", val)
 	}
@@ -2420,11 +2425,18 @@ func getDifference(a, b map[int]struct{}) []int {
 }
 
 func ConvertMySQLInstanceOptimizedWritesResponse(source string) string {
+	if source == "nil" {
+		return ""
+	}
+
 	switch source {
 	case "{\"optimized_writes\":true,\"init_optimized_writes\":true}":
 		return "optimized"
 	case "{\"optimized_writes\":false,\"init_optimized_writes\":true}":
 		return "none"
+	case "{\"optimized_writes\":false,\"init_optimized_writes\":false}":
+		return ""
+	default:
+		return source
 	}
-	return source
 }
