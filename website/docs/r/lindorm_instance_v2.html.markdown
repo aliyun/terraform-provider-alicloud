@@ -20,12 +20,6 @@ For information about Lindorm Instance V2 and how to use it, see [What is Instan
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_lindorm_instance_v2&exampleId=d2762c8c-d82c-ab36-d8ef-df45a4da3186e90fe9b5&activeTab=example&spm=docs.r.lindorm_instance_v2.0.d2762c8cd8&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -104,7 +98,7 @@ The following arguments are supported:
 > - PerformanceStorage: performance-based cloud storage
 >- capacity storage: Capacity-based cloud storage
 * `deletion_protection` - (Optional, Computed) Whether to enable deletion protection
-* `engine_list` - (Required, List) Engine List See [`engine_list`](#engine_list) below.
+* `engine_list` - (Required, Set) Engine List See [`engine_list`](#engine_list) below.
 * `instance_alias` - (Required) Instance name
 * `payment_type` - (Required, ForceNew) The payment type of the resource
 * `primary_vswitch_id` - (Optional, ForceNew) Primary zone VswitchId
@@ -119,7 +113,7 @@ The following arguments are supported:
 
 The engine_list supports the following:
 * `engine_type` - (Required, ForceNew) Engine
-* `node_group` - (Optional, List) Node Group List See [`node_group`](#engine_list-node_group) below.
+* `node_group` - (Optional, Set) Node Group List See [`node_group`](#engine_list-node_group) below.
 
 ### `engine_list-node_group`
 

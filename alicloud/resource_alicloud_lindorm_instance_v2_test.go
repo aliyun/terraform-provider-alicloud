@@ -332,13 +332,13 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 						},
 					},
 					"instance_alias":      "preTest-cx",
-					"deletion_protection": "true",
+					"deletion_protection": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_list.#":       "1",
 						"instance_alias":      "preTest-cx",
-						"deletion_protection": "true",
+						"deletion_protection": "false",
 					}),
 				),
 			},
@@ -366,6 +366,16 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 						"engine_list.#":       "1",
 						"instance_alias":      "preTest-cx",
 						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
 					}),
 				),
 			},
