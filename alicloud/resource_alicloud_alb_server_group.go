@@ -635,34 +635,46 @@ func resourceAliCloudAlbServerGroupRead(d *schema.ResourceData, meta interface{}
 		return err
 	}
 
-	objectRaw, err = albServiceV2.DescribeServerGroupListServerGroupServers(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	serversRaw := make([]interface{}, 0)
+	nextToken := ""
+	for {
+		objectRaw, err = albServiceV2.DescribeServerGroupListServerGroupServers(d.Id(), nextToken)
+		if err != nil && !NotFoundError(err) {
+			return WrapError(err)
+		}
+
+		serversRawChunk, _ := jsonpath.Get("$.Servers", objectRaw)
+		if serversRawChunk != nil {
+			serversRaw = append(serversRaw, serversRawChunk.([]interface{})...)
+		}
+
+		nextTokenChunk, _ := jsonpath.Get("$.NextToken", objectRaw)
+		if nextTokenChunk == nil {
+			break
+		} else {
+			nextToken = nextTokenChunk.(string)
+		}
 	}
 
-	serversRaw, _ := jsonpath.Get("$.Servers", objectRaw)
-
 	serversMaps := make([]map[string]interface{}, 0)
-	if serversRaw != nil {
-		for _, serversChildRaw := range serversRaw.([]interface{}) {
-			serversMap := make(map[string]interface{})
-			serversChildRaw := serversChildRaw.(map[string]interface{})
-			serversMap["description"] = serversChildRaw["Description"]
-			serversMap["remote_ip_enabled"] = serversChildRaw["RemoteIpEnabled"]
-			serversMap["server_group_id"] = serversChildRaw["ServerGroupId"]
-			serversMap["server_id"] = serversChildRaw["ServerId"]
+	for _, serversChildRaw := range serversRaw {
+		serversMap := make(map[string]interface{})
+		serversChildRaw := serversChildRaw.(map[string]interface{})
+		serversMap["description"] = serversChildRaw["Description"]
+		serversMap["remote_ip_enabled"] = serversChildRaw["RemoteIpEnabled"]
+		serversMap["server_group_id"] = serversChildRaw["ServerGroupId"]
+		serversMap["server_id"] = serversChildRaw["ServerId"]
+		serversMap["server_ip"] = serversChildRaw["ServerIp"]
+		serversMap["server_type"] = serversChildRaw["ServerType"]
+		serversMap["status"] = serversChildRaw["Status"]
+
+		if fmt.Sprint(serversChildRaw["ServerType"]) != "Fc" {
+			serversMap["port"] = serversChildRaw["Port"]
+			serversMap["weight"] = serversChildRaw["Weight"]
 			serversMap["server_ip"] = serversChildRaw["ServerIp"]
-			serversMap["server_type"] = serversChildRaw["ServerType"]
-			serversMap["status"] = serversChildRaw["Status"]
-
-			if fmt.Sprint(serversChildRaw["ServerType"]) != "Fc" {
-				serversMap["port"] = serversChildRaw["Port"]
-				serversMap["weight"] = serversChildRaw["Weight"]
-				serversMap["server_ip"] = serversChildRaw["ServerIp"]
-			}
-
-			serversMaps = append(serversMaps, serversMap)
 		}
+
+		serversMaps = append(serversMaps, serversMap)
 	}
 	if err := d.Set("servers", serversMaps); err != nil {
 		return err
