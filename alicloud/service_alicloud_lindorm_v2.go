@@ -156,8 +156,12 @@ func (s *LindormServiceV2) DescribeLindormInstanceV2(id string) (object map[stri
 }
 
 func (s *LindormServiceV2) LindormInstanceV2StateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.LindormInstanceV2StateRefreshFuncWithApi(id, field, failStates, s.DescribeLindormInstanceV2)
+}
+
+func (s *LindormServiceV2) LindormInstanceV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeLindormInstanceV2(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil, "", nil

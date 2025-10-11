@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -59,7 +60,7 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 				Computed: true,
 			},
 			"engine_list": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -77,7 +78,7 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 							ForceNew: true,
 						},
 						"connect_address_list": {
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -101,7 +102,7 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 							Computed: true,
 						},
 						"node_group": {
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -224,12 +225,12 @@ func resourceAliCloudLindormInstanceV2Create(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("engine_list"); ok {
 		engineListMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			localMaps := make([]interface{}, 0)
 			localData1 := dataLoopTmp["node_group"]
-			for _, dataLoop1 := range localData1.([]interface{}) {
+			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
 				dataLoop1Tmp := dataLoop1.(map[string]interface{})
 				dataLoop1Map := make(map[string]interface{})
 				dataLoop1Map["ResourceGroupName"] = dataLoop1Tmp["resource_group_name"]
@@ -344,7 +345,7 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 	engineListRaw := objectRaw["EngineList"]
 	engineListMaps := make([]map[string]interface{}, 0)
 	if engineListRaw != nil {
-		for _, engineListChildRaw := range engineListRaw.([]interface{}) {
+		for _, engineListChildRaw := range convertToInterfaceArray(engineListRaw) {
 			engineListMap := make(map[string]interface{})
 			engineListChildRaw := engineListChildRaw.(map[string]interface{})
 			engineListMap["engine_type"] = engineListChildRaw["Engine"]
@@ -355,7 +356,7 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 			connectAddressListRaw := engineListChildRaw["ConnectAddressList"]
 			connectAddressListMaps := make([]map[string]interface{}, 0)
 			if connectAddressListRaw != nil {
-				for _, connectAddressListChildRaw := range connectAddressListRaw.([]interface{}) {
+				for _, connectAddressListChildRaw := range convertToInterfaceArray(connectAddressListRaw) {
 					connectAddressListMap := make(map[string]interface{})
 					connectAddressListChildRaw := connectAddressListChildRaw.(map[string]interface{})
 					connectAddressListMap["address"] = connectAddressListChildRaw["Address"]
@@ -369,7 +370,7 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 			nodeGroupRaw := engineListChildRaw["NodeGroup"]
 			nodeGroupMaps := make([]map[string]interface{}, 0)
 			if nodeGroupRaw != nil {
-				for _, nodeGroupChildRaw := range nodeGroupRaw.([]interface{}) {
+				for _, nodeGroupChildRaw := range convertToInterfaceArray(nodeGroupRaw) {
 					nodeGroupMap := make(map[string]interface{})
 					nodeGroupChildRaw := nodeGroupChildRaw.(map[string]interface{})
 					nodeGroupMap["category"] = nodeGroupChildRaw["Category"]
@@ -451,12 +452,12 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 	}
 	if v, ok := d.GetOk("engine_list"); ok || d.HasChange("engine_list") {
 		engineListMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			localMaps := make([]interface{}, 0)
 			localData1 := dataLoopTmp["node_group"]
-			for _, dataLoop1 := range localData1.([]interface{}) {
+			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
 				dataLoop1Tmp := dataLoop1.(map[string]interface{})
 				dataLoop1Map := make(map[string]interface{})
 				dataLoop1Map["NodeDiskSize"] = dataLoop1Tmp["node_disk_size"]
