@@ -135,6 +135,10 @@ func resourceAlicloudLogETL() *schema.Resource {
 				Optional: true,
 				Default:  sls.ETLVersion,
 			},
+			"lang": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"logstore": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -199,6 +203,13 @@ func resourceAlicloudLogETL() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							Default:  sls.ETLSinksType,
+						},
+						"datasets": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
 						},
 					},
 				},
@@ -282,6 +293,7 @@ func resourceAlicloudLogETLRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("logstore", etl.Configuration.Logstore)
 	d.Set("parameters", etl.Configuration.Parameters)
 	d.Set("role_arn", etl.Configuration.RoleArn)
+	d.Set("lang", etl.Configuration.Lang)
 
 	var etl_sinks []map[string]interface{}
 	for _, etl_sink := range etl.Configuration.ETLSinks {
@@ -294,6 +306,7 @@ func resourceAlicloudLogETLRead(d *schema.ResourceData, meta interface{}) error 
 			"logstore":          etl_sink.Logstore,
 			"role_arn":          etl_sink.RoleArn,
 			"type":              etl_sink.Type,
+			"datasets":          etl_sink.DataSets,
 		}
 		etl_sinks = append(etl_sinks, temp)
 	}
@@ -446,6 +459,7 @@ func getETLJob(d *schema.ResourceData, meta interface{}) (sls.ETL, error) {
 		Script:     d.Get("script").(string),
 		ToTime:     int32(d.Get("to_time").(int)),
 		Version:    int8(d.Get("version").(int)),
+		Lang:       d.Get("lang").(string),
 	}
 	for _, f := range d.Get("etl_sinks").(*schema.Set).List() {
 		v := f.(map[string]interface{})
@@ -456,6 +470,17 @@ func getETLJob(d *schema.ResourceData, meta interface{}) (sls.ETL, error) {
 			Type:     v["type"].(string),
 			Logstore: v["logstore"].(string),
 		}
+
+		// Handle datasets field
+		if datasets, ok := v["datasets"]; ok {
+			datasetList := datasets.([]interface{})
+			stringDatasets := make([]string, len(datasetList))
+			for i, dataset := range datasetList {
+				stringDatasets[i] = dataset.(string)
+			}
+			sink.DataSets = stringDatasets
+		}
+
 		sinkResult, err := permissionParameterCheck(v, client, d)
 		if err != nil {
 			return etlJob, WrapError(err)
