@@ -158,11 +158,11 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQos(id string) (o
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeExpressConnectTrafficQos"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["QosIdList.1"] = id
-	query["RegionId"] = client.RegionId
+	request["RegionId"] = client.RegionId
+	action := "DescribeExpressConnectTrafficQos"
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -177,11 +177,10 @@ func (s *ExpressConnectServiceV2) DescribeExpressConnectTrafficQos(id string) (o
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -209,6 +208,13 @@ func (s *ExpressConnectServiceV2) ExpressConnectTrafficQosStateRefreshFunc(id st
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
@@ -752,3 +758,89 @@ func (s *ExpressConnectServiceV2) ExpressConnectBgpNetworkStateRefreshFunc(id st
 }
 
 // DescribeExpressConnectBgpNetwork >>> Encapsulated.
+
+// SetResourceTags <<< Encapsulated tag function for ExpressConnect.
+func (s *ExpressConnectServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+	if d.HasChange("tags") {
+		var action string
+		var err error
+		client := s.client
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+
+		added, removed := parsingTags(d)
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action = "UntagResourcesForExpressConnect"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+
+			request["ResourceType"] = resourceType
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added) > 0 {
+			action = "TagResourcesForExpressConnect"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceId.1"] = d.Id()
+			request["RegionId"] = client.RegionId
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
+			request["ResourceType"] = resourceType
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+	}
+
+	return nil
+}
+
+// SetResourceTags >>> tag function encapsulated.
