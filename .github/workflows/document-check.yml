@@ -23,6 +23,7 @@ jobs:
           use-verbose-mode: 'yes'
           folder-path: "website/docs"
           file-extension: '.md'
+          config-file: '.markdown-link-check.json'
 
   markdown-lint:
     runs-on: ubuntu-latest
