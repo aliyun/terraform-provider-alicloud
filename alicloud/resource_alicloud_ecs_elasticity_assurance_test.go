@@ -11,43 +11,46 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudEcsElasticityAssurance_basic1716(t *testing.T) {
+func TestAccAliCloudEcsElasticityAssurance_basic1716(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_elasticity_assurance.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsElasticityAssuranceMap1716)
+	ra := resourceAttrInit(resourceId, AliCloudEcsElasticityAssuranceMap1716)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsElasticityAssurance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sEcsElasticityAssurance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsElasticityAssuranceBasicDependence1716)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsElasticityAssuranceBasicDependence1716)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_amount":                     "1",
 					"description":                         "before",
-					"zone_ids":                            []string{"${data.alicloud_zones.default.zones[0].id}"},
-					"private_pool_options_name":           "test_before",
+					"zone_ids":                            []string{"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"},
+					"private_pool_options_name":           name,
 					"period":                              "1",
 					"private_pool_options_match_criteria": "Open",
 					"instance_type":                       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"period_unit":                         "Month",
+					"auto_renew":                          "true",
+					"auto_renew_period":                   "2",
+					"auto_renew_period_unit":              "Year",
 					"assurance_times":                     "Unlimited",
 					"start_time":                          time.Now().Add(1 * time.Hour).Format("2006-01-02T15:04:05Z"),
-					"resource_group_id":                   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"resource_group_id":                   "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"tags": map[string]string{
-						"Created": "tfTestAcc0",
-						"For":     "Tftestacc 0",
+						"Created": "TF",
+						"For":     "Test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -55,15 +58,20 @@ func TestAccAlicloudEcsElasticityAssurance_basic1716(t *testing.T) {
 						"instance_amount":                     "1",
 						"description":                         "before",
 						"zone_ids.#":                          "1",
-						"private_pool_options_name":           "test_before",
+						"private_pool_options_name":           name,
 						"period":                              "1",
 						"private_pool_options_match_criteria": "Open",
 						"instance_type.#":                     "1",
 						"period_unit":                         "Month",
+						"auto_renew":                          "true",
+						"auto_renew_period":                   "2",
+						"auto_renew_period_unit":              "Year",
 						"assurance_times":                     "Unlimited",
 						"start_time":                          CHECKSET,
 						"resource_group_id":                   CHECKSET,
 						"tags.%":                              "2",
+						"tags.Created":                        "TF",
+						"tags.For":                            "Test",
 					}),
 				),
 			},
@@ -77,61 +85,53 @@ func TestAccAlicloudEcsElasticityAssurance_basic1716(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsElasticityAssurance_basic1717(t *testing.T) {
+func TestAccAliCloudEcsElasticityAssurance_basic1717(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_elasticity_assurance.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsElasticityAssuranceMap1716)
+	ra := resourceAttrInit(resourceId, AliCloudEcsElasticityAssuranceMap1716)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsElasticityAssurance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sEcsElasticityAssurance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsElasticityAssuranceBasicDependence1716)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsElasticityAssuranceBasicDependence1716)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_ids":        []string{"${data.alicloud_zones.default.zones[0].id}"},
-					"instance_type":   []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"instance_amount": "1",
+					"zone_ids":          []string{"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"},
+					"instance_type":     []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"instance_amount":   "1",
+					"auto_renew":        "true",
+					"auto_renew_period": "1",
+					"period_unit":       "Month",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_ids.#":      "1",
-						"instance_type.#": "1",
-						"instance_amount": "1",
+						"zone_ids.#":        "1",
+						"instance_type.#":   "1",
+						"instance_amount":   "1",
+						"auto_renew":        "true",
+						"auto_renew_period": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "tfTestAcc1",
-						"For":     "Tftestacc 1",
-					},
+					"private_pool_options_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"private_pool_options_name": "test_after_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"private_pool_options_name": "test_after_update",
+						"private_pool_options_name": name,
 					}),
 				),
 			},
@@ -147,21 +147,77 @@ func TestAccAlicloudEcsElasticityAssurance_basic1717(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_amount":                     "1",
-					"description":                         "after",
-					"private_pool_options_name":           "test_after",
-					"period":                              "2",
-					"private_pool_options_match_criteria": "Open",
-					"instance_type":                       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"instance_amount": "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_amount":                     "1",
-						"description":                         "after",
-						"private_pool_options_name":           "test_after",
-						"period":                              "2",
-						"private_pool_options_match_criteria": "Open",
-						"instance_type.#":                     "1",
+						"instance_amount": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew":             "true",
+					"auto_renew_period":      "2",
+					"auto_renew_period_unit": "Year",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew":             "true",
+						"auto_renew_period":      "2",
+						"auto_renew_period_unit": "Year",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -175,9 +231,9 @@ func TestAccAlicloudEcsElasticityAssurance_basic1717(t *testing.T) {
 	})
 }
 
-var AlicloudEcsElasticityAssuranceMap1716 = map[string]string{}
+var AliCloudEcsElasticityAssuranceMap1716 = map[string]string{}
 
-func AlicloudEcsElasticityAssuranceBasicDependence1716(name string) string {
+func AliCloudEcsElasticityAssuranceBasicDependence1716(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -190,10 +246,5 @@ data "alicloud_resource_manager_resource_groups" "default"{
 data "alicloud_instance_types" "default" {
 	instance_type_family = "ecs.c6"
 }
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "Instance"
-}
-
 `, name)
 }
