@@ -14,7 +14,7 @@ which is widely applicable to scenarios such as data regularization, enrichment,
 [Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/125384.htm).
 
 -> **NOTE:** This resource is no longer maintained. It is recommended to use the new resource alicloud_sls_etl.
-[Refer to details](https://help.aliyun.com/zh/terraform/alicloud-sls-etl).
+[Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/125384.htm).
 
 -> **NOTE:** Available since v1.120.0.
 
@@ -110,12 +110,13 @@ The following arguments are supported:
 * `status` - (Optional) Log project tags. the default value is RUNNING, Only 4 values are supported: `STARTING`，`RUNNING`，`STOPPING`，`STOPPED`.
 * `create_time` - (Optional) The etl job create time.
 * `last_modified_time` - (Optional) ETL job last modified time.
-* `access_key_id` - (Optional,Sensitive) Source logstore access key id.
+* `access_key_id` - (Optional, Sensitive, Available since v1.261.0) Source logstore access key id.
 * `kms_encrypted_access_key_id` - (Optional) An KMS encrypts access key id used to a log etl job. If the `access_key_id` is filled in, this field will be ignored.
 * `kms_encryption_access_key_id_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_access_key_id` before creating or updating an instance with `kms_encrypted_access_key_id`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set. When it is changed, the instance will reboot to make the change take effect.
-* `access_key_secret` - (Optional,Sensitive) Source logstore access key secret.
+* `access_key_secret` - (Optional, Sensitive, Available since v1.261.0) Source logstore access key secret.
 * `kms_encrypted_access_key_secret` - (Optional) An KMS encrypts access key secret used to a log etl job. If the `access_key_secret` is filled in, this field will be ignored.
 * `kms_encryption_access_key_secret_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_access_key_secret` before creating or updating an instance with `kms_encrypted_access_key_secret`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set. When it is changed, the instance will reboot to make the change take effect.
+* `lang` - (Optional, Available since v1.261.0) The language of the etl job.
 
 * `from_time` - (Optional) The start time of the processing job, if not set the value is 0, indicates to start processing from the oldest data.
 * `to_time` - (Optional) Deadline of processing job, if not set the value is 0, indicates that new data will be processed continuously.
@@ -124,17 +125,23 @@ The following arguments are supported:
 * `logstore` - (Required) The source logstore of the processing job.
 * `parameters` - (Optional) Advanced parameter configuration of processing operations.
 * `role_arn` - (Optional) Sts role info under source logstore. `role_arn` and `(access_key_id, access_key_secret)` fill in at most one. If you do not fill in both, then you must fill in `(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context)` to use KMS to get the key pair.
-* `etl_sinks` - (Required) Target logstore configuration for delivery after data processing.
-    * `access_key_id` - (Optional,Sensitive) Delivery target logstore access key id.
-    * `kms_encrypted_access_key_id` - (Optional) An KMS encrypts access key id used to a log etl job. If the `access_key_id` is filled in, this field will be ignored.
-    * `access_key_secret`- (Optional,Sensitive) Delivery target logstore access key secret.
-    * `kms_encrypted_access_key_secret` - (Optional) An KMS encrypts access key secret used to a log etl job. If the `access_key_secret` is filled in, this field will be ignored.
-    * `endpoint` - (Required) Delivery target logstore region.
-    * `name` - (Required) Delivery target name.
-    * `project` - (Required) The project where the target logstore is delivered.
-    * `logstore` - (Required) Delivery target logstore.
-    * `role_arn` - (Optional) Sts role info under delivery target logstore. `role_arn` and `(access_key_id, access_key_secret)` fill in at most one. If you do not fill in both, then you must fill in `(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context)` to use KMS to get the key pair.
-    * `type` - (Optional)  ETL sinks type, the default value is AliyunLOG.
+* `etl_sinks` - (Required) Target logstore configuration for delivery after data processing. See [`etl_sinks`](#etl_sinks) below.
+
+
+### `etl_sinks`
+
+The etl_sinks supports the following:
+* `access_key_id` - (Optional, Sensitive) Delivery target logstore access key id.
+* `kms_encrypted_access_key_id` - (Optional) An KMS encrypts access key id used to a log etl job. If the `access_key_id` is filled in, this field will be ignored.
+* `access_key_secret` - (Optional, Sensitive) Delivery target logstore access key secret.
+* `kms_encrypted_access_key_secret` - (Optional) An KMS encrypts access key secret used to a log etl job. If the `access_key_secret` is filled in, this field will be ignored.
+* `endpoint` - (Required) Delivery target logstore region.
+* `name` - (Required) Delivery target name.
+* `project` - (Required) The project where the target logstore is delivered.
+* `logstore` - (Required) Delivery target logstore.
+* `role_arn` - (Optional) Sts role info under delivery target logstore. `role_arn` and `(access_key_id, access_key_secret)` fill in at most one. If you do not fill in both, then you must fill in `(kms_encrypted_access_key_id, kms_encrypted_access_key_secret)` to use KMS to get the key pair.
+* `type` - (Optional)  ETL sinks type, the default value is AliyunLOG.
+* `datasets` - (Optional, Available since v1.261.0) LogETL datasets.
     
 -> **Note:** `from_time` and `to_time` no modification allowed after successful creation.
 
