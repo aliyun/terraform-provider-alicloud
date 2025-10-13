@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of available zones by the enhanced Nat Gateway.
 
--> **NOTE:** Available since 1.102.0+.
+-> **NOTE:** Available since v1.102.0.
 
 ## Example Usage
 
@@ -28,14 +28,13 @@ output "zones" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of alarm IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - (Optional) A list of available zones IDs by the enhanced NAT gateway.
+* `ids` - A list of available zones IDs by the enhanced NAT gateway.
 * `zones` - A list of available zones. Each element contains the following attributes:
   * `zone_id` - The ID of the available zone.
   * `local_name` - Name of the available zone.
