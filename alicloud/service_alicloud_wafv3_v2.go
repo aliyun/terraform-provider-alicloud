@@ -381,15 +381,18 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseRule(id string) (object map[string]
 }
 
 func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.Wafv3DefenseRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeWafv3DefenseRule)
+}
+
+func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeWafv3DefenseRule(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

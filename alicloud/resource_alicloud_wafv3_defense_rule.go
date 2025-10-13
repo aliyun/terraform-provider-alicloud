@@ -303,41 +303,40 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 
 	if v := d.Get("config"); !IsNil(v) {
 		ratelimit := make(map[string]interface{})
-		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", v)
+		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", d.Get("config"))
 		if threshold1 != nil && threshold1 != "" {
 			ratelimit["threshold"] = threshold1
 		}
 		status := make(map[string]interface{})
-		code1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].code", v)
+		code1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].code", d.Get("config"))
 		if code1 != nil && code1 != "" {
 			status["code"] = code1
 		}
-		count1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].count", v)
+		count1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].count", d.Get("config"))
 		if count1 != nil && count1 != "" && count1.(int) > 0 {
 			status["count"] = count1
 		}
-		ratio1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].ratio", v)
+		ratio1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].ratio", d.Get("config"))
 		if ratio1 != nil && ratio1 != "" && ratio1.(int) > 0 {
 			status["ratio"] = ratio1
 		}
 
-		statusRaw, _ := jsonpath.Get("$[0].rate_limit[0].status", v)
-		if statusRaw != nil {
+		if len(status) > 0 {
 			ratelimit["status"] = status
 		}
-		interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", v)
+		interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
 		if interval1 != nil && interval1 != "" && interval1.(int) > 0 {
 			ratelimit["interval"] = interval1
 		}
-		ttl1, _ := jsonpath.Get("$[0].rate_limit[0].ttl", v)
+		ttl1, _ := jsonpath.Get("$[0].rate_limit[0].ttl", d.Get("config"))
 		if ttl1 != nil && ttl1 != "" && ttl1.(int) > 0 {
 			ratelimit["ttl"] = ttl1
 		}
-		target1, _ := jsonpath.Get("$[0].rate_limit[0].target", v)
+		target1, _ := jsonpath.Get("$[0].rate_limit[0].target", d.Get("config"))
 		if target1 != nil && target1 != "" {
 			ratelimit["target"] = target1
 		}
-		subKey1, _ := jsonpath.Get("$[0].rate_limit[0].sub_key", v)
+		subKey1, _ := jsonpath.Get("$[0].rate_limit[0].sub_key", d.Get("config"))
 		if subKey1 != nil && subKey1 != "" {
 			ratelimit["subKey"] = subKey1
 		}
@@ -361,7 +360,7 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range localData.(*schema.Set).List() {
+			for _, dataLoop := range convertToInterfaceArray(localData) {
 				dataLoopTmp := make(map[string]interface{})
 				if dataLoop != nil {
 					dataLoopTmp = dataLoop.(map[string]interface{})
@@ -396,7 +395,7 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 				localData1 = make([]interface{}, 0)
 			}
 			localMaps1 := make([]interface{}, 0)
-			for _, dataLoop1 := range localData1.(*schema.Set).List() {
+			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
 				dataLoop1Tmp := make(map[string]interface{})
 				if dataLoop1 != nil {
 					dataLoop1Tmp = dataLoop1.(map[string]interface{})
@@ -417,7 +416,7 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("config"); ok {
 		bypassRegularTypes, _ := jsonpath.Get("$[0].bypass_regular_types", v)
 		if bypassRegularTypes != nil && bypassRegularTypes != "" {
-			dataList["regularTypes"] = bypassRegularTypes.(*schema.Set).List()
+			dataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
 		}
 	}
 
@@ -463,7 +462,7 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("config"); ok {
 		bypassTags, _ := jsonpath.Get("$[0].bypass_tags", v)
 		if bypassTags != nil && bypassTags != "" {
-			dataList["tags"] = bypassTags.(*schema.Set).List()
+			dataList["tags"] = convertToInterfaceArray(bypassTags)
 		}
 	}
 
@@ -477,7 +476,7 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("config"); ok {
 		remoteAddr1, _ := jsonpath.Get("$[0].remote_addr", v)
 		if remoteAddr1 != nil && remoteAddr1 != "" {
-			dataList["remoteAddr"] = remoteAddr1.(*schema.Set).List()
+			dataList["remoteAddr"] = convertToInterfaceArray(remoteAddr1)
 		}
 	}
 
@@ -491,7 +490,7 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("config"); ok {
 		bypassRegularRules, _ := jsonpath.Get("$[0].bypass_regular_rules", v)
 		if bypassRegularRules != nil && bypassRegularRules != "" {
-			dataList["regularRules"] = bypassRegularRules.(*schema.Set).List()
+			dataList["regularRules"] = convertToInterfaceArray(bypassRegularRules)
 		}
 	}
 
@@ -581,7 +580,7 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 		accountIdentifiersRaw := configRaw["accountIdentifiers"]
 		accountIdentifiersMaps := make([]map[string]interface{}, 0)
 		if accountIdentifiersRaw != nil {
-			for _, accountIdentifiersChildRaw := range accountIdentifiersRaw.([]interface{}) {
+			for _, accountIdentifiersChildRaw := range convertToInterfaceArray(accountIdentifiersRaw) {
 				accountIdentifiersMap := make(map[string]interface{})
 				accountIdentifiersChildRaw := accountIdentifiersChildRaw.(map[string]interface{})
 				accountIdentifiersMap["decode_type"] = accountIdentifiersChildRaw["decodeType"]
@@ -596,26 +595,26 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 		configMap["account_identifiers"] = accountIdentifiersMaps
 		regularRulesRaw := make([]interface{}, 0)
 		if configRaw["regularRules"] != nil {
-			regularRulesRaw = configRaw["regularRules"].([]interface{})
+			regularRulesRaw = convertToInterfaceArray(configRaw["regularRules"])
 		}
 
 		configMap["bypass_regular_rules"] = regularRulesRaw
 		regularTypesRaw := make([]interface{}, 0)
 		if configRaw["regularTypes"] != nil {
-			regularTypesRaw = configRaw["regularTypes"].([]interface{})
+			regularTypesRaw = convertToInterfaceArray(configRaw["regularTypes"])
 		}
 
 		configMap["bypass_regular_types"] = regularTypesRaw
 		tagsRaw := make([]interface{}, 0)
 		if configRaw["tags"] != nil {
-			tagsRaw = configRaw["tags"].([]interface{})
+			tagsRaw = convertToInterfaceArray(configRaw["tags"])
 		}
 
 		configMap["bypass_tags"] = tagsRaw
 		conditionsRaw := configRaw["conditions"]
 		conditionsMaps := make([]map[string]interface{}, 0)
 		if conditionsRaw != nil {
-			for _, conditionsChildRaw := range conditionsRaw.([]interface{}) {
+			for _, conditionsChildRaw := range convertToInterfaceArray(conditionsRaw) {
 				conditionsMap := make(map[string]interface{})
 				conditionsChildRaw := conditionsChildRaw.(map[string]interface{})
 				conditionsMap["key"] = conditionsChildRaw["key"]
@@ -659,7 +658,7 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 		configMap["rate_limit"] = rateLimitMaps
 		remoteAddrRaw := make([]interface{}, 0)
 		if configRaw["remoteAddr"] != nil {
-			remoteAddrRaw = configRaw["remoteAddr"].([]interface{})
+			remoteAddrRaw = convertToInterfaceArray(configRaw["remoteAddr"])
 		}
 
 		configMap["remote_addr"] = remoteAddrRaw
@@ -696,8 +695,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	v := d.Get("config")
-	ccStatus1, _ := jsonpath.Get("$[0].cc_status", v)
+	ccStatus1, _ := jsonpath.Get("$[0].cc_status", d.Get("config"))
 	if ccStatus1 != nil && (d.HasChange("config.0.cc_status") || ccStatus1 != "") {
 		dataList["ccStatus"] = ccStatus1
 	}
@@ -707,40 +705,39 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	}
 	if v := d.Get("config"); v != nil {
 		ratelimit := make(map[string]interface{})
-		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", v)
+		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", d.Get("config"))
 		if threshold1 != nil && (d.HasChange("config.0.rate_limit.0.threshold") || threshold1 != "") {
 			ratelimit["threshold"] = threshold1
 		}
 		status := make(map[string]interface{})
-		code1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].code", v)
+		code1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].code", d.Get("config"))
 		if code1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.code") || code1 != "") {
 			status["code"] = code1
 		}
-		count1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].count", v)
+		count1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].count", d.Get("config"))
 		if count1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.count") || count1 != "") && count1.(int) > 0 {
 			status["count"] = count1
 		}
-		ratio1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].ratio", v)
+		ratio1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].ratio", d.Get("config"))
 		if ratio1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.ratio") || ratio1 != "") && ratio1.(int) > 0 {
 			status["ratio"] = ratio1
 		}
-		statusJsonNode, _ := jsonpath.Get("$[0].rate_limit[0].status", v)
-		if statusJsonNode != nil {
+		if len(status) > 0 {
 			ratelimit["status"] = status
 		}
-		interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", v)
+		interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
 		if interval1 != nil && (d.HasChange("config.0.rate_limit.0.interval") || interval1 != "") && interval1.(int) > 0 {
 			ratelimit["interval"] = interval1
 		}
-		ttl1, _ := jsonpath.Get("$[0].rate_limit[0].ttl", v)
+		ttl1, _ := jsonpath.Get("$[0].rate_limit[0].ttl", d.Get("config"))
 		if ttl1 != nil && (d.HasChange("config.0.rate_limit.0.ttl") || ttl1 != "") && ttl1.(int) > 0 {
 			ratelimit["ttl"] = ttl1
 		}
-		target1, _ := jsonpath.Get("$[0].rate_limit[0].target", v)
+		target1, _ := jsonpath.Get("$[0].rate_limit[0].target", d.Get("config"))
 		if target1 != nil && (d.HasChange("config.0.rate_limit.0.target") || target1 != "") {
 			ratelimit["target"] = target1
 		}
-		subKey1, _ := jsonpath.Get("$[0].rate_limit[0].sub_key", v)
+		subKey1, _ := jsonpath.Get("$[0].rate_limit[0].sub_key", d.Get("config"))
 		if subKey1 != nil && (d.HasChange("config.0.rate_limit.0.sub_key") || subKey1 != "") {
 			ratelimit["subKey"] = subKey1
 		}
@@ -753,7 +750,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	mode1, _ := jsonpath.Get("$[0].mode", v)
+	mode1, _ := jsonpath.Get("$[0].mode", d.Get("config"))
 	if mode1 != nil && (d.HasChange("config.0.mode") || mode1 != "") {
 		dataList["mode"] = mode1
 	}
@@ -768,7 +765,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range localData.(*schema.Set).List() {
+			for _, dataLoop := range convertToInterfaceArray(localData) {
 				dataLoopTmp := make(map[string]interface{})
 				if dataLoop != nil {
 					dataLoopTmp = dataLoop.(map[string]interface{})
@@ -788,7 +785,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	ccEffect, _ := jsonpath.Get("$[0].cc_effect", v)
+	ccEffect, _ := jsonpath.Get("$[0].cc_effect", d.Get("config"))
 	if ccEffect != nil && (d.HasChange("config.0.cc_effect") || ccEffect != "") {
 		dataList["effect"] = ccEffect
 	}
@@ -803,7 +800,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 				localData1 = make([]interface{}, 0)
 			}
 			localMaps1 := make([]interface{}, 0)
-			for _, dataLoop1 := range localData1.(*schema.Set).List() {
+			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
 				dataLoop1Tmp := make(map[string]interface{})
 				if dataLoop1 != nil {
 					dataLoop1Tmp = dataLoop1.(map[string]interface{})
@@ -826,13 +823,13 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	}
 	bypassRegularTypes, _ := jsonpath.Get("$[0].bypass_regular_types", d.Get("config"))
 	if bypassRegularTypes != nil && (d.HasChange("config.0.bypass_regular_types") || bypassRegularTypes != "") {
-		dataList["regularTypes"] = bypassRegularTypes.(*schema.Set).List()
+		dataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
-	throttleType, _ := jsonpath.Get("$[0].throttle_type", v)
+	throttleType, _ := jsonpath.Get("$[0].throttle_type", d.Get("config"))
 	if throttleType != nil && (d.HasChange("config.0.throttle_type") || throttleType != "") {
 		dataList["type"] = throttleType
 	}
@@ -840,7 +837,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	throttleThrehold, _ := jsonpath.Get("$[0].throttle_threhold", v)
+	throttleThrehold, _ := jsonpath.Get("$[0].throttle_threhold", d.Get("config"))
 	if throttleThrehold != nil && (d.HasChange("config.0.throttle_threhold") || throttleThrehold != "") && throttleThrehold.(int) > 0 {
 		dataList["threshold"] = throttleThrehold
 	}
@@ -855,7 +852,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	url1, _ := jsonpath.Get("$[0].url", v)
+	url1, _ := jsonpath.Get("$[0].url", d.Get("config"))
 	if url1 != nil && (d.HasChange("config.0.url") || url1 != "") {
 		dataList["url"] = url1
 	}
@@ -863,7 +860,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	protocol1, _ := jsonpath.Get("$[0].protocol", v)
+	protocol1, _ := jsonpath.Get("$[0].protocol", d.Get("config"))
 	if protocol1 != nil && (d.HasChange("config.0.protocol") || protocol1 != "") {
 		dataList["protocol"] = protocol1
 	}
@@ -871,25 +868,31 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	ua1, _ := jsonpath.Get("$[0].ua", v)
+	ua1, _ := jsonpath.Get("$[0].ua", d.Get("config"))
 	if ua1 != nil && (d.HasChange("config.0.ua") || ua1 != "") {
 		dataList["ua"] = ua1
 	}
 
 	dataList["id"] = parts[2]
+	if d.HasChange("rule_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("rule_id"); ok {
+		dataList["id"] = v
+	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	bypassTags, _ := jsonpath.Get("$[0].bypass_tags", d.Get("config"))
 	if bypassTags != nil && (d.HasChange("config.0.bypass_tags") || bypassTags != "") {
-		dataList["tags"] = bypassTags.(*schema.Set).List()
+		dataList["tags"] = convertToInterfaceArray(bypassTags)
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
-	abroadRegions, _ := jsonpath.Get("$[0].abroad_regions", v)
+	abroadRegions, _ := jsonpath.Get("$[0].abroad_regions", d.Get("config"))
 	if abroadRegions != nil && (d.HasChange("config.0.abroad_regions") || abroadRegions != "") {
 		dataList["abroadRegionList"] = abroadRegions
 	}
@@ -899,7 +902,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	}
 	remoteAddr1, _ := jsonpath.Get("$[0].remote_addr", d.Get("config"))
 	if remoteAddr1 != nil && (d.HasChange("config.0.remote_addr") || remoteAddr1 != "") {
-		dataList["remoteAddr"] = remoteAddr1.(*schema.Set).List()
+		dataList["remoteAddr"] = convertToInterfaceArray(remoteAddr1)
 	}
 
 	if d.HasChange("config") {
@@ -907,13 +910,13 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	}
 	bypassRegularRules, _ := jsonpath.Get("$[0].bypass_regular_rules", d.Get("config"))
 	if bypassRegularRules != nil && (d.HasChange("config.0.bypass_regular_rules") || bypassRegularRules != "") {
-		dataList["regularRules"] = bypassRegularRules.(*schema.Set).List()
+		dataList["regularRules"] = convertToInterfaceArray(bypassRegularRules)
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
-	cnRegions, _ := jsonpath.Get("$[0].cn_regions", v)
+	cnRegions, _ := jsonpath.Get("$[0].cn_regions", d.Get("config"))
 	if cnRegions != nil && (d.HasChange("config.0.cn_regions") || cnRegions != "") {
 		dataList["cnRegionList"] = cnRegions
 	}
@@ -921,7 +924,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	ruleAction, _ := jsonpath.Get("$[0].rule_action", v)
+	ruleAction, _ := jsonpath.Get("$[0].rule_action", d.Get("config"))
 	if ruleAction != nil && (d.HasChange("config.0.rule_action") || ruleAction != "") {
 		dataList["action"] = ruleAction
 	}
