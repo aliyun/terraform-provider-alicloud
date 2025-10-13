@@ -1943,7 +1943,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_provisioned_product":                   resourceAlicloudServiceCatalogProvisionedProduct(),
 			"alicloud_vpc_peer_connection_accepter":                          resourceAliCloudVpcPeerPeerConnectionAccepter(),
 			"alicloud_ebs_dedicated_block_storage_cluster":                   resourceAlicloudEbsDedicatedBlockStorageCluster(),
-			"alicloud_ecs_elasticity_assurance":                              resourceAlicloudEcsElasticityAssurance(),
+			"alicloud_ecs_elasticity_assurance":                              resourceAliCloudEcsElasticityAssurance(),
 			"alicloud_express_connect_grant_rule_to_cen":                     resourceAlicloudExpressConnectGrantRuleToCen(),
 			"alicloud_express_connect_virtual_physical_connection":           resourceAlicloudExpressConnectVirtualPhysicalConnection(),
 			"alicloud_express_connect_vbr_pconn_association":                 resourceAlicloudExpressConnectVbrPconnAssociation(),
