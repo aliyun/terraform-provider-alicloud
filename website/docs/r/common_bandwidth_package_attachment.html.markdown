@@ -57,13 +57,14 @@ resource "alicloud_common_bandwidth_package_attachment" "default" {
 
 The following arguments are supported:
 * `bandwidth_package_bandwidth` - (Optional, Computed) The maximum bandwidth for the EIP. This value cannot be larger than the maximum bandwidth of the Internet Shared Bandwidth instance. Unit: Mbit/s.
+-> **NOTE:**  From version 1.261.0, If you want to cancel the maximum bandwidth configuration for the EIP, you can set `bandwidth_package_bandwidth` to `Cancelled`.
 * `bandwidth_package_id` - (Required, ForceNew) The ID of the Internet Shared Bandwidth instance.
-* `cancel_common_bandwidth_package_ip_bandwidth` - (Optional) Whether to cancel the maximum bandwidth configuration for the EIP. Default: false.
+* `cancel_common_bandwidth_package_ip_bandwidth` - (Deprecated since v1.261.0). Field `cancel_common_bandwidth_package_ip_bandwidth` has been deprecated from provider version 1.261.0. Replace with `bandwidth_package_bandwidth` = `"Cancelled"`.
 * `instance_id` - (Required, ForceNew) The ID of the EIP that you want to query.
 
 You can specify up to 50 EIP IDs. Separate multiple IDs with commas (,).
 
--> **NOTE:**   If both `EipAddress` and `AllocationId` are specified, you can specify up to 50 EIP IDs for `AllocationId`, and specify up to 50 EIPs for `EipAddress`.
+-> **NOTE:** If both `EipAddress` and `AllocationId` are specified, you can specify up to 50 EIP IDs for `AllocationId`, and specify up to 50 EIPs for `EipAddress`.
 
 * `ip_type` - (Optional) The type of IP address. Set the value to `EIP` to associate EIPs with the Internet Shared Bandwidth instance.
 

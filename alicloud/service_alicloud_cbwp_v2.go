@@ -246,8 +246,8 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackageAttachment(id string) 
 	action := "DescribeCommonBandwidthPackages"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["BandwidthPackageId"] = parts[0]
-	query["RegionId"] = client.RegionId
+	request["BandwidthPackageId"] = parts[0]
+	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -260,11 +260,11 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackageAttachment(id string) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -310,9 +310,10 @@ func (s *CbwpServiceV2) DescribeDescribeEipAddresses(id string) (object map[stri
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeEipAddresses"
+	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AllocationId"] = parts[1]
-	query["RegionId"] = client.RegionId
+	request["AllocationId"] = parts[1]
+	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -325,11 +326,11 @@ func (s *CbwpServiceV2) DescribeDescribeEipAddresses(id string) (object map[stri
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

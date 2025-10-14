@@ -32,9 +32,6 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("cancel_common_bandwidth_package_ip_bandwidth").(bool)
-				},
 			},
 			"bandwidth_package_id": {
 				Type:     schema.TypeString,
@@ -42,8 +39,9 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachment() *schema.Resource {
 				ForceNew: true,
 			},
 			"cancel_common_bandwidth_package_ip_bandwidth": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field `cancel_common_bandwidth_package_ip_bandwidth` has been deprecated from version 1.261.0. Replace with bandwidth_package_bandwidth = \"Cancelled\"",
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -73,8 +71,8 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentCreate(d *schema.Resour
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["BandwidthPackageId"] = d.Get("bandwidth_package_id")
-	query["IpInstanceId"] = d.Get("instance_id")
+	request["BandwidthPackageId"] = d.Get("bandwidth_package_id")
+	request["IpInstanceId"] = d.Get("instance_id")
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
@@ -91,15 +89,15 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentCreate(d *schema.Resour
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_common_bandwidth_package_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", query["BandwidthPackageId"], query["IpInstanceId"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["BandwidthPackageId"], request["IpInstanceId"]))
 
 	cbwpServiceV2 := CbwpServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbwpServiceV2.CbwpCommonBandwidthPackageAttachmentStateRefreshFunc(d.Id(), "Status", []string{}))
@@ -147,9 +145,17 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentRead(d *schema.Resource
 		return WrapError(err)
 	}
 
+	isCancelCommonBandwidthPackageIpBandwidth := d.Get("cancel_common_bandwidth_package_ip_bandwidth").(bool)
+	isCancelled := d.Get("bandwidth_package_bandwidth").(string) == "Cancelled"
+
 	if objectRaw["Bandwidth"] != nil {
 		d.Set("bandwidth_package_bandwidth", objectRaw["Bandwidth"])
+
+		if objectRaw["BandwidthPackageBandwidth"] != nil && fmt.Sprint(objectRaw["Bandwidth"]) == fmt.Sprint(objectRaw["BandwidthPackageBandwidth"]) && (!d.IsNewResource() || isCancelled || isCancelCommonBandwidthPackageIpBandwidth) {
+			d.Set("bandwidth_package_bandwidth", "Cancelled")
+		}
 	}
+
 	if objectRaw["BandwidthPackageId"] != nil {
 		d.Set("bandwidth_package_id", objectRaw["BandwidthPackageId"])
 	}
@@ -172,10 +178,11 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentUpdate(d *schema.Resour
 	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["BandwidthPackageId"] = parts[0]
-	query["EipId"] = parts[1]
+	request["BandwidthPackageId"] = parts[0]
+	request["EipId"] = parts[1]
 	request["RegionId"] = client.RegionId
-	if d.HasChange("bandwidth_package_bandwidth") {
+
+	if d.HasChange("bandwidth_package_bandwidth") && d.Get("bandwidth_package_bandwidth").(string) != "Cancelled" {
 		update = true
 		request["Bandwidth"] = d.Get("bandwidth_package_bandwidth")
 	}
@@ -191,9 +198,10 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentUpdate(d *schema.Resour
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -204,16 +212,17 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentUpdate(d *schema.Resour
 		}
 	}
 
-	if d.HasChange("cancel_common_bandwidth_package_ip_bandwidth") {
+	if d.HasChange("cancel_common_bandwidth_package_ip_bandwidth") || d.HasChange("bandwidth_package_bandwidth") {
+		isCancelCommonBandwidthPackageIpBandwidth := d.Get("cancel_common_bandwidth_package_ip_bandwidth").(bool)
+		isCancelled := d.Get("bandwidth_package_bandwidth").(string) == "Cancelled"
 
-		target := d.Get("cancel_common_bandwidth_package_ip_bandwidth").(bool)
-		if target == true {
+		if isCancelCommonBandwidthPackageIpBandwidth || isCancelled {
 			parts = strings.Split(d.Id(), ":")
 			action = "CancelCommonBandwidthPackageIpBandwidth"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
-			query["BandwidthPackageId"] = parts[0]
-			query["EipId"] = parts[1]
+			request["BandwidthPackageId"] = parts[0]
+			request["EipId"] = parts[1]
 			request["RegionId"] = client.RegionId
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -225,9 +234,10 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentUpdate(d *schema.Resour
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -253,8 +263,8 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentDelete(d *schema.Resour
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["BandwidthPackageId"] = parts[0]
-	query["IpInstanceId"] = parts[1]
+	request["BandwidthPackageId"] = parts[0]
+	request["IpInstanceId"] = parts[1]
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
@@ -270,9 +280,9 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentDelete(d *schema.Resour
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"OperationUnsupported.IpNotInCbwp"}) {
