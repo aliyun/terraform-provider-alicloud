@@ -881,3 +881,80 @@ func (s *CloudSSOServiceV2) CloudSSOUserProvisioningStateRefreshFunc(id string, 
 }
 
 // DescribeCloudSSOUserProvisioning >>> Encapsulated.
+// DescribeCloudSsoUserProvisioningEvent <<< Encapsulated get interface for CloudSso UserProvisioningEvent.
+
+func (s *CloudSSOServiceV2) DescribeCloudSsoUserProvisioningEvent(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DirectoryId"] = parts[0]
+	request["EventId"] = parts[1]
+
+	action := "GetUserProvisioningEvent"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.UserProvisioningEvent", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.UserProvisioningEvent", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CloudSSOServiceV2) CloudSsoUserProvisioningEventStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CloudSsoUserProvisioningEventStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudSsoUserProvisioningEvent)
+}
+
+func (s *CloudSSOServiceV2) CloudSsoUserProvisioningEventStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCloudSsoUserProvisioningEvent >>> Encapsulated.

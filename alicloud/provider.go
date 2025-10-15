@@ -175,6 +175,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_cloud_sso_user_provisioning_events":       dataSourceAliCloudCloudSsoUserProvisioningEvents(),
 			"alicloud_sls_machine_groups":                       dataSourceAliCloudSlsMachineGroups(),
 			"alicloud_sls_logtail_configs":                      dataSourceAliCloudSlsLogtailConfigs(),
 			"alicloud_sls_etls":                                 dataSourceAliCloudSlsEtls(),
