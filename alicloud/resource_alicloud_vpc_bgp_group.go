@@ -1,32 +1,29 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudVpcBgpGroup() *schema.Resource {
+func resourceAliCloudExpressConnectBgpGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudVpcBgpGroupCreate,
-		Read:   resourceAlicloudVpcBgpGroupRead,
-		Update: resourceAlicloudVpcBgpGroupUpdate,
-		Delete: resourceAlicloudVpcBgpGroupDelete,
+		Create: resourceAliCloudExpressConnectBgpGroupCreate,
+		Read:   resourceAliCloudExpressConnectBgpGroupRead,
+		Update: resourceAliCloudExpressConnectBgpGroupUpdate,
+		Delete: resourceAliCloudExpressConnectBgpGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"auth_key": {
@@ -34,14 +31,22 @@ func resourceAlicloudVpcBgpGroup() *schema.Resource {
 				Optional: true,
 			},
 			"bgp_group_name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.All(validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][A-Za-z0-9._-]{1,127}$`), "The name must be `2` to `128` characters in length and can contain digits, periods (.), underscores (_), and hyphens (-)."), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"clear_auth_key": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.All(validation.StringLenBetween(2, 256), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ip_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"is_fake_asn": {
 				Type:     schema.TypeBool,
@@ -57,6 +62,15 @@ func resourceAlicloudVpcBgpGroup() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"route_limit": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"router_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -70,36 +84,45 @@ func resourceAlicloudVpcBgpGroup() *schema.Resource {
 	}
 }
 
-func resourceAlicloudVpcBgpGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudExpressConnectBgpGroupCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateBgpGroup"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	if v, ok := d.GetOk("auth_key"); ok {
-		request["AuthKey"] = v
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOkExists("is_fake_asn"); ok {
+		request["IsFakeAsn"] = v
 	}
 	if v, ok := d.GetOk("bgp_group_name"); ok {
 		request["Name"] = v
 	}
+	request["RouterId"] = d.Get("router_id")
+	request["PeerAsn"] = d.Get("peer_asn")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	if v, ok := d.GetOkExists("is_fake_asn"); ok {
-		request["IsFakeAsn"] = v
+	if v, ok := d.GetOkExists("route_limit"); ok {
+		request["RouteQuota"] = v
+	}
+	if v, ok := d.GetOk("ip_version"); ok {
+		request["IpVersion"] = v
+	}
+	if v, ok := d.GetOk("auth_key"); ok {
+		request["AuthKey"] = v
 	}
 	if v, ok := d.GetOk("local_asn"); ok {
 		request["LocalAsn"] = v
 	}
-	request["PeerAsn"] = d.Get("peer_asn")
-	request["RegionId"] = client.RegionId
-	request["RouterId"] = d.Get("router_id")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("CreateBgpGroup")
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 				wait()
@@ -110,90 +133,106 @@ func resourceAlicloudVpcBgpGroupCreate(d *schema.ResourceData, meta interface{})
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_bgp_group", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["BgpGroupId"]))
-	vpcService := VpcService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcBgpGroupStateRefreshFunc(d.Id(), []string{}))
+
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectServiceV2.ExpressConnectBgpGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudVpcBgpGroupRead(d, meta)
+	return resourceAliCloudExpressConnectBgpGroupUpdate(d, meta)
 }
-func resourceAlicloudVpcBgpGroupRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudExpressConnectBgpGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	object, err := vpcService.DescribeVpcBgpGroup(d.Id())
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+
+	objectRaw, err := expressConnectServiceV2.DescribeExpressConnectBgpGroup(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_vpc_bgp_group vpcService.DescribeVpcBgpGroup Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpc_bgp_group DescribeExpressConnectBgpGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("auth_key", object["AuthKey"])
-	d.Set("bgp_group_name", object["Name"])
-	d.Set("description", object["Description"])
-	d.Set("local_asn", formatInt(object["LocalAsn"]))
-	d.Set("peer_asn", formatInt(object["PeerAsn"]))
-	d.Set("router_id", object["RouterId"])
-	d.Set("is_fake_asn", object["IsFake"])
-	d.Set("status", object["Status"])
+
+	d.Set("auth_key", objectRaw["AuthKey"])
+	d.Set("bgp_group_name", objectRaw["Name"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("ip_version", objectRaw["IpVersion"])
+	d.Set("is_fake_asn", formatBool(objectRaw["IsFake"]))
+	d.Set("local_asn", objectRaw["LocalAsn"])
+	d.Set("peer_asn", objectRaw["PeerAsn"])
+	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("route_limit", formatInt(objectRaw["RouteLimit"]))
+	d.Set("router_id", objectRaw["RouterId"])
+	d.Set("status", objectRaw["Status"])
+
 	return nil
 }
-func resourceAlicloudVpcBgpGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudExpressConnectBgpGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	var err error
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
-	request := map[string]interface{}{
-		"BgpGroupId": d.Id(),
-	}
+
+	var err error
+	action := "ModifyBgpGroupAttribute"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["BgpGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if d.HasChange("auth_key") {
+	request["ClientToken"] = buildClientToken(action)
+	if !d.IsNewResource() && d.HasChange("is_fake_asn") {
 		update = true
-		if v, ok := d.GetOk("auth_key"); ok {
-			request["AuthKey"] = v
-		}
+		request["IsFakeAsn"] = d.Get("is_fake_asn")
 	}
-	if d.HasChange("bgp_group_name") {
+
+	if !d.IsNewResource() && d.HasChange("bgp_group_name") {
 		update = true
-		if v, ok := d.GetOk("bgp_group_name"); ok {
-			request["Name"] = v
-		}
+		request["Name"] = d.Get("bgp_group_name")
 	}
-	if d.HasChange("description") {
+
+	if !d.IsNewResource() && d.HasChange("peer_asn") {
 		update = true
-		if v, ok := d.GetOk("description"); ok {
-			request["Description"] = v
-		}
 	}
-	if d.HasChange("local_asn") {
+	request["PeerAsn"] = d.Get("peer_asn")
+	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
-		if v, ok := d.GetOk("local_asn"); ok {
-			request["LocalAsn"] = v
-		}
+		request["Description"] = d.Get("description")
 	}
-	if d.HasChange("peer_asn") {
+
+	if v, ok := d.GetOk("clear_auth_key"); ok {
+		request["ClearAuthKey"] = v
+	}
+	if !d.IsNewResource() && d.HasChange("route_limit") {
 		update = true
-		request["PeerAsn"] = d.Get("peer_asn")
+		request["RouteQuota"] = d.Get("route_limit")
 	}
+
+	if !d.IsNewResource() && d.HasChange("auth_key") {
+		update = true
+		request["AuthKey"] = d.Get("auth_key")
+	}
+
+	if !d.IsNewResource() && d.HasChange("local_asn") {
+		update = true
+		request["LocalAsn"] = d.Get("local_asn")
+	}
+
 	if update {
-		if v, ok := d.GetOkExists("is_fake_asn"); ok {
-			request["IsFakeAsn"] = v
-		}
-		action := "ModifyBgpGroupAttribute"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			request["ClientToken"] = buildClientToken("ModifyBgpGroupAttribute")
-			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -207,30 +246,34 @@ func resourceAlicloudVpcBgpGroupUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.VpcBgpGroupStateRefreshFunc(d.Id(), []string{}))
+		expressConnectServiceV2 := ExpressConnectServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, expressConnectServiceV2.ExpressConnectBgpGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
-	return resourceAlicloudVpcBgpGroupRead(d, meta)
-}
-func resourceAlicloudVpcBgpGroupDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	action := "DeleteBgpGroup"
-	var response map[string]interface{}
-	var err error
-	request := map[string]interface{}{
-		"BgpGroupId": d.Id(),
-	}
 
+	return resourceAliCloudExpressConnectBgpGroupRead(d, meta)
+}
+
+func resourceAliCloudExpressConnectBgpGroupDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteBgpGroup"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["BgpGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = buildClientToken(action)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("DeleteBgpGroup")
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation.BgpPeer"}) {
 				wait()
@@ -241,12 +284,19 @@ func resourceAlicloudVpcBgpGroupDelete(d *schema.ResourceData, meta interface{})
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpcBgpGroupStateRefreshFunc(d.Id(), []string{}))
+
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, expressConnectServiceV2.ExpressConnectBgpGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }

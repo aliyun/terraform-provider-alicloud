@@ -844,3 +844,80 @@ func (s *ExpressConnectServiceV2) SetResourceTags(d *schema.ResourceData, resour
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeExpressConnectBgpGroup <<< Encapsulated get interface for ExpressConnect BgpGroup.
+
+func (s *ExpressConnectServiceV2) DescribeExpressConnectBgpGroup(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["BgpGroupId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeBgpGroups"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.BgpGroups.BgpGroup[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BgpGroups.BgpGroup[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("BgpGroup", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *ExpressConnectServiceV2) ExpressConnectBgpGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ExpressConnectBgpGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeExpressConnectBgpGroup)
+}
+
+func (s *ExpressConnectServiceV2) ExpressConnectBgpGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeExpressConnectBgpGroup >>> Encapsulated.
