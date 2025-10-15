@@ -1984,6 +1984,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_monitor_service_monitoring_agent_process":        resourceAliCloudCloudMonitorServiceMonitoringAgentProcess(),
 			"alicloud_cloud_monitor_service_group_monitoring_agent_process":  resourceAliCloudCloudMonitorServiceGroupMonitoringAgentProcess(),
 			"alicloud_polardb_on_ens_cluster":                                resourceAliCloudPolarDbOnENSCluster(),
+			"alicloud_polardb_on_ens_endpoint":                               resourceAlicloudPolarDBOnENSEndpoint(),
 		},
 	}
 	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
