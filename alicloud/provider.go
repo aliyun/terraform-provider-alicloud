@@ -1778,7 +1778,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_vbr_ha":                                            resourceAlicloudVpcVbrHa(),
 			"alicloud_ros_template_scratch":                                  resourceAlicloudRosTemplateScratch(),
 			"alicloud_alidns_gtm_instance":                                   resourceAlicloudAlidnsGtmInstance(),
-			"alicloud_vpc_bgp_group":                                         resourceAlicloudVpcBgpGroup(),
+			"alicloud_vpc_bgp_group":                                         resourceAliCloudExpressConnectBgpGroup(),
 			"alicloud_ram_security_preference":                               resourceAliCloudRamSecurityPreference(),
 			"alicloud_nas_snapshot":                                          resourceAlicloudNasSnapshot(),
 			"alicloud_hbr_replication_vault":                                 resourceAliCloudHbrReplicationVault(),
