@@ -1987,6 +1987,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_on_ens_endpoint":                               resourceAlicloudPolarDBOnENSEndpoint(),
 			"alicloud_polardb_on_ens_account":                                resourceAlicloudPolarDBOnEnsAccount(),
 			"alicloud_polardb_on_ens_account_privilege":                      resourceAlicloudPolarDBOnENSAccountPrivilege(),
+			"alicloud_polardb_on_ens_database":                               resourceAlicloudPolarDBOnENSDatabase(),
 		},
 	}
 	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
