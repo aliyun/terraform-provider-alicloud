@@ -366,11 +366,16 @@ func polardbPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return true
 }
 
-func polardbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("pay_type").(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
-		return false
+func polardbDBClusterVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	var latestVersion interface{}
+	latestVersion, ok := d.GetOk("cluster_latest_version")
+	if !ok {
+		return true
 	}
-	return true
+	if old == latestVersion.(string) {
+		return true
+	}
+	return false
 }
 
 func polardbTDEAndEnabledDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -398,6 +403,13 @@ func polardbServrelessTypeDiffSuppressFunc(k, old, new string, d *schema.Resourc
 		if d.Get("serverless_type").(string) == "AgileServerless" || (d.Get("serverless_type").(string) == "SteadyServerless" && d.Get("serverless_steady_switch").(string) == "ON") {
 			return false
 		}
+	}
+	return true
+}
+
+func polardbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("pay_type").(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
+		return false
 	}
 	return true
 }
