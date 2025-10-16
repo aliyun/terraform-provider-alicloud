@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -22,9 +21,9 @@ func resourceAliCloudExpressConnectTrafficQosQueue() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
-			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(8 * time.Minute),
+			Update: schema.DefaultTimeout(8 * time.Minute),
+			Delete: schema.DefaultTimeout(8 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"bandwidth_percent": {
@@ -73,33 +72,35 @@ func resourceAliCloudExpressConnectTrafficQosQueueCreate(d *schema.ResourceData,
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["QosId"] = d.Get("qos_id")
+	if v, ok := d.GetOk("qos_id"); ok {
+		request["QosId"] = v
+	}
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	request["QueueType"] = d.Get("queue_type")
-	if v, ok := d.GetOk("bandwidth_percent"); ok {
-		request["BandwidthPercent"] = v
-	}
 	if v, ok := d.GetOk("queue_description"); ok {
 		request["QueueDescription"] = v
+	}
+	if v, ok := d.GetOk("bandwidth_percent"); ok {
+		request["BandwidthPercent"] = v
 	}
 	if v, ok := d.GetOk("queue_name"); ok {
 		request["QueueName"] = v
 	}
+	request["QueueType"] = d.Get("queue_type")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.Qos", "EcQoSConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_express_connect_traffic_qos_queue", action, AlibabaCloudSdkGoERROR)
@@ -138,10 +139,6 @@ func resourceAliCloudExpressConnectTrafficQosQueueRead(d *schema.ResourceData, m
 	d.Set("qos_id", objectRaw["QosId"])
 	d.Set("queue_id", objectRaw["QueueId"])
 
-	parts := strings.Split(d.Id(), ":")
-	d.Set("qos_id", parts[0])
-	d.Set("queue_id", parts[1])
-
 	return nil
 }
 
@@ -151,13 +148,14 @@ func resourceAliCloudExpressConnectTrafficQosQueueUpdate(d *schema.ResourceData,
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyExpressConnectTrafficQosQueue"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["QueueId"] = parts[1]
-	query["QosId"] = parts[0]
+	request["QueueId"] = parts[1]
+	request["QosId"] = parts[0]
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	if d.HasChange("bandwidth_percent") {
@@ -180,20 +178,20 @@ func resourceAliCloudExpressConnectTrafficQosQueueUpdate(d *schema.ResourceData,
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"IncorrectStatus.Qos", "EcQoSConflict"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		expressConnectServiceV2 := ExpressConnectServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 0, expressConnectServiceV2.DescribeAsyncExpressConnectTrafficQosQueueStateRefreshFunc(d, response, "$.QosList[0].Status", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 0, expressConnectServiceV2.DescribeAsyncExpressConnectTrafficQosQueueStateRefreshFunc(d, response, "$.QosList[0].Status", []string{}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 		}
@@ -212,39 +210,37 @@ func resourceAliCloudExpressConnectTrafficQosQueueDelete(d *schema.ResourceData,
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["QosId"] = parts[0]
-	query["QueueId"] = parts[1]
+	request["QueueId"] = parts[1]
+	request["QosId"] = parts[0]
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"EcQoSConflict", "IncorrectStatus.Qos"}) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.Qos", "EcQoSConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"IllegalParam.%s"}) {
+		if IsExpectedErrors(err, []string{"IllegalParam.%s"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	expressConnectServiceV2 := ExpressConnectServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 0, expressConnectServiceV2.DescribeAsyncExpressConnectTrafficQosQueueStateRefreshFunc(d, response, "$.QosList[0].Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutDelete), 0, expressConnectServiceV2.DescribeAsyncExpressConnectTrafficQosQueueStateRefreshFunc(d, response, "$.QosList[0].Status", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
+
 	return nil
 }

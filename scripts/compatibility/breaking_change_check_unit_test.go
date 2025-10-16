@@ -202,3 +202,113 @@ func TestRetryCodeRemoval(t *testing.T) {
 	}
 }
 
+// TestRetryCodeAddition tests if adding retry error codes is allowed (safe change)
+func TestRetryCodeAddition(t *testing.T) {
+	oldCodes := map[string]map[string]struct{}{
+		"CreateInstance": {
+			"Throttling": {},
+		},
+	}
+
+	newCodes := map[string]map[string]struct{}{
+		"CreateInstance": {
+			"Throttling":         {},
+			"ServiceUnavailable": {},
+			"OperationConflict":  {},
+		},
+	}
+
+	hasBreaking := IsRetryCodeBreaking(oldCodes, newCodes)
+	if hasBreaking {
+		t.Error("Expected no breaking change for retry code addition, but got one")
+	} else {
+		fmt.Println("✓ Test passed: Retry code addition allowed")
+	}
+}
+
+// TestRetryCodeCompleteRemoval tests if complete removal of IsExpectedErrors is detected
+func TestRetryCodeCompleteRemoval(t *testing.T) {
+	oldCodes := map[string]map[string]struct{}{
+		"CreateInstance": {
+			"Throttling":         {},
+			"ServiceUnavailable": {},
+		},
+	}
+
+	newCodes := map[string]map[string]struct{}{
+		// CreateInstance completely removed
+	}
+
+	hasBreaking := IsRetryCodeBreaking(oldCodes, newCodes)
+	if !hasBreaking {
+		t.Error("Expected breaking change for complete retry code removal, but got none")
+	} else {
+		fmt.Println("✓ Test passed: Complete retry code removal detected")
+	}
+}
+
+// TestRetryCodeParsingFromContent tests parsing retry codes from actual Go code
+func TestRetryCodeParsingFromContent(t *testing.T) {
+	content := `
+package alicloud
+
+func resourceCreate(d *schema.ResourceData) error {
+	action := "CreateInstance"
+	if err := client.DoAction(action); err != nil {
+		if IsExpectedErrors(err, []string{"Throttling", "ServiceUnavailable"}) {
+			return resource.RetryableError(err)
+		}
+		return err
+	}
+	
+	action = "DescribeInstance"
+	if err := client.DoAction(action); err != nil {
+		if IsExpectedErrors(err, []string{"NotFound", "InvalidId"}) {
+			return resource.RetryableError(err)
+		}
+		return err
+	}
+	return nil
+}
+`
+
+	codes := ParseRetryErrorCodesFromContent(content)
+
+	// Should have 2 APIs
+	if len(codes) != 2 {
+		t.Errorf("Expected 2 APIs, got %d", len(codes))
+		return
+	}
+
+	// Check CreateInstance codes
+	if createCodes, ok := codes["CreateInstance"]; ok {
+		if len(createCodes) != 2 {
+			t.Errorf("Expected 2 codes for CreateInstance, got %d", len(createCodes))
+		}
+		if _, ok := createCodes["Throttling"]; !ok {
+			t.Error("Expected Throttling code for CreateInstance")
+		}
+		if _, ok := createCodes["ServiceUnavailable"]; !ok {
+			t.Error("Expected ServiceUnavailable code for CreateInstance")
+		}
+	} else {
+		t.Error("CreateInstance not found in parsed codes")
+	}
+
+	// Check DescribeInstance codes
+	if describeCodes, ok := codes["DescribeInstance"]; ok {
+		if len(describeCodes) != 2 {
+			t.Errorf("Expected 2 codes for DescribeInstance, got %d", len(describeCodes))
+		}
+		if _, ok := describeCodes["NotFound"]; !ok {
+			t.Error("Expected NotFound code for DescribeInstance")
+		}
+		if _, ok := describeCodes["InvalidId"]; !ok {
+			t.Error("Expected InvalidId code for DescribeInstance")
+		}
+	} else {
+		t.Error("DescribeInstance not found in parsed codes")
+	}
+
+	fmt.Println("✓ Test passed: Retry code parsing from content")
+}

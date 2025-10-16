@@ -70,14 +70,9 @@ func main() {
 			newAttrs := ParseSchemaFromAST(newContent)
 			schemaBreaking := IsBreakingChange(oldAttrs, newAttrs)
 
-			// Check retry error codes changes
-			oldRetryCodes := make(map[string]map[string]struct{})
-			newRetryCodes := make(map[string]map[string]struct{})
-			for _, hunk := range file.Hunks {
-				if hunk != nil {
-					ParseRetryErrorCodesFromHunk(hunk, oldRetryCodes, newRetryCodes)
-				}
-			}
+			// Check retry error codes changes - parse from full file content
+			oldRetryCodes := ParseRetryErrorCodesFromContent(oldContent)
+			newRetryCodes := ParseRetryErrorCodesFromContent(newContent)
 			retryBreaking := IsRetryCodeBreaking(oldRetryCodes, newRetryCodes)
 
 			if !schemaBreaking && !retryBreaking {
@@ -289,185 +284,78 @@ func extractFieldProperties(compLit *ast.CompositeLit, props map[string]interfac
 	}
 }
 
-// ParseRetryErrorCodesFromHunk extracts retry error codes from IsExpectedErrors calls in diff hunks
+// ParseRetryErrorCodesFromContent extracts retry error codes from full file content
 // Format: IsExpectedErrors(err, []string{"ErrorCode1", "ErrorCode2"})
-// Map structure: map[apiContext]map[errorCode]struct{}
-func ParseRetryErrorCodesFromHunk(hunk *diffparser.DiffHunk, oldRetryCodes, newRetryCodes map[string]map[string]struct{}) {
+// Map structure: map[apiName]map[errorCode]struct{}
+func ParseRetryErrorCodesFromContent(content string) map[string]map[string]struct{} {
+	retryCodesMap := make(map[string]map[string]struct{})
 	// Regex to match: IsExpectedErrors(err, []string{"code1", "code2", ...})
-	expectedErrorsRegex := regexp.MustCompile(`IsExpectedErrors\([^,]+,\s*\[\]string\{([^}]*)\}`)
-	// Regex to extract action name from current or previous lines
+	expectedErrorsRegex := regexp.MustCompile(`IsExpectedErrors\(err,\s*\[\]string\{([^}]*)\}`)
+	// Regex to find action variable: action := "ApiName" or action = "ApiName"
 	actionRegex := regexp.MustCompile(`action\s*:?=\s*"([^"]*)"`)
-	// Regex to extract function name context (both regular functions and methods)
-	funcRegex := regexp.MustCompile(`func\s+(?:\([^)]*\)\s*)?(\w+)`)
 
-	// Collect all lines first to enable better context searching
-	lines := hunk.WholeRange.Lines
-	lineContents := make([]string, len(lines))
-	for i, line := range lines {
-		lineContents[i] = strings.TrimSpace(line.Content)
-	}
+	lines := strings.Split(content, "\n")
+	currentAction := ""
 
-	for i, line := range lines {
-		content := strings.TrimSpace(line.Content)
-		if content == "" {
-			continue
+	for _, line := range lines {
+		// Look for action definition
+		if actionMatches := actionRegex.FindStringSubmatch(line); actionMatches != nil && len(actionMatches) > 1 {
+			currentAction = actionMatches[1]
 		}
 
-		// Look for IsExpectedErrors calls
-		if expectedErrorsMatch := expectedErrorsRegex.FindStringSubmatch(content); expectedErrorsMatch != nil && len(expectedErrorsMatch) > 1 {
-			errorCodesStr := expectedErrorsMatch[1]
-			// Parse individual error codes: "Code1", "Code2", ...
+		// Look for IsExpectedErrors call
+		if expectedErrorsMatches := expectedErrorsRegex.FindStringSubmatch(line); expectedErrorsMatches != nil && len(expectedErrorsMatches) > 1 {
+			if currentAction == "" {
+				// Skip if no action found in current scope
+				continue
+			}
+
+			errorCodesStr := expectedErrorsMatches[1]
+
+			// Extract individual error codes
 			codeRegex := regexp.MustCompile(`"([^"]+)"`)
 			codeMatches := codeRegex.FindAllStringSubmatch(errorCodesStr, -1)
 
-			if len(codeMatches) > 0 {
-				// Find the best context for this IsExpectedErrors call
-				context := findContextForErrorCodes(lineContents, i, actionRegex, funcRegex)
+			if _, exists := retryCodesMap[currentAction]; !exists {
+				retryCodesMap[currentAction] = make(map[string]struct{})
+			}
 
-				log.Debugf("Line %d: Found IsExpectedErrors with context '%s'", line.Number, context)
-
-				// Determine which map to update based on line mode
-				var targetMap map[string]map[string]struct{}
-				switch line.Mode {
-				case diffparser.REMOVED:
-					targetMap = oldRetryCodes
-					log.Debugf("Found REMOVED retry codes in %s: %v", context, codeMatches)
-				case diffparser.ADDED:
-					targetMap = newRetryCodes
-					log.Debugf("Found ADDED retry codes in %s: %v", context, codeMatches)
-				default:
-					// For unchanged lines, add to both maps
-					targetMap = oldRetryCodes
-					// Also add to newRetryCodes
-					if _, exist := newRetryCodes[context]; !exist {
-						newRetryCodes[context] = make(map[string]struct{})
-					}
-					for _, match := range codeMatches {
-						if len(match) > 1 {
-							newRetryCodes[context][match[1]] = struct{}{}
-						}
-					}
-				}
-
-				if targetMap != nil {
-					if _, exist := targetMap[context]; !exist {
-						targetMap[context] = make(map[string]struct{})
-					}
-					for _, match := range codeMatches {
-						if len(match) > 1 {
-							targetMap[context][match[1]] = struct{}{}
-						}
-					}
+			for _, match := range codeMatches {
+				if len(match) > 1 {
+					errorCode := match[1]
+					retryCodesMap[currentAction][errorCode] = struct{}{}
 				}
 			}
 		}
 	}
+
+	return retryCodesMap
 }
 
-// findContextForErrorCodes searches for the best context (action or function name) for an IsExpectedErrors call
-// It uses a multi-strategy approach with different search ranges
-func findContextForErrorCodes(lines []string, currentIndex int, actionRegex, funcRegex *regexp.Regexp) string {
-	// Strategy 1: Search backwards within the same function scope (up to 5000 lines for extreme cases)
-	maxBackwardSearch := 5000
-	if currentIndex < maxBackwardSearch {
-		maxBackwardSearch = currentIndex
-	}
-
-	// Look for action definition in reverse order
-	for i := currentIndex - 1; i >= currentIndex-maxBackwardSearch; i-- {
-		if actionMatch := actionRegex.FindStringSubmatch(lines[i]); actionMatch != nil && len(actionMatch) > 1 {
-			log.Debugf("Found action context '%s' at distance %d from IsExpectedErrors", actionMatch[1], currentIndex-i)
-			return actionMatch[1]
-		}
-
-		// If we encounter another function definition, stop searching
-		if funcRegex.MatchString(lines[i]) && i < currentIndex-5 {
-			log.Debugf("Hit function boundary at line %d, stopping context search", i)
-			break
-		}
-	}
-
-	// Strategy 2: Look for function name context
-	for i := currentIndex - 1; i >= 0 && i >= currentIndex-20; i-- {
-		if funcMatch := funcRegex.FindStringSubmatch(lines[i]); funcMatch != nil && len(funcMatch) > 1 {
-			funcName := funcMatch[1]
-			log.Debugf("Found function context '%s' at distance %d from IsExpectedErrors", funcName, currentIndex-i)
-			return funcName
-		}
-	}
-
-	// Strategy 3: Search forward for action definition (in case it's defined after IsExpectedErrors, rare but possible)
-	maxForwardSearch := 10
-	if currentIndex+maxForwardSearch >= len(lines) {
-		maxForwardSearch = len(lines) - currentIndex - 1
-	}
-
-	for i := currentIndex + 1; i <= currentIndex+maxForwardSearch; i++ {
-		if actionMatch := actionRegex.FindStringSubmatch(lines[i]); actionMatch != nil && len(actionMatch) > 1 {
-			log.Debugf("Found forward action context '%s' at distance %d from IsExpectedErrors", actionMatch[1], i-currentIndex)
-			return actionMatch[1]
-		}
-	}
-
-	// Strategy 4: Use line number as fallback
-	fallbackContext := fmt.Sprintf("line_%d", currentIndex+1)
-	log.Debugf("Using fallback context '%s' for IsExpectedErrors", fallbackContext)
-	return fallbackContext
-}
-
-// IsRetryCodeBreaking checks if retry error codes have been reduced
+// IsRetryCodeBreaking checks if retry error codes have been reduced for each API
 func IsRetryCodeBreaking(oldRetryCodes, newRetryCodes map[string]map[string]struct{}) bool {
 	res := false
 
-	// Log all found retry codes for debugging
-	log.Debugf("Old retry codes found: %d contexts", len(oldRetryCodes))
-	for context, codes := range oldRetryCodes {
-		codeList := make([]string, 0, len(codes))
-		for code := range codes {
-			codeList = append(codeList, code)
-		}
-		log.Debugf("  %s: %v", context, codeList)
-	}
-
-	log.Debugf("New retry codes found: %d contexts", len(newRetryCodes))
-	for context, codes := range newRetryCodes {
-		codeList := make([]string, 0, len(codes))
-		for code := range codes {
-			codeList = append(codeList, code)
-		}
-		log.Debugf("  %s: %v", context, codeList)
-	}
-
-	// Check for removed contexts (entire IsExpectedErrors calls removed)
-	for context, oldCodes := range oldRetryCodes {
-		newCodes, exist := newRetryCodes[context]
-
-		// If the IsExpectedErrors call was completely removed
+	// Check each API's retry codes
+	for apiName, oldCodes := range oldRetryCodes {
+		newCodes, exist := newRetryCodes[apiName]
 		if !exist {
-			if len(oldCodes) > 0 {
-				res = true
-				log.Errorf("[Breaking Change]: Retry error codes for '%s' have been completely removed!", context)
-				for code := range oldCodes {
-					log.Errorf("  - Removed error code: '%s'", code)
-				}
+			// The entire IsExpectedErrors call was removed for this API
+			res = true
+			log.Errorf("[Breaking Change]: Retry error codes for API '%s' have been completely removed!", apiName)
+			for oldCode := range oldCodes {
+				log.Errorf("  - Removed error code: '%s'", oldCode)
 			}
 			continue
 		}
 
-		// Check if any error codes were removed within the same context
+		// Check if any error code was removed
 		for oldCode := range oldCodes {
 			if _, stillExists := newCodes[oldCode]; !stillExists {
 				res = true
-				log.Errorf("[Breaking Change]: Retry error code '%s' for '%s' should not be removed!", oldCode, context)
+				log.Errorf("[Breaking Change]: Retry error code '%s' for API '%s' should not been removed!", oldCode, apiName)
 			}
 		}
-	}
-
-	// Log summary
-	if res {
-		log.Errorf("Retry error code breaking changes detected!")
-	} else {
-		log.Infof("No retry error code breaking changes detected.")
 	}
 
 	return res
