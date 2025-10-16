@@ -918,6 +918,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_delivery_channel":                    resourceAliCloudResourceManagerDeliveryChannel(),
 			"alicloud_esa_load_balancer":                                    resourceAliCloudEsaLoadBalancer(),
 			"alicloud_resource_manager_multi_account_delivery_channel":      resourceAliCloudResourceManagerMultiAccountDeliveryChannel(),
+			"alicloud_star_rocks_node_group":                                resourceAliCloudStarRocksNodeGroup(),
 			"alicloud_esa_transport_layer_application":                      resourceAliCloudEsaTransportLayerApplication(),
 			"alicloud_esa_waf_rule":                                         resourceAliCloudEsaWafRule(),
 			"alicloud_esa_waf_ruleset":                                      resourceAliCloudEsaWafRuleset(),
