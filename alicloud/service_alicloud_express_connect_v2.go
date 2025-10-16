@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/tidwall/sjson"
 )
 
 type ExpressConnectServiceV2 struct {
@@ -654,6 +656,102 @@ func (s *ExpressConnectServiceV2) DescribeAsyncExpressConnectTrafficQosRuleState
 }
 
 // DescribeExpressConnectTrafficQosRule >>> Encapsulated.
+// DescribeExpressConnectVbrPconnAssociation <<< Encapsulated get interface for ExpressConnect VbrPconnAssociation.
+
+func (s *ExpressConnectServiceV2) DescribeExpressConnectVbrPconnAssociation(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	jsonString := "{}"
+	jsonString, _ = sjson.Set(jsonString, "Filter.0.Value.0", parts[0])
+	jsonString, _ = sjson.Set(jsonString, "Filter.0.Key", "VbrId")
+	err = json.Unmarshal([]byte(jsonString), &request)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request["RegionId"] = client.RegionId
+	request["IncludeCrossAccountVbr"] = true
+
+	action := "DescribeVirtualBorderRouters"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.VirtualBorderRouterSet.VirtualBorderRouterType[*].AssociatedPhysicalConnections.AssociatedPhysicalConnection[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VirtualBorderRouterSet.VirtualBorderRouterType[*].AssociatedPhysicalConnections.AssociatedPhysicalConnection[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("VbrPconnAssociation", id), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["PhysicalConnectionId"]) != parts[1] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(NotFoundErr("VbrPconnAssociation", id), NotFoundMsg, response)
+}
+
+func (s *ExpressConnectServiceV2) ExpressConnectVbrPconnAssociationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ExpressConnectVbrPconnAssociationStateRefreshFuncWithApi(id, field, failStates, s.DescribeExpressConnectVbrPconnAssociation)
+}
+
+func (s *ExpressConnectServiceV2) ExpressConnectVbrPconnAssociationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeExpressConnectVbrPconnAssociation >>> Encapsulated.
 
 // DescribeExpressConnectBgpNetwork <<< Encapsulated get interface for ExpressConnect BgpNetwork.
 

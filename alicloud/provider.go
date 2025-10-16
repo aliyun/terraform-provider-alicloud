@@ -1947,7 +1947,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_elasticity_assurance":                              resourceAliCloudEcsElasticityAssurance(),
 			"alicloud_express_connect_grant_rule_to_cen":                     resourceAlicloudExpressConnectGrantRuleToCen(),
 			"alicloud_express_connect_virtual_physical_connection":           resourceAlicloudExpressConnectVirtualPhysicalConnection(),
-			"alicloud_express_connect_vbr_pconn_association":                 resourceAlicloudExpressConnectVbrPconnAssociation(),
+			"alicloud_express_connect_vbr_pconn_association":                 resourceAliCloudExpressConnectVbrPconnAssociation(),
 			"alicloud_ebs_disk_replica_pair":                                 resourceAliCloudEbsDiskReplicaPair(),
 			"alicloud_ga_domain":                                             resourceAlicloudGaDomain(),
 			"alicloud_ga_custom_routing_endpoint_group":                      resourceAliCloudGaCustomRoutingEndpointGroup(),

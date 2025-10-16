@@ -240,7 +240,7 @@ generate_commit_message() {
         commit_message="${selected}Added the field $added_fields."
         echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (added fields: $added_fields)${NC}" >&2
       else
-        commit_message="${selected}Fix and improve functionality."
+        commit_message="${selected}Refactored the resource and improve the docs."
         echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (no new fields detected)${NC}" >&2
       fi
     elif [[ "$selected" =~ ^(docs|ci|website|chore): ]]; then

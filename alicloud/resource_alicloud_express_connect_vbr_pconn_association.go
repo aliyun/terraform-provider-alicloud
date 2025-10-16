@@ -1,22 +1,22 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudExpressConnectVbrPconnAssociation() *schema.Resource {
+func resourceAliCloudExpressConnectVbrPconnAssociation() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudExpressConnectVbrPconnAssociationCreate,
-		Read:   resourceAlicloudExpressConnectVbrPconnAssociationRead,
-		Delete: resourceAlicloudExpressConnectVbrPconnAssociationDelete,
+		Create: resourceAliCloudExpressConnectVbrPconnAssociationCreate,
+		Read:   resourceAliCloudExpressConnectVbrPconnAssociationRead,
+		Delete: resourceAliCloudExpressConnectVbrPconnAssociationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -26,113 +26,112 @@ func resourceAlicloudExpressConnectVbrPconnAssociation() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"circuit_code": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"enable_ipv6": {
+				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
-				Type:     schema.TypeBool,
 			},
 			"local_gateway_ip": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"local_ipv6_gateway_ip": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"peer_gateway_ip": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"peer_ipv6_gateway_ip": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"peering_ipv6_subnet_mask": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"peering_subnet_mask": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"physical_connection_id": {
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"status": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"vbr_id": {
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"vlan_id": {
-				Required:     true,
-				ForceNew:     true,
-				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(0, 2999),
+				Type:     schema.TypeInt,
+				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudExpressConnectVbrPconnAssociationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudExpressConnectVbrPconnAssociationCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	expressConnectService := ExpressConnectService{client}
-	request := map[string]interface{}{
-		"RegionId": client.RegionId,
-	}
+
+	action := "AssociatePhysicalConnectionToVirtualBorderRouter"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	if v, ok := d.GetOk("enable_ipv6"); ok {
-		request["EnableIpv6"] = v
-	}
-	if v, ok := d.GetOk("local_gateway_ip"); ok {
-		request["LocalGatewayIp"] = v
-	}
-	if v, ok := d.GetOk("local_ipv6_gateway_ip"); ok {
-		request["LocalIpv6GatewayIp"] = v
-	}
-	if v, ok := d.GetOk("peer_gateway_ip"); ok {
-		request["PeerGatewayIp"] = v
-	}
-	if v, ok := d.GetOk("peer_ipv6_gateway_ip"); ok {
-		request["PeerIpv6GatewayIp"] = v
-	}
-	if v, ok := d.GetOk("peering_ipv6_subnet_mask"); ok {
-		request["PeeringIpv6SubnetMask"] = v
-	}
-	if v, ok := d.GetOk("peering_subnet_mask"); ok {
-		request["PeeringSubnetMask"] = v
-	}
+	request = make(map[string]interface{})
 	if v, ok := d.GetOk("physical_connection_id"); ok {
 		request["PhysicalConnectionId"] = v
 	}
 	if v, ok := d.GetOk("vbr_id"); ok {
 		request["VbrId"] = v
 	}
-	if v, ok := d.GetOk("vlan_id"); ok {
-		request["VlanId"] = v
-	}
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
 
-	var response map[string]interface{}
-	action := "AssociatePhysicalConnectionToVirtualBorderRouter"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("AssociatePhysicalConnectionToVirtualBorderRouter")
-		resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+	request["VlanId"] = d.Get("vlan_id")
+	if v, ok := d.GetOk("peering_ipv6_subnet_mask"); ok {
+		request["PeeringIpv6SubnetMask"] = v
+	}
+	if v, ok := d.GetOk("local_ipv6_gateway_ip"); ok {
+		request["LocalIpv6GatewayIp"] = v
+	}
+	if v, ok := d.GetOk("local_gateway_ip"); ok {
+		request["LocalGatewayIp"] = v
+	}
+	if v, ok := d.GetOkExists("enable_ipv6"); ok {
+		request["EnableIpv6"] = v
+	}
+	if v, ok := d.GetOk("peer_ipv6_gateway_ip"); ok {
+		request["PeerIpv6GatewayIp"] = v
+	}
+	if v, ok := d.GetOk("peering_subnet_mask"); ok {
+		request["PeeringSubnetMask"] = v
+	}
+	if v, ok := d.GetOk("peer_gateway_ip"); ok {
+		request["PeerGatewayIp"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -140,75 +139,75 @@ func resourceAlicloudExpressConnectVbrPconnAssociationCreate(d *schema.ResourceD
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_express_connect_vbr_pconn_association", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["VbrId"], ":", request["PhysicalConnectionId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Associated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectService.ExpressConnectVbrPconnAssociationStateRefreshFunc(d, []string{}))
+	d.SetId(fmt.Sprintf("%v:%v", request["VbrId"], request["PhysicalConnectionId"]))
+
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Associated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectServiceV2.ExpressConnectVbrPconnAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudExpressConnectVbrPconnAssociationRead(d, meta)
+
+	return resourceAliCloudExpressConnectVbrPconnAssociationRead(d, meta)
 }
 
-func resourceAlicloudExpressConnectVbrPconnAssociationRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudExpressConnectVbrPconnAssociationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	expressConnectService := ExpressConnectService{client}
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
 
-	object, err := expressConnectService.DescribeExpressConnectVbrPconnAssociation(d.Id())
+	objectRaw, err := expressConnectServiceV2.DescribeExpressConnectVbrPconnAssociation(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_express_connect_vbr_pconn_association expressConnectService.DescribeExpressConnectVbrPconnAssociation Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_express_connect_vbr_pconn_association DescribeExpressConnectVbrPconnAssociation Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+
+	d.Set("circuit_code", objectRaw["CircuitCode"])
+	d.Set("enable_ipv6", objectRaw["EnableIpv6"])
+	d.Set("local_gateway_ip", objectRaw["LocalGatewayIp"])
+	d.Set("local_ipv6_gateway_ip", objectRaw["LocalIpv6GatewayIp"])
+	d.Set("peer_gateway_ip", objectRaw["PeerGatewayIp"])
+	d.Set("peer_ipv6_gateway_ip", objectRaw["PeerIpv6GatewayIp"])
+	d.Set("peering_ipv6_subnet_mask", objectRaw["PeeringIpv6SubnetMask"])
+	d.Set("peering_subnet_mask", objectRaw["PeeringSubnetMask"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("vlan_id", formatInt(objectRaw["VlanId"]))
+	d.Set("physical_connection_id", objectRaw["PhysicalConnectionId"])
+
+	parts := strings.Split(d.Id(), ":")
 	d.Set("vbr_id", parts[0])
-	d.Set("physical_connection_id", parts[1])
-	d.Set("circuit_code", object["CircuitCode"])
-	d.Set("enable_ipv6", object["EnableIpv6"])
-	d.Set("local_gateway_ip", object["LocalGatewayIp"])
-	d.Set("local_ipv6_gateway_ip", object["LocalIpv6GatewayIp"])
-	d.Set("peer_gateway_ip", object["PeerGatewayIp"])
-	d.Set("peer_ipv6_gateway_ip", object["PeerIpv6GatewayIp"])
-	d.Set("peering_ipv6_subnet_mask", object["PeeringIpv6SubnetMask"])
-	d.Set("peering_subnet_mask", object["PeeringSubnetMask"])
-	d.Set("status", object["Status"])
-	d.Set("vlan_id", formatInt(object["VlanId"]))
 
 	return nil
 }
 
-func resourceAlicloudExpressConnectVbrPconnAssociationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudExpressConnectVbrPconnAssociationDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	expressConnectService := ExpressConnectService{client}
-	var err error
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	request := map[string]interface{}{
-		"VbrId":                parts[0],
-		"PhysicalConnectionId": parts[1],
-		"RegionId":             client.RegionId,
-	}
-
+	parts := strings.Split(d.Id(), ":")
 	action := "UnassociatePhysicalConnectionFromVirtualBorderRouter"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("UnassociatePhysicalConnectionFromVirtualBorderRouter")
-		resp, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["PhysicalConnectionId"] = parts[1]
+	request["VbrId"] = parts[0]
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -216,18 +215,22 @@ func resourceAlicloudExpressConnectVbrPconnAssociationDelete(d *schema.ResourceD
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, expressConnectService.ExpressConnectVbrPconnAssociationStateRefreshFunc(d, []string{}))
+
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, expressConnectServiceV2.ExpressConnectVbrPconnAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
