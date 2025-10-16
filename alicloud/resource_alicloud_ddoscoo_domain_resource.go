@@ -50,6 +50,16 @@ func resourceAliCloudDdosCooDomainResource() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"custom_headers": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.ValidateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+			},
 			"domain": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -125,10 +135,10 @@ func resourceAliCloudDdosCooDomainResourceCreate(d *schema.ResourceData, meta in
 
 	if v, ok := d.GetOk("proxy_types"); ok {
 		proxyTypesMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.(*schema.Set).List() {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["ProxyPorts"] = dataLoopTmp["proxy_ports"].(*schema.Set).List()
+			dataLoopMap["ProxyPorts"] = convertToInterfaceArray(dataLoopTmp["proxy_ports"])
 			dataLoopMap["ProxyType"] = dataLoopTmp["proxy_type"]
 			proxyTypesMapsArray = append(proxyTypesMapsArray, dataLoopMap)
 		}
@@ -137,12 +147,14 @@ func resourceAliCloudDdosCooDomainResourceCreate(d *schema.ResourceData, meta in
 
 	request["RsType"] = d.Get("rs_type")
 	if v, ok := d.GetOk("real_servers"); ok {
-		realServersMapsArray := v.(*schema.Set).List()
+		realServersMapsArray := convertToInterfaceArray(v)
+
 		request["RealServers"] = realServersMapsArray
 	}
 
 	if v, ok := d.GetOk("instance_ids"); ok {
-		instanceIdsMapsArray := v.(*schema.Set).List()
+		instanceIdsMapsArray := convertToInterfaceArray(v)
+
 		request["InstanceIds"] = instanceIdsMapsArray
 	}
 
@@ -194,21 +206,21 @@ func resourceAliCloudDdosCooDomainResourceRead(d *schema.ResourceData, meta inte
 
 	instanceIdsRaw := make([]interface{}, 0)
 	if objectRaw["InstanceIds"] != nil {
-		instanceIdsRaw = objectRaw["InstanceIds"].([]interface{})
+		instanceIdsRaw = convertToInterfaceArray(objectRaw["InstanceIds"])
 	}
 
 	d.Set("instance_ids", instanceIdsRaw)
 	proxyTypesRaw := objectRaw["ProxyTypes"]
 	proxyTypesMaps := make([]map[string]interface{}, 0)
 	if proxyTypesRaw != nil {
-		for _, proxyTypesChildRaw := range proxyTypesRaw.([]interface{}) {
+		for _, proxyTypesChildRaw := range convertToInterfaceArray(proxyTypesRaw) {
 			proxyTypesMap := make(map[string]interface{})
 			proxyTypesChildRaw := proxyTypesChildRaw.(map[string]interface{})
 			proxyTypesMap["proxy_type"] = proxyTypesChildRaw["ProxyType"]
 
 			proxyPortsRaw := make([]interface{}, 0)
 			if proxyTypesChildRaw["ProxyPorts"] != nil {
-				proxyPortsRaw = proxyTypesChildRaw["ProxyPorts"].([]interface{})
+				proxyPortsRaw = convertToInterfaceArray(proxyTypesChildRaw["ProxyPorts"])
 			}
 
 			proxyTypesMap["proxy_ports"] = proxyPortsRaw
@@ -220,7 +232,7 @@ func resourceAliCloudDdosCooDomainResourceRead(d *schema.ResourceData, meta inte
 	}
 	realServersRaw := make([]interface{}, 0)
 	if objectRaw["RealServers"] != nil {
-		realServersRaw = objectRaw["RealServers"].([]interface{})
+		realServersRaw = convertToInterfaceArray(objectRaw["RealServers"])
 	}
 
 	d.Set("real_servers", realServersRaw)
@@ -232,6 +244,15 @@ func resourceAliCloudDdosCooDomainResourceRead(d *schema.ResourceData, meta inte
 
 	d.Set("cert_name", objectRaw["UserCertName"])
 	d.Set("domain", objectRaw["Domain"])
+
+	objectRaw, err = ddosCooServiceV2.DescribeDomainResourceDescribeHeaders(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if objectRaw["Headers"] != nil {
+		d.Set("custom_headers", convertObjectToJsonString(objectRaw["Headers"]))
+	}
 
 	return nil
 }
@@ -367,6 +388,35 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 		request["CertIdentifier"] = d.Get("cert_identifier")
 	}
 
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	update = false
+	action = "ModifyHeaders"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domain"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("custom_headers") {
+		update = true
+	}
+	request["CustomHeaders"] = d.Get("custom_headers")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
