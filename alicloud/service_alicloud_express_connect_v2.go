@@ -1019,3 +1019,81 @@ func (s *ExpressConnectServiceV2) ExpressConnectBgpGroupStateRefreshFuncWithApi(
 }
 
 // DescribeExpressConnectBgpGroup >>> Encapsulated.
+// DescribeExpressConnectVbrHa <<< Encapsulated get interface for ExpressConnect VbrHa.
+
+func (s *ExpressConnectServiceV2) DescribeExpressConnectVbrHa(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["VbrHaId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeVbrHa"
+	request["ClientToken"] = buildClientToken(action)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+		request["ClientToken"] = buildClientToken(action)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	if vbrHaId, ok := object["VbrHaId"]; !ok || fmt.Sprint(vbrHaId) == "" {
+		return object, WrapErrorf(NotFoundErr("VbrHa", id), NotFoundWithResponse, response)
+	}
+
+	return response, nil
+}
+
+func (s *ExpressConnectServiceV2) ExpressConnectVbrHaStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ExpressConnectVbrHaStateRefreshFuncWithApi(id, field, failStates, s.DescribeExpressConnectVbrHa)
+}
+
+func (s *ExpressConnectServiceV2) ExpressConnectVbrHaStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeExpressConnectVbrHa >>> Encapsulated.

@@ -1776,7 +1776,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_acl_attachment":                                     resourceAliCloudGaAclAttachment(),
 			"alicloud_ga_additional_certificate":                             resourceAliCloudGaAdditionalCertificate(),
 			"alicloud_alidns_custom_line":                                    resourceAlicloudAlidnsCustomLine(),
-			"alicloud_vpc_vbr_ha":                                            resourceAlicloudVpcVbrHa(),
+			"alicloud_vpc_vbr_ha":                                            resourceAliCloudExpressConnectVbrHa(),
 			"alicloud_ros_template_scratch":                                  resourceAlicloudRosTemplateScratch(),
 			"alicloud_alidns_gtm_instance":                                   resourceAlicloudAlidnsGtmInstance(),
 			"alicloud_vpc_bgp_group":                                         resourceAliCloudExpressConnectBgpGroup(),
