@@ -2,7 +2,6 @@
 subcategory: "Express Connect"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_express_connect_vbr_pconn_association"
-sidebar_current: "docs-alicloud-resource-express-connect-vbr-pconn-association"
 description: |-
   Provides a Alicloud Express Connect Vbr Pconn Association resource.
 ---
@@ -11,6 +10,8 @@ description: |-
 
 Provides a Express Connect Vbr Pconn Association resource.
 
+VBR multi-pconn Association.
+
 For information about Express Connect Vbr Pconn Association and how to use it, see [What is Vbr Pconn Association](https://www.alibabacloud.com/help/en/express-connect/latest/associatephysicalconnectiontovirtualborderrouter#doc-api-Vpc-AssociatePhysicalConnectionToVirtualBorderRouter).
 
 -> **NOTE:** Available since v1.196.0.
@@ -18,12 +19,6 @@ For information about Express Connect Vbr Pconn Association and how to use it, s
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_express_connect_vbr_pconn_association&exampleId=09686d90-b700-a2fa-f87e-512fc88726f36d23fbc2&activeTab=example&spm=docs.r.express_connect_vbr_pconn_association.0.09686d90b7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 provider "alicloud" {
@@ -69,26 +64,34 @@ resource "alicloud_express_connect_vbr_pconn_association" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `enable_ipv6` - (Optional, ForceNew) Whether IPv6 is enabled. Value:
-  - **true**: on.
-  - **false** (default): Off.
+* `enable_ipv6` - (Optional, ForceNew, Computed) Whether IPv6 is enabled. Value:
+  - `true`: on.
+  - `false` (default): Off.
 * `local_gateway_ip` - (Optional, ForceNew) The Alibaba cloud IP address of the VBR instance.
 * `local_ipv6_gateway_ip` - (Optional, ForceNew) The IPv6 address on the Alibaba Cloud side of the VBR instance.
-* `peer_gateway_ip` - (Optional, ForceNew) The client IP address of the VBR instance. This attribute only allows the VBR owner to specify or modify. **NOTE:** Required when creating a VBR instance for the physical connection owner.
-* `peer_ipv6_gateway_ip` - (Optional, ForceNew) The IPv6 address of the client side of the VBR instance. This attribute only allows the VBR owner to specify or modify. **NOTE:** Required when creating a VBR instance for the physical connection owner.
-* `peering_ipv6_subnet_mask` - (Optional, ForceNew) The subnet mask of the Alibaba Cloud side and the client side of the VBR instance.Two IPv6 addresses must be in the same subnet.
-* `peering_subnet_mask` - (Optional, ForceNew) The subnet mask of the Alibaba Cloud side and the client side of the VBR instance.The two IP addresses must be in the same subnet.
+* `peer_gateway_ip` - (Optional, ForceNew) The client IP address of the VBR instance.
+  - This attribute only allows the VBR owner to specify or modify.
+  - Required when creating a VBR instance for the physical connection owner.
+* `peer_ipv6_gateway_ip` - (Optional, ForceNew) The IPv6 address of the client side of the VBR instance.
+  - This attribute only allows the VBR owner to specify or modify.
+  - Required when creating a VBR instance for the physical connection owner.
+* `peering_ipv6_subnet_mask` - (Optional, ForceNew) The subnet mask of the Alibaba Cloud side and the client side of the VBR instance.
+Two IPv6 addresses must be in the same subnet.
+* `peering_subnet_mask` - (Optional, ForceNew) The subnet mask of the Alibaba Cloud side and the client side of the VBR instance.
+The two IP addresses must be in the same subnet.
 * `physical_connection_id` - (Required, ForceNew) The ID of the leased line instance.
 * `vbr_id` - (Required, ForceNew) The ID of the VBR instance.
-* `vlan_id` - (Required, ForceNew) VLAN ID of the VBR. Valid values: **0 to 2999**. **NOTE:** only the owner of the physical connection can specify this parameter. The VLAN ID of two VBRs under the same physical connection cannot be the same.
+* `vlan_id` - (Required, ForceNew) VLAN ID of the VBR. Valid values: **0 to 2999**.
+
+-> **NOTE:**  only the owner of the physical connection can specify this parameter. The VLAN ID of two VBRs under the same physical connection cannot be the same.
 
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The `key` of the resource supplied above.The value is formulated as `vbr_id:physical_connection_id`.
-* `status` - The status of the resource.
-* `circuit_code` - The circuit code provided by the operator for the physical connection.
+* `id` - The ID of the resource supplied above.The value is formulated as `<vbr_id>:<physical_connection_id>`.
+* `status` - The status of the resource
+* `circuit_code` - (Optional, ForceNew, Computed) The circuit code provided by the operator for the physical connection.
 
 ## Timeouts
 
@@ -101,5 +104,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 Express Connect Vbr Pconn Association can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_express_connect_vbr_pconn_association.example <VbrId>:<PhysicalConnectionId>
+$ terraform import alicloud_express_connect_vbr_pconn_association.example <vbr_id>:<physical_connection_id>
 ```
