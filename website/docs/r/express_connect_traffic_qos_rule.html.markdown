@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_express_connect_traffic_qos_rule
 
-Provides a Express Connect Traffic Qos Rule resource. Express Connect Traffic QoS Rule.
+Provides a Express Connect Traffic Qos Rule resource.
+
+Express Connect Traffic QoS Rule.
 
 For information about Express Connect Traffic Qos Rule and how to use it, see [What is Traffic Qos Rule](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/CreateExpressConnectTrafficQosRule).
 
@@ -17,12 +19,6 @@ For information about Express Connect Traffic Qos Rule and how to use it, see [W
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_express_connect_traffic_qos_rule&exampleId=8dd603a8-82ae-5d9a-b3ad-261b2c3c4ae8be188618&activeTab=example&spm=docs.r.express_connect_traffic_qos_rule.0.8dd603a882&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -77,55 +73,65 @@ resource "alicloud_express_connect_traffic_qos_rule" "default" {
 
 The following arguments are supported:
 * `dst_cidr` - (Optional) The traffic of the QoS rule matches the Destination IPv4 network segment.
--> **NOTE:**  If this parameter is not supported, enter **SrcIPv6Cidr** or **DstIPv6Cidr * *.
+
+-> **NOTE:**  If this parameter is not supported, enter `SrcIPv6Cidr` or **DstIPv6Cidr * *.
+
 * `dst_ipv6_cidr` - (Optional) The QoS rule traffic matches the Destination IPv6 network segment.
--> **NOTE:**  If this parameter is not supported, enter **SrcCidr** or **DstCidr * *.
-* `dst_port_range` - (Optional) QoS rule traffic matches the destination port number range. Value range: **0** to **65535**. If not, the value is - 1. Currently, only a single port number is supported, and the start and end of the port number must be the same. The corresponding destination port number range is fixed for different protocol types. The values are as follows:
-  - **ALL**:-1/-1, not editable.
+
+-> **NOTE:**  If this parameter is not supported, enter `SrcCidr` or **DstCidr * *.
+
+* `dst_port_range` - (Optional, Computed) QoS rule traffic matches the destination port number range. Value range: `0` to `65535`. If not, the value is - 1. Currently, only a single port number is supported, and the start and end of the port number must be the same. The corresponding destination port number range is fixed for different protocol types. The values are as follows:
+  - `ALL`:-1/-1, not editable.
   - **ICMP(IPv4)**:-1/-1, non-editable.
   - **ICMPv6(IPv6)**:-1/-1, non-editable.
-  - **TCP**:-1/-1, editable.
-  - **UDP**:-1/-1, editable.
-  - **GRE**:-1/-1, not editable.
-  - **SSH**:22/22, not editable.
-  - **Telnet**:23/23, not editable.
-  - **HTTP**:80/80, non-editable.
-  - **HTTPS**:443/443, which cannot be edited.
+  - `TCP`:-1/-1, editable.
+  - `UDP`:-1/-1, editable.
+  - `GRE`:-1/-1, not editable.
+  - `SSH`:22/22, not editable.
+  - `Telnet`:23/23, not editable.
+  - `HTTP`:80/80, non-editable.
+  - `HTTPS`:443/443, which cannot be edited.
   - **MS SQL**:1443/1443, which cannot be edited.
-  - **Oracle**:1521/1521, non-editable.
-  - **MySql**:3306/3306, non-editable.
-  - **RDP**:3389/3389, non-editable.
-  - **PostgreSQL**:5432/5432, non-editable.
-  - **Redis**:6379/6379, non-editable.
-* `match_dscp` - (Optional) The DSCP value of the traffic matched by the QoS rule. Value range: **0** to **63**. If not, the value is - 1.
-* `priority` - (Required) QoS rule priority. Value range: **1** to **9000**. The larger the number, the higher the priority. The priority of a QoS rule cannot be repeated in the same QoS policy.
+  - `Oracle`:1521/1521, non-editable.
+  - `MySql`:3306/3306, non-editable.
+  - `RDP`:3389/3389, non-editable.
+  - `PostgreSQL`:5432/5432, non-editable.
+  - `Redis`:6379/6379, non-editable.
+* `match_dscp` - (Optional, Computed, Int) The DSCP value of the traffic matched by the QoS rule. Value range: `0` to `63`. If not, the value is - 1.
+* `priority` - (Required, Int) QoS rule priority. Value range: `1` to `9000`. The larger the number, the higher the priority. The priority of a QoS rule cannot be repeated in the same QoS policy.
 * `protocol` - (Required) QoS rule protocol type, value:
-  - **ALL**
+  - `ALL`
   - **ICMP(IPv4)**
   - **ICMPv6(IPv6)* *
-  - **TCP**
-  - **UDP**
-  - **GRE**
-  - **SSH**
-  - **Telnet**
-  - **HTTP**
-  - **HTTPS**
+  - `TCP`
+  - `UDP`
+  - `GRE`
+  - `SSH`
+  - `Telnet`
+  - `HTTP`
+  - `HTTPS`
   - **MS SQL**
-  - **Oracle**
-  - **MySql**
-  - **RDP**
-  - **PostgreSQL**
-  - **Redis**.
+  - `Oracle`
+  - `MySql`
+  - `RDP`
+  - `PostgreSQL`
+  - `Redis`
 * `qos_id` - (Required, ForceNew) The QoS policy ID.
 * `queue_id` - (Required, ForceNew) The QoS queue ID.
-* `remarking_dscp` - (Optional) Modify The DSCP value in the flow. Value range: **0** to **63**. If the value is not modified, the value is - 1.
-* `rule_description` - (Optional) The description of the QoS rule.  The length is 0 to 256 characters and cannot start with 'http:// 'or 'https.
-* `rule_name` - (Optional) The name of the QoS rule.  The length is 0 to 128 characters and cannot start with 'http:// 'or 'https.
+* `remarking_dscp` - (Optional, Computed, Int) Modify The DSCP value in the flow. Value range: `0` to `63`. If the value is not modified, the value is - 1.
+* `rule_description` - (Optional) The description of the QoS rule.
+The length is 0 to 256 characters and cannot start with 'http:// 'or 'https.
+* `rule_name` - (Optional) The name of the QoS rule.
+The length is 0 to 128 characters and cannot start with 'http:// 'or 'https.
 * `src_cidr` - (Optional) The QoS rule traffic matches the source IPv4 CIDR block.
--> **NOTE:**  If this parameter is not supported, enter **SrcIPv6Cidr** or **DstIPv6Cidr * *.
+
+-> **NOTE:**  If this parameter is not supported, enter `SrcIPv6Cidr` or **DstIPv6Cidr * *.
+
 * `src_ipv6_cidr` - (Optional) The QoS rule traffic matches the source IPv6 network segment.
--> **NOTE:**  If this parameter is not supported, enter **SrcCidr** or **DstCidr * *.
-* `src_port_range` - (Optional) The source port number of the QoS rule traffic matching. The value range is **0** to **65535**. If the traffic does not match, the value is - 1. Currently, only a single port number is supported, and the start and end of the port number must be the same.
+
+-> **NOTE:**  If this parameter is not supported, enter `SrcCidr` or **DstCidr * *.
+
+* `src_port_range` - (Optional, Computed) The source port number of the QoS rule traffic matching. The value range is `0` to `65535`. If the traffic does not match, the value is - 1. Currently, only a single port number is supported, and the start and end of the port number must be the same.
 
 ## Attributes Reference
 
