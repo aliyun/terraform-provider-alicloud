@@ -541,7 +541,7 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy", "ResourceStatus.Error"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy", "ResourceStatus.Error", "NetworkAclExistBinding"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -587,7 +587,7 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy", "ResourceStatus.Error"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy", "ResourceStatus.Error", "NetworkAclExistBinding"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
