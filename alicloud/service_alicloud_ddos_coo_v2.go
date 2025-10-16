@@ -176,15 +176,10 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[
 
 	v, err := jsonpath.Get("$.WebRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.WebRules[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
-	}
-
-	currentStatus := v.([]interface{})[0].(map[string]interface{})["Domain"]
-	if currentStatus == nil {
 		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
 	}
 
@@ -230,16 +225,60 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeWebRules(id string) (ob
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
+func (s *DdosCooServiceV2) DescribeDomainResourceDescribeHeaders(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domain"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeHeaders"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.CustomHeader", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CustomHeader", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
 func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.DdosCooDomainResourceStateRefreshFuncWithApi(id, field, failStates, s.DescribeDdosCooDomainResource)
+}
+
+func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeDdosCooDomainResource(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
+		object["OcspEnabled"] = convertDdosCooDomainResourceWebRulesOcspEnabledResponse(object["OcspEnabled"])
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
