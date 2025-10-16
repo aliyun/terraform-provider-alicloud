@@ -582,6 +582,30 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 	}
 	schemaModifySet = schemaModifySet.Difference(testIgnoreSet)
 
+	// Get immutable attributes from documentation
+	immutableAttrs := getImmutableAttributesFromDoc(resourceName, fileType)
+	if immutableAttrs.Cardinality() > 0 {
+		log.Infof("Found %d immutable attributes in documentation: %v", immutableAttrs.Cardinality(), immutableAttrs.ToSlice())
+
+		// Build a set that includes both the immutable attributes and all their nested fields
+		immutableWithNested := mapset.NewSet()
+		for _, attr := range immutableAttrs.ToSlice() {
+			attrStr := attr.(string)
+			immutableWithNested.Add(attrStr)
+
+			// Also add any nested fields (e.g., if "resources" is immutable, also exclude "resources.resource_id")
+			for _, schemaAttr := range schemaModifySet.ToSlice() {
+				schemaAttrStr := schemaAttr.(string)
+				if strings.HasPrefix(schemaAttrStr, attrStr+".") {
+					immutableWithNested.Add(schemaAttrStr)
+					log.Debugf("Excluding nested immutable attribute: %s", schemaAttrStr)
+				}
+			}
+		}
+
+		schemaModifySet = schemaModifySet.Difference(immutableWithNested)
+	}
+
 	notModifySlice := schemaModifySet.Difference(testModifySet).ToSlice()
 	if len(notModifySlice) != 0 {
 		isAllModified = false
@@ -596,6 +620,86 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 	}
 
 	return isFullCover && isIgnoreLegal && isAllModified
+}
+
+// getImmutableAttributesFromDoc reads the documentation and finds attributes marked as immutable
+// These attributes have descriptions like "Note: The parameter is immutable after resource creation"
+func getImmutableAttributesFromDoc(resourceName string, fileType string) mapset.Set {
+	immutableSet := mapset.NewSet()
+
+	// Remove "alicloud_" prefix if present for documentation path
+	docResourceName := strings.TrimPrefix(resourceName, "alicloud_")
+
+	// Construct documentation path
+	var docPath string
+	if fileType == "resource" {
+		docPath = "website/docs/r/" + docResourceName + ".html.markdown"
+	} else {
+		docPath = "website/docs/d/" + docResourceName + ".html.markdown"
+	}
+
+	// Read documentation file
+	file, err := os.Open(docPath)
+	if err != nil {
+		log.Debugf("Cannot open documentation file %s: %v", docPath, err)
+		return immutableSet
+	}
+	defer file.Close()
+
+	// Regex patterns to match immutable declarations
+	immutablePattern := regexp.MustCompile(`\*\*Note:\s*The parameter is immutable after resource creation`)
+	// Pattern to extract attribute name: * `attr_name` - (Optional/Required...) Description
+	attrPattern := regexp.MustCompile(`^\*\s+\x60([a-zA-Z_0-9]+)\x60\s+-\s+\(`)
+
+	scanner := bufio.NewScanner(file)
+	var currentAttr string
+	var continuedLine string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Check if this line defines an attribute
+		if matches := attrPattern.FindStringSubmatch(line); matches != nil {
+			// Save previous attribute if it was immutable
+			if currentAttr != "" && strings.Contains(continuedLine, "immutable after resource creation") {
+				// Add the attribute and all its nested fields
+				immutableSet.Add(currentAttr)
+				log.Debugf("Found immutable attribute: %s", currentAttr)
+			}
+
+			// Start tracking new attribute
+			currentAttr = matches[1]
+			continuedLine = line
+		} else if currentAttr != "" {
+			// Continue reading the description (might span multiple lines)
+			continuedLine += " " + strings.TrimSpace(line)
+
+			// Stop if we hit a new section or empty line
+			if strings.HasPrefix(line, "##") || strings.HasPrefix(line, "###") {
+				// Check if current attribute is immutable before resetting
+				if strings.Contains(continuedLine, "immutable after resource creation") {
+					immutableSet.Add(currentAttr)
+					log.Debugf("Found immutable attribute: %s", currentAttr)
+				}
+				currentAttr = ""
+				continuedLine = ""
+			}
+		}
+
+		// Also check for inline immutable declarations
+		if immutablePattern.MatchString(line) && currentAttr != "" {
+			immutableSet.Add(currentAttr)
+			log.Debugf("Found immutable attribute: %s", currentAttr)
+		}
+	}
+
+	// Check the last attribute
+	if currentAttr != "" && strings.Contains(continuedLine, "immutable after resource creation") {
+		immutableSet.Add(currentAttr)
+		log.Debugf("Found immutable attribute: %s", currentAttr)
+	}
+
+	return immutableSet
 }
 
 func testAll(diff *diffparser.Diff) {
