@@ -914,6 +914,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_esa_transport_layer_application":                      resourceAliCloudEsaTransportLayerApplication(),
+			"alicloud_esa_waf_rule":                                         resourceAliCloudEsaWafRule(),
 			"alicloud_esa_waf_ruleset":                                      resourceAliCloudEsaWafRuleset(),
 			"alicloud_sls_index":                                            resourceAliCloudSlsIndex(),
 			"alicloud_dms_airflow":                                          resourceAliCloudDmsAirflow(),

@@ -3852,12 +3852,21 @@ func (s *EsaServiceV2) DescribeEsaWafRule(id string) (object map[string]interfac
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
+	currentStatus := response["Id"]
+	if currentStatus == nil {
+		return object, WrapErrorf(NotFoundErr("WafRule", id), NotFoundMsg, response)
+	}
+
 	return response, nil
 }
 
 func (s *EsaServiceV2) EsaWafRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaWafRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWafRule)
+}
+
+func (s *EsaServiceV2) EsaWafRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaWafRule(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
