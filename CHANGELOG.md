@@ -1,4 +1,29 @@
 ## 1.261.0 (Unreleased)
+
+- **New Resource:** `alicloud_ess_instance_refresh` [GH-9033]
+- **New Data Source:** `alicloud_cloud_sso_user_provisioning_events` [GH-9056]
+
+ENHANCEMENTS:
+
+- resource/alicloud_message_service_service: Support repeated creation without error. [GH-9031]
+- resource/alicloud_adb_resource_group: Refactored the resource alicloud_adb_resource_group; Added the field cluster_mode, cluster_size_resource, engine, engine_params, max_cluster_count, max_compute_resource, min_cluster_count, min_compute_resource, port, connection_string, status. [GH-9035]
+- resource/alicloud_lindorm_instance_v2: Changed the field engine_list, node_group to TypeSet. [GH-9037]
+- resource/alicloud_express_connect_traffic_qos: Refactored the resource alicloud_express_connect_traffic_qos; Added the field resource_group_id, tags. [GH-9039]
+- resource/alicloud_log_etl: support create new version for data process. [GH-9041]
+- resource/alicloud_wafv3_defense_rule: Fixed bug while create with rate_limit.status valued null. [GH-9045]
+- resource/alicloud_ecs_elasticity_assurance: Refactored the resource alicloud_ecs_elasticity_assurance; Added the field auto_renew, auto_renew_period, auto_renew_period_unit, region_id; Removed the ForceNew for field instance_amount, private_pool_options_name. [GH-9046]
+- resource/alicloud_express_connect_vbr_pconn_association: Refactored the resource and improve the docs. [GH-9048]
+- resource/alicloud_common_bandwidth_package_attachment: Supported bandwidth_package_bandwidth set to Cancelled; Deprecated the field cancel_common_bandwidth_package_ip_bandwidth. [GH-9049]
+- resource/alicloud_vpc_bgp_group: Added the field clear_auth_key, ip_version, region_id, route_limit. [GH-9051]
+- resource/alicloud_vpc_vbr_ha: Added the field create_time, region_id. [GH-9057]
+- resource/alicloud_network_acl: Add retry code; resource/alicloud_vpc_network_acl_attachment: Add retry code. [GH-9059]
+- resource/alicloud_express_connect_traffic_qos_queue: Refactored the resource and improve the docs. [GH-9062]
+- resource/alicloud_ddoscoo_domain_resource: Added the field custom_headers. [GH-9064]
+- resource/alicloud_resource_manager_resource_share: Added the field allow_external_targets, create_time, permission_names, resource_group_id, resources, resource_id, resource_type, tags, targets. [GH-9066]
+- docs: Improved the document kvstore_account. [GH-9038]
+- docs: Improves description for enhanced_nat_available_zones. [GH-9047]
+- docs: Update express_connect_traffic_qos_rule content. [GH-9060]
+
 ## 1.260.1 (September 26, 2025)
 
 ENHANCEMENTS:
@@ -12,6 +37,7 @@ ENHANCEMENTS:
 - resource/alicloud_amqp_queue: Added expected error code InstanceNotExist, InstanceIdNotExist. ([#9024](https://github.com/aliyun/terraform-provider-alicloud/issues/9024))
 - resource/alicloud_kvstore_account: refactoring implement and fix testcase. ([#9026](https://github.com/aliyun/terraform-provider-alicloud/issues/9026))
 - resource/alicloud_vpc_bgp_network: Refactored the resource alicloud_vpc_bgp_network; Added the field vpc_id. ([#9027](https://github.com/aliyun/terraform-provider-alicloud/issues/9027))
+- resource/alicloud_apig_gateway: Added the field gateway_type, zones. ([#9030](https://github.com/aliyun/terraform-provider-alicloud/issues/9030))
 - docs: Improved the document update version. ([#9028](https://github.com/aliyun/terraform-provider-alicloud/issues/9028))
 
 BUG FIXES:
