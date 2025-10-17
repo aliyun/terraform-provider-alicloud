@@ -236,7 +236,8 @@ resource "alicloud_cs_managed_kubernetes" "auto-mode" {
     "controlplane-events",
     "alb",
     "ack-goatscaler",
-    "coredns"
+    "coredns",
+    "gatekeeper"
   ]
   control_plane_log_ttl = "30"
 
@@ -245,7 +246,7 @@ resource "alicloud_cs_managed_kubernetes" "auto-mode" {
   }
 
   addons {
-    name = "managed-metrics-server"
+    name = "metrics-server"
   }
 
   addons {
