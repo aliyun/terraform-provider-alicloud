@@ -20,7 +20,7 @@ For information about ess instance refresh, see [StartInstanceRefresh](https://w
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_instance_refresh&exampleId=0c41e297-00f9-b7db-8042-8d32d1564d4cb01daed9&activeTab=example&spm=docs.r.ess_instance_refresh.0.0c41e29700&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_instance_refresh&exampleId=36c0c7b1-51ca-80c7-4692-88ba02e441a3e4680173&activeTab=example&spm=docs.r.ess_instance_refresh.0.36c0c7b151&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

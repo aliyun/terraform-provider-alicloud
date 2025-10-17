@@ -21,7 +21,7 @@ For information about ECS Elasticity Assurance and how to use it, see [What is E
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_elasticity_assurance&exampleId=b14da29c-d75f-4580-6ea0-dffe7d201e0f620a1ac2&activeTab=example&spm=docs.r.ecs_elasticity_assurance.0.b14da29cd7&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ecs_elasticity_assurance&exampleId=5d39c3e1-3c4d-7ecc-7023-7dff72405e335a5b4a41&activeTab=example&spm=docs.r.ecs_elasticity_assurance.0.5d39c3e13c&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

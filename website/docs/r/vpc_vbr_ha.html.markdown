@@ -20,6 +20,12 @@ For information about Express Connect Vbr Ha and how to use it, see [What is Vbr
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_vbr_ha&exampleId=51a841d0-a62c-fd12-fbcc-92985eb2b611632d8845&activeTab=example&spm=docs.r.vpc_vbr_ha.0.51a841d0a6&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
