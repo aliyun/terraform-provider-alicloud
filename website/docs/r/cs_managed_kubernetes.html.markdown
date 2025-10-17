@@ -209,6 +209,7 @@ resource "alicloud_cs_managed_kubernetes" "auto-mode" {
   proxy_mode                     = var.proxy_mode
   service_cidr                   = var.service_cidr
   ip_stack                       = "ipv4"
+  deletion_protection            = true
 
   auto_mode {
     enabled = true
