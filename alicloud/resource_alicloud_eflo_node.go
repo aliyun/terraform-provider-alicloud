@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -35,8 +36,11 @@ func resourceAliCloudEfloNode() *schema.Resource {
 				Optional: true,
 			},
 			"computing_server": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Deprecated:    "Field 'computing_server' has been deprecated from provider version 1.261.0. New field 'machine_type' instead.",
+				ConflictsWith: []string{"machine_type"},
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -49,10 +53,24 @@ func resourceAliCloudEfloNode() *schema.Resource {
 			"hpn_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
+			},
+			"machine_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"payment_ratio": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
 			},
 			"period": {
 				Type:     schema.TypeInt,
@@ -62,13 +80,18 @@ func resourceAliCloudEfloNode() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"renew_period": {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
 			"renewal_status": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -83,10 +106,6 @@ func resourceAliCloudEfloNode() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"install_pai": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
 			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -96,12 +115,22 @@ func resourceAliCloudEfloNode() *schema.Resource {
 			"zone": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
+			},
+			"install_pai": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 		},
 	}
 }
 
 func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) error {
+
+	installPai := false
+	if v, ok := d.GetOk("install_pai"); ok && v.(bool) {
+		installPai = true
+	}
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -111,13 +140,10 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	installPai := false
-	if v, ok := d.GetOk("install_pai"); ok && v.(bool) {
-		installPai = true
-	}
 
 	request["ClientToken"] = buildClientToken(action)
 
+	request["SubscriptionType"] = d.Get("payment_type")
 	parameterMapList := make([]map[string]interface{}, 0)
 	if v, ok := d.GetOk("server_arch"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -172,11 +198,15 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 			"Value": v,
 		})
 	}
-	computingServerCode := "computing_server"
+	computingServerCode := "computingserver"
 	if installPai {
 		computingServerCode = "ComputingServer"
-	} else {
-		computingServerCode = "computingserver"
+	}
+	if v, ok := d.GetOk("machine_type"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  computingServerCode,
+			"Value": v,
+		})
 	}
 	if v, ok := d.GetOk("computing_server"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -198,7 +228,6 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	request["Parameter"] = parameterMapList
 
-	request["SubscriptionType"] = "Subscription"
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request["RenewalStatus"] = v
 	}
@@ -215,6 +244,13 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 		request["ProductCode"] = "learn"
 		request["ProductType"] = "learn_eflocomputing_public_cn"
 	}
+	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductCode"] = "bccluster"
+		request["ProductType"] = "bccluster_computinginstance_public_cn"
+		if installPai {
+			return WrapError(Error("InstallPai currently does not support pay-as-you-go products."))
+		}
+	}
 	if client.IsInternationalAccount() {
 		request["ProductCode"] = "bccluster"
 		request["ProductType"] = "bccluster_eflocomputing_public_intl"
@@ -222,6 +258,16 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 			request["ProductCode"] = "learn"
 			request["ProductType"] = "learn_eflocomputing_public_intl"
 		}
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "bccluster"
+			request["ProductType"] = "bccluster_computinginstance_public_intl"
+			if installPai {
+				return WrapError(Error("InstallPai currently does not support pay-as-you-go products."))
+			}
+		}
+	}
+	if request["SubscriptionType"] == "" {
+		request["SubscriptionType"] = "Subscription"
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -237,6 +283,13 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 				if installPai {
 					request["ProductCode"] = "learn"
 					request["ProductType"] = "learn_eflocomputing_public_intl"
+				}
+				if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+					request["ProductCode"] = "bccluster"
+					request["ProductType"] = "bccluster_computinginstance_public_intl"
+					if installPai {
+						return resource.RetryableError(err)
+					}
 				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
@@ -277,9 +330,13 @@ func resourceAliCloudEfloNodeRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
+	d.Set("computing_server", objectRaw["MachineType"])
 	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("hpn_zone", objectRaw["HpnZone"])
+	d.Set("machine_type", objectRaw["MachineType"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("status", objectRaw["OperatingState"])
+	d.Set("zone", objectRaw["ZoneId"])
 
 	objectRaw, err = efloServiceV2.DescribeNodeListTagResources(d.Id())
 	if err != nil && !NotFoundError(err) {
@@ -288,6 +345,20 @@ func resourceAliCloudEfloNodeRead(d *schema.ResourceData, meta interface{}) erro
 
 	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
+
+	objectRaw, err = efloServiceV2.DescribeNodeQueryAvailableInstances(d)
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	d.Set("payment_type", objectRaw["SubscriptionType"])
+	d.Set("region_id", objectRaw["Region"])
+	if fmt.Sprint(objectRaw["RenewalDurationUnit"]) == "Y" {
+		d.Set("renew_period", formatInt(objectRaw["RenewalDuration"])*12)
+	} else {
+		d.Set("renew_period", objectRaw["RenewalDuration"])
+	}
+	d.Set("renewal_status", objectRaw["RenewStatus"])
 
 	return nil
 }
@@ -298,6 +369,7 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+	d.Partial(true)
 
 	var err error
 	action := "ChangeResourceGroup"
@@ -328,50 +400,43 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-
-	if d.HasChange("tags") {
-		efloServiceV2 := EfloServiceV2{client}
-		if err := efloServiceV2.SetResourceTags(d, "Node"); err != nil {
-			return WrapError(err)
-		}
-	}
-	return resourceAliCloudEfloNodeRead(d, meta)
-}
-
-func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*connectivity.AliyunClient)
-	action := "RefundInstance"
-	var request map[string]interface{}
-	var response map[string]interface{}
-	query := make(map[string]interface{})
-	var err error
-	request = make(map[string]interface{})
-	request["InstanceId"] = d.Id()
-
-	request["ClientToken"] = buildClientToken(action)
+	update = false
+	action = "SetRenewal"
 	installPai := false
 	if v, ok := d.GetOk("install_pai"); ok && v.(bool) {
 		installPai = true
 	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceIDs"] = d.Id()
 
-	if !installPai {
-		installPai, err = isInstallPai(d.Id(), d.Timeout(schema.TimeoutDelete), client)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
+	if !d.IsNewResource() && d.HasChange("payment_type") {
+		update = true
+		request["SubscriptionType"] = d.Get("payment_type")
 	}
 
-	request["ImmediatelyRelease"] = "1"
+	if !d.IsNewResource() && d.HasChange("renewal_status") {
+		update = true
+	}
+	request["RenewalStatus"] = d.Get("renewal_status")
+	if !d.IsNewResource() && d.HasChange("renew_period") {
+		update = true
+		request["RenewalPeriod"] = d.Get("renew_period")
+	}
+
 	var endpoint string
 	request["ProductCode"] = "bccluster"
 	request["ProductType"] = "bccluster_eflocomputing_public_cn"
 	if installPai {
 		request["ProductCode"] = "learn"
 		request["ProductType"] = "learn_eflocomputing_public_cn"
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductCode"] = "bccluster"
+		request["ProductType"] = "bccluster_computinginstance_public_cn"
+		if installPai {
+			return WrapError(Error("InstallPai currently does not support pay-as-you-go products."))
+		}
 	}
 	if client.IsInternationalAccount() {
 		request["ProductCode"] = "bccluster"
@@ -380,46 +445,239 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 			request["ProductCode"] = "learn"
 			request["ProductType"] = "learn_eflocomputing_public_intl"
 		}
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "bccluster"
+			request["ProductType"] = "bccluster_computinginstance_public_intl"
+			if installPai {
+				return WrapError(Error("InstallPai currently does not support pay-as-you-go products."))
+			}
+		}
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["SubscriptionType"] = v
+	}
+	if request["SubscriptionType"] == "" {
+		request["SubscriptionType"] = "Subscription"
+	}
+	if request["SubscriptionType"] == "Subscription" {
+		v, ok := d.GetOk("renew_period")
+		if !ok {
+			return WrapError(Error("RenewPeriod is required when RenewalStatus is set to AutoRenewal."))
+		}
+		request["RenewalPeriod"] = v
+		if v.(int)%12 != 0 {
+			return WrapError(Error("RenewPeriod must be a multiple of 12."))
+		}
+		renewPeriod := v.(int) / 12
+		if renewPeriod > 1 {
+			request["RenewalPeriod"] = renewPeriod
+			request["RenewalPeriodUnit"] = "Y"
+		}
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					request["ProductCode"] = "bccluster"
+					request["ProductType"] = "bccluster_eflocomputing_public_intl"
+					if installPai {
+						request["ProductCode"] = "learn"
+						request["ProductType"] = "learn_eflocomputing_public_intl"
+					}
+					if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+						request["ProductCode"] = "bccluster"
+						request["ProductType"] = "bccluster_computinginstance_public_intl"
+						if installPai {
+							return resource.RetryableError(err)
+						}
+					}
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("tags") {
+		efloServiceV2 := EfloServiceV2{client}
+		if err := efloServiceV2.SetResourceTags(d, "Node"); err != nil {
+			return WrapError(err)
+		}
+	}
+	d.Partial(false)
+	return resourceAliCloudEfloNodeRead(d, meta)
+}
+
+func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) error {
+
+	enableDelete := false
+	if _, ok := d.GetOk("payment_type"); !ok {
+		enableDelete = true
+	}
+	if v, ok := d.GetOk("payment_type"); ok {
+		if InArray(fmt.Sprint(v), []string{"Subscription"}) {
+			enableDelete = true
+		}
+	}
+	if enableDelete {
+		client := meta.(*connectivity.AliyunClient)
+		action := "RefundInstance"
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+		var err error
+		request = make(map[string]interface{})
+		request["InstanceId"] = d.Id()
+
 		request["ClientToken"] = buildClientToken(action)
 
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request["ProductCode"] = "bccluster"
-				request["ProductType"] = "bccluster_eflocomputing_public_intl"
-				if installPai {
-					request["ProductCode"] = "learn"
-					request["ProductType"] = "learn_eflocomputing_public_intl"
+		request["ImmediatelyRelease"] = "1"
+		installPai := false
+		if v, ok := d.GetOk("install_pai"); ok && v.(bool) {
+			installPai = true
+		}
+
+		if !installPai {
+			installPai, err = isInstallPai(d.Id(), d.Timeout(schema.TimeoutDelete), client)
+			if err != nil {
+				if NotFoundError(err) {
+					return nil
 				}
-				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return WrapErrorf(err, IdMsg, d.Id())
 			}
-			return resource.NonRetryableError(err)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-
-	if err != nil {
-		if IsExpectedErrors(err, []string{"RESOURCE_NOT_FOUND"}) || NotFoundError(err) {
+		var endpoint string
+		request["ProductCode"] = "bccluster"
+		request["ProductType"] = "bccluster_eflocomputing_public_cn"
+		if installPai {
+			request["ProductCode"] = "learn"
+			request["ProductType"] = "learn_eflocomputing_public_cn"
+		}
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "bccluster"
+			request["ProductType"] = "bccluster_computinginstance_public_cn"
+			if installPai {
+				return WrapError(Error("InstallPai currently does not support pay-as-you-go products."))
+			}
+		}
+		if client.IsInternationalAccount() {
+			request["ProductCode"] = "bccluster"
+			request["ProductType"] = "bccluster_eflocomputing_public_intl"
+			if installPai {
+				request["ProductCode"] = "learn"
+				request["ProductType"] = "learn_eflocomputing_public_intl"
+			}
+			if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+				request["ProductCode"] = "bccluster"
+				request["ProductType"] = "bccluster_computinginstance_public_intl"
+				if installPai {
+					return WrapError(Error("InstallPai currently does not support pay-as-you-go products."))
+				}
+			}
+		}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					request["ProductCode"] = "bccluster"
+					request["ProductType"] = "bccluster_eflocomputing_public_intl"
+					if installPai {
+						request["ProductCode"] = "learn"
+						request["ProductType"] = "learn_eflocomputing_public_intl"
+					}
+					if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+						request["ProductCode"] = "bccluster"
+						request["ProductType"] = "bccluster_computinginstance_public_intl"
+						if installPai {
+							return resource.RetryableError(err)
+						}
+					}
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
 			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"RESOURCE_NOT_FOUND"}) || NotFoundError(err) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+
+		efloServiceV2 := EfloServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, efloServiceV2.EfloNodeStateRefreshFunc(d.Id(), "$.NodeId", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 	}
 
-	efloServiceV2 := EfloServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, efloServiceV2.EfloNodeStateRefreshFunc(d.Id(), "$.NodeId", []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+	enableDelete = false
+	if v, ok := d.GetOk("payment_type"); ok {
+		if InArray(fmt.Sprint(v), []string{"PayAsYouGo"}) {
+			enableDelete = true
+		}
 	}
+	if enableDelete {
+		client := meta.(*connectivity.AliyunClient)
+		action := "DeleteNode"
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+		var err error
+		request = make(map[string]interface{})
+		request["NodeId"] = d.Id()
+		request["RegionId"] = client.RegionId
 
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"RESOURCE_NOT_FOUND", "InvalidNodeId.NotFound"}) || NotFoundError(err) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		efloServiceV2 := EfloServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, efloServiceV2.EfloNodeStateRefreshFunc(d.Id(), "$.NodeId", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+	}
 	return nil
 }
 

@@ -43,7 +43,7 @@ func (s *EfloServiceV2) DescribeEfloNode(id string) (object map[string]interface
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"RESOURCE_NOT_FOUND"}) || NotFoundError(err) {
+		if IsExpectedErrors(err, []string{"RESOURCE_NOT_FOUND"}) {
 			return object, WrapErrorf(NotFoundErr("Node", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -51,7 +51,6 @@ func (s *EfloServiceV2) DescribeEfloNode(id string) (object map[string]interface
 
 	return response, nil
 }
-
 func (s *EfloServiceV2) DescribeNodeListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -84,17 +83,111 @@ func (s *EfloServiceV2) DescribeNodeListTagResources(id string) (object map[stri
 
 	return response, nil
 }
+func (s *EfloServiceV2) DescribeNodeQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	id := d.Id()
+	installPai := false
+	if v, ok := d.GetOk("install_pai"); ok && v.(bool) {
+		installPai = true
+	}
+	request["InstanceIDs"] = id
+	request["Region"] = client.RegionId
+	var endpoint string
+	request["ProductCode"] = "bccluster"
+	request["ProductType"] = "bccluster_eflocomputing_public_cn"
+	if installPai {
+		request["ProductCode"] = "learn"
+		request["ProductType"] = "learn_eflocomputing_public_cn"
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductCode"] = "bccluster"
+		request["ProductType"] = "bccluster_computinginstance_public_cn"
+		if installPai {
+			return nil, WrapError(Error("InstallPai currently does not support pay-as-you-go products."))
+		}
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = "bccluster"
+		request["ProductType"] = "bccluster_eflocomputing_public_intl"
+		if installPai {
+			request["ProductCode"] = "learn"
+			request["ProductType"] = "learn_eflocomputing_public_intl"
+		}
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "bccluster"
+			request["ProductType"] = "bccluster_computinginstance_public_intl"
+			if installPai {
+				return nil, WrapError(Error("InstallPai currently does not support pay-as-you-go products."))
+			}
+		}
+	}
+	action := "QueryAvailableInstances"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "bccluster"
+				request["ProductType"] = "bccluster_eflocomputing_public_intl"
+				if installPai {
+					request["ProductCode"] = "learn"
+					request["ProductType"] = "learn_eflocomputing_public_intl"
+				}
+				if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+					request["ProductCode"] = "bccluster"
+					request["ProductType"] = "bccluster_computinginstance_public_intl"
+					if installPai {
+						return resource.RetryableError(err)
+					}
+				}
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data.InstanceList[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("Node", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
 
 func (s *EfloServiceV2) EfloNodeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EfloNodeStateRefreshFuncWithApi(id, field, failStates, s.DescribeEfloNode)
+}
+
+func (s *EfloServiceV2) EfloNodeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEfloNode(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
