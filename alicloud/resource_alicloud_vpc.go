@@ -39,10 +39,6 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"dns_hostname_status": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -56,6 +52,7 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 			"enable_ipv6": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Required: true,
 			},
 			"force_delete": {
 				Type:     schema.TypeBool,
