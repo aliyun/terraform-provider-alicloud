@@ -23,7 +23,7 @@ func resourceAliCloudCrInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(6 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
@@ -161,26 +161,22 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	action := "CreateInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var endpoint string
-	var err error
 	query := make(map[string]interface{})
+	var err error
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
 
-	if v, ok := d.GetOkExists("period"); ok {
-		request["Period"] = v
-	}
-	if v, ok := d.GetOk("renewal_status"); ok {
-		request["RenewalStatus"] = v
-	}
-	if v, ok := d.GetOkExists("renew_period"); ok {
-		request["RenewPeriod"] = v
-	}
 	parameterMapList := make([]map[string]interface{}, 0)
-	if v, ok := d.GetOk("instance_type"); ok {
+	if v, ok := d.GetOk("custom_oss_bucket"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "InstanceType",
+			"Code":  "InstanceStorageName",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("default_oss_bucket"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "DefaultOssBucket",
 			"Value": v,
 		})
 	}
@@ -190,19 +186,9 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 			"Value": v,
 		})
 	}
-	parameterMapList = append(parameterMapList, map[string]interface{}{
-		"Code":  "Region",
-		"Value": client.RegionId,
-	})
-	if v, ok := d.GetOk("default_oss_bucket"); ok {
+	if v, ok := d.GetOk("instance_type"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "DefaultOssBucket",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("custom_oss_bucket"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "InstanceStorageName",
+			"Code":  "InstanceType",
 			"Value": v,
 		})
 	}
@@ -212,15 +198,28 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 			"Value": v,
 		})
 	}
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "Region",
+		"Value": client.RegionId,
+	})
 	request["Parameter"] = parameterMapList
 
 	request["SubscriptionType"] = d.Get("payment_type")
+	if v, ok := d.GetOk("renewal_status"); ok {
+		request["RenewalStatus"] = v
+	}
+	if v, ok := d.GetOkExists("period"); ok {
+		request["Period"] = v
+	}
+	if v, ok := d.GetOkExists("renew_period"); ok {
+		request["RenewPeriod"] = v
+	}
+	var endpoint string
 	request["ProductCode"] = "acr"
 	request["ProductType"] = "acr_ee_public_cn"
 	if client.IsInternationalAccount() {
 		request["ProductType"] = "acr_ee_public_intl"
 	}
-
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
@@ -230,6 +229,7 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 				return resource.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "acr"
 				request["ProductType"] = "acr_ee_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
@@ -242,6 +242,9 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_instance", action, AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Code"]) != "Success" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
@@ -270,72 +273,49 @@ func resourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["InstanceName"] != nil {
-		d.Set("instance_name", objectRaw["InstanceName"])
-	}
-	if objectRaw["ResourceGroupId"] != nil {
-		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("instance_name", objectRaw["InstanceName"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	if objectRaw["InstanceSpecification"] != nil {
 		d.Set("instance_type", strings.TrimPrefix(objectRaw["InstanceSpecification"].(string), "Enterprise_"))
 	}
-	if objectRaw["InstanceStatus"] != nil {
-		d.Set("status", objectRaw["InstanceStatus"])
-	}
+	d.Set("status", objectRaw["InstanceStatus"])
 
 	objectRaw, err = crServiceV2.DescribeInstanceQueryAvailableInstances(d.Id())
 	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["EndTime"] != nil {
-		d.Set("end_time", objectRaw["EndTime"])
-	}
-	if objectRaw["SubscriptionType"] != nil {
-		d.Set("payment_type", objectRaw["SubscriptionType"])
-	}
-	if objectRaw["Region"] != nil {
-		d.Set("region_id", objectRaw["Region"])
-	}
-	if objectRaw["RenewalDuration"] == nil {
-		d.Set("renew_period", objectRaw["RenewalDuration"])
-	}
-	if objectRaw["RenewalDuration"] != nil {
-		d.Set("renew_period", objectRaw["RenewalDuration"])
-	}
-	if objectRaw["RenewStatus"] != nil {
-		d.Set("renewal_status", objectRaw["RenewStatus"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("end_time", objectRaw["EndTime"])
+	d.Set("payment_type", objectRaw["SubscriptionType"])
+	d.Set("region_id", objectRaw["Region"])
+	d.Set("renew_period", objectRaw["RenewalDuration"])
+	d.Set("renewal_status", objectRaw["RenewStatus"])
 
 	objectRaw, err = crServiceV2.DescribeInstanceListInstanceEndpoint(d.Id())
 	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	endpoints1Raw, _ := jsonpath.Get("$.Endpoints", objectRaw)
+	endpointsRaw, _ := jsonpath.Get("$.Endpoints", objectRaw)
 
 	instanceEndpointsMaps := make([]map[string]interface{}, 0)
-	if endpoints1Raw != nil {
-		for _, endpointsChild1Raw := range endpoints1Raw.([]interface{}) {
+	if endpointsRaw != nil {
+		for _, endpointsChildRaw := range convertToInterfaceArray(endpointsRaw) {
 			instanceEndpointsMap := make(map[string]interface{})
-			endpointsChild1Raw := endpointsChild1Raw.(map[string]interface{})
-			instanceEndpointsMap["enable"] = endpointsChild1Raw["Enable"]
-			instanceEndpointsMap["endpoint_type"] = endpointsChild1Raw["EndpointType"]
+			endpointsChildRaw := endpointsChildRaw.(map[string]interface{})
+			instanceEndpointsMap["enable"] = endpointsChildRaw["Enable"]
+			instanceEndpointsMap["endpoint_type"] = endpointsChildRaw["EndpointType"]
 
-			domains1Raw := endpointsChild1Raw["Domains"]
+			domainsRaw := endpointsChildRaw["Domains"]
 			domainsMaps := make([]map[string]interface{}, 0)
-			if domains1Raw != nil {
-				for _, domainsChild1Raw := range domains1Raw.([]interface{}) {
+			if domainsRaw != nil {
+				for _, domainsChildRaw := range convertToInterfaceArray(domainsRaw) {
 					domainsMap := make(map[string]interface{})
-					domainsChild1Raw := domainsChild1Raw.(map[string]interface{})
-					domainsMap["domain"] = domainsChild1Raw["Domain"]
-					domainsMap["type"] = domainsChild1Raw["Type"]
+					domainsChildRaw := domainsChildRaw.(map[string]interface{})
+					domainsMap["domain"] = domainsChildRaw["Domain"]
+					domainsMap["type"] = domainsChildRaw["Type"]
 
 					domainsMaps = append(domainsMaps, domainsMap)
 				}
@@ -344,10 +324,8 @@ func resourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) er
 			instanceEndpointsMaps = append(instanceEndpointsMaps, instanceEndpointsMap)
 		}
 	}
-	if objectRaw["Endpoints"] != nil {
-		if err := d.Set("instance_endpoints", instanceEndpointsMaps); err != nil {
-			return err
-		}
+	if err := d.Set("instance_endpoints", instanceEndpointsMaps); err != nil {
+		return err
 	}
 
 	d.Set("created_time", d.Get("create_time"))
@@ -358,11 +336,11 @@ func resourceAliCloudCrInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 
+	var err error
 	action := "ChangeResourceGroup"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -375,7 +353,7 @@ func resourceAliCloudCrInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, false)
+			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -419,7 +397,7 @@ func resourceAliCloudCrInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, false)
+			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -445,32 +423,30 @@ func resourceAliCloudCrInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	action := "RefundInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var endpoint string
-	var err error
 	query := make(map[string]interface{})
+	var err error
 	request = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
 
 	request["ImmediatelyRelease"] = "1"
+	var endpoint string
 	request["ProductCode"] = "acr"
 	request["ProductType"] = "acr_ee_public_cn"
 	if client.IsInternationalAccount() {
 		request["ProductType"] = "acr_ee_public_intl"
 	}
-
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "acr"
 				request["ProductType"] = "acr_ee_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)

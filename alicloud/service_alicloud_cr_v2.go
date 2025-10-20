@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -23,11 +22,11 @@ func (s *CrServiceV2) DescribeCrInstance(id string) (object map[string]interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetInstance"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
+	action := "GetInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -54,19 +53,19 @@ func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var endpoint string
 	var query map[string]interface{}
-	action := "QueryAvailableInstances"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceIDs"] = id
 	request["Region"] = client.RegionId
-
+	var endpoint string
 	request["ProductCode"] = "acr"
 	request["ProductType"] = "acr_ee_public_cn"
 	if client.IsInternationalAccount() {
 		request["ProductType"] = "acr_ee_public_intl"
 	}
+	action := "QueryAvailableInstances"
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
@@ -77,6 +76,7 @@ func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object
 				return resource.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "acr"
 				request["ProductType"] = "acr_ee_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
@@ -106,11 +106,11 @@ func (s *CrServiceV2) DescribeInstanceListInstanceEndpoint(id string) (object ma
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListInstanceEndpoint"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 	request["RegionId"] = client.RegionId
+	action := "ListInstanceEndpoint"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -134,15 +134,18 @@ func (s *CrServiceV2) DescribeInstanceListInstanceEndpoint(id string) (object ma
 }
 
 func (s *CrServiceV2) CrInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CrInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrInstance)
+}
+
+func (s *CrServiceV2) CrInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCrInstance(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -162,41 +165,6 @@ func (s *CrServiceV2) CrInstanceStateRefreshFunc(id string, field string, failSt
 	}
 }
 
-func (s *CrServiceV2) DescribeAsyncGetInstance(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
-	client := s.client
-	id := d.Id()
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
-	action := "GetInstance"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["InstanceId"] = d.Id()
-	request["RegionId"] = client.RegionId
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
-
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	return response, nil
-}
-
 func (s *CrServiceV2) DescribeAsyncCrInstanceStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncGetInstance(d, res)
@@ -205,7 +173,6 @@ func (s *CrServiceV2) DescribeAsyncCrInstanceStateRefreshFunc(d *schema.Resource
 				return object, "", nil
 			}
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -306,4 +273,38 @@ func (s *CrServiceV2) DescribeCrRepoSyncRule(id string) (object map[string]inter
 	return object, nil
 }
 
-// DescribeCrInstance >>> Encapsulated.
+// DescribeAsyncGetInstance <<< Encapsulated for Cr.
+func (s *CrServiceV2) DescribeAsyncGetInstance(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+	client := s.client
+	id := d.Id()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	action := "GetInstance"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeAsyncGetInstance >>> Encapsulated.
