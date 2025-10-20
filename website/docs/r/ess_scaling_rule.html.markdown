@@ -24,6 +24,10 @@ For information about ess scaling rule, see [CreateScalingRule](https://www.alib
 </div></div>
 
 ```terraform
+provider "alicloud" {
+  region = "ap-southeast-5"
+}
+
 variable "name" {
   default = "terraform-example"
 }

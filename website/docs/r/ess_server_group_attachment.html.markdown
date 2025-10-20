@@ -30,6 +30,10 @@ For information about  server group attachment, see [AttachServerGroups](https:/
 </div></div>
 
 ```terraform
+provider "alicloud" {
+  region = "ap-southeast-5"
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -73,8 +77,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = local.name
-  vpc_id = alicloud_vpc.default.id
+  security_group_name = local.name
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_ess_scaling_group" "default" {
