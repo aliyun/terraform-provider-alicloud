@@ -42,7 +42,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"tcp", "udp", "icmp", "gre", "all"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"tcp", "udp", "icmp", "icmpv6", "gre", "all"}, false),
 			},
 			"policy": {
 				Type:         schema.TypeString,

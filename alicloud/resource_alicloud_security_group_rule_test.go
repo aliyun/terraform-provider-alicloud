@@ -357,6 +357,50 @@ func TestAccAliCloudECSSecurityGroupIngressRuleOtherIpv6(t *testing.T) {
 
 }
 
+func TestAccAliCloudECSSecurityGroupEgressRuleICMPv6(t *testing.T) {
+	var v ecs.Permission
+	resourceId := "alicloud_security_group_rule.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"type":         "ingress",
+		"policy":       "accept",
+		"description":  "SHDRP-7513",
+		"port_range":   "-1/-1",
+		"priority":     "1",
+		"ipv6_cidr_ip": "::/0",
+	})
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSecurityGroupEgressRuleICMPv6,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "SHDRP-7513",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
+
 var testAccCheckSecurityGroupRuleBasicMap = map[string]string{
 	"type":                     "ingress",
 	"ip_protocol":              "tcp",
@@ -753,5 +797,32 @@ const testAccSecurityGroupEgressRule_description = `
   		security_group_id = "${alicloud_security_group.default.id}"
   		cidr_ip           = "182.254.11.243/32"
   		description       = "SHDRP-7512"
+	}
+`
+
+const testAccSecurityGroupEgressRuleICMPv6 = `
+	variable "name" {
+  		default = "tf-testAccSecurityGroupEgressRuleIpv6"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	resource "alicloud_security_group" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+  		name   = "${var.name}"
+	}
+
+	resource "alicloud_security_group_rule" "default" {
+  		type              = "ingress"
+  		ip_protocol       = "icmpv6"
+  		nic_type          = "intranet"
+  		policy            = "accept"
+  		port_range        = "-1/-1"
+  		priority          = "1"
+  		security_group_id = "${alicloud_security_group.default.id}"
+  		ipv6_cidr_ip      = "::/0"
+  		description       = "SHDRP-7513"
 	}
 `

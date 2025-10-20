@@ -58,7 +58,7 @@ The following arguments are supported:
 * `type` - (Required, ForceNew) The type of the Security Group Rule. Valid values:
   - `ingress`: inbound.
   - `egress`: outbound.
-* `ip_protocol` - (Required, ForceNew) The transport layer protocol of the Security Group Rule. Valid values: `tcp`, `udp`, `icmp`, `gre`, `all`.
+* `ip_protocol` - (Required, ForceNew) The transport layer protocol of the Security Group Rule. Valid values: `tcp`, `udp`, `icmp`, `icmpv6`, `gre`, `all`. **NOTE:** From version 1.262.0, `ip_protocol` can be set to `icmpv6`.
 * `policy` - (Optional, ForceNew) The action of the Security Group Rule that determines whether to allow inbound access. Default value: `accept`. Valid values: `accept`, `drop`.
 * `priority` - (Optional, ForceNew, Int) The priority of the Security Group Rule. Default value: `1`. Valid values: `1` to `100`.
 * `cidr_ip` - (Optional, ForceNew) The target IP address range. The default value is 0.0.0.0/0 (which means no restriction will be applied). Other supported formats include 10.159.6.18/12. Only IPv4 is supported.
