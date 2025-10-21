@@ -13,7 +13,7 @@ Provides an PolarDB zonal cluster resource. An PolarDB zonal cluster is an isola
 environment in the cloud. An PolarDB zonal cluster can contain multiple user-created
 databases.
 
--> **NOTE:** Available since v1.66.0.
+-> **NOTE:** Available since v1.261.0.
 
 ## Example Usage
 
@@ -75,7 +75,7 @@ The following arguments are supported:
 
 * `db_type` - (Optional, Required, ForceNew) Database type. Value options: MySQL, Oracle, PostgreSQL.
 * `db_version` - (Optional, Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBVersion`.
-* `db_minor_version` - (Optional, ForceNew, Available since 1.247.0) Database minor version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBMinorVersion`. This parameter takes effect only when `db_type` is MySQL and `db_version` is 8.0.
+* `db_minor_version` - (Optional, ForceNew) Database minor version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBMinorVersion`. This parameter takes effect only when `db_type` is MySQL and `db_version` is 8.0.
 * `db_node_class` - (Required) The db_node_class of cluster node.Only effective when the cluster is created for the first time. After the cluster is started, the cluster specification is maintained through the node class.
 * `ens_region_id` - (Required, ForceNew) The Zone to launch the DB cluster.
 * `pay_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
