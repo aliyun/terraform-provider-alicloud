@@ -223,6 +223,7 @@ The liveness_v2 supports the following:
 * `initial_delay_seconds` (Optional, Int) The delay of the health check.
 * `period_seconds` (Optional, Int) The interval at which the health check is performed.
 * `timeout_seconds` (Optional, Int) The timeout period of the health check.
+* `failure_threshold` (Optional, Int) The number of consecutive failures required before considering the container as unhealthy. Increasing this value makes the container more tolerant to transient failures.
 * `exec` - (Optional, Set) Execute. See [`exec`](#liveness_v2-exec) below.
 * `tcp_socket` - (Optional, Set) The liveness check settings of the container. See [`tcp_socket`](#liveness_v2-tcp_socket) below.
 * `http_get` - (Optional, Set) The liveness check settings of the container. See [`http_get`](#liveness_v2-http_get) below.
@@ -256,6 +257,8 @@ The readiness_v2 supports the following:
 * `initial_delay_seconds` (Optional, Int) The delay of the health check.
 * `period_seconds` (Optional, Int) The interval at which the health check is performed.
 * `timeout_seconds` (Optional, Int) The timeout period of the health check.
+* `success_threshold` (Optional, Int) The number of consecutive successes required before considering the container as healthy. Increasing this value makes the container more tolerant to transient successes during recovery.
+* `failure_threshold` (Optional, Int) The number of consecutive failures required before considering the container as unhealthy. Increasing this value makes the container more tolerant to transient failures.
 * `exec` - (Optional, Set) Execute. See [`exec`](#readiness_v2-exec) below.
 * `tcp_socket` - (Optional, Set) The liveness check settings of the container. See [`tcp_socket`](#readiness_v2-tcp_socket) below.
 * `http_get` - (Optional, Set) The liveness check settings of the container. See [`http_get`](#readiness_v2-http_get) below.
