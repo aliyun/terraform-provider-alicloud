@@ -1368,7 +1368,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ots_secondary_index":                                   resourceAlicloudOtsSecondaryIndex(),
 			"alicloud_ots_search_index":                                      resourceAlicloudOtsSearchIndex(),
 			"alicloud_cms_alarm":                                             resourceAliCloudCmsAlarm(),
-			"alicloud_cms_site_monitor":                                      resourceAlicloudCmsSiteMonitor(),
+			"alicloud_cms_site_monitor":                                      resourceAliCloudCloudMonitorServiceSiteMonitor(),
 			"alicloud_pvtz_zone":                                             resourceAlicloudPvtzZone(),
 			"alicloud_pvtz_zone_attachment":                                  resourceAlicloudPvtzZoneAttachment(),
 			"alicloud_pvtz_zone_record":                                      resourceAlicloudPvtzZoneRecord(),
