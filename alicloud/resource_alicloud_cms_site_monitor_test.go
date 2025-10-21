@@ -2,16 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"log"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func init() {
@@ -24,7 +23,7 @@ func init() {
 func testSweepCmsSiteMonitor(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -75,26 +74,148 @@ func testSweepCmsSiteMonitor(region string) error {
 	return nil
 }
 
-func TestAccAliCloudCmsSiteMonitor_basic(t *testing.T) {
-	resourceName := "alicloud_cms_site_monitor.basic"
+// Test CloudMonitorService SiteMonitor. >>> Resource test cases, automatically generated.
+// Case pop3 5461
+func TestAccAliCloudCloudMonitorServiceSiteMonitor_basic5461(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_site_monitor.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudMonitorServiceSiteMonitorMap5460)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudMonitorServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudMonitorServiceSiteMonitor")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudmonitorservice%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudMonitorServiceSiteMonitorBasicDependence5460)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceName,
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCmsSiteMonitorDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCmsSiteMonitor_basic(),
+				Config: testAccConfig(map[string]interface{}{
+					"address":   "https://www.alibaba.com",
+					"task_name": name,
+					"task_type": "HTTP",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.basic", "task_name", "tf-testAccCmsSiteMonitor_basic"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.basic", "interval", "5"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.basic", "address", "http://www.alibabacloud.com"),
+					testAccCheck(map[string]string{
+						"address":   "https://www.alibaba.com",
+						"task_name": name,
+						"task_type": "HTTP",
+					}),
 				),
 			},
 			{
-				ResourceName:      resourceName,
+				Config: testAccConfig(map[string]interface{}{
+					"address": "https://www.alibabacloud.com",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address": "https://www.alibabacloud.com",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"custom_schedule": []map[string]interface{}{
+						{
+							"start_hour": "0",
+							"days": []string{
+								"2", "3"},
+							"end_hour":  "2",
+							"time_zone": "Local",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_schedule.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"interval": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"interval": "5",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"isp_cities": []map[string]interface{}{
+						{
+							"isp":  "232",
+							"city": "641",
+							"type": "IDC",
+						},
+						{
+							"isp":  "5",
+							"city": "738",
+							"type": "LASTMILE",
+						},
+						{
+							"isp":  "5",
+							"city": "641",
+							"type": "IDC",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"isp_cities.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"task_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"task_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"options_json": `{\"http_method\":\"get\",\"time_out\":5000}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"options_json": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -102,57 +223,78 @@ func TestAccAliCloudCmsSiteMonitor_basic(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudCmsSiteMonitor_update(t *testing.T) {
+func TestAccAliCloudCloudMonitorServiceSiteMonitor_basic5461_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_site_monitor.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudMonitorServiceSiteMonitorMap5460)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudMonitorServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudMonitorServiceSiteMonitor")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudmonitorservice%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudMonitorServiceSiteMonitorBasicDependence5460)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: "alicloud_cms_site_monitor.update",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCmsSiteMonitorDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCmsSiteMonitor_update(),
+				Config: testAccConfig(map[string]interface{}{
+					"address":     "https://www.alibaba.com",
+					"agent_group": "PC",
+					"task_name":   name,
+					"task_type":   "HTTP",
+					"custom_schedule": []map[string]interface{}{
+						{
+							"start_hour": "0",
+							"days": []string{
+								"2", "3"},
+							"end_hour":  "2",
+							"time_zone": "Local",
+						},
+					},
+					"isp_cities": []map[string]interface{}{
+						{
+							"isp":  "232",
+							"city": "641",
+							"type": "IDC",
+						},
+						{
+							"isp":  "5",
+							"city": "738",
+							"type": "LASTMILE",
+						},
+						{
+							"isp":  "5",
+							"city": "641",
+							"type": "IDC",
+						},
+					},
+					"interval":     "5",
+					"options_json": `{\"http_method\":\"get\",\"time_out\":5000}`,
+					"status":       "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "task_name", "tf-testAccCmsSiteMonitor_update"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "interval", "5"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "address", "http://www.alibabacloud.com"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "isp_cities.#", "1"),
+					testAccCheck(map[string]string{
+						"address":           "https://www.alibaba.com",
+						"agent_group":       "PC",
+						"task_name":         name,
+						"task_type":         "HTTP",
+						"isp_cities.#":      "3",
+						"custom_schedule.#": "1",
+						"interval":          "5",
+						"options_json":      CHECKSET,
+						"status":            "1",
+					}),
 				),
 			},
 			{
-				Config: testAccCmsSiteMonitor_updateAfter(),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "task_name", "tf-testAccCmsSiteMonitor_updateafter"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "interval", "1"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "address", "http://www.alibaba.com"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "isp_cities.#", "2"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAliCloudCmsSiteMonitor_basic1(t *testing.T) {
-	resourceName := "alicloud_cms_site_monitor.basic"
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceName,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCmsSiteMonitorDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCmsSiteMonitor_basic1(),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.basic", "task_name", "tf-testAccCmsSiteMonitor_basic"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.basic", "interval", "5"),
-					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.basic", "address", "http://www.alibabacloud.com"),
-				),
-			},
-			{
-				ResourceName:      resourceName,
+				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -160,129 +302,22 @@ func TestAccAliCloudCmsSiteMonitor_basic1(t *testing.T) {
 	})
 }
 
-func testAccCheckCmsSiteMonitorDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_cms_site_monitor" {
-			continue
-		}
-
-		request := cms.CreateDescribeSiteMonitorListRequest()
-		request.TaskId = rs.Primary.ID
-
-		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DescribeSiteMonitorList(request)
-		})
-		list := raw.(*cms.DescribeSiteMonitorListResponse)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return err
-		}
-		if list.TotalCount > 0 {
-			return fmt.Errorf("Site Monitor %s still exists", rs.Primary.ID)
-		}
-	}
-
-	return nil
+var AliCloudCloudMonitorServiceSiteMonitorMap5460 = map[string]string{
+	"agent_group":  CHECKSET,
+	"interval":     CHECKSET,
+	"options_json": CHECKSET,
+	"status":       CHECKSET,
+	"task_state":   CHECKSET,
 }
 
-func testAccCmsSiteMonitor_basic() string {
+func AliCloudCloudMonitorServiceSiteMonitorBasicDependence5460(name string) string {
 	return fmt.Sprintf(`
-	resource "alicloud_cms_site_monitor" "basic" {
-  		address   = "http://www.alibabacloud.com"
-  		task_name = "tf-testAccCmsSiteMonitor_basic"
-  		task_type = "HTTP"
-  		interval  = 5
-  		isp_cities {
-    		city = "546"
-    		isp  = "465"
-  		}
-	}
-	`)
+variable "name" {
+    default = "%s"
 }
 
-func testAccCmsSiteMonitor_update() string {
-	return fmt.Sprintf(`
-	resource "alicloud_cms_site_monitor" "update" {
-  		address   = "http://www.alibabacloud.com"
-  		task_name = "tf-testAccCmsSiteMonitor_update"
-  		task_type = "HTTP"
-  		interval  = 5
-  		isp_cities {
-    		city = "546"
-    		isp  = "465"
-  		}
-		options_json = <<EOT
-		{
-			"http_method": "get",
-			"waitTime_after_completion": null,
-			"ipv6_task": false,
-			"diagnosis_ping": false,
-			"diagnosis_mtr": false,
-			"assertions": [
-				{
-					"operator": "lessThan",
-					"type": "response_time",
-					"target": 1000
-				}
-			],
-			"time_out": 30000
-		}
-EOT
-	}
-	`)
+
+`, name)
 }
 
-func testAccCmsSiteMonitor_updateAfter() string {
-	return fmt.Sprintf(`
-	resource "alicloud_cms_site_monitor" "update" {
-  		address   = "http://www.alibaba.com"
-  		task_name = "tf-testAccCmsSiteMonitor_updateafter"
-  		task_type = "HTTP"
-  		interval  = 1
-  		isp_cities {
-    		city = "546"
-    		isp  = "465"
-  		}
-  		isp_cities {
-    		city = "572"
-    		isp  = "465"
-  		}
-		options_json = <<EOT
-		{
-			"http_method": "post",
-			"waitTime_after_completion": null,
-			"ipv6_task": true,
-			"diagnosis_ping": false,
-			"diagnosis_mtr": false,
-			"assertions": [
-				{
-					"operator": "lessThan",
-					"type": "response_time",
-					"target": 1000
-				}
-			],
-			"time_out": 30000
-		}
-		EOT
-	}
-	`)
-}
-
-func testAccCmsSiteMonitor_basic1() string {
-	return fmt.Sprintf(`
-	resource "alicloud_cms_site_monitor" "basic" {
-  		address   = "http://www.alibabacloud.com"
-  		task_name = "tf-testAccCmsSiteMonitor_basic"
-  		task_type = "PING"
-  		interval  = 5
-  		isp_cities {
-			city = "546"
-    		isp  = "465"
-  		}
-	}
-	`)
-}
+// Test CloudMonitorService SiteMonitor. <<< Resource test cases, automatically generated.
