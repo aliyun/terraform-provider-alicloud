@@ -1184,6 +1184,7 @@ func TestAccAliCloudSAEApplication_basicPhp(t *testing.T) {
 							"initial_delay_seconds": "30",
 							"period_seconds":        "30",
 							"timeout_seconds":       "5",
+							"failure_threshold":     "5",
 							"http_get": []map[string]interface{}{
 								{
 									"path":   "/",
@@ -1216,6 +1217,7 @@ func TestAccAliCloudSAEApplication_basicPhp(t *testing.T) {
 						"php":                              "PHP-FPM 7.2",
 						"programming_language":             "php",
 						"liveness_v2.#":                    "1",
+						"liveness_v2.0.failure_threshold":  "5",
 					}),
 				),
 			},
@@ -1395,6 +1397,7 @@ func TestAccAliCloudSAEApplication_basicPhp(t *testing.T) {
 							"initial_delay_seconds": "31",
 							"period_seconds":        "10",
 							"timeout_seconds":       "3",
+							"failure_threshold":     "9",
 							"http_get": []map[string]interface{}{
 								{
 									"path":                "/tmp",
@@ -1409,8 +1412,9 @@ func TestAccAliCloudSAEApplication_basicPhp(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"package_version": CHECKSET,
-						"liveness_v2.#":   "1",
+						"package_version":                 CHECKSET,
+						"liveness_v2.#":                   "1",
+						"liveness_v2.0.failure_threshold": "9",
 					}),
 				),
 			},
@@ -1422,6 +1426,8 @@ func TestAccAliCloudSAEApplication_basicPhp(t *testing.T) {
 							"initial_delay_seconds": "31",
 							"period_seconds":        "10",
 							"timeout_seconds":       "3",
+							"success_threshold":     "1",
+							"failure_threshold":     "5",
 							"http_get": []map[string]interface{}{
 								{
 									"path":                "/",
