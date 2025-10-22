@@ -28,7 +28,7 @@ func resourceAliCloudEnsLoadBalancer() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"backend_servers": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -44,6 +44,7 @@ func resourceAliCloudEnsLoadBalancer() *schema.Resource {
 						"ip": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"port": {
 							Type:         schema.TypeInt,
@@ -54,6 +55,7 @@ func resourceAliCloudEnsLoadBalancer() *schema.Resource {
 						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: IntBetween(0, 100),
 						},
 					},
@@ -112,6 +114,8 @@ func resourceAliCloudEnsLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	var err error
 	request = make(map[string]interface{})
 
+	request["ClientToken"] = buildClientToken(action)
+
 	request["EnsRegionId"] = d.Get("ens_region_id")
 	request["LoadBalancerSpec"] = d.Get("load_balancer_spec")
 	if v, ok := d.GetOk("load_balancer_name"); ok {
@@ -130,9 +134,9 @@ func resourceAliCloudEnsLoadBalancerCreate(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ens_load_balancer", action, AlibabaCloudSdkGoERROR)
@@ -163,50 +167,32 @@ func resourceAliCloudEnsLoadBalancerRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["EnsRegionId"] != nil {
-		d.Set("ens_region_id", objectRaw["EnsRegionId"])
-	}
-	if objectRaw["LoadBalancerName"] != nil {
-		d.Set("load_balancer_name", objectRaw["LoadBalancerName"])
-	}
-	if objectRaw["LoadBalancerSpec"] != nil {
-		d.Set("load_balancer_spec", objectRaw["LoadBalancerSpec"])
-	}
-	if objectRaw["NetworkId"] != nil {
-		d.Set("network_id", objectRaw["NetworkId"])
-	}
-	if convertEnsLoadBalancerPayTypeResponse(objectRaw["PayType"]) != nil {
-		d.Set("payment_type", convertEnsLoadBalancerPayTypeResponse(objectRaw["PayType"]))
-	}
-	if objectRaw["LoadBalancerStatus"] != nil {
-		d.Set("status", objectRaw["LoadBalancerStatus"])
-	}
-	if objectRaw["VSwitchId"] != nil {
-		d.Set("vswitch_id", objectRaw["VSwitchId"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("ens_region_id", objectRaw["EnsRegionId"])
+	d.Set("load_balancer_name", objectRaw["LoadBalancerName"])
+	d.Set("load_balancer_spec", objectRaw["LoadBalancerSpec"])
+	d.Set("network_id", objectRaw["NetworkId"])
+	d.Set("payment_type", convertEnsLoadBalancerPayTypeResponse(objectRaw["PayType"]))
+	d.Set("status", objectRaw["LoadBalancerStatus"])
+	d.Set("vswitch_id", objectRaw["VSwitchId"])
 
-	backendServers1Raw := objectRaw["BackendServers"]
+	backendServersRaw := objectRaw["BackendServers"]
 	backendServersMaps := make([]map[string]interface{}, 0)
-	if backendServers1Raw != nil {
-		for _, backendServersChild1Raw := range backendServers1Raw.([]interface{}) {
+	if backendServersRaw != nil {
+		for _, backendServersChildRaw := range convertToInterfaceArray(backendServersRaw) {
 			backendServersMap := make(map[string]interface{})
-			backendServersChild1Raw := backendServersChild1Raw.(map[string]interface{})
-			backendServersMap["ip"] = backendServersChild1Raw["Ip"]
-			backendServersMap["port"] = backendServersChild1Raw["Port"]
-			backendServersMap["server_id"] = backendServersChild1Raw["ServerId"]
-			backendServersMap["type"] = backendServersChild1Raw["Type"]
-			backendServersMap["weight"] = backendServersChild1Raw["Weight"]
+			backendServersChildRaw := backendServersChildRaw.(map[string]interface{})
+			backendServersMap["ip"] = backendServersChildRaw["Ip"]
+			backendServersMap["port"] = formatInt(backendServersChildRaw["Port"])
+			backendServersMap["server_id"] = backendServersChildRaw["ServerId"]
+			backendServersMap["type"] = backendServersChildRaw["Type"]
+			backendServersMap["weight"] = backendServersChildRaw["Weight"]
 
 			backendServersMaps = append(backendServersMaps, backendServersMap)
 		}
 	}
-	if objectRaw["BackendServers"] != nil {
-		if err := d.Set("backend_servers", backendServersMaps); err != nil {
-			return err
-		}
+	if err := d.Set("backend_servers", backendServersMaps); err != nil {
+		return err
 	}
 
 	return nil
@@ -218,11 +204,12 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "ModifyLoadBalancerAttribute"
+
 	var err error
+	action := "ModifyLoadBalancerAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["LoadBalancerId"] = d.Id()
+	request["LoadBalancerId"] = d.Id()
 
 	if !d.IsNewResource() && d.HasChange("load_balancer_name") {
 		update = true
@@ -239,9 +226,9 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -249,17 +236,19 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 	if d.HasChange("backend_servers") {
 		oldEntry, newEntry := d.GetChange("backend_servers")
-		removed := oldEntry
-		added := newEntry
+		oldEntrySet := oldEntry.(*schema.Set)
+		newEntrySet := newEntry.(*schema.Set)
+		removed := oldEntrySet.Difference(newEntrySet)
+		added := newEntrySet.Difference(oldEntrySet)
 
-		if len(removed.([]interface{})) > 0 {
+		if removed.Len() > 0 {
 			action := "RemoveBackendServers"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
-			query["LoadBalancerId"] = d.Id()
+			request["LoadBalancerId"] = d.Id()
 
-			localData := removed.([]interface{})
-			backendServersMaps := make([]interface{}, 0)
+			localData := removed.List()
+			backendServersMapsArray := make([]interface{}, 0)
 			for _, dataLoop := range localData {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
@@ -268,9 +257,9 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				dataLoopMap["Type"] = dataLoopTmp["type"]
 				dataLoopMap["Ip"] = dataLoopTmp["ip"]
 				dataLoopMap["Port"] = dataLoopTmp["port"]
-				backendServersMaps = append(backendServersMaps, dataLoopMap)
+				backendServersMapsArray = append(backendServersMapsArray, dataLoopMap)
 			}
-			backendServersMapsJson, err := json.Marshal(backendServersMaps)
+			backendServersMapsJson, err := json.Marshal(backendServersMapsArray)
 			if err != nil {
 				return WrapError(err)
 			}
@@ -286,23 +275,23 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
 
-		if len(added.([]interface{})) > 0 {
+		if added.Len() > 0 {
 			action := "AddBackendServers"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
-			query["LoadBalancerId"] = d.Id()
+			request["LoadBalancerId"] = d.Id()
 
-			localData := added.([]interface{})
-			backendServersMaps := make([]interface{}, 0)
+			localData := added.List()
+			backendServersMapsArray := make([]interface{}, 0)
 			for _, dataLoop := range localData {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
@@ -311,9 +300,9 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				dataLoopMap["Type"] = dataLoopTmp["type"]
 				dataLoopMap["Ip"] = dataLoopTmp["ip"]
 				dataLoopMap["Port"] = dataLoopTmp["port"]
-				backendServersMaps = append(backendServersMaps, dataLoopMap)
+				backendServersMapsArray = append(backendServersMapsArray, dataLoopMap)
 			}
-			backendServersMapsJson, err := json.Marshal(backendServersMaps)
+			backendServersMapsJson, err := json.Marshal(backendServersMapsArray)
 			if err != nil {
 				return WrapError(err)
 			}
@@ -329,9 +318,9 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -350,12 +339,11 @@ func resourceAliCloudEnsLoadBalancerDelete(d *schema.ResourceData, meta interfac
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["LoadBalancerId"] = d.Id()
+	request["LoadBalancerId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -363,16 +351,19 @@ func resourceAliCloudEnsLoadBalancerDelete(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsLoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerId", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsLoadBalancerStateRefreshFunc(d.Id(), "$.LoadBalancerId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
