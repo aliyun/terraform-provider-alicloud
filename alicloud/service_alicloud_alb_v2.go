@@ -688,7 +688,7 @@ func (s *AlbServiceV2) DescribeAlbServerGroup(id string) (object map[string]inte
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *AlbServiceV2) DescribeServerGroupListServerGroupServers(id string) (object map[string]interface{}, err error) {
+func (s *AlbServiceV2) DescribeServerGroupListServerGroupServers(id string, nextToken string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -696,6 +696,10 @@ func (s *AlbServiceV2) DescribeServerGroupListServerGroupServers(id string) (obj
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServerGroupId"] = id
+	request["MaxResults"] = 200
+	if nextToken != "" {
+		request["NextToken"] = nextToken
+	}
 
 	action := "ListServerGroupServers"
 
