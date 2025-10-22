@@ -865,15 +865,18 @@ func (s *SlsServiceV2) DescribeSlsIndex(id string) (object map[string]interface{
 }
 
 func (s *SlsServiceV2) SlsIndexStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.SlsIndexStateRefreshFuncWithApi(id, field, failStates, s.DescribeSlsIndex)
+}
+
+func (s *SlsServiceV2) SlsIndexStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeSlsIndex(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
