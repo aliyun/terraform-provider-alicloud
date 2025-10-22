@@ -121,7 +121,7 @@ The following arguments are supported:
 * `enable_grey_tag_route` - (Optional, Bool) The enable grey tag route. Default value: `false`. Valid values:
   - `true`: The canary release rule is enabled.
   - `false`: The canary release rule is disabled.
-  **NOTE:** Currently, `enable_grey_tag_route` can only be set to `false`, and if you want to set it to `true`, you must operate on the web console.
+    **NOTE:** Currently, `enable_grey_tag_route` can only be set to `false`, and if you want to set it to `true`, you must operate on the web console.
 * `min_ready_instances` - (Optional, Int) The Minimum Available Instance. On the Change Had Promised during the Available Number of Instances to Be.
 * `min_ready_instance_ratio` - (Optional, Int) Minimum Survival Instance Percentage. **NOTE:** When `min_ready_instances` and `min_ready_instance_ratio` are passed at the same time, and the value of `min_ready_instance_ratio` is not -1, the `min_ready_instance_ratio` parameter shall prevail. Assuming that `min_ready_instances` is 5 and `min_ready_instance_ratio` is 50, 50 is used to calculate the minimum number of surviving instances.The value description is as follows:
   * `-1`: Initialization value, indicating that percentages are not used.
@@ -142,14 +142,14 @@ The following arguments are supported:
   * `name` - environment variable name.
   * `value` - Environment variable value or environment variable reference.
 * `sls_configs` - (Optional, String) Configuration for log collection to SLS. Valid parameter descriptions are as follows:
-  * `projectName`: Configures the project name on SLS. 
-  * `logDir`: Path to the logs. 
-  * `logType`: Type of logs. stdout indicates container standard output logs, and only one can be set; if not set, it means collecting file logs. 
-  * `logstoreName`: Configures the log store name on SLS. 
+  * `projectName`: Configures the project name on SLS.
+  * `logDir`: Path to the logs.
+  * `logType`: Type of logs. stdout indicates container standard output logs, and only one can be set; if not set, it means collecting file logs.
+  * `logstoreName`: Configures the log store name on SLS.
   * `logtailName`: Configures the log tail name on SLS; if not specified, it means creating a new log tail.
 
   If you no longer need to use the SLS collection feature, you should set the value of this field to an empty string. There are two examples:
-  - Using SAE automatically created SLS resources: [{"logDir":"","logType":"stdout"},{"logDir":"/tmp/a.log"}]. 
+  - Using SAE automatically created SLS resources: [{"logDir":"","logType":"stdout"},{"logDir":"/tmp/a.log"}].
   - Using custom SLS resources: [{"projectName":"test-sls","logType":"stdout","logDir":"","logstoreName":"sae","logtailName":""},{"projectName":"test","logDir":"/tmp/a.log","logstoreName":"sae","logtailName":""}].
 
   **NOTE:** Projects that are automatically created with applications will be deleted along with the application deletion. Therefore, when selecting existing projects, you cannot choose projects automatically created by SAE.
@@ -223,6 +223,7 @@ The liveness_v2 supports the following:
 * `initial_delay_seconds` (Optional, Int) The delay of the health check.
 * `period_seconds` (Optional, Int) The interval at which the health check is performed.
 * `timeout_seconds` (Optional, Int) The timeout period of the health check.
+* `failure_threshold` (Optional, Int, Available since v1.262.0) The number of consecutive failures required before considering the container as unhealthy. Increasing this value makes the container more tolerant to transient failures.
 * `exec` - (Optional, Set) Execute. See [`exec`](#liveness_v2-exec) below.
 * `tcp_socket` - (Optional, Set) The liveness check settings of the container. See [`tcp_socket`](#liveness_v2-tcp_socket) below.
 * `http_get` - (Optional, Set) The liveness check settings of the container. See [`http_get`](#liveness_v2-http_get) below.
@@ -256,6 +257,8 @@ The readiness_v2 supports the following:
 * `initial_delay_seconds` (Optional, Int) The delay of the health check.
 * `period_seconds` (Optional, Int) The interval at which the health check is performed.
 * `timeout_seconds` (Optional, Int) The timeout period of the health check.
+* `success_threshold` (Optional, Int, Available since v1.262.0) The number of consecutive successes required before considering the container as healthy. Increasing this value makes the container more tolerant to transient successes during recovery.
+* `failure_threshold` (Optional, Int, Available since v1.262.0) The number of consecutive failures required before considering the container as unhealthy. Increasing this value makes the container more tolerant to transient failures.
 * `exec` - (Optional, Set) Execute. See [`exec`](#readiness_v2-exec) below.
 * `tcp_socket` - (Optional, Set) The liveness check settings of the container. See [`tcp_socket`](#readiness_v2-tcp_socket) below.
 * `http_get` - (Optional, Set) The liveness check settings of the container. See [`http_get`](#readiness_v2-http_get) below.

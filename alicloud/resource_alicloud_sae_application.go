@@ -196,6 +196,7 @@ func resourceAliCloudSaeApplication() *schema.Resource {
 			"acr_assume_role_arn": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"micro_registration": {
 				Type:         schema.TypeString,
@@ -331,6 +332,11 @@ func resourceAliCloudSaeApplication() *schema.Resource {
 							Optional: true,
 							Computed: true,
 						},
+						"failure_threshold": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
 						"exec": {
 							Type:     schema.TypeList,
 							Optional: true,
@@ -419,6 +425,16 @@ func resourceAliCloudSaeApplication() *schema.Resource {
 							Computed: true,
 						},
 						"timeout_seconds": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"success_threshold": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"failure_threshold": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
@@ -1082,6 +1098,10 @@ func resourceAliCloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 				livenessMap["initialDelaySeconds"] = initialDelaySeconds
 			}
 
+			if failureThreshold, ok := livenessArg["failure_threshold"]; ok {
+				livenessMap["failureThreshold"] = failureThreshold
+			}
+
 			if periodSeconds, ok := livenessArg["period_seconds"]; ok {
 				livenessMap["periodSeconds"] = periodSeconds
 			}
@@ -1163,6 +1183,14 @@ func resourceAliCloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 
 			if initialDelaySeconds, ok := readinessArg["initial_delay_seconds"]; ok {
 				readinessMap["initialDelaySeconds"] = initialDelaySeconds
+			}
+
+			if successThreshold, ok := readinessArg["success_threshold"]; ok {
+				readinessMap["successThreshold"] = successThreshold
+			}
+
+			if failureThreshold, ok := readinessArg["failure_threshold"]; ok {
+				readinessMap["failureThreshold"] = failureThreshold
 			}
 
 			if periodSeconds, ok := readinessArg["period_seconds"]; ok {
@@ -1710,6 +1738,10 @@ func resourceAliCloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 			livenessMap["initial_delay_seconds"] = initialDelaySeconds
 		}
 
+		if failureThreshold, ok := livenessArg["failureThreshold"]; ok {
+			livenessMap["failure_threshold"] = failureThreshold
+		}
+
 		if periodSeconds, ok := livenessArg["periodSeconds"]; ok {
 			livenessMap["period_seconds"] = periodSeconds
 		}
@@ -1794,6 +1826,14 @@ func resourceAliCloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 
 		if initialDelaySeconds, ok := readinessArg["initialDelaySeconds"]; ok {
 			readinessMap["initial_delay_seconds"] = initialDelaySeconds
+		}
+
+		if successThreshold, ok := readinessArg["successThreshold"]; ok {
+			readinessMap["success_threshold"] = successThreshold
+		}
+
+		if failureThreshold, ok := readinessArg["failureThreshold"]; ok {
+			readinessMap["failure_threshold"] = failureThreshold
 		}
 
 		if periodSeconds, ok := readinessArg["periodSeconds"]; ok {
@@ -2539,6 +2579,10 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 					livenessMap["initialDelaySeconds"] = initialDelaySeconds
 				}
 
+				if failureThreshold, ok := livenessArg["failure_threshold"]; ok {
+					livenessMap["failureThreshold"] = failureThreshold
+				}
+
 				if periodSeconds, ok := livenessArg["period_seconds"]; ok {
 					livenessMap["periodSeconds"] = periodSeconds
 				}
@@ -2622,6 +2666,14 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 
 				if initialDelaySeconds, ok := readinessArg["initial_delay_seconds"]; ok {
 					readinessMap["initialDelaySeconds"] = initialDelaySeconds
+				}
+
+				if successThreshold, ok := readinessArg["success_threshold"]; ok {
+					readinessMap["successThreshold"] = successThreshold
+				}
+
+				if failureThreshold, ok := readinessArg["failure_threshold"]; ok {
+					readinessMap["failureThreshold"] = failureThreshold
 				}
 
 				if periodSeconds, ok := readinessArg["period_seconds"]; ok {
