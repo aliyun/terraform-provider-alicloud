@@ -3,12 +3,14 @@ subcategory: "ENS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ens_load_balancer"
 description: |-
-  Provides a Alicloud Ens Load Balancer resource.
+  Provides a Alicloud ENS Load Balancer resource.
 ---
 
 # alicloud_ens_load_balancer
 
-Provides a Ens Load Balancer resource.
+Provides a ENS Load Balancer resource.
+
+Load balancing.
 
 For information about ENS Load Balancer and how to use it, see [What is Load Balancer](https://www.alibabacloud.com/help/en/ens/developer-reference/api-createloadbalancer).
 
@@ -58,7 +60,7 @@ resource "alicloud_ens_load_balancer" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `backend_servers` - (Optional, List, Available since v1.230.0) The list of backend servers. See [`backend_servers`](#backend_servers) below.
+* `backend_servers` - (Optional, Set, Available since v1.230.0) The list of backend servers. See [`backend_servers`](#backend_servers) below.
 * `ens_region_id` - (Required, ForceNew) The ID of the ENS node.
 * `load_balancer_name` - (Optional) Name of the Server Load Balancer instance. The length is 1~80 English or Chinese characters. When this parameter is not specified, the system randomly assigns an instance name. Cannot start with http:// and https.
 * `load_balancer_spec` - (Required, ForceNew) Specifications of the Server Load Balancer instance. Optional values: elb.s1.small,elb.s3.medium,elb.s2.small,elb.s2.medium,elb.s3.small.
@@ -91,7 +93,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Ens Load Balancer can be imported using the id, e.g.
+ENS Load Balancer can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_ens_load_balancer.example <id>

@@ -451,10 +451,11 @@ func (s *EnsServiceV2) DescribeEnsLoadBalancer(id string) (object map[string]int
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeLoadBalancerAttribute"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["LoadBalancerId"] = id
+	request["LoadBalancerId"] = id
+
+	action := "DescribeLoadBalancerAttribute"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -467,11 +468,10 @@ func (s *EnsServiceV2) DescribeEnsLoadBalancer(id string) (object map[string]int
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -484,17 +484,28 @@ func (s *EnsServiceV2) DescribeEnsLoadBalancer(id string) (object map[string]int
 }
 
 func (s *EnsServiceV2) EnsLoadBalancerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EnsLoadBalancerStateRefreshFuncWithApi(id, field, failStates, s.DescribeEnsLoadBalancer)
+}
+
+func (s *EnsServiceV2) EnsLoadBalancerStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEnsLoadBalancer(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
+		object["PayType"] = convertEnsLoadBalancerPayTypeResponse(object["PayType"])
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
