@@ -8,6 +8,8 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 type OssServiceWrapper struct {
@@ -277,3 +279,294 @@ func resourceOssBucketReplicationDependence(name string) string {
 }
 
 var ossBucketReplicationMap = map[string]string{}
+
+func TestAccAliCloudOssBucketReplicationRtc(t *testing.T) {
+	resourceId := "alicloud_oss_bucket_replication.rtc-test"
+	ra := resourceAttrInit(resourceId, ossBucketReplicationMap)
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-bucket-replication-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketReplicationDifferentRegionDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName:     resourceId,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckDestoryWithProviders(&providers),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":                        "${local.bucket_src}",
+					"action":                        "ALL",
+					"historical_object_replication": "enabled",
+					"prefix_set": []map[string]interface{}{
+						{
+							"prefixes": []string{
+								"test-abc",
+								"test-def",
+							},
+						},
+					},
+					"destination": []map[string]interface{}{
+						{
+							"bucket":        "${local.bucket_dest}",
+							"location":      "${local.location}",
+							"transfer_type": "",
+						},
+					},
+					"sync_role": "${local.role_name}",
+					"encryption_configuration": []map[string]interface{}{
+						{
+							"replica_kms_key_id": "${local.kms_key_id}",
+						},
+					},
+					"source_selection_criteria": []map[string]interface{}{
+						{
+							"sse_kms_encrypted_objects": []map[string]interface{}{
+								{
+									"status": "Enabled",
+								},
+							},
+						},
+					},
+					"rtc": []map[string]interface{}{
+						{
+							"enabled": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":                        name + "-rtc-1",
+						"action":                        "ALL",
+						"destination.#":                 "1",
+						"destination.0.bucket":          name + "-rtc-2",
+						"destination.0.location":        "oss-cn-shanghai",
+						"destination.0.transfer_type":   "",
+						"historical_object_replication": "enabled",
+						"rule_id":                       CHECKSET,
+						"status":                        CHECKSET,
+						"sync_role":                     name + "-rtc-ramrole",
+						"encryption_configuration.#":    "1",
+						"encryption_configuration.0.replica_kms_key_id":                  CHECKSET,
+						"source_selection_criteria.#":                                    "1",
+						"source_selection_criteria.0.sse_kms_encrypted_objects.#":        "1",
+						"source_selection_criteria.0.sse_kms_encrypted_objects.0.status": "Enabled",
+						"prefix_set.#":            "1",
+						"prefix_set.0.prefixes.#": "2",
+						"prefix_set.0.prefixes.0": "test-abc",
+						"prefix_set.0.prefixes.1": "test-def",
+						"rtc.#":                   "1",
+						"rtc.0.enabled":           "true",
+						"rtc.0.status":            "enabling",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":                        "${local.bucket_src}",
+					"action":                        "ALL",
+					"historical_object_replication": "enabled",
+					"prefix_set": []map[string]interface{}{
+						{
+							"prefixes": []string{
+								"test-abc",
+								"test-def",
+							},
+						},
+					},
+					"destination": []map[string]interface{}{
+						{
+							"bucket":        "${local.bucket_dest}",
+							"location":      "${local.location}",
+							"transfer_type": "",
+						},
+					},
+					"sync_role": "${local.role_name}",
+					"encryption_configuration": []map[string]interface{}{
+						{
+							"replica_kms_key_id": "${local.kms_key_id}",
+						},
+					},
+					"source_selection_criteria": []map[string]interface{}{
+						{
+							"sse_kms_encrypted_objects": []map[string]interface{}{
+								{
+									"status": "Enabled",
+								},
+							},
+						},
+					},
+					"rtc": []map[string]interface{}{
+						{
+							"enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":                        name + "-rtc-1",
+						"action":                        "ALL",
+						"destination.#":                 "1",
+						"destination.0.bucket":          name + "-rtc-2",
+						"destination.0.location":        "oss-cn-shanghai",
+						"destination.0.transfer_type":   "",
+						"historical_object_replication": "enabled",
+						"rule_id":                       CHECKSET,
+						"status":                        CHECKSET,
+						"sync_role":                     name + "-rtc-ramrole",
+						"encryption_configuration.#":    "1",
+						"encryption_configuration.0.replica_kms_key_id":                  CHECKSET,
+						"source_selection_criteria.#":                                    "1",
+						"source_selection_criteria.0.sse_kms_encrypted_objects.#":        "1",
+						"source_selection_criteria.0.sse_kms_encrypted_objects.0.status": "Enabled",
+						"prefix_set.#":            "1",
+						"prefix_set.0.prefixes.#": "2",
+						"prefix_set.0.prefixes.0": "test-abc",
+						"prefix_set.0.prefixes.1": "test-def",
+						"rtc.#":                   "1",
+						"rtc.0.enabled":           "false",
+						"rtc.0.status":            "",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceOssBucketReplicationDifferentRegionDependence(name string) string {
+	return fmt.Sprintf(`
+
+	variable "name" {
+		default = "%s-rtc"
+	}
+
+	provider "alicloud" {
+		region = "cn-hangzhou"
+	}
+
+	provider "alicloud" {
+		alias  = "sh"
+		region = "cn-shanghai"
+	}
+
+	resource "alicloud_oss_bucket" "bucket_src" {
+		bucket   = "${var.name}-1"
+	}
+
+	resource "alicloud_oss_bucket" "bucket_dest" {
+		provider = alicloud.sh
+		bucket   = "${var.name}-2"
+	}
+
+	resource "alicloud_ram_role" "role" {
+		name     = "${var.name}-ramrole"
+		document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "oss.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+		EOF
+		description = "this is a test"
+		force       = true
+	}
+
+	resource "alicloud_ram_policy" "policy" {
+		policy_name        = "${var.name}-rampolicy"
+		policy_document    = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"*"
+			  ],
+			  "Effect": "Allow",
+			  "Resource": [
+				"*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+		EOF
+		description = "this is a policy test"
+		force       = true
+	}
+
+	resource "alicloud_ram_role_policy_attachment" "attach" {
+		policy_name = alicloud_ram_policy.policy.name
+		policy_type = alicloud_ram_policy.policy.type
+		role_name   = alicloud_ram_role.role.name
+	}
+
+	resource "alicloud_kms_key" "key" {
+		description             = "Hello KMS"
+		pending_window_in_days  = "7"
+		status                  = "Enabled"
+	}
+
+	locals {
+		bucket_src = alicloud_oss_bucket.bucket_src.id
+		bucket_dest = alicloud_oss_bucket.bucket_dest.id
+		location = alicloud_oss_bucket.bucket_dest.location
+		role_name = alicloud_ram_role.role.name
+		kms_key_id = alicloud_kms_key.key.id
+	}
+`, name)
+}
+
+func testAccCheckDestoryWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, provider := range *providers {
+			if provider.Meta() == nil {
+				continue
+			}
+			if err := testAccCheckResourceDestroyWithProvider(s, provider); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func testAccCheckResourceDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
+	client := provider.Meta().(*connectivity.AliyunClient)
+	OssService := OssService{client}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_oss_bucket" {
+			continue
+		}
+
+		_, err := OssService.DescribeOssBucket(rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return err
+		}
+	}
+
+	return nil
+}

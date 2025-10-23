@@ -19,6 +19,7 @@ func resourceAlicloudOssBucketReplication() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudOssBucketReplicationCreate,
 		Read:   resourceAlicloudOssBucketReplicationRead,
+		Update: resourceAlicloudOssBucketReplicationUpdate,
 		Delete: resourceAlicloudOssBucketReplicationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -163,6 +164,24 @@ func resourceAlicloudOssBucketReplication() *schema.Resource {
 					},
 				},
 			},
+			"rtc": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"enabled": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -189,6 +208,10 @@ type EncryptionConfigurationType struct {
 	ReplicaKmsKeyID string `xml:"ReplicaKmsKeyID,omitempty"`
 }
 
+type RtcType struct {
+	Status string `xml:"Status,omitempty"`
+}
+
 type ReplicationRule struct {
 	ID                          string                       `xml:"ID,omitempty"`
 	Action                      string                       `xml:"Action,omitempty"`
@@ -199,6 +222,7 @@ type ReplicationRule struct {
 	SyncRole                    string                       `xml:"SyncRole,omitempty"`
 	SourceSelectionCriteria     *SourceSelectionCriteriaType `xml:"SourceSelectionCriteria,omitempty"`
 	EncryptionConfiguration     *EncryptionConfigurationType `xml:"EncryptionConfiguration,omitempty"`
+	Rtc                         *RtcType                     `xml:"RTC,omitempty"`
 }
 
 type ReplicationConfiguration struct {
@@ -303,6 +327,19 @@ func expandReplicationRule(d *schema.ResourceData) ReplicationRule {
 		rule.EncryptionConfiguration = &i
 	}
 
+	// RTC
+	if val, ok := r["rtc"].([]interface{}); ok && len(val) > 0 && val[0] != nil {
+		e := val[0].(map[string]interface{})
+		i := RtcType{}
+		// use enabled to set status
+		if val, ok := e["enabled"].(bool); ok && val {
+			i.Status = "enabled"
+		} else {
+			i.Status = "disabled"
+		}
+		rule.Rtc = &i
+	}
+
 	return rule
 }
 
@@ -387,6 +424,18 @@ func flattenReplicationRule(d *schema.ResourceData, rc *ReplicationConfiguration
 			}
 			rule["encryption_configuration"] = []interface{}{encryptionConfiguration}
 		}
+
+		// RTC
+		rtc := make(map[string]interface{})
+		rtc["enabled"] = false
+		rtc["status"] = ""
+		if r.Rtc != nil {
+			rtc["status"] = r.Rtc.Status
+			if r.Rtc.Status == "enabled" || r.Rtc.Status == "enabling" {
+				rtc["enabled"] = true
+			}
+		}
+		rule["rtc"] = []interface{}{rtc}
 
 		//Progress
 		if rp != nil {
@@ -576,6 +625,59 @@ func resourceAlicloudOssBucketReplicationRead(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapError(err)
 	}
+	return nil
+}
+
+func resourceAlicloudOssBucketReplicationUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	d.Partial(true)
+
+	if d.HasChange("rtc") {
+		if err := resourceAlicloudOssBucketReplicationRtcUpdate(client, d); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("rtc")
+	}
+
+	d.Partial(false)
+	return resourceAlicloudOssBucketReplicationRead(d, meta)
+}
+
+func resourceAlicloudOssBucketReplicationRtcUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	bucket := parts[0]
+	ruleId := parts[1]
+
+	config := d.Get("rtc").([]interface{})
+	c := config[0].(map[string]interface{})
+
+	enabled := "disabled"
+	if v, ok := c["enabled"]; ok && v.(bool) {
+		enabled = "enabled"
+	}
+
+	var requestInfo *oss.Client
+	bucketRtc := oss.PutBucketRTC{
+		RTC: &enabled,
+		ID:  ruleId,
+	}
+
+	log.Printf("[DEBUG] Oss bucket: %s, RuleId: %s, put RTC: %#v", bucket, ruleId, bucketRtc)
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
+		return nil, ossClient.PutBucketRTC(bucket, bucketRtc)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PutBucketReplicationRtc", AliyunOssGoSdk)
+	}
+	addDebug("PutBucketReplicationRtc", raw, requestInfo, map[string]interface{}{
+		"RuleId":      d.Id(),
+		"RTC enabled": enabled,
+	})
 	return nil
 }
 
