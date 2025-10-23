@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"log"
 	"strings"
 	"time"
 
@@ -495,6 +496,10 @@ func (s *PolarDbServiceV2) DescribeDBClusterEndpointsZonal(id string) (object *D
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
+	if response["Items"] != nil && len(response["Items"].([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("ZonalClusterEndpoint", id), NotFoundMsg, response)
+	}
+
 	var responseObj *DBEndpoint
 	responseByte, err := json.Marshal(response["Items"].([]interface{})[0])
 	if err := json.Unmarshal(responseByte, &responseObj); err != nil {
@@ -606,8 +611,8 @@ func (s *PolarDbServiceV2) ModifyDBClusterEndpointZonal(requestObj *polardb.Modi
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		_, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
-		addDebug(action, err, request)
+		response, err := client.RpcPost("polardb", "2017-08-01", action, query, request, true)
+		log.Printf("ModifyDBClusterEndpointZonal response %s %v %v", requestObj.DBEndpointId, request, response)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -660,7 +665,7 @@ func (s *PolarDbServiceV2) DeleteDBClusterEndpointZonal(regionId, DBClusterId, e
 	return nil
 }
 
-func (s *PolarDbServiceV2) WaitForPolarDBEndpoints(d *schema.ResourceData, status Status, endpointIds *schema.Set, timeout int) (string, error) {
+func (s *PolarDbServiceV2) WaitForPolarDBEndpoints(d *schema.ResourceData, status Status, endpointIds *schema.Set, endpointType string, timeout int) (string, error) {
 	var dbEndpointId string
 	if d.Id() != "" {
 		parts, err := ParseResourceId(d.Id(), 2)
@@ -670,7 +675,6 @@ func (s *PolarDbServiceV2) WaitForPolarDBEndpoints(d *schema.ResourceData, statu
 		dbEndpointId = parts[1]
 	}
 	dbClusterId := d.Get("db_cluster_id").(string)
-	endpointType := d.Get("endpoint_type").(string)
 
 	newEndpoint := make(map[string]string)
 	newEndpoint["endpoint_type"] = endpointType
@@ -683,7 +687,7 @@ func (s *PolarDbServiceV2) WaitForPolarDBEndpoints(d *schema.ResourceData, statu
 		}
 
 		deleted := true
-		completed := true
+		completed := false
 		for _, value := range *endpoints {
 			if status == Deleted && dbEndpointId == value.DBEndpointId {
 				deleted = false
