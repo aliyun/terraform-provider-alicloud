@@ -26,6 +26,9 @@ Attaches several ECS instances to a specified scaling group or remove them from 
 </div></div>
 
 ```terraform
+provider "alicloud" {
+  region = "ap-southeast-5"
+}
 variable "name" {
   default = "terraform-example"
 }
@@ -45,15 +48,16 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  cpu_core_count    = 2
-  memory_size       = 4
+  availability_zone    = data.alicloud_zones.default.zones[0].id
+  cpu_core_count       = 2
+  memory_size          = 8
+  instance_type_family = "ecs.g9i"
 }
 
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
-  most_recent = true
-  owners      = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types[0].id
+  most_recent   = true
+  owners        = "system"
 }
 
 data "alicloud_vpcs" "default" {
@@ -91,13 +95,14 @@ resource "alicloud_ess_scaling_group" "default" {
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
-  scaling_group_id  = alicloud_ess_scaling_group.default.id
-  image_id          = data.alicloud_images.default.images[0].id
-  instance_type     = data.alicloud_instance_types.default.instance_types[0].id
-  security_group_id = alicloud_security_group.default.id
-  force_delete      = true
-  active            = true
-  enable            = true
+  scaling_group_id     = alicloud_ess_scaling_group.default.id
+  image_id             = data.alicloud_images.default.images[0].id
+  instance_type        = data.alicloud_instance_types.default.instance_types[0].id
+  security_group_id    = alicloud_security_group.default.id
+  system_disk_category = "cloud_essd"
+  force_delete         = true
+  active               = true
+  enable               = true
 }
 
 resource "alicloud_instance" "default" {
@@ -108,7 +113,7 @@ resource "alicloud_instance" "default" {
   internet_charge_type       = "PayByTraffic"
   internet_max_bandwidth_out = "10"
   instance_charge_type       = "PostPaid"
-  system_disk_category       = "cloud_efficiency"
+  system_disk_category       = "cloud_essd"
   vswitch_id                 = data.alicloud_vswitches.default.ids[0]
   instance_name              = var.name
 }

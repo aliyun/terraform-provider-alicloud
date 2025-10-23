@@ -24,6 +24,10 @@ For information about ess schedule task, see [Scheduled Tasks](https://www.aliba
 </div></div>
 
 ```terraform
+provider "alicloud" {
+  region = "ap-southeast-5"
+}
+
 variable "name" {
   default = "terraform-example"
 }
