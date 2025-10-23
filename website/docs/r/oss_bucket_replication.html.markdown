@@ -40,8 +40,8 @@ resource "alicloud_oss_bucket" "bucket_dest" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name        = "example-role-${random_integer.default.result}"
-  document    = <<EOF
+  role_name                   = "example-role-${random_integer.default.result}"
+  assume_role_policy_document = <<EOF
 		{
 		  "Statement": [
 			{
@@ -57,8 +57,8 @@ resource "alicloud_ram_role" "role" {
 		  "Version": "1"
 		}
 	  	EOF
-  description = "this is a test"
-  force       = true
+  description                 = "this is a test"
+  force                       = true
 }
 
 resource "alicloud_ram_policy" "policy" {
@@ -86,7 +86,7 @@ resource "alicloud_ram_policy" "policy" {
 resource "alicloud_ram_role_policy_attachment" "attach" {
   policy_name = alicloud_ram_policy.policy.policy_name
   policy_type = alicloud_ram_policy.policy.type
-  role_name   = alicloud_ram_role.role.name
+  role_name   = alicloud_ram_role.role.role_name
 }
 
 resource "alicloud_kms_key" "key" {
@@ -106,7 +106,7 @@ resource "alicloud_oss_bucket_replication" "cross-region-replication" {
     bucket   = alicloud_oss_bucket.bucket_dest.id
     location = alicloud_oss_bucket.bucket_dest.location
   }
-  sync_role = alicloud_ram_role.role.name
+  sync_role = alicloud_ram_role.role.role_name
   encryption_configuration {
     replica_kms_key_id = alicloud_kms_key.key.id
   }
@@ -131,6 +131,7 @@ The following arguments are supported:
 * `source_selection_criteria` - (Optional, ForceNew) Specifies other conditions used to filter the source objects to replicate. See [`source_selection_criteria`](#source_selection_criteria) below.
 * `encryption_configuration` - (Optional, ForceNew) Specifies the encryption configuration for the objects replicated to the destination bucket. See [`encryption_configuration`](#encryption_configuration) below.
 * `progress` - (Optional) Specifies the progress for querying the progress of a data replication task of a bucket.
+* `rtc` - (Computed, Optional, Available since v1.262.0) Configures the Replication Time Control (RTC) feature for a data replication task of a bucket. See [`rtc`](#rtc) below.
 
 
 ### `prefix_set`
@@ -170,6 +171,16 @@ The encryption_configuration configuration block supports the following:
 * `replica_kms_key_id` - (Required, ForceNew) The CMK ID used in SSE-KMS.
 
 `NOTE`: If the status of sse_kms_encrypted_objects is set to Enabled, you must specify the replica_kms_key_id.
+
+### `rtc`
+
+The rtc configuration block supports the following:
+
+* `enabled` - (Required) Specifies whether to enable the RTC feature. Set to `true` to enable or `false` to disable. This argument is required when the rtc block is defined.
+* `status` - (Computed) The current status of the RTC feature. This attribute is read-only and is only populated when `enabled` is set to `true`. Possible values are:
+    * `enabling` - The feature is being activated but the historical data migration is still in progress.
+    * `enabled` - The feature is fully active and the historical data migration has completed (or if historical migration was not selected for the task).
+
 
 ## Attributes Reference
 
