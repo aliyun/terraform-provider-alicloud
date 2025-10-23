@@ -131,6 +131,7 @@ The following arguments are supported:
 * `source_selection_criteria` - (Optional, ForceNew) Specifies other conditions used to filter the source objects to replicate. See [`source_selection_criteria`](#source_selection_criteria) below.
 * `encryption_configuration` - (Optional, ForceNew) Specifies the encryption configuration for the objects replicated to the destination bucket. See [`encryption_configuration`](#encryption_configuration) below.
 * `progress` - (Optional) Specifies the progress for querying the progress of a data replication task of a bucket.
+* `rtc` - (Computed, Optional) Configures the Replication Time Control (RTC) feature for a data replication task of a bucket. See [`rtc`](#rtc) below.
 
 
 ### `prefix_set`
@@ -170,6 +171,16 @@ The encryption_configuration configuration block supports the following:
 * `replica_kms_key_id` - (Required, ForceNew) The CMK ID used in SSE-KMS.
 
 `NOTE`: If the status of sse_kms_encrypted_objects is set to Enabled, you must specify the replica_kms_key_id.
+
+### `rtc`
+
+The rtc configuration block supports the following:
+
+* `enabled` - (Required) Specifies whether to enable the RTC feature. Set to `true` to enable or `false` to disable. This argument is required when the rtc block is defined.
+* `status` - (Computed) The current status of the RTC feature. This attribute is read-only and is only populated when `enabled` is set to `true`. Possible values are:
+    * `enabling` - The feature is being activated but the historical data migration is still in progress.
+    * `enabled` - The feature is fully active and the historical data migration has completed (or if historical migration was not selected for the task).
+
 
 ## Attributes Reference
 
