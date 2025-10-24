@@ -550,6 +550,13 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	startInstanceReq["InstanceId"] = alikafkaInstanceVO["InstanceId"]
 	startInstanceReq["VSwitchId"] = d.Get("vswitch_id")
 
+	vswitchId := d.Get("vswitch_id").(string)
+
+	if v, ok := d.GetOk("vswitch_ids"); ok && !IsNil(v) {
+		vswitchId = v.([]interface{})[0].(string)
+		startInstanceReq["VSwitchIds"] = v
+	}
+
 	if v, ok := d.GetOk("vpc_id"); ok {
 		startInstanceReq["VpcId"] = v
 	}
@@ -559,7 +566,7 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	}
 
 	if startInstanceReq["VpcId"] == nil {
-		vsw, err := vpcService.DescribeVswitch(startInstanceReq["VSwitchId"].(string))
+		vsw, err := vpcService.DescribeVswitch(vswitchId)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -567,10 +574,6 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 		if v, ok := startInstanceReq["VpcId"].(string); !ok || v == "" {
 			startInstanceReq["VpcId"] = vsw["VpcId"]
 		}
-	}
-
-	if v, ok := d.GetOk("vswitch_ids"); ok {
-		startInstanceReq["VSwitchIds"] = v
 	}
 
 	if _, ok := d.GetOkExists("eip_max"); ok {
@@ -1101,7 +1104,7 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "ScheduledTask.AlreadyHasSameTaskType"}) || NeedRetry(err) {
