@@ -416,6 +416,7 @@ func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 					"instance_type":   "alikafka",
 					"eip_max":         "3",
 					"io_max":          "20",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_id":      "${data.alicloud_vswitches.default.ids.0}",
 					"paid_type":       "PrePaid",
 					"spec_type":       "normal",
@@ -607,7 +608,6 @@ func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
 						"For":     "acceptance test",
 					},
 					"security_group": "${alicloud_security_group.default.id}",
-					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_ids":    []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
 					"selected_zones": []string{"zoneb", "zonec"},
 					"serverless_config": []map[string]interface{}{
@@ -693,7 +693,6 @@ func SkipTestAccAliCloudAlikafkaInstance_Confluent(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
 					"password":       "YourPassword123!",
 					"vswitch_ids":    []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
 					"selected_zones": []string{"zoneb", "zonec"},
