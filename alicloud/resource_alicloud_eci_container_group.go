@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudEciContainerGroup() *schema.Resource {
+func resourceAliCloudEciContainerGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEciContainerGroupCreate,
-		Read:   resourceAlicloudEciContainerGroupRead,
-		Update: resourceAlicloudEciContainerGroupUpdate,
-		Delete: resourceAlicloudEciContainerGroupDelete,
+		Create: resourceAliCloudEciContainerGroupCreate,
+		Read:   resourceAliCloudEciContainerGroupRead,
+		Update: resourceAliCloudEciContainerGroupUpdate,
+		Delete: resourceAliCloudEciContainerGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -111,6 +111,34 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			"eip_instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"dns_policy": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"ephemeral_storage": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"termination_grace_period_seconds": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"spot_price_limit": {
+				Type:     schema.TypeFloat,
+				ForceNew: true,
+				Optional: true,
+				Computed: true,
+			},
+			"spot_strategy": {
+				Type:         schema.TypeString,
+				ForceNew:     true,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
 			"tags": tagsSchema(),
 			"containers": {
@@ -597,12 +625,6 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 					},
 				},
 			},
-			"dns_policy": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Computed: true,
-			},
 			"dns_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -863,27 +885,11 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"termination_grace_period_seconds": {
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-			"spot_price_limit": {
-				Type:     schema.TypeFloat,
-				ForceNew: true,
-				Optional: true,
-				Computed: true,
-			},
-			"spot_strategy": {
-				Type:         schema.TypeString,
-				ForceNew:     true,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
-			}},
+		},
 	}
 }
 
-func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eciService := EciService{client}
 	var response map[string]interface{}
@@ -1044,6 +1050,10 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("dns_policy"); ok {
 		request["DnsPolicy"] = v
+	}
+
+	if v, ok := d.GetOkExists("ephemeral_storage"); ok {
+		request["EphemeralStorage"] = v
 	}
 
 	if v, ok := d.GetOk("dns_config"); ok {
@@ -1322,10 +1332,10 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudEciContainerGroupRead(d, meta)
+	return resourceAliCloudEciContainerGroupRead(d, meta)
 }
 
-func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eciService := EciService{client}
 	object, err := eciService.DescribeEciContainerGroup(d.Id())
@@ -1340,6 +1350,7 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 	d.Set("container_group_name", object["ContainerGroupName"])
 	d.Set("internet_ip", object["InternetIp"])
 	d.Set("intranet_ip", object["IntranetIp"])
+	d.Set("ephemeral_storage", object["EphemeralStorage"])
 
 	containers := make([]map[string]interface{}, 0)
 	if containersList, ok := object["Containers"].([]interface{}); ok {
@@ -1787,7 +1798,7 @@ func getConfigFileContent(d *schema.ResourceData, name interface{}, path interfa
 	return ""
 }
 
-func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eciService := EciService{client}
 	var response map[string]interface{}
@@ -2117,10 +2128,10 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 		}
 	}
 
-	return resourceAlicloudEciContainerGroupRead(d, meta)
+	return resourceAliCloudEciContainerGroupRead(d, meta)
 }
 
-func resourceAlicloudEciContainerGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEciContainerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteContainerGroup"
 	var response map[string]interface{}
