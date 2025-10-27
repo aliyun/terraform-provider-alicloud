@@ -56,6 +56,7 @@ func resourceAliCloudVpcGatewayEndpoint() *schema.Resource {
 			"route_tables": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"service_name": {
