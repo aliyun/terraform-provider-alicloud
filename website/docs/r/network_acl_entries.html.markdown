@@ -7,15 +7,13 @@ description: |-
   Provides a Alicloud Network Acl Entries resource.
 ---
 
-# alicloud\_network_acl_entries
+# alicloud_network_acl_entries
 
 Provides a network acl entries resource to create ingress and egress entries.
 
--> **NOTE:** Available in 1.45.0+. Currently, the resource are only available in Hongkong(cn-hongkong), and Indonesia(ap-southeast-1) regions.
+-> **NOTE:** Available in 1.45.0+.
 
 -> **NOTE:** It doesn't support concurrency and the order of the ingress and egress entries determines the priority.
-
--> **NOTE:** Using this resource need to open a whitelist.
 
 -> **DEPRECATED:**  This resource  has been deprecated from version `1.122.0`. Replace by `ingress_acl_entries` and `egress_acl_entries` with the resource [alicloud_network_acl](https://www.terraform.io/docs/providers/alicloud/r/network_acl).
 
@@ -85,10 +83,10 @@ resource "alicloud_network_acl_entries" "default" {
 The following arguments are supported:
 
 * `network_acl_id` - (Required, ForceNew) The id of the network acl, the field can't be changed.
-* `ingress` - (Optional) List of the ingress entries of the network acl. The order of the ingress entries determines the priority. The details see Block Ingress.
-* `egress` - (Optional) List of the egress entries of the network acl. The order of the egress entries determines the priority. The details see Block Egress.
+* `ingress` - (Optional) List of the ingress entries of the network acl. The order of the ingress entries determines the priority. See [`ingress`](#ingress) below.
+* `egress` - (Optional) List of the egress entries of the network acl. The order of the egress entries determines the priority. See [`egress`](#egress) below.
 
-### Ingress Resources
+### `ingress`
 
 The resources mapping supports the following:
 
@@ -100,7 +98,7 @@ The resources mapping supports the following:
 * `port` - (Optional) The port of the ingress entry.
 * `protocol` - (Optional) The protocol of the ingress entry.
 
-### Egress Resources
+### `egress`
 
 The resources mapping supports the following:
 
