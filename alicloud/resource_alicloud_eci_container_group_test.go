@@ -14,48 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-const ECI_EcsInstanceCommonTestCase = `
-data "alicloud_zones" "default" {
-  available_disk_category     = "cloud_efficiency"
-  available_resource_creation = "VSwitch"
-}
-data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.1.id}"
-  cpu_core_count    = 2
-  memory_size       = 4
-}
-
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu"
-  most_recent = true
-  owners      = "system"
-}
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  zone_id = "${data.alicloud_zones.default.zones.1.id}"
-  vswitch_name              = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-resource "alicloud_security_group_rule" "default" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
-  	cidr_ip = "172.16.0.0/24"
-}
-`
-
 func init() {
 	resource.AddTestSweepers(
 		"alicloud_eci_container_group",
@@ -72,7 +30,7 @@ func testSweepEciContainerGroup(region string) error {
 	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "error getting Alicloud client.")
+		return WrapErrorf(err, "error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -139,15 +97,15 @@ func testSweepEciContainerGroup(region string) error {
 func TestAccAliCloudEciContainerGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -162,6 +120,7 @@ func TestAccAliCloudEciContainerGroup_basic(t *testing.T) {
 					"security_group_id":      "${alicloud_security_group.default.id}",
 					"vswitch_id":             "${alicloud_vswitch.default.id}",
 					"auto_match_image_cache": "false",
+					"ephemeral_storage":      "20",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -196,6 +155,7 @@ func TestAccAliCloudEciContainerGroup_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"container_group_name": strings.ToLower(name),
+						"ephemeral_storage":    "20",
 						"containers.#":         "1",
 						"init_containers.#":    "1",
 						"host_aliases.#":       "1",
@@ -314,15 +274,15 @@ func TestAccAliCloudEciContainerGroup_basic(t *testing.T) {
 func TestAccAliCloudEciContainerGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -401,15 +361,15 @@ func TestAccAliCloudEciContainerGroup_basic1(t *testing.T) {
 func TestAccAliCloudEciContainerGroup_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -481,15 +441,15 @@ func TestAccAliCloudEciContainerGroup_basic2(t *testing.T) {
 func TestAccAliCloudEciContainerGroup_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence2)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -561,7 +521,7 @@ func TestAccAliCloudEciContainerGroup_basic3(t *testing.T) {
 func TestAccAliCloudEciContainerGroup_basic4(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
@@ -569,7 +529,7 @@ func TestAccAliCloudEciContainerGroup_basic4(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacceci-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence3_2)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence3)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -726,7 +686,7 @@ func TestAccAliCloudEciContainerGroup_basic4(t *testing.T) {
 func TestAccAliCloudEciContainerGroup_basic5(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
@@ -734,7 +694,7 @@ func TestAccAliCloudEciContainerGroup_basic5(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacceci-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence3)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence3)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -891,15 +851,15 @@ func TestAccAliCloudEciContainerGroup_basic5(t *testing.T) {
 func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1268,18 +1228,19 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 func TestAccAliCloudEciContainerGroup_basic7(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence4)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence4)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1291,8 +1252,8 @@ func TestAccAliCloudEciContainerGroup_basic7(t *testing.T) {
 					"security_group_id":      "${alicloud_security_group.default.id}",
 					"auto_match_image_cache": "false",
 					"vswitch_id":             "${alicloud_vswitch.default.id}",
-					"zone_id":                "${data.alicloud_zones.default.zones.1.id}",
-					"instance_type":          "${data.alicloud_instance_types.default.instance_types.13.id}",
+					"zone_id":                "${data.alicloud_zones.default.zones.0.id}",
+					"instance_type":          "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"ram_role_name":          "${alicloud_ram_role.default.name}",
 					"security_context": []map[string]interface{}{
 						{
@@ -1307,7 +1268,7 @@ func TestAccAliCloudEciContainerGroup_basic7(t *testing.T) {
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
-							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", "${data.alicloud_regions.default.regions.0.id}"),
 							"image_pull_policy": "IfNotPresent",
 							"commands":          []string{"/bin/sh", "-c", "sleep 9999"},
 							"volume_mounts": []map[string]interface{}{
@@ -1391,7 +1352,7 @@ func TestAccAliCloudEciContainerGroup_basic7(t *testing.T) {
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
-							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", "${data.alicloud_regions.default.regions.0.id}"),
 							"image_pull_policy": "IfNotPresent",
 							"commands":          []string{"/bin/sh", "-c", "sleep 9999"},
 							"volume_mounts": []map[string]interface{}{
@@ -1462,15 +1423,15 @@ func TestAccAliCloudEciContainerGroup_basic7(t *testing.T) {
 func TestAccAliCloudEciContainerGroup_basic8(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1533,15 +1494,15 @@ func TestAccAliCloudEciContainerGroup_basic8(t *testing.T) {
 func TestAccAliCloudEciContainerGroup_basic9(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEciContainerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEciContainerGroupBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1602,13 +1563,13 @@ func TestAccAliCloudEciContainerGroup_basic9(t *testing.T) {
 	})
 }
 
-var AlicloudEciContainerGroupMap = map[string]string{
+var AliCloudEciContainerGroupMap = map[string]string{
 	"resource_group_id": CHECKSET,
 	"restart_policy":    "Always",
 	"status":            CHECKSET,
 }
 
-func AlicloudEciContainerGroupBasicDependence(name string) string {
+func AliCloudEciContainerGroupBasicDependence(name string) string {
 	return fmt.Sprintf(`
 %s
 	variable "name" {
@@ -1620,7 +1581,7 @@ func AlicloudEciContainerGroupBasicDependence(name string) string {
 `, EcsInstanceCommonTestCase, name)
 }
 
-func AlicloudEciContainerGroupBasicDependence2(name string) string {
+func AliCloudEciContainerGroupBasicDependence2(name string) string {
 	return fmt.Sprintf(`
 %s
 	variable "name" {
@@ -1633,7 +1594,7 @@ func AlicloudEciContainerGroupBasicDependence2(name string) string {
 `, EcsInstanceCommonTestCase, name)
 }
 
-func AlicloudEciContainerGroupBasicDependence3(name string) string {
+func AliCloudEciContainerGroupBasicDependence3(name string) string {
 	return fmt.Sprintf(`
 %s
 	variable "name" {
@@ -1644,34 +1605,25 @@ func AlicloudEciContainerGroupBasicDependence3(name string) string {
 `, EcsInstanceCommonTestCase, name)
 }
 
-func AlicloudEciContainerGroupBasicDependence3_2(name string) string {
+func AliCloudEciContainerGroupBasicDependence4(name string) string {
 	return fmt.Sprintf(`
-%s
+	%s
+
 	variable "name" {
   		default = "%s"
 	}
-`, EcsInstanceCommonTestCase, name)
-}
 
-func AlicloudEciContainerGroupBasicDependence4(name string) string {
-	return fmt.Sprintf(`
-%s
-
-	variable "storage_type" {
-  		default = "Capacity"
-	}
-
-	variable "name" {
-  		default = "%s"
+	data "alicloud_regions" "default" {
+  		current = true
 	}
 
 	data "alicloud_nas_protocols" "default" {
-        type = "${var.storage_type}"
+  		type = "Capacity"
 	}
 
 	resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
-	  document = <<EOF
+  		name        = var.name
+  		document    = <<EOF
 		{
 		  "Statement": [
 			{
@@ -1687,35 +1639,34 @@ func AlicloudEciContainerGroupBasicDependence4(name string) string {
 		  "Version": "1"
 		}
 	  EOF
-	  description = "this is a test"
-	  force = true
+  		description = "this is a test"
+  		force       = true
 	}
 
 	resource "alicloud_nas_file_system" "default" {
-	  description = "${var.name}"
-	  storage_type = "${var.storage_type}"
-	  protocol_type = "${data.alicloud_nas_protocols.default.protocols.1}"
-    }
+  		description   = var.name
+  		storage_type  = "Capacity"
+  		protocol_type = data.alicloud_nas_protocols.default.protocols.1
+	}
 
 	resource "alicloud_nas_mount_target" "default" {
-	  file_system_id    = "${alicloud_nas_file_system.default.id}"
-  	  access_group_name = "DEFAULT_VPC_GROUP_NAME"
-  	  vswitch_id        = "${alicloud_vswitch.default.id}"
+  		file_system_id    = alicloud_nas_file_system.default.id
+  		access_group_name = "DEFAULT_VPC_GROUP_NAME"
+  		vswitch_id        = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_ecs_disk" "default" {
-		zone_id = "${data.alicloud_zones.default.zones.1.id}"
-		category = "cloud_efficiency"
-		description = "Test For Terraform"
-		disk_name = var.name
-		enable_auto_snapshot = "true"
-		encrypted = "true"
-		size = "500"
-		tags = {
-			Created     = "TF"
-			Environment = "Acceptance-test"
-		}
-}
-
-`, ECI_EcsInstanceCommonTestCase, name)
+  		zone_id              = data.alicloud_zones.default.zones.0.id
+  		category             = "cloud_efficiency"
+  		description          = "Test For Terraform"
+  		disk_name            = var.name
+  		enable_auto_snapshot = "true"
+  		encrypted            = "true"
+  		size                 = "500"
+  		tags = {
+    		Created     = "TF"
+    		Environment = "Acceptance-test"
+  		}
+	}
+`, EcsInstanceCommonTestCase, name)
 }

@@ -1547,7 +1547,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_resource_share":                       resourceAliCloudResourceManagerResourceShare(),
 			"alicloud_privatelink_vpc_endpoint_zone":                         resourceAliCloudPrivateLinkVpcEndpointZone(),
 			"alicloud_ga_accelerator":                                        resourceAliCloudGaAccelerator(),
-			"alicloud_eci_container_group":                                   resourceAlicloudEciContainerGroup(),
+			"alicloud_eci_container_group":                                   resourceAliCloudEciContainerGroup(),
 			"alicloud_resource_manager_shared_resource":                      resourceAliCloudResourceManagerSharedResource(),
 			"alicloud_resource_manager_shared_target":                        resourceAliCloudResourceManagerSharedTarget(),
 			"alicloud_ga_listener":                                           resourceAliCloudGaListener(),

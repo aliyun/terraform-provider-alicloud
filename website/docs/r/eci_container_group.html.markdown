@@ -134,17 +134,18 @@ The following arguments are supported:
 * `security_group_id` - (Required, ForceNew) The ID of the security group to which the container group belongs. Container groups within the same security group can access each other.
 * `instance_type` - (Optional, ForceNew) The type of the ECS instance.
 * `zone_id` - (Optional, ForceNew) The ID of the zone where you want to deploy the container group. If no value is specified, the system assigns a zone to the container group. By default, no value is specified.
-* `cpu` - (Optional, Float, ForceNew) The amount of CPU resources allocated to the container group.
-* `memory` - (Optional, Float, ForceNew) The amount of memory resources allocated to the container group.
+* `cpu` - (Optional, ForceNew, Float) The amount of CPU resources allocated to the container group.
+* `memory` - (Optional, ForceNew, Float) The amount of memory resources allocated to the container group.
 * `ram_role_name` - (Optional, ForceNew) The RAM role that the container group assumes. ECI and ECS share the same RAM role.
 * `resource_group_id` - (Optional) The ID of the resource group. **NOTE:** From version 1.208.0, `resource_group_id` can be modified.
 * `restart_policy` - (Optional) The restart policy of the container group. Valid values: `Always`, `Never`, `OnFailure`.
-* `auto_match_image_cache` - (Optional, Bool, ForceNew, Available since v1.166.0) Specifies whether to automatically match the image cache. Default value: `false`. Valid values: `true` and `false`.
+* `auto_match_image_cache` - (Optional, ForceNew, Bool, Available since v1.166.0) Specifies whether to automatically match the image cache. Default value: `false`. Valid values: `true` and `false`.
 * `plain_http_registry` - (Optional, Available since v1.170.0) The address of the self-built mirror warehouse. When creating an image cache from an image in a self-built image repository using the HTTP protocol, you need to configure this parameter so that the ECI uses the HTTP protocol to pull the image to avoid image pull failure due to different protocols.
 * `insecure_registry` - (Optional, Available since v1.170.0) The address of the self-built mirror warehouse. When creating an image cache using an image in a self-built image repository with a self-signed certificate, you need to configure this parameter to skip certificate authentication to avoid image pull failure due to certificate authentication failure.
 * `auto_create_eip` - (Optional, Bool, Available since v1.170.0) Specifies whether to automatically create an EIP and bind the EIP to the elastic container instance.
 * `eip_bandwidth` - (Optional, Int, Available since v1.170.0) The bandwidth of the EIP. Default value: `5`.
 * `eip_instance_id` - (Optional, Available since v1.170.0) The ID of the elastic IP address (EIP).
+* `ephemeral_storage` - (Optional, ForceNew, Int, Available since v1.262.0) The size of the temporary storage space to add. Unit: GiB.
 * `containers` - (Required, Set) The list of containers. See [`containers`](#containers) below.
 * `init_containers` - (Optional, Set) The list of initContainers. See [`init_containers`](#init_containers) below.
 * `dns_policy` - (Optional, ForceNew, Available since v1.232.0) The policy of DNS. Default value: `Default`. Valid values: `Default` and `None`.
@@ -192,7 +193,7 @@ The volumes supports the following:
 * `flex_volume_options` - (Optional, ForceNew) The list of FlexVolume objects. Each object is a key-value pair contained in a JSON string.
 * `nfs_volume_path` - (Optional, ForceNew) The path to the NFS volume.
 * `nfs_volume_server` - (Optional, ForceNew) The address of the NFS server.
-* `nfs_volume_read_only` - (Optional, Bool, ForceNew) The nfs volume read only. Default value: `false`.
+* `nfs_volume_read_only` - (Optional, ForceNew, Bool) The nfs volume read only. Default value: `false`.
 * `config_file_volume_config_file_to_paths` - (Optional, Set, ForceNew) The paths of the ConfigFile volume. See [`config_file_volume_config_file_to_paths`](#volumes-config_file_volume_config_file_to_paths) below.
 -> **NOTE:** Every volumes mounted must have `name` and `type` attributes.
 
@@ -258,7 +259,7 @@ The init_containers supports the following:
 
 * `name` - (Optional, ForceNew) The name of the init container.
 * `cpu` - (Optional, Float) The amount of CPU resources allocated to the container. Default value: `0`.
-* `gpu` - (Optional, Int, ForceNew) The number GPUs. Default value: `0`.
+* `gpu` - (Optional, ForceNew, Int) The number GPUs. Default value: `0`.
 * `memory` - (Optional, Float) The amount of memory resources allocated to the container. Default value: `0`.
 * `image` - (Optional) The image of the container.
 * `image_pull_policy` - (Optional) The restart policy of the image. Default value: `IfNotPresent`. Valid values: `Always`, `IfNotPresent`, `Never`.
@@ -318,7 +319,7 @@ The containers supports the following:
 * `name` - (Required, ForceNew) The name of the init container.
 * `image` - (Required) The image of the container.
 * `cpu` - (Optional, Float) The amount of CPU resources allocated to the container. Default value: `0`.
-* `gpu` - (Optional, Int, ForceNew) The number GPUs. Default value: `0`.
+* `gpu` - (Optional, ForceNew, Int) The number GPUs. Default value: `0`.
 * `memory` - (Optional, Float) The amount of memory resources allocated to the container. Default value: `0`.
 * `image_pull_policy` - (Optional) The restart policy of the image. Default value: `IfNotPresent`. Valid values: `Always`, `IfNotPresent`, `Never`.
 * `working_dir` - (Optional) The working directory of the container.
@@ -367,7 +368,7 @@ The liveness_probe supports the following:
 * `initial_delay_seconds` - (Optional, Int) Check the time to start execution, calculated from the completion of container startup.
 * `period_seconds` - (Optional, Int) Buffer time for the program to handle operations before closing.
 * `timeout_seconds` - (Optional, Int) Check the timeout, the default is 1 second, the minimum is 1 second.
-* `success_threshold` - (Optional, Int, ForceNew) The check count threshold for re-identifying successful checks since the last failed check (must be consecutive successes), default is 1. Current must be 1.
+* `success_threshold` - (Optional, ForceNew, Int) The check count threshold for re-identifying successful checks since the last failed check (must be consecutive successes), default is 1. Current must be 1.
 * `failure_threshold` - (Optional, Int) Threshold for the number of checks that are determined to have failed since the last successful check (must be consecutive failures), default is 3.
 * `exec` - (Optional, Set) Health check using command line method. See [`exec`](#containers-liveness_probe-exec) below.
 * `tcp_socket` - (Optional, Set) Health check using TCP socket method. See [`tcp_socket`](#containers-liveness_probe-tcp_socket) below.
@@ -402,7 +403,7 @@ The readiness_probe supports the following:
 * `initial_delay_seconds` - (Optional, Int) Check the time to start execution, calculated from the completion of container startup.
 * `period_seconds` - (Optional, Int) Buffer time for the program to handle operations before closing.
 * `timeout_seconds` - (Optional, Int) Check the timeout, the default is 1 second, the minimum is 1 second.
-* `success_threshold` - (Optional, Int, ForceNew) The check count threshold for re-identifying successful checks since the last failed check (must be consecutive successes), default is 1. Current must be 1.
+* `success_threshold` - (Optional, ForceNew, Int) The check count threshold for re-identifying successful checks since the last failed check (must be consecutive successes), default is 1. Current must be 1.
 * `failure_threshold` - (Optional, Int) Threshold for the number of checks that are determined to have failed since the last successful check (must be consecutive failures), default is 3.
 * `exec` - (Optional) Health check using command line method. See [`exec`](#containers-readiness_probe-exec) below.
 * `tcp_socket` - (Optional) Health check using TCP socket method. See [`tcp_socket`](#containers-readiness_probe-tcp_socket) below.
@@ -436,7 +437,7 @@ The security_context supports the following:
 
 * `capability` - (Optional, Available since v1.215.0) The permissions that you want to grant to the processes in the containers. See [`capability`](#containers-security_context-capability) below.
 * `run_as_user` - (Optional, Long, Available since v1.215.0) The ID of the user who runs the container.
-* `privileged` - (Optional, Bool, ForceNew, Available since v1.225.1) Specifies whether to give extended privileges to this container. Default value: `false`. Valid values: `true` and `false`.
+* `privileged` - (Optional, ForceNew, Bool, Available since v1.225.1) Specifies whether to give extended privileges to this container. Default value: `false`. Valid values: `true` and `false`.
 
 ### `containers-security_context-capability`
 
