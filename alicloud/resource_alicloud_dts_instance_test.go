@@ -11,10 +11,10 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudDtsInstance_basic1170(t *testing.T) {
+func TestAccAliCloudDtsInstance_basic1170(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDtsInstanceMap1170)
+	ra := resourceAttrInit(resourceId, AliCloudDtsInstanceMap1170)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDtsInstance")
@@ -22,7 +22,7 @@ func TestAccAlicloudDtsInstance_basic1170(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sDtsInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDtsInstanceBasicDependence1170)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDtsInstanceBasicDependence1170)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -95,10 +95,10 @@ func TestAccAlicloudDtsInstance_basic1170(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDtsInstance_basic1(t *testing.T) {
+func TestAccAliCloudDtsInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDtsInstanceMap1170)
+	ra := resourceAttrInit(resourceId, AliCloudDtsInstanceMap1170)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDtsInstance")
@@ -106,7 +106,7 @@ func TestAccAlicloudDtsInstance_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sDtsInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDtsInstanceBasicDependence1170)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDtsInstanceBasicDependence1170)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -160,9 +160,9 @@ func TestAccAlicloudDtsInstance_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudDtsInstanceMap1170 = map[string]string{}
+var AliCloudDtsInstanceMap1170 = map[string]string{}
 
-func AlicloudDtsInstanceBasicDependence1170(name string) string {
+func AliCloudDtsInstanceBasicDependence1170(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"

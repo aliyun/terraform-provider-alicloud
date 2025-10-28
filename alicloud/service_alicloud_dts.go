@@ -651,7 +651,7 @@ func (s *DtsService) DescribeDtsInstance(id string) (object map[string]interface
 	action := "DescribeDtsInstanceDetail"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -659,10 +659,10 @@ func (s *DtsService) DescribeDtsInstance(id string) (object map[string]interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

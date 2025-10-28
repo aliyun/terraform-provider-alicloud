@@ -1962,7 +1962,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_kv_namespace":                                     resourceAlicloudDcdnKvNamespace(),
 			"alicloud_dcdn_kv":                                               resourceAlicloudDcdnKv(),
 			"alicloud_hbr_hana_backup_client":                                resourceAlicloudHbrHanaBackupClient(),
-			"alicloud_dts_instance":                                          resourceAlicloudDtsInstance(),
+			"alicloud_dts_instance":                                          resourceAliCloudDtsInstance(),
 			"alicloud_threat_detection_instance":                             resourceAliCloudThreatDetectionInstance(),
 			"alicloud_cr_vpc_endpoint_linked_vpc":                            resourceAlicloudCrVpcEndpointLinkedVpc(),
 			"alicloud_express_connect_router_interface":                      resourceAlicloudExpressConnectRouterInterface(),
