@@ -9,15 +9,14 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudDtsInstance() *schema.Resource {
+func resourceAliCloudDtsInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDtsInstanceCreate,
-		Read:   resourceAlicloudDtsInstanceRead,
-		Update: resourceAlicloudDtsInstanceUpdate,
-		Delete: resourceAlicloudDtsInstanceDelete,
+		Create: resourceAliCloudDtsInstanceCreate,
+		Read:   resourceAliCloudDtsInstanceRead,
+		Update: resourceAliCloudDtsInstanceUpdate,
+		Delete: resourceAliCloudDtsInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -54,7 +53,7 @@ func resourceAlicloudDtsInstance() *schema.Resource {
 				Computed:     true,
 				Type:         schema.TypeString,
 				AtLeastOneOf: []string{"destination_endpoint_engine_name", "job_id"},
-				ValidateFunc: validation.StringInSlice([]string{"ADS", "DB2", "DRDS", "DataHub", "Greenplum", "MSSQL", "MySQL", "PolarDB", "PostgreSQL", "Redis", "Tablestore", "as400", "clickhouse", "kafka", "mongodb", "odps", "oracle", "polardb_o", "polardb_pg", "tidb"}, false),
+				ValidateFunc: StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, false),
 			},
 			"dts_instance_id": {
 				Computed: true,
@@ -63,18 +62,18 @@ func resourceAlicloudDtsInstance() *schema.Resource {
 			"du": {
 				Optional:     true,
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(1, 100),
+				ValidateFunc: IntBetween(1, 100),
 			},
 			"fee_type": {
 				Optional:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"ONLY_CONFIGURATION_FEE", "CONFIGURATION_FEE_AND_DATA_FEE"}, false),
+				ValidateFunc: StringInSlice([]string{"ONLY_CONFIGURATION_FEE", "CONFIGURATION_FEE_AND_DATA_FEE"}, false),
 			},
 			"instance_class": {
 				Optional:     true,
 				ForceNew:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"4xlarge", "2xlarge", "xlarge", "large", "medium", "small", "micro"}, false),
+				ValidateFunc: StringInSlice([]string{"4xlarge", "2xlarge", "xlarge", "large", "medium", "small", "micro"}, false),
 			},
 			"instance_name": {
 				Computed: true,
@@ -88,12 +87,12 @@ func resourceAlicloudDtsInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"period": {
 				Optional:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"resource_group_id": {
 				Optional: true,
@@ -106,7 +105,7 @@ func resourceAlicloudDtsInstance() *schema.Resource {
 				ForceNew:     true,
 				Type:         schema.TypeString,
 				AtLeastOneOf: []string{"source_endpoint_engine_name", "job_id"},
-				ValidateFunc: validation.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "DB2", "as400", "Tablestore"}, false),
+				ValidateFunc: StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, false),
 			},
 			"source_region": {
 				Optional:     true,
@@ -126,13 +125,13 @@ func resourceAlicloudDtsInstance() *schema.Resource {
 			},
 			"sync_architecture": {
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"bidirectional", "oneway"}, false),
+				ValidateFunc: StringInSlice([]string{"bidirectional", "oneway"}, false),
 				Type:         schema.TypeString,
 			},
 			"synchronization_direction": {
 				Optional:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Forward", "Reverse"}, false),
+				ValidateFunc: StringInSlice([]string{"Forward", "Reverse"}, false),
 			},
 			"tags": tagsSchema(),
 			"type": {
@@ -140,12 +139,12 @@ func resourceAlicloudDtsInstance() *schema.Resource {
 				ForceNew:     true,
 				Type:         schema.TypeString,
 				AtLeastOneOf: []string{"type", "job_id"},
-				ValidateFunc: validation.StringInSlice([]string{"migration", "sync", "subscribe"}, false),
+				ValidateFunc: StringInSlice([]string{"migration", "sync", "subscribe"}, false),
 			},
 			"used_time": {
 				Optional:     true,
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("payment_type").(string) != "Subscription"
 				},
@@ -154,7 +153,7 @@ func resourceAlicloudDtsInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDtsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDtsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
@@ -220,7 +219,7 @@ func resourceAlicloudDtsInstanceCreate(d *schema.ResourceData, meta interface{})
 	action := "CreateDtsInstance"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -228,10 +227,10 @@ func resourceAlicloudDtsInstanceCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dts_instance", action, AlibabaCloudSdkGoERROR)
 	}
@@ -242,10 +241,10 @@ func resourceAlicloudDtsInstanceCreate(d *schema.ResourceData, meta interface{})
 		d.SetId(fmt.Sprint(v))
 	}
 
-	return resourceAlicloudDtsInstanceUpdate(d, meta)
+	return resourceAliCloudDtsInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudDtsInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDtsInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := DtsService{client}
 
@@ -289,11 +288,12 @@ func resourceAlicloudDtsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func resourceAlicloudDtsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDtsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var err error
 	dtsService := DtsService{client}
+	var response map[string]interface{}
 	d.Partial(true)
 	update := false
 	request := map[string]interface{}{
@@ -311,7 +311,7 @@ func resourceAlicloudDtsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		action := "ConvertInstanceResourceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -319,9 +319,10 @@ func resourceAlicloudDtsInstanceUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -335,16 +336,17 @@ func resourceAlicloudDtsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("tags")
 	}
 	d.Partial(false)
-	return resourceAlicloudDtsInstanceRead(d, meta)
+	return resourceAliCloudDtsInstanceRead(d, meta)
 }
 
-func resourceAlicloudDtsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDtsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("payment_type").(string) == "Subscription" {
-		log.Printf("[WARN] Cannot destroy resource Alicloud Resource DTS Instance. Terraform will remove this resource from the state file, however resources may remain.")
+		log.Printf("[WARN] Cannot destroy resource AliCloud Resource DTS Instance. Terraform will remove this resource from the state file, however resources may remain.")
 		return nil
 	}
 	client := meta.(*connectivity.AliyunClient)
 	var err error
+	var response map[string]interface{}
 
 	request := map[string]interface{}{
 		"DtsInstanceId": d.Id(),
@@ -357,8 +359,8 @@ func resourceAlicloudDtsInstanceDelete(d *schema.ResourceData, meta interface{})
 
 	action := "DeleteDtsJob"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -366,9 +368,9 @@ func resourceAlicloudDtsInstanceDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
