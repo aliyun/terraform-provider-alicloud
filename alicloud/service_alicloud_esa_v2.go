@@ -1551,7 +1551,7 @@ func (s *EsaServiceV2) DescribeEsaCacheRule(id string) (object map[string]interf
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
 	query["SiteId"] = parts[0]
-	query["RegionId"] = client.RegionId
+
 	action := "GetCacheRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -1559,7 +1559,7 @@ func (s *EsaServiceV2) DescribeEsaCacheRule(id string) (object map[string]interf
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"LockFailed"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1581,15 +1581,18 @@ func (s *EsaServiceV2) DescribeEsaCacheRule(id string) (object map[string]interf
 }
 
 func (s *EsaServiceV2) EsaCacheRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaCacheRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCacheRule)
+}
+
+func (s *EsaServiceV2) EsaCacheRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaCacheRule(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

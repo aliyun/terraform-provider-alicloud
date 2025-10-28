@@ -111,6 +111,11 @@ func resourceAliCloudEsaCacheRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"sequence": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"serve_stale": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -163,8 +168,10 @@ func resourceAliCloudEsaCacheRuleCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
+	if v, ok := d.GetOkExists("sequence"); ok {
+		request["Sequence"] = v
+	}
 	if v, ok := d.GetOk("check_presence_cookie"); ok {
 		request["CheckPresenceCookie"] = v
 	}
@@ -292,6 +299,7 @@ func resourceAliCloudEsaCacheRuleRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("rule", objectRaw["Rule"])
 	d.Set("rule_enable", objectRaw["RuleEnable"])
 	d.Set("rule_name", objectRaw["RuleName"])
+	d.Set("sequence", objectRaw["Sequence"])
 	d.Set("serve_stale", objectRaw["ServeStale"])
 	d.Set("site_version", objectRaw["SiteVersion"])
 	d.Set("sort_query_string_for_cache", objectRaw["SortQueryStringForCache"])
@@ -320,7 +328,12 @@ func resourceAliCloudEsaCacheRuleUpdate(d *schema.ResourceData, meta interface{}
 	query = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["ConfigId"] = parts[1]
-	request["RegionId"] = client.RegionId
+
+	if d.HasChange("sequence") {
+		update = true
+		request["Sequence"] = d.Get("sequence")
+	}
+
 	if d.HasChange("check_presence_cookie") {
 		update = true
 		request["CheckPresenceCookie"] = d.Get("check_presence_cookie")
@@ -470,12 +483,10 @@ func resourceAliCloudEsaCacheRuleDelete(d *schema.ResourceData, meta interface{}
 	request = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
