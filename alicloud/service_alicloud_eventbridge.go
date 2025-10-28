@@ -175,10 +175,12 @@ func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object m
 	var response map[string]interface{}
 	client := s.client
 	action := "ListUserDefinedEventSources"
+
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"Limit":    PageSizeLarge,
 	}
+
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -194,31 +196,37 @@ func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object m
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		v, err := jsonpath.Get("$.Data.EventSourceList", response)
+
+		resp, err := jsonpath.Get("$.Data.EventSourceList", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.EventSourceList", response)
 		}
-		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(NotFoundErr("EventBridge", id), NotFoundWithResponse, response)
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(NotFoundErr("EventBridge:EventSource", id), NotFoundWithResponse, response)
 		}
-		for _, v := range v.([]interface{}) {
-			if v.(map[string]interface{})["Name"].(string) == id {
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["Name"]) == id {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
 		}
 
-		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+		if nextToken, ok := response["Data"].(map[string]interface{})["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
 			break
 		}
 	}
+
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("EventBridge", id), NotFoundWithResponse, response)
+		return object, WrapErrorf(NotFoundErr("EventBridge:EventSource", id), NotFoundWithResponse, response)
 	}
-	return
+
+	return object, nil
 }
