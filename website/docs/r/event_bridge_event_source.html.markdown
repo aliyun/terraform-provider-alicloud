@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 resource "random_integer" "default" {
@@ -35,20 +35,22 @@ resource "random_integer" "default" {
   max = 99999
 }
 
-resource "alicloud_event_bridge_event_bus" "example" {
-  event_bus_name = var.name
-}
-resource "alicloud_mns_queue" "example" {
+resource "alicloud_mns_queue" "default" {
   name = "${var.name}-${random_integer.default.result}"
 }
-resource "alicloud_event_bridge_event_source" "example" {
-  event_bus_name         = alicloud_event_bridge_event_bus.example.event_bus_name
-  event_source_name      = var.name
+
+resource "alicloud_event_bridge_event_bus" "default" {
+  event_bus_name = "${var.name}-${random_integer.default.result}"
+}
+
+resource "alicloud_event_bridge_event_source" "default" {
+  event_bus_name         = alicloud_event_bridge_event_bus.default.event_bus_name
+  event_source_name      = "${var.name}-${random_integer.default.result}"
   description            = var.name
   linked_external_source = true
   external_source_type   = "MNS"
   external_source_config = {
-    QueueName = alicloud_mns_queue.example.name
+    QueueName = alicloud_mns_queue.default.name
   }
 }
 ```
@@ -57,12 +59,10 @@ resource "alicloud_event_bridge_event_source" "example" {
 
 The following arguments are supported:
 
-* `event_bus_name` - (Required, ForceNew) The name of event bus.
-* `description` - (Optional) The detail describe of event source.
-* `event_source_name` - (Required, ForceNew) The code name of event source.
-* `linked_external_source` - (Optional, Computed) Whether to connect to an external data source. Default value: `false`
-* `external_source_type` - (Optional) The type of external data source. Valid value : `RabbitMQ`, `RocketMQ` and `MNS`. **NOTE:** Only When `linked_external_source` is `true`, This field is valid.
-* `external_source_config`- (Optional, Map) The config of external source.
+* `event_bus_name` - (Required, ForceNew) The name of the event bus to which the event source is attached.
+* `event_source_name` - (Required, ForceNew) The name of the event source.
+* `external_source_type` - (Optional) The type of the external data source. Valid values: `RabbitMQ`, `RocketMQ` and `MNS`.
+* `external_source_config`- (Optional, Map) The configuration of the external data source.
   When `external_source_type` is `RabbitMQ`, The following attributes are supported:
   `RegionId` - The region ID of RabbitMQ.
   `InstanceId` - The instance ID of RabbitMQ.
@@ -76,6 +76,8 @@ The following arguments are supported:
   `GroupID` - The group ID of consumer.
   When `external_source_type` is `MNS`, The following attributes are supported:
   `QueueName` - The queue name of MNS.
+* `description` - (Optional) The description of the event source.
+* `linked_external_source` - (Optional) Specifies whether to connect to an external data source. Default value: `false`.
 
 ## Attributes Reference
 
