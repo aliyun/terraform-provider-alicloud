@@ -66,32 +66,242 @@ func TestAccAliCloudESACacheRuleresource_cacherule_test(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"edge_cache_ttl":              "400",
-					"rule_enable":                 "on",
-					"query_string_mode":           "exclude_query_string",
-					"query_string":                "shili",
-					"edge_cache_mode":             "no_cache",
-					"bypass_cache":                "bypass_all",
-					"edge_status_code_cache_ttl":  "400",
-					"check_presence_header":       "headernamee",
-					"sort_query_string_for_cache": "on",
-					"check_presence_cookie":       "cookienamee",
-					"browser_cache_mode":          "follow_origin",
-					"user_device_type":            "on",
-					"user_geo":                    "on",
-					"browser_cache_ttl":           "400",
-					"include_cookie":              "cookie_shili",
-					"cache_reserve_eligibility":   "eligible_for_cache_reserve",
-					"additional_cacheable_ports":  "2052",
-					"rule":                        "http.host eq \\\"videoo.example.com\\\"",
-					"user_language":               "on",
-					"serve_stale":                 "on",
-					"cache_deception_armor":       "on",
-					"rule_name":                   "rule_shili",
-					"include_header":              "shili",
+					"edge_cache_ttl": "400",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"edge_cache_ttl": "400",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sequence": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sequence": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_enable": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_enable": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"query_string_mode": "exclude_query_string",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"query_string_mode": "exclude_query_string",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"query_string": "shili",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"query_string": "shili",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"edge_cache_mode": "no_cache",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"edge_cache_mode": "no_cache",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bypass_cache": "bypass_all",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bypass_cache": "bypass_all",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"edge_status_code_cache_ttl": "400",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"edge_status_code_cache_ttl": "400",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"check_presence_header": "headernamee",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"check_presence_header": "headernamee",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sort_query_string_for_cache": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sort_query_string_for_cache": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"check_presence_cookie": "cookienamee",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"check_presence_cookie": "cookienamee",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"browser_cache_mode": "follow_origin",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"browser_cache_mode": "follow_origin",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_device_type": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_device_type": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_geo": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_geo": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"browser_cache_ttl": "400",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"browser_cache_ttl": "400",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"include_cookie": "cookie_shili",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"include_cookie": "cookie_shili",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cache_reserve_eligibility": "eligible_for_cache_reserve",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cache_reserve_eligibility": "eligible_for_cache_reserve",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_cacheable_ports": "2052",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_cacheable_ports": "2052",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule": "http.host eq \\\"videoo.example.com\\\"",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_language": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_language": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serve_stale": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serve_stale": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cache_deception_armor": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cache_deception_armor": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_name": "rule_shili",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_name": "rule_shili",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"include_header": "shili",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"include_header": "shili",
+					}),
 				),
 			},
 			{
