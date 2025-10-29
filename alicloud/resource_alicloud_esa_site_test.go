@@ -19,7 +19,7 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("bcd%d.com", rand)
+	name := fmt.Sprintf("bcd%d.queniuwk.cn", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEsaSiteBasicDependence8490)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -50,13 +50,11 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"coverage":          "global",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"coverage": "global",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"coverage":          "global",
-						"resource_group_id": CHECKSET,
+						"coverage": "global",
 					}),
 				),
 			},
@@ -151,7 +149,7 @@ func TestAccAliCloudEsaSite_basic8484(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("bcd%d.com", rand)
+	name := fmt.Sprintf("bcd%d.queniuwk.cn", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEsaSiteBasicDependence8484)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -182,13 +180,21 @@ func TestAccAliCloudEsaSite_basic8484(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"coverage":          "global",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"coverage": "global",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"coverage":          "global",
-						"resource_group_id": CHECKSET,
+						"coverage": "global",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"paused": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"paused": "false",
 					}),
 				),
 			},
@@ -284,7 +290,7 @@ func TestAccAliCloudEsaSite_basic8288(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("bcd%d.com", rand)
+	name := fmt.Sprintf("bcd%d.queniuwk.cn", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEsaSiteBasicDependence8288)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -315,13 +321,11 @@ func TestAccAliCloudEsaSite_basic8288(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"coverage":          "global",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"coverage": "global",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"coverage":          "global",
-						"resource_group_id": CHECKSET,
+						"coverage": "global",
 					}),
 				),
 			},
@@ -417,7 +421,7 @@ func TestAccAliCloudEsaSite_basic8106(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("bcd%d.com", rand)
+	name := fmt.Sprintf("bcd%d.queniuwk.cn", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEsaSiteBasicDependence8106)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -550,7 +554,7 @@ func TestAccAliCloudEsaSite_basic9798(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("bcd%d.com", rand)
+	name := fmt.Sprintf("bcd%d.queniuwk.cn", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEsaSiteBasicDependence9798)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -678,7 +682,7 @@ func TestAccAliCloudEsaSite_basic10677(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("bcd%d.com", rand)
+	name := fmt.Sprintf("bcd%d.queniuwk.cn", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEsaSiteBasicDependence10677)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

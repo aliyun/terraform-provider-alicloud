@@ -20,12 +20,6 @@ For information about ESA Site and how to use it, see [What is Site](https://www
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_site&exampleId=526a6ad2-d747-8099-80fe-4adba67e465727294d3a&activeTab=example&spm=docs.r.esa_site.0.526a6ad2d7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -65,7 +59,7 @@ resource "alicloud_esa_site" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `access_type` - (Optional, ForceNew) The DNS setup. Valid values:
+* `access_type` - (Required, ForceNew) The DNS setup. Valid values:
   - `NS`
   - `CNAME`
 * `add_client_geolocation_header` - (Optional, Available since v1.244.0) Add visitor geolocation header. Value range:
@@ -103,9 +97,12 @@ The following arguments are supported:
 * `ipv6_enable` - (Optional, Computed, Available since v1.244.0) Specifies whether to enable IPv6. Valid values:
   - `on`
   - `off`
-* `ipv6_region` - (Optional, Available since v1.251.0) The region in which Ipv6 is enabled. The default value is x.x:
+* `ipv6_region` - (Optional, Computed, Available since v1.251.0) The region in which Ipv6 is enabled. The default value is x.x:
   - 'x.x': Global.
   - 'Cn.cn ': Mainland China.
+* `paused` - (Optional, Available since v1.262.0) Specifies whether to temporarily pause ESA on the website. If you set this parameter to true, all requests to the domains in your DNS records go directly to your origin server. Valid values:
+  - `true`
+  - `false`
 * `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group
 * `seo_bypass` - (Optional, Available since v1.251.0) Release the search engine crawler configuration. Value:
   - `on`
@@ -117,7 +114,7 @@ The following arguments are supported:
 * `site_version` - (Optional, Int, Available since v1.244.0) The version number of the site. For sites with version management enabled, you can use this parameter to specify the site version for which the configuration will take effect, defaulting to version 0.
 * `tag_name` - (Optional, Available since v1.251.0) Custom CacheTag name.
 * `tags` - (Optional, Map) Resource tags
-* `version_management` - (Optional, Available since v1.251.0) Version management enabled. When true, version management is turned on for the table site.
+* `version_management` - (Optional) Version management enabled. When true, version management is turned on for the table site.
 
 ## Attributes Reference
 
@@ -130,7 +127,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Site.
-* `delete` - (Defaults to 5 mins) Used when delete the Site.
+* `delete` - (Defaults to 15 mins) Used when delete the Site.
 * `update` - (Defaults to 5 mins) Used when update the Site.
 
 ## Import
