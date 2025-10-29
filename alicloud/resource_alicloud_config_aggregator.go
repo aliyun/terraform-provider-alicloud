@@ -1,47 +1,50 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudConfigAggregator() *schema.Resource {
+func resourceAliCloudConfigAggregator() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudConfigAggregatorCreate,
-		Read:   resourceAlicloudConfigAggregatorRead,
-		Update: resourceAlicloudConfigAggregatorUpdate,
-		Delete: resourceAlicloudConfigAggregatorDelete,
+		Create: resourceAliCloudConfigAggregatorCreate,
+		Read:   resourceAliCloudConfigAggregatorRead,
+		Update: resourceAliCloudConfigAggregatorUpdate,
+		Delete: resourceAliCloudConfigAggregatorDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"aggregator_accounts": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"account_id": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+						},
+						"account_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"ResourceDirectory"}, false),
 						},
 						"account_name": {
 							Type:     schema.TypeString,
-							Required: true,
-						},
-						"account_type": {
-							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 					},
 				},
@@ -51,15 +54,22 @@ func resourceAlicloudConfigAggregator() *schema.Resource {
 				Required: true,
 			},
 			"aggregator_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CUSTOM", "RD"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"create_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"folder_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -69,44 +79,47 @@ func resourceAlicloudConfigAggregator() *schema.Resource {
 	}
 }
 
-func resourceAlicloudConfigAggregatorCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	configService := ConfigService{client}
-	request := make(map[string]interface{})
+func resourceAliCloudConfigAggregatorCreate(d *schema.ResourceData, meta interface{}) error {
 
-	aggregatorAccountsMaps := make([]map[string]interface{}, 0)
-	for _, aggregatorAccounts := range d.Get("aggregator_accounts").(*schema.Set).List() {
-		aggregatorAccountsArg := aggregatorAccounts.(map[string]interface{})
-		aggregatorAccountsMap := map[string]interface{}{
-			"AccountId":   aggregatorAccountsArg["account_id"],
-			"AccountName": aggregatorAccountsArg["account_name"],
-			"AccountType": aggregatorAccountsArg["account_type"],
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateAggregator"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("aggregator_accounts"); ok {
+		aggregatorAccountsMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(v) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["AccountName"] = dataLoopTmp["account_name"]
+			dataLoopMap["AccountId"] = dataLoopTmp["account_id"]
+			dataLoopMap["AccountType"] = dataLoopTmp["account_type"]
+			aggregatorAccountsMapsArray = append(aggregatorAccountsMapsArray, dataLoopMap)
 		}
-		aggregatorAccountsMaps = append(aggregatorAccountsMaps, aggregatorAccountsMap)
+		aggregatorAccountsMapsJson, err := json.Marshal(aggregatorAccountsMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["AggregatorAccounts"] = string(aggregatorAccountsMapsJson)
 	}
-	if v, err := convertArrayObjectToJsonString(aggregatorAccountsMaps); err == nil {
-		request["AggregatorAccounts"] = v
-	} else {
-		return WrapError(err)
-	}
-	if v, ok := d.GetOk("aggregator_name"); ok {
-		request["AggregatorName"] = v
+
+	if v, ok := d.GetOk("folder_id"); ok {
+		request["FolderId"] = v
 	}
 	if v, ok := d.GetOk("aggregator_type"); ok {
 		request["AggregatorType"] = v
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
-	request["ClientToken"] = buildClientToken("CreateAggregator")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	var response map[string]interface{}
-	var err error
-	action := "CreateAggregator"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["Description"] = d.Get("description")
+	request["AggregatorName"] = d.Get("aggregator_name")
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, true)
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -114,98 +127,119 @@ func resourceAlicloudConfigAggregatorCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_aggregator", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["AggregatorId"]))
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, configService.ConfigAggregatorStateRefreshFunc(d, []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+
+	configServiceV2 := ConfigServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, configServiceV2.DescribeAsyncConfigAggregatorStateRefreshFunc(d, response, "$.Aggregator.AggregatorStatus", []string{}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
 
-	return resourceAlicloudConfigAggregatorRead(d, meta)
+	return resourceAliCloudConfigAggregatorRead(d, meta)
 }
-func resourceAlicloudConfigAggregatorRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudConfigAggregatorRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	configService := ConfigService{client}
-	object, err := configService.DescribeConfigAggregator(d.Id())
+	configServiceV2 := ConfigServiceV2{client}
+
+	objectRaw, err := configServiceV2.DescribeConfigAggregator(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_config_aggregator configService.DescribeConfigAggregator Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_config_aggregator DescribeConfigAggregator Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	aggregatorAccounts := make([]map[string]interface{}, 0)
-	if aggregatorAccountsList, ok := object["AggregatorAccounts"].([]interface{}); ok {
-		for _, v := range aggregatorAccountsList {
-			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
-					"account_id":   fmt.Sprint(m1["AccountId"]),
-					"account_name": m1["AccountName"],
-					"account_type": m1["AccountType"],
-				}
-				aggregatorAccounts = append(aggregatorAccounts, temp1)
 
-			}
+	d.Set("aggregator_name", objectRaw["AggregatorName"])
+	d.Set("aggregator_type", objectRaw["AggregatorType"])
+	d.Set("create_time", formatInt(objectRaw["AggregatorCreateTimestamp"]))
+	d.Set("description", objectRaw["Description"])
+	d.Set("folder_id", objectRaw["FolderId"])
+	d.Set("status", convertConfigAggregatorAggregatorAggregatorStatusResponse(objectRaw["AggregatorStatus"]))
+
+	aggregatorAccountsRaw := objectRaw["AggregatorAccounts"]
+	aggregatorAccountsMaps := make([]map[string]interface{}, 0)
+	if aggregatorAccountsRaw != nil {
+		for _, aggregatorAccountsChildRaw := range convertToInterfaceArray(aggregatorAccountsRaw) {
+			aggregatorAccountsMap := make(map[string]interface{})
+			aggregatorAccountsChildRaw := aggregatorAccountsChildRaw.(map[string]interface{})
+			aggregatorAccountsMap["account_id"] = aggregatorAccountsChildRaw["AccountId"]
+			aggregatorAccountsMap["account_name"] = aggregatorAccountsChildRaw["AccountName"]
+			aggregatorAccountsMap["account_type"] = aggregatorAccountsChildRaw["AccountType"]
+
+			aggregatorAccountsMaps = append(aggregatorAccountsMaps, aggregatorAccountsMap)
 		}
 	}
-	if err := d.Set("aggregator_accounts", aggregatorAccounts); err != nil {
-		return WrapError(err)
+	if err := d.Set("aggregator_accounts", aggregatorAccountsMaps); err != nil {
+		return err
 	}
-	d.Set("aggregator_name", object["AggregatorName"])
-	d.Set("aggregator_type", object["AggregatorType"])
-	d.Set("description", object["Description"])
-	d.Set("status", convertConfigAggregatorStatusResponse(formatInt(object["AggregatorStatus"])))
+
 	return nil
 }
-func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudConfigAggregatorUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
-	request := map[string]interface{}{
-		"AggregatorId": d.Id(),
-	}
+
+	var err error
+	action := "UpdateAggregator"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AggregatorId"] = d.Id()
+
+	request["ClientToken"] = buildClientToken(action)
 	if d.HasChange("aggregator_accounts") {
 		update = true
 	}
-	aggregatorAccountsMaps := make([]map[string]interface{}, 0)
-	for _, aggregatorAccounts := range d.Get("aggregator_accounts").(*schema.Set).List() {
-		aggregatorAccountsArg := aggregatorAccounts.(map[string]interface{})
-		aggregatorAccountsMap := map[string]interface{}{
-			"AccountId":   aggregatorAccountsArg["account_id"],
-			"AccountName": aggregatorAccountsArg["account_name"],
-			"AccountType": aggregatorAccountsArg["account_type"],
+	if v, ok := d.GetOk("aggregator_accounts"); ok && d.Get("aggregator_type") == "CUSTOM" {
+		aggregatorAccountsMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(v) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["AccountName"] = dataLoopTmp["account_name"]
+			dataLoopMap["AccountId"] = dataLoopTmp["account_id"]
+			dataLoopMap["AccountType"] = dataLoopTmp["account_type"]
+			aggregatorAccountsMapsArray = append(aggregatorAccountsMapsArray, dataLoopMap)
 		}
-		aggregatorAccountsMaps = append(aggregatorAccountsMaps, aggregatorAccountsMap)
+		aggregatorAccountsMapsJson, err := json.Marshal(aggregatorAccountsMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["AggregatorAccounts"] = string(aggregatorAccountsMapsJson)
 	}
-	if v, err := convertArrayObjectToJsonString(aggregatorAccountsMaps); err == nil {
-		request["AggregatorAccounts"] = v
-	} else {
-		return WrapError(err)
-	}
-	if d.HasChange("aggregator_name") {
+
+	if d.HasChange("folder_id") {
 		update = true
-		if v, ok := d.GetOk("aggregator_name"); ok {
-			request["AggregatorName"] = v
-		}
 	}
+	if v, ok := d.GetOk("folder_id"); ok {
+		request["FolderId"] = v
+	}
+
 	if d.HasChange("description") {
 		update = true
-		if v, ok := d.GetOk("description"); ok {
-			request["Description"] = v
-		}
 	}
+	request["Description"] = d.Get("description")
+	if d.HasChange("aggregator_name") {
+		update = true
+	}
+	request["AggregatorName"] = d.Get("aggregator_name")
 	if update {
-		action := "UpdateAggregator"
-		request["ClientToken"] = buildClientToken("UpdateAggregator")
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err := client.RpcPost("Config", "2020-09-07", action, nil, request, true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -213,29 +247,33 @@ func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudConfigAggregatorRead(d, meta)
+
+	return resourceAliCloudConfigAggregatorRead(d, meta)
 }
-func resourceAlicloudConfigAggregatorDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudConfigAggregatorDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-
-	request := map[string]interface{}{
-		"AggregatorIds": d.Id(),
-	}
-
-	request["ClientToken"] = buildClientToken("DeleteAggregators")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	action := "DeleteAggregators"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err := client.RpcPost("Config", "2020-09-07", action, nil, request, true)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["AggregatorIds"] = d.Id()
+
+	request["ClientToken"] = buildClientToken(action)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -243,17 +281,33 @@ func resourceAlicloudConfigAggregatorDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"AccountNotExisted", "Invalid.AggregatorIds.Empty"}) {
+		if IsExpectedErrors(err, []string{"Invalid.AggregatorIds.Empty", "AccountNotExisted"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
+
+func convertConfigAggregatorAggregatorAggregatorStatusResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
+	switch source {
+	case "0":
+		return "Creating"
+	case "1":
+		return "Normal"
+	case "2":
+		return "Deleting"
+	}
+	return source
+}
+
 func convertConfigAggregatorStatusResponse(source interface{}) interface{} {
 	switch source {
 	case 0:

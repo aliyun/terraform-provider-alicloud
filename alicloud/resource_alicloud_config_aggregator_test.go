@@ -37,7 +37,7 @@ func init() {
 func testSweepConfigAggregator(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -120,184 +120,7 @@ func testSweepConfigAggregator(region string) error {
 	return nil
 }
 
-func TestAccAliCloudConfigAggregator_basic(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_config_aggregator.default"
-	ra := resourceAttrInit(resourceId, AlicloudConfigAggregatorMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeConfigAggregator")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sconfigaggregator%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregatorBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
-		},
-
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"aggregator_accounts": []map[string]interface{}{
-						{
-							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.0.account_id}",
-							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.0.display_name}",
-							"account_type": "ResourceDirectory",
-						},
-					},
-					"aggregator_name": "${var.name}",
-					"description":     "tf-create-aggregator",
-					"aggregator_type": "CUSTOM",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"aggregator_accounts.#": "1",
-						"aggregator_name":       name,
-						"description":           "tf-create-aggregator",
-						"aggregator_type":       "CUSTOM",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"aggregator_accounts": []map[string]interface{}{
-						{
-							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.0.account_id}",
-							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.0.display_name}",
-							"account_type": "ResourceDirectory",
-						},
-						{
-							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.1.account_id}",
-							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.1.display_name}",
-							"account_type": "ResourceDirectory",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"aggregator_accounts.#": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"aggregator_name": name + "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"aggregator_name": name + "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "tf-modify-aggregator",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "tf-modify-aggregator",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"aggregator_accounts": []map[string]interface{}{
-						{
-							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.0.account_id}",
-							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.0.display_name}",
-							"account_type": "ResourceDirectory",
-						},
-					},
-					"aggregator_name": "${var.name}",
-					"description":     "tf-create-aggregator",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"aggregator_accounts.#": "1",
-						"aggregator_name":       name,
-						"description":           "tf-create-aggregator",
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAliCloudConfigAggregator_aggregator_accounts_update(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_config_aggregator.default"
-	ra := resourceAttrInit(resourceId, AlicloudConfigAggregatorMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeConfigAggregator")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sconfigaggregator%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregatorBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
-		},
-
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"aggregator_name": "${var.name}",
-					"description":     "tf-create-aggregator",
-					"aggregator_type": "RD",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"aggregator_accounts.#": CHECKSET,
-						"aggregator_name":       name,
-						"description":           "tf-create-aggregator",
-						"aggregator_type":       "RD",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AlicloudConfigAggregatorMap0 = map[string]string{
-	"aggregator_type": "CUSTOM",
-}
-
-func AlicloudConfigAggregatorBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
-
-data "alicloud_resource_manager_accounts" "default" {
-  status  = "CreateSuccess"
-}
-
-`, name)
-}
-
-func TestUnitAlicloudConfigAggregator(t *testing.T) {
+func TestUnitAliCloudConfigAggregator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_aggregator"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_config_aggregator"].Schema).Data(nil, nil)
@@ -377,7 +200,7 @@ func TestUnitAlicloudConfigAggregator(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudConfigAggregatorCreate(dInit, rawClient)
+	err = resourceAliCloudConfigAggregatorCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -405,7 +228,7 @@ func TestUnitAlicloudConfigAggregator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregatorCreate(dInit, rawClient)
+		err := resourceAliCloudConfigAggregatorCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -431,7 +254,7 @@ func TestUnitAlicloudConfigAggregator(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudConfigAggregatorUpdate(dExisted, rawClient)
+	err = resourceAliCloudConfigAggregatorUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateAggregator
@@ -483,7 +306,7 @@ func TestUnitAlicloudConfigAggregator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregatorUpdate(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregatorUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -522,7 +345,7 @@ func TestUnitAlicloudConfigAggregator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregatorRead(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregatorRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -540,7 +363,7 @@ func TestUnitAlicloudConfigAggregator(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudConfigAggregatorDelete(dExisted, rawClient)
+	err = resourceAliCloudConfigAggregatorDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "AccountNotExisted", "Invalid.AggregatorIds.Empty"}
@@ -562,7 +385,7 @@ func TestUnitAlicloudConfigAggregator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregatorDelete(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregatorDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -572,3 +395,456 @@ func TestUnitAlicloudConfigAggregator(t *testing.T) {
 		}
 	}
 }
+
+// Test Config Aggregator. >>> Resource test cases, automatically generated.
+// Case 账号组-资源测试-CUSTOM 11746
+func TestAccAliCloudConfigAggregator_basic11746(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregator.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregatorMap11746)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccconfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregatorBasicDependence11746)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "RD",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name": name,
+						"description":     name,
+						"aggregator_type": "RD",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "_update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudConfigAggregator_basic11746_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregator.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregatorMap11746)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccconfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregatorBasicDependence11746)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "RD",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name": name,
+						"description":     name,
+						"aggregator_type": "RD",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func AliCloudConfigAggregatorBasicDependence11746(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+`, name)
+}
+
+var AliCloudConfigAggregatorMap11746 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+// Case 账号组-资源测试-CUSTOM 11747
+func TestAccAliCloudConfigAggregator_basic11747(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregator.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregatorMap11746)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccconfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregatorBasicDependence11747)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_accounts": []map[string]interface{}{
+						{
+							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.0.account_id}",
+							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.0.display_name}",
+							"account_type": "ResourceDirectory",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name":       name,
+						"description":           name,
+						"aggregator_accounts.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_accounts": []map[string]interface{}{
+						{
+							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.1.account_id}",
+							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.1.display_name}",
+							"account_type": "ResourceDirectory",
+						},
+						{
+							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.2.account_id}",
+							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.2.display_name}",
+							"account_type": "ResourceDirectory",
+						},
+						{
+							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.3.account_id}",
+							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.3.display_name}",
+							"account_type": "ResourceDirectory",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_accounts.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_accounts": []map[string]interface{}{
+						{
+							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.0.account_id}",
+							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.0.display_name}",
+							"account_type": "ResourceDirectory",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_accounts.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudConfigAggregator_basic11747_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregator.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregatorMap11746)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccconfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregatorBasicDependence11747)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "CUSTOM",
+					"aggregator_accounts": []map[string]interface{}{
+						{
+							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.1.account_id}",
+							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.1.display_name}",
+							"account_type": "ResourceDirectory",
+						},
+						{
+							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.2.account_id}",
+							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.2.display_name}",
+							"account_type": "ResourceDirectory",
+						},
+						{
+							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.3.account_id}",
+							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.3.display_name}",
+							"account_type": "ResourceDirectory",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name":       name,
+						"description":           name,
+						"aggregator_type":       "CUSTOM",
+						"aggregator_accounts.#": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func AliCloudConfigAggregatorBasicDependence11747(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_accounts" "default" {
+  status  = "CreateSuccess"
+}
+`, name)
+}
+
+// Case 账号组-资源测试-基础用例-FOLDER 10748
+func TestAccAliCloudConfigAggregator_basic11748(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregator.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregatorMap11746)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccconfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregatorBasicDependence11748)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "FOLDER",
+					"folder_id":       "${data.alicloud_resource_manager_folders.default.folders.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name": name,
+						"description":     name,
+						"aggregator_type": "FOLDER",
+						"folder_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"folder_id": fmt.Sprintf("%s,%s,%s", "${data.alicloud_resource_manager_folders.default.folders.1.id}", "${data.alicloud_resource_manager_folders.default.folders.2.id}", "${data.alicloud_resource_manager_folders.default.folders.3.id}"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"folder_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudConfigAggregator_basic11748_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregator.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregatorMap11746)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccconfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregatorBasicDependence11748)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "FOLDER",
+					"folder_id":       fmt.Sprintf("%s,%s,%s", "${data.alicloud_resource_manager_folders.default.folders.1.id}", "${data.alicloud_resource_manager_folders.default.folders.2.id}", "${data.alicloud_resource_manager_folders.default.folders.3.id}"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name": name,
+						"description":     name,
+						"aggregator_type": "FOLDER",
+						"folder_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func AliCloudConfigAggregatorBasicDependence11748(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_folders" "default" {
+}
+`, name)
+}
+
+// Test Config Aggregator. <<< Resource test cases, automatically generated.
