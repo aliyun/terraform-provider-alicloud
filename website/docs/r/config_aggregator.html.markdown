@@ -2,16 +2,17 @@
 subcategory: "Cloud Config (Config)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_config_aggregator"
-sidebar_current: "docs-alicloud-resource-config-aggregator"
 description: |-
-  Provides a Alicloud Cloud Config Aggregator resource.
+  Provides a Alicloud Cloud Config (Config) Aggregator resource.
 ---
 
 # alicloud_config_aggregator
 
-Provides a Cloud Config Aggregator resource.
+Provides a Cloud Config (Config) Aggregator resource.
 
-For information about Cloud Config Aggregate Config Rule and how to use it, see [What is Aggregator](https://www.alibabacloud.com/help/en/cloud-config/latest/api-config-2020-09-07-createaggregator).
+
+
+For information about Cloud Config (Config) Aggregator and how to use it, see [What is Aggregator](https://www.alibabacloud.com/help/en/cloud-config/latest/api-config-2020-09-07-createaggregator).
 
 -> **NOTE:** Available since v1.124.0.
 
@@ -52,38 +53,40 @@ resource "alicloud_config_aggregator" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `aggregator_accounts` - (Optional) The information of account in aggregator. If the aggregator_type is RD, it is optional and means add all members in the resource directory to the account group. See [`aggregator_accounts`](#aggregator_accounts) below.  **NOTE:** the field `aggregator_accounts` is not required from version 1.148.0.
-* `aggregator_name` - (Required) The name of aggregator.
-* `aggregator_type` - (Optional, ForceNew) The type of aggregator. Valid values: `CUSTOM`, `RD`. The Default value: `CUSTOM`.
-  * `CUSTOM` - The custom account group.
-  * `RD` - The global account group.
-* `description` - (Required) The description of aggregator.
+* `aggregator_accounts` - (Optional, Set) The member accounts of the account group. See [`aggregator_accounts`](#aggregator_accounts) below.
+-> **NOTE:** If `aggregator_type` is set to `CUSTOM`, `aggregator_accounts` is required.
+* `aggregator_name` - (Required) The name of the account group.
+* `aggregator_type` - (Optional, ForceNew) The type of the account group. Default value: `CUSTOM`. Valid values:
+  - `RD`: Global account group.
+  - `FOLDER`: Folder account group.
+  - `CUSTOM`: Custom account group.
+* `description` - (Required) The description of the account group.
+* `folder_id` - (Optional, Available since v1.262.0) The ID of the attached folder. You can specify multiple folder IDs. Separate the IDs with commas (,). **NOTE:** If `aggregator_type` is set to `FOLDER`, `folder_id` is required.
 
 ### `aggregator_accounts`
 
-The aggregator_accounts supports the following: 
-
-* `account_id` - (Required) Aggregator account Uid.
-* `account_name` - (Required) Aggregator account name.
-* `account_type` - (Required) Aggregator account source type. Valid values: `ResourceDirectory`.
+The aggregator_accounts supports the following:
+* `account_id` - (Optional) The member ID.
+* `account_name` - (Optional) The member name.
+* `account_type` - (Optional) The affiliation of the member. Valid values: `ResourceDirectory`.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Aggregator.
-* `status` - The status of the resource. Valid values: `0`: creating `1`: normal `2`: deleting.
+* `id` - The ID of the resource supplied above.
+* `create_time` - (Available since v1.262.0) The timestamp when the account group was created.
+* `status` - The status of the account group.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when create the Aggregator.
+* `create` - (Defaults to 5 mins) Used when create the Aggregator.
+* `delete` - (Defaults to 5 mins) Used when delete the Aggregator.
+* `update` - (Defaults to 5 mins) Used when update the Aggregator.
 
 ## Import
 
-Cloud Config Aggregator can be imported using the id, e.g.
+Cloud Config (Config) Aggregator can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_config_aggregator.example <id>
