@@ -30,6 +30,10 @@ func resourceAliCloudOssBucketLogging() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"logging_role": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"target_bucket": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -56,16 +60,18 @@ func resourceAliCloudOssBucketLoggingCreate(d *schema.ResourceData, meta interfa
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Get("bucket").(string))
 
-	objectDataLocalMap := make(map[string]interface{})
+	dataList := make(map[string]interface{})
 
-	loggingEnabled := make(map[string]interface{})
-	if v, ok := d.GetOk("target_prefix"); ok {
-		loggingEnabled["TargetPrefix"] = v
+	if v := d.Get("target_bucket"); !IsNil(v) {
+		loggingEnabled := make(map[string]interface{})
+		loggingEnabled["TargetPrefix"] = d.Get("target_prefix")
+		loggingEnabled["TargetBucket"] = d.Get("target_bucket")
+		loggingEnabled["LoggingRole"] = d.Get("logging_role")
+		dataList["LoggingEnabled"] = loggingEnabled
 	}
-	loggingEnabled["TargetBucket"] = d.Get("target_bucket")
-	objectDataLocalMap["LoggingEnabled"] = loggingEnabled
 
-	request["BucketLoggingStatus"] = objectDataLocalMap
+	request["BucketLoggingStatus"] = dataList
+
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -110,12 +116,9 @@ func resourceAliCloudOssBucketLoggingRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	if objectRaw["TargetBucket"] != nil {
-		d.Set("target_bucket", objectRaw["TargetBucket"])
-	}
-	if objectRaw["TargetPrefix"] != nil {
-		d.Set("target_prefix", objectRaw["TargetPrefix"])
-	}
+	d.Set("logging_role", objectRaw["LoggingRole"])
+	d.Set("target_bucket", objectRaw["TargetBucket"])
+	d.Set("target_prefix", objectRaw["TargetPrefix"])
 
 	d.Set("bucket", d.Id())
 
@@ -130,30 +133,36 @@ func resourceAliCloudOssBucketLoggingUpdate(d *schema.ResourceData, meta interfa
 	var body map[string]interface{}
 	update := false
 
-	action := fmt.Sprintf("/?logging")
 	var err error
+	action := fmt.Sprintf("/?logging")
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(d.Id())
 
-	objectDataLocalMap := make(map[string]interface{})
-	loggingEnabled := make(map[string]interface{})
-	if d.HasChange("target_bucket") {
+	dataList := make(map[string]interface{})
+
+	if d.HasChanges("target_bucket", "target_prefix", "logging_role") {
 		update = true
 	}
-	loggingEnabled["TargetBucket"] = d.Get("target_bucket")
+	if v := d.Get("target_bucket"); v != nil {
+		loggingEnabled := make(map[string]interface{})
+		if v, ok := d.GetOk("target_bucket"); ok {
+			loggingEnabled["TargetBucket"] = v
+		}
+		if v, ok := d.GetOk("target_prefix"); ok {
+			loggingEnabled["TargetPrefix"] = v
+		}
+		if v, ok := d.GetOk("logging_role"); ok {
+			loggingEnabled["LoggingRole"] = v
+		}
 
-	if d.HasChange("target_prefix") {
-		update = true
+		dataList["LoggingEnabled"] = loggingEnabled
 	}
-	if v, ok := d.GetOk("target_prefix"); ok {
-		loggingEnabled["TargetPrefix"] = v
-	}
-	objectDataLocalMap["LoggingEnabled"] = loggingEnabled
 
-	request["BucketLoggingStatus"] = objectDataLocalMap
+	request["BucketLoggingStatus"] = dataList
+
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)

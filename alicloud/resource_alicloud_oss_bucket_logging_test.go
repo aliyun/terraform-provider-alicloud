@@ -75,6 +75,16 @@ func TestAccAliCloudOssBucketLogging_basic6484(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"logging_role": "test-role",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logging_role": "test-role",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"bucket":        "${alicloud_oss_bucket.CreateBucket.bucket}",
 					"target_bucket": "${alicloud_oss_bucket.CreateBucket.bucket}",
 					"target_prefix": "log/",
@@ -150,12 +160,14 @@ func TestAccAliCloudOssBucketLogging_basic6484_twin(t *testing.T) {
 					"bucket":        "${alicloud_oss_bucket.CreateBucket.bucket}",
 					"target_bucket": "${alicloud_oss_bucket.CreateLoggingBucket.bucket}",
 					"target_prefix": "logging/",
+					"logging_role":  "test-role",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bucket":        CHECKSET,
 						"target_bucket": CHECKSET,
 						"target_prefix": "logging/",
+						"logging_role":  "test-role",
 					}),
 				),
 			},
