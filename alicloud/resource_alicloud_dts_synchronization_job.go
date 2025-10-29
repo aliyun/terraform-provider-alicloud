@@ -1,8 +1,10 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -252,6 +254,11 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Synchronizing", "Suspending"}, false),
 			},
+			"job_parameters": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: false,
+			},
 		},
 	}
 }
@@ -445,6 +452,16 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	d.Set("status", object["Status"])
 	d.Set("structure_initialization", migrationModeObj["StructureInitialization"])
 	d.Set("synchronization_direction", object["SynchronizationDirection"])
+
+	parameters, err := dtsService.QueryChangedJobParameters(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_job dtsService.DescribeDtsSynchronizationJob Failed!!! %s", err)
+			return nil
+		}
+		return WrapError(err)
+	}
+	d.Set("job_parameters", parameters)
 
 	return nil
 }
@@ -652,6 +669,87 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
 			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("job_parameters") {
+		oldRaw, newRaw := d.GetChange("job_parameters")
+		var normalize = func(raw any) string {
+			switch t := raw.(type) {
+			case string:
+				var arr []map[string]interface{}
+				if err := json.Unmarshal([]byte(t), &arr); err != nil {
+					return t
+				}
+				sort.Slice(arr, func(i, j int) bool {
+					n1, _ := arr[i]["name"].(string)
+					n2, _ := arr[j]["name"].(string)
+					return n1 < n2
+				})
+				b, _ := json.Marshal(arr)
+				return string(b)
+			case []interface{}:
+				// 直接转成 []map
+				var arr []map[string]interface{}
+				for _, v := range t {
+					m, ok := v.(map[string]interface{})
+					if ok {
+						arr = append(arr, m)
+					}
+				}
+				sort.Slice(arr, func(i, j int) bool {
+					n1, _ := arr[i]["name"].(string)
+					n2, _ := arr[j]["name"].(string)
+					return n1 < n2
+				})
+				b, _ := json.Marshal(arr)
+				return string(b)
+			default:
+				// 无法解析，原样字符串化
+				return fmt.Sprintf("%v", raw)
+			}
+		}
+
+		normOld := normalize(oldRaw)
+		normNew := normalize(newRaw)
+
+		if normOld != normNew {
+			modifyJobConfigReq := map[string]interface{}{
+				"DtsJobId": d.Id(),
+				"RegionId": client.RegionId,
+			}
+			modifyJobConfigReq["Parameters"] = normNew
+
+			action := "ModifyDtsJobConfig"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyJobConfigReq, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, modifyJobConfigReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			if fmt.Sprint(response["Success"]) == "false" {
+				return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			}
+			// d.Set("job_parameters", normNew)
+			// d.SetPartial("job_parameters")
+
+			target := d.Get("status").(string)
+			err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+			if err != nil {
+				return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
+			}
 		}
 	}
 	d.Partial(false)

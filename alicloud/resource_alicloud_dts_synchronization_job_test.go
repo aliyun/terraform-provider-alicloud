@@ -22,6 +22,9 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
+	synchronizationConfigValue := `[{\"module\":\"03\",\"name\":\"sink.batch.size.minimum\",\"value\":\"64\"},{\"module\":\"03\",\"name\":\"source.connection.idle.second\",\"value\":\"8640\"}]`
+
+	expectedSynchronizationConfigValue := `[{"module":"03","name":"sink.batch.size.minimum","value":"64"},{"module":"03","name":"source.connection.idle.second","value":"8640"}]`
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -73,6 +76,16 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"dts_job_name": "tf-testAccCase1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"job_parameters": synchronizationConfigValue,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"job_parameters": expectedSynchronizationConfigValue,
 					}),
 				),
 			},
@@ -324,7 +337,7 @@ func AliCloudDTSSynchronizationJobBasicDependence0(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
+  		name_regex =  "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
@@ -417,7 +430,7 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
+  		name_regex =  "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
@@ -450,7 +463,7 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		vswitch_id    = data.alicloud_vswitches.default.ids.0
   		description   = "polardb_cluster_description"
 		storage_space = 20
-		storage_type  = "ESSDPL0"
+		storage_type  = "ESSDPL0" 
 	}
 
 	resource "alicloud_polardb_database" "source_db" {
