@@ -4,7 +4,7 @@ require (
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/agiledragon/gomonkey/v2 v2.3.1
 	github.com/alibabacloud-go/cs-20151215/v5 v5.9.5
-	github.com/alibabacloud-go/tea v1.2.2
+	github.com/alibabacloud-go/tea v1.3.8
 	github.com/alibabacloud-go/tea-roa v1.3.4
 	github.com/alibabacloud-go/tea-rpc v1.2.0
 	github.com/alibabacloud-go/tea-utils v1.4.5
@@ -27,7 +27,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.10.0
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d
-	golang.org/x/net v0.25.0
+	golang.org/x/net v0.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.25.3
 	k8s.io/apimachinery v0.25.3
@@ -36,12 +36,12 @@ require (
 )
 
 require (
-	github.com/alibabacloud-go/alibabacloud-gateway-oss v0.0.18
+	github.com/alibabacloud-go/alibabacloud-gateway-oss v0.0.21
 	github.com/alibabacloud-go/alibabacloud-gateway-sls v0.0.6
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.11
 	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
 	github.com/alibabacloud-go/sts-20150401/v2 v2.0.2
-	github.com/alibabacloud-go/tea-utils/v2 v2.0.6
+	github.com/alibabacloud-go/tea-utils/v2 v2.0.7
 	github.com/blues/jsonata-go v1.5.4
 	github.com/samber/lo v1.49.1
 	github.com/tidwall/sjson v1.2.5
@@ -63,7 +63,7 @@ require (
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/alibabacloud-go/alibabacloud-gateway-fc-util v0.0.6 // indirect
-	github.com/alibabacloud-go/alibabacloud-gateway-oss-util v0.0.7 // indirect
+	github.com/alibabacloud-go/alibabacloud-gateway-oss-util v0.0.10 // indirect
 	github.com/alibabacloud-go/alibabacloud-gateway-sls-util v0.0.1 // indirect
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.5 // indirect
 	github.com/alibabacloud-go/darabonba-array v0.1.0 // indirect
@@ -194,13 +194,13 @@ require (
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
-	golang.org/x/term v0.20.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/term v0.21.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/api v0.171.0 // indirect
