@@ -110,7 +110,7 @@ func resourceAliCloudGaEndpointGroup() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"Domain", "Ip", "PublicIp", "ECS", "SLB", "ALB", "NLB", "ENI", "OSS"}, false),
+							ValidateFunc: StringInSlice([]string{"Domain", "Ip", "IpTarget", "PublicIp", "ECS", "SLB", "ALB", "NLB", "ENI", "OSS"}, false),
 						},
 						"weight": {
 							Type:         schema.TypeInt,
@@ -130,6 +130,15 @@ func resourceAliCloudGaEndpointGroup() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"vswitch_ids": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 					},
 				},
@@ -248,6 +257,14 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 			endpointConfigurationsMap["EnableClientIPPreservation"] = enableClientIPPreservation
 		}
 
+		if vpcId, ok := endpointConfigurationsArg["vpc_id"]; ok {
+			endpointConfigurationsMap["VpcId"] = vpcId
+		}
+
+		if vSwitchIds, ok := endpointConfigurationsArg["vswitch_ids"]; ok {
+			endpointConfigurationsMap["VSwitchIds"] = vSwitchIds
+		}
+
 		endpointConfigurationsMaps = append(endpointConfigurationsMaps, endpointConfigurationsMap)
 	}
 
@@ -359,6 +376,14 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 
 			if enableClientIPPreservation, ok := endpointConfigurationsArg["EnableClientIPPreservation"]; ok {
 				endpointConfigurationsMap["enable_clientip_preservation"] = enableClientIPPreservation
+			}
+
+			if vpcId, ok := endpointConfigurationsArg["VpcId"]; ok {
+				endpointConfigurationsMap["vpc_id"] = vpcId
+			}
+
+			if vSwitchIds, ok := endpointConfigurationsArg["VSwitchIds"]; ok {
+				endpointConfigurationsMap["vswitch_ids"] = vSwitchIds
 			}
 
 			endpointConfigurationsMaps = append(endpointConfigurationsMaps, endpointConfigurationsMap)
@@ -529,6 +554,14 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 
 		if enableClientIPPreservation, ok := endpointConfigurationsArg["enable_clientip_preservation"]; ok {
 			endpointConfigurationsMap["EnableClientIPPreservation"] = enableClientIPPreservation
+		}
+
+		if vpcId, ok := endpointConfigurationsArg["vpc_id"]; ok {
+			endpointConfigurationsMap["VpcId"] = vpcId
+		}
+
+		if vSwitchIds, ok := endpointConfigurationsArg["vswitch_ids"]; ok {
+			endpointConfigurationsMap["VSwitchIds"] = vSwitchIds
 		}
 
 		endpointConfigurationsMaps = append(endpointConfigurationsMaps, endpointConfigurationsMap)
