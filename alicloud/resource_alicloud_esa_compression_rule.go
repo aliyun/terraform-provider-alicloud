@@ -54,6 +54,11 @@ func resourceAliCloudEsaCompressionRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"sequence": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"site_id": {
 				Type:     schema.TypeInt,
 				Required: true,
@@ -86,8 +91,10 @@ func resourceAliCloudEsaCompressionRuleCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
+	if v, ok := d.GetOkExists("sequence"); ok {
+		request["Sequence"] = v
+	}
 	if v, ok := d.GetOk("zstd"); ok {
 		request["Zstd"] = v
 	}
@@ -151,6 +158,7 @@ func resourceAliCloudEsaCompressionRuleRead(d *schema.ResourceData, meta interfa
 	d.Set("rule", objectRaw["Rule"])
 	d.Set("rule_enable", objectRaw["RuleEnable"])
 	d.Set("rule_name", objectRaw["RuleName"])
+	d.Set("sequence", objectRaw["Sequence"])
 	d.Set("site_version", objectRaw["SiteVersion"])
 	d.Set("zstd", objectRaw["Zstd"])
 	d.Set("config_id", objectRaw["ConfigId"])
@@ -175,7 +183,21 @@ func resourceAliCloudEsaCompressionRuleUpdate(d *schema.ResourceData, meta inter
 	query = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
+
+	if !d.IsNewResource() && d.HasChange("sequence") {
+		update = true
+		request["Sequence"] = d.Get("sequence")
+		if v, ok := d.GetOk("gzip"); ok {
+			request["Gzip"] = v
+		}
+		if v, ok := d.GetOk("zstd"); ok {
+			request["Zstd"] = v
+		}
+		if v, ok := d.GetOk("brotli"); ok {
+			request["Brotli"] = v
+		}
+	}
+
 	if !d.IsNewResource() && d.HasChange("zstd") {
 		update = true
 		request["Zstd"] = d.Get("zstd")
@@ -240,12 +262,10 @@ func resourceAliCloudEsaCompressionRuleDelete(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
