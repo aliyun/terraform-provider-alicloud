@@ -14,107 +14,62 @@ Provides a WAFV3 Defense Rule resource.
 
 For information about WAFV3 Defense Rule and how to use it, see [What is Defense Rule](https://next.api.alibabacloud.com/document/waf-openapi/2021-10-01/CreateDefenseRule).
 
--> **NOTE:** Available since v1.257.0.
+-> **NOTE:** Available since v1.262.0.
 
 ## Example Usage
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_wafv3_defense_rule&exampleId=de7e00cd-afb2-a911-8c67-5e13fbfcd4aaa033328b&activeTab=example&spm=docs.r.wafv3_defense_rule.0.de7e00cdaf&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
-  default = "tfaccwafv310619"
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
 }
 
 variable "region_id" {
   default = "cn-hangzhou"
 }
 
+variable "domain" {
+  default = "examplefromtf1014.wafqax.top"
+}
+
 data "alicloud_wafv3_instances" "default" {
 }
 
-resource "alicloud_wafv3_domain" "default" {
-  instance_id = data.alicloud_wafv3_instances.default.ids.0
-  listen {
-    protection_resource = "share"
-    http_ports = [
-      "81",
-      "82",
-      "83"
-    ]
-    https_ports = [
-
-    ]
-    xff_header_mode = "2"
-    xff_headers = [
-      "examplea",
-      "exampleb",
-      "examplec"
-    ]
-    custom_ciphers = [
-
-    ]
-    ipv6_enabled = "true"
-  }
-
+resource "alicloud_wafv3_domain" "defaultICMRhk" {
   redirect {
-    keepalive_timeout = "15"
-    backends = [
-      "1.1.1.1",
-      "3.3.3.3",
-      "2.2.2.2"
-    ]
-    write_timeout      = "5"
-    keepalive_requests = "1000"
-    request_headers {
-      key   = "examplekey1"
-      value = "exampleValue1"
-    }
-    request_headers {
-      key   = "key1"
-      value = "value1"
-    }
-    request_headers {
-      key   = "key22"
-      value = "value22"
-    }
-
-    loadbalance        = "iphash"
-    focus_http_backend = "false"
-    sni_enabled        = "false"
-    connect_timeout    = "5"
-    read_timeout       = "5"
-    keepalive          = "true"
-    retry              = "true"
+    loadbalance = "iphash"
+    backends    = ["39.98.217.197"]
   }
-
-  domain      = "zcexample_250746.wafqax.top"
+  domain      = "1511928242963727.wafqax.top"
   access_type = "share"
+  instance_id = alicloud_wafv3_instance.defaultnxb04D.id
+  listen {
+    http_ports = ["80"]
+  }
 }
 
 
 resource "alicloud_wafv3_defense_rule" "default" {
+  instance_id    = alicloud_wafv3_instance.defaultnxb04D.id
+  defense_type   = "resource"
+  defense_scene  = "account_identifier"
+  rule_status    = "1"
+  resource       = alicloud_wafv3_domain.defaultICMRhk.domain_id
   defense_origin = "custom"
   config {
     account_identifiers {
+      position    = "jwt"
       priority    = "2"
       decode_type = "jwt"
       key         = "Query-Arg"
       sub_key     = "adb"
-      position    = "jwt"
     }
   }
-
-  instance_id   = data.alicloud_wafv3_instances.default.ids.0
-  defense_type  = "resource"
-  defense_scene = "account_identifier"
-  rule_status   = "1"
-  resource      = alicloud_wafv3_domain.default.domain_id
 }
 ```
 
@@ -146,11 +101,11 @@ When the protection rule type `DefenseType` is set to `resource`, the value is a
   - `template` (default): indicates the template protection rule.
   - `resource`: indicates the rule of the protected object dimension.
 * `instance_id` - (Required, ForceNew) The ID of the Web Application Firewall (WAF) instance.
-* `resource` - (Optional, ForceNew) The protection object corresponding to the rule to be queried.
+* `resource` - (Optional, ForceNew, Computed) The protection object corresponding to the rule to be queried.
 
 -> **NOTE:**  This parameter is required only when `DefenseType` is set to `resource`.
 
-* `rule_name` - (Optional) The rule name.
+* `rule_name` - (Optional, Computed) The rule name.
 * `rule_status` - (Optional, Int) Protection rule status.
   - `0`: indicates closed.
   - `1`: indicates open.
@@ -209,6 +164,10 @@ The config supports the following:
   - 1: Indicates that the speed limit is on.
 * `cn_regions` - (Optional) The regions in China from which you want to block requests. If you specify "CN", requests from the Chinese mainland (excluding Hong Kong, Macao, and Taiwan) are blocked. Separate multiple regions with commas (,). For more information about region codes, see Description of region codes in China.
 * `conditions` - (Optional, Set) The traffic characteristics of ACL, which are described in JSON format. You can enter up to five matching conditions. For specific configuration information, see detailed configuration of conditions. See [`conditions`](#config-conditions) below.
+* `gray_config` - (Optional, List) The canary release configuration for the rule. The value is a JSON. This parameter is required only when you set `GrayStatus` to 1. See [`gray_config`](#config-gray_config) below.
+* `gray_status` - (Optional, Int) Specifies whether to enable canary release for the rule. Valid values:
+  - 0 (default): disables canary release.
+  - 1: enables canary release.
 * `mode` - (Optional, Int) The HTTP flood protection mode. Valid values:
   - 0 (default): indicates normal protection.
   - 1: indicates emergency protection.
@@ -231,6 +190,7 @@ The config supports the following:
 * `throttle_type` - (Optional) The throttling method. Valid values:
   - qps: indicates throttling based on queries per second (QPS).
   - ratio (default): indicates throttling based on percentage.
+* `time_config` - (Optional, Computed, List) The scheduled rule configuration. The value is a JSON.  See [`time_config`](#config-time_config) below.
 * `ua` - (Optional) The User-Agent string that is allowed for access to the address.
 * `url` - (Optional) The address of the cached page.
 
@@ -290,6 +250,18 @@ The config-conditions supports the following:
 -> **NOTE:**  The value range of the logical (opValue) and matching content (values) parameters in the matching condition parameter is related to the specified matching field (key).
 
 
+### `config-gray_config`
+
+The config-gray_config supports the following:
+* `gray_rate` - (Optional, Int) The percentage of traffic for which the canary release takes effect. The value must be in the range of 1 to 100.
+* `gray_sub_key` - (Optional) The sub-feature of the statistical object. This parameter is required when you set the `GrayTarget` parameter to `cookie`, `header`, or `queryarg`.
+* `gray_target` - (Optional) The type of the canary release object. Valid values:
+  - `remote_addr` (default): IP address.
+  - **cookie.acw_tc**: Session.
+  - `header`: Custom header. If you select this value, you must specify the header in the `GraySubKey` parameter.
+  - `queryarg`: Custom parameter. If you select this value, you must specify the custom parameter in the `GraySubKey` parameter.
+  - `cookie`: Custom cookie. If you select this value, you must specify the cookie in the `GraySubKey` parameter.
+
 ### `config-rate_limit`
 
 The config-rate_limit supports the following:
@@ -306,6 +278,35 @@ Valid values: 1 to 1800 seconds.
 * `threshold` - (Optional, Int) The maximum number of requests that can be sent from a statistical object.
 * `ttl` - (Optional, Int) The period of time during which you want the specified action to be valid. Unit: seconds.
 Valid values: 60 to 86400.
+
+### `config-time_config`
+
+The config-time_config supports the following:
+* `time_periods` - (Optional, Set) The time period during which the rule is effective. This parameter is required when you set the `TimeScope` parameter to `period`. A maximum of five time periods can be set. See [`time_periods`](#config-time_config-time_periods) below.
+* `time_scope` - (Optional, Computed) The effective period of the rule. Valid values:
+  - `permanent` (default): The rule is always effective.
+  - `period`: The rule is effective within a specific time period.
+  - `cycle`: The rule is effective periodically.
+* `time_zone` - (Optional, Computed, Int) The time zone in which the rule is effective. The default value is `8`. The value must be in the range of - 12 to 12. `0` indicates UTC. `8` indicates UTC+8. **-8** indicates UTC-8.
+* `week_time_periods` - (Optional, Set) The periodic time period during which the rule is effective. This parameter is required when you set the `TimeScope` parameter to `cycle`. A maximum of five time periods can be set. See [`week_time_periods`](#config-time_config-week_time_periods) below.
+
+### `config-time_config-time_periods`
+
+The config-time_config-time_periods supports the following:
+* `end` - (Optional, Int) The end time of the rule. This is a UNIX timestamp in milliseconds.
+* `start` - (Optional, Int) The start time of the rule. This is a UNIX timestamp in milliseconds.
+
+### `config-time_config-week_time_periods`
+
+The config-time_config-week_time_periods supports the following:
+* `day` - (Optional) The time period of each day when the rule is effective. It includes the start time start and end time end. You can specify multiple time periods.
+* `day_periods` - (Optional, Set) The time period of each day when the rule is effective.  See [`day_periods`](#config-time_config-week_time_periods-day_periods) below.
+
+### `config-time_config-week_time_periods-day_periods`
+
+The config-time_config-week_time_periods-day_periods supports the following:
+* `end` - (Optional, Int) The end time of each day when the rule is effective. This is a millisecond-level timestamp relative to 00:00 of the day. The value must be in the range of [0-86400000).
+* `start` - (Optional, Int) The start time of each day when the rule is effective. This is a millisecond-level timestamp relative to 00:00 of the day. The value must be in the range of [0-86400000).
 
 ### `config-rate_limit-status`
 

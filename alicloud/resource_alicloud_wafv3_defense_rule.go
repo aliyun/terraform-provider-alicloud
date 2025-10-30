@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -38,6 +39,29 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
+						"gray_config": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"gray_target": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringInSlice([]string{"cookie.acw_tc", "header", "queryarg", "cookie", "remote_addr"}, false),
+									},
+									"gray_rate": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: IntBetween(0, 100),
+									},
+									"gray_sub_key": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
 						"rule_action": {
 							Type:         schema.TypeString,
 							Optional:     true,
@@ -56,6 +80,72 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 						"cn_regions": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"time_config": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"time_zone": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: IntBetween(-12, 12),
+									},
+									"time_periods": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"start": {
+													Type:     schema.TypeInt,
+													Optional: true,
+												},
+												"end": {
+													Type:     schema.TypeInt,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"time_scope": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: StringInSlice([]string{"permanent", "period", "cycle"}, false),
+									},
+									"week_time_periods": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"day_periods": {
+													Type:     schema.TypeSet,
+													Optional: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"start": {
+																Type:     schema.TypeInt,
+																Optional: true,
+															},
+															"end": {
+																Type:     schema.TypeInt,
+																Optional: true,
+															},
+														},
+													},
+												},
+												"day": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
 						},
 						"bypass_regular_types": {
 							Type:     schema.TypeSet,
@@ -210,6 +300,11 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 								},
 							},
 						},
+						"gray_status": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntInSlice([]int{0, 1}),
+						},
 						"protocol": {
 							Type:         schema.TypeString,
 							Optional:     true,
@@ -290,31 +385,27 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 
 	dataList := make(map[string]interface{})
 
-	if v, ok := d.GetOk("defense_origin"); ok {
-		dataList["origin"] = v
-	}
-
 	if v, ok := d.GetOk("config"); ok {
-		ccStatus1, _ := jsonpath.Get("$[0].cc_status", v)
-		if ccStatus1 != nil && ccStatus1 != "" {
-			dataList["ccStatus"] = ccStatus1
+		mode1, _ := jsonpath.Get("$[0].mode", v)
+		if mode1 != nil && mode1 != "" {
+			dataList["mode"] = mode1
 		}
 	}
 
 	if v := d.Get("config"); !IsNil(v) {
 		ratelimit := make(map[string]interface{})
-		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", d.Get("config"))
-		if threshold1 != nil && threshold1 != "" {
-			ratelimit["threshold"] = threshold1
+		interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
+		if interval1 != nil && interval1 != "" && interval1.(int) > 0 {
+			ratelimit["interval"] = interval1
 		}
 		status := make(map[string]interface{})
-		code1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].code", d.Get("config"))
-		if code1 != nil && code1 != "" {
-			status["code"] = code1
-		}
 		count1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].count", d.Get("config"))
 		if count1 != nil && count1 != "" && count1.(int) > 0 {
 			status["count"] = count1
+		}
+		code1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].code", d.Get("config"))
+		if code1 != nil && code1 != "" {
+			status["code"] = code1
 		}
 		ratio1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].ratio", d.Get("config"))
 		if ratio1 != nil && ratio1 != "" && ratio1.(int) > 0 {
@@ -324,17 +415,17 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 		if len(status) > 0 {
 			ratelimit["status"] = status
 		}
-		interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
-		if interval1 != nil && interval1 != "" && interval1.(int) > 0 {
-			ratelimit["interval"] = interval1
+		target1, _ := jsonpath.Get("$[0].rate_limit[0].target", d.Get("config"))
+		if target1 != nil && target1 != "" {
+			ratelimit["target"] = target1
+		}
+		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", d.Get("config"))
+		if threshold1 != nil && threshold1 != "" {
+			ratelimit["threshold"] = threshold1
 		}
 		ttl1, _ := jsonpath.Get("$[0].rate_limit[0].ttl", d.Get("config"))
 		if ttl1 != nil && ttl1 != "" && ttl1.(int) > 0 {
 			ratelimit["ttl"] = ttl1
-		}
-		target1, _ := jsonpath.Get("$[0].rate_limit[0].target", d.Get("config"))
-		if target1 != nil && target1 != "" {
-			ratelimit["target"] = target1
 		}
 		subKey1, _ := jsonpath.Get("$[0].rate_limit[0].sub_key", d.Get("config"))
 		if subKey1 != nil && subKey1 != "" {
@@ -347,15 +438,16 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 	}
 
 	if v, ok := d.GetOk("config"); ok {
-		mode1, _ := jsonpath.Get("$[0].mode", v)
-		if mode1 != nil && mode1 != "" {
-			dataList["mode"] = mode1
+		grayStatus1, _ := jsonpath.Get("$[0].gray_status", v)
+		if grayStatus1 != nil && grayStatus1 != "" {
+			dataList["grayStatus"] = grayStatus1
 		}
 	}
 
 	if v := d.Get("config"); !IsNil(v) {
+		timeConfig := make(map[string]interface{})
 		if v, ok := d.GetOk("config"); ok {
-			localData, err := jsonpath.Get("$[0].conditions", v)
+			localData, err := jsonpath.Get("$[0].time_config[0].time_periods", v)
 			if err != nil {
 				localData = make([]interface{}, 0)
 			}
@@ -366,31 +458,19 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 					dataLoopTmp = dataLoop.(map[string]interface{})
 				}
 				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["values"] = dataLoopTmp["values"]
-				dataLoopMap["opValue"] = dataLoopTmp["op_value"]
-				dataLoopMap["subKey"] = dataLoopTmp["sub_key"]
-				dataLoopMap["key"] = dataLoopTmp["key"]
+				dataLoopMap["start"] = dataLoopTmp["start"]
+				dataLoopMap["end"] = dataLoopTmp["end"]
 				localMaps = append(localMaps, dataLoopMap)
 			}
-			dataList["conditions"] = localMaps
+			timeConfig["timePeriods"] = localMaps
 		}
 
-	}
-
-	if v, ok := d.GetOk("config"); ok {
-		ccEffect, _ := jsonpath.Get("$[0].cc_effect", v)
-		if ccEffect != nil && ccEffect != "" {
-			dataList["effect"] = ccEffect
+		timeZone1, _ := jsonpath.Get("$[0].time_config[0].time_zone", d.Get("config"))
+		if timeZone1 != nil && timeZone1 != "" {
+			timeConfig["timeZone"] = timeZone1
 		}
-	}
-
-	if v, ok := d.GetOkExists("rule_status"); ok {
-		dataList["status"] = v
-	}
-
-	if v := d.Get("config"); !IsNil(v) {
 		if v, ok := d.GetOk("config"); ok {
-			localData1, err := jsonpath.Get("$[0].account_identifiers", v)
+			localData1, err := jsonpath.Get("$[0].time_config[0].week_time_periods", v)
 			if err != nil {
 				localData1 = make([]interface{}, 0)
 			}
@@ -401,22 +481,56 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 					dataLoop1Tmp = dataLoop1.(map[string]interface{})
 				}
 				dataLoop1Map := make(map[string]interface{})
-				dataLoop1Map["position"] = dataLoop1Tmp["position"]
-				dataLoop1Map["priority"] = dataLoop1Tmp["priority"]
-				dataLoop1Map["subKey"] = dataLoop1Tmp["sub_key"]
-				dataLoop1Map["key"] = dataLoop1Tmp["key"]
-				dataLoop1Map["decodeType"] = dataLoop1Tmp["decode_type"]
+				localMaps2 := make([]interface{}, 0)
+				localData2 := dataLoop1Tmp["day_periods"]
+				for _, dataLoop2 := range convertToInterfaceArray(localData2) {
+					dataLoop2Tmp := dataLoop2.(map[string]interface{})
+					dataLoop2Map := make(map[string]interface{})
+					dataLoop2Map["start"] = dataLoop2Tmp["start"]
+					dataLoop2Map["end"] = dataLoop2Tmp["end"]
+					localMaps2 = append(localMaps2, dataLoop2Map)
+				}
+				dataLoop1Map["dayPeriods"] = localMaps2
+				dataLoop1Map["day"] = dataLoop1Tmp["day"]
 				localMaps1 = append(localMaps1, dataLoop1Map)
 			}
-			dataList["accountIdentifiers"] = localMaps1
+			timeConfig["weekTimePeriods"] = localMaps1
 		}
 
+		timeScope1, _ := jsonpath.Get("$[0].time_config[0].time_scope", d.Get("config"))
+		if timeScope1 != nil && timeScope1 != "" {
+			timeConfig["timeScope"] = timeScope1
+		}
+
+		if len(timeConfig) > 0 {
+			dataList["timeConfig"] = timeConfig
+		}
+	}
+
+	if v := d.Get("config"); !IsNil(v) {
+		grayConfig := make(map[string]interface{})
+		grayTarget1, _ := jsonpath.Get("$[0].gray_config[0].gray_target", d.Get("config"))
+		if grayTarget1 != nil && grayTarget1 != "" {
+			grayConfig["grayTarget"] = grayTarget1
+		}
+		graySubKey1, _ := jsonpath.Get("$[0].gray_config[0].gray_sub_key", d.Get("config"))
+		if graySubKey1 != nil && graySubKey1 != "" {
+			grayConfig["graySubKey"] = graySubKey1
+		}
+		grayRate1, _ := jsonpath.Get("$[0].gray_config[0].gray_rate", d.Get("config"))
+		if grayRate1 != nil && grayRate1 != "" && grayRate1.(int) > 0 {
+			grayConfig["grayRate"] = grayRate1
+		}
+
+		if len(grayConfig) > 0 {
+			dataList["grayConfig"] = grayConfig
+		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
-		bypassRegularTypes, _ := jsonpath.Get("$[0].bypass_regular_types", v)
-		if bypassRegularTypes != nil && bypassRegularTypes != "" {
-			dataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
+		ccEffect, _ := jsonpath.Get("$[0].cc_effect", v)
+		if ccEffect != nil && ccEffect != "" {
+			dataList["effect"] = ccEffect
 		}
 	}
 
@@ -459,6 +573,84 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 		}
 	}
 
+	if v := d.Get("config"); !IsNil(v) {
+		if v, ok := d.GetOk("config"); ok {
+			localData3, err := jsonpath.Get("$[0].account_identifiers", v)
+			if err != nil {
+				localData3 = make([]interface{}, 0)
+			}
+			localMaps3 := make([]interface{}, 0)
+			for _, dataLoop3 := range convertToInterfaceArray(localData3) {
+				dataLoop3Tmp := make(map[string]interface{})
+				if dataLoop3 != nil {
+					dataLoop3Tmp = dataLoop3.(map[string]interface{})
+				}
+				dataLoop3Map := make(map[string]interface{})
+				dataLoop3Map["decodeType"] = dataLoop3Tmp["decode_type"]
+				dataLoop3Map["position"] = dataLoop3Tmp["position"]
+				dataLoop3Map["priority"] = dataLoop3Tmp["priority"]
+				dataLoop3Map["subKey"] = dataLoop3Tmp["sub_key"]
+				dataLoop3Map["key"] = dataLoop3Tmp["key"]
+				localMaps3 = append(localMaps3, dataLoop3Map)
+			}
+			dataList["accountIdentifiers"] = localMaps3
+		}
+
+	}
+
+	if v, ok := d.GetOk("config"); ok {
+		ruleAction, _ := jsonpath.Get("$[0].rule_action", v)
+		if ruleAction != nil && ruleAction != "" {
+			dataList["action"] = ruleAction
+		}
+	}
+
+	if v, ok := d.GetOk("defense_origin"); ok {
+		dataList["origin"] = v
+	}
+
+	if v, ok := d.GetOk("config"); ok {
+		ccStatus1, _ := jsonpath.Get("$[0].cc_status", v)
+		if ccStatus1 != nil && ccStatus1 != "" {
+			dataList["ccStatus"] = ccStatus1
+		}
+	}
+
+	if v := d.Get("config"); !IsNil(v) {
+		if v, ok := d.GetOk("config"); ok {
+			localData4, err := jsonpath.Get("$[0].conditions", v)
+			if err != nil {
+				localData4 = make([]interface{}, 0)
+			}
+			localMaps4 := make([]interface{}, 0)
+			for _, dataLoop4 := range convertToInterfaceArray(localData4) {
+				dataLoop4Tmp := make(map[string]interface{})
+				if dataLoop4 != nil {
+					dataLoop4Tmp = dataLoop4.(map[string]interface{})
+				}
+				dataLoop4Map := make(map[string]interface{})
+				dataLoop4Map["values"] = dataLoop4Tmp["values"]
+				dataLoop4Map["opValue"] = dataLoop4Tmp["op_value"]
+				dataLoop4Map["subKey"] = dataLoop4Tmp["sub_key"]
+				dataLoop4Map["key"] = dataLoop4Tmp["key"]
+				localMaps4 = append(localMaps4, dataLoop4Map)
+			}
+			dataList["conditions"] = localMaps4
+		}
+
+	}
+
+	if v, ok := d.GetOkExists("rule_status"); ok {
+		dataList["status"] = v
+	}
+
+	if v, ok := d.GetOk("config"); ok {
+		bypassRegularTypes, _ := jsonpath.Get("$[0].bypass_regular_types", v)
+		if bypassRegularTypes != nil && bypassRegularTypes != "" {
+			dataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
+		}
+	}
+
 	if v, ok := d.GetOk("config"); ok {
 		bypassTags, _ := jsonpath.Get("$[0].bypass_tags", v)
 		if bypassTags != nil && bypassTags != "" {
@@ -481,13 +673,6 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 	}
 
 	if v, ok := d.GetOk("config"); ok {
-		ruleAction, _ := jsonpath.Get("$[0].rule_action", v)
-		if ruleAction != nil && ruleAction != "" {
-			dataList["action"] = ruleAction
-		}
-	}
-
-	if v, ok := d.GetOk("config"); ok {
 		bypassRegularRules, _ := jsonpath.Get("$[0].bypass_regular_rules", v)
 		if bypassRegularRules != nil && bypassRegularRules != "" {
 			dataList["regularRules"] = convertToInterfaceArray(bypassRegularRules)
@@ -505,11 +690,11 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 	RulesMap = append(RulesMap, dataList)
 	request["Rules"], _ = convertListMapToJsonString(RulesMap)
 
-	if v, ok := d.GetOkExists("template_id"); ok {
-		request["TemplateId"] = v
-	}
 	if v, ok := d.GetOk("resource"); ok {
 		request["Resource"] = v
+	}
+	if v, ok := d.GetOkExists("template_id"); ok {
+		request["TemplateId"] = v
 	}
 	request["DefenseScene"] = d.Get("defense_scene")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -532,7 +717,7 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 
 	d.SetId(fmt.Sprintf("%v:%v:%v", request["InstanceId"], request["DefenseType"], response["RuleIds"]))
 
-	return resourceAliCloudWafv3DefenseRuleUpdate(d, meta)
+	return resourceAliCloudWafv3DefenseRuleRead(d, meta)
 }
 
 func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface{}) error {
@@ -569,6 +754,7 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 		configMap["cc_effect"] = configRaw["effect"]
 		configMap["cc_status"] = formatInt(configRaw["ccStatus"])
 		configMap["cn_regions"] = configRaw["cnRegionList"]
+		configMap["gray_status"] = formatInt(configRaw["grayStatus"])
 		configMap["mode"] = formatInt(configRaw["mode"])
 		configMap["protocol"] = configRaw["protocol"]
 		configMap["rule_action"] = configRaw["action"]
@@ -626,6 +812,20 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 			}
 		}
 		configMap["conditions"] = conditionsMaps
+		grayConfigMaps := make([]map[string]interface{}, 0)
+		grayConfigMap := make(map[string]interface{})
+		grayConfigRaw := make(map[string]interface{})
+		if configRaw["grayConfig"] != nil {
+			grayConfigRaw = configRaw["grayConfig"].(map[string]interface{})
+		}
+		if len(grayConfigRaw) > 0 {
+			grayConfigMap["gray_rate"] = formatInt(grayConfigRaw["grayRate"])
+			grayConfigMap["gray_sub_key"] = grayConfigRaw["graySubKey"]
+			grayConfigMap["gray_target"] = grayConfigRaw["grayTarget"]
+
+			grayConfigMaps = append(grayConfigMaps, grayConfigMap)
+		}
+		configMap["gray_config"] = grayConfigMaps
 		rateLimitMaps := make([]map[string]interface{}, 0)
 		rateLimitMap := make(map[string]interface{})
 		ratelimitRaw := make(map[string]interface{})
@@ -662,6 +862,57 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 		}
 
 		configMap["remote_addr"] = remoteAddrRaw
+		timeConfigMaps := make([]map[string]interface{}, 0)
+		timeConfigMap := make(map[string]interface{})
+		timeConfigRaw := make(map[string]interface{})
+		if configRaw["timeConfig"] != nil {
+			timeConfigRaw = configRaw["timeConfig"].(map[string]interface{})
+		}
+		if len(timeConfigRaw) > 0 {
+			timeConfigMap["time_scope"] = timeConfigRaw["timeScope"]
+			timeConfigMap["time_zone"] = formatInt(timeConfigRaw["timeZone"])
+
+			timePeriodsRaw := timeConfigRaw["timePeriods"]
+			timePeriodsMaps := make([]map[string]interface{}, 0)
+			if timePeriodsRaw != nil {
+				for _, timePeriodsChildRaw := range convertToInterfaceArray(timePeriodsRaw) {
+					timePeriodsMap := make(map[string]interface{})
+					timePeriodsChildRaw := timePeriodsChildRaw.(map[string]interface{})
+					timePeriodsMap["end"] = formatInt(timePeriodsChildRaw["end"])
+					timePeriodsMap["start"] = formatInt(timePeriodsChildRaw["start"])
+
+					timePeriodsMaps = append(timePeriodsMaps, timePeriodsMap)
+				}
+			}
+			timeConfigMap["time_periods"] = timePeriodsMaps
+			weekTimePeriodsRaw := timeConfigRaw["weekTimePeriods"]
+			weekTimePeriodsMaps := make([]map[string]interface{}, 0)
+			if weekTimePeriodsRaw != nil {
+				for _, weekTimePeriodsChildRaw := range convertToInterfaceArray(weekTimePeriodsRaw) {
+					weekTimePeriodsMap := make(map[string]interface{})
+					weekTimePeriodsChildRaw := weekTimePeriodsChildRaw.(map[string]interface{})
+					weekTimePeriodsMap["day"] = weekTimePeriodsChildRaw["day"]
+
+					dayPeriodsRaw := weekTimePeriodsChildRaw["dayPeriods"]
+					dayPeriodsMaps := make([]map[string]interface{}, 0)
+					if dayPeriodsRaw != nil {
+						for _, dayPeriodsChildRaw := range convertToInterfaceArray(dayPeriodsRaw) {
+							dayPeriodsMap := make(map[string]interface{})
+							dayPeriodsChildRaw := dayPeriodsChildRaw.(map[string]interface{})
+							dayPeriodsMap["end"] = formatInt(dayPeriodsChildRaw["end"])
+							dayPeriodsMap["start"] = formatInt(dayPeriodsChildRaw["start"])
+
+							dayPeriodsMaps = append(dayPeriodsMaps, dayPeriodsMap)
+						}
+					}
+					weekTimePeriodsMap["day_periods"] = dayPeriodsMaps
+					weekTimePeriodsMaps = append(weekTimePeriodsMaps, weekTimePeriodsMap)
+				}
+			}
+			timeConfigMap["week_time_periods"] = weekTimePeriodsMaps
+			timeConfigMaps = append(timeConfigMaps, timeConfigMap)
+		}
+		configMap["time_config"] = timeConfigMaps
 		configMaps = append(configMaps, configMap)
 	}
 	if err := d.Set("config", configMaps); err != nil {
@@ -695,9 +946,9 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	ccStatus1, _ := jsonpath.Get("$[0].cc_status", d.Get("config"))
-	if ccStatus1 != nil && (d.HasChange("config.0.cc_status") || ccStatus1 != "") {
-		dataList["ccStatus"] = ccStatus1
+	mode1, _ := jsonpath.Get("$[0].mode", d.Get("config"))
+	if mode1 != nil && (d.HasChange("config.0.mode") || mode1 != "") {
+		dataList["mode"] = mode1
 	}
 
 	if d.HasChange("config") {
@@ -705,37 +956,38 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	}
 	if v := d.Get("config"); v != nil {
 		ratelimit := make(map[string]interface{})
-		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", d.Get("config"))
-		if threshold1 != nil && (d.HasChange("config.0.rate_limit.0.threshold") || threshold1 != "") {
-			ratelimit["threshold"] = threshold1
+		interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
+		if interval1 != nil && (d.HasChange("config.0.rate_limit.0.interval") || interval1 != "") && interval1.(int) > 0 {
+			ratelimit["interval"] = interval1
 		}
 		status := make(map[string]interface{})
-		code1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].code", d.Get("config"))
-		if code1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.code") || code1 != "") {
-			status["code"] = code1
-		}
 		count1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].count", d.Get("config"))
 		if count1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.count") || count1 != "") && count1.(int) > 0 {
 			status["count"] = count1
+		}
+		code1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].code", d.Get("config"))
+		if code1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.code") || code1 != "") {
+			status["code"] = code1
 		}
 		ratio1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].ratio", d.Get("config"))
 		if ratio1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.ratio") || ratio1 != "") && ratio1.(int) > 0 {
 			status["ratio"] = ratio1
 		}
+
 		if len(status) > 0 {
 			ratelimit["status"] = status
-		}
-		interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
-		if interval1 != nil && (d.HasChange("config.0.rate_limit.0.interval") || interval1 != "") && interval1.(int) > 0 {
-			ratelimit["interval"] = interval1
-		}
-		ttl1, _ := jsonpath.Get("$[0].rate_limit[0].ttl", d.Get("config"))
-		if ttl1 != nil && (d.HasChange("config.0.rate_limit.0.ttl") || ttl1 != "") && ttl1.(int) > 0 {
-			ratelimit["ttl"] = ttl1
 		}
 		target1, _ := jsonpath.Get("$[0].rate_limit[0].target", d.Get("config"))
 		if target1 != nil && (d.HasChange("config.0.rate_limit.0.target") || target1 != "") {
 			ratelimit["target"] = target1
+		}
+		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", d.Get("config"))
+		if threshold1 != nil && (d.HasChange("config.0.rate_limit.0.threshold") || threshold1 != "") {
+			ratelimit["threshold"] = threshold1
+		}
+		ttl1, _ := jsonpath.Get("$[0].rate_limit[0].ttl", d.Get("config"))
+		if ttl1 != nil && (d.HasChange("config.0.rate_limit.0.ttl") || ttl1 != "") && ttl1.(int) > 0 {
+			ratelimit["ttl"] = ttl1
 		}
 		subKey1, _ := jsonpath.Get("$[0].rate_limit[0].sub_key", d.Get("config"))
 		if subKey1 != nil && (d.HasChange("config.0.rate_limit.0.sub_key") || subKey1 != "") {
@@ -750,17 +1002,18 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("config") {
 		update = true
 	}
-	mode1, _ := jsonpath.Get("$[0].mode", d.Get("config"))
-	if mode1 != nil && (d.HasChange("config.0.mode") || mode1 != "") {
-		dataList["mode"] = mode1
+	grayStatus1, _ := jsonpath.Get("$[0].gray_status", d.Get("config"))
+	if grayStatus1 != nil && (d.HasChange("config.0.gray_status") || grayStatus1 != "") {
+		dataList["grayStatus"] = grayStatus1
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	if v := d.Get("config"); v != nil {
+		timeConfig := make(map[string]interface{})
 		if v, ok := d.GetOk("config"); ok {
-			localData, err := jsonpath.Get("$[0].conditions", v)
+			localData, err := jsonpath.Get("$[0].time_config[0].time_periods", v)
 			if err != nil {
 				localData = make([]interface{}, 0)
 			}
@@ -771,31 +1024,19 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 					dataLoopTmp = dataLoop.(map[string]interface{})
 				}
 				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["values"] = dataLoopTmp["values"]
-				dataLoopMap["opValue"] = dataLoopTmp["op_value"]
-				dataLoopMap["subKey"] = dataLoopTmp["sub_key"]
-				dataLoopMap["key"] = dataLoopTmp["key"]
+				dataLoopMap["start"] = dataLoopTmp["start"]
+				dataLoopMap["end"] = dataLoopTmp["end"]
 				localMaps = append(localMaps, dataLoopMap)
 			}
-			dataList["conditions"] = localMaps
+			timeConfig["timePeriods"] = localMaps
 		}
 
-	}
-
-	if d.HasChange("config") {
-		update = true
-	}
-	ccEffect, _ := jsonpath.Get("$[0].cc_effect", d.Get("config"))
-	if ccEffect != nil && (d.HasChange("config.0.cc_effect") || ccEffect != "") {
-		dataList["effect"] = ccEffect
-	}
-
-	if d.HasChange("config") {
-		update = true
-	}
-	if v := d.Get("config"); v != nil {
+		timeZone1, _ := jsonpath.Get("$[0].time_config[0].time_zone", d.Get("config"))
+		if timeZone1 != nil && (d.HasChange("config.0.time_config.0.time_zone") || timeZone1 != "") {
+			timeConfig["timeZone"] = timeZone1
+		}
 		if v, ok := d.GetOk("config"); ok {
-			localData1, err := jsonpath.Get("$[0].account_identifiers", v)
+			localData1, err := jsonpath.Get("$[0].time_config[0].week_time_periods", v)
 			if err != nil {
 				localData1 = make([]interface{}, 0)
 			}
@@ -806,24 +1047,61 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 					dataLoop1Tmp = dataLoop1.(map[string]interface{})
 				}
 				dataLoop1Map := make(map[string]interface{})
-				dataLoop1Map["position"] = dataLoop1Tmp["position"]
-				dataLoop1Map["priority"] = dataLoop1Tmp["priority"]
-				dataLoop1Map["subKey"] = dataLoop1Tmp["sub_key"]
-				dataLoop1Map["key"] = dataLoop1Tmp["key"]
-				dataLoop1Map["decodeType"] = dataLoop1Tmp["decode_type"]
+				localMaps2 := make([]interface{}, 0)
+				localData2 := dataLoop1Tmp["day_periods"]
+				for _, dataLoop2 := range convertToInterfaceArray(localData2) {
+					dataLoop2Tmp := dataLoop2.(map[string]interface{})
+					dataLoop2Map := make(map[string]interface{})
+					dataLoop2Map["start"] = dataLoop2Tmp["start"]
+					dataLoop2Map["end"] = dataLoop2Tmp["end"]
+					localMaps2 = append(localMaps2, dataLoop2Map)
+				}
+				dataLoop1Map["dayPeriods"] = localMaps2
+				dataLoop1Map["day"] = dataLoop1Tmp["day"]
 				localMaps1 = append(localMaps1, dataLoop1Map)
 			}
-			dataList["accountIdentifiers"] = localMaps1
+			timeConfig["weekTimePeriods"] = localMaps1
 		}
 
+		timeScope1, _ := jsonpath.Get("$[0].time_config[0].time_scope", d.Get("config"))
+		if timeScope1 != nil && (d.HasChange("config.0.time_config.0.time_scope") || timeScope1 != "") {
+			timeConfig["timeScope"] = timeScope1
+		}
+
+		if len(timeConfig) > 0 {
+			dataList["timeConfig"] = timeConfig
+		}
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
-	bypassRegularTypes, _ := jsonpath.Get("$[0].bypass_regular_types", d.Get("config"))
-	if bypassRegularTypes != nil && (d.HasChange("config.0.bypass_regular_types") || bypassRegularTypes != "") {
-		dataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
+	if v := d.Get("config"); v != nil {
+		grayConfig := make(map[string]interface{})
+		grayTarget1, _ := jsonpath.Get("$[0].gray_config[0].gray_target", d.Get("config"))
+		if grayTarget1 != nil && (d.HasChange("config.0.gray_config.0.gray_target") || grayTarget1 != "") {
+			grayConfig["grayTarget"] = grayTarget1
+		}
+		graySubKey1, _ := jsonpath.Get("$[0].gray_config[0].gray_sub_key", d.Get("config"))
+		if graySubKey1 != nil && (d.HasChange("config.0.gray_config.0.gray_sub_key") || graySubKey1 != "") {
+			grayConfig["graySubKey"] = graySubKey1
+		}
+		grayRate1, _ := jsonpath.Get("$[0].gray_config[0].gray_rate", d.Get("config"))
+		if grayRate1 != nil && (d.HasChange("config.0.gray_config.0.gray_rate") || grayRate1 != "") && grayRate1.(int) > 0 {
+			grayConfig["grayRate"] = grayRate1
+		}
+
+		if len(grayConfig) > 0 {
+			dataList["grayConfig"] = grayConfig
+		}
+	}
+
+	if d.HasChange("config") {
+		update = true
+	}
+	ccEffect, _ := jsonpath.Get("$[0].cc_effect", d.Get("config"))
+	if ccEffect != nil && (d.HasChange("config.0.cc_effect") || ccEffect != "") {
+		dataList["effect"] = ccEffect
 	}
 
 	if d.HasChange("config") {
@@ -871,6 +1149,85 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	ua1, _ := jsonpath.Get("$[0].ua", d.Get("config"))
 	if ua1 != nil && (d.HasChange("config.0.ua") || ua1 != "") {
 		dataList["ua"] = ua1
+	}
+
+	if d.HasChange("config") {
+		update = true
+	}
+	if v := d.Get("config"); v != nil {
+		if v, ok := d.GetOk("config"); ok {
+			localData3, err := jsonpath.Get("$[0].account_identifiers", v)
+			if err != nil {
+				localData3 = make([]interface{}, 0)
+			}
+			localMaps3 := make([]interface{}, 0)
+			for _, dataLoop3 := range convertToInterfaceArray(localData3) {
+				dataLoop3Tmp := make(map[string]interface{})
+				if dataLoop3 != nil {
+					dataLoop3Tmp = dataLoop3.(map[string]interface{})
+				}
+				dataLoop3Map := make(map[string]interface{})
+				dataLoop3Map["decodeType"] = dataLoop3Tmp["decode_type"]
+				dataLoop3Map["position"] = dataLoop3Tmp["position"]
+				dataLoop3Map["priority"] = dataLoop3Tmp["priority"]
+				dataLoop3Map["subKey"] = dataLoop3Tmp["sub_key"]
+				dataLoop3Map["key"] = dataLoop3Tmp["key"]
+				localMaps3 = append(localMaps3, dataLoop3Map)
+			}
+			dataList["accountIdentifiers"] = localMaps3
+		}
+
+	}
+
+	if d.HasChange("config") {
+		update = true
+	}
+	ruleAction, _ := jsonpath.Get("$[0].rule_action", d.Get("config"))
+	if ruleAction != nil && (d.HasChange("config.0.rule_action") || ruleAction != "") {
+		dataList["action"] = ruleAction
+	}
+
+	if d.HasChange("config") {
+		update = true
+	}
+	ccStatus1, _ := jsonpath.Get("$[0].cc_status", d.Get("config"))
+	if ccStatus1 != nil && (d.HasChange("config.0.cc_status") || ccStatus1 != "") {
+		dataList["ccStatus"] = ccStatus1
+	}
+
+	if d.HasChange("config") {
+		update = true
+	}
+	if v := d.Get("config"); v != nil {
+		if v, ok := d.GetOk("config"); ok {
+			localData4, err := jsonpath.Get("$[0].conditions", v)
+			if err != nil {
+				localData4 = make([]interface{}, 0)
+			}
+			localMaps4 := make([]interface{}, 0)
+			for _, dataLoop4 := range convertToInterfaceArray(localData4) {
+				dataLoop4Tmp := make(map[string]interface{})
+				if dataLoop4 != nil {
+					dataLoop4Tmp = dataLoop4.(map[string]interface{})
+				}
+				dataLoop4Map := make(map[string]interface{})
+				dataLoop4Map["values"] = dataLoop4Tmp["values"]
+				dataLoop4Map["opValue"] = dataLoop4Tmp["op_value"]
+				dataLoop4Map["subKey"] = dataLoop4Tmp["sub_key"]
+				dataLoop4Map["key"] = dataLoop4Tmp["key"]
+				localMaps4 = append(localMaps4, dataLoop4Map)
+			}
+			dataList["conditions"] = localMaps4
+		}
+
+	}
+
+	if d.HasChange("config") {
+		update = true
+	}
+	bypassRegularTypes, _ := jsonpath.Get("$[0].bypass_regular_types", d.Get("config"))
+	if bypassRegularTypes != nil && (d.HasChange("config.0.bypass_regular_types") || bypassRegularTypes != "") {
+		dataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
 	}
 
 	dataList["id"] = parts[2]
@@ -921,17 +1278,10 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 		dataList["cnRegionList"] = cnRegions
 	}
 
-	if d.HasChange("config") {
-		update = true
-	}
-	ruleAction, _ := jsonpath.Get("$[0].rule_action", d.Get("config"))
-	if ruleAction != nil && (d.HasChange("config.0.rule_action") || ruleAction != "") {
-		dataList["action"] = ruleAction
-	}
-
 	RulesMap := make([]map[string]interface{}, 0)
 	RulesMap = append(RulesMap, dataList)
 	request["Rules"], _ = convertListMapToJsonString(RulesMap)
+
 	request["InstanceId"] = parts[0]
 	request["DefenseType"] = parts[1]
 
@@ -962,7 +1312,7 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	request["RuleId"] = parts[2]
 	request["DefenseType"] = parts[1]
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("rule_status") {
+	if d.HasChange("rule_status") {
 		update = true
 	}
 	request["RuleStatus"] = d.Get("rule_status")
@@ -1013,7 +1363,6 @@ func resourceAliCloudWafv3DefenseRuleDelete(d *schema.ResourceData, meta interfa
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
