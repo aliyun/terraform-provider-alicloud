@@ -228,9 +228,29 @@ func TestAccAliCloudWafv3DefenseRule_basic11029(t *testing.T) {
 								},
 								{
 									"priority":    "12",
-									"decode_type": "plain",
+									"decode_type": "jwt",
 									"key":         "Post-Arg",
 									"sub_key":     "22222",
+									"position":    "asssaaa",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": []map[string]interface{}{
+						{
+							"account_identifiers": []map[string]interface{}{
+								{
+									"key":         "Query-Arg",
+									"sub_key":     "asxsss",
+									"decode_type": "basic",
+									"priority":    "0",
 								},
 							},
 						},
@@ -262,6 +282,10 @@ variable "name" {
 
 variable "region_id" {
   default = "cn-hangzhou"
+}
+
+variable "domain" {
+  default = "testfromtf1014.wafqax.top"
 }
 
 data "alicloud_wafv3_instances" "default" {
@@ -350,6 +374,41 @@ func TestAccAliCloudWafv3DefenseRule_basic11017(t *testing.T) {
 									"sub_key": "testky1",
 								},
 							},
+							"gray_status": "1",
+							"gray_config": []map[string]interface{}{
+								{
+									"gray_target": "remote_addr",
+									"gray_rate":   "80",
+								},
+							},
+							"time_config": []map[string]interface{}{
+								{
+									"time_scope": "period",
+									"time_zone":  "8",
+									"time_periods": []map[string]interface{}{
+										{
+											"start": "1760174804000",
+											"end":   "1760175804000",
+										},
+										{
+											"start": "1760171804000",
+											"end":   "1760172804000",
+										},
+										{
+											"start": "1760176804000",
+											"end":   "1760177804000",
+										},
+										{
+											"start": "1760178804000",
+											"end":   "1760179804000",
+										},
+										{
+											"start": "1760170804000",
+											"end":   "1760171804000",
+										},
+									},
+								},
+							},
 						},
 					},
 					"defense_scene": "custom_acl",
@@ -377,7 +436,7 @@ func TestAccAliCloudWafv3DefenseRule_basic11017(t *testing.T) {
 							"rule_action": "monitor",
 							"conditions": []map[string]interface{}{
 								{
-									"op_value": "contain",
+									"op_value": "eq",
 									"values":   "abcd",
 									"key":      "Header",
 									"sub_key":  "testkey",
@@ -398,6 +457,35 @@ func TestAccAliCloudWafv3DefenseRule_basic11017(t *testing.T) {
 										},
 									},
 									"sub_key": "abc",
+								},
+							},
+							"gray_status": "1",
+							"gray_config": []map[string]interface{}{
+								{
+									"gray_target":  "queryarg",
+									"gray_sub_key": "abc",
+									"gray_rate":    "77",
+								},
+							},
+							"time_config": []map[string]interface{}{
+								{
+									"time_scope": "cycle",
+									"time_zone":  "9",
+									"week_time_periods": []map[string]interface{}{
+										{
+											"day": "1,5",
+											"day_periods": []map[string]interface{}{
+												{
+													"start": "10",
+													"end":   "888",
+												},
+												{
+													"start": "999",
+													"end":   "1999",
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -424,6 +512,12 @@ func TestAccAliCloudWafv3DefenseRule_basic11017(t *testing.T) {
 									"sub_key":  "test",
 								},
 							},
+							"gray_status": "0",
+							"time_config": []map[string]interface{}{
+								{
+									"time_scope": "permanent",
+								},
+							},
 						},
 					},
 					"rule_status": "0",
@@ -433,6 +527,124 @@ func TestAccAliCloudWafv3DefenseRule_basic11017(t *testing.T) {
 					testAccCheck(map[string]string{
 						"rule_status": "0",
 						"rule_name":   "custom_acl_update1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": []map[string]interface{}{
+						{
+							"rule_action": "block",
+							"conditions": []map[string]interface{}{
+								{
+									"key":      "URL",
+									"op_value": "contain",
+									"values":   "/anbs",
+								},
+							},
+							"cc_status": "1",
+							"gray_config": []map[string]interface{}{
+								{
+									"gray_target":  "cookie",
+									"gray_sub_key": "saaa",
+									"gray_rate":    "11",
+								},
+							},
+							"time_config": []map[string]interface{}{
+								{
+									"time_scope": "period",
+									"time_zone":  "9",
+									"time_periods": []map[string]interface{}{
+										{
+											"start": "1760172104000",
+											"end":   "1760172804000",
+										},
+									},
+								},
+							},
+							"gray_status": "1",
+							"cc_effect":   "service",
+							"rate_limit": []map[string]interface{}{
+								{
+									"target":    "header",
+									"interval":  "300",
+									"threshold": "50",
+									"ttl":       "500",
+									"status": []map[string]interface{}{
+										{
+											"code":  "306",
+											"count": "50",
+										},
+									},
+								},
+							},
+						},
+					},
+					"rule_status": "1",
+					"rule_name":   "tet2222111",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_status": "1",
+						"rule_name":   "tet2222111",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": []map[string]interface{}{
+						{
+							"rule_action": "monitor",
+							"conditions": []map[string]interface{}{
+								{
+									"key":      "Header",
+									"sub_key":  "ssss",
+									"op_value": "contain",
+									"values":   "ssss",
+								},
+							},
+							"cc_status":   "0",
+							"gray_status": "0",
+							"time_config": []map[string]interface{}{
+								{
+									"time_scope": "cycle",
+									"time_zone":  "-8",
+									"week_time_periods": []map[string]interface{}{
+										{
+											"day": "3,4",
+											"day_periods": []map[string]interface{}{
+												{
+													"start": "1",
+													"end":   "10",
+												},
+												{
+													"start": "20",
+													"end":   "30",
+												},
+												{
+													"start": "40",
+													"end":   "50",
+												},
+												{
+													"start": "60",
+													"end":   "70",
+												},
+												{
+													"start": "80",
+													"end":   "90",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					"rule_name": "testfromamp",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_name": "testfromamp",
 					}),
 				),
 			},
@@ -1306,6 +1518,112 @@ resource "alicloud_wafv3_defense_template" "defaultfIoHt5-hf" {
   template_origin       = "custom"
   defense_template_name = "1758078609"
   defense_scene         = "spike_throttle"
+  template_type         = "user_custom"
+  status                = "1"
+  description           = "testCreate"
+}
+
+
+`, name)
+}
+
+// Case  DefenseRule__20250723——CC，删除时报错 11078
+func TestAccAliCloudWafv3DefenseRule_basic11078(t *testing.T) {
+	// there is a bug in delete api
+	t.Skipf("Skipping the test case because there is a bug in delete api")
+	t.Skipped()
+	var v map[string]interface{}
+	resourceId := "alicloud_wafv3_defense_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseRuleMap11078)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeWafv3DefenseRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccwafv3%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DefenseRuleBasicDependence11078)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":    "${data.alicloud_wafv3_instances.default.ids.0}",
+					"defense_type":   "template",
+					"defense_scene":  "cc",
+					"rule_status":    "1",
+					"template_id":    "${alicloud_wafv3_defense_template.defaultZmPPmw-cc.defense_template_id}",
+					"defense_origin": "custom",
+					"config": []map[string]interface{}{
+						{
+							"mode": "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":    CHECKSET,
+						"defense_type":   "template",
+						"defense_scene":  "cc",
+						"rule_status":    "1",
+						"template_id":    CHECKSET,
+						"defense_origin": "custom",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_status": "0",
+					"config": []map[string]interface{}{
+						{
+							"mode": "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_status": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudWafv3DefenseRuleMap11078 = map[string]string{
+	"rule_id": CHECKSET,
+}
+
+func AlicloudWafv3DefenseRuleBasicDependence11078(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-hangzhou"
+}
+
+data "alicloud_wafv3_instances" "default" {
+}
+
+resource "alicloud_wafv3_defense_template" "defaultZmPPmw-cc" {
+  instance_id           = data.alicloud_wafv3_instances.default.ids.0
+  template_origin       = "custom"
+  defense_template_name = "1761808233"
+  defense_scene         = "cc"
   template_type         = "user_custom"
   status                = "1"
   description           = "testCreate"
