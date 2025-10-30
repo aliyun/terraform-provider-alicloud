@@ -939,6 +939,7 @@ func (s *EsaServiceV2) EsaPageStateRefreshFunc(id string, field string, failStat
 }
 
 // DescribeEsaPage >>> Encapsulated.
+
 // DescribeEsaHttpRequestHeaderModificationRule <<< Encapsulated get interface for Esa HttpRequestHeaderModificationRule.
 
 func (s *EsaServiceV2) DescribeEsaHttpRequestHeaderModificationRule(id string) (object map[string]interface{}, err error) {
@@ -959,7 +960,7 @@ func (s *EsaServiceV2) DescribeEsaHttpRequestHeaderModificationRule(id string) (
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -979,15 +980,18 @@ func (s *EsaServiceV2) DescribeEsaHttpRequestHeaderModificationRule(id string) (
 }
 
 func (s *EsaServiceV2) EsaHttpRequestHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaHttpRequestHeaderModificationRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpRequestHeaderModificationRule)
+}
+
+func (s *EsaServiceV2) EsaHttpRequestHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaHttpRequestHeaderModificationRule(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -1328,6 +1332,7 @@ func (s *EsaServiceV2) DescribeAsyncGetSite(d *schema.ResourceData, res map[stri
 }
 
 // DescribeAsyncGetSite >>> Encapsulated.
+
 // DescribeEsaCompressionRule <<< Encapsulated get interface for Esa CompressionRule.
 
 func (s *EsaServiceV2) DescribeEsaCompressionRule(id string) (object map[string]interface{}, err error) {
@@ -1343,7 +1348,7 @@ func (s *EsaServiceV2) DescribeEsaCompressionRule(id string) (object map[string]
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
 	query["SiteId"] = parts[0]
-	query["RegionId"] = client.RegionId
+
 	action := "GetCompressionRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -1368,15 +1373,18 @@ func (s *EsaServiceV2) DescribeEsaCompressionRule(id string) (object map[string]
 }
 
 func (s *EsaServiceV2) EsaCompressionRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaCompressionRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCompressionRule)
+}
+
+func (s *EsaServiceV2) EsaCompressionRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaCompressionRule(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
