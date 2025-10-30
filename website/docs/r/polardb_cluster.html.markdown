@@ -162,7 +162,7 @@ The following arguments are supported:
 * `security_group_ids` - (Optional, Available since 1.128.0) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 * `deletion_lock` - (Optional, Available since 1.169.0) turn on table deletion_lock. Valid values are 0, 1. 1 means to open the cluster protection lock, 0 means to close the cluster protection lock
--> **NOTE:**  Cannot modify after created when `pay_type` is `Prepaid` .`deletion_lock` the cluster protection lock can be turned on or off when `pay_type` is `Postpaid`.
+-> **NOTE:**  Cannot modify after created when `pay_type` is `PrePaid` .`deletion_lock` the cluster protection lock can be turned on or off when `pay_type` is `PostPaid`.
 * `backup_retention_policy_on_cluster_deletion` - (Optional, Available since 1.170.0) The retention policy for the backup sets when you delete the cluster.  Valid values are `ALL`, `LATEST`, `NONE`. Value options can refer to the latest docs [DeleteDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/deletedbcluster-1)
 * `imci_switch` - (Optional, Available since 1.173.0) Specifies whether to enable the In-Memory Column Index (IMCI) feature. Valid values are `ON`, `OFF`.
 -> **NOTE:**  Only polardb MySQL Cluster version is available. The cluster with minor version number of 8.0.1 supports the column index feature, and the specific kernel version must be 8.0.1.1.22 or above.
@@ -184,7 +184,7 @@ The following arguments are supported:
 * `storage_space` - (Optional, Computed, Available since v1.203.0) Storage space charged by space (monthly package). Unit: GB.
 -> **NOTE:**  Valid values for PolarDB for MySQL Standard Edition: 20 to 32000. It is valid when pay_type are `PrePaid` ,`PostPaid`.
 -> **NOTE:**  Valid values for PolarDB for MySQL Enterprise Edition: 50 to 100000.It is valid when pay_type is `PrePaid`.
-* `storage_pay_type` - (Optional, ForceNew, Computed, Available since v1.210.0) The billing method of the storage. Valid values `Postpaid`, `Prepaid`.
+* `storage_pay_type` - (Optional, ForceNew, Computed, Available since v1.210.0) The billing method of the storage. Valid values `PostPaid`, `PrePaid`.
 * `hot_standby_cluster` - (Optional, Computed, ForceNew, Available since v1.203.0) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`, `EQUAL`.
 -> **NOTE:** From version 1.249.0, `hot_standby_cluster` can be set to `EQUAL`, and this value is only valid for MySQL.
 * `standby_az` - (Optional, Computed, Available since 1.249.0) The availability zone where the hot standby cluster is stored, takes effect when `hot_standby_cluster` is `ON` or `EQUAL`.
