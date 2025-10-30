@@ -40,10 +40,13 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"auto_renew_duration": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"auto_renewal": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"cloud_storage_size": {
 				Type:     schema.TypeInt,
@@ -58,6 +61,10 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"engine_list": {
 				Type:     schema.TypeSet,
@@ -75,7 +82,6 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 						"engine_type": {
 							Type:     schema.TypeString,
 							Required: true,
-							ForceNew: true,
 						},
 						"connect_address_list": {
 							Type:     schema.TypeSet,
@@ -137,7 +143,6 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 									"node_disk_type": {
 										Type:     schema.TypeString,
 										Optional: true,
-										ForceNew: true,
 									},
 									"memory_size_gi_b": {
 										Type:     schema.TypeInt,
@@ -150,7 +155,6 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 									"resource_group_name": {
 										Type:     schema.TypeString,
 										Required: true,
-										ForceNew: true,
 									},
 								},
 							},
@@ -165,7 +169,10 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 			"payment_type": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
+			},
+			"pricing_cycle": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"primary_vswitch_id": {
 				Type:     schema.TypeString,
@@ -223,6 +230,9 @@ func resourceAliCloudLindormInstanceV2Create(d *schema.ResourceData, meta interf
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
+	if v, ok := d.GetOkExists("duration"); ok {
+		request["Duration"] = v
+	}
 	if v, ok := d.GetOk("engine_list"); ok {
 		engineListMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range convertToInterfaceArray(v) {
@@ -263,6 +273,9 @@ func resourceAliCloudLindormInstanceV2Create(d *schema.ResourceData, meta interf
 	}
 	request["PayType"] = d.Get("payment_type")
 	request["ArchVersion"] = d.Get("arch_version")
+	if v, ok := d.GetOk("pricing_cycle"); ok {
+		request["PricingCycle"] = v
+	}
 	request["InstanceAlias"] = d.Get("instance_alias")
 	if v, ok := d.GetOk("arbiter_vswitch_id"); ok {
 		request["ArbiterVSwitchId"] = v
@@ -272,6 +285,9 @@ func resourceAliCloudLindormInstanceV2Create(d *schema.ResourceData, meta interf
 	}
 	if v, ok := d.GetOk("primary_zone_id"); ok {
 		request["PrimaryZoneId"] = v
+	}
+	if v, ok := d.GetOk("auto_renew_duration"); ok {
+		request["AutoRenewDuration"] = v
 	}
 	if v, ok := d.GetOkExists("auto_renewal"); ok {
 		request["AutoRenewal"] = v
@@ -327,7 +343,6 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 
 	d.Set("arbiter_vswitch_id", objectRaw["ArbiterVSwitchId"])
 	d.Set("arbiter_zone_id", objectRaw["ArbiterZoneId"])
-	d.Set("auto_renewal", objectRaw["AutoRenew"])
 	d.Set("cloud_storage_size", objectRaw["CloudStorageSize"])
 	d.Set("cloud_storage_type", objectRaw["DiskCategory"])
 	d.Set("deletion_protection", objectRaw["DeletionProtection"])
@@ -341,6 +356,7 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 	d.Set("vpc_id", objectRaw["VpcId"])
 	d.Set("vswitch_id", objectRaw["VswitchId"])
 	d.Set("zone_id", objectRaw["ZoneId"])
+	d.Set("auto_renewal", objectRaw["AutoRenew"])
 
 	engineListRaw := objectRaw["EngineList"]
 	engineListMaps := make([]map[string]interface{}, 0)
@@ -510,6 +526,41 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+	update = false
+	action = "ModifyInstancePayType"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["Duration"] = d.Get("duration")
+	if !d.IsNewResource() && d.HasChange("payment_type") {
+		update = true
+	}
+	request["PayType"] = d.Get("payment_type")
+	request["PricingCycle"] = d.Get("pricing_cycle")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		lindormServiceV2 := LindormServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, lindormServiceV2.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
 
 	d.Partial(false)
 	return resourceAliCloudLindormInstanceV2Read(d, meta)
@@ -531,7 +582,6 @@ func resourceAliCloudLindormInstanceV2Delete(d *schema.ResourceData, meta interf
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

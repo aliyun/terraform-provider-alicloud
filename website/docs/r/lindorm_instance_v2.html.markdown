@@ -20,12 +20,6 @@ For information about Lindorm Instance V2 and how to use it, see [What is Instan
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_lindorm_instance_v2&exampleId=d2762c8c-d82c-ab36-d8ef-df45a4da3186e90fe9b5&activeTab=example&spm=docs.r.lindorm_instance_v2.0.d2762c8cd8&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -91,22 +85,64 @@ The following arguments are supported:
 * `arbiter_vswitch_id` - (Optional, ForceNew) Coordination Zone VswitchId
 * `arbiter_zone_id` - (Optional, ForceNew) Coordination Zone ZoneId
 * `arch_version` - (Required) Deployment Scenario
-> Enumeration value
-> - 1.0 Single AZ
-> - 2.0 Multi-AZ Basic
-> - 3.0 Multi-AZ High Availability Edition
-* `auto_renewal` - (Optional, ForceNew) Auto Renew
+
+-> **NOTE:**  Enumeration value
+
+-> **NOTE:**  - 1.0 Single AZ
+
+-> **NOTE:**  - 2.0 Multi-AZ Basic
+
+-> **NOTE:**  - 3.0 Multi-AZ High Availability Edition
+
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
+* `auto_renew_duration` - (Optional, Available since v1.262.0) Automatic renewal duration. Unit: Month.
+
+Value range: `1` to **12 * *.
+
+-> **NOTE:**  This item takes effect only when `AutoRenewal` is **true.
+
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
+* `auto_renewal` - (Optional) Whether the instance is automatically renewed. Enumerated values:
+  - `true`: Automatic renewal.
+  - `false`: does not renew automatically.
+
+The default value is false
+
+-> **NOTE:**  This parameter is valid only when the `PayType` value is `PREPAY` (Subscription).
+
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
 * `cloud_storage_size` - (Optional, Int) 
-> Cloud storage capacity in GB
+
+-> **NOTE:**  Cloud storage capacity in GB
+
 * `cloud_storage_type` - (Optional, ForceNew) 
->>
-> - StandardStorage: Standard cloud storage
-> - PerformanceStorage: performance-based cloud storage
->- capacity storage: Capacity-based cloud storage
+
+-> **NOTE:** >
+
+-> **NOTE:**  - StandardStorage: Standard cloud storage
+
+-> **NOTE:**  - PerformanceStorage: performance-based cloud storage
+
+-> **NOTE:** - capacity storage: Capacity-based cloud storage
+
 * `deletion_protection` - (Optional, Computed) Whether to enable deletion protection
+* `duration` - (Optional, Int, Available since v1.262.0) The specified duration when the resource is purchased. Only the subscription instances are valid.
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
 * `engine_list` - (Required, Set) Engine List See [`engine_list`](#engine_list) below.
 * `instance_alias` - (Required) Instance name
-* `payment_type` - (Required, ForceNew) The payment type of the resource
+* `payment_type` - (Required) The payment type of the resource
+* `pricing_cycle` - (Optional, Available since v1.262.0) Purchase duration unit: Month, Year
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
 * `primary_vswitch_id` - (Optional, ForceNew) Primary zone VswitchId
 * `primary_zone_id` - (Optional, ForceNew) Primary zone ZoneID
 * `standby_vswitch_id` - (Optional, ForceNew) Standby zone VswitchId
@@ -118,7 +154,7 @@ The following arguments are supported:
 ### `engine_list`
 
 The engine_list supports the following:
-* `engine_type` - (Required, ForceNew) Engine
+* `engine_type` - (Required) Engine
 * `node_group` - (Optional, Set) Node Group List See [`node_group`](#engine_list-node_group) below.
 
 ### `engine_list-node_group`
@@ -126,9 +162,9 @@ The engine_list supports the following:
 The engine_list-node_group supports the following:
 * `node_count` - (Required, Int) Number of nodes
 * `node_disk_size` - (Optional, Int) Local cloud disk storage capacity
-* `node_disk_type` - (Optional, ForceNew) Node Disk Type
+* `node_disk_type` - (Optional) Node Disk Type
 * `node_spec` - (Required) Node Specifications
-* `resource_group_name` - (Required, ForceNew) Resource group name
+* `resource_group_name` - (Required) Resource group name
 
 ## Attributes Reference
 

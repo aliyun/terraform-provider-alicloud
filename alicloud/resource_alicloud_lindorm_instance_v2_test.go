@@ -11,6 +11,134 @@ import (
 )
 
 // Test Lindorm InstanceV2. >>> Resource test cases, automatically generated.
+// Case InstanceV2单可用区预付费实例 11753
+func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_lindorm_instance_v2.default"
+	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11753)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeLindormInstanceV2")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacclindorm%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormInstanceV2BasicDependence11753)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TABLE",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "2",
+									"node_spec":           "lindorm.g.2xlarge",
+									"resource_group_name": "chixiao-rg-test",
+									"node_disk_type":      "cloud_essd",
+									"node_disk_size":      "200",
+								},
+							},
+						},
+					},
+					"arch_version":        "1.0",
+					"vswitch_id":          "${alicloud_vswitch.defaultcEoant.id}",
+					"vpc_id":              "${alicloud_vpc.defaultHgtTqh.id}",
+					"instance_alias":      "preTest",
+					"payment_type":        "PREPAY",
+					"zone_id":             "cn-beijing-l",
+					"pricing_cycle":       "Month",
+					"duration":            "1",
+					"auto_renew_duration": "1",
+					"auto_renewal":        "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#":       "1",
+						"arch_version":        CHECKSET,
+						"vswitch_id":          CHECKSET,
+						"vpc_id":              CHECKSET,
+						"instance_alias":      "preTest",
+						"payment_type":        "PREPAY",
+						"zone_id":             "cn-beijing-l",
+						"pricing_cycle":       "Month",
+						"duration":            "1",
+						"auto_renew_duration": CHECKSET,
+						"auto_renewal":        "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TABLE",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "2",
+									"node_spec":           "lindorm.g.2xlarge",
+									"resource_group_name": "chixiao-rg-test",
+									"node_disk_size":      "400",
+									"node_disk_type":      "cloud_essd",
+								},
+							},
+						},
+					},
+					"instance_alias":      "preTest-cx",
+					"payment_type":        "POSTPAY",
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#":       "1",
+						"instance_alias":      "preTest-cx",
+						"payment_type":        "POSTPAY",
+						"deletion_protection": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"arch_version", "auto_renew_duration", "auto_renewal", "duration", "pricing_cycle"},
+			},
+		},
+	})
+}
+
+var AlicloudLindormInstanceV2Map11753 = map[string]string{
+	"region_id": CHECKSET,
+}
+
+func AlicloudLindormInstanceV2BasicDependence11753(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "defaultHgtTqh" {
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "defaultcEoant" {
+  zone_id    = "cn-beijing-l"
+  cidr_block = "10.0.0.0/16"
+  vpc_id     = alicloud_vpc.defaultHgtTqh.id
+}
+
+
+`, name)
+}
+
 // Case InstanceV2多可用区测试用例 11176
 func TestAccAliCloudLindormInstanceV2_basic11176(t *testing.T) {
 	var v map[string]interface{}
@@ -100,7 +228,7 @@ func TestAccAliCloudLindormInstanceV2_basic11176(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"arch_version", "deletion_protection"},
+				ImportStateVerifyIgnore: []string{"arch_version", "auto_renew_duration", "auto_renewal", "duration", "pricing_cycle"},
 			},
 		},
 	})
@@ -228,7 +356,7 @@ func TestAccAliCloudLindormInstanceV2_basic11191(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"arch_version", "deletion_protection"},
+				ImportStateVerifyIgnore: []string{"arch_version", "auto_renew_duration", "auto_renewal", "duration", "pricing_cycle"},
 			},
 		},
 	})
@@ -383,7 +511,7 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"arch_version", "deletion_protection"},
+				ImportStateVerifyIgnore: []string{"arch_version", "auto_renew_duration", "auto_renewal", "duration", "pricing_cycle"},
 			},
 		},
 	})

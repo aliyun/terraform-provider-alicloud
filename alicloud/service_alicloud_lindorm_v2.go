@@ -168,7 +168,6 @@ func (s *LindormServiceV2) LindormInstanceV2StateRefreshFuncWithApi(id string, f
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
