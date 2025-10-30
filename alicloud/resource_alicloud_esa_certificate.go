@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -52,8 +53,9 @@ func resourceAliCloudEsaCertificate() *schema.Resource {
 				Computed: true,
 			},
 			"created_type": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: StringInSlice([]string{"cas", "upload", "free"}, false),
 			},
 			"domains": {
 				Type:     schema.TypeString,
@@ -79,10 +81,11 @@ func resourceAliCloudEsaCertificate() *schema.Resource {
 				Computed: true,
 			},
 			"type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"lets_encrypt"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("created_type"); ok && v.(string) == "free" {
 						return true
@@ -159,14 +162,13 @@ func resourceAliCloudEsaCertificateCreate(d *schema.ResourceData, meta interface
 		if v, ok := d.GetOk("site_id"); ok {
 			query["SiteId"] = v
 		}
-		query["RegionId"] = client.RegionId
 
 		if v, ok := d.GetOk("domains"); ok {
-			query["Domains"] = StringPointer(v.(string))
+			query["Domains"] = v.(string)
 		}
 
 		if v, ok := d.GetOk("type"); ok {
-			query["Type"] = StringPointer(v.(string))
+			query["Type"] = v.(string)
 		}
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -248,24 +250,24 @@ func resourceAliCloudEsaCertificateUpdate(d *schema.ResourceData, meta interface
 		request["PrivateKey"] = v
 	}
 	request["Type"] = d.Get("created_type")
-	if v, ok := d.GetOk("region"); ok || d.HasChange("region") {
+	if _, ok := d.GetOk("region"); ok || d.HasChange("region") {
 		update = true
-		request["Region"] = v
+		request["Region"] = d.Get("region")
 	}
 
-	if v, ok := d.GetOk("cas_id"); ok || d.HasChange("cas_id") {
+	if _, ok := d.GetOk("cas_id"); ok || d.HasChange("cas_id") {
 		update = true
-		request["CasId"] = v
+		request["CasId"] = d.Get("cas_id")
 	}
 
-	if v, ok := d.GetOk("certificate"); ok || d.HasChange("certificate") {
+	if _, ok := d.GetOk("certificate"); ok || d.HasChange("certificate") {
 		update = true
-		request["Certificate"] = v
+		request["Certificate"] = d.Get("certificate")
 	}
 
-	if v, ok := d.GetOk("cert_name"); ok || d.HasChange("cert_name") {
+	if _, ok := d.GetOk("cert_name"); ok || d.HasChange("cert_name") {
 		update = true
-		request["Name"] = v
+		request["Name"] = d.Get("cert_name")
 	}
 
 	if update {
@@ -302,12 +304,10 @@ func resourceAliCloudEsaCertificateDelete(d *schema.ResourceData, meta interface
 	request = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["Id"] = parts[1]
-	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
