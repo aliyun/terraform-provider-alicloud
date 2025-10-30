@@ -2069,6 +2069,7 @@ func (s *EsaServiceV2) EsaWaitingRoomRuleStateRefreshFunc(id string, field strin
 }
 
 // DescribeEsaWaitingRoomRule >>> Encapsulated.
+
 // DescribeEsaCertificate <<< Encapsulated get interface for Esa Certificate.
 
 func (s *EsaServiceV2) DescribeEsaCertificate(id string) (object map[string]interface{}, err error) {
@@ -2084,7 +2085,7 @@ func (s *EsaServiceV2) DescribeEsaCertificate(id string) (object map[string]inte
 	query = make(map[string]interface{})
 	query["Id"] = parts[1]
 	query["SiteId"] = parts[0]
-	query["RegionId"] = client.RegionId
+
 	action := "GetCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -2109,15 +2110,18 @@ func (s *EsaServiceV2) DescribeEsaCertificate(id string) (object map[string]inte
 }
 
 func (s *EsaServiceV2) EsaCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCertificate)
+}
+
+func (s *EsaServiceV2) EsaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaCertificate(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
