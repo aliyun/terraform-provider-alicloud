@@ -14,7 +14,7 @@ After you enable and configure logging for a bucket, Object Storage Service (OSS
 
 For information about OSS Bucket Logging and how to use it, see [What is Bucket Logging](https://next.api.alibabacloud.com/document/Oss/2019-05-17/PutBucketLogging).
 
--> **NOTE:** Available since v1.262.0.
+-> **NOTE:** Available since v1.222.0.
 
 ## Example Usage
 
@@ -56,7 +56,7 @@ resource "alicloud_oss_bucket_logging" "default" {
 
 The following arguments are supported:
 * `bucket` - (Required, ForceNew) The name of the bucket
-* `logging_role` - (Optional) Authorization role used for bucket logging
+* `logging_role` - (Optional, Available since v1.262.0) Authorization role used for bucket logging
 * `target_bucket` - (Required) The bucket that stores access logs.
 * `target_prefix` - (Optional) The prefix of the saved log objects. This element can be left empty.
 
