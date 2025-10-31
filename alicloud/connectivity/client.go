@@ -2756,6 +2756,10 @@ func (client *AliyunClient) formatEndpointWithAccountID(productCode string, endp
 		if strings.HasPrefix(endpoint, accountId) {
 			return endpoint, nil
 		}
+		// skip pop endpoint
+		if !strings.HasSuffix(endpoint, ".fc.aliyuncs.com") {
+			return endpoint, nil
+		}
 		return fmt.Sprintf("%s.%s", accountId, endpoint), nil
 	}
 	return endpoint, nil
