@@ -16,6 +16,12 @@ Provides a PolarDB Zonal endpoint resource to manage custom endpoint of PolarDB 
 
 ## Example Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_zonal_endpoint&exampleId=da04e972-ae13-6644-30f0-a1f75e7c5cf10829ffad&activeTab=example&spm=docs.r.polardb_zonal_endpoint.0.da04e972ae&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "db_cluster_nodes_configs" {
   description = "The advanced configuration for all nodes in the cluster except for the RW node, including db_node_class, hot_replica_mode, and imci_switch properties."

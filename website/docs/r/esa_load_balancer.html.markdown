@@ -20,6 +20,12 @@ For information about ESA Load Balancer and how to use it, see [What is Load Bal
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_load_balancer&exampleId=0d361cc7-092e-1eef-b8a7-b296dded48797b4484d6&activeTab=example&spm=docs.r.esa_load_balancer.0.0d361cc709&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

@@ -1,45 +1,46 @@
-## 1.262.0 (Unreleased)
+## 1.262.1 (Unreleased)
+## 1.262.0 (October 31, 2025)
 
-- **New Resource:** `alicloud_star_rocks_node_group` [GH-9061]
-- **New Resource:** `alicloud_esa_load_balancer` [GH-9082]
-- **New Resource:** `alicloud_polardb_zonal_endpoint` [GH-9086]
-- **New Resource:** `alicloud_polardb_zonal_account` [GH-9091]
-- **New Resource:** `alicloud_resource_manager_multi_account_delivery_channel` [GH-9101]
-- **New Resource:** `alicloud_resource_manager_delivery_channel` [GH-9102]
-- **New Data Source:** `alicloud_sls_indexs` [GH-9084]
-- **New Data Source:** `alicloud_cloud_firewall_tls_inspect_ca_certificates` [GH-9089]
+- **New Resource:** `alicloud_star_rocks_node_group` ([#9061](https://github.com/aliyun/terraform-provider-alicloud/issues/9061))
+- **New Resource:** `alicloud_esa_load_balancer` ([#9082](https://github.com/aliyun/terraform-provider-alicloud/issues/9082))
+- **New Resource:** `alicloud_polardb_zonal_endpoint` ([#9086](https://github.com/aliyun/terraform-provider-alicloud/issues/9086))
+- **New Resource:** `alicloud_polardb_zonal_account` ([#9091](https://github.com/aliyun/terraform-provider-alicloud/issues/9091))
+- **New Resource:** `alicloud_resource_manager_multi_account_delivery_channel` ([#9101](https://github.com/aliyun/terraform-provider-alicloud/issues/9101))
+- **New Resource:** `alicloud_resource_manager_delivery_channel` ([#9102](https://github.com/aliyun/terraform-provider-alicloud/issues/9102))
+- **New Data Source:** `alicloud_sls_indexs` ([#9084](https://github.com/aliyun/terraform-provider-alicloud/issues/9084))
+- **New Data Source:** `alicloud_cloud_firewall_tls_inspect_ca_certificates` ([#9089](https://github.com/aliyun/terraform-provider-alicloud/issues/9089))
 
 ENHANCEMENTS:
 
-- resource/alicloud_security_group_rule: Supported ip_protocol set to icmpv6. [GH-9074]
-- resource/alicloud_cr_ee_instance: Optimized code implementation and docs. [GH-9075]
-- resource/alicloud_cms_site_monitor: Refactored the resource alicloud_cms_site_monitor; Added the field agent_group, isp_cities.type, custom_schedule, status; Deprecated the field task_state, create_time, update_time, alert_ids; Changed the field isp_cities.city, isp_cities.isp from Required to Optional. [GH-9079]
-- resource/alicloud_ens_load_balancer: Refactored the resource alicloud_ens_load_balancer; Supported action setting ClientToken; Improved alicloud_ens_load_balancer testcase. [GH-9081]
-- resource/alicloud_sae_application: add success_failure_threshold. [GH-9083]
-- resource/alicloud_cms_site_monitor: Added the field option_json; Deprecated the field options_json. [GH-9085]
-- resource/alicloud_vpc_gateway_endpoint: mark route_tables as Computed. [GH-9094]
-- resource/alicloud_eci_container_group: Added the field ephemeral_storage. [GH-9095]
-- resource/alicloud_oss_bucket_replication: add the field rtc. [GH-9097]
-- resource/alicloud_esa_cache_rule: Added the field sequence. [GH-9098]
-- resource/alicloud_esa_certificate: Improve the docs. [GH-9099]
-- resource/alicloud_dts_instance: Improved the destination_endpoint_engine_name enums limitation. [GH-9100]
-- resource/alicloud_esa_compression_rule: Added the field sequence. [GH-9103]
-- resource/alicloud_oss_bucket_logging: Added the field logging_role. [GH-9108]
-- resource/alicloud_wafv3_defense_rule: Added the field gray_config, gray_target, gray_rate. [GH-9110]
-- resource/alicloud_config_aggregator: Refactored the resource alicloud_config_aggregator; Added the field folder_id, create_time. [GH-9111]
-- resource/alicloud_lindorm_instance_v2: Added the field auto_renew_duration, duration, pricing_cycle. [GH-9113]
-- resource/alicloud_ga_endpoint_group: Added the field endpoint_configurations.vpc_id, endpoint_configurations.vswitch_ids; Supported endpoint_configurations.type set to IpTarget. [GH-9114]
-- docs: Fix polardb_zonal_db_cluster version bug. [GH-9077]
-- docs: Improves description for network_acl_entries. [GH-9092]
-- docs: Improves description for ram_policy. [GH-9093]
-- docs: resource/alicloud_polardb_cluster fix typo, Prepaid/Postpaid -> PrePaid/PostPaid. [GH-9115]
-- docs: Improves available version info. [GH-9117]
+- resource/alicloud_security_group_rule: Supported ip_protocol set to icmpv6. ([#9074](https://github.com/aliyun/terraform-provider-alicloud/issues/9074))
+- resource/alicloud_cr_ee_instance: Optimized code implementation and docs. ([#9075](https://github.com/aliyun/terraform-provider-alicloud/issues/9075))
+- resource/alicloud_cms_site_monitor: Refactored the resource alicloud_cms_site_monitor; Added the field agent_group, isp_cities.type, custom_schedule, status; Deprecated the field task_state, create_time, update_time, alert_ids; Changed the field isp_cities.city, isp_cities.isp from Required to Optional. ([#9079](https://github.com/aliyun/terraform-provider-alicloud/issues/9079))
+- resource/alicloud_ens_load_balancer: Refactored the resource alicloud_ens_load_balancer; Supported action setting ClientToken; Improved alicloud_ens_load_balancer testcase. ([#9081](https://github.com/aliyun/terraform-provider-alicloud/issues/9081))
+- resource/alicloud_sae_application: add success_failure_threshold. ([#9083](https://github.com/aliyun/terraform-provider-alicloud/issues/9083))
+- resource/alicloud_cms_site_monitor: Added the field option_json; Deprecated the field options_json. ([#9085](https://github.com/aliyun/terraform-provider-alicloud/issues/9085))
+- resource/alicloud_vpc_gateway_endpoint: mark route_tables as Computed. ([#9094](https://github.com/aliyun/terraform-provider-alicloud/issues/9094))
+- resource/alicloud_eci_container_group: Added the field ephemeral_storage. ([#9095](https://github.com/aliyun/terraform-provider-alicloud/issues/9095))
+- resource/alicloud_oss_bucket_replication: add the field rtc. ([#9097](https://github.com/aliyun/terraform-provider-alicloud/issues/9097))
+- resource/alicloud_esa_cache_rule: Added the field sequence. ([#9098](https://github.com/aliyun/terraform-provider-alicloud/issues/9098))
+- resource/alicloud_esa_certificate: Improve the docs. ([#9099](https://github.com/aliyun/terraform-provider-alicloud/issues/9099))
+- resource/alicloud_dts_instance: Improved the destination_endpoint_engine_name enums limitation. ([#9100](https://github.com/aliyun/terraform-provider-alicloud/issues/9100))
+- resource/alicloud_esa_compression_rule: Added the field sequence. ([#9103](https://github.com/aliyun/terraform-provider-alicloud/issues/9103))
+- resource/alicloud_oss_bucket_logging: Added the field logging_role. ([#9108](https://github.com/aliyun/terraform-provider-alicloud/issues/9108))
+- resource/alicloud_wafv3_defense_rule: Added the field gray_config, gray_target, gray_rate. ([#9110](https://github.com/aliyun/terraform-provider-alicloud/issues/9110))
+- resource/alicloud_config_aggregator: Refactored the resource alicloud_config_aggregator; Added the field folder_id, create_time. ([#9111](https://github.com/aliyun/terraform-provider-alicloud/issues/9111))
+- resource/alicloud_lindorm_instance_v2: Added the field auto_renew_duration, duration, pricing_cycle. ([#9113](https://github.com/aliyun/terraform-provider-alicloud/issues/9113))
+- resource/alicloud_ga_endpoint_group: Added the field endpoint_configurations.vpc_id, endpoint_configurations.vswitch_ids; Supported endpoint_configurations.type set to IpTarget. ([#9114](https://github.com/aliyun/terraform-provider-alicloud/issues/9114))
+- docs: Fix polardb_zonal_db_cluster version bug. ([#9077](https://github.com/aliyun/terraform-provider-alicloud/issues/9077))
+- docs: Improves description for network_acl_entries. ([#9092](https://github.com/aliyun/terraform-provider-alicloud/issues/9092))
+- docs: Improves description for ram_policy. ([#9093](https://github.com/aliyun/terraform-provider-alicloud/issues/9093))
+- docs: resource/alicloud_polardb_cluster fix typo, Prepaid/Postpaid -> PrePaid/PostPaid. ([#9115](https://github.com/aliyun/terraform-provider-alicloud/issues/9115))
+- docs: Improves available version info. ([#9117](https://github.com/aliyun/terraform-provider-alicloud/issues/9117))
 
 BUG FIXES:
 
-- resource/alicloud_db_instance: fix optimized_writes. [GH-9088]
-- resource/alicloud_alikafka_instance: Fixed the create error caused by specifying only vswitch_ids without specifying vpc_id and vswitch_id. [GH-9090]
-- resource/alicloud_event_bridge_event_source: Fixed the read error. [GH-9104]
+- resource/alicloud_db_instance: fix optimized_writes. ([#9088](https://github.com/aliyun/terraform-provider-alicloud/issues/9088))
+- resource/alicloud_alikafka_instance: Fixed the create error caused by specifying only vswitch_ids without specifying vpc_id and vswitch_id. ([#9090](https://github.com/aliyun/terraform-provider-alicloud/issues/9090))
+- resource/alicloud_event_bridge_event_source: Fixed the read error. ([#9104](https://github.com/aliyun/terraform-provider-alicloud/issues/9104))
 
 ## 1.261.0 (October 17, 2025)
 

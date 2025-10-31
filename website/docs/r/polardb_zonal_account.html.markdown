@@ -15,6 +15,12 @@ Provides a PolarDB Zonal account resource and used to manage databases.
 
 ## Example Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_zonal_account&exampleId=ef1ea45a-3046-aa64-f8bc-cefcb0528e60e9edac8d&activeTab=example&spm=docs.r.polardb_zonal_account.0.ef1ea45a30&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "db_cluster_nodes_configs" {
   description = "The advanced configuration for all nodes in the cluster except for the RW node, including db_node_class, hot_replica_mode, and imci_switch properties."
