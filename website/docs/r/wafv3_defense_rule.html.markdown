@@ -14,19 +14,19 @@ Provides a WAFV3 Defense Rule resource.
 
 For information about WAFV3 Defense Rule and how to use it, see [What is Defense Rule](https://next.api.alibabacloud.com/document/waf-openapi/2021-10-01/CreateDefenseRule).
 
--> **NOTE:** Available since v1.262.0.
+-> **NOTE:** Available since v1.257.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "terraform-example"
-}
-
 provider "alicloud" {
   region = "cn-hangzhou"
+}
+
+variable "name" {
+  default = "tfexample"
 }
 
 variable "region_id" {
@@ -34,7 +34,7 @@ variable "region_id" {
 }
 
 variable "domain" {
-  default = "examplefromtf1014.wafqax.top"
+  default = "example.wafqax.top"
 }
 
 data "alicloud_wafv3_instances" "default" {
@@ -42,20 +42,21 @@ data "alicloud_wafv3_instances" "default" {
 
 resource "alicloud_wafv3_domain" "defaultICMRhk" {
   redirect {
-    loadbalance = "iphash"
-    backends    = ["39.98.217.197"]
+    loadbalance     = "iphash"
+    backends        = ["39.98.217.197"]
+    connect_timeout = 5
+    read_timeout    = 120
+    write_timeout   = 120
   }
-  domain      = "1511928242963727.wafqax.top"
+  domain      = "example.wafqax.top"
   access_type = "share"
-  instance_id = alicloud_wafv3_instance.defaultnxb04D.id
+  instance_id = data.alicloud_wafv3_instances.default.ids.0
   listen {
     http_ports = ["80"]
   }
 }
 
-
 resource "alicloud_wafv3_defense_rule" "default" {
-  instance_id    = alicloud_wafv3_instance.defaultnxb04D.id
   defense_type   = "resource"
   defense_scene  = "account_identifier"
   rule_status    = "1"
@@ -69,7 +70,9 @@ resource "alicloud_wafv3_defense_rule" "default" {
       key         = "Query-Arg"
       sub_key     = "adb"
     }
+
   }
+  instance_id = data.alicloud_wafv3_instances.default.ids.0
 }
 ```
 
@@ -164,8 +167,8 @@ The config supports the following:
   - 1: Indicates that the speed limit is on.
 * `cn_regions` - (Optional) The regions in China from which you want to block requests. If you specify "CN", requests from the Chinese mainland (excluding Hong Kong, Macao, and Taiwan) are blocked. Separate multiple regions with commas (,). For more information about region codes, see Description of region codes in China.
 * `conditions` - (Optional, Set) The traffic characteristics of ACL, which are described in JSON format. You can enter up to five matching conditions. For specific configuration information, see detailed configuration of conditions. See [`conditions`](#config-conditions) below.
-* `gray_config` - (Optional, List) The canary release configuration for the rule. The value is a JSON. This parameter is required only when you set `GrayStatus` to 1. See [`gray_config`](#config-gray_config) below.
-* `gray_status` - (Optional, Int) Specifies whether to enable canary release for the rule. Valid values:
+* `gray_config` - (Optional, List, Available since v1.262.0) The canary release configuration for the rule. The value is a JSON. This parameter is required only when you set `GrayStatus` to 1. See [`gray_config`](#config-gray_config) below.
+* `gray_status` - (Optional, Int, Available since v1.262.0) Specifies whether to enable canary release for the rule. Valid values:
   - 0 (default): disables canary release.
   - 1: enables canary release.
 * `mode` - (Optional, Int) The HTTP flood protection mode. Valid values:
@@ -190,7 +193,7 @@ The config supports the following:
 * `throttle_type` - (Optional) The throttling method. Valid values:
   - qps: indicates throttling based on queries per second (QPS).
   - ratio (default): indicates throttling based on percentage.
-* `time_config` - (Optional, Computed, List) The scheduled rule configuration. The value is a JSON.  See [`time_config`](#config-time_config) below.
+* `time_config` - (Optional, Computed, List, Available since v1.262.0) The scheduled rule configuration. The value is a JSON.  See [`time_config`](#config-time_config) below.
 * `ua` - (Optional) The User-Agent string that is allowed for access to the address.
 * `url` - (Optional) The address of the cached page.
 
