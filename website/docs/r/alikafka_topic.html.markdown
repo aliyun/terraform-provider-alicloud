@@ -2,19 +2,19 @@
 subcategory: "AliKafka"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alikafka_topic"
-sidebar_current: "docs-alicloud-resource-alikafka-topic"
 description: |-
-  Provides a Alicloud ALIKAFKA Topic resource.
+  Provides a Alicloud Alikafka Topic resource.
 ---
 
 # alicloud_alikafka_topic
 
-Provides an ALIKAFKA topic resource, see [What is Alikafka topic ](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-createtopic).
+Provides a Alikafka Topic resource.
+
+Topic in kafka.
+
+For information about Alikafka Topic and how to use it, see [What is Topic](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-createtopic).
 
 -> **NOTE:** Available since v1.56.0.
-
--> **NOTE:**  Only the following regions support create alikafka topic.
-[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
 
 ## Example Usage
 
@@ -27,27 +27,24 @@ Basic Usage
 </div></div>
 
 ```terraform
-variable "instance_name" {
-  default = "tf-example"
+variable "name" {
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
-}
-
 resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {
@@ -55,56 +52,83 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name           = "${var.instance_name}-${random_integer.default.result}"
-  partition_num  = "50"
-  disk_type      = "1"
-  disk_size      = "500"
-  deploy_type    = "5"
-  io_max         = "20"
-  vswitch_id     = alicloud_vswitch.default.id
-  security_group = alicloud_security_group.default.id
+  name            = var.name
+  partition_num   = 50
+  disk_type       = "1"
+  disk_size       = "500"
+  deploy_type     = "5"
+  io_max          = "20"
+  spec_type       = "professional"
+  service_version = "2.2.0"
+  vswitch_id      = alicloud_vswitch.default.id
+  security_group  = alicloud_security_group.default.id
+  config = jsonencode(
+    {
+      "enable.acl" : "true"
+    }
+  )
 }
 
 resource "alicloud_alikafka_topic" "default" {
   instance_id   = alicloud_alikafka_instance.default.id
-  topic         = "example-topic"
-  local_topic   = "false"
-  compact_topic = "false"
-  partition_num = "12"
-  remark        = "dafault_kafka_topic_remark"
+  topic         = var.name
+  remark        = var.name
+  local_topic   = "true"
+  compact_topic = "true"
+  partition_num = "18"
+  configs = jsonencode(
+    {
+      "message.format.version" : "2.2.0",
+      "max.message.bytes" : "10485760",
+      "min.insync.replicas" : "1",
+      "replication-factor" : "2",
+      "retention.ms" : "3600000"
+    }
+  )
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `instance_id` - (Required, ForceNew) InstanceId of your Kafka resource, the topic will create in this instance.
-* `topic` - (Required, ForceNew) Name of the topic. Two topics on a single instance cannot have the same name. The length cannot exceed 249 characters.
-* `local_topic` - (Optional, ForceNew) Whether the topic is localTopic or not.
-* `compact_topic` - (Optional, ForceNew) Whether the topic is compactTopic or not. Compact topic must be a localTopic.
-* `partition_num` - (Optional) The number of partitions of the topic. The number should between 1 and 48.
-* `remark` - (Required) This attribute is a concise description of topic. The length cannot exceed 64.
-* `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
+* `compact_topic` - (Optional, ForceNew, Bool) The cleanup policy for the topic. This parameter is available only if you set the storage engine of the topic to Local storage. Valid values:
+  - false: The delete cleanup policy is used.
+  - true: The compact cleanup policy is used.
+* `configs` - (Optional, Available since v1.262.1) The advanced configurations.
+* `instance_id` - (Required, ForceNew) The ID of the instance.
+* `local_topic` - (Optional, ForceNew, Bool) The storage engine of the topic. Valid values:
+  - false: Cloud storage.
+  - true: Local storage.
+* `partition_num` - (Optional, Int) The number of partitions in the topic.
+* `remark` - (Required) The description of the topic.
+* `tags` - (Optional, Map, Available since v1.63.0) A mapping of tags to assign to the resource.
+* `topic` - (Required, ForceNew) The topic name.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The `key` of the resource supplied above. The value is formulated as `<instance_id>:<topic>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<topic>`.
+* `create_time` - (Available since v1.262.1) The time when the topic was created.
+* `region_id` - (Available since v1.262.1) The ID of the region where the instance resides.
+* `status` - (Available since v1.262.1) The status of the service.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.119.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 10 mins) Used when creating the topic (until it reaches the initial `Running` status).
+* `create` - (Defaults to 5 mins) Used when create the Topic.
+* `delete` - (Defaults to 16 mins) Used when delete the Topic.
+* `update` - (Defaults to 5 mins) Used when update the Topic.
 
 ## Import
 
-ALIKAFKA TOPIC can be imported using the id, e.g.
+Alikafka Topic can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_alikafka_topic.topic alikafka_post-cn-123455abc:topicName
+$ terraform import alicloud_alikafka_topic.example <instance_id>:<topic>
 ```
