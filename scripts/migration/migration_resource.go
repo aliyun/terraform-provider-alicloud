@@ -106,6 +106,8 @@ var specialResourceMap = map[string]map[string]string{
 		"vpn_connection":       "vpn_connection",
 		"vpn_ipsec_server":     "vpn_ipsec_server",
 		"vpn_pbr_route_entry":  "vpn_pbr_route_entry",
+		"ssl_vpn_server":       "ssl_vpn_server",
+		"ssl_vpn_client_cert":  "ssl_vpn_client_cert",
 	},
 	"redis": {
 		"instance":         "kvstore_instance",
@@ -984,14 +986,14 @@ func commonReplaces(line string) string {
 	}
 
 	rdkPointerRe := regexp.MustCompile(`rdk\.StringPointer\(\s*d\.Get\("([^"]+)"\)(?:\.\(string\))?\s*\)`)
-	line = rdkPointerRe.ReplaceAllString(line, `rdk.StringPointer(d.Get("$1").(string))`)
+	line = rdkPointerRe.ReplaceAllString(line, `tea.String(d.Get("$1").(string))`)
 
 	if strings.Contains(line, " StringPointer") {
-		line = strings.ReplaceAll(line, " StringPointer", " rdk.StringPointer")
+		line = strings.ReplaceAll(line, " StringPointer", " tea.String")
 	}
 
 	rdkNestedRe := regexp.MustCompile(`rdk\.StringPointer\(\s*StringPointer\(([^)]+)\)\s*\)`)
-	line = rdkNestedRe.ReplaceAllString(line, `rdk.StringPointer($1)`)
+	line = rdkNestedRe.ReplaceAllString(line, `tea.String($1)`)
 
 	if mode != nil && *mode == "sdk" {
 		createRequestRe := regexp.MustCompile(`request := (\w+)\.Create(\w+)Request\(\)`)
@@ -1062,12 +1064,12 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 	headers := "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/rdk"
+	headers = headers + "\"\n\"" + "github.com/alibabacloud-go/tea/tea"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/names"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err/sdkdiag"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/service"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/helper"
-	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/rdk"
+	headers = headers + "\"\n\"" + "github.com/alibabacloud-go/tea/tea"
 	headers = headers + "\"\n" + "tferr \"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err"
 
 	imports := "import ("
@@ -1140,7 +1142,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 
 		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace)
 		line = strings.ReplaceAll(line, "import (", imports)
-		line = strings.ReplaceAll(line, "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity", "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/connectivity")
+		line = strings.ReplaceAll(line, "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity", "gitlab.alibaba-inc.com/opensource-tools/alibabacloud-go-rdk-repository/core/connectivity")
 		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/resource", "")
 		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/schema", headers)
 
@@ -1233,7 +1235,7 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "query := make(map[string]interface{})", "query := make(map[string]*string)")
 		line = strings.ReplaceAll(line, "var query map[string]interface{}", "var query map[string]*string")
 		line = strings.ReplaceAll(line, "query = make(map[string]interface{})", "query = make(map[string]*string)")
-		line = queryAssignRe.ReplaceAllString(line, `query["$1"] = rdk.StringPointer($2)`)
+		line = queryAssignRe.ReplaceAllString(line, `query["$1"] = tea.String($2)`)
 
 		if strings.Contains(line, "return tferr.") {
 			line = strings.ReplaceAll(line, "WrapError(", "tferr.WrapError(")
@@ -1331,7 +1333,7 @@ func modifyServiceFile(filePath, namespace, version string) error {
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/names"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err/sdkdiag"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/helper"
-	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/rdk"
+	headers = headers + "\"\n\"" + "github.com/alibabacloud-go/tea/tea"
 	headers = headers + "\"\n" + "tferr \"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/err"
 
 	imports := "import ("
@@ -1354,7 +1356,7 @@ func modifyServiceFile(filePath, namespace, version string) error {
 
 		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace)
 		line = strings.ReplaceAll(line, "import (", imports)
-		line = strings.ReplaceAll(line, "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity", "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/connectivity")
+		line = strings.ReplaceAll(line, "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity", "gitlab.alibaba-inc.com/opensource-tools/alibabacloud-go-rdk-repository/core/connectivity")
 		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/resource", headers)
 		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/schema", "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema")
 		line = modifyServiceFunctionLine(line, version)
@@ -1514,7 +1516,7 @@ func modifyServiceFunctionLine(line, version string) string {
 	line = strings.ReplaceAll(line, "query := make(map[string]interface{})", "query := make(map[string]*string)")
 	line = strings.ReplaceAll(line, "var query map[string]interface{}", "var query map[string]*string")
 	line = strings.ReplaceAll(line, "query = make(map[string]interface{})", "query = make(map[string]*string)")
-	line = queryAssignRe.ReplaceAllString(line, `query["$1"] = rdk.StringPointer($2)`)
+	line = queryAssignRe.ReplaceAllString(line, `query["$1"] = tea.String($2)`)
 
 	line = strings.ReplaceAll(line, "RetryContext(ctx,", "RetryContext(context.Background(),")
 	line = strings.ReplaceAll(line, "alicloud_", "apsara_")
@@ -1531,7 +1533,7 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 	scanner := bufio.NewScanner(file)
 	var lines []string
 
-	headers := "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/connectivity"
+	headers := "gitlab.alibaba-inc.com/opensource-tools/alibabacloud-go-rdk-repository/core/connectivity"
 	headers = headers + "\"\n\"" + "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	headers = headers + "\"\n\"" + "gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/provider"
 	headers = headers + "\"\n" + "tftest \"gitlab.alibaba-inc.com/opensource-tools/terraform-provider-atlanta/internal/acctest"
