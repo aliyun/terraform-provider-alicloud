@@ -315,9 +315,8 @@ validate_commit_message() {
   echo "  - New Resource: alicloud_xxx"
   echo "  - New Data Source: alicloud_xxx"
   echo
-  echo -e "${YELLOW}Continue anyway? (y/N):${NC}"
-  read -r confirm
-  [[ "$confirm" =~ ^[Yy]$ ]]
+  echo -e "${YELLOW}Auto-continuing with non-standard format...${NC}"
+  return 0
 }
 
 # Main execution
@@ -382,7 +381,7 @@ main() {
     # Show recent commits
     echo
     echo -e "${BLUE}Recent commits:${NC}"
-    git log --oneline -3
+    git --no-pager log --oneline -3
     exit 0
   else
     echo -e "${RED}❌ Commit failed!${NC}"

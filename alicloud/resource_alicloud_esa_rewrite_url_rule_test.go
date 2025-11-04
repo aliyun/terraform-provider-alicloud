@@ -34,7 +34,7 @@ func TestAccAliCloudESARewriteUrlRuleresource_RewriteUrlRule_test(t *testing.T) 
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":                   "${alicloud_esa_site.resource_RewriteUrlRule_Site_test.id}",
+					"site_id":                   "${data.alicloud_esa_sites.default.sites.0.id}",
 					"rewrite_uri_type":          "static",
 					"rule_enable":               "on",
 					"rewrite_query_string_type": "static",
@@ -145,21 +145,9 @@ variable "name" {
 }
 
 
-resource "alicloud_esa_rate_plan_instance" "resource_RewriteUrlRule_RatePlanInstance_test" {
-  type         = "NS"
-  auto_renew   = "false"
-  period       = "1"
-  payment_type = "Subscription"
-  coverage     = "overseas"
-  auto_pay     = "true"
-  plan_name    = "high"
-}
-
-resource "alicloud_esa_site" "resource_RewriteUrlRule_Site_test" {
-  site_name   = "gositecdn.cn"
-  instance_id = alicloud_esa_rate_plan_instance.resource_RewriteUrlRule_RatePlanInstance_test.id
-  coverage    = "overseas"
-  access_type = "NS"
+data "alicloud_esa_sites" "default" {
+  plan_subscribe_type = "enterpriseplan"
+  site_name = "gositecdn.cn"
 }
 
 `, name)
