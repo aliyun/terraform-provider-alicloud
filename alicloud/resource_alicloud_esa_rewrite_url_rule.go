@@ -58,6 +58,11 @@ func resourceAliCloudEsaRewriteUrlRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"sequence": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"site_id": {
 				Type:     schema.TypeInt,
 				Required: true,
@@ -90,6 +95,9 @@ func resourceAliCloudEsaRewriteUrlRuleCreate(d *schema.ResourceData, meta interf
 		request["SiteId"] = v
 	}
 
+	if v, ok := d.GetOkExists("sequence"); ok {
+		request["Sequence"] = v
+	}
 	if v, ok := d.GetOk("rewrite_query_string_type"); ok {
 		request["RewriteQueryStringType"] = v
 	}
@@ -151,33 +159,16 @@ func resourceAliCloudEsaRewriteUrlRuleRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	if objectRaw["QueryString"] != nil {
-		d.Set("query_string", objectRaw["QueryString"])
-	}
-	if objectRaw["RewriteQueryStringType"] != nil {
-		d.Set("rewrite_query_string_type", objectRaw["RewriteQueryStringType"])
-	}
-	if objectRaw["RewriteUriType"] != nil {
-		d.Set("rewrite_uri_type", objectRaw["RewriteUriType"])
-	}
-	if objectRaw["Rule"] != nil {
-		d.Set("rule", objectRaw["Rule"])
-	}
-	if objectRaw["RuleEnable"] != nil {
-		d.Set("rule_enable", objectRaw["RuleEnable"])
-	}
-	if objectRaw["RuleName"] != nil {
-		d.Set("rule_name", objectRaw["RuleName"])
-	}
-	if objectRaw["SiteVersion"] != nil {
-		d.Set("site_version", objectRaw["SiteVersion"])
-	}
-	if objectRaw["Uri"] != nil {
-		d.Set("uri", objectRaw["Uri"])
-	}
-	if objectRaw["ConfigId"] != nil {
-		d.Set("config_id", objectRaw["ConfigId"])
-	}
+	d.Set("query_string", objectRaw["QueryString"])
+	d.Set("rewrite_query_string_type", objectRaw["RewriteQueryStringType"])
+	d.Set("rewrite_uri_type", objectRaw["RewriteUriType"])
+	d.Set("rule", objectRaw["Rule"])
+	d.Set("rule_enable", objectRaw["RuleEnable"])
+	d.Set("rule_name", objectRaw["RuleName"])
+	d.Set("sequence", objectRaw["Sequence"])
+	d.Set("site_version", objectRaw["SiteVersion"])
+	d.Set("uri", objectRaw["Uri"])
+	d.Set("config_id", objectRaw["ConfigId"])
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("site_id", formatInt(parts[0]))
@@ -192,13 +183,18 @@ func resourceAliCloudEsaRewriteUrlRuleUpdate(d *schema.ResourceData, meta interf
 	var query map[string]interface{}
 	update := false
 
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateRewriteUrlRule"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
+
+	if d.HasChange("sequence") {
+		update = true
+		request["Sequence"] = d.Get("sequence")
+	}
 
 	if d.HasChange("rewrite_query_string_type") {
 		update = true
@@ -273,7 +269,6 @@ func resourceAliCloudEsaRewriteUrlRuleDelete(d *schema.ResourceData, meta interf
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalException"}) || NeedRetry(err) {
 				wait()
