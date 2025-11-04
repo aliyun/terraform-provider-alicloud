@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"strings"
 	"testing"
 
 	"fmt"
@@ -9,144 +8,324 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRAMRolesDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 99999999)
-
-	policyConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
-			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
-			"policy_type": `"Custom"`,
-		}),
-	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ram_role.default.name}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ram_role.default.name}_fake"`,
-		}),
-	}
+func TestAccAliCloudRamRolesDataSource_basic0(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+	resourceId := "data.alicloud_ram_roles.default"
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceRamRolesConfig0)
 
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ram_role.default.role_id}"]`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ram_role.default.role_id}"},
 		}),
-		fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ram_role.default.role_id}_fake"]`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ram_role.default.role_id}_fake"},
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_ram_role_policy_attachment.default.role_name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_ram_role_policy_attachment.default.role_name}_fake",
+		}),
+	}
+
+	policyNameConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"policy_name": "${alicloud_ram_role_policy_attachment.default.policy_name}",
+		}),
+	}
+
+	policyTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"policy_name": "${alicloud_ram_role_policy_attachment.default.policy_name}",
+			"policy_type": "${alicloud_ram_role_policy_attachment.default.policy_type}",
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "Role",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "Role_Fake",
+			},
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
-			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
-			"policy_type": `"Custom"`,
-			"ids":         `["${alicloud_ram_role.default.role_id}"]`,
-			"name_regex":  `"${alicloud_ram_role.default.name}"`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":         []string{"${alicloud_ram_role.default.role_id}"},
+			"name_regex":  "${alicloud_ram_role_policy_attachment.default.role_name}",
+			"policy_name": "${alicloud_ram_role_policy_attachment.default.policy_name}",
+			"policy_type": "${alicloud_ram_role_policy_attachment.default.policy_type}",
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "Role",
+			},
 		}),
-		fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
-			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
-			"policy_type": `"Custom"`,
-			"ids":         `["${alicloud_ram_role.default.role_id}_fake"]`,
-			"name_regex":  `"${alicloud_ram_role.default.name}_fake"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":         []string{"${alicloud_ram_role.default.role_id}_fake"},
+			"name_regex":  "${alicloud_ram_role_policy_attachment.default.role_name}_fake",
+			"policy_name": "${alicloud_ram_role_policy_attachment.default.policy_name}",
+			"policy_type": "${alicloud_ram_role_policy_attachment.default.policy_type}",
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "Role_Fake",
+			},
 		}),
 	}
 
-	ramRolesCheckInfo.dataSourceTestCheck(t, rand, policyConf, nameRegexConf, idsConf, allConf)
+	var existAliCloudRamRolesDefaultDataSourceMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                               "1",
+			"names.#":                             "1",
+			"roles.#":                             "1",
+			"roles.0.id":                          CHECKSET,
+			"roles.0.name":                        CHECKSET,
+			"roles.0.assume_role_policy_document": CHECKSET,
+			"roles.0.document":                    CHECKSET,
+			"roles.0.description":                 CHECKSET,
+			"roles.0.tags.%":                      "2",
+			"roles.0.tags.Created":                "TF",
+			"roles.0.tags.For":                    "Role",
+			"roles.0.arn":                         CHECKSET,
+			"roles.0.create_date":                 CHECKSET,
+			"roles.0.update_date":                 CHECKSET,
+		}
+	}
 
+	var fakeAliCloudRamRolesDefaultDataSourceMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":   "0",
+			"names.#": "0",
+			"roles.#": "0",
+		}
+	}
+
+	var aliCloudRamRolesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_ram_roles.default",
+		existMapFunc: existAliCloudRamRolesDefaultDataSourceMapFunc,
+		fakeMapFunc:  fakeAliCloudRamRolesDefaultDataSourceMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	aliCloudRamRolesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, policyNameConf, policyTypeConf, tagsConf, allConf)
 }
 
-func testAccCheckAlicloudRamRolesDataSourceConfig(rand int, attrMap map[string]string) string {
-	region := defaultRegionToTest
-	var pairs []string
-	for k, v := range attrMap {
-		pairs = append(pairs, k+" = "+v)
+func TestAccAliCloudRamRolesDataSource_basic1(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+	resourceId := "data.alicloud_ram_roles.default"
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceRamRolesConfig1)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ram_role.default.role_id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ram_role.default.role_id}_fake"},
+		}),
 	}
 
-	config := fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%sRamRolesDataSourceForPolicy-%d"
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_ram_role_policy_attachment.default.role_name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_ram_role_policy_attachment.default.role_name}_fake",
+		}),
 	}
-	resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
-	  document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": [
-				"oss:ListObjects",
-				"oss:ListObjects"
-			  ],
-			  "Effect": "Deny",
-			  "Resource": [
-				"acs:oss:*:*:mybucket",
-				"acs:oss:*:*:mybucket/*"
-			  ]
-			}
-		  ],
-			"Version": "1"
+
+	policyNameAndpolicyTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"policy_name": "${alicloud_ram_role_policy_attachment.default.policy_name}",
+			"policy_type": "${alicloud_ram_role_policy_attachment.default.policy_type}",
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "Role",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "Role_Fake",
+			},
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":         []string{"${alicloud_ram_role.default.role_id}"},
+			"name_regex":  "${alicloud_ram_role_policy_attachment.default.role_name}",
+			"policy_name": "${alicloud_ram_role_policy_attachment.default.policy_name}",
+			"policy_type": "${alicloud_ram_role_policy_attachment.default.policy_type}",
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "Role",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":         []string{"${alicloud_ram_role.default.role_id}_fake"},
+			"name_regex":  "${alicloud_ram_role_policy_attachment.default.role_name}_fake",
+			"policy_name": "${alicloud_ram_role_policy_attachment.default.policy_name}",
+			"policy_type": "${alicloud_ram_role_policy_attachment.default.policy_type}",
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "Role_Fake",
+			},
+		}),
+	}
+
+	var existAliCloudRamRolesDefaultDataSourceMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                               "1",
+			"names.#":                             "1",
+			"roles.#":                             "1",
+			"roles.0.id":                          CHECKSET,
+			"roles.0.name":                        CHECKSET,
+			"roles.0.assume_role_policy_document": CHECKSET,
+			"roles.0.document":                    CHECKSET,
+			"roles.0.description":                 CHECKSET,
+			"roles.0.tags.%":                      "2",
+			"roles.0.tags.Created":                "TF",
+			"roles.0.tags.For":                    "Role",
+			"roles.0.arn":                         CHECKSET,
+			"roles.0.create_date":                 CHECKSET,
+			"roles.0.update_date":                 CHECKSET,
 		}
-	  EOF
-	  description = "this is a policy test"
-	  force = true
+	}
+
+	var fakeAliCloudRamRolesDefaultDataSourceMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":   "0",
+			"names.#": "0",
+			"roles.#": "0",
+		}
+	}
+
+	var aliCloudRamRolesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_ram_roles.default",
+		existMapFunc: existAliCloudRamRolesDefaultDataSourceMapFunc,
+		fakeMapFunc:  fakeAliCloudRamRolesDefaultDataSourceMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	aliCloudRamRolesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, policyNameAndpolicyTypeConf, tagsConf, allConf)
+}
+
+func dataSourceRamRolesConfig0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
 	}
 
 	resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
-	  document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": "sts:AssumeRole",
-			  "Effect": "Allow",
-			  "Principal": {
-				"Service": [
-				  "apigateway.aliyuncs.com", 
-				  "ecs.aliyuncs.com"
-				]
-			  }
-			}
-		  ],
-		  "Version": "1"
-		}
-	  EOF
-	  description = "this is a test"
-	  force = true
+  		role_name                   = var.name
+  		description                 = var.name
+  		force                       = true
+  		assume_role_policy_document = <<EOF
+  		{
+    		"Statement": [
+      			{
+        			"Action": "sts:AssumeRole",
+        			"Effect": "Allow",
+        			"Principal": {
+          				"Service": [
+            				"ecs.aliyuncs.com"
+          				]
+        			}
+      			}
+    		],
+    		"Version": "1"
+  		}
+  		EOF
+  		tags = {
+    		Created = "TF"
+    		For     = "Role"
+  		}
 	}
 
 	resource "alicloud_ram_role_policy_attachment" "default" {
-	  policy_name = "${alicloud_ram_policy.default.name}"
-	  role_name = "${alicloud_ram_role.default.name}"
-	  policy_type = "${alicloud_ram_policy.default.type}"
+  		role_name   = alicloud_ram_role.default.role_name
+  		policy_name = "AliyunRDSGADReadOnlyAccess"
+  		policy_type = "System"
 	}
-	data "alicloud_ram_roles" "default" {
-	%s
-	}`, region, rand, strings.Join(pairs, "\n  "))
-	return config
+`, name)
 }
 
-var existRamRolesMapFunc = func(rand int) map[string]string {
-	return map[string]string{
-		"ids.#":               "1",
-		"names.#":             "1",
-		"roles.#":             "1",
-		"roles.0.id":          CHECKSET,
-		"roles.0.name":        fmt.Sprintf("tf-testAcc%sRamRolesDataSourceForPolicy-%d", defaultRegionToTest, rand),
-		"roles.0.arn":         CHECKSET,
-		"roles.0.description": "this is a test",
-		"roles.0.document":    CHECKSET,
+func dataSourceRamRolesConfig1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
 	}
-}
 
-var fakeRamRolesMapFunc = func(rand int) map[string]string {
-	return map[string]string{
-		"ids.#":   "0",
-		"names.#": "0",
-		"roles.#": "0",
+	resource "alicloud_ram_role" "default" {
+  		role_name                   = var.name
+  		description                 = var.name
+  		force                       = true
+  		assume_role_policy_document = <<EOF
+  		{
+    		"Statement": [
+      			{
+        			"Action": "sts:AssumeRole",
+        			"Effect": "Allow",
+        			"Principal": {
+          				"Service": [
+            				"ecs.aliyuncs.com"
+          				]
+        			}
+      			}
+    		],
+    		"Version": "1"
+  		}
+  		EOF
+  		tags = {
+    		Created = "TF"
+    		For     = "Role"
+  		}
 	}
-}
 
-var ramRolesCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_ram_roles.default",
-	existMapFunc: existRamRolesMapFunc,
-	fakeMapFunc:  fakeRamRolesMapFunc,
+	resource "alicloud_ram_policy" "default" {
+  		policy_name     = var.name
+  		description     = var.name
+  		force           = true
+  		policy_document = <<EOF
+		{
+			"Statement": [
+				{
+					"Effect": "Allow",
+					"Action": "*",
+					"Resource": "*"
+				}
+			],
+			"Version": "1"
+		}
+		EOF
+	}
+
+	resource "alicloud_ram_role_policy_attachment" "default" {
+  		role_name   = alicloud_ram_role.default.role_name
+  		policy_name = alicloud_ram_policy.default.policy_name
+  		policy_type = alicloud_ram_policy.default.type
+	}
+`, name)
 }

@@ -1,27 +1,33 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudRamRoles() *schema.Resource {
+func dataSourceAliCloudRamRoles() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudRamRolesRead,
-
+		Read: dataSourceAliCloudRamRolesRead,
 		Schema: map[string]*schema.Schema{
-			"name_regex": {
-				Type:     schema.TypeString,
+			"ids": {
+				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"policy_name": {
 				Type:         schema.TypeString,
@@ -35,23 +41,16 @@ func dataSourceAlicloudRamRoles() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"System", "Custom"}, false),
 			},
+			"tags": tagsSchemaForceNew(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-
-			// Computed values
 			"roles": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -65,7 +64,11 @@ func dataSourceAlicloudRamRoles() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"arn": {
+						"assume_role_policy_document": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"document": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -73,11 +76,11 @@ func dataSourceAlicloudRamRoles() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"assume_role_policy_document": {
-							Type:     schema.TypeString,
+						"tags": {
+							Type:     schema.TypeMap,
 							Computed: true,
 						},
-						"document": {
+						"arn": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -96,39 +99,59 @@ func dataSourceAlicloudRamRoles() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudRamRolesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	allRoles := []interface{}{}
 
-	allRolesMap := make(map[string]interface{})
+	action := "ListRoles"
+	request := make(map[string]interface{})
 
-	dataMap := []interface{}{}
+	request["MaxItems"] = PageSizeLarge
+
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMaps := ConvertTags(v.(map[string]interface{}))
+
+		tagsMapsJson, err := convertListMapToJsonString(tagsMaps)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request["Tag"] = tagsMapsJson
+	}
 
 	policyName, policyNameOk := d.GetOk("policy_name")
 	policyType, policyTypeOk := d.GetOk("policy_type")
-	nameRegex, nameRegexOk := d.GetOk("name_regex")
+
+	var objects []map[string]interface{}
+	allRolesMap := make(map[string]interface{})
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			if vv == nil {
 				continue
 			}
+
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	// all roles
 
-	request := ram.CreateListRolesRequest()
-	request.RegionId = client.RegionId
-	request.MaxItems = requests.NewInteger(1000)
+	var roleNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		roleNameRegex = r
+	}
+
+	var response map[string]interface{}
+	var err error
+
 	for {
-		var raw interface{}
-		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
-			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.ListRoles(request)
-			})
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -138,144 +161,141 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 			}
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", action, AlibabaCloudSdkGoERROR)
 		}
 
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		resp, err := jsonpath.Get("$.Roles.Role", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Roles.Role", response)
+		}
 
-		response, _ := raw.(*ram.ListRolesResponse)
-		for _, v := range response.Roles.Role {
-			if nameRegexOk {
-				r, err := regexp.Compile(nameRegex.(string))
-				if err != nil {
-					return WrapError(err)
-				}
-				if !r.MatchString(v.RoleName) {
-					continue
-				}
-			}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[v.RoleId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["RoleId"])]; !ok {
 					continue
 				}
 			}
-			allRolesMap[v.RoleName] = v
-			allRoles = append(allRoles, v)
-		}
-		if !response.IsTruncated {
-			break
-		}
-		request.Marker = response.Marker
-	}
 
-	// roles which attach with this policy
-	if policyNameOk {
-		pType := "System"
-		if policyTypeOk {
-			pType = policyType.(string)
-		}
-		request := ram.CreateListEntitiesForPolicyRequest()
-		request.PolicyType = pType
-		request.PolicyName = policyName.(string)
-
-		var raw interface{}
-		var err error
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
-			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.ListEntitiesForPolicy(request)
-			})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-
-		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
-		for _, v := range response.Roles.Role {
-			role, ok := allRolesMap[v.RoleName]
-			if ok {
-				dataMap = append(dataMap, role)
-			}
-		}
-		allRoles = dataMap
-	}
-	return ramRolesDescriptionAttributes(d, meta, allRoles)
-}
-
-func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, roles []interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	var ids []string
-	var names []string
-	var s []map[string]interface{}
-	for _, v := range roles {
-		role := v.(ram.Role)
-		request := ram.CreateGetRoleRequest()
-		request.RoleName = role.RoleName
-
-		var raw interface{}
-		var err error
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
-			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.GetRole(request)
-			})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			return nil
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"EntityNotExist"}) {
+			if roleNameRegex != nil && !roleNameRegex.MatchString(fmt.Sprint(item["RoleName"])) {
 				continue
 			}
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+			allRolesMap[fmt.Sprint(item["RoleName"])] = item
+			objects = append(objects, item)
 		}
 
-		response, _ := raw.(*ram.GetRoleResponse)
-		mapping := map[string]interface{}{
-			"id":                          role.RoleId,
-			"name":                        role.RoleName,
-			"arn":                         role.Arn,
-			"description":                 response.Role.Description,
-			"create_date":                 role.CreateDate,
-			"update_date":                 role.UpdateDate,
-			"assume_role_policy_document": response.Role.AssumeRolePolicyDocument,
-			"document":                    response.Role.AssumeRolePolicyDocument,
+		if !response["IsTruncated"].(bool) {
+			break
 		}
-		ids = append(ids, role.RoleId)
-		names = append(names, role.RoleName)
+
+		request["Marker"] = response["Marker"]
+	}
+
+	if policyNameOk {
+		action = "ListEntitiesForPolicy"
+
+		listEntitiesForPolicyRequest := map[string]interface{}{
+			"PolicyName": fmt.Sprint(policyName),
+			"PolicyType": "System",
+		}
+
+		if policyTypeOk {
+			listEntitiesForPolicyRequest["PolicyType"] = fmt.Sprint(policyType)
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Ram", "2015-05-01", action, nil, listEntitiesForPolicyRequest, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, listEntitiesForPolicyRequest)
+
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", action, AlibabaCloudSdkGoERROR)
+		}
+
+		roleResp, err := jsonpath.Get("$.Roles.Role", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Roles.Role", response)
+		}
+
+		policyRoleMaps := make([]map[string]interface{}, 0)
+		if roleResp != nil && len(roleResp.([]interface{})) > 0 {
+			for _, v := range roleResp.([]interface{}) {
+				item := v.(map[string]interface{})
+				policyRoleMap, ok := allRolesMap[fmt.Sprint(item["RoleName"])].(map[string]interface{})
+				if ok {
+					policyRoleMaps = append(policyRoleMaps, policyRoleMap)
+				}
+			}
+		}
+
+		objects = policyRoleMaps
+	}
+
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":          fmt.Sprint(object["RoleId"]),
+			"name":        fmt.Sprint(object["RoleName"]),
+			"description": object["Description"],
+			"arn":         object["Arn"],
+			"create_date": object["CreateDate"],
+			"update_date": object["UpdateDate"],
+		}
+
+		if v, ok := object["Tags"]; ok {
+			tags := v.(map[string]interface{})
+			if tagMaps, ok := tags["Tag"]; ok {
+				mapping["tags"] = tagsToMap(tagMaps)
+			}
+		}
+
+		ramServiceV2 := RamServiceV2{client}
+		ramRoleDetail, err := ramServiceV2.DescribeRamRole(fmt.Sprint(object["RoleName"]))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		mapping["assume_role_policy_document"] = ramRoleDetail["AssumeRolePolicyDocument"]
+		mapping["document"] = ramRoleDetail["AssumeRolePolicyDocument"]
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["RoleName"])
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("roles", s); err != nil {
-		return WrapError(err)
-	}
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 
-	// create a json file in current directory and write data source to it.
+	if err := d.Set("roles", s); err != nil {
+		return WrapError(err)
+	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }
