@@ -46,7 +46,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST", "ODPS-0420111", "INTERNAL_SERVER_ERROR", "ODPS-0420095"}) {
+		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST", "ODPS-0420111", "INTERNAL_SERVER_ERROR", "ODPS-0420095", "PROJECT_NOT_FOUND"}) {
 			return object, WrapErrorf(NotFoundErr("Project", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -93,15 +93,18 @@ func (s *MaxComputeServiceV2) DescribeProjectListTagResources(id string) (object
 }
 
 func (s *MaxComputeServiceV2) MaxComputeProjectStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.MaxComputeProjectStateRefreshFuncWithApi(id, field, failStates, s.DescribeMaxComputeProject)
+}
+
+func (s *MaxComputeServiceV2) MaxComputeProjectStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeMaxComputeProject(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
