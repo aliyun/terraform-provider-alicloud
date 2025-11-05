@@ -1708,6 +1708,7 @@ func (s *EsaServiceV2) EsaOriginRuleStateRefreshFunc(id string, field string, fa
 }
 
 // DescribeEsaOriginRule >>> Encapsulated.
+
 // DescribeEsaImageTransform <<< Encapsulated get interface for Esa ImageTransform.
 
 func (s *EsaServiceV2) DescribeEsaImageTransform(id string) (object map[string]interface{}, err error) {
@@ -1723,7 +1724,7 @@ func (s *EsaServiceV2) DescribeEsaImageTransform(id string) (object map[string]i
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
 	query["SiteId"] = parts[0]
-	query["RegionId"] = client.RegionId
+
 	action := "GetImageTransform"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -1748,15 +1749,18 @@ func (s *EsaServiceV2) DescribeEsaImageTransform(id string) (object map[string]i
 }
 
 func (s *EsaServiceV2) EsaImageTransformStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaImageTransformStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaImageTransform)
+}
+
+func (s *EsaServiceV2) EsaImageTransformStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaImageTransform(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
