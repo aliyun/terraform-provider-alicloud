@@ -1179,12 +1179,12 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
 	query["SiteId"] = parts[0]
-
+	query["RegionId"] = client.RegionId
 	action := "GetHttpResponseHeaderModificationRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1199,26 +1199,20 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	configId, _ := jsonpath.Get("$.ConfigId", response)
-	if configId == nil {
-		return object, WrapErrorf(NotFoundErr("HttpResponseHeaderModificationRule", id), NotFoundMsg, response)
-	}
+
 	return response, nil
 }
 
 func (s *EsaServiceV2) EsaHttpResponseHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return s.EsaHttpResponseHeaderModificationRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpResponseHeaderModificationRule)
-}
-
-func (s *EsaServiceV2) EsaHttpResponseHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := call(id)
+		object, err := s.DescribeEsaHttpResponseHeaderModificationRule(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
+
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -1418,6 +1412,7 @@ func (s *EsaServiceV2) EsaCompressionRuleStateRefreshFuncWithApi(id string, fiel
 }
 
 // DescribeEsaCompressionRule >>> Encapsulated.
+
 // DescribeEsaHttpsApplicationConfiguration <<< Encapsulated get interface for Esa HttpsApplicationConfiguration.
 
 func (s *EsaServiceV2) DescribeEsaHttpsApplicationConfiguration(id string) (object map[string]interface{}, err error) {
@@ -1433,7 +1428,7 @@ func (s *EsaServiceV2) DescribeEsaHttpsApplicationConfiguration(id string) (obje
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
 	query["SiteId"] = parts[0]
-	query["RegionId"] = client.RegionId
+
 	action := "GetHttpsApplicationConfiguration"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -1458,15 +1453,18 @@ func (s *EsaServiceV2) DescribeEsaHttpsApplicationConfiguration(id string) (obje
 }
 
 func (s *EsaServiceV2) EsaHttpsApplicationConfigurationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaHttpsApplicationConfigurationStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpsApplicationConfiguration)
+}
+
+func (s *EsaServiceV2) EsaHttpsApplicationConfigurationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaHttpsApplicationConfiguration(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
