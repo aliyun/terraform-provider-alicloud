@@ -20,12 +20,6 @@ For information about ESA Https Basic Configuration and how to use it, see [What
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_https_basic_configuration&exampleId=4ffb51be-6fef-f2fb-c63f-7f29540abfdc06262700&activeTab=example&spm=docs.r.esa_https_basic_configuration.0.4ffb51be6f&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -89,7 +83,8 @@ The following arguments are supported:
   - on: open.
   - off: close.
 * `rule_name` - (Optional) Rule name. When adding global configuration, this parameter does not need to be set.
-* `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](https://next.api.alibabacloud.com/document/ESA/2024-09-10/ListSites) interface.
+* `sequence` - (Optional, Int, Available since v1.263.0) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
+* `site_id` - (Required, ForceNew, Int) Site ID, which can be obtained by calling the [ListSites](~~ListSites~~) interface.
 * `tls10` - (Optional) Whether to enable TLS1.0. Default is disabled. Possible values:
   - on: Enable.
   - off: Disable.
