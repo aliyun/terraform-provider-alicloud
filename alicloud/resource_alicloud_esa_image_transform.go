@@ -49,6 +49,11 @@ func resourceAliCloudEsaImageTransform() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"sequence": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"site_id": {
 				Type:     schema.TypeInt,
 				Required: true,
@@ -76,8 +81,10 @@ func resourceAliCloudEsaImageTransformCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
+	if v, ok := d.GetOkExists("sequence"); ok {
+		request["Sequence"] = v
+	}
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
 	}
@@ -134,6 +141,7 @@ func resourceAliCloudEsaImageTransformRead(d *schema.ResourceData, meta interfac
 	d.Set("rule", objectRaw["Rule"])
 	d.Set("rule_enable", objectRaw["RuleEnable"])
 	d.Set("rule_name", objectRaw["RuleName"])
+	d.Set("sequence", objectRaw["Sequence"])
 	d.Set("site_version", objectRaw["SiteVersion"])
 	d.Set("config_id", objectRaw["ConfigId"])
 
@@ -157,7 +165,12 @@ func resourceAliCloudEsaImageTransformUpdate(d *schema.ResourceData, meta interf
 	query = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
+
+	if !d.IsNewResource() && d.HasChange("sequence") {
+		update = true
+		request["Sequence"] = d.Get("sequence")
+	}
+
 	if !d.IsNewResource() && d.HasChange("rule_enable") {
 		update = true
 		request["RuleEnable"] = d.Get("rule_enable")
@@ -212,12 +225,10 @@ func resourceAliCloudEsaImageTransformDelete(d *schema.ResourceData, meta interf
 	request = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
