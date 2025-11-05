@@ -115,6 +115,7 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -432,6 +433,7 @@ func TestAccAliCloudALBServerGroup_basic0_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -525,6 +527,7 @@ func TestAccAliCloudALBServerGroup_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -714,6 +717,7 @@ func TestAccAliCloudALBServerGroup_basic1_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -807,6 +811,7 @@ func TestAccAliCloudALBServerGroup_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -856,7 +861,7 @@ func TestAccAliCloudALBServerGroup_basic2(t *testing.T) {
 						{
 							"health_check_enabled":      "true",
 							"health_check_connect_port": "80",
-							"health_check_host":         "${data.alicloud_account.default.id}." + defaultRegionToTest + ".fc.aliyuncs.com",
+							"health_check_host":         "${data.alicloud_account.default.id}." + "cn-hangzhou.fc.aliyuncs.com",
 							"health_check_http_version": "HTTP1.1",
 							"health_check_interval":     "2",
 							"health_check_method":       "HEAD",
@@ -926,6 +931,7 @@ func TestAccAliCloudALBServerGroup_basic2_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -940,7 +946,7 @@ func TestAccAliCloudALBServerGroup_basic2_twin(t *testing.T) {
 						{
 							"health_check_enabled":      "true",
 							"health_check_connect_port": "80",
-							"health_check_host":         "${data.alicloud_account.default.id}." + defaultRegionToTest + ".fc.aliyuncs.com",
+							"health_check_host":         "${data.alicloud_account.default.id}." + "cn-hangzhou.fc.aliyuncs.com",
 							"health_check_http_version": "HTTP1.1",
 							"health_check_interval":     "2",
 							"health_check_method":       "HEAD",
@@ -1056,9 +1062,41 @@ func TestAccAliCloudALBServerGroup_basic3(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbservergroup%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBServerGroupBasicDependence3)
+	var servers []map[string]interface{}
+	var changedServers []map[string]interface{}
+	for i := 0; i < 22; i++ {
+		serverId := fmt.Sprintf("${alicloud_instance.default.%d.id}", i)
+		serverIp := fmt.Sprintf("${alicloud_instance.default.%d.private_ip}", i)
+		serverDescription := fmt.Sprintf("name%d", i)
+		servers = append(servers, map[string]interface{}{
+			"server_id":         serverId,
+			"server_type":       "Ecs",
+			"server_ip":         serverIp,
+			"port":              "80",
+			"remote_ip_enabled": "false",
+			"weight":            "10",
+			"description":       serverDescription,
+		})
+	}
+	for i := 2; i < 25; i++ {
+		serverId := fmt.Sprintf("${alicloud_instance.default.%d.id}", i)
+		serverIp := fmt.Sprintf("${alicloud_instance.default.%d.private_ip}", i)
+		serverDescription := fmt.Sprintf("name%d", i)
+		changedServers = append(changedServers, map[string]interface{}{
+			"server_id":         serverId,
+			"server_type":       "Ecs",
+			"server_ip":         serverIp,
+			"port":              "80",
+			"remote_ip_enabled": "false",
+			"weight":            "10",
+			"description":       serverDescription,
+		})
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1067,7 +1105,7 @@ func TestAccAliCloudALBServerGroup_basic3(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"server_group_name": name,
-					"server_group_type": "Ip",
+					"server_group_type": "Instance",
 					"vpc_id":            "${alicloud_vpc.default.id}",
 					"sticky_session_config": []map[string]interface{}{
 						{
@@ -1080,14 +1118,26 @@ func TestAccAliCloudALBServerGroup_basic3(t *testing.T) {
 						},
 					},
 					"ipv6_enabled": "true",
+					"servers":      servers,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"server_group_name":       name,
-						"server_group_type":       "Ip",
+						"server_group_type":       "Instance",
 						"vpc_id":                  CHECKSET,
 						"sticky_session_config.#": "1",
 						"health_check_config.#":   "1",
+						"servers.#":               "22",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"servers": changedServers,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"servers.#": "23",
 					}),
 				),
 			},
@@ -1147,6 +1197,7 @@ func AliCloudALBServerGroupBasicDependence3(name string) string {
 	}
 
 	resource "alicloud_instance" "default" {
+        count = 25
   		image_id                   = data.alicloud_images.default.images.0.id
   		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
   		instance_name              = var.name
@@ -1179,7 +1230,7 @@ func TestAccAliCloudALBServerGroup_basic4(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBServerGroupBasicDependence4)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
