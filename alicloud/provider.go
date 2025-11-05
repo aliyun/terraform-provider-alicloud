@@ -1603,7 +1603,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_network_interface":                                 resourceAliCloudEcsNetworkInterface(),
 			"alicloud_ecs_network_interface_attachment":                      resourceAliCloudEcsNetworkInterfaceAttachment(),
 			"alicloud_config_aggregator":                                     resourceAliCloudConfigAggregator(),
-			"alicloud_config_aggregate_config_rule":                          resourceAlicloudConfigAggregateConfigRule(),
+			"alicloud_config_aggregate_config_rule":                          resourceAliCloudConfigAggregateConfigRule(),
 			"alicloud_config_aggregate_compliance_pack":                      resourceAliCloudConfigAggregateCompliancePack(),
 			"alicloud_config_compliance_pack":                                resourceAliCloudConfigCompliancePack(),
 			"alicloud_direct_mail_receivers":                                 resourceAlicloudDirectMailReceivers(),
