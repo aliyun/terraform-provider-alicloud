@@ -1179,12 +1179,12 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
 	query["SiteId"] = parts[0]
-	query["RegionId"] = client.RegionId
+
 	action := "GetHttpResponseHeaderModificationRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1199,20 +1199,26 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
+	configId, _ := jsonpath.Get("$.ConfigId", response)
+	if configId == nil {
+		return object, WrapErrorf(NotFoundErr("HttpResponseHeaderModificationRule", id), NotFoundMsg, response)
+	}
 	return response, nil
 }
 
 func (s *EsaServiceV2) EsaHttpResponseHeaderModificationRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaHttpResponseHeaderModificationRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaHttpResponseHeaderModificationRule)
+}
+
+func (s *EsaServiceV2) EsaHttpResponseHeaderModificationRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaHttpResponseHeaderModificationRule(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

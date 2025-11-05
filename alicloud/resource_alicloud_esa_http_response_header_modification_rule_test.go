@@ -34,7 +34,7 @@ func TestAccAliCloudESAHttpResponseHeaderModificationRulehttpResponseHeaderModif
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":     "${alicloud_esa_site.resource_Site_HttpResponseHeaderModificationRule_test.id}",
+					"site_id":     "${data.alicloud_esa_sites.default.sites.0.id}",
 					"rule_enable": "on",
 					"response_header_modification": []map[string]interface{}{
 
@@ -138,22 +138,9 @@ variable "name" {
     default = "%s"
 }
 
-
-resource "alicloud_esa_rate_plan_instance" "resource_HttpResponseHeaderModificationRule_test" {
-  type         = "NS"
-  auto_renew   = "false"
-  period       = "1"
-  payment_type = "Subscription"
-  coverage     = "overseas"
-  auto_pay     = "true"
-  plan_name    = "high"
-}
-
-resource "alicloud_esa_site" "resource_Site_HttpResponseHeaderModificationRule_test" {
-  site_name   = "gositecdn.cn"
-  instance_id = alicloud_esa_rate_plan_instance.resource_HttpResponseHeaderModificationRule_test.id
-  coverage    = "overseas"
-  access_type = "NS"
+data "alicloud_esa_sites" "default" {
+  plan_subscribe_type = "enterpriseplan"
+  site_name = "gositecdn.cn"
 }
 
 `, name)
