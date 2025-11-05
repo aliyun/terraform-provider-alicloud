@@ -2,23 +2,23 @@
 subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_policies"
-sidebar_current: "docs-alicloud-datasource-ram-policies"
 description: |-
-    Provides a list of ram policies available to the user.
+  Provides a list of RAM Policies to the user.
 ---
 
 # alicloud_ram_policies
 
-This data source provides a list of RAM policies in an Alibaba Cloud account according to the specified filters.
+This data source provides the RAM Policies of the current Alibaba Cloud user.
 
--> **NOTE:** Available since v1.0.0+.
+-> **NOTE:** Available since v1.0.0.
 
 ## Example Usage
 
+Basic Usage
+
 ```terraform
-resource "alicloud_ram_group" "group" {
-  name     = "groupName-${random_integer.default.result}"
-  comments = "this is a group comments."
+variable "name" {
+  default = "terraform-example"
 }
 
 resource "random_integer" "default" {
@@ -26,41 +26,34 @@ resource "random_integer" "default" {
   max = 99999
 }
 
-resource "alicloud_ram_policy" "policy" {
-  policy_name     = "tf-example-${random_integer.default.result}"
+resource "alicloud_ram_policy" "default" {
+  policy_name     = "${var.name}-${random_integer.default.result}"
+  description     = "${var.name}-${random_integer.default.result}"
+  force           = true
   policy_document = <<EOF
-    {
-      "Statement": [
-        {
-          "Action": [
-            "oss:ListObjects",
-            "oss:GetObject"
-          ],
-          "Effect": "Allow",
-          "Resource": [
-            "acs:oss:*:*:mybucket",
-            "acs:oss:*:*:mybucket/*"
-          ]
-        }
-      ],
-        "Version": "1"
-    }
+  {
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "*",
+        "Resource": "*"
+      }
+    ],
+    "Version": "1"
+  }
   EOF
-  description     = "this is a policy test"
+  tags = {
+    Created = "TF"
+    For     = "Policy"
+  }
 }
 
-resource "alicloud_ram_group_policy_attachment" "attach" {
-  policy_name = alicloud_ram_policy.policy.policy_name
-  policy_type = alicloud_ram_policy.policy.type
-  group_name  = alicloud_ram_group.group.name
-}
-data "alicloud_ram_policies" "policies_ds" {
-  group_name = alicloud_ram_group_policy_attachment.attach.group_name
-  type       = "Custom"
+data "alicloud_ram_policies" "ids" {
+  ids = [alicloud_ram_policy.default.id]
 }
 
-output "first_policy_name" {
-  value = data.alicloud_ram_policies.policies_ds.policies.0.name
+output "ram_policies_id_0" {
+  value = data.alicloud_ram_policies.ids.policies.0.id
 }
 ```
 
@@ -68,31 +61,33 @@ output "first_policy_name" {
 
 The following arguments are supported:
 
-* `name_regex` - (Optional, ForceNew) A regex string to filter resulting policies by name.
-* `ids` - (Optional, ForceNew) A list of ram group IDs. 
-* `type` - (Optional, ForceNew) Filter results by a specific policy type. Valid values are `Custom` and `System`.
-* `user_name` - (Optional, ForceNew) Filter results by a specific user name. Returned policies are attached to the specified user.
-* `group_name` - (Optional, ForceNew) Filter results by a specific group name. Returned policies are attached to the specified group.
-* `role_name` - (Optional, ForceNew) Filter results by a specific role name. Returned policies are attached to the specified role.
+* `ids` (Optional, ForceNew, List, Available since v1.114.0) - A list of Policy IDs.
+* `name_regex` - (Optional, ForceNew) A regex string to filter results by Policy name.
+* `type` - (Optional, ForceNew) The type of the policy. Valid values: `System` and `Custom`.
+* `user_name` - (Optional, ForceNew) The name of the RAM user.
+* `group_name` - (Optional, ForceNew) The name of the user group.
+* `role_name` - (Optional, ForceNew) The name of the RAM role.
+* `tags` - (Optional, ForceNew, Available since v1.262.1) A mapping of tags to assign to the resource.
+* `enable_details` -(Optional, Bool, Available since v1.114.0) Whether to query the detailed list of resource attributes. Default value: `true`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `enable_details` - (Optional, Available since 1.114.0+) Default to `true`. Set it to true can output more details.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `names` - A list of ram group names.
-* `policies` - A list of policies. Each element contains the following attributes:
-  * `id` - ID of the policy.
-  * `name` - Name of the policy.
-  * `policy_name` - Name of the policy.
-  * `type` - Type of the policy.
-  * `description` - Description of the policy.
-  * `default_version` - Default version of the policy.
-  * `create_date` - Creation date of the policy.
-  * `update_date` - Update date of the policy.
-  * `attachment_count` - Attachment count of the policy.
-  * `document` - Policy document of the policy.
-  * `policy_document` - Policy document of the policy.
-  * `version_id` - The ID of default policy.
-  * `user_name` - The user name of  policy.
+* `names` - (Available since v1.42.0) A list of Policy names.
+* `policies` - A list of Policy. Each element contains the following attributes:
+  * `id` - (Available since v1.114.0) The ID of the Policy.
+  * `policy_name` - (Available since v1.114.0) The name of the policy.
+  * `name` - The name of the policy.
+  * `type` - The type of the policy.
+  * `description` - The description of the policy.
+  * `tags` - (Available since v1.262.1) The tags of the Policy.
+  * `default_version` - The default version of the policy.
+  * `attachment_count` - The number of references to the policy.
+  * `policy_document` - (Available since v1.114.0) The document of the policy. **Note:** `policy_document` takes effect only if `enable_details` is set to `true`.
+  * `document` - The document of the policy. **Note:** `document` takes effect only if `enable_details` is set to `true`.
+  * `version_id` - (Available since v1.114.0) The ID of the default policy version. **Note:** `version_id` takes effect only if `enable_details` is set to `true`.
+  * `create_date` - The time when the policy was created.
+  * `update_date` - The time when the policy was modified.
+  * `user_name` - (Removed since v1.262.1) Field `user_name` has been removed from provider version 1.262.1.
