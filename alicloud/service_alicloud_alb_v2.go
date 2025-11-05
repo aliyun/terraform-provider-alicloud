@@ -699,40 +699,64 @@ func (s *AlbServiceV2) DescribeServerGroupListServerGroupServers(id string) (obj
 
 	action := "ListServerGroupServers"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
+	var allServers []interface{}
+	var finalResponse map[string]interface{}
 
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ResourceNotFound.ServerGroup"}) {
+				return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
+			}
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound.ServerGroup"}) {
-			return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
+
+		finalResponse = response
+		if servers, ok := response["Servers"].([]interface{}); ok {
+			allServers = append(allServers, servers...)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+
+	if finalResponse != nil {
+		finalResponse["Servers"] = allServers
+		return finalResponse, nil
 	}
 
 	return response, nil
 }
 
 func (s *AlbServiceV2) AlbServerGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.AlbServerGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeAlbServerGroup)
+}
+
+func (s *AlbServiceV2) AlbServerGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAlbServerGroup(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

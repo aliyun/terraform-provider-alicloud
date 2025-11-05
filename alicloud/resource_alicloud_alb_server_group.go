@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -14,10 +13,11 @@ import (
 
 func resourceAliCloudAlbServerGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudAlbServerGroupCreate,
-		Read:   resourceAliCloudAlbServerGroupRead,
-		Update: resourceAliCloudAlbServerGroupUpdate,
-		Delete: resourceAliCloudAlbServerGroupDelete,
+		Create:        resourceAliCloudAlbServerGroupCreate,
+		Read:          resourceAliCloudAlbServerGroupRead,
+		Update:        resourceAliCloudAlbServerGroupUpdate,
+		Delete:        resourceAliCloudAlbServerGroupDelete,
+		CustomizeDiff: resourceAlbServerGroupCustomizeDiff,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -26,7 +26,6 @@ func resourceAliCloudAlbServerGroup() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
-		CustomizeDiff: resourceAlbServerGroupCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"connection_drain_config": {
 				Type:     schema.TypeList,
@@ -326,100 +325,100 @@ func resourceAliCloudAlbServerGroupCreate(d *schema.ResourceData, meta interface
 
 	request["ClientToken"] = buildClientToken(action)
 
-	objectDataLocalMap := make(map[string]interface{})
+	dataList := make(map[string]interface{})
 
 	if v := d.Get("sticky_session_config"); !IsNil(v) {
 		cookieTimeout1, _ := jsonpath.Get("$[0].cookie_timeout", v)
 		if cookieTimeout1 != nil && cookieTimeout1 != "" && cookieTimeout1.(int) > 0 {
-			objectDataLocalMap["CookieTimeout"] = cookieTimeout1
+			dataList["CookieTimeout"] = cookieTimeout1
 		}
 		cookie1, _ := jsonpath.Get("$[0].cookie", v)
 		if cookie1 != nil && cookie1 != "" {
-			objectDataLocalMap["Cookie"] = cookie1
+			dataList["Cookie"] = cookie1
 		}
 		stickySessionEnabled1, _ := jsonpath.Get("$[0].sticky_session_enabled", v)
 		if stickySessionEnabled1 != nil && stickySessionEnabled1 != "" {
-			objectDataLocalMap["StickySessionEnabled"] = stickySessionEnabled1
+			dataList["StickySessionEnabled"] = stickySessionEnabled1
 		}
 		stickySessionType1, _ := jsonpath.Get("$[0].sticky_session_type", v)
 		if stickySessionType1 != nil && stickySessionType1 != "" {
-			objectDataLocalMap["StickySessionType"] = stickySessionType1
+			dataList["StickySessionType"] = stickySessionType1
 		}
 
-		request["StickySessionConfig"] = objectDataLocalMap
+		request["StickySessionConfig"] = dataList
 	}
 
-	objectDataLocalMap1 := make(map[string]interface{})
+	dataList1 := make(map[string]interface{})
 
 	if v := d.Get("health_check_config"); v != nil {
 		healthCheckCodes1, _ := jsonpath.Get("$[0].health_check_codes", v)
 		if healthCheckCodes1 != nil && healthCheckCodes1 != "" {
-			objectDataLocalMap1["HealthCheckCodes"] = healthCheckCodes1
+			dataList1["HealthCheckCodes"] = healthCheckCodes1
 		}
 		healthCheckHost1, _ := jsonpath.Get("$[0].health_check_host", v)
 		if healthCheckHost1 != nil && healthCheckHost1 != "" {
-			objectDataLocalMap1["HealthCheckHost"] = healthCheckHost1
+			dataList1["HealthCheckHost"] = healthCheckHost1
 		}
 		healthCheckPath1, _ := jsonpath.Get("$[0].health_check_path", v)
 		if healthCheckPath1 != nil && healthCheckPath1 != "" {
-			objectDataLocalMap1["HealthCheckPath"] = healthCheckPath1
+			dataList1["HealthCheckPath"] = healthCheckPath1
 		}
 		healthCheckEnabled1, _ := jsonpath.Get("$[0].health_check_enabled", v)
 		if healthCheckEnabled1 != nil && healthCheckEnabled1 != "" {
-			objectDataLocalMap1["HealthCheckEnabled"] = healthCheckEnabled1
+			dataList1["HealthCheckEnabled"] = healthCheckEnabled1
 		}
 		healthCheckTimeout1, _ := jsonpath.Get("$[0].health_check_timeout", v)
 		if healthCheckTimeout1 != nil && healthCheckTimeout1 != "" && healthCheckTimeout1.(int) > 0 {
-			objectDataLocalMap1["HealthCheckTimeout"] = healthCheckTimeout1
+			dataList1["HealthCheckTimeout"] = healthCheckTimeout1
 		}
 		unhealthyThreshold1, _ := jsonpath.Get("$[0].unhealthy_threshold", v)
 		if unhealthyThreshold1 != nil && unhealthyThreshold1 != "" && unhealthyThreshold1.(int) > 0 {
-			objectDataLocalMap1["UnhealthyThreshold"] = unhealthyThreshold1
+			dataList1["UnhealthyThreshold"] = unhealthyThreshold1
 		}
 		healthCheckInterval1, _ := jsonpath.Get("$[0].health_check_interval", v)
 		if healthCheckInterval1 != nil && healthCheckInterval1 != "" && healthCheckInterval1.(int) > 0 {
-			objectDataLocalMap1["HealthCheckInterval"] = healthCheckInterval1
+			dataList1["HealthCheckInterval"] = healthCheckInterval1
 		}
 		healthCheckConnectPort1, _ := jsonpath.Get("$[0].health_check_connect_port", v)
 		if healthCheckConnectPort1 != nil && healthCheckConnectPort1 != "" {
-			objectDataLocalMap1["HealthCheckConnectPort"] = healthCheckConnectPort1
+			dataList1["HealthCheckConnectPort"] = healthCheckConnectPort1
 		}
 		healthCheckHttpVersion1, _ := jsonpath.Get("$[0].health_check_http_version", v)
 		if healthCheckHttpVersion1 != nil && healthCheckHttpVersion1 != "" {
-			objectDataLocalMap1["HealthCheckHttpVersion"] = healthCheckHttpVersion1
+			dataList1["HealthCheckHttpVersion"] = healthCheckHttpVersion1
 		}
 		healthCheckMethod1, _ := jsonpath.Get("$[0].health_check_method", v)
 		if healthCheckMethod1 != nil && healthCheckMethod1 != "" {
-			objectDataLocalMap1["HealthCheckMethod"] = healthCheckMethod1
+			dataList1["HealthCheckMethod"] = healthCheckMethod1
 		}
 		healthCheckProtocol1, _ := jsonpath.Get("$[0].health_check_protocol", v)
 		if healthCheckProtocol1 != nil && healthCheckProtocol1 != "" {
-			objectDataLocalMap1["HealthCheckProtocol"] = healthCheckProtocol1
+			dataList1["HealthCheckProtocol"] = healthCheckProtocol1
 		}
 		healthyThreshold1, _ := jsonpath.Get("$[0].healthy_threshold", v)
 		if healthyThreshold1 != nil && healthyThreshold1 != "" && healthyThreshold1.(int) > 0 {
-			objectDataLocalMap1["HealthyThreshold"] = healthyThreshold1
+			dataList1["HealthyThreshold"] = healthyThreshold1
 		}
 
-		request["HealthCheckConfig"] = objectDataLocalMap1
+		request["HealthCheckConfig"] = dataList1
 	}
 
 	if v, ok := d.GetOk("protocol"); ok {
 		request["Protocol"] = v
 	}
-	objectDataLocalMap2 := make(map[string]interface{})
+	dataList2 := make(map[string]interface{})
 
 	if v := d.Get("slow_start_config"); !IsNil(v) {
 		slowStartEnabled1, _ := jsonpath.Get("$[0].slow_start_enabled", v)
 		if slowStartEnabled1 != nil && slowStartEnabled1 != "" {
-			objectDataLocalMap2["SlowStartEnabled"] = slowStartEnabled1
+			dataList2["SlowStartEnabled"] = slowStartEnabled1
 		}
 		slowStartDuration1, _ := jsonpath.Get("$[0].slow_start_duration", v)
 		if slowStartDuration1 != nil && slowStartDuration1 != "" {
-			objectDataLocalMap2["SlowStartDuration"] = slowStartDuration1
+			dataList2["SlowStartDuration"] = slowStartDuration1
 		}
 
-		request["SlowStartConfig"] = objectDataLocalMap2
+		request["SlowStartConfig"] = dataList2
 	}
 
 	request["ServerGroupName"] = d.Get("server_group_name")
@@ -434,37 +433,37 @@ func resourceAliCloudAlbServerGroupCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	objectDataLocalMap3 := make(map[string]interface{})
+	dataList3 := make(map[string]interface{})
 
 	if v := d.Get("connection_drain_config"); !IsNil(v) {
 		connectionDrainEnabled1, _ := jsonpath.Get("$[0].connection_drain_enabled", v)
 		if connectionDrainEnabled1 != nil && connectionDrainEnabled1 != "" {
-			objectDataLocalMap3["ConnectionDrainEnabled"] = connectionDrainEnabled1
+			dataList3["ConnectionDrainEnabled"] = connectionDrainEnabled1
 		}
 		connectionDrainTimeout1, _ := jsonpath.Get("$[0].connection_drain_timeout", v)
 		if connectionDrainTimeout1 != nil && connectionDrainTimeout1 != "" {
-			objectDataLocalMap3["ConnectionDrainTimeout"] = connectionDrainTimeout1
+			dataList3["ConnectionDrainTimeout"] = connectionDrainTimeout1
 		}
 
-		request["ConnectionDrainConfig"] = objectDataLocalMap3
+		request["ConnectionDrainConfig"] = dataList3
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	objectDataLocalMap4 := make(map[string]interface{})
+	dataList4 := make(map[string]interface{})
 
 	if v := d.Get("uch_config"); v != nil {
 		value2, _ := jsonpath.Get("$[0].value", v)
 		if value2 != nil && value2 != "" {
-			objectDataLocalMap4["Value"] = value2
+			dataList4["Value"] = value2
 		}
 		type1, _ := jsonpath.Get("$[0].type", v)
 		if type1 != nil && type1 != "" {
-			objectDataLocalMap4["Type"] = type1
+			dataList4["Type"] = type1
 		}
 
-		request["UchConfig"] = objectDataLocalMap4
+		request["UchConfig"] = dataList4
 	}
 
 	if v, ok := d.GetOk("scheduler"); ok {
@@ -576,7 +575,7 @@ func resourceAliCloudAlbServerGroupRead(d *schema.ResourceData, meta interface{}
 
 		healthCheckCodesRaw := make([]interface{}, 0)
 		if healthCheckConfigRaw["HealthCheckCodes"] != nil {
-			healthCheckCodesRaw = healthCheckConfigRaw["HealthCheckCodes"].([]interface{})
+			healthCheckCodesRaw = convertToInterfaceArray(healthCheckConfigRaw["HealthCheckCodes"])
 		}
 
 		healthCheckConfigMap["health_check_codes"] = healthCheckCodesRaw
@@ -644,7 +643,7 @@ func resourceAliCloudAlbServerGroupRead(d *schema.ResourceData, meta interface{}
 
 	serversMaps := make([]map[string]interface{}, 0)
 	if serversRaw != nil {
-		for _, serversChildRaw := range serversRaw.([]interface{}) {
+		for _, serversChildRaw := range convertToInterfaceArray(serversRaw) {
 			serversMap := make(map[string]interface{})
 			serversChildRaw := serversChildRaw.(map[string]interface{})
 			serversMap["description"] = serversChildRaw["Description"]
@@ -688,103 +687,103 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 	request["ClientToken"] = buildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("sticky_session_config") {
 		update = true
-		objectDataLocalMap := make(map[string]interface{})
+		dataList := make(map[string]interface{})
 
 		if v := d.Get("sticky_session_config"); v != nil {
 			cookieTimeout1, _ := jsonpath.Get("$[0].cookie_timeout", v)
 			if cookieTimeout1 != nil && (d.HasChange("sticky_session_config.0.cookie_timeout") || cookieTimeout1 != "") && cookieTimeout1.(int) > 0 {
-				objectDataLocalMap["CookieTimeout"] = cookieTimeout1
+				dataList["CookieTimeout"] = cookieTimeout1
 			}
 			cookie1, _ := jsonpath.Get("$[0].cookie", v)
 			if cookie1 != nil && (d.HasChange("sticky_session_config.0.cookie") || cookie1 != "") {
-				objectDataLocalMap["Cookie"] = cookie1
+				dataList["Cookie"] = cookie1
 			}
 			stickySessionEnabled1, _ := jsonpath.Get("$[0].sticky_session_enabled", v)
 			if stickySessionEnabled1 != nil && (d.HasChange("sticky_session_config.0.sticky_session_enabled") || stickySessionEnabled1 != "") {
-				objectDataLocalMap["StickySessionEnabled"] = stickySessionEnabled1
+				dataList["StickySessionEnabled"] = stickySessionEnabled1
 			}
 			stickySessionType1, _ := jsonpath.Get("$[0].sticky_session_type", v)
 			if stickySessionType1 != nil && (d.HasChange("sticky_session_config.0.sticky_session_type") || stickySessionType1 != "") {
-				objectDataLocalMap["StickySessionType"] = stickySessionType1
+				dataList["StickySessionType"] = stickySessionType1
 			}
 
-			request["StickySessionConfig"] = objectDataLocalMap
+			request["StickySessionConfig"] = dataList
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("health_check_config") {
 		update = true
 	}
-	objectDataLocalMap1 := make(map[string]interface{})
+	dataList1 := make(map[string]interface{})
 
 	if v := d.Get("health_check_config"); v != nil {
-		healthCheckCodes1, _ := jsonpath.Get("$[0].health_check_codes", d.Get("health_check_config"))
+		healthCheckCodes1, _ := jsonpath.Get("$[0].health_check_codes", v)
 		if healthCheckCodes1 != nil && (d.HasChange("health_check_config.0.health_check_codes") || healthCheckCodes1 != "") {
-			objectDataLocalMap1["HealthCheckCodes"] = healthCheckCodes1
+			dataList1["HealthCheckCodes"] = healthCheckCodes1
 		}
 		healthCheckHost1, _ := jsonpath.Get("$[0].health_check_host", v)
 		if healthCheckHost1 != nil && (d.HasChange("health_check_config.0.health_check_host") || healthCheckHost1 != "") {
-			objectDataLocalMap1["HealthCheckHost"] = healthCheckHost1
+			dataList1["HealthCheckHost"] = healthCheckHost1
 		}
 		healthCheckPath1, _ := jsonpath.Get("$[0].health_check_path", v)
 		if healthCheckPath1 != nil && (d.HasChange("health_check_config.0.health_check_path") || healthCheckPath1 != "") {
-			objectDataLocalMap1["HealthCheckPath"] = healthCheckPath1
+			dataList1["HealthCheckPath"] = healthCheckPath1
 		}
 		healthCheckEnabled1, _ := jsonpath.Get("$[0].health_check_enabled", v)
 		if healthCheckEnabled1 != nil && (d.HasChange("health_check_config.0.health_check_enabled") || healthCheckEnabled1 != "") {
-			objectDataLocalMap1["HealthCheckEnabled"] = healthCheckEnabled1
+			dataList1["HealthCheckEnabled"] = healthCheckEnabled1
 		}
 		healthCheckTimeout1, _ := jsonpath.Get("$[0].health_check_timeout", v)
 		if healthCheckTimeout1 != nil && (d.HasChange("health_check_config.0.health_check_timeout") || healthCheckTimeout1 != "") && healthCheckTimeout1.(int) > 0 {
-			objectDataLocalMap1["HealthCheckTimeout"] = healthCheckTimeout1
+			dataList1["HealthCheckTimeout"] = healthCheckTimeout1
 		}
 		unhealthyThreshold1, _ := jsonpath.Get("$[0].unhealthy_threshold", v)
 		if unhealthyThreshold1 != nil && (d.HasChange("health_check_config.0.unhealthy_threshold") || unhealthyThreshold1 != "") && unhealthyThreshold1.(int) > 0 {
-			objectDataLocalMap1["UnhealthyThreshold"] = unhealthyThreshold1
+			dataList1["UnhealthyThreshold"] = unhealthyThreshold1
 		}
 		healthCheckInterval1, _ := jsonpath.Get("$[0].health_check_interval", v)
 		if healthCheckInterval1 != nil && (d.HasChange("health_check_config.0.health_check_interval") || healthCheckInterval1 != "") && healthCheckInterval1.(int) > 0 {
-			objectDataLocalMap1["HealthCheckInterval"] = healthCheckInterval1
+			dataList1["HealthCheckInterval"] = healthCheckInterval1
 		}
 		healthCheckConnectPort1, _ := jsonpath.Get("$[0].health_check_connect_port", v)
 		if healthCheckConnectPort1 != nil && (d.HasChange("health_check_config.0.health_check_connect_port") || healthCheckConnectPort1 != "") {
-			objectDataLocalMap1["HealthCheckConnectPort"] = healthCheckConnectPort1
+			dataList1["HealthCheckConnectPort"] = healthCheckConnectPort1
 		}
 		healthCheckHttpVersion1, _ := jsonpath.Get("$[0].health_check_http_version", v)
 		if healthCheckHttpVersion1 != nil && (d.HasChange("health_check_config.0.health_check_http_version") || healthCheckHttpVersion1 != "") {
-			objectDataLocalMap1["HealthCheckHttpVersion"] = healthCheckHttpVersion1
+			dataList1["HealthCheckHttpVersion"] = healthCheckHttpVersion1
 		}
 		healthCheckMethod1, _ := jsonpath.Get("$[0].health_check_method", v)
 		if healthCheckMethod1 != nil && (d.HasChange("health_check_config.0.health_check_method") || healthCheckMethod1 != "") {
-			objectDataLocalMap1["HealthCheckMethod"] = healthCheckMethod1
+			dataList1["HealthCheckMethod"] = healthCheckMethod1
 		}
 		healthCheckProtocol1, _ := jsonpath.Get("$[0].health_check_protocol", v)
 		if healthCheckProtocol1 != nil && (d.HasChange("health_check_config.0.health_check_protocol") || healthCheckProtocol1 != "") {
-			objectDataLocalMap1["HealthCheckProtocol"] = healthCheckProtocol1
+			dataList1["HealthCheckProtocol"] = healthCheckProtocol1
 		}
 		healthyThreshold1, _ := jsonpath.Get("$[0].healthy_threshold", v)
 		if healthyThreshold1 != nil && (d.HasChange("health_check_config.0.healthy_threshold") || healthyThreshold1 != "") && healthyThreshold1.(int) > 0 {
-			objectDataLocalMap1["HealthyThreshold"] = healthyThreshold1
+			dataList1["HealthyThreshold"] = healthyThreshold1
 		}
 
-		request["HealthCheckConfig"] = objectDataLocalMap1
+		request["HealthCheckConfig"] = dataList1
 	}
 
 	if !d.IsNewResource() && d.HasChange("slow_start_config") {
 		update = true
-		objectDataLocalMap2 := make(map[string]interface{})
+		dataList2 := make(map[string]interface{})
 
 		if v := d.Get("slow_start_config"); v != nil {
 			slowStartEnabled1, _ := jsonpath.Get("$[0].slow_start_enabled", v)
 			if slowStartEnabled1 != nil && (d.HasChange("slow_start_config.0.slow_start_enabled") || slowStartEnabled1 != "") {
-				objectDataLocalMap2["SlowStartEnabled"] = slowStartEnabled1
+				dataList2["SlowStartEnabled"] = slowStartEnabled1
 			}
 			slowStartDuration1, _ := jsonpath.Get("$[0].slow_start_duration", v)
 			if slowStartDuration1 != nil && (d.HasChange("slow_start_config.0.slow_start_duration") || slowStartDuration1 != "") {
-				objectDataLocalMap2["SlowStartDuration"] = slowStartDuration1
+				dataList2["SlowStartDuration"] = slowStartDuration1
 			}
 
-			request["SlowStartConfig"] = objectDataLocalMap2
+			request["SlowStartConfig"] = dataList2
 		}
 	}
 
@@ -794,37 +793,38 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 	request["ServerGroupName"] = d.Get("server_group_name")
 	if !d.IsNewResource() && d.HasChange("connection_drain_config") {
 		update = true
-		objectDataLocalMap3 := make(map[string]interface{})
+		dataList3 := make(map[string]interface{})
 
 		if v := d.Get("connection_drain_config"); v != nil {
 			connectionDrainEnabled1, _ := jsonpath.Get("$[0].connection_drain_enabled", v)
 			if connectionDrainEnabled1 != nil && (d.HasChange("connection_drain_config.0.connection_drain_enabled") || connectionDrainEnabled1 != "") {
-				objectDataLocalMap3["ConnectionDrainEnabled"] = connectionDrainEnabled1
+				dataList3["ConnectionDrainEnabled"] = connectionDrainEnabled1
 			}
 			connectionDrainTimeout1, _ := jsonpath.Get("$[0].connection_drain_timeout", v)
 			if connectionDrainTimeout1 != nil && (d.HasChange("connection_drain_config.0.connection_drain_timeout") || connectionDrainTimeout1 != "") {
-				objectDataLocalMap3["ConnectionDrainTimeout"] = connectionDrainTimeout1
+				dataList3["ConnectionDrainTimeout"] = connectionDrainTimeout1
 			}
 
-			request["ConnectionDrainConfig"] = objectDataLocalMap3
+			request["ConnectionDrainConfig"] = dataList3
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("uch_config") {
 		update = true
-		objectDataLocalMap4 := make(map[string]interface{})
-		if v := d.Get("uch_config"); v != nil {
-			value1, _ := jsonpath.Get("$[0].value", v)
-			if value1 != nil && (d.HasChange("uch_config.0.value") || value1 != "") {
-				objectDataLocalMap4["Value"] = value1
-			}
-			type1, _ := jsonpath.Get("$[0].type", v)
-			if type1 != nil && (d.HasChange("uch_config.0.type") || type1 != "") {
-				objectDataLocalMap4["Type"] = type1
-			}
+	}
+	dataList4 := make(map[string]interface{})
 
-			request["UchConfig"] = objectDataLocalMap4
+	if v := d.Get("uch_config"); v != nil {
+		value1, _ := jsonpath.Get("$[0].value", v)
+		if value1 != nil && (d.HasChange("uch_config.0.value") || value1 != "") {
+			dataList4["Value"] = value1
 		}
+		type1, _ := jsonpath.Get("$[0].type", v)
+		if type1 != nil && (d.HasChange("uch_config.0.type") || type1 != "") {
+			dataList4["Type"] = type1
+		}
+
+		request["UchConfig"] = dataList4
 	}
 
 	if !d.IsNewResource() && d.HasChange("scheduler") {
@@ -1058,8 +1058,6 @@ func resourceAliCloudAlbServerGroupDelete(d *schema.ResourceData, meta interface
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"SystemBusy", "ResourceInUse.ServerGroup", "IncorrectStatus.ServerGroup", "IdempotenceProcessing"}) || NeedRetry(err) {
 				wait()
