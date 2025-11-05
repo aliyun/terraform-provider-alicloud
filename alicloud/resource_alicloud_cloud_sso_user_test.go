@@ -24,7 +24,7 @@ import (
 func testSweepCloudSsoDirectoryUser(region, directoryId string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -89,164 +89,7 @@ func testSweepCloudSsoDirectoryUser(region, directoryId string) error {
 	return nil
 }
 
-func TestAccAlicloudCloudSSOUser_basic0(t *testing.T) {
-	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.CloudSsoSupportRegions)
-	resourceId := "alicloud_cloud_sso_user.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudSSOUserMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudssoService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudSsoUser")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacccloudssouser%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudSSOUserBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"user_name":    "${var.name}",
-					"directory_id": "${local.directory_id}",
-					"email":        "cloud_sso_user@qq.com",
-					"description":  "${var.name}",
-					"first_name":   "${var.name}",
-					"display_name": "${var.name}",
-					"last_name":    "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"user_name":    name,
-						"directory_id": CHECKSET,
-						"email":        "cloud_sso_user@qq.com",
-						"description":  name,
-						"first_name":   name,
-						"display_name": name,
-						"last_name":    name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"email": "cloud_sso_user1@qq.com",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"email": "cloud_sso_user1@qq.com",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"first_name": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"first_name": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"display_name": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"display_name": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"last_name": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"last_name": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "Disabled",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "Disabled",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"email":        "cloud_sso_user@qq.com",
-					"description":  "${var.name}",
-					"first_name":   "${var.name}",
-					"display_name": "${var.name}",
-					"last_name":    "${var.name}",
-					"status":       "Enabled",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"email":        "cloud_sso_user@qq.com",
-						"description":  name,
-						"first_name":   name,
-						"display_name": name,
-						"last_name":    name,
-						"status":       "Enabled",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
-}
-
-var AlicloudCloudSSOUserMap0 = map[string]string{
-	"user_id":      CHECKSET,
-	"directory_id": CHECKSET,
-}
-
-func AlicloudCloudSSOUserBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_cloud_sso_directories" "default" {}
-
-resource "alicloud_cloud_sso_directory" "default" {
-  count             = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
-  directory_name    = var.name
-}
-
-locals{
-  directory_id =  length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
-}
-`, name)
-}
-
-func TestUnitAlicloudCloudSSOUser(t *testing.T) {
+func TestUnitAliCloudCloudSSOUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_user"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_sso_user"].Schema).Data(nil, nil)
@@ -326,7 +169,7 @@ func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudSsoUserCreate(dInit, rawClient)
+		err := resourceAliCloudCloudSsoUserCreate(dInit, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		ReadMockResponseDiff = map[string]interface{}{
@@ -354,7 +197,7 @@ func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoUserCreate(dInit, rawClient)
+			err := resourceAliCloudCloudSsoUserCreate(dInit, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -383,7 +226,7 @@ func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudSsoUserUpdate(dExisted, rawClient)
+		err := resourceAliCloudCloudSsoUserUpdate(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		// UpdateUserStatus
@@ -419,7 +262,7 @@ func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoUserUpdate(dExisted, rawClient)
+			err := resourceAliCloudCloudSsoUserUpdate(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -478,7 +321,7 @@ func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoUserUpdate(dExisted, rawClient)
+			err := resourceAliCloudCloudSsoUserUpdate(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -519,7 +362,7 @@ func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoUserRead(dExisted, rawClient)
+			err := resourceAliCloudCloudSsoUserRead(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -540,7 +383,7 @@ func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudSsoUserDelete(dExisted, rawClient)
+		err := resourceAliCloudCloudSsoUserDelete(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		attributesDiff := map[string]interface{}{}
@@ -568,7 +411,7 @@ func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAlicloudCloudSsoUserDelete(dExisted, rawClient)
+			err := resourceAliCloudCloudSsoUserDelete(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -580,3 +423,284 @@ func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 		}
 	})
 }
+
+// Test CloudSso User. >>> Resource test cases, automatically generated.
+// Case User_pre_tag 10696
+func TestAccAliCloudCloudSsoUser_basic10696(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_sso_user.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudSsoUserMap10696)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudSSOServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudSsoUser")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudsso%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudSsoUserBasicDependence10696)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"directory_id": "${local.directory_id}",
+					"user_name":    name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"directory_id": CHECKSET,
+						"user_name":    name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"display_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"display_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"email": "cloud_sso_user@aliyun.com",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"email": "cloud_sso_user@aliyun.com",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"first_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"first_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"last_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"last_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mfa_authentication_settings": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mfa_authentication_settings": "Disabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mfa_authentication_settings": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mfa_authentication_settings": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password": "Yourpassword123!",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password": "Yourpassword123!",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Disabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudSsoUser_basic10696_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_sso_user.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudSsoUserMap10696)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudSSOServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudSsoUser")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudsso%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudSsoUserBasicDependence10696)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"directory_id":                "${local.directory_id}",
+					"user_name":                   name,
+					"description":                 name,
+					"display_name":                name,
+					"email":                       "cloud_sso_user@aliyun.com",
+					"first_name":                  name,
+					"last_name":                   name,
+					"mfa_authentication_settings": "Enabled",
+					"password":                    "Yourpassword123!",
+					"status":                      "Enabled",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"directory_id":                CHECKSET,
+						"user_name":                   name,
+						"description":                 name,
+						"display_name":                name,
+						"email":                       "cloud_sso_user@aliyun.com",
+						"first_name":                  name,
+						"last_name":                   name,
+						"mfa_authentication_settings": "Enabled",
+						"password":                    "Yourpassword123!",
+						"status":                      "Enabled",
+						"tags.%":                      "2",
+						"tags.Created":                "TF",
+						"tags.For":                    "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+		},
+	})
+}
+
+var AliCloudCloudSsoUserMap10696 = map[string]string{
+	"create_time": CHECKSET,
+	"user_id":     CHECKSET,
+	"status":      CHECKSET,
+}
+
+func AliCloudCloudSsoUserBasicDependence10696(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_cloud_sso_directories" "default" {
+	}
+
+	resource "alicloud_cloud_sso_directory" "default" {
+  		count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
+  		directory_name = var.name
+	}
+
+	locals {
+  		directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+	}
+`, name)
+}
+
+// Test CloudSso User. <<< Resource test cases, automatically generated.

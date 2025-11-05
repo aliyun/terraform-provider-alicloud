@@ -2,20 +2,19 @@
 subcategory: "Cloud SSO"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cloud_sso_user"
-sidebar_current: "docs-alicloud-resource-cloud-sso-user"
 description: |-
-  Provides a Alicloud Cloud SSO User resource.
+  Provides a Alicloud Cloud Sso User resource.
 ---
 
 # alicloud_cloud_sso_user
 
-Provides a Cloud SSO User resource.
+Provides a Cloud Sso User resource.
 
-For information about Cloud SSO User and how to use it, see [What is User](https://www.alibabacloud.com/help/en/cloudsso/latest/api-cloudsso-2021-05-15-createuser).
+
+
+For information about Cloud Sso User and how to use it, see [What is User](https://www.alibabacloud.com/help/en/cloudsso/latest/api-cloudsso-2021-05-15-createuser).
 
 -> **NOTE:** Available since v1.140.0.
-
--> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
 ## Example Usage
 
@@ -29,20 +28,14 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
+
 provider "alicloud" {
   region = "cn-shanghai"
 }
-data "alicloud_cloud_sso_directories" "default" {}
 
-resource "alicloud_cloud_sso_directory" "default" {
-  count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
-  directory_name = var.name
-}
-
-locals {
-  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+data "alicloud_cloud_sso_directories" "default" {
 }
 
 resource "random_integer" "default" {
@@ -50,35 +43,55 @@ resource "random_integer" "default" {
   max = 99999
 }
 
+resource "alicloud_cloud_sso_directory" "default" {
+  count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
+  directory_name = var.name
+}
+
 resource "alicloud_cloud_sso_user" "default" {
   directory_id = local.directory_id
   user_name    = "${var.name}-${random_integer.default.result}"
+}
+
+locals {
+  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `description` - (Optional) The description of user. The description can be up to `1024` characters long.
-* `directory_id` - (Required, ForceNew) The ID of the Directory.
-* `display_name` - (Optional) The display name of user. The display name can be up to `256` characters long.
-* `email` - (Optional) The User's Contact Email Address. The email can be up to `128` characters long.
-* `first_name` - (Optional) The first name of user. The first_name can be up to `64` characters long.
-* `last_name` - (Optional) The last name of user. The last_name can be up to `64` characters long.
-* `status` - (Optional) The status of user. Valid values: `Disabled`, `Enabled`.
-* `user_name` - (Required, ForceNew) The name of user. The name must be `1` to `64` characters in length and can contain letters, digits, at signs (@), periods (.), underscores (_), and hyphens (-).
+* `description` - (Optional) The description of the user. The description can be up to 1,024 characters in length.
+* `directory_id` - (Required, ForceNew) The ID of the directory.
+* `display_name` - (Optional) The display name of the user. The display name can be up to 256 characters in length.
+* `email` - (Optional) The email address of the user. The email address must be unique within the directory. The email address can be up to 128 characters in length.
+* `first_name` - (Optional) The first name of the user. The first name can be up to 64 characters in length.
+* `last_name` - (Optional) The last name of the user. The last name can be up to 64 characters in length.
+* `mfa_authentication_settings` - (Optional, Available since v1.262.1) Specifies whether to enable MFA for the user. Default value: `Enabled`. Valid values: `Enabled`, `Disabled`.
+* `password` - (Optional, Available since v1.262.1) The new password. The password must contain the following types of characters: uppercase letters, lowercase letters, digits, and special characters. The password must be 8 to 32 characters in length.
+* `status` - (Optional, Computed) The status of the user. Default value: `Enabled`. Valid values: `Enabled`, `Disabled`.
+* `tags` - (Optional, Map, Available since v1.262.1) The tag of the resource.
+* `user_name` - (Required, ForceNew) The username of the user. The username can contain digits, letters, and the following special characters: @_-. The username can be up to 64 characters in length.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<directory_id>:<user_id>`.
+* `create_time` - (Available since v1.262.1) The time when the user was created.
+* `user_id` - The ID of the user.
 
-* `id` - The resource ID of User. The value formats as `<directory_id>:<user_id>`.
-* `user_id` - The User ID of the group.
+## Timeouts
+
+-> **NOTE:** Available since v1.262.1.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the User.
+* `delete` - (Defaults to 5 mins) Used when delete the User.
+* `update` - (Defaults to 5 mins) Used when update the User.
 
 ## Import
 
-Cloud SSO User can be imported using the id, e.g.
+Cloud Sso User can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_cloud_sso_user.example <directory_id>:<user_id>
