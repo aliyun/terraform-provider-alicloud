@@ -799,7 +799,7 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("health_check_types"); ok {
 		count := 1
-		for _, value := range v.(*schema.Set).List() {
+		for _, value := range convertToInterfaceArray(v) {
 			request[fmt.Sprintf("HealthCheckTypes.%d", count)] = value
 			count++
 		}
