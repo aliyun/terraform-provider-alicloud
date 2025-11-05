@@ -958,3 +958,214 @@ func (s *CloudSSOServiceV2) CloudSsoUserProvisioningEventStateRefreshFuncWithApi
 }
 
 // DescribeCloudSsoUserProvisioningEvent >>> Encapsulated.
+
+// DescribeCloudSsoUser <<< Encapsulated get interface for CloudSso User.
+
+func (s *CloudSSOServiceV2) DescribeCloudSsoUser(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DirectoryId"] = parts[0]
+	request["UserId"] = parts[1]
+
+	action := "GetUser"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.User"}) {
+			return object, WrapErrorf(NotFoundErr("User", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.User", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.User", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CloudSSOServiceV2) DescribeUserGetUserMFAAuthenticationSettings(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DirectoryId"] = parts[0]
+	request["UserId"] = parts[1]
+
+	action := "GetUserMFAAuthenticationSettings"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.User"}) {
+			return object, WrapErrorf(NotFoundErr("User", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *CloudSSOServiceV2) CloudSsoUserStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CloudSsoUserStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudSsoUser)
+}
+
+func (s *CloudSSOServiceV2) CloudSsoUserStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCloudSsoUser >>> Encapsulated.
+
+// SetResourceTags <<< Encapsulated tag function for CloudSso.
+func (s *CloudSSOServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+	if d.HasChange("tags") {
+		var action string
+		var err error
+		client := s.client
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+
+		added, removed := parsingTags(d)
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			parts := strings.Split(d.Id(), ":")
+			action = "UntagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceId.1"] = parts[1]
+			request["DirectoryId"] = parts[0]
+
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+
+			request["ResourceType"] = resourceType
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added) > 0 {
+			parts := strings.Split(d.Id(), ":")
+			action = "TagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceId.1"] = parts[1]
+			request["DirectoryId"] = parts[0]
+
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
+			request["ResourceType"] = resourceType
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("cloudsso", "2021-05-15", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+	}
+
+	return nil
+}
+
+// SetResourceTags >>> tag function encapsulated.
