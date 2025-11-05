@@ -37,6 +37,11 @@ func resourceAliCloudEsaHttpResponseHeaderModificationRule() *schema.Resource {
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
 						"value": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -63,6 +68,11 @@ func resourceAliCloudEsaHttpResponseHeaderModificationRule() *schema.Resource {
 			"rule_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"sequence": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"site_id": {
 				Type:     schema.TypeInt,
@@ -92,16 +102,22 @@ func resourceAliCloudEsaHttpResponseHeaderModificationRuleCreate(d *schema.Resou
 		request["SiteId"] = v
 	}
 
+	if v, ok := d.GetOkExists("sequence"); ok {
+		request["Sequence"] = v
+	}
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
 	}
 	if v, ok := d.GetOk("response_header_modification"); ok {
 		responseHeaderModificationMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["Value"] = dataLoopTmp["value"]
 			dataLoopMap["Name"] = dataLoopTmp["name"]
+			if dataLoopTmp["type"] != "" {
+				dataLoopMap["Type"] = dataLoopTmp["type"]
+			}
 			dataLoopMap["Operation"] = dataLoopTmp["operation"]
 			responseHeaderModificationMapsArray = append(responseHeaderModificationMapsArray, dataLoopMap)
 		}
@@ -158,39 +174,29 @@ func resourceAliCloudEsaHttpResponseHeaderModificationRuleRead(d *schema.Resourc
 		return WrapError(err)
 	}
 
-	if objectRaw["Rule"] != nil {
-		d.Set("rule", objectRaw["Rule"])
-	}
-	if objectRaw["RuleEnable"] != nil {
-		d.Set("rule_enable", objectRaw["RuleEnable"])
-	}
-	if objectRaw["RuleName"] != nil {
-		d.Set("rule_name", objectRaw["RuleName"])
-	}
-	if objectRaw["SiteVersion"] != nil {
-		d.Set("site_version", objectRaw["SiteVersion"])
-	}
-	if objectRaw["ConfigId"] != nil {
-		d.Set("config_id", objectRaw["ConfigId"])
-	}
+	d.Set("rule", objectRaw["Rule"])
+	d.Set("rule_enable", objectRaw["RuleEnable"])
+	d.Set("rule_name", objectRaw["RuleName"])
+	d.Set("sequence", objectRaw["Sequence"])
+	d.Set("site_version", objectRaw["SiteVersion"])
+	d.Set("config_id", objectRaw["ConfigId"])
 
-	responseHeaderModification2Raw := objectRaw["ResponseHeaderModification"]
+	responseHeaderModificationRaw := objectRaw["ResponseHeaderModification"]
 	responseHeaderModificationMaps := make([]map[string]interface{}, 0)
-	if responseHeaderModification2Raw != nil {
-		for _, responseHeaderModificationChild2Raw := range responseHeaderModification2Raw.([]interface{}) {
+	if responseHeaderModificationRaw != nil {
+		for _, responseHeaderModificationChildRaw := range convertToInterfaceArray(responseHeaderModificationRaw) {
 			responseHeaderModificationMap := make(map[string]interface{})
-			responseHeaderModificationChild2Raw := responseHeaderModificationChild2Raw.(map[string]interface{})
-			responseHeaderModificationMap["name"] = responseHeaderModificationChild2Raw["Name"]
-			responseHeaderModificationMap["operation"] = responseHeaderModificationChild2Raw["Operation"]
-			responseHeaderModificationMap["value"] = responseHeaderModificationChild2Raw["Value"]
+			responseHeaderModificationChildRaw := responseHeaderModificationChildRaw.(map[string]interface{})
+			responseHeaderModificationMap["name"] = responseHeaderModificationChildRaw["Name"]
+			responseHeaderModificationMap["operation"] = responseHeaderModificationChildRaw["Operation"]
+			responseHeaderModificationMap["type"] = responseHeaderModificationChildRaw["Type"]
+			responseHeaderModificationMap["value"] = responseHeaderModificationChildRaw["Value"]
 
 			responseHeaderModificationMaps = append(responseHeaderModificationMaps, responseHeaderModificationMap)
 		}
 	}
-	if objectRaw["ResponseHeaderModification"] != nil {
-		if err := d.Set("response_header_modification", responseHeaderModificationMaps); err != nil {
-			return err
-		}
+	if err := d.Set("response_header_modification", responseHeaderModificationMaps); err != nil {
+		return err
 	}
 
 	parts := strings.Split(d.Id(), ":")
@@ -206,22 +212,30 @@ func resourceAliCloudEsaHttpResponseHeaderModificationRuleUpdate(d *schema.Resou
 	var query map[string]interface{}
 	update := false
 
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateHttpResponseHeaderModificationRule"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
+
+	if d.HasChange("sequence") {
+		update = true
+		request["Sequence"] = d.Get("sequence")
+	}
 
 	if d.HasChange("response_header_modification") {
 		update = true
 	}
 	if v, ok := d.GetOk("response_header_modification"); ok || d.HasChange("response_header_modification") {
 		responseHeaderModificationMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
+			if dataLoopTmp["type"] != "" {
+				dataLoopMap["Type"] = dataLoopTmp["type"]
+			}
 			dataLoopMap["Value"] = dataLoopTmp["value"]
 			dataLoopMap["Name"] = dataLoopTmp["name"]
 			dataLoopMap["Operation"] = dataLoopTmp["operation"]
@@ -287,7 +301,6 @@ func resourceAliCloudEsaHttpResponseHeaderModificationRuleDelete(d *schema.Resou
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
