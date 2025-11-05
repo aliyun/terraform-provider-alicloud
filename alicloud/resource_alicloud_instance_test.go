@@ -4418,14 +4418,16 @@ func resourceInstanceLaunchTemplateDependence(name string) string {
 	}
 
 	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
   		owners      = "system"
 	}
 
 	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.g8i"
   		availability_zone    = data.alicloud_zones.default.zones.0.id
   		image_id             = data.alicloud_images.default.images.0.id
-		system_disk_category = "cloud_essd"
+  		system_disk_category = "cloud_essd"
 	}
 
 	resource "alicloud_vpc" "default" {

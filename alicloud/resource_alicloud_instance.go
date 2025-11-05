@@ -1239,9 +1239,13 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("system_disk_encrypted", disk["Encrypted"])
 		d.Set("system_disk_kms_key_id", disk["KMSKeyId"])
 		d.Set("system_disk_provisioned_iops", disk["ProvisionedIops"])
-		d.Set("system_disk_bursting_enabled", disk["BurstingEnabled"])
 		d.Set("system_disk_id", disk["DiskId"])
 		d.Set("system_disk_performance_level", disk["PerformanceLevel"])
+
+		if disk["BurstingEnabled"] != nil {
+			d.Set("system_disk_bursting_enabled", disk["BurstingEnabled"])
+		}
+
 		if v, ok := disk["Tags"].(map[string]interface{}); ok {
 			d.Set("volume_tags", tagsToMap(v["Tag"]))
 		}
