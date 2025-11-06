@@ -1114,7 +1114,7 @@ func (s *EsaServiceV2) DescribeEsaRedirectRule(id string) (object map[string]int
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1134,15 +1134,18 @@ func (s *EsaServiceV2) DescribeEsaRedirectRule(id string) (object map[string]int
 }
 
 func (s *EsaServiceV2) EsaRedirectRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaRedirectRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaRedirectRule)
+}
+
+func (s *EsaServiceV2) EsaRedirectRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaRedirectRule(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
