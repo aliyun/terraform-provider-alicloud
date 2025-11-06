@@ -32,9 +32,8 @@ func resourceAliCloudEsaRedirectRule() *schema.Resource {
 				Computed: true,
 			},
 			"reserve_query_string": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"rule": {
 				Type:     schema.TypeString,
@@ -48,6 +47,11 @@ func resourceAliCloudEsaRedirectRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"sequence": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"site_id": {
 				Type:     schema.TypeInt,
 				Required: true,
@@ -59,9 +63,8 @@ func resourceAliCloudEsaRedirectRule() *schema.Resource {
 				ForceNew: true,
 			},
 			"status_code": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: StringInSlice([]string{"301", "302"}, false),
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"target_url": {
 				Type:     schema.TypeString,
@@ -70,7 +73,7 @@ func resourceAliCloudEsaRedirectRule() *schema.Resource {
 			"type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"static"}, false),
+				ValidateFunc: StringInSlice([]string{"static", "dynamic"}, false),
 			},
 		},
 	}
@@ -90,6 +93,9 @@ func resourceAliCloudEsaRedirectRuleCreate(d *schema.ResourceData, meta interfac
 		request["SiteId"] = v
 	}
 
+	if v, ok := d.GetOkExists("sequence"); ok {
+		request["Sequence"] = v
+	}
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
 	}
@@ -143,33 +149,16 @@ func resourceAliCloudEsaRedirectRuleRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	if objectRaw["ReserveQueryString"] != nil {
-		d.Set("reserve_query_string", objectRaw["ReserveQueryString"])
-	}
-	if objectRaw["Rule"] != nil {
-		d.Set("rule", objectRaw["Rule"])
-	}
-	if objectRaw["RuleEnable"] != nil {
-		d.Set("rule_enable", objectRaw["RuleEnable"])
-	}
-	if objectRaw["RuleName"] != nil {
-		d.Set("rule_name", objectRaw["RuleName"])
-	}
-	if objectRaw["SiteVersion"] != nil {
-		d.Set("site_version", objectRaw["SiteVersion"])
-	}
-	if objectRaw["StatusCode"] != nil {
-		d.Set("status_code", objectRaw["StatusCode"])
-	}
-	if objectRaw["TargetUrl"] != nil {
-		d.Set("target_url", objectRaw["TargetUrl"])
-	}
-	if objectRaw["Type"] != nil {
-		d.Set("type", objectRaw["Type"])
-	}
-	if objectRaw["ConfigId"] != nil {
-		d.Set("config_id", objectRaw["ConfigId"])
-	}
+	d.Set("reserve_query_string", objectRaw["ReserveQueryString"])
+	d.Set("rule", objectRaw["Rule"])
+	d.Set("rule_enable", objectRaw["RuleEnable"])
+	d.Set("rule_name", objectRaw["RuleName"])
+	d.Set("sequence", objectRaw["Sequence"])
+	d.Set("site_version", objectRaw["SiteVersion"])
+	d.Set("status_code", objectRaw["StatusCode"])
+	d.Set("target_url", objectRaw["TargetUrl"])
+	d.Set("type", objectRaw["Type"])
+	d.Set("config_id", objectRaw["ConfigId"])
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("site_id", formatInt(parts[0]))
@@ -184,13 +173,18 @@ func resourceAliCloudEsaRedirectRuleUpdate(d *schema.ResourceData, meta interfac
 	var query map[string]interface{}
 	update := false
 
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateRedirectRule"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
+
+	if d.HasChange("sequence") {
+		update = true
+		request["Sequence"] = d.Get("sequence")
+	}
 
 	if d.HasChange("reserve_query_string") {
 		update = true
@@ -261,7 +255,6 @@ func resourceAliCloudEsaRedirectRuleDelete(d *schema.ResourceData, meta interfac
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

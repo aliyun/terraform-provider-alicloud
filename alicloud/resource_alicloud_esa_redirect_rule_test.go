@@ -58,6 +58,14 @@ func TestAccAliCloudESARedirectRuleredirectrule_test(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"sequence": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"rule_enable": "off",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -142,7 +150,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_RedirectRule_test" {
 }
 
 resource "alicloud_esa_site" "resource_Site_RedirectRule_test" {
-  site_name   = "gositecdn.cn"
+  site_name   = "gositecdn1.cn"
   instance_id = alicloud_esa_rate_plan_instance.resource_RedirectRule_test.id
   coverage    = "overseas"
   access_type = "NS"
