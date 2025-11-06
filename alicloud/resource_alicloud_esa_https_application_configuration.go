@@ -79,6 +79,20 @@ func resourceAliCloudEsaHttpsApplicationConfiguration() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"301", "302", "307", "308"}, false),
 			},
+			"https_no_sni_deny": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
+			"https_sni_verify": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
+			"https_sni_whitelist": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"rule": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -91,6 +105,11 @@ func resourceAliCloudEsaHttpsApplicationConfiguration() *schema.Resource {
 			"rule_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"sequence": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"site_id": {
 				Type:     schema.TypeInt,
@@ -119,10 +138,15 @@ func resourceAliCloudEsaHttpsApplicationConfigurationCreate(d *schema.ResourceDa
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("https_force"); ok {
 		request["HttpsForce"] = v
+	}
+	if v, ok := d.GetOkExists("sequence"); ok {
+		request["Sequence"] = v
+	}
+	if v, ok := d.GetOk("https_no_sni_deny"); ok {
+		request["HttpsNoSniDeny"] = v
 	}
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
@@ -132,6 +156,9 @@ func resourceAliCloudEsaHttpsApplicationConfigurationCreate(d *schema.ResourceDa
 	}
 	if v, ok := d.GetOk("rule_name"); ok {
 		request["RuleName"] = v
+	}
+	if v, ok := d.GetOk("https_sni_whitelist"); ok {
+		request["HttpsSniWhitelist"] = v
 	}
 	if v, ok := d.GetOk("hsts"); ok {
 		request["Hsts"] = v
@@ -150,6 +177,9 @@ func resourceAliCloudEsaHttpsApplicationConfigurationCreate(d *schema.ResourceDa
 	}
 	if v, ok := d.GetOk("alt_svc_persist"); ok {
 		request["AltSvcPersist"] = v
+	}
+	if v, ok := d.GetOk("https_sni_verify"); ok {
+		request["HttpsSniVerify"] = v
 	}
 	if v, ok := d.GetOk("alt_svc"); ok {
 		request["AltSvc"] = v
@@ -210,9 +240,13 @@ func resourceAliCloudEsaHttpsApplicationConfigurationRead(d *schema.ResourceData
 	d.Set("hsts_preload", objectRaw["HstsPreload"])
 	d.Set("https_force", objectRaw["HttpsForce"])
 	d.Set("https_force_code", objectRaw["HttpsForceCode"])
+	d.Set("https_no_sni_deny", objectRaw["HttpsNoSniDeny"])
+	d.Set("https_sni_verify", objectRaw["HttpsSniVerify"])
+	d.Set("https_sni_whitelist", objectRaw["HttpsSniWhitelist"])
 	d.Set("rule", objectRaw["Rule"])
 	d.Set("rule_enable", objectRaw["RuleEnable"])
 	d.Set("rule_name", objectRaw["RuleName"])
+	d.Set("sequence", objectRaw["Sequence"])
 	d.Set("site_version", objectRaw["SiteVersion"])
 	d.Set("config_id", objectRaw["ConfigId"])
 
@@ -236,10 +270,20 @@ func resourceAliCloudEsaHttpsApplicationConfigurationUpdate(d *schema.ResourceDa
 	query = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
+
 	if !d.IsNewResource() && d.HasChange("https_force") {
 		update = true
 		request["HttpsForce"] = d.Get("https_force")
+	}
+
+	if !d.IsNewResource() && d.HasChange("sequence") {
+		update = true
+		request["Sequence"] = d.Get("sequence")
+	}
+
+	if !d.IsNewResource() && d.HasChange("https_no_sni_deny") {
+		update = true
+		request["HttpsNoSniDeny"] = d.Get("https_no_sni_deny")
 	}
 
 	if !d.IsNewResource() && d.HasChange("rule_enable") {
@@ -250,6 +294,11 @@ func resourceAliCloudEsaHttpsApplicationConfigurationUpdate(d *schema.ResourceDa
 	if !d.IsNewResource() && d.HasChange("rule_name") {
 		update = true
 		request["RuleName"] = d.Get("rule_name")
+	}
+
+	if !d.IsNewResource() && d.HasChange("https_sni_whitelist") {
+		update = true
+		request["HttpsSniWhitelist"] = d.Get("https_sni_whitelist")
 	}
 
 	if !d.IsNewResource() && d.HasChange("hsts") {
@@ -280,6 +329,11 @@ func resourceAliCloudEsaHttpsApplicationConfigurationUpdate(d *schema.ResourceDa
 	if !d.IsNewResource() && d.HasChange("alt_svc_persist") {
 		update = true
 		request["AltSvcPersist"] = d.Get("alt_svc_persist")
+	}
+
+	if !d.IsNewResource() && d.HasChange("https_sni_verify") {
+		update = true
+		request["HttpsSniVerify"] = d.Get("https_sni_verify")
 	}
 
 	if !d.IsNewResource() && d.HasChange("alt_svc") {
@@ -336,12 +390,10 @@ func resourceAliCloudEsaHttpsApplicationConfigurationDelete(d *schema.ResourceDa
 	request = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
