@@ -28,9 +28,10 @@ func resourceAliCloudWafv3DefenseTemplate() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"defense_scene": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"ip_blacklist", "custom_acl", "whitelist", "region_block", "cc", "tamperproof", "dlp", "spike_throttle"}, false),
 			},
 			"defense_template_id": {
 				Type:     schema.TypeInt,
@@ -48,6 +49,11 @@ func resourceAliCloudWafv3DefenseTemplate() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"resource_groups": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"resource_manager_resource_group_id": {
 				Type:     schema.TypeString,
@@ -97,6 +103,9 @@ func resourceAliCloudWafv3DefenseTemplateCreate(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
+	if v, ok := d.GetOk("resource_manager_resource_group_id"); ok {
+		request["ResourceManagerResourceGroupId"] = v
+	}
 	request["DefenseScene"] = d.Get("defense_scene")
 	request["TemplateStatus"] = d.Get("status")
 	request["TemplateOrigin"] = d.Get("template_origin")
@@ -120,6 +129,9 @@ func resourceAliCloudWafv3DefenseTemplateCreate(d *schema.ResourceData, meta int
 
 	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], response["TemplateId"]))
 
+	if d.Get("template_type") == "user_default" {
+		return resourceAliCloudWafv3DefenseTemplateRead(d, meta)
+	}
 	return resourceAliCloudWafv3DefenseTemplateUpdate(d, meta)
 }
 
@@ -145,19 +157,31 @@ func resourceAliCloudWafv3DefenseTemplateRead(d *schema.ResourceData, meta inter
 	d.Set("template_type", objectRaw["TemplateType"])
 	d.Set("defense_template_id", objectRaw["TemplateId"])
 
-	objectRaw, err = wafv3ServiceV2.DescribeDefenseTemplateDescribeTemplateResources(d.Id())
+	objectRaw, err = wafv3ServiceV2.DescribeDefenseTemplateDescribeTemplateResources(d.Id(), "single")
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	singleResourcesRaw := make([]interface{}, 0)
+	if objectRaw["Resources"] != nil {
+		singleResourcesRaw = convertToInterfaceArray(objectRaw["Resources"])
+	}
+
+	d.Set("resources", singleResourcesRaw)
+
+	objectRaw, err = wafv3ServiceV2.DescribeDefenseTemplateDescribeTemplateResources(d.Id(), "group")
 	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
 	d.Set("defense_template_id", objectRaw["TemplateId"])
 
-	resourcesRaw := make([]interface{}, 0)
+	groupResourcesRaw := make([]interface{}, 0)
 	if objectRaw["Resources"] != nil {
-		resourcesRaw = objectRaw["Resources"].([]interface{})
+		groupResourcesRaw = convertToInterfaceArray(objectRaw["Resources"])
 	}
 
-	d.Set("resources", resourcesRaw)
+	d.Set("resource_groups", groupResourcesRaw)
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("instance_id", parts[0])
@@ -421,7 +445,6 @@ func resourceAliCloudWafv3DefenseTemplateDelete(d *schema.ResourceData, meta int
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

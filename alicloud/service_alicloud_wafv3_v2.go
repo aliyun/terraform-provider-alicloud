@@ -54,12 +54,17 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseTemplate(id string) (object map[str
 
 	v, err := jsonpath.Get("$.Template", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("Wafv3", id), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(NotFoundErr("DefenseTemplate", id), NotFoundMsg, response)
+	}
+
+	currentStatus := v.(map[string]interface{})["TemplateName"]
+	if currentStatus == nil {
+		return object, WrapErrorf(NotFoundErr("DefenseTemplate", id), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
-func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id string) (object map[string]interface{}, err error) {
+func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id string, resourceType string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -73,7 +78,7 @@ func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id str
 	request["TemplateId"] = parts[1]
 	request["InstanceId"] = parts[0]
 	request["RegionId"] = client.RegionId
-	request["ResourceType"] = "single"
+	request["ResourceType"] = resourceType
 	action := "DescribeTemplateResources"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -101,15 +106,18 @@ func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id str
 }
 
 func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.Wafv3DefenseTemplateStateRefreshFuncWithApi(id, field, failStates, s.DescribeWafv3DefenseTemplate)
+}
+
+func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeWafv3DefenseTemplate(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
