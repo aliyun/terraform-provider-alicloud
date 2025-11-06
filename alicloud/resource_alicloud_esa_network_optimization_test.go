@@ -67,6 +67,14 @@ func TestAccAliCloudESANetworkOptimizationnetworkOptimization_test(t *testing.T)
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"sequence": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"rule": "(http.request.uri eq \\\"/content?page=1234\\\")",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -159,7 +167,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "resource_NetworkOptimization_Site_test" {
-  site_name   = "gositecdn.cn"
+  site_name   = "gositecdn1.cn"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"
