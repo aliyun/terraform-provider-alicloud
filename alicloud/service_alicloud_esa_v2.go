@@ -1638,6 +1638,7 @@ func (s *EsaServiceV2) EsaCacheRuleStateRefreshFuncWithApi(id string, field stri
 }
 
 // DescribeEsaCacheRule >>> Encapsulated.
+
 // DescribeEsaOriginRule <<< Encapsulated get interface for Esa OriginRule.
 
 func (s *EsaServiceV2) DescribeEsaOriginRule(id string) (object map[string]interface{}, err error) {
@@ -1653,7 +1654,7 @@ func (s *EsaServiceV2) DescribeEsaOriginRule(id string) (object map[string]inter
 	query = make(map[string]interface{})
 	query["ConfigId"] = parts[1]
 	query["SiteId"] = parts[0]
-	query["RegionId"] = client.RegionId
+
 	action := "GetOriginRule"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -1673,7 +1674,6 @@ func (s *EsaServiceV2) DescribeEsaOriginRule(id string) (object map[string]inter
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
 	currentStatus := response["ConfigId"]
 	if currentStatus == nil {
 		return object, WrapErrorf(NotFoundErr("OriginRule", id), NotFoundMsg, response)
@@ -1683,15 +1683,18 @@ func (s *EsaServiceV2) DescribeEsaOriginRule(id string) (object map[string]inter
 }
 
 func (s *EsaServiceV2) EsaOriginRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaOriginRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginRule)
+}
+
+func (s *EsaServiceV2) EsaOriginRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaOriginRule(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
