@@ -2408,6 +2408,325 @@ func TestAccAliCloudEssScalingGroup_vpc(t *testing.T) {
 
 }
 
+func TestAccAliCloudEssScalingGroup_balanceUpdate(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":           "1",
+		"max_size":           "1",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup_vpc-%d", rand),
+		"vswitch_ids.#":      "2",
+		"removal_policies.#": "2",
+		"multi_az_policy":    "BALANCE",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup_vpc-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "1",
+					"scaling_group_name": "${var.name}",
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "BALANCE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "2",
+					"scaling_group_name": "${var.name}",
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "BALANCE",
+					"balance_mode":       "BalancedBestEffort",
+					"auto_rebalance":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_size":       "2",
+						"balance_mode":   "BalancedBestEffort",
+						"auto_rebalance": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "2",
+					"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "BALANCE",
+					"balance_mode":       "BalancedOnly",
+					"auto_rebalance":     "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+						"balance_mode":       "BalancedOnly",
+						"auto_rebalance":     "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "1",
+					"scaling_group_name": "${var.name}",
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "BALANCE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudEssScalingGroup_balanceCreate(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":           "1",
+		"max_size":           "1",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup_vpc-%d", rand),
+		"vswitch_ids.#":      "2",
+		"removal_policies.#": "2",
+		"multi_az_policy":    "BALANCE",
+		"balance_mode":       "BalancedBestEffort",
+		"auto_rebalance":     "true",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup_vpc-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "1",
+					"scaling_group_name": "${var.name}",
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "BALANCE",
+					"balance_mode":       "BalancedBestEffort",
+					"auto_rebalance":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "2",
+					"scaling_group_name": "${var.name}",
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "BALANCE",
+					"balance_mode":       "BalancedOnly",
+					"auto_rebalance":     "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_size":       "2",
+						"balance_mode":   "BalancedOnly",
+						"auto_rebalance": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "2",
+					"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "BALANCE",
+					"balance_mode":       "BalancedBestEffort",
+					"auto_rebalance":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+						"balance_mode":       "BalancedBestEffort",
+						"auto_rebalance":     "true",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudEssScalingGroup_noBalanceCreate(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":           "1",
+		"max_size":           "1",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup_vpc-%d", rand),
+		"vswitch_ids.#":      "2",
+		"removal_policies.#": "2",
+		"multi_az_policy":    "PRIORITY",
+		"balance_mode":       "BalancedBestEffort",
+		"auto_rebalance":     "true",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup_vpc-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "1",
+					"scaling_group_name": "${var.name}",
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "PRIORITY",
+					"balance_mode":       "BalancedBestEffort",
+					"auto_rebalance":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "2",
+					"scaling_group_name": "${var.name}",
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "PRIORITY",
+					"balance_mode":       "BalancedOnly",
+					"auto_rebalance":     "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_size":       "2",
+						"balance_mode":   "BalancedOnly",
+						"auto_rebalance": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "1",
+					"max_size":           "2",
+					"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+					"default_cooldown":   "20",
+					"vswitch_ids":        []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"multi_az_policy":    "PRIORITY",
+					"balance_mode":       "BalancedBestEffort",
+					"auto_rebalance":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+						"balance_mode":       "BalancedBestEffort",
+						"auto_rebalance":     "true",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAliCloudEssScalingGroup_slb(t *testing.T) {
 	var v ess.ScalingGroup
 	var slb *slb.DescribeLoadBalancerAttributeResponse

@@ -35,6 +35,15 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Required:     true,
 				ValidateFunc: IntBetween(0, 2000),
 			},
+			"balance_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"BalancedBestEffort", "BalancedOnly"}, false),
+			},
+			"auto_rebalance": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"stop_instance_timeout": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -356,6 +365,8 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	}
 	d.Set("multi_az_policy", object["MultiAZPolicy"])
 	d.Set("az_balance", object["AzBalance"])
+	d.Set("balance_mode", object["BalanceMode"])
+	d.Set("auto_rebalance", object["AutoRebalance"])
 	d.Set("allocation_strategy", object["AllocationStrategy"])
 	d.Set("spot_allocation_strategy", object["SpotAllocationStrategy"])
 	d.Set("on_demand_base_capacity", object["OnDemandBaseCapacity"])
@@ -637,12 +648,20 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		request["AzBalance"] = requests.NewBoolean(d.Get("az_balance").(bool))
 	}
 
-	if d.HasChange("allocation_strategy") {
-		request["AllocationStrategy"] = d.Get("allocation_strategy").(string)
+	if d.HasChange("auto_rebalance") {
+		request["AutoRebalance"] = requests.NewBoolean(d.Get("auto_rebalance").(bool))
+	}
+
+	if d.HasChange("balance_mode") {
+		request["BalanceMode"] = d.Get("balance_mode").(string)
 	}
 
 	if d.HasChange("spot_allocation_strategy") {
 		request["SpotAllocationStrategy"] = d.Get("spot_allocation_strategy").(string)
+	}
+
+	if d.HasChange("allocation_strategy") {
+		request["AllocationStrategy"] = d.Get("allocation_strategy").(string)
 	}
 
 	if d.HasChange("group_deletion_protection") {
@@ -775,6 +794,14 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("az_balance"); ok {
 		request["AzBalance"] = v
+	}
+
+	if v, ok := d.GetOk("auto_rebalance"); ok {
+		request["AutoRebalance"] = v
+	}
+
+	if v, ok := d.GetOk("balance_mode"); ok {
+		request["BalanceMode"] = v
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
