@@ -167,6 +167,8 @@ The following arguments are supported:
 * `launch_template_override` - (Optional, Available since v1.216.0) The details of the instance types that are specified by using the Extend Instance Type of Launch Template feature.  See [`launch_template_override`](#launch_template_override) below for details.
 * `resource_group_id` - (Optional, Available since v1.224.0) The ID of the resource group to which you want to add the scaling group.
 * `alb_server_group` - (Optional, Available since v1.224.0) If a Serve ALB instance is specified in the scaling group, the scaling group automatically attaches its ECS instances to the Server ALB instance.  See [`alb_server_group`](#alb_server_group) below for details.
+* `balance_mode` - (Optional, Available since v1.262.1) The zone balancing mode. This parameter takes effect only when zone balancing is enabled. Valid values: BalancedBestEffort, BalancedOnly. 
+* `auto_rebalance` - (Optional, Available since v1.262.1) Specifies whether to enable automatic rebalancing for the scaling group. This parameter takes effect only when BalancedOnly is enabled for a zone-balanced scaling group. Valid values: false, true.
 
 ### `alb_server_group`
 
