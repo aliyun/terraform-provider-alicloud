@@ -34,7 +34,7 @@ func TestAccAliCloudESAHttpsBasicConfigurationresource_HttpsBasicConfiguration_s
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":           "${alicloud_esa_site.resource_HttpBasicConfiguration_set_global_test.id}",
+					"site_id":           "${data.alicloud_esa_sites.default.sites.0.id}",
 					"ciphersuite":       "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
 					"rule_enable":       "on",
 					"https":             "on",
@@ -55,7 +55,7 @@ func TestAccAliCloudESAHttpsBasicConfigurationresource_HttpsBasicConfiguration_s
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":           "${alicloud_esa_site.resource_HttpBasicConfiguration_set_global_test.id}",
+					"site_id":           "${data.alicloud_esa_sites.default.sites.0.id}",
 					"ciphersuite":       "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
 					"rule_enable":       "off",
 					"https":             "off",
@@ -75,7 +75,9 @@ func TestAccAliCloudESAHttpsBasicConfigurationresource_HttpsBasicConfiguration_s
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{}),
+				Config: testAccConfig(map[string]interface{}{
+					"sequence": "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
 				),
@@ -101,21 +103,9 @@ variable "name" {
 }
 
 
-resource "alicloud_esa_rate_plan_instance" "resource_RatePlanInstance_set_globle_test" {
-  type         = "NS"
-  auto_renew   = "false"
-  period       = "1"
-  payment_type = "Subscription"
-  coverage     = "overseas"
-  auto_pay     = "true"
-  plan_name    = "high"
-}
-
-resource "alicloud_esa_site" "resource_HttpBasicConfiguration_set_global_test" {
-  site_name   = "gositecdn.cn"
-  instance_id = alicloud_esa_rate_plan_instance.resource_RatePlanInstance_set_globle_test.id
-  coverage    = "overseas"
-  access_type = "NS"
+data "alicloud_esa_sites" "default" {
+  plan_subscribe_type = "enterpriseplan"
+  site_name = "gositecdn.cn"
 }
 
 `, name)
@@ -146,7 +136,7 @@ func TestAccAliCloudESAHttpsBasicConfigurationresource_HttpsBasicConfiguration_s
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":     "${alicloud_esa_site.resource_HttpBasicConfiguration_set_test.id}",
+					"site_id":     "${data.alicloud_esa_sites.default.sites.0.id}",
 					"rule_enable": "on",
 					"https":       "on",
 					"rule":        "true",
@@ -158,7 +148,7 @@ func TestAccAliCloudESAHttpsBasicConfigurationresource_HttpsBasicConfiguration_s
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":     "${alicloud_esa_site.resource_HttpBasicConfiguration_set_test.id}",
+					"site_id":     "${data.alicloud_esa_sites.default.sites.0.id}",
 					"rule_enable": "on",
 					"https":       "off",
 					"rule":        "true",
@@ -195,21 +185,9 @@ variable "name" {
 }
 
 
-resource "alicloud_esa_rate_plan_instance" "resource_RatePlanInstance_set_test" {
-  type         = "NS"
-  auto_renew   = "false"
-  period       = "1"
-  payment_type = "Subscription"
-  coverage     = "overseas"
-  auto_pay     = "true"
-  plan_name    = "high"
-}
-
-resource "alicloud_esa_site" "resource_HttpBasicConfiguration_set_test" {
-  site_name   = "gositecdn.cn"
-  instance_id = alicloud_esa_rate_plan_instance.resource_RatePlanInstance_set_test.id
-  coverage    = "overseas"
-  access_type = "NS"
+data "alicloud_esa_sites" "default" {
+  plan_subscribe_type = "enterpriseplan"
+  site_name = "gositecdn.cn"
 }
 
 `, name)

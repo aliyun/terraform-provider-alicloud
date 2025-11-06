@@ -32,40 +32,51 @@ func resourceAliCloudEsaHttpsBasicConfiguration() *schema.Resource {
 				Optional: true,
 			},
 			"ciphersuite_group": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"all", "strict", "custom"}, false),
 			},
 			"config_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
 			"http2": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"http3": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"https": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"ocsp_stapling": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"rule": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"rule_enable": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"rule_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"sequence": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"site_id": {
 				Type:     schema.TypeInt,
@@ -73,20 +84,24 @@ func resourceAliCloudEsaHttpsBasicConfiguration() *schema.Resource {
 				ForceNew: true,
 			},
 			"tls10": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"tls11": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"tls12": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"tls13": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 		},
 	}
@@ -105,13 +120,15 @@ func resourceAliCloudEsaHttpsBasicConfigurationCreate(d *schema.ResourceData, me
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("tls11"); ok {
 		request["Tls11"] = v
 	}
 	if v, ok := d.GetOk("tls10"); ok {
 		request["Tls10"] = v
+	}
+	if v, ok := d.GetOkExists("sequence"); ok {
+		request["Sequence"] = v
 	}
 	if v, ok := d.GetOk("tls13"); ok {
 		request["Tls13"] = v
@@ -192,6 +209,7 @@ func resourceAliCloudEsaHttpsBasicConfigurationRead(d *schema.ResourceData, meta
 	d.Set("rule", objectRaw["Rule"])
 	d.Set("rule_enable", objectRaw["RuleEnable"])
 	d.Set("rule_name", objectRaw["RuleName"])
+	d.Set("sequence", objectRaw["Sequence"])
 	d.Set("tls10", objectRaw["Tls10"])
 	d.Set("tls11", objectRaw["Tls11"])
 	d.Set("tls12", objectRaw["Tls12"])
@@ -218,7 +236,7 @@ func resourceAliCloudEsaHttpsBasicConfigurationUpdate(d *schema.ResourceData, me
 	query = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("tls11") {
 		update = true
 		request["Tls11"] = d.Get("tls11")
@@ -227,6 +245,11 @@ func resourceAliCloudEsaHttpsBasicConfigurationUpdate(d *schema.ResourceData, me
 	if d.HasChange("tls10") {
 		update = true
 		request["Tls10"] = d.Get("tls10")
+	}
+
+	if d.HasChange("sequence") {
+		update = true
+		request["Sequence"] = d.Get("sequence")
 	}
 
 	if d.HasChange("tls13") {
@@ -318,12 +341,10 @@ func resourceAliCloudEsaHttpsBasicConfigurationDelete(d *schema.ResourceData, me
 	request = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
