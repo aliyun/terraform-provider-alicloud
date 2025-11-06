@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"testing"
 )
 
 // Test ESA HttpsApplicationConfiguration. >>> Resource test cases, automatically generated.
@@ -34,7 +35,7 @@ func TestAccAliCloudESAHttpsApplicationConfigurationresource_HttpsApplicationCon
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":                 "${alicloud_esa_site.default.id}",
+					"site_id":                 "${data.alicloud_esa_sites.default.sites.0.id}",
 					"hsts_include_subdomains": "off",
 					"alt_svc_ma":              "86400",
 					"rule_enable":             "off",
@@ -49,6 +50,9 @@ func TestAccAliCloudESAHttpsApplicationConfigurationresource_HttpsApplicationCon
 					"rule":                    "http.host eq \\\"video.example.com\\\"",
 					"site_version":            "0",
 					"rule_name":               "rule_example",
+					"https_no_sni_deny":       "off",
+					"https_sni_verify":        "off",
+					"https_sni_whitelist":     "example.com test.com",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -69,6 +73,9 @@ func TestAccAliCloudESAHttpsApplicationConfigurationresource_HttpsApplicationCon
 					"https_force":             "on",
 					"rule":                    "http.host eq \\\"videoo.example.com\\\"",
 					"rule_name":               "rule_viedoo",
+					"https_no_sni_deny":       "on",
+					"https_sni_verify":        "on",
+					"https_sni_whitelist":     "videoo.example.com secure.videoo.example.com",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -180,6 +187,38 @@ func TestAccAliCloudESAHttpsApplicationConfigurationresource_HttpsApplicationCon
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"https_no_sni_deny": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"https_sni_verify": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sequence": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"https_sni_whitelist": "secure.example.com api.example.com",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"hsts_include_subdomains": "on",
 					"alt_svc_ma":              "172800",
 					"rule_enable":             "off",
@@ -193,6 +232,9 @@ func TestAccAliCloudESAHttpsApplicationConfigurationresource_HttpsApplicationCon
 					"https_force":             "on",
 					"rule":                    "http.host eq \\\"video.example.com\\\"",
 					"rule_name":               "rule_example",
+					"https_no_sni_deny":       "off",
+					"https_sni_verify":        "off",
+					"https_sni_whitelist":     "video.example.com secure.video.example.com",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -226,13 +268,7 @@ variable "name" {
 
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
-}
-
-resource "alicloud_esa_site" "default" {
-  site_name   = "httpsapplicationconfiguration.example.com"
-  instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
-  coverage    = "domestic"
-  access_type = "NS"
+  site_name = "gositecdn.cn"
 }
 
 `, name)
