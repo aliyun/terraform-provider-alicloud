@@ -21,7 +21,7 @@ For information about Cloud Sso User and how to use it, see [What is User](https
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_sso_user&exampleId=9ab06875-0649-45b3-d95c-8c1edcb885326fdfa416&activeTab=example&spm=docs.r.cloud_sso_user.0.9ab0687506&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_sso_user&exampleId=e8dcdbdd-325b-c5c5-a0dd-81d8b377f00e91ae9a39&activeTab=example&spm=docs.r.cloud_sso_user.0.e8dcdbdd32&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

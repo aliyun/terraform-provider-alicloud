@@ -20,7 +20,7 @@ For information about RocketMQ Instance and how to use it, see [What is Instance
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_rocketmq_instance&exampleId=946de15e-604b-d7bb-90fe-117d3bfc8a676030e55e&activeTab=example&spm=docs.r.rocketmq_instance.0.946de15e60&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_rocketmq_instance&exampleId=5199e5cc-8d43-774f-d40d-aaf29b7f798cd525e360&activeTab=example&spm=docs.r.rocketmq_instance.0.5199e5cc8d&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

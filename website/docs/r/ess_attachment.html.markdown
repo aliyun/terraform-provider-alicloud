@@ -20,7 +20,7 @@ Attaches several ECS instances to a specified scaling group or remove them from 
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_attachment&exampleId=7414e67c-f167-e72f-66cc-a7f0a705f0ba86567364&activeTab=example&spm=docs.r.ess_attachment.0.7414e67cf1&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ess_attachment&exampleId=fd33e833-99fb-73a7-2b4d-12381d2c3e857d343984&activeTab=example&spm=docs.r.ess_attachment.0.fd33e83399&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

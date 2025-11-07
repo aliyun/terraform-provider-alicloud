@@ -1,31 +1,32 @@
-## 1.262.1 (Unreleased)
+## 1.263.0 (Unreleased)
+## 1.262.1 (November 7, 2025)
 
 ENHANCEMENTS:
 
-- client: support pop endpoint for fc. [GH-9120]
-- resource/alicloud_alikafka_topic: Refactored the resource alicloud_alikafka_topic; Added the field configs, status, region_id, create_time. [GH-9123]
-- resource/alicloud_esa_rewrite_url_rule: Added the field sequence. [GH-9125]
-- resource/alicloud_esa_http_response_header_modification_rule: Added the field sequence. [GH-9131]
-- resource/alicloud_cloud_sso_user: Refactored the resource alicloud_cloud_sso_user; Added the field mfa_authentication_settings, password, tags, create_time. [GH-9132]
-- resource/alicloud_esa_image_transform: Added the field sequence. [GH-9135]
-- resource/alicloud_esa_network_optimization: Added the field sequence. [GH-9138]
-- resource/alicloud_esa_origin_rule: Added the field follow302_enable, follow302_max_tries, follow302_retain_args, follow302_retain_header, follow302_target_host, origin_mtls, origin_read_timeout, origin_verify, range_chunk_size, sequence. [GH-9139]
-- resource/alicloud_ess_scaling_group: add balance_mode and auto_rebalance. [GH-9140]
-- resource/alicloud_esa_redirect_rule: Added the field sequence. [GH-9143]
-- resource/alicloud_esa_https_basic_configuration: Added the field sequence. [GH-9144]
-- resource/alicloud_esa_https_application_configuration: Added the field https_no_sni_deny, https_sni_verify, https_sni_whitelist, sequence. [GH-9145]
-- data-source/alicloud_ram_roles: Refactored the data source alicloud_ram_roles; Added the field tags; Improved alicloud_ram_roles testcase and document. [GH-9124]
-- data-source/alicloud_ram_policies: Refactored the data source alicloud_ram_policies; Added the field tags; Removed the field user_name; Improved alicloud_ram_policies testcase and document. [GH-9127]
-- docs: improve the examples for ess. [GH-9073]
-- docs: improve the examples. [GH-9087]
-- docs: Improves description for esa_rate_plan_instance. [GH-9142]
-- testcase: Improves test for vpc_network_acl_attachment. [GH-9146]
+- client: support pop endpoint for fc. ([#9120](https://github.com/aliyun/terraform-provider-alicloud/issues/9120))
+- resource/alicloud_alikafka_topic: Refactored the resource alicloud_alikafka_topic; Added the field configs, status, region_id, create_time. ([#9123](https://github.com/aliyun/terraform-provider-alicloud/issues/9123))
+- resource/alicloud_esa_rewrite_url_rule: Added the field sequence. ([#9125](https://github.com/aliyun/terraform-provider-alicloud/issues/9125))
+- resource/alicloud_esa_http_response_header_modification_rule: Added the field sequence. ([#9131](https://github.com/aliyun/terraform-provider-alicloud/issues/9131))
+- resource/alicloud_cloud_sso_user: Refactored the resource alicloud_cloud_sso_user; Added the field mfa_authentication_settings, password, tags, create_time. ([#9132](https://github.com/aliyun/terraform-provider-alicloud/issues/9132))
+- resource/alicloud_esa_image_transform: Added the field sequence. ([#9135](https://github.com/aliyun/terraform-provider-alicloud/issues/9135))
+- resource/alicloud_esa_network_optimization: Added the field sequence. ([#9138](https://github.com/aliyun/terraform-provider-alicloud/issues/9138))
+- resource/alicloud_esa_origin_rule: Added the field follow302_enable, follow302_max_tries, follow302_retain_args, follow302_retain_header, follow302_target_host, origin_mtls, origin_read_timeout, origin_verify, range_chunk_size, sequence. ([#9139](https://github.com/aliyun/terraform-provider-alicloud/issues/9139))
+- resource/alicloud_ess_scaling_group: add balance_mode and auto_rebalance. ([#9140](https://github.com/aliyun/terraform-provider-alicloud/issues/9140))
+- resource/alicloud_esa_redirect_rule: Added the field sequence. ([#9143](https://github.com/aliyun/terraform-provider-alicloud/issues/9143))
+- resource/alicloud_esa_https_basic_configuration: Added the field sequence. ([#9144](https://github.com/aliyun/terraform-provider-alicloud/issues/9144))
+- resource/alicloud_esa_https_application_configuration: Added the field https_no_sni_deny, https_sni_verify, https_sni_whitelist, sequence. ([#9145](https://github.com/aliyun/terraform-provider-alicloud/issues/9145))
+- data-source/alicloud_ram_roles: Refactored the data source alicloud_ram_roles; Added the field tags; Improved alicloud_ram_roles testcase and document. ([#9124](https://github.com/aliyun/terraform-provider-alicloud/issues/9124))
+- data-source/alicloud_ram_policies: Refactored the data source alicloud_ram_policies; Added the field tags; Removed the field user_name; Improved alicloud_ram_policies testcase and document. ([#9127](https://github.com/aliyun/terraform-provider-alicloud/issues/9127))
+- docs: improve the examples for ess. ([#9073](https://github.com/aliyun/terraform-provider-alicloud/issues/9073))
+- docs: improve the examples. ([#9087](https://github.com/aliyun/terraform-provider-alicloud/issues/9087))
+- docs: Improves description for esa_rate_plan_instance. ([#9142](https://github.com/aliyun/terraform-provider-alicloud/issues/9142))
+- testcase: Improves test for vpc_network_acl_attachment. ([#9146](https://github.com/aliyun/terraform-provider-alicloud/issues/9146))
 
 BUG FIXES:
 
-- resource/alicloud_alb_server_group: Fix bug while set servers more than 20 instances. [GH-9126]
-- resource/alicloud_ess_scaling_group: fix health_check_types. [GH-9129]
-- resource/alicloud_instance: Fixed the import error caused by field system_disk_bursting_enabled. [GH-9130]
+- resource/alicloud_alb_server_group: Fix bug while set servers more than 20 instances. ([#9126](https://github.com/aliyun/terraform-provider-alicloud/issues/9126))
+- resource/alicloud_ess_scaling_group: fix health_check_types. ([#9129](https://github.com/aliyun/terraform-provider-alicloud/issues/9129))
+- resource/alicloud_instance: Fixed the import error caused by field system_disk_bursting_enabled. ([#9130](https://github.com/aliyun/terraform-provider-alicloud/issues/9130))
 
 ## 1.262.0 (October 31, 2025)
 
