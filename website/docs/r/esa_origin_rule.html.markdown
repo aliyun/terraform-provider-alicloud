@@ -45,37 +45,37 @@ resource "alicloud_esa_origin_rule" "default" {
 
 The following arguments are supported:
 * `dns_record` - (Optional) Overwrite the DNS resolution record of the origin request.
-* `follow302_enable` - (Optional, Available since v1.263.0) Return Source 302 follow switch. Value range:
+* `follow302_enable` - (Optional, Available since v1.262.1) Return Source 302 follow switch. Value range:
   - `on`: ON.
   - `off`: closed.
-* `follow302_max_tries` - (Optional, Available since v1.263.0) 302 follows the upper limit of the number of times, with a value range of [1-5].
-* `follow302_retain_args` - (Optional, Available since v1.263.0) Retain the original request parameter switch. Value range:
+* `follow302_max_tries` - (Optional, Available since v1.262.1) 302 follows the upper limit of the number of times, with a value range of [1-5].
+* `follow302_retain_args` - (Optional, Available since v1.262.1) Retain the original request parameter switch. Value range:
   - `on`: ON.
   - `off`: closed.
-* `follow302_retain_header` - (Optional, Available since v1.263.0) Retain the original request header switch. Value range:
+* `follow302_retain_header` - (Optional, Available since v1.262.1) Retain the original request header switch. Value range:
   - `on`: ON.
   - `off`: closed.
-* `follow302_target_host` - (Optional, Available since v1.263.0) Modify the source host after 302.
+* `follow302_target_host` - (Optional, Available since v1.262.1) Modify the source host after 302.
 * `origin_host` - (Optional) The HOST carried in the back-to-origin request.
 * `origin_http_port` - (Optional) The port of the origin station accessed when the HTTP protocol is used to return to the origin.
 * `origin_https_port` - (Optional) The port of the origin station accessed when the HTTPS protocol is used to return to the origin.
-* `origin_mtls` - (Optional, Available since v1.263.0) The mtls switch. Value range:
+* `origin_mtls` - (Optional, Available since v1.262.1) The mtls switch. Value range:
   - `on`: ON.
   - `off`: closed.
-* `origin_read_timeout` - (Optional, Available since v1.263.0) Read timeout interval of the source station (s).
+* `origin_read_timeout` - (Optional, Available since v1.262.1) Read timeout interval of the source station (s).
 * `origin_scheme` - (Optional) The protocol used by the back-to-origin request. Value range:
   - `http`: uses the http protocol to return to the source.
   - `https`: uses the https protocol to return to the source.
   - `follow`: follows the Client Protocol back to the source.
 * `origin_sni` - (Optional) SNI carried in the back-to-origin request.
-* `origin_verify` - (Optional, Available since v1.263.0) Source station certificate verification switch. Value range:
+* `origin_verify` - (Optional, Available since v1.262.1) Source station certificate verification switch. Value range:
   - `on`: ON.
   - `off`: closed.
 * `range` - (Optional) Use the range sharding method to download the file from the source. Value range:
   - `on`: Open.
   - `off`: off.
   - `force`: force.
-* `range_chunk_size` - (Optional, Available since v1.263.0) range shard size.
+* `range_chunk_size` - (Optional, Available since v1.262.1) range shard size.
 * `rule` - (Optional) Rule content, using conditional expressions to match user requests. When adding global configuration, this parameter does not need to be set. There are two usage scenarios:
   - Match all incoming requests: value set to true
   - Match specified request: Set the value to a custom expression, for example: (http.host eq \"video.example.com\")
@@ -83,7 +83,7 @@ The following arguments are supported:
   - `on`: open.
   - `off`: close.
 * `rule_name` - (Optional) Rule name. When adding global configuration, this parameter does not need to be set.
-* `sequence` - (Optional, Int, Available since v1.263.0) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
+* `sequence` - (Optional, Int, Available since v1.262.1) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
 * `site_id` - (Required, ForceNew, Int) The site ID.
 * `site_version` - (Optional, ForceNew, Int) The version number of the site configuration. For sites that have enabled configuration version management, this parameter can be used to specify the effective version of the configuration site, which defaults to version 0.
 

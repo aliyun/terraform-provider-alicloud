@@ -79,7 +79,7 @@ The following arguments are supported:
   - `on`
   - `off`
 * `rule_name` - (Optional) Rule name. When adding global configuration, this parameter does not need to be set.
-* `sequence` - (Optional, Int, Available since v1.263.0) Order of rule execution. The smaller the value, the higher the priority for execution.
+* `sequence` - (Optional, Int, Available since v1.262.1) Order of rule execution. The smaller the value, the higher the priority for execution.
 * `site_id` - (Required, ForceNew, Int) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
 * `site_version` - (Optional, ForceNew, Int) The version number of the site configuration. For sites that have enabled configuration version management, this parameter can be used to specify the effective version of the configuration site, which defaults to version 0.
 * `status_code` - (Required) The response code that you want to use to indicate URL redirection. Valid values:

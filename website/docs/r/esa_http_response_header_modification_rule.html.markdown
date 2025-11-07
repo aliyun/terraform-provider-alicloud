@@ -86,7 +86,7 @@ The following arguments are supported:
   - `on`: open.
   - `off`: close.
 * `rule_name` - (Optional) Rule name. When adding global configuration, this parameter does not need to be set.
-* `sequence` - (Optional, Int, Available since v1.263.0) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
+* `sequence` - (Optional, Int, Available since v1.262.1) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
 * `site_id` - (Required, ForceNew, Int) The site ID.
 * `site_version` - (Optional, ForceNew, Int) The version number of the site configuration. For sites that have enabled configuration version management, this parameter can be used to specify the effective version of the configuration site, which defaults to version 0.
 
@@ -98,7 +98,7 @@ The response_header_modification supports the following:
   - `add`: Add
   - `del`: Delete
   - `modify`: Modify
-* `type` - (Optional, Available since v1.263.0) The value type. Value range:
+* `type` - (Optional, Available since v1.262.1) The value type. Value range:
   - `static`: Static mode.
   - `dynamic`: Dynamic mode.
 * `value` - (Optional) The response header value.

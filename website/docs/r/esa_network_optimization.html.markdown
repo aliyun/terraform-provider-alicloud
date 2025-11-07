@@ -67,7 +67,7 @@ The following arguments are supported:
   - `on`: open.
   - `off`: close.
 * `rule_name` - (Optional) Rule name.
-* `sequence` - (Optional, Int, Available since v1.263.0) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
+* `sequence` - (Optional, Int, Available since v1.262.1) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
 * `site_id` - (Required, ForceNew, Int) Site ID.
 * `site_version` - (Optional, ForceNew, Int) The version number of the site configuration. For sites that have enabled configuration version management, this parameter can be used to specify the effective version of the configuration site, which defaults to version 0.
 * `smart_routing` - (Optional) Whether to enable smart routing service, default is disabled. Value range:
