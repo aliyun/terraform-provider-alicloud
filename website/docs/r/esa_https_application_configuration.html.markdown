@@ -82,13 +82,13 @@ The following arguments are supported:
   - `302`
   - `307`
   - `308`
-* `https_no_sni_deny` - (Optional, Available since v1.263.0) Whether to enable to reject TLS handshake requests without SNI. This parameter is disabled by default. Value range:
+* `https_no_sni_deny` - (Optional, Available since v1.262.1) Whether to enable to reject TLS handshake requests without SNI. This parameter is disabled by default. Value range:
   - `on`: open.
   - `off`: off.
-* `https_sni_verify` - (Optional, Available since v1.263.0) Whether to enable SNI verification. It is disabled by default. Value range:
+* `https_sni_verify` - (Optional, Available since v1.262.1) Whether to enable SNI verification. It is disabled by default. Value range:
   - `on`: open.
   - `off`: off.
-* `https_sni_whitelist` - (Optional, Available since v1.263.0) Specifies the list of allowed SNI whitelists, separated by spaces.
+* `https_sni_whitelist` - (Optional, Available since v1.262.1) Specifies the list of allowed SNI whitelists, separated by spaces.
 * `rule` - (Optional) Rule content, using conditional expressions to match user requests. When adding global configuration, this parameter does not need to be set. There are two usage scenarios:
   - Match all incoming requests: value set to true
   - Match specified request: Set the value to a custom expression, for example: (http.host eq \"video.example.com\")
@@ -96,7 +96,7 @@ The following arguments are supported:
   - `on`: open.
   - `off`: close.
 * `rule_name` - (Optional) Rule name. When adding global configuration, this parameter does not need to be set.
-* `sequence` - (Optional, Int, Available since v1.263.0) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
+* `sequence` - (Optional, Int, Available since v1.262.1) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
 * `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
 * `site_version` - (Optional, ForceNew, Int) The version number of the site configuration. For sites that have enabled configuration version management, this parameter can be used to specify the effective version of the configuration site, which defaults to version 0.
 
