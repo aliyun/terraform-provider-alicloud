@@ -22,10 +22,11 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBastionhostInstanceDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudBastionhostInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -48,6 +49,8 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 						"description":          name,
 						"period":               "1",
 						"security_group_ids.#": "2",
+						"storage":              "5",
+						"bandwidth":            "10",
 					}),
 				),
 			},
@@ -94,11 +97,31 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"license_code": "bhah_ult_1000_asset",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"license_code": "bhah_ult_1000_asset",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"storage": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"storage": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth": "20",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": "20",
 					}),
 				),
 			},
@@ -244,7 +267,7 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					//"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":        "${var.name}",
-					"license_code":       "bhah_ent_200_asset",
+					"license_code":       "bhah_ult_10000_asset",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
 					"tags":               REMOVEKEY,
 				}),
@@ -252,7 +275,7 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						//"resource_group_id":    CHECKSET,
 						"description":          name,
-						"license_code":         "bhah_ent_200_asset",
+						"license_code":         "bhah_ult_10000_asset",
 						"security_group_ids.#": "2",
 						"tags.%":               REMOVEKEY,
 						"tags.Created":         REMOVEKEY,
@@ -282,10 +305,11 @@ func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBastionhostInstanceDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudBastionhostInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -295,12 +319,13 @@ func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"license_code":         "bhah_ent_50_asset",
 					"period":               "1",
-					"plan_code":            "cloudbastion",
+					"plan_code":            "cloudbastion_ha",
 					"storage":              "5",
 					"bandwidth":            "10",
 					"description":          "${var.name}",
 					"vswitch_id":           "${local.vswitch_id}",
 					"security_group_ids":   []string{"${alicloud_security_group.default.0.id}"},
+					"slave_vswitch_id":     "${local.slave_vswitch_id}",
 					"enable_public_access": "false",
 					"public_white_list":    []string{"192.168.0.0/16"},
 				}),
@@ -308,8 +333,9 @@ func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 					testAccCheck(map[string]string{
 						"description":          name,
 						"period":               "1",
-						"plan_code":            "cloudbastion",
+						"plan_code":            "cloudbastion_ha",
 						"security_group_ids.#": "1",
+						"slave_vswitch_id":     CHECKSET,
 						"enable_public_access": "false",
 						"public_white_list.#":  "1",
 						"public_white_list.0":  "192.168.0.0/16",
@@ -338,6 +364,36 @@ func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"license_code": "bhah_ent_100_asset",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"license_code": "bhah_ent_100_asset",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"license_code": "bhah_ult_1000_asset",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"license_code": "bhah_ult_1000_asset",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"license_code": "bhah_ult_10000_asset",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"license_code": "bhah_ult_10000_asset",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       false,
@@ -347,37 +403,44 @@ func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 	})
 }
 
-func resourceBastionhostInstanceDependence(name string) string {
-	return fmt.Sprintf(
-		`data "alicloud_zones" "default" {
-				  available_resource_creation = "VSwitch"
-				}
+func AliCloudBastionhostInstanceBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
 
-				data "alicloud_resource_manager_resource_groups" "default"{
-					status="OK"
-				}
-				
-				variable "name" {
-				  default = "%s"
-				}
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		status = "OK"
+	}
 
-				data "alicloud_vpcs" "default" {
-					name_regex = "^default-NODELETING$"
-				}
-				data "alicloud_vswitches" "default" {
-					vpc_id = data.alicloud_vpcs.default.ids.0
-					zone_id = data.alicloud_zones.default.zones.0.id
-				}
-				
-				locals {
-				  vswitch_id = data.alicloud_vswitches.default.ids[0]
-				}
-				
-				resource "alicloud_security_group" "default" {
-				  count  = 2
-				  name   = "${var.name}"
-				  vpc_id = data.alicloud_vpcs.default.ids.0
-				}
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	data "alicloud_vswitches" "slave" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.zones.1.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		count  = 2
+  		name   = var.name
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	locals {
+  		vswitch_id       = data.alicloud_vswitches.default.ids.0
+  		slave_vswitch_id = data.alicloud_vswitches.slave.ids.0
+	}
 `, name)
 }
 
