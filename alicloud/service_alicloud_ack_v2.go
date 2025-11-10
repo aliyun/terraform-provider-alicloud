@@ -59,15 +59,18 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 }
 
 func (s *AckServiceV2) AckNodepoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.AckNodepoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeAckNodepool)
+}
+
+func (s *AckServiceV2) AckNodepoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAckNodepool(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -95,7 +98,6 @@ func (s *AckServiceV2) DescribeAsyncAckNodepoolStateRefreshFunc(d *schema.Resour
 				return object, "", nil
 			}
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -133,7 +135,9 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	action := fmt.Sprintf("/tasks/%s", res["task_id"])
+	task_id, err := jsonpath.Get("$.task_id", res)
+
+	action := fmt.Sprintf("/tasks/%s", task_id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -152,6 +156,7 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 	if err != nil {
 		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	return response, nil
 }
 
