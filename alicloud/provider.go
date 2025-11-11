@@ -1365,7 +1365,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cdn_domain":                                            resourceAlicloudCdnDomain(),
 			"alicloud_cdn_domain_new":                                        resourceAliCloudCdnDomain(),
 			"alicloud_cdn_domain_config":                                     resourceAliCloudCdnDomainConfig(),
-			"alicloud_router_interface":                                      resourceAlicloudRouterInterface(),
+			"alicloud_express_connect_router_interface_v2":                   resourceAliCloudExpressConnectRouterInterface(),
 			"alicloud_router_interface_connection":                           resourceAlicloudRouterInterfaceConnection(),
 			"alicloud_ots_table":                                             resourceAlicloudOtsTable(),
 			"alicloud_ots_instance":                                          resourceAlicloudOtsInstance(),
