@@ -918,6 +918,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_firewall_ai_traffic_analysis_status":            resourceAliCloudCloudFirewallAiTrafficAnalysisStatus(),
 			"alicloud_eflo_vpd_grant_rule":                                  resourceAliCloudEfloVpdGrantRule(),
 			"alicloud_wafv3_defense_resource_group":                         resourceAliCloudWafv3DefenseResourceGroup(),
+			"alicloud_milvus_instance":                                      resourceAliCloudMilvusInstance(),
 			"alicloud_resource_manager_delivery_channel":                    resourceAliCloudResourceManagerDeliveryChannel(),
 			"alicloud_esa_load_balancer":                                    resourceAliCloudEsaLoadBalancer(),
 			"alicloud_resource_manager_multi_account_delivery_channel":      resourceAliCloudResourceManagerMultiAccountDeliveryChannel(),
