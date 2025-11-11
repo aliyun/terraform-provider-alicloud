@@ -170,148 +170,148 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 // Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
 // Value: location code
 var productCodeToLocationCode = map[string]string{
-	"ecs":                  "ecs",     // ECS
-	"adb":                  "ads",     //ADB
-	"ess":                  "ess",     //AutoScaling
-	"cs":                   "cs",      // ACK
-	"polardb":              "polardb", // PolarDB
-	"cr":                   "acr",     // CR
-	"dds":                  "dds",     //MongoDB
-	"gpdb":                 "gpdb",    //GPDB
-	"fc_open":              "fc",      // FC, FCV2
-	"fc":                   "fc",      // FCV3
-	"cloudapi":             "apigateway",
-	"apig":                 "nativeapigw",     // APIG
-	"datahub":              "datahub",         // DataHub
-	"mns_open":             "mns",             // MessageService
-	"elasticsearch":        "elasticsearch",   // Elasticsearch
-	"ddoscoo":              "ddoscoo",         // DdosCoo
-	"ddosbgp":              "ddosbgp",         // DdosBgp
-	"antiddos_public":      "ddosbasic",       // DdosBasic
-	"bssopenapi":           "bssopenapi",      //BssOpenApi
-	"alikafka":             "alikafka",        //AliKafka
-	"emr":                  "emr",             //EMR
-	"smartag":              "smartag",         // Smartag
-	"yundun_dbaudit":       "dbaudit",         //DBAudit
-	"yundun_bastionhost":   "bastionhost",     //Bastionhost
-	"hbase":                "hbase",           //HBase
-	"edas":                 "edas",            // EDAS
-	"alidns":               "alidns",          //Alidns
-	"cassandra":            "cds",             //Cassandra
-	"eci":                  "eci",             // ECI
-	"dcdn":                 "dcdn",            // DCDN
-	"r_kvstore":            "redisa",          // Redis
-	"ons":                  "ons",             //Ons
-	"config":               "config",          //Config
-	"fnf":                  "fnf",             // FnF
-	"ros":                  "ros",             // ROS
-	"mse":                  "mse",             // MSE
-	"pvtz":                 "pvtz",            //PrivateZone
-	"privatelink":          "privatelink",     // PrivateLink
-	"maxcompute":           "odps",            //MaxCompute
-	"resourcesharing":      "ressharing",      // ResourceManager
-	"ga":                   "gaplus",          // Ga
-	"actiontrail":          "actiontrail",     //ActionTrail
-	"hitsdb":               "hitsdb",          //Lindorm
-	"brain_industrial":     "aistudio",        //BrainIndustrial
-	"eipanycast":           "eipanycast",      // Eipanycast
-	"oos":                  "oos",             // OOS
-	"ims":                  "ims",             //IMS
-	"resourcemanager":      "resourcemanager", // ResourceManager
-	"nas":                  "nas",             //NAS
-	"dms_enterprise":       "dmsenterprise",   //DMSEnterprise
-	"sgw":                  "hcs_sgw",         // CloudStorageGateway
-	"slb":                  "slb",             // SLB
-	"kms":                  "kms",             //KMS
-	"dm":                   "dm",              //DirectMail
-	"eventbridge":          "eventbridge",     // EventBridge
-	"hbr":                  "hbr",             //HBR
-	"cas":                  "cas",             //SSLCertificatesService
-	"arms":                 "arms",            // ARMS
-	"cloudfw":              "cloudfirewall",   //CloudFirewall
-	"sae":                  "serverless",      //SAE
-	"alb":                  "alb",             // ALB
-	"ecd":                  "gwsecd",          // ECD
-	"cloudphone":           "cloudphone",      // ECP
-	"scdn":                 "scdn",            //SCDN
-	"dataworks_public":     "dide",            //DataWorks
-	"cdn":                  "cdn",             // CDN
-	"cddc":                 "cddc",            // CDDC
-	"mscopensubscription":  "mscsub",          //MscSub
-	"sddp":                 "sddp",            // SDDP
-	"sas":                  "sas",             // ThreatDetection
-	"ehpc":                 "ehs",             // Ehpc
-	"ens":                  "ens",             // ENS
-	"iot":                  "iot",             // Iot
-	"imm":                  "imm",             // IMM
-	"clickhouse":           "clickhouse",      // ClickHouse
-	"selectdb":             "selectdb",        //SelectDB
-	"dts":                  "dts",             // DTS
-	"dg":                   "dg",              // DatabaseGateway
-	"cloudsso":             "cloudsso",        // CloudSSO
-	"swas_open":            "swas",            // SimpleApplicationServer
-	"vs":                   "vs",              // VideoSurveillanceSystem
-	"quickbi_public":       "quickbi",         // QuickBI
-	"devops_rdc":           "rdcdevops",       // RDC
-	"vod":                  "vod",             // VOD
-	"opensearch":           "opensearch",      // OpenSearch
-	"gdb":                  "gds",             // GraphDatabase
-	"dbfs":                 "dbfs",            // DBFS
-	"eais":                 "eais",            // EAIS
-	"cloudauth":            "cloudauth",       // Cloudauth
-	"imp":                  "imp",             // IMP
-	"mhub":                 "emas",            // MHUB
-	"servicemesh":          "servicemesh",     // ServiceMesh
-	"starrocks":            "emrstarrocks",    // StarRocks
-	"eds_user":             "edsuser",         // ECD
-	"tag":                  "tag",             // Tag
-	"schedulerx2":          "edasschedulerx",  // Schedulerx
-	"dysmsapi":             "dysms",           // SMS
-	"vpcpeer":              "vpcpeer",         // VpcPeer
-	"dbs":                  "cbs",             // DBS
-	"nlb":                  "nlb",             // NLB
-	"ebs":                  "ebs",             // EBS
-	"bpstudio":             "bpstudio",        // BPStudio
-	"das":                  "hdm",             // DAS
-	"servicecatalog":       "srvcatalog",      // ServiceCatalog
-	"eflo":                 "eflo",            //Eflo
-	"oceanbasepro":         "oceanbase",       // OceanBase
-	"chatbot":              "beebot",          // Chatbot
-	"computenest":          "computenest",     // ComputeNest
-	"drds":                 "drds",            // DRDS
-	"polardbx":             "polardbx",        // DRDS
-	"adcp":                 "adcp",            // AckOne
-	"sls":                  "sls",             // SLS
-	"rocketmq":             "rmq",             // RocketMQ
-	"resourcecenter":       "",                // ResourceManager
-	"hologram":             "hologram",        // Hologram
-	"foasconsole":          "foasconsole",     // RealtimeCompute
-	"vpc":                  "vpc",             // VPC, VPNGateway,ExpressConnect, CBWP, EIP
-	"oss":                  "oss",             // OSS
-	"cms":                  "cms",             // CloudMonitorService
-	"waf_openapi":          "waf",             //WAFV3,WAF
-	"dfs":                  "alidfs",          //DFS
-	"amqp":                 "onsproxy",        // Amqp
-	"amqp_open":            "onsproxy",        // Amqp
-	"cbn":                  "cbn",             // CEN
-	"expressconnectrouter": "ecr",             // ExpressConnectRouter
-	"green":                "green",           // Aligreen
-	"governance":           "governance",      // Governance
-	"ots":                  "ots",             // OTS
-	"tablestore":           "ots",             // OTS
-	"ram":                  "ram",             //RAM
-	"quotas":               "quotas",          //Quotas
-	"market":               "market",          //Market
-	"aiworkspace":          "paiworkspace",    //PAIWorkspace
-	"vpcipam":              "vpcipam",         //VpcIpam
-	"gwlb":                 "gwlb",            // GWLB
-	"esa":                  "dcdnservices",    // ESA
-	"live":                 "live",            // Live
-	"eds_aic":              "wycloudphone",    // CloudPhone
-	"cloudcontrol":         "cloudcontrol",    // CloudControl
-	"eflo_controller":      "efloctrl",        // Eflo
-	"eflo_cnp":             "eflocnp",         // Eflo-CNP
-
+	"ecs":                     "ecs",     // ECS
+	"adb":                     "ads",     //ADB
+	"ess":                     "ess",     //AutoScaling
+	"cs":                      "cs",      // ACK
+	"polardb":                 "polardb", // PolarDB
+	"cr":                      "acr",     // CR
+	"dds":                     "dds",     //MongoDB
+	"gpdb":                    "gpdb",    //GPDB
+	"fc_open":                 "fc",      // FC, FCV2
+	"fc":                      "fc",      // FCV3
+	"cloudapi":                "apigateway",
+	"apig":                    "nativeapigw",       // APIG
+	"datahub":                 "datahub",           // DataHub
+	"mns_open":                "mns",               // MessageService
+	"elasticsearch":           "elasticsearch",     // Elasticsearch
+	"ddoscoo":                 "ddoscoo",           // DdosCoo
+	"ddosbgp":                 "ddosbgp",           // DdosBgp
+	"antiddos_public":         "ddosbasic",         // DdosBasic
+	"bssopenapi":              "bssopenapi",        //BssOpenApi
+	"alikafka":                "alikafka",          //AliKafka
+	"emr":                     "emr",               //EMR
+	"smartag":                 "smartag",           // Smartag
+	"yundun_dbaudit":          "dbaudit",           //DBAudit
+	"yundun_bastionhost":      "bastionhost",       //Bastionhost
+	"hbase":                   "hbase",             //HBase
+	"edas":                    "edas",              // EDAS
+	"alidns":                  "alidns",            //Alidns
+	"cassandra":               "cds",               //Cassandra
+	"eci":                     "eci",               // ECI
+	"dcdn":                    "dcdn",              // DCDN
+	"r_kvstore":               "redisa",            // Redis
+	"ons":                     "ons",               //Ons
+	"config":                  "config",            //Config
+	"fnf":                     "fnf",               // FnF
+	"ros":                     "ros",               // ROS
+	"mse":                     "mse",               // MSE
+	"pvtz":                    "pvtz",              //PrivateZone
+	"privatelink":             "privatelink",       // PrivateLink
+	"maxcompute":              "odps",              //MaxCompute
+	"resourcesharing":         "ressharing",        // ResourceManager
+	"ga":                      "gaplus",            // Ga
+	"actiontrail":             "actiontrail",       //ActionTrail
+	"hitsdb":                  "hitsdb",            //Lindorm
+	"brain_industrial":        "aistudio",          //BrainIndustrial
+	"eipanycast":              "eipanycast",        // Eipanycast
+	"oos":                     "oos",               // OOS
+	"ims":                     "ims",               //IMS
+	"resourcemanager":         "resourcemanager",   // ResourceManager
+	"nas":                     "nas",               //NAS
+	"dms_enterprise":          "dmsenterprise",     //DMSEnterprise
+	"sgw":                     "hcs_sgw",           // CloudStorageGateway
+	"slb":                     "slb",               // SLB
+	"kms":                     "kms",               //KMS
+	"dm":                      "dm",                //DirectMail
+	"eventbridge":             "eventbridge",       // EventBridge
+	"hbr":                     "hbr",               //HBR
+	"cas":                     "cas",               //SSLCertificatesService
+	"arms":                    "arms",              // ARMS
+	"cloudfw":                 "cloudfirewall",     //CloudFirewall
+	"sae":                     "serverless",        //SAE
+	"alb":                     "alb",               // ALB
+	"ecd":                     "gwsecd",            // ECD
+	"cloudphone":              "cloudphone",        // ECP
+	"scdn":                    "scdn",              //SCDN
+	"dataworks_public":        "dide",              //DataWorks
+	"cdn":                     "cdn",               // CDN
+	"cddc":                    "cddc",              // CDDC
+	"mscopensubscription":     "mscsub",            //MscSub
+	"sddp":                    "sddp",              // SDDP
+	"sas":                     "sas",               // ThreatDetection
+	"ehpc":                    "ehs",               // Ehpc
+	"ens":                     "ens",               // ENS
+	"iot":                     "iot",               // Iot
+	"imm":                     "imm",               // IMM
+	"clickhouse":              "clickhouse",        // ClickHouse
+	"selectdb":                "selectdb",          //SelectDB
+	"dts":                     "dts",               // DTS
+	"dg":                      "dg",                // DatabaseGateway
+	"cloudsso":                "cloudsso",          // CloudSSO
+	"swas_open":               "swas",              // SimpleApplicationServer
+	"vs":                      "vs",                // VideoSurveillanceSystem
+	"quickbi_public":          "quickbi",           // QuickBI
+	"devops_rdc":              "rdcdevops",         // RDC
+	"vod":                     "vod",               // VOD
+	"opensearch":              "opensearch",        // OpenSearch
+	"gdb":                     "gds",               // GraphDatabase
+	"dbfs":                    "dbfs",              // DBFS
+	"eais":                    "eais",              // EAIS
+	"cloudauth":               "cloudauth",         // Cloudauth
+	"imp":                     "imp",               // IMP
+	"mhub":                    "emas",              // MHUB
+	"servicemesh":             "servicemesh",       // ServiceMesh
+	"starrocks":               "emrstarrocks",      // StarRocks
+	"eds_user":                "edsuser",           // ECD
+	"tag":                     "tag",               // Tag
+	"schedulerx2":             "edasschedulerx",    // Schedulerx
+	"dysmsapi":                "dysms",             // SMS
+	"vpcpeer":                 "vpcpeer",           // VpcPeer
+	"dbs":                     "cbs",               // DBS
+	"nlb":                     "nlb",               // NLB
+	"ebs":                     "ebs",               // EBS
+	"bpstudio":                "bpstudio",          // BPStudio
+	"das":                     "hdm",               // DAS
+	"servicecatalog":          "srvcatalog",        // ServiceCatalog
+	"eflo":                    "eflo",              //Eflo
+	"oceanbasepro":            "oceanbase",         // OceanBase
+	"chatbot":                 "beebot",            // Chatbot
+	"computenest":             "computenest",       // ComputeNest
+	"drds":                    "drds",              // DRDS
+	"polardbx":                "polardbx",          // DRDS
+	"adcp":                    "adcp",              // AckOne
+	"sls":                     "sls",               // SLS
+	"rocketmq":                "rmq",               // RocketMQ
+	"resourcecenter":          "",                  // ResourceManager
+	"hologram":                "hologram",          // Hologram
+	"foasconsole":             "foasconsole",       // RealtimeCompute
+	"vpc":                     "vpc",               // VPC, VPNGateway,ExpressConnect, CBWP, EIP
+	"oss":                     "oss",               // OSS
+	"cms":                     "cms",               // CloudMonitorService
+	"waf_openapi":             "waf",               //WAFV3,WAF
+	"dfs":                     "alidfs",            //DFS
+	"amqp":                    "onsproxy",          // Amqp
+	"amqp_open":               "onsproxy",          // Amqp
+	"cbn":                     "cbn",               // CEN
+	"expressconnectrouter":    "ecr",               // ExpressConnectRouter
+	"green":                   "green",             // Aligreen
+	"governance":              "governance",        // Governance
+	"ots":                     "ots",               // OTS
+	"tablestore":              "ots",               // OTS
+	"ram":                     "ram",               //RAM
+	"quotas":                  "quotas",            //Quotas
+	"market":                  "market",            //Market
+	"aiworkspace":             "paiworkspace",      //PAIWorkspace
+	"vpcipam":                 "vpcipam",           //VpcIpam
+	"gwlb":                    "gwlb",              // GWLB
+	"esa":                     "dcdnservices",      // ESA
+	"live":                    "live",              // Live
+	"eds_aic":                 "wycloudphone",      // CloudPhone
+	"cloudcontrol":            "cloudcontrol",      // CloudControl
+	"eflo_controller":         "efloctrl",          // Eflo
+	"eflo_cnp":                "eflocnp",           // Eflo-CNP
+	"milvus":                  "cloudmilvus",       // Milvus
 	"resourcedirectorymaster": "resourcedirectory", // ResourceManager
 }
 
