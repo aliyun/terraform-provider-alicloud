@@ -34,20 +34,30 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":  "${alicloud_log_project.default.name}",
-					"logstore": "${alicloud_log_store.default.name}",
+					"project":               "${alicloud_log_project.default.name}",
+					"logstore":              "${alicloud_log_store.default.name}",
+					"log_reduce":            true,
+					"log_reduce_black_list": []interface{}{"test"},
+					"log_reduce_white_list": []interface{}{"name"},
+					"max_text_len":          2048,
 					"full_text": []map[string]interface{}{
 						{
-							"case_sensitive": "true",
+							"case_sensitive": true,
 							"token":          ` #$^*\r\n\t`,
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"project":     name,
-						"logstore":    name,
-						"full_text.#": "1",
+						"project":                 name,
+						"logstore":                name,
+						"log_reduce":              "true",
+						"log_reduce_black_list.#": "1",
+						"log_reduce_black_list.0": "test",
+						"log_reduce_white_list.#": "1",
+						"log_reduce_white_list.0": "name",
+						"max_text_len":            "2048",
+						"full_text.#":             "1",
 					}),
 				),
 			},
@@ -58,11 +68,15 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"full_text": REMOVEKEY,
+					"log_reduce":            false,
+					"log_reduce_black_list": []interface{}{},
+					"log_reduce_white_list": []interface{}{},
+					"max_text_len":          1024,
+					"full_text":             REMOVEKEY,
 					"field_search": []map[string]interface{}{
 						{
 							"name":             "${var.name}",
-							"enable_analytics": "true",
+							"enable_analytics": true,
 							"token":            ` #$^*\r\n\t`,
 							"type":             "text",
 						},
@@ -70,14 +84,23 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"full_text.#":    REMOVEKEY,
-						"field_search.#": "1",
+						"log_reduce":              "false",
+						"log_reduce_black_list.#": "0",
+						"log_reduce_black_list.0": REMOVEKEY,
+						"log_reduce_white_list.#": "0",
+						"log_reduce_white_list.0": REMOVEKEY,
+						"max_text_len":            "1024",
+						"full_text.#":             REMOVEKEY,
+						"field_search.#":          "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-
+					"log_reduce":            REMOVEKEY,
+					"log_reduce_black_list": REMOVEKEY,
+					"log_reduce_white_list": REMOVEKEY,
+					"max_text_len":          REMOVEKEY,
 					"full_text": []map[string]interface{}{
 						{
 							"case_sensitive": "true",
@@ -108,8 +131,12 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"full_text.#":    "1",
-						"field_search.#": "2",
+						"log_reduce":              REMOVEKEY,
+						"log_reduce_black_list.#": REMOVEKEY,
+						"log_reduce_white_list.#": REMOVEKEY,
+						"max_text_len":            REMOVEKEY,
+						"full_text.#":             "1",
+						"field_search.#":          "2",
 					}),
 				),
 			},
