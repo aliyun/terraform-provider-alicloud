@@ -2,28 +2,23 @@
 subcategory: "MongoDB"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_mongodb_audit_policy"
-sidebar_current: "docs-alicloud-resource-mongodb-audit-policy"
 description: |-
-  Provides a Alicloud MongoDB Audit Policy resource.
+  Provides a Alicloud Mongodb Audit Policy resource.
 ---
 
 # alicloud_mongodb_audit_policy
 
-Provides a MongoDB Audit Policy resource.
+Provides a Mongodb Audit Policy resource.
 
-For information about MongoDB Audit Policy and how to use it, see [What is Audit Policy](https://www.alibabacloud.com/help/doc-detail/131941.html).
+
+
+For information about Mongodb Audit Policy and how to use it, see [What is Audit Policy](https://www.alibabacloud.com/help/doc-detail/131941.html).
 
 -> **NOTE:** Available since v1.148.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_mongodb_audit_policy&exampleId=579e6708-068f-a8e0-b150-a675a47950d124d6f20b&activeTab=example&spm=docs.r.mongodb_audit_policy.0.579e670806&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -65,33 +60,32 @@ resource "alicloud_mongodb_audit_policy" "default" {
 }
 ```
 
+### Deleting `alicloud_mongodb_audit_policy` or removing it from your configuration
+
+Terraform cannot destroy resource `alicloud_mongodb_audit_policy`. Terraform will remove this resource from the state file, however resources may remain.
+
 ## Argument Reference
 
 The following arguments are supported:
-
-* `db_instance_id` - (Required, ForceNew) The ID of the instance.
-* `audit_status` - (Required) The status of the audit log. Valid values: `disabled`, `enable`.
-* `storage_period` - (Optional) The retention period of audit logs. Valid values: `1` to `30`. Default value: `30`.
+* `audit_status` - (Required) Audit state, Valid values: `enable`, `disabled`.
+* `db_instance_id` - (Required, ForceNew) Database Instance Id
+* `storage_period` - (Optional, Int) Audit log retention duration. The value range is 1 to 365 days. The default value is 30 days.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Audit Policy. Its value is same as `db_instance_id`.
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
--> **NOTE:** Available since v1.161.0.
-
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 5 mins) Used when create the Audit Policy.
-* `update` - (Defaults to 5 mins) Used when update the Audit Policy.
+* `create` - (Defaults to 10 mins) Used when create the Audit Policy.
+* `update` - (Defaults to 10 mins) Used when update the Audit Policy.
 
 ## Import
 
-MongoDB Audit Policy can be imported using the id, e.g.
+Mongodb Audit Policy can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_mongodb_audit_policy.example <db_instance_id>
+$ terraform import alicloud_mongodb_audit_policy.example <id>
 ```
