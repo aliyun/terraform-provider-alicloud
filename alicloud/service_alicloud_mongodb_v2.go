@@ -96,12 +96,12 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
-	action := "DescribeAccounts"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
 	request["DBInstanceId"] = parts[0]
 	request["RegionId"] = client.RegionId
+	action := "DescribeAccounts"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -134,15 +134,18 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 }
 
 func (s *MongodbServiceV2) MongodbAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.MongodbAccountStateRefreshFuncWithApi(id, field, failStates, s.DescribeMongodbAccount)
+}
+
+func (s *MongodbServiceV2) MongodbAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeMongodbAccount(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

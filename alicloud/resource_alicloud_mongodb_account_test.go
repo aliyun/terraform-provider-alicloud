@@ -25,7 +25,7 @@ func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudMongoDBAccountMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &MongodbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMongodbAccount")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -93,9 +93,10 @@ func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 }
 
 var AlicloudMongoDBAccountMap0 = map[string]string{
-	"account_name": CHECKSET,
-	"instance_id":  CHECKSET,
-	"status":       CHECKSET,
+	"account_name":   CHECKSET,
+	"instance_id":    CHECKSET,
+	"status":         CHECKSET,
+	"character_type": "normal",
 }
 
 func AlicloudMongoDBAccountBasicDependence0(name string) string {
