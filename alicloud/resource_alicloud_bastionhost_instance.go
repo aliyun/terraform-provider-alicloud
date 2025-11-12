@@ -33,7 +33,7 @@ func resourceAliCloudBastionhostInstance() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringLenBetween(1, 64),
+				ValidateFunc: StringLenBetween(1, 64),
 			},
 			"license_code": {
 				Type:     schema.TypeString,
@@ -43,7 +43,7 @@ func resourceAliCloudBastionhostInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloudbastion", "cloudbastion_ha"}, false),
+				ValidateFunc: StringInSlice([]string{"cloudbastion", "cloudbastion_ha"}, false),
 			},
 			"storage": {
 				Type:     schema.TypeString,
@@ -52,7 +52,6 @@ func resourceAliCloudBastionhostInstance() *schema.Resource {
 			"bandwidth": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"public_white_list": {
 				Type:     schema.TypeList,
@@ -62,7 +61,7 @@ func resourceAliCloudBastionhostInstance() *schema.Resource {
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntInSlice([]int{1, 3, 6, 12, 24, 36}),
+				ValidateFunc: IntInSlice([]int{1, 3, 6, 12, 24, 36}),
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -73,6 +72,11 @@ func resourceAliCloudBastionhostInstance() *schema.Resource {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"slave_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"tags": tagsSchema(),
 			"resource_group_id": {
@@ -232,7 +236,7 @@ func resourceAliCloudBastionhostInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"M", "Y"}, false),
+				ValidateFunc: StringInSlice([]string{"M", "Y"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
 						return false
@@ -244,7 +248,7 @@ func resourceAliCloudBastionhostInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal", "NotRenewal"}, false),
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal", "NotRenewal"}, false),
 			},
 		},
 	}
@@ -337,15 +341,43 @@ func resourceAliCloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
+	// start instance
+	startInstanceAction := "StartInstance"
+	startInstanceResponse := make(map[string]interface{})
+	startInstanceReq := make(map[string]interface{})
+	startInstanceReq["InstanceId"] = d.Id()
+	startInstanceReq["VswitchId"] = d.Get("vswitch_id")
+
 	rawSecurityGroupIds := d.Get("security_group_ids").(*schema.Set).List()
 	securityGroupIds := make([]string, len(rawSecurityGroupIds))
 	for index, rawSecurityGroupId := range rawSecurityGroupIds {
 		securityGroupIds[index] = rawSecurityGroupId.(string)
 	}
-	// start instance
-	if err := bastionhostService.StartBastionhostInstance(d.Id(), d.Get("vswitch_id").(string), securityGroupIds); err != nil {
-		return WrapError(err)
+
+	startInstanceReq["SecurityGroupIds"] = securityGroupIds
+
+	if v, ok := d.GetOk("slave_vswitch_id"); ok {
+		startInstanceReq["SlaveVswitchId"] = v
 	}
+
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", startInstanceAction, nil, startInstanceReq, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(startInstanceAction, startInstanceResponse, startInstanceReq)
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_bastionhost_instance", startInstanceAction, AlibabaCloudSdkGoERROR)
+	}
+
 	// wait for pending
 	stateConf = BuildStateConf([]string{"PENDING", "CREATING"}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 600*time.Second, bastionhostService.BastionhostInstanceRefreshFunc(d.Id(), []string{"UPGRADING", "UPGRADE_FAILED", "CREATE_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
@@ -370,13 +402,22 @@ func resourceAliCloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	d.Set("license_code", instance["LicenseCode"])
 	d.Set("vswitch_id", instance["VswitchId"])
 	d.Set("security_group_ids", instance["AuthorizedSecurityGroups"])
+	d.Set("slave_vswitch_id", instance["SlaveVswitchId"])
 	d.Set("enable_public_access", instance["PublicNetworkAccess"])
 	d.Set("resource_group_id", instance["ResourceGroupId"])
+
+	planCodeDetail, err := BastionhostService.DescribeBastionhostInstances(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("plan_code", planCodeDetail["PlanCode"])
+
 	// instance["Storage"] is in byte, and it is larger than request param
 	if v, err := strconv.ParseInt(instance["Storage"].(json.Number).String(), 10, 64); err != nil {
 		return WrapError(err)
 	} else {
-		d.Set("storage", fmt.Sprint(bytesToTB(v)-1))
+		d.Set("storage", convertBastionhostInstanceStorageResponse(bytesToTB(v), planCodeDetail["PlanCode"], instance["LicenseCode"]))
 	}
 
 	d.Set("bandwidth", instance["BandwidthPackage"])
@@ -384,12 +425,6 @@ func resourceAliCloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	if fmt.Sprint(instance["PublicNetworkAccess"]) == "true" {
 		d.Set("public_white_list", instance["PublicWhiteList"])
 	}
-
-	instance, err = BastionhostService.DescribeBastionhostInstances(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("plan_code", instance["PlanCode"])
 
 	tags, err := BastionhostService.ListTagResources(d.Id(), "INSTANCE")
 	if err != nil {
@@ -507,6 +542,20 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("storage")
+	}
+
+	if !d.IsNewResource() && d.HasChange("bandwidth") {
+		params := map[string]string{
+			"Bandwidth": "bandwidth",
+		}
+		if err := bastionhostService.UpdateInstanceSpec(params, d, meta); err != nil {
+			return WrapError(err)
+		}
+		stateConf := BuildStateConf([]string{"UPGRADING"}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, bastionhostService.BastionhostInstanceRefreshFunc(d.Id(), []string{"CREATING", "UPGRADE_FAILED", "CREATE_FAILED"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("bandwidth")
 	}
 
 	if !d.IsNewResource() && d.HasChange("security_group_ids") {
@@ -758,4 +807,26 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 func resourceAliCloudBastionhostInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resourceBastionhostInstance. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
+}
+
+func convertBastionhostInstanceStorageResponse(storage float64, planCode, licenseCode interface{}) string {
+	if HIGH_AVAILABILITY_PLAN_CODE[fmt.Sprint(planCode)] {
+		if ASSET_50_100_200[fmt.Sprint(licenseCode)] {
+			storage -= 2
+		} else if ASSET_500_1000_2000[fmt.Sprint(licenseCode)] {
+			storage -= 3
+		} else if ASSET_5000_10000_20000[fmt.Sprint(licenseCode)] {
+			storage -= 4
+		}
+	} else {
+		if ASSET_50_100_200[fmt.Sprint(licenseCode)] {
+			storage -= 1
+		} else if ASSET_500_1000_2000[fmt.Sprint(licenseCode)] {
+			storage -= 2
+		} else if ASSET_5000_10000_20000[fmt.Sprint(licenseCode)] {
+			storage -= 2
+		}
+	}
+
+	return fmt.Sprint(storage)
 }

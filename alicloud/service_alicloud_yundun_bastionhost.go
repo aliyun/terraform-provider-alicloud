@@ -47,6 +47,31 @@ var bastionhostpolicyRequired = []BastionhostPolicyRequired{
 	},
 }
 
+var HIGH_AVAILABILITY_PLAN_CODE = map[string]bool{
+	"ha_on":           true,
+	"cloudbastion_ha": true,
+	"cloudbastion_sm": true,
+}
+
+var ASSET_50_100_200 = map[string]bool{
+	"bhah_pro_20_asset":  true,
+	"bhah_ent_50_asset":  true,
+	"bhah_ent_100_asset": true,
+	"bhah_ent_200_asset": true,
+}
+
+var ASSET_500_1000_2000 = map[string]bool{
+	"bhah_ult_500_asset":  true,
+	"bhah_ult_1000_asset": true,
+	"bhah_ult_2000_asset": true,
+}
+
+var ASSET_5000_10000_20000 = map[string]bool{
+	"bhah_ult_5000_asset":  true,
+	"bhah_ult_10000_asset": true,
+	"bhah_ult_20000_asset": true,
+}
+
 func (s *YundunBastionhostService) DescribeBastionhostInstance(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var response map[string]interface{}
