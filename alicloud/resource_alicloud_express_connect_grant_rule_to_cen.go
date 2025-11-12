@@ -1,7 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -9,17 +12,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudExpressConnectGrantRuleToCen() *schema.Resource {
+func resourceAliCloudExpressConnectGrantRuleToCen() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudExpressConnectGrantRuleToCenCreate,
-		Read:   resourceAlicloudExpressConnectGrantRuleToCenRead,
-		Delete: resourceAlicloudExpressConnectGrantRuleToCenDelete,
+		Create: resourceAliCloudExpressConnectGrantRuleToCenCreate,
+		Read:   resourceAliCloudExpressConnectGrantRuleToCenRead,
+		Delete: resourceAliCloudExpressConnectGrantRuleToCenDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(3 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cen_id": {
@@ -28,9 +31,13 @@ func resourceAlicloudExpressConnectGrantRuleToCen() *schema.Resource {
 				ForceNew: true,
 			},
 			"cen_owner_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -41,23 +48,32 @@ func resourceAlicloudExpressConnectGrantRuleToCen() *schema.Resource {
 	}
 }
 
-func resourceAlicloudExpressConnectGrantRuleToCenCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudExpressConnectGrantRuleToCenCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "GrantInstanceToCen"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("cen_id"); ok {
+		request["CenId"] = v
+	}
+	if v, ok := d.GetOk("instance_id"); ok {
+		request["InstanceId"] = v
+	}
+	if v, ok := d.GetOk("cen_owner_id"); ok {
+		request["CenOwnerId"] = v
+	}
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("GrantInstanceToCen")
-	request["CenId"] = d.Get("cen_id")
-	request["CenOwnerId"] = d.Get("cen_owner_id")
-	request["InstanceId"] = d.Get("instance_id")
-	request["InstanceType"] = "VBR"
+	request["ClientToken"] = buildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+	request["InstanceType"] = "VBR"
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -75,58 +91,53 @@ func resourceAlicloudExpressConnectGrantRuleToCenCreate(d *schema.ResourceData, 
 
 	d.SetId(fmt.Sprintf("%v:%v:%v", request["CenId"], request["CenOwnerId"], request["InstanceId"]))
 
-	return resourceAlicloudExpressConnectGrantRuleToCenRead(d, meta)
+	return resourceAliCloudExpressConnectGrantRuleToCenRead(d, meta)
 }
 
-func resourceAlicloudExpressConnectGrantRuleToCenRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudExpressConnectGrantRuleToCenRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
 
-	object, err := vpcService.DescribeExpressConnectGrantRuleToCen(d.Id())
+	objectRaw, err := expressConnectServiceV2.DescribeExpressConnectGrantRuleToCen(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_express_connect_grant_rule_to_cen DescribeExpressConnectGrantRuleToCen Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	parts, err := ParseResourceId(d.Id(), 3)
-	if err != nil {
-		return WrapError(err)
-	}
+	d.Set("create_time", objectRaw["CreationTime"])
+	d.Set("cen_id", objectRaw["CenInstanceId"])
+	d.Set("cen_owner_id", fmt.Sprint(objectRaw["CenOwnerId"]))
 
-	d.Set("cen_id", object["CenInstanceId"])
-	d.Set("cen_owner_id", formatInt(object["CenOwnerId"]))
+	parts := strings.Split(d.Id(), ":")
 	d.Set("instance_id", parts[2])
 
 	return nil
 }
 
-func resourceAlicloudExpressConnectGrantRuleToCenDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudExpressConnectGrantRuleToCenDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
 	action := "RevokeInstanceFromCen"
+	var request map[string]interface{}
 	var response map[string]interface{}
-
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
+	request["CenId"] = parts[0]
+	request["InstanceId"] = parts[2]
+	request["CenOwnerId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
 
-	parts, err := ParseResourceId(d.Id(), 3)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	request := map[string]interface{}{
-		"RegionId":     client.RegionId,
-		"ClientToken":  buildClientToken("RevokeInstanceFromCen"),
-		"CenId":        parts[0],
-		"CenOwnerId":   parts[1],
-		"InstanceId":   parts[2],
-		"InstanceType": "VBR",
-	}
-
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+	request["InstanceType"] = "VBR"
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -139,6 +150,9 @@ func resourceAlicloudExpressConnectGrantRuleToCenDelete(d *schema.ResourceData, 
 	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
