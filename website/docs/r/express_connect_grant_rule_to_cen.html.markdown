@@ -2,7 +2,6 @@
 subcategory: "Express Connect"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_express_connect_grant_rule_to_cen"
-sidebar_current: "docs-alicloud-resource-express-connect-grant-rule-to-cen"
 description: |-
   Provides a Alicloud Express Connect Grant Rule To Cen resource.
 ---
@@ -29,44 +28,49 @@ Basic Usage
 provider "alicloud" {
   region = "cn-hangzhou"
 }
+
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
-data "alicloud_express_connect_physical_connections" "example" {
+
+data "alicloud_account" "default" {
+}
+
+data "alicloud_express_connect_physical_connections" "default" {
   name_regex = "^preserved-NODELETING"
 }
-resource "random_integer" "vlan_id" {
+
+resource "random_integer" "default" {
   max = 2999
   min = 1
 }
-resource "alicloud_express_connect_virtual_border_router" "example" {
+
+resource "alicloud_express_connect_virtual_border_router" "default" {
   local_gateway_ip           = "10.0.0.1"
   peer_gateway_ip            = "10.0.0.2"
   peering_subnet_mask        = "255.255.255.252"
-  physical_connection_id     = data.alicloud_express_connect_physical_connections.example.connections.0.id
+  physical_connection_id     = data.alicloud_express_connect_physical_connections.default.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = random_integer.vlan_id.id
+  vlan_id                    = random_integer.default.id
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
 }
 
-resource "alicloud_cen_instance" "example" {
+resource "alicloud_cen_instance" "default" {
   cen_instance_name = var.name
 }
-data "alicloud_account" "default" {}
 
-resource "alicloud_express_connect_grant_rule_to_cen" "example" {
-  cen_id       = alicloud_cen_instance.example.id
+resource "alicloud_express_connect_grant_rule_to_cen" "default" {
+  cen_id       = alicloud_cen_instance.default.id
   cen_owner_id = data.alicloud_account.default.id
-  instance_id  = alicloud_express_connect_virtual_border_router.example.id
+  instance_id  = alicloud_express_connect_virtual_border_router.default.id
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
 * `cen_id` - (Required, ForceNew) The ID of the CEN instance to which you want to grant permissions.
 * `cen_owner_id` - (Required, ForceNew) The user ID (UID) of the Alibaba Cloud account to which the CEN instance belongs.
 * `instance_id` - (Required, ForceNew) The ID of the VBR.
@@ -74,15 +78,14 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Grant Rule To Cen. It formats as `<cen_id>:<cen_owner_id>:<instance_id>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<cen_id>:<cen_owner_id>:<instance_id>`.
+* `create_time` - (Available since v1.263.0) The time when the instance was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 3 mins) Used when create the Grant Rule To Cen.
-* `delete` - (Defaults to 3 mins) Used when delete the Grant Rule To Cen.
+* `create` - (Defaults to 5 mins) Used when create the Grant Rule To Cen.
+* `delete` - (Defaults to 5 mins) Used when delete the Grant Rule To Cen.
 
 ## Import
 

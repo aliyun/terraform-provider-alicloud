@@ -9,21 +9,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudExpressConnectGrantRuleToCen_basic0(t *testing.T) {
+// Test ExpressConnect GrantRuleToCen. >>> Resource test cases, automatically generated.
+// Case 高速通道跨账号授权_副本1758786253950 11567
+func TestAccAliCloudExpressConnectGrantRuleToCen_basic11567(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	resourceId := "alicloud_express_connect_grant_rule_to_cen.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudExpressConnectGrantRuleToCenMap)
+	ra := resourceAttrInit(resourceId, AliCloudExpressConnectGrantRuleToCenMap11567)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &ExpressConnectServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeExpressConnectGrantRuleToCen")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAccExpressConnectGrantRuleToCen-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudExpressConnectGrantRuleToCenBasicDependence)
+	name := fmt.Sprintf("tfaccexpressconnect%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudExpressConnectGrantRuleToCenBasicDependence11567)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -32,30 +34,33 @@ func TestAccAliCloudExpressConnectGrantRuleToCen_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id":       "${alicloud_cen_instance.default.id}",
-					"cen_owner_id": "${data.alicloud_account.default.id}",
 					"instance_id":  "${alicloud_express_connect_virtual_border_router.default.id}",
+					"cen_owner_id": "${data.alicloud_account.default.id}",
+					"cen_id":       "${alicloud_cen_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cen_id":       CHECKSET,
-						"cen_owner_id": CHECKSET,
 						"instance_id":  CHECKSET,
+						"cen_owner_id": CHECKSET,
+						"cen_id":       CHECKSET,
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
 }
 
-var resourceAlicloudExpressConnectGrantRuleToCenMap = map[string]string{}
+var AliCloudExpressConnectGrantRuleToCenMap11567 = map[string]string{
+	"create_time": CHECKSET,
+}
 
-func resourceAlicloudExpressConnectGrantRuleToCenBasicDependence(name string) string {
+func AliCloudExpressConnectGrantRuleToCenBasicDependence11567(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -84,3 +89,5 @@ func resourceAlicloudExpressConnectGrantRuleToCenBasicDependence(name string) st
 	}
 `, name, acctest.RandIntRange(1, 2999))
 }
+
+// Test ExpressConnect GrantRuleToCen. <<< Resource test cases, automatically generated.
