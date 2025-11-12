@@ -1767,7 +1767,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_state_configuration":                               resourceAlicloudOosStateConfiguration(),
 			"alicloud_oos_secret_parameter":                                  resourceAliCloudOosSecretParameter(),
 			"alicloud_click_house_backup_policy":                             resourceAlicloudClickHouseBackupPolicy(),
-			"alicloud_mongodb_audit_policy":                                  resourceAlicloudMongodbAuditPolicy(),
+			"alicloud_mongodb_audit_policy":                                  resourceAliCloudMongodbAuditPolicy(),
 			"alicloud_cloud_sso_access_configuration_provisioning":           resourceAlicloudCloudSsoAccessConfigurationProvisioning(),
 			"alicloud_mongodb_account":                                       resourceAliCloudMongodbAccount(),
 			"alicloud_mongodb_serverless_instance":                           resourceAlicloudMongodbServerlessInstance(),
