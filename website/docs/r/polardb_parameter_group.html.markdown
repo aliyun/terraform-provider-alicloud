@@ -2,16 +2,17 @@
 subcategory: "PolarDB"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_polardb_parameter_group"
-sidebar_current: "docs-alicloud-resource-polardb-parameter-group"
 description: |-
-  Provides a Alicloud PolarDB Parameter Group resource.
+  Provides a Alicloud Polar Db Parameter Group resource.
 ---
 
 # alicloud_polardb_parameter_group
 
-Provides a PolarDB Parameter Group resource.
+Provides a Polar Db Parameter Group resource.
 
-For information about PolarDB Parameter Group and how to use it, see [What is Parameter Group](https://www.alibabacloud.com/help/en/polardb/polardb-for-mysql/user-guide/apply-a-parameter-template).
+
+
+For information about Polar Db Parameter Group and how to use it, see [What is Parameter Group](https://www.alibabacloud.com/help/en/polardb/polardb-for-mysql/user-guide/apply-a-parameter-template).
 
 -> **NOTE:** Available since v1.183.0.
 
@@ -19,17 +20,11 @@ For information about PolarDB Parameter Group and how to use it, see [What is Pa
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_parameter_group&exampleId=03f8e183-ae35-65ce-d46f-a37a51b9ab387168091d&activeTab=example&spm=docs.r.polardb_parameter_group.0.03f8e183ae&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 resource "alicloud_polardb_parameter_group" "example" {
-  name       = "example_value"
-  db_type    = "MySQL"
-  db_version = "8.0"
+  parameter_group_name = "example_value"
+  db_type              = "MySQL"
+  db_version           = "8.0"
   parameters {
     param_name  = "wait_timeout"
     param_value = "86400"
@@ -41,36 +36,41 @@ resource "alicloud_polardb_parameter_group" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `name` - (Required, ForceNew) The name of the parameter template. It must be 8 to 64 characters in length, and can contain letters, digits, and underscores (_). It must start with a letter and cannot contain Chinese characters.
 * `db_type` - (Required, ForceNew) The type of the database engine. Only `MySQL` is supported.
-* `db_version` - (Required, ForceNew) The version number of the database engine. Valid values: `5.6`, `5.7`, `8.0`.
-* `parameters` - (Required, ForceNew) The parameter template. See the following `Block parameters`.
-* `description` - (Optional, ForceNew) The description of the parameter template. It must be 0 to 200 characters in length.
+* `db_version` - (Required, ForceNew) The version of the database engine. Valid values: 
+  - **5.6** 
+  - **5.7** 
+  - **8.0**
+* `description` - (Optional, ForceNew) ParameterGroupDesc
+* `parameter_group_name` - (Optional, ForceNew, Available since v1.263.0) The name of the parameter template. The name must meet the following requirements:
 
-#### Block parameters
+  - It must start with a letter and can contain letters, digits, and underscores (_). It cannot contain Chinese characters or end with an underscore (_).
 
-The parameters supports the following:
+  - It must be 8 to 64 characters in length.
+* `parameters` - (Required, ForceNew, Set) ParameterDetail See [`parameters`](#parameters) below.
+* `name` - (Deprecated since v1.263.0). Field 'name' has been deprecated from provider version 1.263.0. New field 'parameter_group_name' instead.
 
-* `param_name` - (Required, ForceNew) The name of a parameter in the parameter template.
-* `param_value` - (Required, ForceNew) The value of a parameter in the parameter template.
+### `parameters`
+
+The parameters supports the following, you can view all parameter details for the target database engine version database cluster through the [DescribeParameterTemplates](https://next.api.alibabacloud.com/document/polardb/2017-08-01/DescribeParameterTemplates), including parameter name, value.
+* `param_value` - (Optional, ForceNew) param value
+* `param_name` - (Optional, ForceNew) param name
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Parameter Group.
+* `id` - The ID of the resource supplied above.
+* `create_time` - The creation time of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when create the PolarDB Parameter Group.
-* `delete` - (Defaults to 1 mins) Used when delete the PolarDB Parameter Group.
+* `create` - (Defaults to 5 mins) Used when create the Parameter Group.
+* `delete` - (Defaults to 5 mins) Used when delete the Parameter Group.
 
 ## Import
 
-PolarDB Parameter Group can be imported using the id, e.g.
+Polar Db Parameter Group can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_polardb_parameter_group.example <id>

@@ -1,44 +1,55 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudPolarDBParameterGroup() *schema.Resource {
+func resourceAliCloudPolarDbParameterGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudPolarDBParameterGroupCreate,
-		Read:   resourceAlicloudPolarDBParameterGroupRead,
-		Delete: resourceAlicloudPolarDBParameterGroupDelete,
+		Create: resourceAliCloudPolarDbParameterGroupCreate,
+		Read:   resourceAliCloudPolarDbParameterGroupRead,
+		Delete: resourceAliCloudPolarDbParameterGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"name": {
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"db_type": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"db_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MySQL"}, false),
-			},
 			"db_version": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"parameter_group_name": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
+				ExactlyOneOf: []string{"parameter_group_name", "name"},
+				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"5.6", "5.7", "8.0"}, false),
 			},
 			"parameters": {
 				Type:     schema.TypeSet,
@@ -46,57 +57,71 @@ func resourceAlicloudPolarDBParameterGroup() *schema.Resource {
 				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"param_name": {
-							Type:     schema.TypeString,
-							Required: true,
-							ForceNew: true,
-						},
 						"param_value": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+							ForceNew: true,
+						},
+						"param_name": {
+							Type:     schema.TypeString,
+							Optional: true,
 							ForceNew: true,
 						},
 					},
 				},
 			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+			"name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'name' has been deprecated since provider version 1.263.0. New field 'parameter_group_name' instead.",
+				ForceNew:   true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudPolarDBParameterGroupCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "CreateParameterGroup"
-	request := make(map[string]interface{})
-	var err error
+func resourceAliCloudPolarDbParameterGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateParameterGroup"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ParameterGroupName"] = d.Get("name")
-	request["DBType"] = d.Get("db_type")
-	request["DBVersion"] = d.Get("db_version")
-	parametersMap := map[string]interface{}{}
-	for _, parametersList := range d.Get("parameters").(*schema.Set).List() {
-		parametersArg := parametersList.(map[string]interface{})
-		parametersMap[fmt.Sprint(parametersArg["param_name"])] = parametersArg["param_value"]
-	}
-	parametersJson, err := convertMaptoJsonString(parametersMap)
-	if err != nil {
-		return WrapError(err)
-	}
-	request["Parameters"] = parametersJson
 
 	if v, ok := d.GetOk("description"); ok {
 		request["ParameterGroupDesc"] = v
 	}
+	request["DBVersion"] = d.Get("db_version")
+	request["DBType"] = d.Get("db_type")
+	_, err = jsonpath.Get("$", d.Get("parameters"))
+	if err == nil {
+		parametersMap := map[string]interface{}{}
+		for _, parametersList := range d.Get("parameters").(*schema.Set).List() {
+			parametersArg := parametersList.(map[string]interface{})
+			parametersMap[fmt.Sprint(parametersArg["param_name"])] = parametersArg["param_value"]
+		}
+		parametersJson, err := convertMaptoJsonString(parametersMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Parameters"] = parametersJson
+	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	if v, ok := d.GetOk("name"); ok || d.HasChange("name") {
+		request["ParameterGroupName"] = v
+	}
+
+	if v, ok := d.GetOk("parameter_group_name"); ok {
+		request["ParameterGroupName"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -107,59 +132,71 @@ func resourceAlicloudPolarDBParameterGroupCreate(d *schema.ResourceData, meta in
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_polardb_parameter_group", action, AlibabaCloudSdkGoERROR)
 	}
+
 	d.SetId(fmt.Sprint(response["ParameterGroupId"]))
 
-	return resourceAlicloudPolarDBParameterGroupRead(d, meta)
+	return resourceAliCloudPolarDbParameterGroupRead(d, meta)
 }
 
-func resourceAlicloudPolarDBParameterGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudPolarDbParameterGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	polarDBService := PolarDBService{client}
-	object, err := polarDBService.DescribePolarDBParameterGroup(d.Id())
+	polarDbServiceV2 := PolarDbServiceV2{client}
+
+	objectRaw, err := polarDbServiceV2.DescribePolarDbParameterGroup(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_polardb_parameter_group DescribePolarDbParameterGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("name", object["ParameterGroupName"])
-	d.Set("db_type", object["DBType"])
-	d.Set("db_version", object["DBVersion"])
 
-	if parameterDetailList, ok := object["ParameterDetail"].([]interface{}); ok {
-		parameterDetailMaps := make([]map[string]interface{}, 0)
-		for _, parameterDetail := range parameterDetailList {
-			parameterDetailMap := map[string]interface{}{}
-			parameterDetailArg := parameterDetail.(map[string]interface{})
-			parameterDetailMap["param_name"] = parameterDetailArg["ParamName"]
-			parameterDetailMap["param_value"] = parameterDetailArg["ParamValue"]
-			parameterDetailMaps = append(parameterDetailMaps, parameterDetailMap)
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("db_type", objectRaw["DBType"])
+	d.Set("db_version", objectRaw["DBVersion"])
+	d.Set("description", objectRaw["ParameterGroupDesc"])
+	d.Set("parameter_group_name", objectRaw["ParameterGroupName"])
+
+	parameterDetailRaw := objectRaw["ParameterDetail"]
+	parametersMaps := make([]map[string]interface{}, 0)
+	if parameterDetailRaw != nil {
+		for _, parameterDetailChildRaw := range convertToInterfaceArray(parameterDetailRaw) {
+			parametersMap := make(map[string]interface{})
+			parameterDetailChildRaw := parameterDetailChildRaw.(map[string]interface{})
+			parametersMap["param_name"] = parameterDetailChildRaw["ParamName"]
+			parametersMap["param_value"] = parameterDetailChildRaw["ParamValue"]
+
+			parametersMaps = append(parametersMaps, parametersMap)
 		}
-		d.Set("parameters", parameterDetailMaps)
+	}
+	if err := d.Set("parameters", parametersMaps); err != nil {
+		return err
 	}
 
-	d.Set("description", object["ParameterGroupDesc"])
-
+	d.Set("name", d.Get("parameter_group_name"))
 	return nil
 }
 
-func resourceAlicloudPolarDBParameterGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudPolarDbParameterGroupDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteParameterGroup"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	request := map[string]interface{}{
-		"RegionId":         client.RegionId,
-		"ParameterGroupId": d.Id(),
-	}
+	request = make(map[string]interface{})
+	request["ParameterGroupId"] = d.Id()
+	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -170,7 +207,11 @@ func resourceAlicloudPolarDBParameterGroupDelete(d *schema.ResourceData, meta in
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ParamGroupsNotExist"}) || NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

@@ -14,13 +14,8 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
-
-type PolarDbServiceV2 struct {
-	client *connectivity.AliyunClient
-}
 
 // DBNode is a nested struct in polardb response
 type DBNode struct {
