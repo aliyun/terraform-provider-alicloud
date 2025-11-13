@@ -33,7 +33,7 @@ func init() {
 func testSweepConfigAggregateConfigRule(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -174,7 +174,7 @@ func testSweepConfigAggregateConfigRule(region string) error {
 func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_config_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateConfigRuleMap0)
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregateConfigRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeConfigAggregateConfigRule")
@@ -182,11 +182,11 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sconfigaggregateconfigrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateConfigRuleBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregateConfigRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -218,11 +218,6 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 						"input_parameters.cpuCount":  "4",
 					}),
 				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -259,7 +254,7 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"exclude_resource_ids_scope": "${data.alicloud_instances.default.ids.0}",
+					"exclude_resource_ids_scope": "${alicloud_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -314,7 +309,7 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 					},
 					"description":                name,
 					"risk_level":                 `1`,
-					"exclude_resource_ids_scope": "${data.alicloud_instances.default.ids.1}",
+					"exclude_resource_ids_scope": "${alicloud_instance.default.id}",
 					"region_ids_scope":           "cn-shanghai",
 					"resource_group_ids_scope":   "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"tag_key_scope":              "tftest",
@@ -334,6 +329,21 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config_rule_trigger_types": "ConfigurationItemChangeNotification,ScheduledNotification",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config_rule_trigger_types": "ConfigurationItemChangeNotification,ScheduledNotification",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -341,7 +351,7 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 func TestAccAliCloudConfigAggregateConfigRule_status(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_config_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateConfigRuleMap0)
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregateConfigRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeConfigAggregateConfigRule")
@@ -349,13 +359,12 @@ func TestAccAliCloudConfigAggregateConfigRule_status(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sconfigaggregateconfigrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateConfigRuleBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregateConfigRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -388,6 +397,16 @@ func TestAccAliCloudConfigAggregateConfigRule_status(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"config_rule_trigger_types": "ConfigurationItemChangeNotification,ScheduledNotification",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config_rule_trigger_types": "ConfigurationItemChangeNotification,ScheduledNotification",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"status": "INACTIVE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -415,101 +434,79 @@ func TestAccAliCloudConfigAggregateConfigRule_status(t *testing.T) {
 	})
 }
 
-var AlicloudConfigAggregateConfigRuleMap0 = map[string]string{
-	"aggregate_config_rule_name":  CHECKSET,
-	"aggregator_id":               CHECKSET,
-	"config_rule_trigger_types":   "ConfigurationItemChangeNotification",
-	"description":                 "",
-	"input_parameters.%":          "1",
-	"input_parameters.cpuCount":   "4",
-	"source_owner":                "ALIYUN",
-	"source_identifier":           "ecs-cpu-min-count-limit",
-	"region_ids_scope":            "",
-	"resource_group_ids_scope":    "",
-	"risk_level":                  "1",
-	"exclude_resource_ids_scope":  "",
-	"resource_types_scope.#":      "1",
-	"maximum_execution_frequency": "",
-	"tag_key_scope":               "",
-	"tag_value_scope":             "",
-	"status":                      "ACTIVE",
+var AliCloudConfigAggregateConfigRuleMap0 = map[string]string{
+	"aggregate_config_rule_name": CHECKSET,
+	"aggregator_id":              CHECKSET,
 }
 
-func AlicloudConfigAggregateConfigRuleBasicDependence0(name string) string {
+func AliCloudConfigAggregateConfigRuleBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_zones" default {
-  available_resource_creation = "Instance"
-}
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		status = "OK"
+	}
 
-data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  instance_type_family = "ecs.sn1ne"
-}
+	data "alicloud_resource_manager_accounts" "default" {
+  		status = "CreateSuccess"
+	}
 
-data "alicloud_images" "default" {
-  name_regex = "^ubuntu"
-  most_recent = true
-  owners = "system"
-}
+	data "alicloud_zones" "default" {
+  		available_disk_category     = "cloud_efficiency"
+  		available_resource_creation = "VSwitch"
+	}
 
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
-}
+	data "alicloud_images" "default" {
+  		most_recent = true
+  		owners      = "system"
+	}
 
-resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
+	data "alicloud_instance_types" "default" {
+  		availability_zone = data.alicloud_zones.default.zones.0.id
+  		image_id          = data.alicloud_images.default.images.0.id
+	}
 
-resource "alicloud_security_group" "tf_test_foo" {
-  name = "${var.name}"
-  description = "foo"
-  vpc_id = "${alicloud_vpc.foo.id}"
-}
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
 
-resource "alicloud_instance" "default" {
-  count = 3
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  # series III
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  system_disk_category = "cloud_efficiency"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = 5
-  security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
-  instance_name = "${var.name}"
-  user_data = "echo 'net.ipv4.ip_forward=1'>> /etc/sysctl.conf"
-}
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
+	}
 
-data "alicloud_instances" "default" {
- name_regex = "${alicloud_instance.default.0.instance_name}"
-}
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = alicloud_vpc.default.id
+	}
 
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
-}
+	resource "alicloud_instance" "default" {
+  		image_id                   = data.alicloud_images.default.images.0.id
+  		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  		security_groups            = alicloud_security_group.default.*.id
+  		internet_charge_type       = "PayByTraffic"
+  		internet_max_bandwidth_out = "10"
+  		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		instance_charge_type       = "PostPaid"
+  		system_disk_category       = "cloud_efficiency"
+  		vswitch_id                 = alicloud_vswitch.default.id
+  		instance_name              = var.name
+	}
 
-data "alicloud_resource_manager_accounts" "default" {
-  status = "CreateSuccess"
+	resource "alicloud_config_aggregator" "default" {
+  		aggregator_name = var.name
+  		description     = var.name
+  		aggregator_accounts {
+    		account_id   = data.alicloud_resource_manager_accounts.default.accounts.1.account_id
+    		account_name = data.alicloud_resource_manager_accounts.default.accounts.1.display_name
+    		account_type = "ResourceDirectory"
+  		}
 }
-resource "alicloud_config_aggregator" "default" {
-  aggregator_accounts {
-    account_id   = data.alicloud_resource_manager_accounts.default.accounts.1.account_id
-    account_name = data.alicloud_resource_manager_accounts.default.accounts.1.display_name
-    account_type = "ResourceDirectory"
-  }
-  aggregator_name = var.name
-  description     = var.name
-}
-
 `, name)
 }
 
@@ -517,7 +514,7 @@ resource "alicloud_config_aggregator" "default" {
 func SkipTestAccAliCloudConfigAggregateConfigRule_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_config_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateConfigRuleMap1)
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregateConfigRuleMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeConfigAggregateConfigRule")
@@ -525,7 +522,7 @@ func SkipTestAccAliCloudConfigAggregateConfigRule_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sconfigaggregateconfigrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateConfigRuleBasicDependence1)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregateConfigRuleBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -558,11 +555,6 @@ func SkipTestAccAliCloudConfigAggregateConfigRule_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": name + "update",
 				}),
@@ -584,7 +576,7 @@ func SkipTestAccAliCloudConfigAggregateConfigRule_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"exclude_resource_ids_scope": "${data.alicloud_instances.default.ids.0}",
+					"exclude_resource_ids_scope": "${alicloud_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -666,7 +658,7 @@ func SkipTestAccAliCloudConfigAggregateConfigRule_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":                 name,
 					"risk_level":                  `1`,
-					"exclude_resource_ids_scope":  "${data.alicloud_instances.default.ids.1}",
+					"exclude_resource_ids_scope":  "${alicloud_instance.default.id}",
 					"region_ids_scope":            "cn-shanghai",
 					"resource_group_ids_scope":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"tag_key_scope":               "tftest",
@@ -690,11 +682,16 @@ func SkipTestAccAliCloudConfigAggregateConfigRule_basic1(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
 
-var AlicloudConfigAggregateConfigRuleMap1 = map[string]string{
+var AliCloudConfigAggregateConfigRuleMap1 = map[string]string{
 	"aggregate_config_rule_name":  CHECKSET,
 	"aggregator_id":               CHECKSET,
 	"config_rule_trigger_types":   "ConfigurationItemChangeNotification",
@@ -712,7 +709,7 @@ var AlicloudConfigAggregateConfigRuleMap1 = map[string]string{
 	"status":                      "ACTIVE",
 }
 
-func AlicloudConfigAggregateConfigRuleBasicDependence1(name string) string {
+func AliCloudConfigAggregateConfigRuleBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 			default = "%s"
@@ -740,7 +737,7 @@ resource "alicloud_config_aggregator" "default" {
 `, name)
 }
 
-func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
+func TestUnitAliCloudConfigAggregateConfigRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(nil, nil)
@@ -837,7 +834,7 @@ func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigAggregateConfigRuleCreate(dInit, rawClient)
+	err = resourceAliCloudConfigAggregateConfigRuleCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -863,7 +860,7 @@ func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateConfigRuleCreate(dInit, rawClient)
+		err := resourceAliCloudConfigAggregateConfigRuleCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -890,7 +887,7 @@ func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
+	err = resourceAliCloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//UpdateAggregateConfigRule
@@ -950,7 +947,7 @@ func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1001,7 +998,7 @@ func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1052,7 +1049,7 @@ func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1097,7 +1094,7 @@ func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateConfigRuleRead(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateConfigRuleRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1115,7 +1112,7 @@ func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigAggregateConfigRuleDelete(dExisted, rawClient)
+	err = resourceAliCloudConfigAggregateConfigRuleDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -1145,7 +1142,7 @@ func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateConfigRuleDelete(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateConfigRuleDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

@@ -8,15 +8,14 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
+func resourceAliCloudConfigAggregateConfigRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudConfigAggregateConfigRuleCreate,
-		Read:   resourceAlicloudConfigAggregateConfigRuleRead,
-		Update: resourceAlicloudConfigAggregateConfigRuleUpdate,
-		Delete: resourceAlicloudConfigAggregateConfigRuleDelete,
+		Create: resourceAliCloudConfigAggregateConfigRuleCreate,
+		Read:   resourceAliCloudConfigAggregateConfigRuleRead,
+		Update: resourceAliCloudConfigAggregateConfigRuleUpdate,
+		Delete: resourceAliCloudConfigAggregateConfigRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -40,9 +39,8 @@ func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
 				Computed: true,
 			},
 			"config_rule_trigger_types": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ConfigurationItemChangeNotification", "ScheduledNotification"}, false),
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -60,7 +58,7 @@ func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"One_Hour", "Six_Hours", "Three_Hours", "Twelve_Hours", "TwentyFour_Hours"}, false),
+				ValidateFunc: StringInSlice([]string{"One_Hour", "Six_Hours", "Three_Hours", "Twelve_Hours", "TwentyFour_Hours"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if fmt.Sprint(d.Get("config_rule_trigger_types")) == "ConfigurationItemChangeNotification" {
 						return true
@@ -84,7 +82,7 @@ func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
 			"risk_level": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntInSlice([]int{1, 2, 3}),
+				ValidateFunc: IntInSlice([]int{1, 2, 3}),
 			},
 			"source_identifier": {
 				Type:     schema.TypeString,
@@ -95,12 +93,12 @@ func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ALIYUN", "CUSTOM_FC"}, false),
+				ValidateFunc: StringInSlice([]string{"ALIYUN", "CUSTOM_FC"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ACTIVE", "INACTIVE"}, false),
+				ValidateFunc: StringInSlice([]string{"ACTIVE", "INACTIVE"}, false),
 				Computed:     true,
 			},
 			"tag_key_scope": {
@@ -115,7 +113,7 @@ func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
 	}
 }
 
-func resourceAlicloudConfigAggregateConfigRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudConfigAggregateConfigRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -177,9 +175,10 @@ func resourceAlicloudConfigAggregateConfigRuleCreate(d *schema.ResourceData, met
 
 	d.SetId(fmt.Sprint(request["AggregatorId"], ":", response["ConfigRuleId"]))
 
-	return resourceAlicloudConfigAggregateConfigRuleUpdate(d, meta)
+	return resourceAliCloudConfigAggregateConfigRuleUpdate(d, meta)
 }
-func resourceAlicloudConfigAggregateConfigRuleRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudConfigAggregateConfigRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	configService := ConfigService{client}
 	object, err := configService.DescribeConfigAggregateConfigRule(d.Id())
@@ -214,7 +213,8 @@ func resourceAlicloudConfigAggregateConfigRuleRead(d *schema.ResourceData, meta 
 	d.Set("tag_value_scope", object["TagValueScope"])
 	return nil
 }
-func resourceAlicloudConfigAggregateConfigRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudConfigAggregateConfigRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	configService := ConfigService{client}
@@ -331,9 +331,10 @@ func resourceAlicloudConfigAggregateConfigRuleUpdate(d *schema.ResourceData, met
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudConfigAggregateConfigRuleRead(d, meta)
+	return resourceAliCloudConfigAggregateConfigRuleRead(d, meta)
 }
-func resourceAlicloudConfigAggregateConfigRuleDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudConfigAggregateConfigRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
