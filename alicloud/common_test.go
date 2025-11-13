@@ -3684,29 +3684,29 @@ func TestUnitCommonGetUserHomeDir(t *testing.T) {
 func TestUnitCommonNewInvoker(t *testing.T) {
 	// Test creating new invoker
 	invoker := NewInvoker()
-	
+
 	if invoker.catchers == nil {
 		t.Error("Expected non-nil catchers")
 	}
-	
+
 	// Verify default catchers were added
 	if len(invoker.catchers) != 3 {
 		t.Errorf("Expected 3 catchers, got %d", len(invoker.catchers))
 	}
-	
+
 	// Verify catcher reasons
 	expectedReasons := map[string]bool{
 		AliyunGoClientFailure: false,
 		"ServiceUnavailable":  false,
 		Throttling:            false,
 	}
-	
+
 	for _, catcher := range invoker.catchers {
 		if _, ok := expectedReasons[catcher.Reason]; ok {
 			expectedReasons[catcher.Reason] = true
 		}
 	}
-	
+
 	for reason, found := range expectedReasons {
 		if !found {
 			t.Errorf("Expected catcher with reason %s not found", reason)
@@ -3716,19 +3716,19 @@ func TestUnitCommonNewInvoker(t *testing.T) {
 
 func TestUnitCommonInvokerAddCatcher(t *testing.T) {
 	invoker := Invoker{}
-	
+
 	customCatcher := Catcher{
 		Reason:           "CustomError",
 		RetryCount:       5,
 		RetryWaitSeconds: 1,
 	}
-	
+
 	invoker.AddCatcher(customCatcher)
-	
+
 	if len(invoker.catchers) != 1 {
 		t.Errorf("Expected 1 catcher, got %d", len(invoker.catchers))
 	}
-	
+
 	if invoker.catchers[0].Reason != "CustomError" {
 		t.Errorf("Expected CustomError, got %s", invoker.catchers[0].Reason)
 	}
@@ -3806,20 +3806,20 @@ func TestUnitCommonInvokerRun(t *testing.T) {
 			errorMsg:    "Retry timeout",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			invoker, fn := tt.setupFunc()
 			err := invoker.Run(fn)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("Expected error but got none")
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
-			
+
 			if tt.expectError && err != nil && tt.errorMsg != "" {
 				if !strings.Contains(err.Error(), tt.errorMsg) {
 					t.Errorf("Expected error containing %s, got %v", tt.errorMsg, err)
@@ -3831,7 +3831,7 @@ func TestUnitCommonInvokerRun(t *testing.T) {
 
 func TestUnitCommonWriteToFileComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	tests := []struct {
 		name     string
 		filePath string
@@ -3878,19 +3878,19 @@ func TestUnitCommonWriteToFileComprehensive(t *testing.T) {
 			wantErr:  true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := writeToFile(tt.filePath, tt.data)
-			
+
 			if tt.wantErr && err == nil {
 				t.Error("Expected error but got none")
 			}
-			
+
 			if !tt.wantErr && err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
-			
+
 			// Verify file was created for non-error cases
 			if !tt.wantErr && tt.data != nil {
 				if _, err := os.Stat(tt.filePath); os.IsNotExist(err) {
@@ -3899,23 +3899,23 @@ func TestUnitCommonWriteToFileComprehensive(t *testing.T) {
 			}
 		})
 	}
-	
+
 	// Test overwriting existing file
 	t.Run("overwrite existing file", func(t *testing.T) {
 		filePath := fmt.Sprintf("%s/overwrite.txt", tmpDir)
-		
+
 		// Write first time
 		err := writeToFile(filePath, "first content")
 		if err != nil {
 			t.Fatalf("First write failed: %v", err)
 		}
-		
+
 		// Write second time (overwrite)
 		err = writeToFile(filePath, "second content")
 		if err != nil {
 			t.Fatalf("Overwrite failed: %v", err)
 		}
-		
+
 		// Verify content was updated
 		content, _ := os.ReadFile(filePath)
 		if string(content) != "second content" {
@@ -3928,7 +3928,7 @@ func TestUnitCommonAddDebug(t *testing.T) {
 	// Save original DEBUG env
 	originalDebug := os.Getenv("DEBUG")
 	defer os.Setenv("DEBUG", originalDebug)
-	
+
 	tests := []struct {
 		name        string
 		debugEnv    string
@@ -3958,18 +3958,18 @@ func TestUnitCommonAddDebug(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			os.Setenv("DEBUG", tt.debugEnv)
-			
+
 			// Should not panic
 			defer func() {
 				if r := recover(); r != nil {
 					t.Errorf("addDebug panicked: %v", r)
 				}
 			}()
-			
+
 			addDebug(tt.action, tt.content, tt.requestInfo...)
 		})
 	}
@@ -3980,37 +3980,37 @@ func TestUnitCommonBuildStateConf(t *testing.T) {
 	target := []string{"Running", "Available"}
 	timeout := 5 * time.Minute
 	delay := 10 * time.Second
-	
+
 	refreshFunc := func() (interface{}, string, error) {
 		return nil, "", nil
 	}
-	
+
 	conf := BuildStateConf(pending, target, timeout, delay, refreshFunc)
-	
+
 	if conf == nil {
 		t.Fatal("Expected non-nil StateChangeConf")
 	}
-	
+
 	if !reflect.DeepEqual(conf.Pending, pending) {
 		t.Errorf("Pending mismatch: expected %v, got %v", pending, conf.Pending)
 	}
-	
+
 	if !reflect.DeepEqual(conf.Target, target) {
 		t.Errorf("Target mismatch: expected %v, got %v", target, conf.Target)
 	}
-	
+
 	if conf.Timeout != timeout {
 		t.Errorf("Timeout mismatch: expected %v, got %v", timeout, conf.Timeout)
 	}
-	
+
 	if conf.Delay != delay {
 		t.Errorf("Delay mismatch: expected %v, got %v", delay, conf.Delay)
 	}
-	
+
 	if conf.MinTimeout != 3*time.Second {
 		t.Errorf("MinTimeout should be 3 seconds, got %v", conf.MinTimeout)
 	}
-	
+
 	if conf.Refresh == nil {
 		t.Error("Refresh function should not be nil")
 	}
@@ -4019,34 +4019,34 @@ func TestUnitCommonBuildStateConf(t *testing.T) {
 func TestUnitCommonIncrementalWait(t *testing.T) {
 	firstDuration := 100 * time.Millisecond
 	increaseDuration := 50 * time.Millisecond
-	
+
 	waitFunc := incrementalWait(firstDuration, increaseDuration)
-	
+
 	// Test first call
 	start := time.Now()
 	waitFunc()
 	elapsed := time.Since(start)
-	
+
 	// Should wait approximately firstDuration
 	if elapsed < firstDuration || elapsed > firstDuration+50*time.Millisecond {
 		t.Errorf("First wait expected ~%v, got %v", firstDuration, elapsed)
 	}
-	
+
 	// Test second call
 	start = time.Now()
 	waitFunc()
 	elapsed = time.Since(start)
-	
+
 	// Should wait approximately increaseDuration
 	if elapsed < increaseDuration || elapsed > increaseDuration+50*time.Millisecond {
 		t.Errorf("Second wait expected ~%v, got %v", increaseDuration, elapsed)
 	}
-	
+
 	// Test third call
 	start = time.Now()
 	waitFunc()
 	elapsed = time.Since(start)
-	
+
 	// Should wait approximately increaseDuration again
 	if elapsed < increaseDuration || elapsed > increaseDuration+50*time.Millisecond {
 		t.Errorf("Third wait expected ~%v, got %v", increaseDuration, elapsed)
@@ -4059,7 +4059,7 @@ func TestUnitCommonCheckWaitForReady(t *testing.T) {
 		Count  int
 		Ready  bool
 	}
-	
+
 	tests := []struct {
 		name        string
 		object      interface{}
@@ -4116,23 +4116,23 @@ func TestUnitCommonCheckWaitForReady(t *testing.T) {
 			expectError: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ready, values, err := checkWaitForReady(tt.object, tt.conditions)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("Expected error but got none")
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
-			
+
 			if ready != tt.expectReady {
 				t.Errorf("Expected ready=%v, got %v", tt.expectReady, ready)
 			}
-			
+
 			if !tt.expectError && tt.conditions != nil && values == nil {
 				t.Error("Expected non-nil values map")
 			}
@@ -4213,19 +4213,73 @@ Products:
 `,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Just verify the function doesn't panic and returns without error
 			result, err := compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tt.yaml1, tt.yaml2)
-			
+
 			// Function always returns nil error
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
-			
+
 			// Just log the result for manual verification if needed
 			_ = result
+		})
+	}
+}
+
+func TestUnitCommonConvertLowercaseTags(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]interface{}
+		expected []map[string]interface{}
+	}{
+		{
+			"empty",
+			map[string]interface{}{},
+			[]map[string]interface{}{},
+		},
+		{
+			"single",
+			map[string]interface{}{
+				"Created": "Terraform",
+			},
+			[]map[string]interface{}{
+				{
+					"key":   "Created",
+					"value": "Terraform",
+				},
+			},
+		},
+		{
+			"multiple",
+			map[string]interface{}{
+				"Created": "Terraform",
+				"For":     "Provider",
+				"Updated": "TF",
+			},
+			[]map[string]interface{}{
+				{
+					"key":   "Created",
+					"value": "Terraform",
+				},
+				{
+					"key":   "For",
+					"value": "Provider",
+				},
+				{
+					"key":   "Updated",
+					"value": "TF",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertLowercaseTags(tt.input)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

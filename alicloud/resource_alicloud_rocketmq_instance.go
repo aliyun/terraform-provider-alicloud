@@ -443,8 +443,8 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 		request["commodityCode"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request["Tags"] = tagsMap
+		tagsMap := ConvertLowercaseTags(v.(map[string]interface{}))
+		request["tags"] = tagsMap
 	}
 
 	body = request
@@ -984,7 +984,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if d.HasChange("tags") {
+	if !d.IsNewResource() && d.HasChange("tags") {
 		rocketmqServiceV2 := RocketmqServiceV2{client}
 		if err := rocketmqServiceV2.SetResourceTags(d, "instance"); err != nil {
 			return WrapError(err)
