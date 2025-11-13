@@ -41,26 +41,31 @@ The following arguments are supported:
   - **5.6** 
   - **5.7** 
   - **8.0**
-* `description` - (Optional, ForceNew) ParameterGroupDesc
+* `description` - (Optional, ForceNew) The description of the parameter template.
 * `parameter_group_name` - (Optional, ForceNew, Available since v1.263.0) The name of the parameter template. The name must meet the following requirements:
 
   - It must start with a letter and can contain letters, digits, and underscores (_). It cannot contain Chinese characters or end with an underscore (_).
 
   - It must be 8 to 64 characters in length.
-* `parameters` - (Required, ForceNew, Set) ParameterDetail See [`parameters`](#parameters) below.
+* `parameters` - (Required, ForceNew, Set) Details about the parameters. See [`parameters`](#parameters) below.
+
+-> **NOTE:**  You can view all parameter details for the target database engine version database cluster through the [DescribeParameterTemplates](https://next.api.alibabacloud.com/document/polardb/2017-08-01/DescribeParameterTemplates), including parameter name, value.
+
+
+The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated since v1.263.0). Field 'name' has been deprecated from provider version 1.263.0. New field 'parameter_group_name' instead.
 
 ### `parameters`
 
 The parameters supports the following, you can view all parameter details for the target database engine version database cluster through the [DescribeParameterTemplates](https://next.api.alibabacloud.com/document/polardb/2017-08-01/DescribeParameterTemplates), including parameter name, value.
-* `param_value` - (Optional, ForceNew) param value
-* `param_name` - (Optional, ForceNew) param name
+* `param_value` - (Optional, ForceNew) The value of the parameter.
+* `param_name` - (Optional, ForceNew) The name of the parameter.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `create_time` - The creation time of the resource
+* `create_time` - The time when the parameter template was created. The time is in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 
 ## Timeouts
 
