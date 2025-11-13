@@ -95,6 +95,7 @@ func TestAccAliCloudRocketmqInstance_bugfix(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -184,6 +185,7 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -472,6 +474,7 @@ func SkipTestAccAliCloudRocketmqInstance_basic4652(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -739,6 +742,7 @@ func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -1084,6 +1088,7 @@ func TestAccAliCloudRocketmqInstance_basic4101(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -1406,6 +1411,8 @@ func TestAccAliCloudRocketmqInstance_basic4665_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1500,6 +1507,7 @@ func SkipTestAccAliCloudRocketmqInstance_basic4652_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -1585,6 +1593,7 @@ func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -1719,6 +1728,7 @@ func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -1819,7 +1829,8 @@ func TestAccAliCloudRocketmqInstance_basic6747(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1980,6 +1991,8 @@ func SkipTestAccAliCloudRocketmqInstance_basic7144(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
