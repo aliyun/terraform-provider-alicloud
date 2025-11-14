@@ -7,6 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -413,3 +414,91 @@ func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFuncWithApi(id string, fiel
 }
 
 // DescribeWafv3DefenseRule >>> Encapsulated.
+
+// DescribeWafv3DefenseResourceGroup <<< Encapsulated get interface for Wafv3 DefenseResourceGroup.
+
+func (s *Wafv3ServiceV2) DescribeWafv3DefenseResourceGroup(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["GroupName"] = parts[1]
+	request["InstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
+	action := "DescribeDefenseResourceGroup"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Group", response)
+	if err != nil {
+		return object, WrapErrorf(NotFoundErr("DefenseResourceGroup", id), NotFoundMsg, response)
+	}
+
+	currentStatus := v.(map[string]interface{})["GroupName"]
+	if currentStatus == nil {
+		return object, WrapErrorf(NotFoundErr("DefenseResourceGroup", id), NotFoundMsg, response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *Wafv3ServiceV2) Wafv3DefenseResourceGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.Wafv3DefenseResourceGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeWafv3DefenseResourceGroup)
+}
+
+func (s *Wafv3ServiceV2) Wafv3DefenseResourceGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		if field == "$.ResourceList" {
+			e := jsonata.MustCompile("$split($.ResourceList, \",\")")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeWafv3DefenseResourceGroup >>> Encapsulated.
