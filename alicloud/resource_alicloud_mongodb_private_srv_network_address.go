@@ -20,7 +20,7 @@ func resourceAliCloudMongodbPrivateSrvNetworkAddress() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(6 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -44,8 +44,8 @@ func resourceAliCloudMongodbPrivateSrvNetworkAddressCreate(d *schema.ResourceDat
 	action := "AllocateDBInstanceSrvNetworkAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	query := make(map[string]interface{})
+	var err error
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("db_instance_id"); ok {
 		request["DBInstanceId"] = v
@@ -53,7 +53,6 @@ func resourceAliCloudMongodbPrivateSrvNetworkAddressCreate(d *schema.ResourceDat
 	request["RegionId"] = client.RegionId
 
 	request["SrvConnectionType"] = "vpc"
-	request["NodeId"] = "ConnectionStringURI"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
@@ -97,9 +96,7 @@ func resourceAliCloudMongodbPrivateSrvNetworkAddressRead(d *schema.ResourceData,
 		return WrapError(err)
 	}
 
-	if objectRaw["PrivateSrvConnectionStringUri"] != nil {
-		d.Set("private_srv_connection_string_uri", objectRaw["PrivateSrvConnectionStringUri"])
-	}
+	d.Set("private_srv_connection_string_uri", objectRaw["PrivateSrvConnectionStringUri"])
 
 	d.Set("db_instance_id", d.Id())
 
@@ -112,19 +109,17 @@ func resourceAliCloudMongodbPrivateSrvNetworkAddressDelete(d *schema.ResourceDat
 	action := "ReleaseNodePrivateNetworkAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	query := make(map[string]interface{})
+	var err error
 	request = make(map[string]interface{})
 	request["DBInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	request["NodeId"] = "ConnectionStringURI"
-	request["ConnectionType"] = "SRV"
 	request["NetworkType"] = "VPC"
+	request["ConnectionType"] = "SRV"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
 				wait()
