@@ -21,7 +21,7 @@ func TestAccAliCloudMongodbPrivateSrvNetworkAddress_basic9657(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smongodbprivatesrvnetworkaddress%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccmongodb%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMongodbPrivateSrvNetworkAddressBasicDependence9657)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

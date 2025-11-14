@@ -22,11 +22,11 @@ func (s *MongodbServiceV2) DescribeMongodbPrivateSrvNetworkAddress(id string) (o
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeAllNetworkAddress"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DBInstanceId"] = id
 	request["RegionId"] = client.RegionId
+	action := "DescribeAllNetworkAddress"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -55,15 +55,18 @@ func (s *MongodbServiceV2) DescribeMongodbPrivateSrvNetworkAddress(id string) (o
 }
 
 func (s *MongodbServiceV2) MongodbPrivateSrvNetworkAddressStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.MongodbPrivateSrvNetworkAddressStateRefreshFuncWithApi(id, field, failStates, s.DescribeMongodbPrivateSrvNetworkAddress)
+}
+
+func (s *MongodbServiceV2) MongodbPrivateSrvNetworkAddressStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeMongodbPrivateSrvNetworkAddress(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
