@@ -31,8 +31,9 @@ const (
 
 	APSouth1 = Region("ap-south-1")
 
-	USWest1 = Region("us-west-1")
-	USEast1 = Region("us-east-1")
+	USWest1      = Region("us-west-1")
+	USEast1      = Region("us-east-1")
+	USSouthEast1 = Region("us-southeast-1")
 
 	MEEast1    = Region("me-east-1")
 	MECentral1 = Region("me-central-1")
@@ -60,7 +61,7 @@ const (
 
 var ValidRegions = []Region{
 	Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote, ChengDu, HeYuan, WuLanChaBu, GuangZhou, NanJing, FuZhou,
-	USWest1, USEast1,
+	USWest1, USEast1, USSouthEast1,
 	APNorthEast1, APNorthEast2, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, APSouthEast6, APSouthEast7,
 	APSouth1,
 	MEEast1, MECentral1,
