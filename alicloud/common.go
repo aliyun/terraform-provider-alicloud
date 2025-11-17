@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net"
 	"os"
 	"os/user"
@@ -21,30 +22,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-
-	"github.com/denverdino/aliyungo/cs"
-
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
-	"gopkg.in/yaml.v2"
-
-	"math"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/cs"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/mitchellh/go-homedir"
+	"gopkg.in/yaml.v2"
+	yamlV3 "gopkg.in/yaml.v3"
 )
 
 type PayType string
@@ -2016,4 +2011,13 @@ func convertToInterfaceArray(v interface{}) []interface{} {
 	}
 
 	return []interface{}{v}
+}
+
+func convertYamlToObject(configured interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	if err := yamlV3.Unmarshal([]byte(configured.(string)), &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
