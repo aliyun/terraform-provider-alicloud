@@ -1,0 +1,78 @@
+---
+subcategory: "Eflo"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_eflo_vpd_grant_rule"
+description: |-
+  Provides a Alicloud Eflo Vpd Grant Rule resource.
+---
+
+# alicloud_eflo_vpd_grant_rule
+
+Provides a Eflo Vpd Grant Rule resource.
+
+Lingjun Network Segment Cross-Account Authorization Information.
+
+For information about Eflo Vpd Grant Rule and how to use it, see [What is Vpd Grant Rule](https://next.api.alibabacloud.com/document/eflo/2022-05-30/CreateVpdGrantRule).
+
+-> **NOTE:** Available since v1.263.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+variable "name" {
+  default = "terraform-example"
+}
+
+data "alicloud_account" "default" {
+}
+
+resource "alicloud_eflo_er" "default" {
+  er_name        = var.name
+  master_zone_id = "cn-hangzhou-a"
+}
+
+resource "alicloud_eflo_vpd" "default" {
+  cidr     = "10.0.0.0/8"
+  vpd_name = var.name
+}
+
+resource "alicloud_eflo_vpd_grant_rule" "default" {
+  grant_tenant_id = data.alicloud_account.default.id
+  er_id           = alicloud_eflo_er.default.id
+  instance_id     = alicloud_eflo_vpd.default.id
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `er_id` - (Required, ForceNew) The ID of the ER instance under the cross-account tenant.
+* `grant_tenant_id` - (Required, ForceNew) Cross-account authorized tenant ID.
+* `instance_id` - (Required, ForceNew) Instance ID of VPD.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - The Creation time.
+* `region_id` - The Region ID.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Vpd Grant Rule.
+* `delete` - (Defaults to 5 mins) Used when delete the Vpd Grant Rule.
+
+## Import
+
+Eflo Vpd Grant Rule can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_eflo_vpd_grant_rule.example <id>
+```
