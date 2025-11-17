@@ -1565,7 +1565,7 @@ func TestUnitCommonInArray(t *testing.T) {
 	}
 }
 
-func TestUnitGetOneStringOrAllStringSlice(t *testing.T) {
+func TestUnitCommonGetOneStringOrAllStringSlice(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       []interface{}
@@ -1970,6 +1970,107 @@ func TestUnitCommonConvertToInterfaceArray(t *testing.T) {
 				if !reflect.DeepEqual(result, tt.expected) {
 					t.Errorf("convertToInterfaceArray(%v) = %v, want %v", tt.input, result, tt.expected)
 				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertYamlToObject(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expected    map[string]interface{}
+		expectError bool
+	}{
+		{
+			"empty",
+			"",
+			map[string]interface{}{},
+			false,
+		},
+		{
+			"int",
+			"min: 1",
+			map[string]interface{}{
+				"min": 1,
+			},
+			false,
+		},
+		{
+			"float",
+			"max: 10.01",
+			map[string]interface{}{
+				"max": 10.01,
+			},
+			false,
+		},
+		{
+			"string",
+			"rule: MayRunAs",
+			map[string]interface{}{
+				"rule": "MayRunAs",
+			},
+			false,
+		},
+		{
+			"bool",
+			"hostNetwork: true",
+			map[string]interface{}{
+				"hostNetwork": true,
+			},
+			false,
+		},
+		{
+			"array",
+			"repos:\n- registry-vpc.cn-hangzhou.aliyuncs.com/acs/\n- registry.cn-hangzhou.aliyuncs.com/acs/",
+			map[string]interface{}{
+				"repos": []interface{}{"registry-vpc.cn-hangzhou.aliyuncs.com/acs/", "registry.cn-hangzhou.aliyuncs.com/acs/"},
+			},
+			false,
+		},
+		{
+			"object",
+			"metadata:\n  name: bad\n  namespace: test-gatekeeper",
+			map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"name":      "bad",
+					"namespace": "test-gatekeeper",
+				},
+			},
+			false,
+		},
+		{
+			"mix type",
+			"object:\n    sub_object:\n      string: MustRunAs\n      second_object:\n        int: 100\n        float: 10.01\n        bool: true\n        array:\n          - \"1\"\n          - \"2\"\n          - \"3\"",
+			map[string]interface{}{
+				"object": map[string]interface{}{
+					"sub_object": map[string]interface{}{
+						"second_object": map[string]interface{}{
+							"array": []interface{}{"1", "2", "3"},
+							"bool":  true,
+							"float": 10.01,
+							"int":   100,
+						},
+						"string": "MustRunAs",
+					},
+				},
+			},
+			false,
+		},
+		{
+			"error test",
+			"error",
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := convertYamlToObject(tt.input)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
