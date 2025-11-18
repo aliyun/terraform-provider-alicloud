@@ -1856,7 +1856,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_schedulerx_namespace":                                  resourceAliCloudSchedulerxNamespace(),
 			"alicloud_ehpc_cluster":                                          resourceAlicloudEhpcCluster(),
 			"alicloud_cen_traffic_marking_policy":                            resourceAliCloudCenTrafficMarkingPolicy(),
-			"alicloud_ecs_instance_set":                                      resourceAlicloudEcsInstanceSet(),
+			"alicloud_ecs_instance_set":                                      resourceAliCloudEcsInstanceSet(),
 			"alicloud_ecd_ram_directory":                                     resourceAlicloudEcdRamDirectory(),
 			"alicloud_service_mesh_user_permission":                          resourceAliCloudServiceMeshUserPermission(),
 			"alicloud_ecd_ad_connector_directory":                            resourceAlicloudEcdAdConnectorDirectory(),
