@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -43,7 +44,7 @@ func resourceAliCloudEsaOriginPool() *schema.Resource {
 				ForceNew: true,
 			},
 			"origins": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -78,12 +79,8 @@ func resourceAliCloudEsaOriginPool() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"secret_key": {
-										Type:      schema.TypeString,
-										Optional:  true,
-										Sensitive: true,
-										//DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-										//	return comparePrefixSuffix(old, new, 5)
-										//},
+										Type:     schema.TypeString,
+										Optional: true,
 									},
 									"version": {
 										Type:     schema.TypeString,
@@ -116,7 +113,7 @@ func resourceAliCloudEsaOriginPool() *schema.Resource {
 				},
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -137,11 +134,10 @@ func resourceAliCloudEsaOriginPoolCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("origins"); ok {
 		originsMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["Address"] = dataLoopTmp["address"]
@@ -225,11 +221,13 @@ func resourceAliCloudEsaOriginPoolRead(d *schema.ResourceData, meta interface{})
 	d.Set("enabled", objectRaw["Enabled"])
 	d.Set("origin_pool_name", objectRaw["Name"])
 	d.Set("origin_pool_id", objectRaw["Id"])
-	d.Set("site_id", objectRaw["SiteId"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	secretKeyMap := make(map[string]interface{})
 	if origins, ok := d.GetOk("origins"); ok {
-		for _, dataLoop := range origins.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(origins) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			originName := fmt.Sprint(dataLoopTmp["name"])
 			if !IsNil(dataLoopTmp["auth_conf"]) {
@@ -240,11 +238,10 @@ func resourceAliCloudEsaOriginPoolRead(d *schema.ResourceData, meta interface{})
 			}
 		}
 	}
-
 	originsRaw := objectRaw["Origins"]
 	originsMaps := make([]map[string]interface{}, 0)
 	if originsRaw != nil {
-		for _, originsChildRaw := range originsRaw.([]interface{}) {
+		for _, originsChildRaw := range convertToInterfaceArray(originsRaw) {
 			originsMap := make(map[string]interface{})
 			originsChildRaw := originsChildRaw.(map[string]interface{})
 			originsMap["address"] = originsChildRaw["Address"]
@@ -299,12 +296,12 @@ func resourceAliCloudEsaOriginPoolUpdate(d *schema.ResourceData, meta interface{
 	query = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["Id"] = parts[1]
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("origins") {
 		update = true
 		if v, ok := d.GetOk("origins"); ok || d.HasChange("origins") {
 			originsMapsArray := make([]interface{}, 0)
-			for _, dataLoop := range v.([]interface{}) {
+			for _, dataLoop := range convertToInterfaceArray(v) {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["Address"] = dataLoopTmp["address"]
@@ -386,12 +383,10 @@ func resourceAliCloudEsaOriginPoolDelete(d *schema.ResourceData, meta interface{
 	request = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["Id"] = parts[1]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
