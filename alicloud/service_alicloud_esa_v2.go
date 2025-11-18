@@ -3440,7 +3440,6 @@ func (s *EsaServiceV2) EsaSiteOriginClientCertificateStateRefreshFuncWithApi(id 
 }
 
 // DescribeEsaSiteOriginClientCertificate >>> Encapsulated.
-
 // DescribeEsaOriginCaCertificate <<< Encapsulated get interface for Esa OriginCaCertificate.
 
 func (s *EsaServiceV2) DescribeEsaOriginCaCertificate(id string) (object map[string]interface{}, err error) {
@@ -3451,13 +3450,12 @@ func (s *EsaServiceV2) DescribeEsaOriginCaCertificate(id string) (object map[str
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
-		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = parts[1]
 	query["SiteId"] = parts[0]
-
+	query["RegionId"] = client.RegionId
 	action := "GetOriginCaCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -3482,18 +3480,15 @@ func (s *EsaServiceV2) DescribeEsaOriginCaCertificate(id string) (object map[str
 }
 
 func (s *EsaServiceV2) EsaOriginCaCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return s.EsaOriginCaCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginCaCertificate)
-}
-
-func (s *EsaServiceV2) EsaOriginCaCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := call(id)
+		object, err := s.DescribeEsaOriginCaCertificate(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
+
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -3823,6 +3818,7 @@ func (s *EsaServiceV2) DescribeEsaWafRuleset(id string) (object map[string]inter
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -3858,15 +3854,18 @@ func (s *EsaServiceV2) DescribeEsaWafRuleset(id string) (object map[string]inter
 }
 
 func (s *EsaServiceV2) EsaWafRulesetStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaWafRulesetStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWafRuleset)
+}
+
+func (s *EsaServiceV2) EsaWafRulesetStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaWafRuleset(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
