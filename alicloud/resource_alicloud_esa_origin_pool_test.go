@@ -55,7 +55,7 @@ func TestAccAliCloudESAOriginPooloriginpool_test(t *testing.T) {
 						{
 							"type":    "S3",
 							"address": "test.s3.com",
-							"header":  "{\\\"Host\\\": [\\\"example1.com\\\"]}",
+							"header":  "{\\\"Host\\\":[\\\"example1.com\\\"]}",
 							"enabled": "true",
 							"auth_conf": []map[string]interface{}{
 								{
