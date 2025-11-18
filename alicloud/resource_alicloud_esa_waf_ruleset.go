@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudEsaWafRuleset() *schema.Resource {
+func resourceAliCloudEsaWafRuleSet() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudEsaWafRulesetCreate,
-		Read:   resourceAliCloudEsaWafRulesetRead,
-		Update: resourceAliCloudEsaWafRulesetUpdate,
-		Delete: resourceAliCloudEsaWafRulesetDelete,
+		Create: resourceAliCloudEsaWafRuleSetCreate,
+		Read:   resourceAliCloudEsaWafRuleSetRead,
+		Update: resourceAliCloudEsaWafRuleSetUpdate,
+		Delete: resourceAliCloudEsaWafRuleSetDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -43,7 +43,7 @@ func resourceAliCloudEsaWafRuleset() *schema.Resource {
 				Computed: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -61,7 +61,7 @@ func resourceAliCloudEsaWafRuleset() *schema.Resource {
 	}
 }
 
-func resourceAliCloudEsaWafRulesetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEsaWafRuleSetCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -74,7 +74,6 @@ func resourceAliCloudEsaWafRulesetCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
@@ -103,17 +102,17 @@ func resourceAliCloudEsaWafRulesetCreate(d *schema.ResourceData, meta interface{
 
 	d.SetId(fmt.Sprintf("%v:%v", response["Id"], request["SiteId"]))
 
-	return resourceAliCloudEsaWafRulesetUpdate(d, meta)
+	return resourceAliCloudEsaWafRuleSetUpdate(d, meta)
 }
 
-func resourceAliCloudEsaWafRulesetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEsaWafRuleSetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	esaServiceV2 := EsaServiceV2{client}
 
-	objectRaw, err := esaServiceV2.DescribeEsaWafRuleset(d.Id())
+	objectRaw, err := esaServiceV2.DescribeEsaWafRuleSet(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_esa_waf_ruleset DescribeEsaWafRuleset Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_esa_waf_ruleset DescribeEsaWafRuleSet Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -126,12 +125,12 @@ func resourceAliCloudEsaWafRulesetRead(d *schema.ResourceData, meta interface{})
 	d.Set("ruleset_id", objectRaw["Id"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[1]))
+	d.Set("site_id", fmt.Sprintf(parts[1]))
 
 	return nil
 }
 
-func resourceAliCloudEsaWafRulesetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEsaWafRuleSetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -145,7 +144,7 @@ func resourceAliCloudEsaWafRulesetUpdate(d *schema.ResourceData, meta interface{
 	query = make(map[string]interface{})
 	request["SiteId"] = parts[1]
 	request["Id"] = parts[0]
-	request["RegionId"] = client.RegionId
+
 	if v, ok := d.GetOk("site_version"); ok {
 		request["SiteVersion"] = v
 	}
@@ -173,10 +172,10 @@ func resourceAliCloudEsaWafRulesetUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	return resourceAliCloudEsaWafRulesetRead(d, meta)
+	return resourceAliCloudEsaWafRuleSetRead(d, meta)
 }
 
-func resourceAliCloudEsaWafRulesetDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEsaWafRuleSetDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -188,7 +187,6 @@ func resourceAliCloudEsaWafRulesetDelete(d *schema.ResourceData, meta interface{
 	request = make(map[string]interface{})
 	request["SiteId"] = parts[1]
 	request["Id"] = parts[0]
-	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
@@ -196,7 +194,6 @@ func resourceAliCloudEsaWafRulesetDelete(d *schema.ResourceData, meta interface{
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

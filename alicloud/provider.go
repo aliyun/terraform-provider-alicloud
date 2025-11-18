@@ -924,7 +924,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_star_rocks_node_group":                                resourceAliCloudStarRocksNodeGroup(),
 			"alicloud_esa_transport_layer_application":                      resourceAliCloudEsaTransportLayerApplication(),
 			"alicloud_esa_waf_rule":                                         resourceAliCloudEsaWafRule(),
-			"alicloud_esa_waf_ruleset":                                      resourceAliCloudEsaWafRuleset(),
+			"alicloud_esa_waf_ruleset":                                      resourceAliCloudEsaWafRuleSet(),
 			"alicloud_sls_index":                                            resourceAliCloudSlsIndex(),
 			"alicloud_dms_airflow":                                          resourceAliCloudDmsAirflow(),
 			"alicloud_lindorm_instance_v2":                                  resourceAliCloudLindormInstanceV2(),
