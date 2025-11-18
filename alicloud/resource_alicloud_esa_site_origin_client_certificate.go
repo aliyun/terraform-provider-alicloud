@@ -42,7 +42,7 @@ func resourceAliCloudEsaSiteOriginClientCertificate() *schema.Resource {
 				Sensitive: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -76,7 +76,6 @@ func resourceAliCloudEsaSiteOriginClientCertificateCreate(d *schema.ResourceData
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	request["Certificate"] = d.Get("certificate")
 	request["PrivateKey"] = d.Get("private_key")
@@ -121,7 +120,9 @@ func resourceAliCloudEsaSiteOriginClientCertificateRead(d *schema.ResourceData, 
 	}
 
 	d.Set("certificate", objectRaw["Certificate"])
-	d.Set("site_id", objectRaw["SiteId"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	resultRawObj, _ := jsonpath.Get("$.Result", objectRaw)
 	resultRaw := make(map[string]interface{})
@@ -148,12 +149,10 @@ func resourceAliCloudEsaSiteOriginClientCertificateDelete(d *schema.ResourceData
 	request = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["Id"] = parts[1]
-	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

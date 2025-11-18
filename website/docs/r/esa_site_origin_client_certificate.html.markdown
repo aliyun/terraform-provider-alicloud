@@ -20,12 +20,6 @@ For information about ESA Site Origin Client Certificate and how to use it, see 
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_site_origin_client_certificate&exampleId=652252a6-bf7d-502d-80dd-e3c421e1c61963bfe332&activeTab=example&spm=docs.r.esa_site_origin_client_certificate.0.652252a6bf&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -56,7 +50,7 @@ resource "alicloud_esa_site_origin_client_certificate" "default" {
 The following arguments are supported:
 * `certificate` - (Required, ForceNew) The certificate content.
 * `private_key` - (Required, ForceNew) The private key of the certificate.
-* `site_id` - (Required, ForceNew, Int) Site ID.
+* `site_id` - (Required, ForceNew) Site ID.
 * `site_origin_client_certificate_name` - (Optional, ForceNew) The certificate name.
 
 ## Attributes Reference
