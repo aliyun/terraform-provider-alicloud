@@ -4,11 +4,11 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -213,7 +213,7 @@ func resourceAliCloudEsaLoadBalancer() *schema.Resource {
 				Optional: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -438,7 +438,7 @@ func resourceAliCloudEsaLoadBalancerCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprintf("%v:%v", request["SiteId"], response["Id"]))
 
-	return resourceAliCloudEsaLoadBalancerUpdate(d, meta)
+	return resourceAliCloudEsaLoadBalancerRead(d, meta)
 }
 
 func resourceAliCloudEsaLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
@@ -459,19 +459,19 @@ func resourceAliCloudEsaLoadBalancerRead(d *schema.ResourceData, meta interface{
 	d.Set("enabled", objectRaw["Enabled"])
 	d.Set("fallback_pool", objectRaw["FallbackPool"])
 	d.Set("load_balancer_name", objectRaw["Name"])
-	d.Set("session_affinity", objectRaw["SessionAffinity"])
-	d.Set("status", objectRaw["Status"])
-	d.Set("steering_policy", objectRaw["SteeringPolicy"])
-	d.Set("ttl", objectRaw["Ttl"])
-	d.Set("load_balancer_id", objectRaw["Id"])
-	d.Set("site_id", objectRaw["SiteId"])
-
 	if objectRaw["RegionPools"] != nil {
 		d.Set("region_pools", convertObjectToJsonString(objectRaw["RegionPools"]))
 	}
-
+	d.Set("session_affinity", objectRaw["SessionAffinity"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("steering_policy", objectRaw["SteeringPolicy"])
 	if objectRaw["SubRegionPools"] != nil {
 		d.Set("sub_region_pools", convertObjectToJsonString(objectRaw["SubRegionPools"]))
+	}
+	d.Set("ttl", objectRaw["Ttl"])
+	d.Set("load_balancer_id", objectRaw["Id"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
 	}
 
 	adaptiveRoutingMaps := make([]map[string]interface{}, 0)
@@ -591,12 +591,12 @@ func resourceAliCloudEsaLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	request["SiteId"] = parts[0]
 	request["Id"] = parts[1]
 
-	if !d.IsNewResource() && d.HasChange("region_pools") {
+	if d.HasChange("region_pools") {
 		update = true
 		request["RegionPools"] = d.Get("region_pools")
 	}
 
-	if !d.IsNewResource() && d.HasChange("rules") {
+	if d.HasChange("rules") {
 		update = true
 		if v, ok := d.GetOk("rules"); ok || d.HasChange("rules") {
 			rulesMapsArray := make([]interface{}, 0)
@@ -634,7 +634,6 @@ func resourceAliCloudEsaLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				dataLoopMap["RuleName"] = dataLoopTmp["rule_name"]
 				rulesMapsArray = append(rulesMapsArray, dataLoopMap)
 			}
-
 			rulesMapsJson, err := json.Marshal(rulesMapsArray)
 			if err != nil {
 				return WrapError(err)
@@ -643,7 +642,7 @@ func resourceAliCloudEsaLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("monitor") {
+	if d.HasChange("monitor") {
 		update = true
 	}
 	dataList := make(map[string]interface{})
@@ -705,22 +704,22 @@ func resourceAliCloudEsaLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		request["Monitor"] = string(dataListJson)
 	}
 
-	if !d.IsNewResource() && d.HasChange("enabled") {
+	if d.HasChange("enabled") {
 		update = true
 		request["Enabled"] = d.Get("enabled")
 	}
 
-	if !d.IsNewResource() && d.HasChange("session_affinity") {
+	if d.HasChange("session_affinity") {
 		update = true
 		request["SessionAffinity"] = d.Get("session_affinity")
 	}
 
-	if !d.IsNewResource() && d.HasChange("ttl") {
+	if d.HasChange("ttl") {
 		update = true
 		request["Ttl"] = d.Get("ttl")
 	}
 
-	if !d.IsNewResource() && d.HasChange("random_steering") {
+	if d.HasChange("random_steering") {
 		update = true
 		dataList1 := make(map[string]interface{})
 
@@ -742,7 +741,7 @@ func resourceAliCloudEsaLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("default_pools") {
+	if d.HasChange("default_pools") {
 		update = true
 	}
 	if v, ok := d.GetOk("default_pools"); ok || d.HasChange("default_pools") {
@@ -755,12 +754,12 @@ func resourceAliCloudEsaLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		request["DefaultPools"] = string(defaultPoolsMapsJson)
 	}
 
-	if !d.IsNewResource() && d.HasChange("description") {
+	if d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
 	}
 
-	if !d.IsNewResource() && d.HasChange("adaptive_routing") {
+	if d.HasChange("adaptive_routing") {
 		update = true
 		dataList2 := make(map[string]interface{})
 
@@ -778,15 +777,15 @@ func resourceAliCloudEsaLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("steering_policy") {
+	if d.HasChange("steering_policy") {
 		update = true
 	}
 	request["SteeringPolicy"] = d.Get("steering_policy")
-	if !d.IsNewResource() && d.HasChange("fallback_pool") {
+	if d.HasChange("fallback_pool") {
 		update = true
 	}
 	request["FallbackPool"] = d.Get("fallback_pool")
-	if !d.IsNewResource() && d.HasChange("sub_region_pools") {
+	if d.HasChange("sub_region_pools") {
 		update = true
 		request["SubRegionPools"] = d.Get("sub_region_pools")
 	}
