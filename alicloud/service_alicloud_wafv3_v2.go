@@ -141,6 +141,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3Domain(id string) (object map[string]inter
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -185,6 +186,7 @@ func (s *Wafv3ServiceV2) DescribeDomainListTagResources(id string) (object map[s
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -215,15 +217,18 @@ func (s *Wafv3ServiceV2) DescribeDomainListTagResources(id string) (object map[s
 }
 
 func (s *Wafv3ServiceV2) Wafv3DomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.Wafv3DomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeWafv3Domain)
+}
+
+func (s *Wafv3ServiceV2) Wafv3DomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeWafv3Domain(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

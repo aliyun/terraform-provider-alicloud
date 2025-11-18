@@ -20,12 +20,6 @@ For information about WAFV3 Domain and how to use it, see [What is Domain](https
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_wafv3_domain&exampleId=6883cb3a-92e1-c272-f108-a9584d515b4ce2e50787&activeTab=example&spm=docs.r.wafv3_domain.0.6883cb3a92&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 data "alicloud_wafv3_instances" "default" {}
 
@@ -85,6 +79,9 @@ resource "alicloud_wafv3_domain" "default" {
 The following arguments are supported:
 * `access_type` - (Optional) The mode in which the domain name is added to WAF. Valid values:
 share: CNAME record mode. This is the default value.
+
+-> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
 * `domain` - (Required, ForceNew) The name of the domain name to query.
 * `instance_id` - (Required, ForceNew) The ID of the Web Application Firewall (WAF) instance.
 * `listen` - (Required, List) Configure listening information. See [`listen`](#listen) below.
@@ -149,11 +146,11 @@ The listen supports the following:
 ### `redirect`
 
 The redirect supports the following:
-* `backends` - (Optional, List) The IP addresses or domain names of the origin server. You cannot specify both IP addresses and domain names. If you specify domain names, the domain names can be resolved only to IPv4 addresses.
+* `backends` - (Optional, Computed, List) The IP addresses or domain names of the origin server. You cannot specify both IP addresses and domain names. If you specify domain names, the domain names can be resolved only to IPv4 addresses.
 
   - If you specify IP addresses, specify the value in the **\["ip1","ip2",...]** format. You can enter up to 20 IP addresses.
   - If you specify domain names, specify the value in the **\["domain"]** format. You can enter up to 20 domain names.
-* `backup_backends` - (Optional, List, Available since v1.257.0) The secondary IP address or domain name of the origin server.
+* `backup_backends` - (Optional, Computed, List, Available since v1.257.0) The secondary IP address or domain name of the origin server.
 * `connect_timeout` - (Optional, Int) Connection timeout duration. Unit: seconds.
 Value range: 1~3600. Default value: 5.
 * `focus_http_backend` - (Optional) Specifies whether to enable force redirect from HTTPS to HTTP for back-to-origin requests. This parameter is available only if you specify `HttpsPorts`. Valid values:
@@ -164,7 +161,7 @@ Value range: 1~3600. Default value: 5.
 
   - `true` (default)
   - `false`
-* `keepalive_requests` - (Optional, Int) The number of reused persistent connections. Valid values: 60 to 1000. Default value: 1000
+* `keepalive_requests` - (Optional, Computed, Int) The number of reused persistent connections. Valid values: 60 to 1000. Default value: 1000
 
 
 -> **NOTE:**   This parameter specifies the number of persistent connections that can be reused after you enable the persistent connection feature.
@@ -208,6 +205,7 @@ The redirect-request_headers supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<domain>`.
+* `cname` - The CNAME assigned by WAF to the domain name.
 * `domain_id` - The domain ID.
 * `status` - The status of the domain name. 
 
