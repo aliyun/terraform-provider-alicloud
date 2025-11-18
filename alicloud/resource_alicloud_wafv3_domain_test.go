@@ -126,7 +126,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 							"https_ports":         []string{"443"},
 							"http_ports":          []string{"80", "88"},
 							"cert_id":             "${local.certificate_id}",
-							"cipher_suite":        "99",
+							"cipher_suite":        "1",
 							"xff_header_mode":     "2",
 							"protection_resource": "share",
 							"tls_version":         "tlsv1",
@@ -168,7 +168,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 						"listen.0.https_ports.#":        "1",
 						"listen.0.http_ports.#":         "2",
 						"listen.0.cert_id":              CHECKSET,
-						"listen.0.cipher_suite":         "99",
+						"listen.0.cipher_suite":         "1",
 						"listen.0.xff_header_mode":      "2",
 						"listen.0.protection_resource":  "share",
 						"listen.0.tls_version":          "tlsv1",
@@ -267,55 +267,56 @@ resource "alicloud_ssl_certificates_service_certificate" "default" {
 // certificate can be generated in https://zh.rakko.tools/tools/46/ and the common name should be .tftest.top
   cert = <<EOF
 -----BEGIN CERTIFICATE-----
-MIIDeDCCAmCgAwIBAgIEN3ZT6zANBgkqhkiG9w0BAQsFADBVMQswCQYDVQQGEwJD
-TjEVMBMGA1UEAwwMKi50ZnRlc3QudG9wMRAwDgYDVQQIDAdCZWlKaW5nMRAwDgYD
-VQQHDAdCZWlKaW5nMQswCQYDVQQKDAJBQTAeFw0yMzA4MjgwNjQ5NDNaFw0yNTA4
-MjcwNjQ5NDNaMFUxCzAJBgNVBAYTAkNOMRUwEwYDVQQDDAwqLnRmdGVzdC50b3Ax
-EDAOBgNVBAgMB0JlaUppbmcxEDAOBgNVBAcMB0JlaUppbmcxCzAJBgNVBAoMAkFB
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzkk9NJUH7PLSQK4RRrGQ
-Y5dVsftkhnKh9HhI6yrnlowWIDPS1PZHOU/5gQ7xPUPGdKQV5S7x8wROnAaXEimx
-N4GdQw25pGhRJvlwme9fzJJiSe6lG49NCxmuBiEdJAzPKaTPpK1cG1f1TqdgCfHR
-HAL6Jxb3ylHG2LlTNFLXikubUi5RT6/9C8psr713Zm4HveCI/cx0WdgZ+fmsc9ft
-rkIB1DdyV1kQ51m8r2rLi3J7aC5ggGOiex/VlGSd4e6SOQLpdQEdDbodtOJ4LgVk
-+arFNCMinUWIOPGFzXhdm6lssPbh4MOBrz8c/M9TcF4hoMn5/o/9johZIZ/DOvXt
-ZQIDAQABo1AwTjAdBgNVHQ4EFgQUOnWiddgeZj17IeysatqhE361o5YwHwYDVR0j
-BBgwFoAUOnWiddgeZj17IeysatqhE361o5YwDAYDVR0TBAUwAwEB/zANBgkqhkiG
-9w0BAQsFAAOCAQEAfh3cnOszHM/5wXjY7BIkmgDOReksS+87ibhBz7T2ddZj+yCF
-9GdIBzXCiHpQFXpW8a3kc3I7l3nGfMTkmF6ld3ot/6SXP17QKJwxtvUA4ib8QkWD
-S7FT+UcHCUHv42Sh1e5uAlQ5pMSul7iKcR7jwlwZGZ0905HOqrmdyUGJ+Ud2uZWD
-AC0dJF6Bv9VhNtci8Imp05PaPH09deXLZu8LRrKRZFy9qLW5R6Swv7nzxckOAqDk
-TTc40xwvQROekWUyxeJL7xaHuylUHE0bxsiIfx5bZsBizRjprIwGlj85CSPuTZyP
-DPfaiZAN/61h5HNAnxLltOZfqabKYYw7l9LBDg==
+MIIDojCCAoqgAwIBAgIEW02xdjANBgkqhkiG9w0BAQsFADBqMQswCQYDVQQGEwJD
+TjEVMBMGA1UEAwwMKi50ZnRlc3QudG9wMQ8wDQYDVQQIDAbljJfkuqwxFTATBgNV
+BAcMDERlZmF1bHQgQ2l0eTEcMBoGA1UECgwTRGVmYXVsdCBDb21wYW55IEx0ZDAe
+Fw0yNTExMTcxMDEwMDRaFw0yNzExMTcxMDEwMDRaMGoxCzAJBgNVBAYTAkNOMRUw
+EwYDVQQDDAwqLnRmdGVzdC50b3AxDzANBgNVBAgMBuWMl+S6rDEVMBMGA1UEBwwM
+RGVmYXVsdCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMIIBIjAN
+BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyxPGODI9JxKzsB9cYkWSkY075aFD
+tKvD8XdGztsOtd9IXuQqqPciTUbvaisYV/wcH9FhTea14nDC2IO05OX6EBDdrX2P
+eHGaXAcahnfHzqc5Sd+JEfZMLdzhkKyIg3YOAC24wV5gqIjAuAfoMbLXuglRlSCe
+pA7wBBn6zUCCBGzjwSB1RtmgZeSEf5q95ZYRZhU3mTWd158LlwImvOcVG5aJIlq8
+Sf+Yj1Wr9hYD0s73M6x5YqgHtw+XwVVs+EJA+oepUdj74CejYWAYyD+OMA6KcLcY
+N1Scg3VLs3mS9YhM3aZqrt04eR1ouLRuqfG/oN7kP0G5nQAov/rN25XmNQIDAQAB
+o1AwTjAdBgNVHQ4EFgQUvJe0lF2jdEw4KpuaLIRIXtparo8wHwYDVR0jBBgwFoAU
+vJe0lF2jdEw4KpuaLIRIXtparo8wDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsF
+AAOCAQEAcssSZQBjVdLb3USF2GRrKstRcaKqCBbno1QrtLc4WGDeOGzCjLq9I92l
+0aGJjB8N4Aw1oTz3z9TFM0eTJbylNNz1U/PgHOhh6rkxq2pMPdT2bwStzA7Yw0oA
+slmXMQkLQ4mT3ANDpXBm1MEOCAQcVS9LQzjpPslCLjXZzgPZd+RyEgToXPCh0gSY
+cX30HpnPDYEccgShhWdNIuW3ptBm2h7sp5rbyLcIrnj7b8gnjR1wfCeMokhMDlQU
+DbyajZrnCjM1ErmcGesfYyNXGut4V/ZD6fRI6umsaHy2ojoc1PLNL0fFx1vpcrv2
+ecFIr8QsgvjmPBaf36mE4L9R/p+bhA==
 -----END CERTIFICATE-----
 EOF
   key = <<EOF
 -----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDOST00lQfs8tJA
-rhFGsZBjl1Wx+2SGcqH0eEjrKueWjBYgM9LU9kc5T/mBDvE9Q8Z0pBXlLvHzBE6c
-BpcSKbE3gZ1DDbmkaFEm+XCZ71/MkmJJ7qUbj00LGa4GIR0kDM8ppM+krVwbV/VO
-p2AJ8dEcAvonFvfKUcbYuVM0UteKS5tSLlFPr/0LymyvvXdmbge94Ij9zHRZ2Bn5
-+axz1+2uQgHUN3JXWRDnWbyvasuLcntoLmCAY6J7H9WUZJ3h7pI5Aul1AR0Nuh20
-4nguBWT5qsU0IyKdRYg48YXNeF2bqWyw9uHgw4GvPxz8z1NwXiGgyfn+j/2OiFkh
-n8M69e1lAgMBAAECggEAevPgTTT+0lYwx2h416ACJboP09O5KQGuUl5XaAPcoTjB
-/1OkOFbKQPjQCAJ1+0QoR2F9w2plv6kziX/MD4FWJXVV3J+TpNCgfhBy8u1gNjiR
-6Osa8gBJtXIK7ZBTJCeWWoXnVYoWuh2FEupkLck6D+4eV6oy6x4u3QIo+6jc24n9
-dIXQG6/v/Iao34kB0LUdp/4WNaUDvfI6NDhEwchpKE95dtWIDlIN/YhfiYAdjrnl
-YmH2VDbAGgsdEiHP4wLZfjgsGPPDGS0+qBHoSiJGH0E6wWEZdAE4TsYGRFsO86n3
-LfjEPFGfPlcnZe2cTTe3kmyKq/DTjxtu2rh3I8o2CQKBgQD/5Xe7cenaOBefzPlx
-GOEsB+qv49UmzEPOXDNZe9hmAawuuuxPUM+xlE++P+mEgQm1LPT4WWgtFLPVuwmx
-ncxt4CJNZh+ZGFyAZ4dm4M4ZhIBXNonyIP+yGyAJUUVF9Iy3TYcJNiGzv2Rx9JRQ
-XWJMQnTDILmZbmU+ltTea7/zqwKBgQDOXqCqb17MuLt7OcKWSgthm79OlaOdzZvl
-i9qU6VzZKG7Axc5gA9yq6tHp3vWPI4bNdvwqIIa/nzVILjGA5fcYFbRN+7gHwo8s
-rNAgi5PAoKWqQRovyJRY9Eq/sn6l1jbJZAOUAMZMWDm8z89OqK7PNQSIAtfFSneo
-2QxJkGeTLwKBgGJkafBB8af9b1/7YWISLepPNPbihH/BhMThAMGEdAVs2TaymtA4
-g1OFck/1pSVUtFXcbmjbf8ntruQcYbLQuNz6lFXsUXP9QPwCUrbE85ouL2bZSps2
-AvsJoPzUKe2nBUAp6CUrkjPaAJYsc6ae8X/fAaRRfeu33ef9+OV4yrq3AoGAYFZo
-ZmfrN2Kdkt7Z6dLTEVPlsMfGQ6pyNmxdM9rkzzNC0JcGymfDIb7RE35T3+hTy6La
-AMiCXv3xn6qAzY2NFh87tpPlyymWMOLTnf3Kkcfszlfp45idOBGCu46V9NDVbppT
-2UmrSIR/H5dbTXsNcAlt/hhlpeInjhkU1VqmH10CgYEA7Kk+QhWq705SczpWjm5J
-9kHqfFzJLwAWNBduiia0WypgPhLe/4wT1rYQkBtKMVKrgFo7Cvi4YKlrtlDnXyeU
-CIFqfEL5NriQelqrFsvgHsmD+MpvDoSWm5C8IrTubtlNyWUzXSVT4OIwzPobzPqG
-LILJ+e7bLw8RrM0HfgFnl8c=
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDLE8Y4Mj0nErOw
+H1xiRZKRjTvloUO0q8Pxd0bO2w6130he5Cqo9yJNRu9qKxhX/Bwf0WFN5rXicMLY
+g7Tk5foQEN2tfY94cZpcBxqGd8fOpzlJ34kR9kwt3OGQrIiDdg4ALbjBXmCoiMC4
+B+gxste6CVGVIJ6kDvAEGfrNQIIEbOPBIHVG2aBl5IR/mr3llhFmFTeZNZ3XnwuX
+Aia85xUblokiWrxJ/5iPVav2FgPSzvczrHliqAe3D5fBVWz4QkD6h6lR2PvgJ6Nh
+YBjIP44wDopwtxg3VJyDdUuzeZL1iEzdpmqu3Th5HWi4tG6p8b+g3uQ/QbmdACi/
++s3bleY1AgMBAAECggEAHmXdW/gZM0oXX5uyJnunjuYHOz5Cdj7n27MxBDHCJ/M+
+UAXzZMtpdQvTNp8wy6rPQuwClricLUMXx3UflMvf/JupsxiCa1MF+hSOIea4H/Tk
+HGy7hdbKXGsd0Jwi6xq2ycwORdOswE2IG4QDe7z7kbtnXN0/Ieuifdqtsh+f1q15
+v3KBy+xNvrLezt+tEW/MKec4+z4w9a/t9vlZaFdy8pmbVoJ5R8R7JOEIb7jVU9bQ
+dw0pR74dT9t+Wy/9IZ8Zg5fPtghHVtsfqaPI2y+PZ+GLIE2zDCkkk9IBTj+1UTyz
+MYXqiV1F5xM4A4SvxjdnigjI1kQe4cyGt4Nb76IzmQKBgQDkCTW5JfVNI2+Gvnah
+g26yzWbmpwajZDj4XKasZeKpO+sbs5ffMWiQXrel4pd4k8VEFLDYzkorivYFe47D
+0MhQJ0srAXS5cxNsWxpNnCOdskU7ATw+IyduD/YXkVsO0CQ6rJYu/Lj+Pm6Z3HwB
+anMJluAMh5pihUhpNMOEH6i0nwKBgQDj+wdbCnJmSIwf/7TJoXCNeOmH1uirv7td
+hnh8ij9CiWHkHQizmO95GN2PDzvQzNbAscFsyCgTPDTB9Tw9fjZ6v+QL91pcBceV
+hg1cjYpB0g0UuU88kW50NMytyQ3GJND72QoSsSejmFZrT8EilyVq5dF3Iqx6KuM1
+3HnzfNLAqwKBgQDKw62zfh8KgjHO3Fjb8ORjtOSEv4vViW5m2OuTa90Joi/CKAUo
+/uP9S1t882jAXJURnlxJy9SDt0JfSah+UY1sSCQ8j0TdCYgB11giHm5E8JlCiCyr
+C9MpuKOX/TW8jDNKwN+h1DIiUB1ETpstHxw/MJr0STdr1xu2AKbBOu1l/QKBgCZs
+2xKHMjz3IVcLXEdXxIazyHiyykiYalYbIhernXnzeeJe2maa8lHw1PcV1DkfLVsR
+Gs7g9ZA4Z5QBZ4Pd0ATkbuVtbXdxKfCTxZDB8nmhk77YdPh6cql3dMAd0QqCjg7E
+yCPaZBn4xSgVKzJPU2kvDx0LZRK6Q82CObPGaCc9AoGBANVlk+qQvp1Gi+IDnx7N
+/i3yoxzoMXllpBvzYLN7xEMUJOcoDVhD1PzoBmr4Gu4iiLqmsVk9rsssUWRVzFkC
+MLsSpBrUluqMOczU/b3XmpWkagSGBNTQ9LdwZJmX9e8tlUhK498wCZTWCWETJtdb
+ehoKzHPSsE7bB1GDRjbHXC8F
 -----END PRIVATE KEY-----
 EOF
 }
@@ -508,13 +509,13 @@ func TestAccAliCloudWafv3Domain_basic9852(t *testing.T) {
 							"keepalive_timeout":  "15",
 						},
 					},
-					"domain":      "qiyezhili-0930.wafqax.top",
+					"domain":      "qiyezhili-1118.wafqax.top",
 					"access_type": "share",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id": CHECKSET,
-						"domain":      "qiyezhili-0930.wafqax.top",
+						"domain":      "qiyezhili-1118.wafqax.top",
 						"access_type": "share",
 					}),
 				),
@@ -566,6 +567,7 @@ func TestAccAliCloudWafv3Domain_basic9852(t *testing.T) {
 
 var AlicloudWafv3DomainMap9852 = map[string]string{
 	"status": CHECKSET,
+	"cname":  CHECKSET,
 }
 
 func AlicloudWafv3DomainBasicDependence9852(name string) string {
@@ -581,7 +583,7 @@ data "alicloud_wafv3_instances" "default" {
 `, name)
 }
 
-// Case 企业级能力zctest_250739.wafqax.top账号_线上_换账号_测试通过_待发布 11009
+// Case 企业级能力qiyezhili-1118.wafqax.top账号_线上_换账号_测试通过_待发布 11009
 func TestAccAliCloudWafv3Domain_basic11009(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_domain.default"
@@ -650,14 +652,14 @@ func TestAccAliCloudWafv3Domain_basic11009(t *testing.T) {
 							},
 						},
 					},
-					"domain":                             "zctest_250739.wafqax.top",
+					"domain":                             "qiyezhili-1118.wafqax.top",
 					"access_type":                        "share",
 					"resource_manager_resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id":                        CHECKSET,
-						"domain":                             "zctest_250739.wafqax.top",
+						"domain":                             "qiyezhili-1118.wafqax.top",
 						"access_type":                        "share",
 						"resource_manager_resource_group_id": CHECKSET,
 					}),
