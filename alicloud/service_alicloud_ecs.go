@@ -2838,7 +2838,8 @@ func (s *EcsService) DescribeEcsSystemDisk(id string) (object map[string]interfa
 	return object, nil
 }
 
-func (s *EcsService) SetInstanceSetResourceTags(d *schema.ResourceData, resourceType string, instanceIds []string) error {
+func (s *EcsService) SetInstanceSetResourceTags(d *schema.ResourceData, resourceType string, instanceIds []string) (err error) {
+	var response map[string]interface{}
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
@@ -2868,7 +2869,7 @@ func (s *EcsService) SetInstanceSetResourceTags(d *schema.ResourceData, resource
 				}
 				wait := incrementalWait(2*time.Second, 1*time.Second)
 				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-					response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -2877,9 +2878,10 @@ func (s *EcsService) SetInstanceSetResourceTags(d *schema.ResourceData, resource
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, request)
 					return nil
 				})
+				addDebug(action, response, request)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
@@ -2902,7 +2904,7 @@ func (s *EcsService) SetInstanceSetResourceTags(d *schema.ResourceData, resource
 
 				wait := incrementalWait(2*time.Second, 1*time.Second)
 				err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-					response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -2911,9 +2913,10 @@ func (s *EcsService) SetInstanceSetResourceTags(d *schema.ResourceData, resource
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, request)
 					return nil
 				})
+				addDebug(action, response, request)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}

@@ -21,12 +21,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudEcsInstanceSet() *schema.Resource {
+func resourceAliCloudEcsInstanceSet() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEcsInstanceSetCreate,
-		Read:   resourceAlicloudEcsInstanceSetRead,
-		Update: resourceAlicloudEcsInstanceSetUpdate,
-		Delete: resourceAlicloudEcsInstanceSetDelete,
+		Create: resourceAliCloudEcsInstanceSetCreate,
+		Read:   resourceAliCloudEcsInstanceSetRead,
+		Update: resourceAliCloudEcsInstanceSetUpdate,
+		Delete: resourceAliCloudEcsInstanceSetDelete,
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
 			Update: schema.DefaultTimeout(30 * time.Minute),
@@ -414,7 +414,7 @@ func resourceAlicloudEcsInstanceSet() *schema.Resource {
 	}
 }
 
-func resourceAlicloudEcsInstanceSetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsInstanceSetCreate(d *schema.ResourceData, meta interface{}) error {
 
 	amount := 1
 	if v, ok := d.GetOk("amount"); ok {
@@ -428,7 +428,7 @@ func resourceAlicloudEcsInstanceSetCreate(d *schema.ResourceData, meta interface
 
 	d.Set("instance_ids", instanceIds)
 	d.SetId(encodeToBase64String(instanceIds))
-	return resourceAlicloudEcsInstanceSetUpdate(d, meta)
+	return resourceAliCloudEcsInstanceSetUpdate(d, meta)
 }
 
 func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interface{}, amount int) (error, []string) {
@@ -646,7 +646,7 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 	return nil, instanceIds
 }
 
-func resourceAlicloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
@@ -733,13 +733,17 @@ func resourceAlicloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func resourceAlicloudEcsInstanceSetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsInstanceSetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	d.Partial(false)
 
 	if d.HasChange("tags") {
 		instanceIds := make([]string, 0)
+		for _, v := range d.Get("instance_ids").([]interface{}) {
+			instanceIds = append(instanceIds, fmt.Sprint(v))
+		}
+
 		if err := ecsService.SetInstanceSetResourceTags(d, "instance", instanceIds); err != nil {
 			return WrapError(err)
 		}
@@ -856,10 +860,10 @@ func resourceAlicloudEcsInstanceSetUpdate(d *schema.ResourceData, meta interface
 		d.SetId(encodeToBase64String(curInstanceIds))
 	}
 
-	return resourceAlicloudEcsInstanceSetRead(d, meta)
+	return resourceAliCloudEcsInstanceSetRead(d, meta)
 }
 
-func resourceAlicloudEcsInstanceSetDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsInstanceSetDelete(d *schema.ResourceData, meta interface{}) error {
 
 	instanceIds, err := decodeFromBase64String(d.Id())
 	if err != nil {
