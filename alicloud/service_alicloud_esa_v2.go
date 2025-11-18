@@ -1889,7 +1889,6 @@ func (s *EsaServiceV2) EsaWaitingRoomStateRefreshFunc(id string, field string, f
 }
 
 // DescribeEsaWaitingRoom >>> Encapsulated.
-
 // DescribeEsaOriginPool <<< Encapsulated get interface for Esa OriginPool.
 
 func (s *EsaServiceV2) DescribeEsaOriginPool(id string) (object map[string]interface{}, err error) {
@@ -1900,13 +1899,12 @@ func (s *EsaServiceV2) DescribeEsaOriginPool(id string) (object map[string]inter
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
-		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = parts[1]
 	query["SiteId"] = parts[0]
-
+	query["RegionId"] = client.RegionId
 	action := "GetOriginPool"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -1931,18 +1929,15 @@ func (s *EsaServiceV2) DescribeEsaOriginPool(id string) (object map[string]inter
 }
 
 func (s *EsaServiceV2) EsaOriginPoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return s.EsaOriginPoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginPool)
-}
-
-func (s *EsaServiceV2) EsaOriginPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := call(id)
+		object, err := s.DescribeEsaOriginPool(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
+
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -3371,6 +3366,7 @@ func (s *EsaServiceV2) EsaOriginClientCertificateStateRefreshFunc(id string, fie
 }
 
 // DescribeEsaOriginClientCertificate >>> Encapsulated.
+
 // DescribeEsaSiteOriginClientCertificate <<< Encapsulated get interface for Esa SiteOriginClientCertificate.
 
 func (s *EsaServiceV2) DescribeEsaSiteOriginClientCertificate(id string) (object map[string]interface{}, err error) {
@@ -3381,12 +3377,13 @@ func (s *EsaServiceV2) DescribeEsaSiteOriginClientCertificate(id string) (object
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["Id"] = parts[1]
-	query["RegionId"] = client.RegionId
+
 	action := "GetSiteOriginClientCertificate"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -3411,15 +3408,18 @@ func (s *EsaServiceV2) DescribeEsaSiteOriginClientCertificate(id string) (object
 }
 
 func (s *EsaServiceV2) EsaSiteOriginClientCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaSiteOriginClientCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaSiteOriginClientCertificate)
+}
+
+func (s *EsaServiceV2) EsaSiteOriginClientCertificateStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaSiteOriginClientCertificate(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
