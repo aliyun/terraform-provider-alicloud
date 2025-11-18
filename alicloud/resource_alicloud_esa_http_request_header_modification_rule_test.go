@@ -34,7 +34,7 @@ func TestAccAliCloudESAHttpRequestHeaderModificationRulehttprequestheadermodific
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":      "${alicloud_esa_site.resource_Site_HttpRequestHeaderModificationRule_test.id}",
+					"site_id":      "${data.alicloud_esa_sites.default.sites.0.id}",
 					"rule_enable":  "on",
 					"rule":         "(http.host eq \\\"video.example.com\\\")",
 					"site_version": "0",
@@ -45,6 +45,7 @@ func TestAccAliCloudESAHttpRequestHeaderModificationRulehttprequestheadermodific
 							"value":     "add",
 							"operation": "add",
 							"name":      "testadd",
+							"type":      "static",
 						},
 
 						{
@@ -74,6 +75,14 @@ func TestAccAliCloudESAHttpRequestHeaderModificationRulehttprequestheadermodific
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"rule_enable": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sequence": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -158,21 +167,9 @@ variable "name" {
 }
 
 
-resource "alicloud_esa_rate_plan_instance" "resource_HttpRequestHeaderModificationRule_test" {
-  type         = "NS"
-  auto_renew   = "false"
-  period       = "1"
-  payment_type = "Subscription"
-  coverage     = "overseas"
-  auto_pay     = "true"
-  plan_name    = "high"
-}
-
-resource "alicloud_esa_site" "resource_Site_HttpRequestHeaderModificationRule_test" {
-  site_name   = "gositecdn.cn"
-  instance_id = alicloud_esa_rate_plan_instance.resource_HttpRequestHeaderModificationRule_test.id
-  coverage    = "overseas"
-  access_type = "NS"
+data "alicloud_esa_sites" "default" {
+  plan_subscribe_type = "enterpriseplan"
+  site_name = "gositecdn.cn"
 }
 
 `, name)
