@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -2073,5 +2074,1591 @@ func TestUnitCommonConvertYamlToObject(t *testing.T) {
 				assert.Equal(t, tt.expected, result)
 			}
 		})
+	}
+}
+
+func TestUnitCommonPointerFunctions(t *testing.T) {
+	t.Run("StringPointer", func(t *testing.T) {
+		str := "test"
+		ptr := StringPointer(str)
+		if ptr == nil || *ptr != str {
+			t.Error("StringPointer failed")
+		}
+	})
+
+	t.Run("BoolPointer", func(t *testing.T) {
+		b := true
+		ptr := BoolPointer(b)
+		if ptr == nil || *ptr != b {
+			t.Error("BoolPointer failed")
+		}
+	})
+
+	t.Run("Int32Pointer", func(t *testing.T) {
+		i := int32(42)
+		ptr := Int32Pointer(i)
+		if ptr == nil || *ptr != i {
+			t.Error("Int32Pointer failed")
+		}
+	})
+
+	t.Run("Int64Pointer", func(t *testing.T) {
+		i := int64(100)
+		ptr := Int64Pointer(i)
+		if ptr == nil || *ptr != i {
+			t.Error("Int64Pointer failed")
+		}
+	})
+}
+
+func TestUnitCommonIntMin(t *testing.T) {
+	tests := []struct {
+		name     string
+		x        int
+		y        int
+		expected int
+	}{
+		{"x smaller", 1, 2, 1},
+		{"y smaller", 5, 3, 3},
+		{"equal", 4, 4, 4},
+		{"negative", -5, -2, -5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IntMin(tt.x, tt.y)
+			if result != tt.expected {
+				t.Errorf("IntMin(%d, %d) = %d, want %d", tt.x, tt.y, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonGetPagination(t *testing.T) {
+	tests := []struct {
+		name       string
+		pageNumber int
+		pageSize   int
+	}{
+		{"default", 1, 10},
+		{"custom", 2, 20},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getPagination(tt.pageNumber, tt.pageSize)
+			if result.PageNumber != tt.pageNumber || result.PageSize != tt.pageSize {
+				t.Errorf("getPagination failed")
+			}
+		})
+	}
+}
+
+func TestUnitCommonBuildClientToken(t *testing.T) {
+	token1 := buildClientToken("CreateInstance")
+	token2 := buildClientToken("CreateInstance")
+
+	if token1 == "" {
+		t.Error("buildClientToken returned empty string")
+	}
+
+	if len(token1) > 64 {
+		t.Error("buildClientToken returned token longer than 64 characters")
+	}
+
+	if token1 == token2 {
+		t.Error("buildClientToken should return different tokens")
+	}
+
+	if !strings.Contains(token1, "TF-CreateInstance") {
+		t.Error("buildClientToken should contain action name")
+	}
+}
+
+func TestUnitCommonGetNextpageNumber(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    requests.Integer
+		expected requests.Integer
+		hasError bool
+	}{
+		{"page 1", requests.Integer("1"), requests.Integer("2"), false},
+		{"page 10", requests.Integer("10"), requests.Integer("11"), false},
+		{"invalid", requests.Integer("abc"), requests.Integer(""), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := getNextpageNumber(tt.input)
+			if tt.hasError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tt.expected {
+					t.Errorf("Expected %s, got %s", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonTerraformToAPI(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"single word", "name", "Name"},
+		{"two words", "user_name", "UserName"},
+		{"multiple words", "vpc_id_test", "VpcIdTest"},
+		{"empty", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := terraformToAPI(tt.input)
+			if result != tt.expected {
+				t.Errorf("terraformToAPI(%s) = %s, want %s", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonCompareJsonTemplateAreEquivalent(t *testing.T) {
+	tests := []struct {
+		name     string
+		tem1     string
+		tem2     string
+		expected bool
+		hasError bool
+	}{
+		{
+			"equal templates",
+			`{"key":"value","number":123}`,
+			`{"number":123,"key":"value"}`,
+			true,
+			false,
+		},
+		{
+			"different templates",
+			`{"key":"value1"}`,
+			`{"key":"value2"}`,
+			false,
+			false,
+		},
+		{
+			"invalid json1",
+			`{invalid}`,
+			`{"key":"value"}`,
+			false,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := compareJsonTemplateAreEquivalent(tt.tem1, tt.tem2)
+			if tt.hasError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tt.expected {
+					t.Errorf("Expected %v, got %v", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonCompareArrayJsonTemplateAreEquivalent(t *testing.T) {
+	tests := []struct {
+		name     string
+		tem1     string
+		tem2     string
+		expected bool
+		hasError bool
+	}{
+		{
+			"equal arrays",
+			`[{"key":"value"},{"number":123}]`,
+			`[{"key":"value"},{"number":123}]`,
+			true,
+			false,
+		},
+		{
+			"different arrays",
+			`[{"key":"value1"}]`,
+			`[{"key":"value2"}]`,
+			false,
+			false,
+		},
+		{
+			"invalid json",
+			`[{invalid}]`,
+			`[{"key":"value"}]`,
+			false,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := compareArrayJsonTemplateAreEquivalent(tt.tem1, tt.tem2)
+			if tt.hasError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tt.expected {
+					t.Errorf("Expected %v, got %v", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonCompareYamlTemplateAreEquivalent(t *testing.T) {
+	tests := []struct {
+		name     string
+		tem1     string
+		tem2     string
+		expected bool
+		hasError bool
+	}{
+		{
+			"equal yaml",
+			"key: value\nnumber: 123",
+			"number: 123\nkey: value",
+			true,
+			false,
+		},
+		{
+			"different yaml",
+			"key: value1",
+			"key: value2",
+			false,
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := compareYamlTemplateAreEquivalent(tt.tem1, tt.tem2)
+			if tt.hasError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tt.expected {
+					t.Errorf("Expected %v, got %v", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonLoadFileContent(t *testing.T) {
+	tmpFile := fmt.Sprintf("%s/test_load.txt", t.TempDir())
+	content := "test content"
+	os.WriteFile(tmpFile, []byte(content), 0644)
+
+	result, err := loadFileContent(tmpFile)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if string(result) != content {
+		t.Errorf("Expected %s, got %s", content, string(result))
+	}
+
+	// Test non-existent file
+	_, err = loadFileContent("/nonexistent/file.txt")
+	if err == nil {
+		t.Error("Expected error for non-existent file")
+	}
+}
+
+func TestUnitCommonParseResourceIds(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{"single part", "id1", []string{"id1"}},
+		{"two parts", "id1:id2", []string{"id1", "id2"}},
+		{"three parts", "vpc:vsw:ecs", []string{"vpc", "vsw", "ecs"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, _ := ParseResourceIds(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("ParseResourceIds(%s) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonParseResourceId(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		length   int
+		expected []string
+		hasError bool
+	}{
+		{"valid two parts", "vpc:vsw", 2, []string{"vpc", "vsw"}, false},
+		{"valid three parts", "a:b:c", 3, []string{"a", "b", "c"}, false},
+		{"invalid length", "vpc:vsw", 3, nil, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseResourceId(tt.input, tt.length)
+			if tt.hasError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if !reflect.DeepEqual(result, tt.expected) {
+					t.Errorf("Expected %v, got %v", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonParseResourceIdN(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		length   int
+		expected []string
+		hasError bool
+	}{
+		{"valid split", "a:b:c:d", 2, []string{"a", "b:c:d"}, false},
+		{"exact match", "a:b", 2, []string{"a", "b"}, false},
+		{"invalid length", "a:b", 3, nil, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseResourceIdN(tt.input, tt.length)
+			if tt.hasError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if !reflect.DeepEqual(result, tt.expected) {
+					t.Errorf("Expected %v, got %v", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonParseResourceIdWithEscaped(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		length   int
+		expected []string
+		hasError bool
+	}{
+		{"no escape", "a:b:c", 3, []string{"a", "b", "c"}, false},
+		{"with escape", `a\:b:c`, 2, []string{"a:b", "c"}, false},
+		{"multiple escape", `a\:b\:c:d`, 2, []string{"a:b:c", "d"}, false},
+		{"invalid length", "a:b", 3, nil, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseResourceIdWithEscaped(tt.input, tt.length)
+			if tt.hasError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if !reflect.DeepEqual(result, tt.expected) {
+					t.Errorf("Expected %v, got %v", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonEscapeColons(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"no colon", "abc", "abc"},
+		{"one colon", "a:b", `a\:b`},
+		{"multiple colons", "a:b:c", `a\:b\:c`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := EscapeColons(tt.input)
+			if result != tt.expected {
+				t.Errorf("EscapeColons(%s) = %s, want %s", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonParseSlbListenerId(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected int
+		hasError bool
+	}{
+		{"valid 2 parts", "slb-123:http", 2, false},
+		{"valid 3 parts", "slb-123:http:80", 3, false},
+		{"invalid", "slb-123", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseSlbListenerId(tt.input)
+			if tt.hasError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if len(result) != tt.expected {
+					t.Errorf("Expected %d parts, got %d", tt.expected, len(result))
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonGetCenChildInstanceType(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+		hasError bool
+	}{
+		{"vpc instance", "vpc-12345", "VPC", false},
+		{"vbr instance", "vbr-12345", "VBR", false},
+		{"ccn instance", "ccn-12345", "CCN", false},
+		{"invalid", "ecs-12345", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := GetCenChildInstanceType(tt.input)
+			if tt.hasError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tt.expected {
+					t.Errorf("Expected %s, got %s", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonMapMerge(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   map[string]interface{}
+		merged   map[string]interface{}
+		expected map[string]interface{}
+	}{
+		{
+			"simple merge",
+			map[string]interface{}{"a": 1},
+			map[string]interface{}{"b": 2},
+			map[string]interface{}{"a": 1, "b": 2},
+		},
+		{
+			"key exists not override",
+			map[string]interface{}{"a": 1},
+			map[string]interface{}{"a": 2},
+			map[string]interface{}{"a": 2},
+		},
+		{
+			"nested map",
+			map[string]interface{}{"a": map[string]interface{}{"x": 1}},
+			map[string]interface{}{"a": map[string]interface{}{"y": 2}},
+			map[string]interface{}{"a": map[string]interface{}{"x": 1, "y": 2}},
+		},
+		{
+			"merge arrays",
+			map[string]interface{}{"arr": []interface{}{1, 2}},
+			map[string]interface{}{"arr": []interface{}{3, 4}},
+			map[string]interface{}{"arr": []interface{}{3, 4}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Make a copy of target to avoid mutation affecting tests
+			targetCopy := make(map[string]interface{})
+			for k, v := range tt.target {
+				targetCopy[k] = v
+			}
+			result := mapMerge(targetCopy, tt.merged)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonInterface2String(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{"string", "hello", "hello"},
+		{"int", 123, "123"},
+		{"float", 3.14, "3.14"},
+		{"bool", true, "true"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Interface2String(tt.input)
+			if result != tt.expected {
+				t.Errorf("Interface2String(%v) = %s, want %s", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonInterface2StrSlice(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []interface{}
+		expected []string
+	}{
+		{"string slice", []interface{}{"a", "b", "c"}, []string{"a", "b", "c"}},
+		{"mixed slice", []interface{}{"a", 1, true}, []string{"a", "1", "true"}},
+		{"empty", []interface{}{}, []string{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Interface2StrSlice(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Interface2StrSlice(%v) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonStr2InterfaceSlice(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []interface{}
+	}{
+		{"string slice", []string{"a", "b", "c"}, []interface{}{"a", "b", "c"}},
+		{"empty", []string{}, []interface{}{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Str2InterfaceSlice(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Str2InterfaceSlice(%v) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonExpandSingletonToList(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected []interface{}
+	}{
+		{"string", "test", []interface{}{"test"}},
+		{"int", 123, []interface{}{123}},
+		{"map", map[string]string{"key": "value"}, []interface{}{map[string]string{"key": "value"}}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := expandSingletonToList(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("expandSingletonToList(%v) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonMD5(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []byte
+		expected string
+	}{
+		{"test string", []byte("test"), "098f6bcd4621d373cade4e832627b4f6"},
+		{"empty", []byte(""), "d41d8cd98f00b204e9800998ecf8427e"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MD5(tt.input)
+			if result != tt.expected {
+				t.Errorf("MD5(%s) = %s, want %s", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertTags(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]interface{}
+		expected []map[string]interface{}
+	}{
+		{
+			"basic tags",
+			map[string]interface{}{"env": "prod", "app": "test"},
+			[]map[string]interface{}{
+				{"Key": "env", "Value": "prod"},
+				{"Key": "app", "Value": "test"},
+			},
+		},
+		{
+			"empty map",
+			map[string]interface{}{},
+			[]map[string]interface{}{},
+		},
+		{
+			"nil value",
+			map[string]interface{}{"key": nil},
+			[]map[string]interface{}{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertTags(tt.input)
+			if len(result) != len(tt.expected) {
+				t.Errorf("Expected %d tags, got %d", len(tt.expected), len(result))
+			}
+		})
+	}
+}
+
+func TestUnitCommonConvertTagsForKms(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]interface{}
+		expected int
+	}{
+		{"basic tags", map[string]interface{}{"env": "prod", "app": "test"}, 2},
+		{"empty map", map[string]interface{}{}, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertTagsForKms(tt.input)
+			if len(result) != tt.expected {
+				t.Errorf("Expected %d tags, got %d", tt.expected, len(result))
+			}
+			for _, tag := range result {
+				if _, ok := tag["TagKey"]; !ok {
+					t.Error("Missing TagKey field")
+				}
+				if _, ok := tag["TagValue"]; !ok {
+					t.Error("Missing TagValue field")
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCommonExpandTagsToMap(t *testing.T) {
+	originMap := map[string]interface{}{"existing": "value"}
+	tags := []map[string]interface{}{
+		{"Key": "env", "Value": "prod"},
+		{"Key": "app", "Value": "test"},
+	}
+
+	result := expandTagsToMap(originMap, tags)
+
+	if result["Tag.1.Key"] != "env" {
+		t.Error("Tag.1.Key not set correctly")
+	}
+	if result["Tag.1.Value"] != "prod" {
+		t.Error("Tag.1.Value not set correctly")
+	}
+	if result["Tag.2.Key"] != "app" {
+		t.Error("Tag.2.Key not set correctly")
+	}
+	if result["existing"] != "value" {
+		t.Error("Original value was modified")
+	}
+}
+
+func TestUnitCommonExpandTagsToMapWithTags(t *testing.T) {
+	originMap := map[string]interface{}{"existing": "value"}
+	tags := []map[string]interface{}{
+		{"Key": "env", "Value": "prod"},
+	}
+
+	result := expandTagsToMapWithTags(originMap, tags)
+
+	if result["Tags.1.Key"] != "env" {
+		t.Error("Tags.1.Key not set correctly")
+	}
+	if result["Tags.1.Value"] != "prod" {
+		t.Error("Tags.1.Value not set correctly")
+	}
+}
+
+func TestUnitCommonConvertChargeTypeToPaymentType(t *testing.T) {
+	tests := []struct {
+		input    interface{}
+		expected interface{}
+	}{
+		{"PostPaid", "PayAsYouGo"},
+		{"Postpaid", "PayAsYouGo"},
+		{"PrePaid", "Subscription"},
+		{"Prepaid", "Subscription"},
+		{"Other", "Other"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input.(string), func(t *testing.T) {
+			result := convertChargeTypeToPaymentType(tt.input)
+			if result != tt.expected {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestUnitCommonBytesToTB(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    int64
+		expected float64
+	}{
+		{"1 TB", 1099511627776, 1.0},
+		{"2 TB", 2199023255552, 2.0},
+		{"0 bytes", 0, 0.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := bytesToTB(tt.input)
+			if result != tt.expected {
+				t.Errorf("bytesToTB(%d) = %f, want %f", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonIsPagingRequest(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     map[string]interface{}
+		expected bool
+	}{
+		{
+			"no page_number",
+			map[string]interface{}{},
+			false,
+		},
+		{
+			"page_number is 0",
+			map[string]interface{}{"page_number": 0},
+			false,
+		},
+		{
+			"page_number is positive",
+			map[string]interface{}{"page_number": 1},
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"page_number": {Type: schema.TypeInt, Optional: true},
+			}, tt.data)
+
+			result := isPagingRequest(d)
+			if result != tt.expected {
+				t.Errorf("isPagingRequest() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonSetPagingRequest(t *testing.T) {
+	tests := []struct {
+		name             string
+		data             map[string]interface{}
+		maxPageSize      int
+		expectedPageNum  int
+		expectedPageSize int
+	}{
+		{
+			"default values",
+			map[string]interface{}{},
+			0,
+			1,
+			PageSizeLarge,
+		},
+		{
+			"custom page_number",
+			map[string]interface{}{"page_number": 2},
+			0,
+			2,
+			PageSizeLarge,
+		},
+		{
+			"custom page_size",
+			map[string]interface{}{"page_size": 20},
+			0,
+			1,
+			20,
+		},
+		{
+			"custom max page size",
+			map[string]interface{}{},
+			30,
+			1,
+			30,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"page_number": {Type: schema.TypeInt, Optional: true},
+				"page_size":   {Type: schema.TypeInt, Optional: true},
+			}, tt.data)
+
+			request := make(map[string]interface{})
+			setPagingRequest(d, request, tt.maxPageSize)
+
+			if request["PageNumber"] != tt.expectedPageNum {
+				t.Errorf("PageNumber = %v, want %v", request["PageNumber"], tt.expectedPageNum)
+			}
+			if request["PageSize"] != tt.expectedPageSize {
+				t.Errorf("PageSize = %v, want %v", request["PageSize"], tt.expectedPageSize)
+			}
+		})
+	}
+}
+
+func TestUnitCommonRpcParam(t *testing.T) {
+	param := rpcParam("POST", "2020-01-01", "CreateInstance")
+
+	if *param.Method != "POST" {
+		t.Error("Method not set correctly")
+	}
+	if *param.Version != "2020-01-01" {
+		t.Error("Version not set correctly")
+	}
+	if *param.Action != "CreateInstance" {
+		t.Error("Action not set correctly")
+	}
+	if *param.Style != "RPC" {
+		t.Error("Style should be RPC")
+	}
+}
+
+func TestUnitCommonRoaParam(t *testing.T) {
+	param := roaParam("GET", "2020-01-01", "ListInstances", "/instances")
+
+	if *param.Method != "GET" {
+		t.Error("Method not set correctly")
+	}
+	if *param.Version != "2020-01-01" {
+		t.Error("Version not set correctly")
+	}
+	if *param.Action != "ListInstances" {
+		t.Error("Action not set correctly")
+	}
+	if *param.Pathname != "/instances" {
+		t.Error("Pathname not set correctly")
+	}
+	if *param.Style != "ROA" {
+		t.Error("Style should be ROA")
+	}
+}
+
+func TestUnitCommonXmlParam(t *testing.T) {
+	param := xmlParam("PUT", "2020-01-01", "UpdateConfig", "/config")
+
+	if *param.Method != "PUT" {
+		t.Error("Method not set correctly")
+	}
+	if *param.ReqBodyType != "xml" {
+		t.Error("ReqBodyType should be xml")
+	}
+	if *param.BodyType != "xml" {
+		t.Error("BodyType should be xml")
+	}
+}
+
+func TestUnitCommonJsonXmlParam(t *testing.T) {
+	param := jsonXmlParam("POST", "2020-01-01", "CreateResource", "/resource")
+
+	if *param.ReqBodyType != "json" {
+		t.Error("ReqBodyType should be json")
+	}
+	if *param.BodyType != "xml" {
+		t.Error("BodyType should be xml")
+	}
+}
+
+func TestUnitCommonXmlJsonParam(t *testing.T) {
+	param := xmlJsonParam("POST", "2020-01-01", "CreateResource", "/resource")
+
+	if *param.ReqBodyType != "xml" {
+		t.Error("ReqBodyType should be xml")
+	}
+	if *param.BodyType != "json" {
+		t.Error("BodyType should be json")
+	}
+}
+
+func TestUnitCommonMyMapMarshalXML(t *testing.T) {
+	// Test empty map - should return nil error for empty map
+	emptyMap := MyMap{}
+	var emptyResult strings.Builder
+	emptyEncoder := xml.NewEncoder(&emptyResult)
+	err := emptyMap.MarshalXML(emptyEncoder, xml.StartElement{Name: xml.Name{Local: "root"}})
+	if err != nil {
+		t.Errorf("MarshalXML failed for empty map: %v", err)
+	}
+
+	// Test non-empty map
+	m := MyMap{
+		"key1": "value1",
+		"key2": "value2",
+	}
+	var result strings.Builder
+	encoder := xml.NewEncoder(&result)
+	err = m.MarshalXML(encoder, xml.StartElement{Name: xml.Name{Local: "root"}})
+	if err != nil {
+		t.Errorf("MarshalXML failed: %v", err)
+	}
+	encoder.Flush()
+	xmlStr := result.String()
+	if !strings.Contains(xmlStr, "key1") || !strings.Contains(xmlStr, "value1") {
+		t.Errorf("MarshalXML output doesn't contain expected keys: %s", xmlStr)
+	}
+}
+
+func TestUnitCommonDebugOn(t *testing.T) {
+	// Save original value
+	originalDebug := os.Getenv("DEBUG")
+	defer os.Setenv("DEBUG", originalDebug)
+
+	// Test when DEBUG is not set
+	os.Setenv("DEBUG", "")
+	if debugOn() {
+		t.Error("debugOn should return false when DEBUG is not set")
+	}
+
+	// Test when DEBUG contains terraform
+	os.Setenv("DEBUG", "terraform")
+	if !debugOn() {
+		t.Error("debugOn should return true when DEBUG contains terraform")
+	}
+
+	// Test when DEBUG contains terraform with other values
+	os.Setenv("DEBUG", "something,terraform,other")
+	if !debugOn() {
+		t.Error("debugOn should return true when DEBUG contains terraform")
+	}
+
+	// Test when DEBUG does not contain terraform
+	os.Setenv("DEBUG", "other")
+	if debugOn() {
+		t.Error("debugOn should return false when DEBUG does not contain terraform")
+	}
+}
+
+func TestUnitCommonTrim(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"with spaces", "  hello  ", "hello"},
+		{"no spaces", "hello", "hello"},
+		{"empty", "", ""},
+		{"only spaces", "   ", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Trim(tt.input)
+			if result != tt.expected {
+				t.Errorf("Trim(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUnitCommonUnique(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{"with duplicates", []string{"a", "b", "a", "c"}, []string{"a", "b", "c"}},
+		{"no duplicates", []string{"a", "b", "c"}, []string{"a", "b", "c"}},
+		{"with empty strings", []string{"a", "", "b", ""}, []string{"a", "b"}},
+		{"empty slice", []string{}, []string{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Unique(tt.input)
+			if len(result) != len(tt.expected) {
+				t.Errorf("Unique(%v) length = %d, want %d", tt.input, len(result), len(tt.expected))
+			}
+		})
+	}
+}
+
+// Additional tests to improve coverage
+
+func TestUnitCommonUserDataHashSumNonBase64(t *testing.T) {
+	// Test non-base64 input
+	input := "plain text"
+	result := userDataHashSum(input)
+	if result != input {
+		t.Errorf("Expected %s, got %s", input, result)
+	}
+}
+
+func TestUnitCommonConvertJsonStringToObjectNil(t *testing.T) {
+	result := convertJsonStringToObject(`{"key":"value"}`)
+	if result == nil {
+		t.Error("Expected non-nil result")
+	}
+	if result["key"] != "value" {
+		t.Errorf("Expected value, got %v", result["key"])
+	}
+
+	// Test invalid JSON returns nil
+	result = convertJsonStringToObject(`{invalid}`)
+	if result != nil {
+		t.Error("Expected nil for invalid JSON")
+	}
+}
+
+func TestUnitCommonConvertObjectToJsonStringError(t *testing.T) {
+	// Test error case with channel (cannot be marshaled)
+	input := make(chan int)
+	result := convertObjectToJsonString(input)
+	if result != "" {
+		t.Errorf("Expected empty string for channel, got %s", result)
+	}
+
+	// Test valid case
+	validInput := map[string]string{"key": "value"}
+	result = convertObjectToJsonString(validInput)
+	if !strings.Contains(result, "key") {
+		t.Errorf("Expected JSON string, got %s", result)
+	}
+}
+
+func TestUnitCommonConvertMaptoJsonStringError(t *testing.T) {
+	// Test error case with channel
+	input := map[string]interface{}{"ch": make(chan int)}
+	_, err := convertMaptoJsonString(input)
+	if err == nil {
+		t.Error("Expected error for channel in map")
+	}
+
+	// Test valid case
+	validInput := map[string]interface{}{"key": "value"}
+	result, err := convertMaptoJsonString(validInput)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "key") {
+		t.Errorf("Expected JSON string, got %s", result)
+	}
+}
+
+func TestUnitCommonConvertMapToJsonStringIgnoreErrorWithChannel(t *testing.T) {
+	// Test with channel that causes error
+	input := map[string]interface{}{"ch": make(chan int)}
+	result := convertMapToJsonStringIgnoreError(input)
+	if result != "" {
+		t.Errorf("Expected empty string for error case, got %s", result)
+	}
+
+	// Test valid case
+	validInput := map[string]interface{}{"key": "value"}
+	result = convertMapToJsonStringIgnoreError(validInput)
+	if !strings.Contains(result, "key") {
+		t.Errorf("Expected JSON string, got %s", result)
+	}
+}
+
+func TestUnitCommonConvertInterfaceToJsonStringError(t *testing.T) {
+	// Test error case with channel
+	input := make(chan int)
+	_, err := convertInterfaceToJsonString(input)
+	if err == nil {
+		t.Error("Expected error for channel")
+	}
+
+	// Test valid case
+	validInput := struct{ Key string }{"value"}
+	result, err := convertInterfaceToJsonString(validInput)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "Key") {
+		t.Errorf("Expected JSON string, got %s", result)
+	}
+}
+
+func TestUnitCommonWriteToFileWithHomeDir(t *testing.T) {
+	// Test with ~ in path
+	tmpDir := t.TempDir()
+	// We can't directly test ~ expansion without mocking, but we can test the logic
+	err := writeToFile(fmt.Sprintf("%s/test.txt", tmpDir), "content")
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	// Test with nil data
+	err = writeToFile(fmt.Sprintf("%s/test2.txt", tmpDir), nil)
+	if err != nil {
+		t.Errorf("Unexpected error for nil: %v", err)
+	}
+
+	// Test overwriting existing file
+	err = writeToFile(fmt.Sprintf("%s/test.txt", tmpDir), "new content")
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+}
+
+func TestUnitCommonComputePeriodByUnitEdgeCases(t *testing.T) {
+	now := time.Now()
+
+	// Test with Year unit
+	result, err := computePeriodByUnit(
+		now.Format(time.RFC3339),
+		now.AddDate(1, 0, 0).Format(time.RFC3339),
+		0,
+		"Year",
+	)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result != 1 {
+		t.Errorf("Expected 1 year, got %d", result)
+	}
+
+	// Test with nil createTime
+	_, err = computePeriodByUnit(nil, now.Format(time.RFC3339), 0, "Month")
+	if err == nil {
+		t.Error("Expected error for nil createTime")
+	}
+
+	// Test with nil endTime
+	_, err = computePeriodByUnit(now.Format(time.RFC3339), nil, 0, "Month")
+	if err == nil {
+		t.Error("Expected error for nil endTime")
+	}
+
+	// Test with int64 time
+	_, err = computePeriodByUnit(
+		now.Unix(),
+		now.AddDate(0, 1, 0).Unix(),
+		0,
+		"Month",
+	)
+	if err != nil {
+		t.Errorf("Unexpected error with int64 time: %v", err)
+	}
+
+	// Test with invalid time format
+	_, err = computePeriodByUnit("invalid", "invalid", 0, "Month")
+	if err == nil {
+		t.Error("Expected error for invalid time format")
+	}
+
+	// Test with unsupported period unit
+	_, err = computePeriodByUnit(
+		now.Format(time.RFC3339),
+		now.AddDate(0, 1, 0).Format(time.RFC3339),
+		0,
+		"Invalid",
+	)
+	if err == nil {
+		t.Error("Expected error for unsupported period unit")
+	}
+
+	// Test with currentPeriod set
+	result, err = computePeriodByUnit(
+		now.Format(time.RFC3339),
+		now.AddDate(0, 2, 0).Format(time.RFC3339),
+		5,
+		"Month",
+	)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result != 5 {
+		t.Errorf("Expected 5 (currentPeriod), got %d", result)
+	}
+
+	// Test UnStandardRFC3339 format
+	UnStandardRFC3339 := "2006-01-02T15:04Z07:00"
+	create := now.Format(UnStandardRFC3339)
+	end := now.AddDate(0, 1, 0).Format(UnStandardRFC3339)
+	_, err = computePeriodByUnit(create, end, 0, "Month")
+	if err != nil {
+		t.Errorf("Unexpected error with UnStandardRFC3339: %v", err)
+	}
+
+	// Test period > 12
+	result, err = computePeriodByUnit(
+		now.Format(time.RFC3339),
+		now.AddDate(2, 0, 0).Format(time.RFC3339),
+		0,
+		"Month",
+	)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result != 12 {
+		t.Errorf("Expected 12 (max period), got %d", result)
+	}
+}
+
+func TestUnitCommonCompressIPv6OrCIDREdgeCases(t *testing.T) {
+	// Test empty string
+	result, err := compressIPv6OrCIDR("")
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result != "" {
+		t.Errorf("Expected empty string, got %s", result)
+	}
+
+	// Test invalid CIDR
+	_, err = compressIPv6OrCIDR("invalid/cidr")
+	if err == nil {
+		t.Error("Expected error for invalid CIDR")
+	}
+
+	// Test IPv4
+	result, err = compressIPv6OrCIDR("192.168.1.1")
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result != "192.168.1.1" {
+		t.Errorf("Expected 192.168.1.1, got %s", result)
+	}
+
+	// Test invalid IP
+	result, err = compressIPv6OrCIDR("not-an-ip")
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result != "not-an-ip" {
+		t.Errorf("Expected original string, got %s", result)
+	}
+}
+
+func TestUnitCommonNormalizeValueEdgeCases(t *testing.T) {
+	// Test string with JSON array that's invalid
+	result, err := normalizeValue(`[invalid`)
+	if err != nil {
+		// Should return original value on error
+		if result == nil {
+			t.Error("Expected non-nil result on error")
+		}
+	}
+
+	// Test nested map
+	nestedMap := map[string]interface{}{
+		"nested": map[string]interface{}{
+			"key": "value",
+		},
+	}
+	result, err = normalizeValue(nestedMap)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result == nil {
+		t.Error("Expected non-nil result")
+	}
+
+	// Test string true/false
+	result, _ = normalizeValue("true")
+	if result != true {
+		t.Errorf("Expected true, got %v", result)
+	}
+
+	result, _ = normalizeValue("false")
+	if result != false {
+		t.Errorf("Expected false, got %v", result)
+	}
+
+	// Test numeric string
+	result, _ = normalizeValue("123")
+	if result != 123 {
+		t.Errorf("Expected 123, got %v", result)
+	}
+
+	// Test array with nested values
+	arr := []interface{}{"true", "false", "123", map[string]interface{}{"key": "value"}}
+	result, err = normalizeValue(arr)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result == nil {
+		t.Error("Expected non-nil result")
+	}
+
+	// Test JSON array string
+	result, err = normalizeValue(`["a", "b", "c"]`)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result == nil {
+		t.Error("Expected non-nil result")
+	}
+}
+
+func TestUnitCommonConvertArrayObjectToJsonStringError(t *testing.T) {
+	// Test with valid input
+	input := []interface{}{1, 2, 3}
+	result, err := convertArrayObjectToJsonString(input)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "[1,2,3]") {
+		t.Errorf("Expected [1,2,3], got %s", result)
+	}
+
+	// Test with error case (channels cannot be marshaled)
+	input = []interface{}{make(chan int)}
+	_, err = convertArrayObjectToJsonString(input)
+	if err == nil {
+		t.Error("Expected error for channel in array")
+	}
+}
+
+func TestUnitCommonMapMergeNestedArrays(t *testing.T) {
+	// Test nested array merging with maps
+	target := map[string]interface{}{
+		"arr": []interface{}{
+			map[string]interface{}{"x": 1},
+		},
+	}
+	merged := map[string]interface{}{
+		"arr": []interface{}{
+			map[string]interface{}{"y": 2},
+		},
+	}
+	result := mapMerge(target, merged)
+	arr := result["arr"].([]interface{})
+	mergedMap := arr[0].(map[string]interface{})
+	if mergedMap["x"] != 1 || mergedMap["y"] != 2 {
+		t.Errorf("Expected merged map with x=1 and y=2, got %v", mergedMap)
+	}
+
+	// Test with non-map array element
+	target2 := map[string]interface{}{
+		"arr": []interface{}{1, 2},
+	}
+	merged2 := map[string]interface{}{
+		"arr": []interface{}{3, 4},
+	}
+	result2 := mapMerge(target2, merged2)
+	arr2 := result2["arr"].([]interface{})
+	if arr2[0] != 3 || arr2[1] != 4 {
+		t.Errorf("Expected [3, 4], got %v", arr2)
+	}
+}
+
+func TestUnitCommonNewInstanceDiffComplex(t *testing.T) {
+	// Test with simple map attribute changes
+	state := &terraform.InstanceState{
+		ID: "vpc-123",
+		Attributes: map[string]string{
+			"cidr_block": "192.168.0.0/16",
+			"name":       "old-name",
+		},
+	}
+
+	attributes := map[string]interface{}{
+		"cidr_block": "192.168.0.0/16",
+		"name":       "old-name",
+	}
+
+	attributesDiff := map[string]interface{}{
+		"name": "new-name",
+	}
+
+	diff, err := newInstanceDiff("alicloud_vpc", attributes, attributesDiff, state)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if diff == nil {
+		t.Fatal("Expected non-nil diff")
+	}
+
+	// Verify the diff contains the change
+	if diff.Attributes["name"].Old != "old-name" || diff.Attributes["name"].New != "new-name" {
+		t.Errorf("Expected name change from old-name to new-name")
+	}
+}
+
+func TestUnitCommonConvertToJsonWithoutEscapeHTMLError(t *testing.T) {
+	// Test with channel that causes error
+	input := map[string]interface{}{"ch": make(chan int)}
+	_, err := convertToJsonWithoutEscapeHTML(input)
+	if err == nil {
+		t.Error("Expected error for channel in map")
+	}
+}
+
+func TestUnitCommonInterface2BoolNil(t *testing.T) {
+	result := Interface2Bool(nil)
+	if result != false {
+		t.Errorf("Expected false for nil, got %v", result)
+	}
+}
+
+func TestUnitCommonSplitMultiZoneIdNoSymbol(t *testing.T) {
+	// Test without MAZ symbol and without parentheses
+	result := splitMultiZoneId("simple-zone")
+	if result != nil {
+		t.Errorf("Expected nil for simple zone, got %v", result)
+	}
+
+	// Test with MAZ but without proper parentheses format
+	// When MAZ is present but no "(", the function still tries to split
+	// This tests the edge case where secondIndex is -1
+	result = splitMultiZoneId("zone-MAZ-something")
+	if result == nil {
+		t.Error("Expected non-nil result when MAZ symbol is present")
+	}
+}
+
+func TestUnitCommonWriteToFileEdgeCases(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Test with map data
+	mapData := map[string]interface{}{
+		"key1": "value1",
+		"key2": 123,
+	}
+	err := writeToFile(fmt.Sprintf("%s/map.json", tmpDir), mapData)
+	if err != nil {
+		t.Errorf("Unexpected error writing map: %v", err)
+	}
+
+	// Test with struct data
+	structData := struct {
+		Name string
+		Age  int
+	}{
+		Name: "test",
+		Age:  30,
+	}
+	err = writeToFile(fmt.Sprintf("%s/struct.json", tmpDir), structData)
+	if err != nil {
+		t.Errorf("Unexpected error writing struct: %v", err)
+	}
+
+	// Verify file was created and can be read
+	content, err := os.ReadFile(fmt.Sprintf("%s/struct.json", tmpDir))
+	if err != nil {
+		t.Errorf("Failed to read written file: %v", err)
+	}
+	if len(content) == 0 {
+		t.Error("Written file is empty")
+	}
+}
+
+func TestUnitCommonNewInstanceDiffRemoveAttributes(t *testing.T) {
+	// Test removing attributes (setting to empty)
+	state := &terraform.InstanceState{
+		ID: "vpc-123",
+		Attributes: map[string]string{
+			"description": "old description",
+			"name":        "test-vpc",
+		},
+	}
+
+	attributes := map[string]interface{}{
+		"description": "old description",
+		"name":        "test-vpc",
+	}
+
+	attributesDiff := map[string]interface{}{
+		"description": "",
+		"name":        "test-vpc",
+	}
+
+	diff, err := newInstanceDiff("alicloud_vpc", attributes, attributesDiff, state)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if diff == nil {
+		t.Fatal("Expected non-nil diff")
+	}
+
+	// Verify description was removed
+	if descDiff, ok := diff.Attributes["description"]; ok {
+		if descDiff.New != "" {
+			t.Errorf("Expected empty description, got %s", descDiff.New)
+		}
 	}
 }
