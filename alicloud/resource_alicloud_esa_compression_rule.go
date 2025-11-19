@@ -60,7 +60,7 @@ func resourceAliCloudEsaCompressionRule() *schema.Resource {
 				Computed: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -164,7 +164,7 @@ func resourceAliCloudEsaCompressionRuleRead(d *schema.ResourceData, meta interfa
 	d.Set("config_id", objectRaw["ConfigId"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprintf(parts[0]))
 
 	return nil
 }
@@ -187,15 +187,6 @@ func resourceAliCloudEsaCompressionRuleUpdate(d *schema.ResourceData, meta inter
 	if !d.IsNewResource() && d.HasChange("sequence") {
 		update = true
 		request["Sequence"] = d.Get("sequence")
-		if v, ok := d.GetOk("gzip"); ok {
-			request["Gzip"] = v
-		}
-		if v, ok := d.GetOk("zstd"); ok {
-			request["Zstd"] = v
-		}
-		if v, ok := d.GetOk("brotli"); ok {
-			request["Brotli"] = v
-		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("zstd") {
