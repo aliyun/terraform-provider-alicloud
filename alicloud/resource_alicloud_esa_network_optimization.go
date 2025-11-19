@@ -60,7 +60,7 @@ func resourceAliCloudEsaNetworkOptimization() *schema.Resource {
 				Computed: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -181,7 +181,7 @@ func resourceAliCloudEsaNetworkOptimizationRead(d *schema.ResourceData, meta int
 	d.Set("config_id", objectRaw["ConfigId"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprintf(parts[0]))
 
 	return nil
 }
