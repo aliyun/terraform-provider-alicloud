@@ -93,7 +93,7 @@ func resourceAliCloudEsaWaitingRoom() *schema.Resource {
 				Required: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -134,7 +134,6 @@ func resourceAliCloudEsaWaitingRoomCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	request["QueuingMethod"] = d.Get("queuing_method")
 	request["WaitingRoomType"] = d.Get("waiting_room_type")
@@ -147,7 +146,7 @@ func resourceAliCloudEsaWaitingRoomCreate(d *schema.ResourceData, meta interface
 	request["Enable"] = d.Get("status")
 	if v, ok := d.GetOk("host_name_and_path"); ok {
 		hostNameAndPathMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["Domain"] = dataLoopTmp["domain"]
@@ -237,7 +236,7 @@ func resourceAliCloudEsaWaitingRoomRead(d *schema.ResourceData, meta interface{}
 	hostNameAndPathRaw := objectRaw["HostNameAndPath"]
 	hostNameAndPathMaps := make([]map[string]interface{}, 0)
 	if hostNameAndPathRaw != nil {
-		for _, hostNameAndPathChildRaw := range hostNameAndPathRaw.([]interface{}) {
+		for _, hostNameAndPathChildRaw := range convertToInterfaceArray(hostNameAndPathRaw) {
 			hostNameAndPathMap := make(map[string]interface{})
 			hostNameAndPathChildRaw := hostNameAndPathChildRaw.(map[string]interface{})
 			hostNameAndPathMap["domain"] = hostNameAndPathChildRaw["Domain"]
@@ -252,7 +251,7 @@ func resourceAliCloudEsaWaitingRoomRead(d *schema.ResourceData, meta interface{}
 	}
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprintf(parts[0]))
 
 	return nil
 }
@@ -271,7 +270,7 @@ func resourceAliCloudEsaWaitingRoomUpdate(d *schema.ResourceData, meta interface
 	query = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["WaitingRoomId"] = parts[1]
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("queuing_method") {
 		update = true
 	}
@@ -299,7 +298,7 @@ func resourceAliCloudEsaWaitingRoomUpdate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("host_name_and_path"); ok || d.HasChange("host_name_and_path") {
 		hostNameAndPathMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["Domain"] = dataLoopTmp["domain"]
@@ -392,12 +391,10 @@ func resourceAliCloudEsaWaitingRoomDelete(d *schema.ResourceData, meta interface
 	request = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["WaitingRoomId"] = parts[1]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

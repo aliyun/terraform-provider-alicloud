@@ -1811,6 +1811,7 @@ func (s *EsaServiceV2) EsaImageTransformStateRefreshFuncWithApi(id string, field
 }
 
 // DescribeEsaImageTransform >>> Encapsulated.
+
 // DescribeEsaWaitingRoom <<< Encapsulated get interface for Esa WaitingRoom.
 
 func (s *EsaServiceV2) DescribeEsaWaitingRoom(id string) (object map[string]interface{}, err error) {
@@ -1821,12 +1822,13 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoom(id string) (object map[string]inte
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["WaitingRoomId"] = parts[1]
-	query["RegionId"] = client.RegionId
+
 	action := "ListWaitingRooms"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -1860,15 +1862,18 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoom(id string) (object map[string]inte
 }
 
 func (s *EsaServiceV2) EsaWaitingRoomStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaWaitingRoomStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWaitingRoom)
+}
+
+func (s *EsaServiceV2) EsaWaitingRoomStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaWaitingRoom(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

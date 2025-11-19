@@ -20,12 +20,6 @@ For information about ESA Waiting Room and how to use it, see [What is Waiting R
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_waiting_room&exampleId=a04eaebe-1739-0a22-5522-32ab1ae01dc72651f739&activeTab=example&spm=docs.r.esa_waiting_room.0.a04eaebe17&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
@@ -81,39 +75,39 @@ The following arguments are supported:
 * `custom_page_html` - (Optional) User-defined waiting room page content, when the waiting room type is custom type, you need to enter. The incoming content needs to be base64 encoded.
 * `description` - (Optional) Waiting room description.
 * `disable_session_renewal_enable` - (Optional) Disable session renewal. Value:
-  -'on': open.
-  -'off': closed.
+  - `on`: open.
+  - `off`: closed.
 * `host_name_and_path` - (Required, List) Host name and path. See [`host_name_and_path`](#host_name_and_path) below.
 * `json_response_enable` - (Optional) The JSON response. If the accept request header contains "application/json", JSON data is returned. Value:
-  -'on': open.
-  -'off': closed.
+  - `on`: open.
+  - `off`: closed.
 * `language` - (Optional) The language of the waiting room page. When the waiting room type is the default type, it needs to be passed in. The following types are supported:
-  -'enus': English.
-  -'zhcn': Simplified Chinese.
-  -'zhhk': Traditional Chinese.
+  - `enus`: English.
+  - `zhcn`: Simplified Chinese.
+  - `zhhk`: Traditional Chinese.
 * `new_users_per_minute` - (Required) Number of new users per minute.
 * `queue_all_enable` - (Optional) All in line. Value:
-  -'on': open.
-  -'off': closed.
+  - `on`: open.
+  - `off`: closed.
 * `queuing_method` - (Required) Way of queuing. Value:
-  -'random': random.
-  -'fifo': first in, first out.
-  -'Passthrough ': through.
-  -'Reject-all': reject all.
+  - `random`: random.
+  - `fifo`: first in, first out.
+  - `Passthrough`: through.
+  - `Reject-all`: reject all.
 * `queuing_status_code` - (Required) Waiting room status code. Value:
-  -'200'
-  -'202'
-  -'429'
+  - `200`
+  - `202`
+  - `429`
 * `session_duration` - (Required) Session duration in minutes.
-* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the [ListSites](https://help.aliyun.com/document_detail/2850189.html) interface.
+* `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the [ListSites](https://help.aliyun.com/document_detail/2850189.html) interface.
 * `status` - (Required) Waiting room enabled status. Value:
-  -'on': Enable waiting room
-  -'off': disabled waiting room
+  - 'on': Enable waiting room
+  - 'off': Disabled waiting room
 * `total_active_users` - (Required) Total number of active users.
 * `waiting_room_name` - (Required) The name of the waiting room.
 * `waiting_room_type` - (Required) Waiting room type, support:
-  -'default': Indicates the default type.
-  -'custom': indicates a custom type.
+  - `default`: Indicates the default type.
+  - `custom`: indicates a custom type.
 
 ### `host_name_and_path`
 
