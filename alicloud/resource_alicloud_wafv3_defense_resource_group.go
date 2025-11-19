@@ -183,7 +183,6 @@ func resourceAliCloudWafv3DefenseResourceGroupUpdate(d *schema.ResourceData, met
 			request["InstanceId"] = parts[0]
 			request["GroupName"] = parts[1]
 			request["RegionId"] = client.RegionId
-			request["Description"] = d.Get("description")
 			request["DeleteList"] = convertArrayToString(removed.List(), ",")
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -213,7 +212,6 @@ func resourceAliCloudWafv3DefenseResourceGroupUpdate(d *schema.ResourceData, met
 			request["InstanceId"] = parts[0]
 			request["GroupName"] = parts[1]
 			request["RegionId"] = client.RegionId
-			request["Description"] = d.Get("description")
 			request["AddList"] = convertArrayToString(added.List(), ",")
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
