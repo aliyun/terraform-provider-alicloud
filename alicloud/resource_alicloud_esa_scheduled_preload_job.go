@@ -51,7 +51,7 @@ func resourceAliCloudEsaScheduledPreloadJob() *schema.Resource {
 				ForceNew: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -76,7 +76,6 @@ func resourceAliCloudEsaScheduledPreloadJobCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("url_list"); ok {
 		request["UrlList"] = v
@@ -127,7 +126,9 @@ func resourceAliCloudEsaScheduledPreloadJobRead(d *schema.ResourceData, meta int
 	d.Set("insert_way", objectRaw["InsertWay"])
 	d.Set("scheduled_preload_job_name", objectRaw["Name"])
 	d.Set("scheduled_preload_job_id", objectRaw["Id"])
-	d.Set("site_id", objectRaw["SiteId"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	return nil
 }
@@ -148,12 +149,10 @@ func resourceAliCloudEsaScheduledPreloadJobDelete(d *schema.ResourceData, meta i
 	var err error
 	request = make(map[string]interface{})
 	request["Id"] = parts[1]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

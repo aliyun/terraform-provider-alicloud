@@ -2706,6 +2706,7 @@ func (s *EsaServiceV2) EsaEdgeContainerAppRecordStateRefreshFunc(id string, fiel
 }
 
 // DescribeEsaEdgeContainerAppRecord >>> Encapsulated.
+
 // DescribeEsaScheduledPreloadJob <<< Encapsulated get interface for Esa ScheduledPreloadJob.
 
 func (s *EsaServiceV2) DescribeEsaScheduledPreloadJob(id string) (object map[string]interface{}, err error) {
@@ -2716,11 +2717,12 @@ func (s *EsaServiceV2) DescribeEsaScheduledPreloadJob(id string) (object map[str
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Id"] = parts[1]
-	query["RegionId"] = client.RegionId
+
 	action := "GetScheduledPreloadJob"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -2741,25 +2743,22 @@ func (s *EsaServiceV2) DescribeEsaScheduledPreloadJob(id string) (object map[str
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	var v interface{}
-	v = response
-	item := v.(map[string]interface{})
-	if fmt.Sprint(item["SiteId"]) != parts[0] {
-		return object, WrapErrorf(NotFoundErr("ScheduledPreloadJob", id), NotFoundMsg, response)
-	}
-	return item, nil
+	return response, nil
 }
 
 func (s *EsaServiceV2) EsaScheduledPreloadJobStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaScheduledPreloadJobStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaScheduledPreloadJob)
+}
+
+func (s *EsaServiceV2) EsaScheduledPreloadJobStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaScheduledPreloadJob(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
