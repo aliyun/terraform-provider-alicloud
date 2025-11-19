@@ -45,13 +45,12 @@ func resourceAliCloudEsaClientCertificate() *schema.Resource {
 				Optional: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
-				Optional: true,
 				Computed: true,
 			},
 			"validity_days": {
@@ -75,7 +74,6 @@ func resourceAliCloudEsaClientCertificateCreate(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("csr"); ok {
 		request["CSR"] = v
@@ -121,7 +119,9 @@ func resourceAliCloudEsaClientCertificateRead(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	d.Set("site_id", formatInt(objectRaw["SiteId"]))
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	resultRawObj, _ := jsonpath.Get("$.Result", objectRaw)
 	resultRaw := make(map[string]interface{})
@@ -141,16 +141,13 @@ func resourceAliCloudEsaClientCertificateUpdate(d *schema.ResourceData, meta int
 	var response map[string]interface{}
 	var query map[string]interface{}
 
-	if d.HasChange("status") {
-		esaServiceV2 := EsaServiceV2{client}
-		object, err := esaServiceV2.DescribeEsaClientCertificate(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
+	esaServiceV2 := EsaServiceV2{client}
+	objectRaw, _ := esaServiceV2.DescribeEsaClientCertificate(d.Id())
 
+	if d.HasChange("status") {
+		var err error
 		target := d.Get("status").(string)
-		status, err := jsonpath.Get("$.Result.Status", object)
-		if fmt.Sprint(status) != target {
+		if objectRaw["$.Result.Status"].(string) != target {
 			if target == "revoked" {
 				parts := strings.Split(d.Id(), ":")
 				action := "RevokeClientCertificate"
@@ -158,7 +155,7 @@ func resourceAliCloudEsaClientCertificateUpdate(d *schema.ResourceData, meta int
 				query = make(map[string]interface{})
 				query["SiteId"] = parts[0]
 				query["Id"] = parts[1]
-				query["RegionId"] = client.RegionId
+
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
@@ -184,7 +181,7 @@ func resourceAliCloudEsaClientCertificateUpdate(d *schema.ResourceData, meta int
 				query = make(map[string]interface{})
 				query["SiteId"] = parts[0]
 				query["Id"] = parts[1]
-				query["RegionId"] = client.RegionId
+
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
@@ -221,12 +218,10 @@ func resourceAliCloudEsaClientCertificateDelete(d *schema.ResourceData, meta int
 	request = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["Id"] = parts[1]
-	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
