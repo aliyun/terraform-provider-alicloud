@@ -2,7 +2,6 @@
 subcategory: "Express Connect"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_express_connect_virtual_border_router"
-sidebar_current: "docs-alicloud-resource-express-connect-virtual-border-router"
 description: |-
   Provides a Alicloud Express Connect Virtual Border Router resource.
 ---
@@ -29,23 +28,27 @@ Basic Usage
 provider "alicloud" {
   region = "cn-hangzhou"
 }
+
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
-data "alicloud_express_connect_physical_connections" "example" {
+
+data "alicloud_express_connect_physical_connections" "default" {
   name_regex = "^preserved-NODELETING"
 }
-resource "random_integer" "vlan_id" {
-  max = 2999
+
+resource "random_integer" "default" {
   min = 1
+  max = 2999
 }
-resource "alicloud_express_connect_virtual_border_router" "example" {
+
+resource "alicloud_express_connect_virtual_border_router" "default" {
   local_gateway_ip           = "10.0.0.1"
   peer_gateway_ip            = "10.0.0.2"
   peering_subnet_mask        = "255.255.255.252"
-  physical_connection_id     = data.alicloud_express_connect_physical_connections.example.connections.0.id
+  physical_connection_id     = data.alicloud_express_connect_physical_connections.default.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = random_integer.vlan_id.id
+  vlan_id                    = random_integer.default.id
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
@@ -55,40 +58,50 @@ resource "alicloud_express_connect_virtual_border_router" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `associated_physical_connections` - (Optional) The associated physical connections.
-* `bandwidth` - (Optional) The bandwidth.
-* `circuit_code` - (Optional) Operators for physical connection circuit provided coding.
-* `description` - (Optional) The description of VBR. Length is from 2 to 256 characters, must start with a letter or the Chinese at the beginning, but not at the http:// Or https:// at the beginning.
-* `detect_multiplier` - (Optional) Detection time multiplier that recipient allows the sender to send a message of the maximum allowable connections for the number of packets, used to detect whether the link normal. Value: 3~10.
-* `enable_ipv6` - (Optional) Whether to Enable IPv6. Valid values: `false`, `true`.
-* `local_gateway_ip` - (Required) Alibaba Cloud-Connected IPv4 address.
-* `local_ipv6_gateway_ip` - (Optional) Alibaba Cloud-Connected IPv6 Address.
-* `min_rx_interval` - (Optional) Configure BFD packet reception interval of values include: 200~1000, unit: ms.
-* `min_tx_interval` - (Optional) Configure BFD packet transmission interval maximum value: 200~1000, unit: ms.
-* `peer_gateway_ip` - (Required) The Client-Side Interconnection IPv4 Address.
-* `peer_ipv6_gateway_ip` - (Optional) The Client-Side Interconnection IPv6 Address.
-* `peering_ipv6_subnet_mask` - (Optional) Alibaba Cloud-Connected IPv6 with Client-Side Interconnection IPv6 of Subnet Mask.
-* `peering_subnet_mask` - (Required) Alibaba Cloud-Connected IPv4 and Client-Side Interconnection IPv4 of Subnet Mask.
-* `physical_connection_id` - (Required, ForceNew) The ID of the Physical Connection to Which the ID.
-* `status` - (Optional) The instance state. Valid values: `active`, `deleting`, `recovering`, `terminated`, `terminating`, `unconfirmed`.
-* `vbr_owner_id` - (Optional) The vbr owner id.
-* `virtual_border_router_name` - (Optional) The name of VBR. Length is from 2 to 128 characters, must start with a letter or the Chinese at the beginning can contain numbers, the underscore character (_) and dash (-). But do not start with http:// or https:// at the beginning.
-* `vlan_id` - (Required) The VLAN ID of the VBR. Value range: 0~2999.
-* `include_cross_account_vbr` - (Optional, Available since v1.191.0) Whether cross account border routers are included. Valid values: `false`, `true`. Default: `true`. 
+* `bandwidth` - (Optional, Int) The bandwidth of the VBR instance. Unit: Mbps. Valid values:
+  - When creating a VBR instance for an exclusive leased line, the values are `50`, `100`, `200`, `300`, `400`, `500`, `1000`, `2048`, `5120`, `8192`, `10240`, `20480`, `40960`, `50120`, `61440`, and `102400`.
+  - When creating a VBR instance for a shared line, you do not need to configure it. The bandwidth of the VBR is the bandwidth set when creating a shared physical line.
+* `circuit_code` - (Optional) The circuit code provided by the operator for the physical connection.
+* `description` - (Optional) The description information of the VBR.
+* `detect_multiplier` - (Optional, Int) Multiple of detection time.
+  That is the maximum number of connection packet losses allowed by the receiver to send messages, which is used to detect whether the link is normal.
+  Valid values: `3` to `10`.
+* `enable_ipv6` - (Optional, Bool) Whether IPv6 is enabled.
+  - `true`: on.
+  - `false`: closed.
+* `local_gateway_ip` - (Required) The IPv4 address on the Alibaba Cloud side of the VBR instance.
+* `local_ipv6_gateway_ip` - (Optional) The IPv6 address on the Alibaba Cloud side of the VBR instance.
+* `min_rx_interval` - (Optional, Int) Configure the receiving interval of BFD packets. Valid values: `200` to `1000`.
+* `min_tx_interval` - (Optional, Int) Configure the sending interval of BFD packets. Valid values: `200` to `1000`.
+* `mtu` - (Optional, Int, Available since v1.263.0) Maximum transmission unit.
+* `peer_gateway_ip` - (Required) The IPv4 address of the client side of the VBR instance.
+* `peer_ipv6_gateway_ip` - (Optional) The IPv6 address of the client side of the VBR instance.
+* `peering_ipv6_subnet_mask` - (Optional) The subnet masks of the Alibaba Cloud-side IPv6 and the customer-side IPv6 of The VBR instance.
+* `peering_subnet_mask` - (Required) The subnet masks of the Alibaba Cloud-side IPv4 and the customer-side IPv4 of The VBR instance.
+* `physical_connection_id` - (Required, ForceNew) The ID of the physical connection to which the VBR belongs.
+* `resource_group_id` - (Optional, Available since v1.263.0) The ID of the resource group.
+* `sitelink_enable` - (Optional, Bool, Available since v1.263.0) Whether to allow inter-IDC communication. Valid values: `true`, `false`.
+* `status` - (Optional) The status of the VBR. Valid values: `active`, `terminated`.
+* `tags` - (Optional, Map, Available since v1.263.0) The tag of the resource.
+* `vbr_owner_id` - (Optional) The account ID of the VBR instance owner. The default value is the logon Alibaba Cloud account ID.
+* `virtual_border_router_name` - (Optional) The name of the VBR instance.
+* `vlan_id` - (Required, Int) The VLAN ID of the VBR instance. Valid values: `0` to `2999`.
+* `associated_physical_connections` - (Deprecated since v1.263.0) Field `associated_physical_connections` has been deprecated from provider version 1.263.0. Please use the resource `alicloud_express_connect_vbr_pconn_association` instead.
+* `include_cross_account_vbr` - (Removed since v1.263.0) Field `include_cross_account_vbr` has been removed from provider version 1.263.0.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Virtual Border Router.
+* `id` - The ID of the resource supplied above.
+* `create_time` - (Available since v1.263.0) The creation time of the VBR.
 * `route_table_id` - (Available since v1.166.0) The Route Table ID Of the Virtual Border Router.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `update` - (Defaults to 2 mins) Used when update the Virtual Border Router.
+* `create` - (Defaults to 5 mins) Used when create the Virtual Border Router.
+* `delete` - (Defaults to 5 mins) Used when delete the Virtual Border Router.
+* `update` - (Defaults to 5 mins) Used when update the Virtual Border Router.
 
 ## Import
 
