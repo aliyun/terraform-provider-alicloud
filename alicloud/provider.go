@@ -1658,7 +1658,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_rule":                                              resourceAliCloudAlbRule(),
 			"alicloud_cms_metric_rule_template":                              resourceAliCloudCmsMetricRuleTemplate(),
 			"alicloud_iot_device_group":                                      resourceAlicloudIotDeviceGroup(),
-			"alicloud_express_connect_virtual_border_router":                 resourceAlicloudExpressConnectVirtualBorderRouter(),
+			"alicloud_express_connect_virtual_border_router":                 resourceAliCloudExpressConnectVirtualBorderRouter(),
 			"alicloud_imm_project":                                           resourceAlicloudImmProject(),
 			"alicloud_click_house_db_cluster":                                resourceAlicloudClickHouseDbCluster(),
 			"alicloud_direct_mail_domain":                                    resourceAlicloudDirectMailDomain(),
