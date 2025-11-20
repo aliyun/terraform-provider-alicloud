@@ -1304,7 +1304,7 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreateWithStandbyAz(t *testing.T)
 					"creation_category":   "SENormal",
 					"storage_type":        "PSL5",
 					"storage_space":       "40",
-					"db_node_num":         "2",
+					"db_node_num":         "1",
 					"hot_standby_cluster": "EQUAL",
 					"storage_pay_type":    "PostPaid",
 					"proxy_type":          "EXCLUSIVE",
