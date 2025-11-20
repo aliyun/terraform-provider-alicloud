@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
+func TestAccAliCloudLogStoreIndex_basic(t *testing.T) {
 	var v *sls.Index
 	resourceId := "alicloud_log_store_index.default"
 	ra := resourceAttrInit(resourceId, logStoreIndexMap)
@@ -34,20 +34,31 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":  "${alicloud_log_project.default.name}",
-					"logstore": "${alicloud_log_store.default.name}",
+					"project":               "${alicloud_log_project.default.name}",
+					"logstore":              "${alicloud_log_store.default.name}",
+					"log_reduce":            true,
+					"log_reduce_black_list": []interface{}{"test"},
+					"log_reduce_white_list": []interface{}{"name"},
+					"max_text_len":          2048,
 					"full_text": []map[string]interface{}{
 						{
-							"case_sensitive": "true",
-							"token":          ` #$^*\r\n\t`,
+							"case_sensitive":  true,
+							"token":           ` #$^*\r\n\t`,
+							"include_chinese": true,
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"project":     name,
-						"logstore":    name,
-						"full_text.#": "1",
+						"project":                 name,
+						"logstore":                name,
+						"log_reduce":              "true",
+						"log_reduce_black_list.#": "1",
+						"log_reduce_black_list.0": "test",
+						"log_reduce_white_list.#": "1",
+						"log_reduce_white_list.0": "name",
+						"max_text_len":            "2048",
+						"full_text.#":             "1",
 					}),
 				),
 			},
@@ -58,11 +69,15 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"full_text": REMOVEKEY,
+					"log_reduce":            false,
+					"log_reduce_black_list": []interface{}{},
+					"log_reduce_white_list": []interface{}{},
+					"max_text_len":          1024,
+					"full_text":             REMOVEKEY,
 					"field_search": []map[string]interface{}{
 						{
 							"name":             "${var.name}",
-							"enable_analytics": "true",
+							"enable_analytics": true,
 							"token":            ` #$^*\r\n\t`,
 							"type":             "text",
 						},
@@ -70,18 +85,28 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"full_text.#":    REMOVEKEY,
-						"field_search.#": "1",
+						"log_reduce":              "false",
+						"log_reduce_black_list.#": "0",
+						"log_reduce_black_list.0": REMOVEKEY,
+						"log_reduce_white_list.#": "0",
+						"log_reduce_white_list.0": REMOVEKEY,
+						"max_text_len":            "1024",
+						"full_text.#":             REMOVEKEY,
+						"field_search.#":          "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-
+					"log_reduce":            REMOVEKEY,
+					"log_reduce_black_list": REMOVEKEY,
+					"log_reduce_white_list": REMOVEKEY,
+					"max_text_len":          REMOVEKEY,
 					"full_text": []map[string]interface{}{
 						{
-							"case_sensitive": "true",
-							"token":          ` #$^*\r\n\t`,
+							"case_sensitive":  "true",
+							"token":           `,`,
+							"include_chinese": "false",
 						},
 					},
 					"field_search": []map[string]interface{}{
@@ -91,14 +116,17 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 							"token":            ` #$^*\r\n\t`,
 							"type":             "json",
 							"json_keys": []map[string]interface{}{
-								{"name": "key2222", "alias": "alisa22222"},
-								{"name": "key1111", "alias": "alisa1111"},
+								{"name": "key2222", "alias": "alisa22222", "doc_value": true, "type": "long"},
+								{"name": "key1111", "alias": "alisa1111", "doc_value": false, "type": "text"},
 							},
 						},
 						{
-							"name":  "${var.name}-2",
-							"token": ` #$^*\r\n\t`,
-							"type":  "json",
+							"name":            "${var.name}-2",
+							"token":           ` #$^*\r\n\t`,
+							"type":            "json",
+							"case_sensitive":  true,
+							"include_chinese": true,
+							"alias":           "json_alias",
 							"json_keys": []map[string]interface{}{
 								{"name": "key3333", "alias": "alisa3333"},
 								{"name": "key4444", "alias": "alisa4444"},
@@ -108,10 +136,17 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"full_text.#":    "1",
-						"field_search.#": "2",
+						"log_reduce":              REMOVEKEY,
+						"log_reduce_black_list.#": REMOVEKEY,
+						"log_reduce_white_list.#": REMOVEKEY,
+						"max_text_len":            REMOVEKEY,
+						"full_text.#":             "1",
+						"field_search.#":          "2",
 					}),
 				),
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

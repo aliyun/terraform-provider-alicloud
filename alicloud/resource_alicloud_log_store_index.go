@@ -34,6 +34,24 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"log_reduce": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"log_reduce_black_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"log_reduce_white_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"max_text_len": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 
 			"full_text": {
 				Type:     schema.TypeSet,
@@ -175,6 +193,26 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 	if fieldOk {
 		index.Keys = buildIndexKeys(d)
 	}
+	if v, ok := d.GetOk("log_reduce"); ok {
+		index.LogReduce = v.(bool)
+	}
+	if v, ok := d.GetOk("log_reduce_black_list"); ok {
+		var blackList []string
+		for _, item := range v.([]interface{}) {
+			blackList = append(blackList, item.(string))
+		}
+		index.LogReduceBlackListDict = blackList
+	}
+	if v, ok := d.GetOk("log_reduce_white_list"); ok {
+		var whiteList []string
+		for _, item := range v.([]interface{}) {
+			whiteList = append(whiteList, item.(string))
+		}
+		index.LogReduceWhiteListDict = whiteList
+	}
+	if v, ok := d.GetOk("max_text_len"); ok {
+		index.MaxTextLen = uint32(v.(int))
+	}
 
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 
@@ -212,6 +250,10 @@ func resourceAlicloudLogStoreIndexRead(d *schema.ResourceData, meta interface{})
 		}
 		return WrapError(err)
 	}
+	d.Set("log_reduce", index.LogReduce)
+	d.Set("log_reduce_black_list", index.LogReduceBlackListDict)
+	d.Set("log_reduce_white_list", index.LogReduceWhiteListDict)
+	d.Set("max_text_len", index.MaxTextLen)
 	if line := index.Line; line != nil {
 		mapping := map[string]interface{}{
 			"case_sensitive":  line.CaseSensitive,
@@ -278,6 +320,30 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 	}
 	if d.HasChange("field_search") {
 		index.Keys = buildIndexKeys(d)
+		update = true
+	}
+	if d.HasChange("log_reduce") {
+		index.LogReduce = d.Get("log_reduce").(bool)
+		update = true
+	}
+	if d.HasChange("log_reduce_black_list") {
+		var blackList []string
+		for _, item := range d.Get("log_reduce_black_list").([]interface{}) {
+			blackList = append(blackList, item.(string))
+		}
+		index.LogReduceBlackListDict = blackList
+		update = true
+	}
+	if d.HasChange("log_reduce_white_list") {
+		var whiteList []string
+		for _, item := range d.Get("log_reduce_white_list").([]interface{}) {
+			whiteList = append(whiteList, item.(string))
+		}
+		index.LogReduceWhiteListDict = whiteList
+		update = true
+	}
+	if d.HasChange("max_text_len") {
+		index.MaxTextLen = uint32(d.Get("max_text_len").(int))
 		update = true
 	}
 
