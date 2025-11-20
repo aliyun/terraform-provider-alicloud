@@ -72,7 +72,7 @@ func resourceAliCloudEsaCertificate() *schema.Resource {
 				Computed: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -212,7 +212,9 @@ func resourceAliCloudEsaCertificateRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.Set("certificate", objectRaw["Certificate"])
-	d.Set("site_id", formatInt(objectRaw["SiteId"]))
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	resultRawObj, _ := jsonpath.Get("$.Result", objectRaw)
 	resultRaw := make(map[string]interface{})
