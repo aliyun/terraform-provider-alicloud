@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -217,52 +216,93 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 		removed := oldEntrySet.Difference(newEntrySet)
 		added := newEntrySet.Difference(oldEntrySet)
 
-		if added.Len() > 0 {
-			fingerprints := added.List()
+		// API constraints: fingerprints must have at least 1 and at most 5 entries
+		// Calculate remaining count after removal
+		currentCount := oldEntrySet.Len()
+		afterRemovalCount := currentCount - removed.Len()
 
-			for _, item := range fingerprints {
-				action := "AddFingerprintToOIDCProvider"
-				request = make(map[string]interface{})
-				query = make(map[string]interface{})
-				request["OIDCProviderName"] = d.Id()
+		// Determine the operation order based on constraints
+		if afterRemovalCount < 1 && added.Len() > 0 {
+			// Need to replace all fingerprints, must maintain at least 1 at all times
+			removedList := removed.List()
+			addedList := added.List()
 
-				if v, ok := item.(string); ok {
-					jsonPathResult, err := jsonpath.Get("$", v)
-					if err != nil {
-						return WrapError(err)
-					}
-					request["Fingerprint"] = jsonPathResult
-				}
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
+			// Check if adding would exceed the limit of 5
+			if currentCount+added.Len() > 5 {
+				// Interleaved operation: remove some, add all, remove rest
+				// Step 1: Remove all but one to make room for new ones
+				for i := 0; i < removed.Len()-1; i++ {
+					item := removedList[i]
+					action := "RemoveFingerprintFromOIDCProvider"
+					request = make(map[string]interface{})
+					query = make(map[string]interface{})
+					request["OIDCProviderName"] = d.Id()
+
+					if v, ok := item.(string); ok {
+						jsonPathResult, err := jsonpath.Get("$", v)
+						if err != nil {
+							return WrapError(err)
 						}
-						return resource.NonRetryableError(err)
+						request["Fingerprint"] = jsonPathResult
 					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					wait := incrementalWait(3*time.Second, 5*time.Second)
+					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, request)
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
 				}
 
-			}
-		}
+				// Step 2: Add all new fingerprints
+				for _, item := range addedList {
+					action := "AddFingerprintToOIDCProvider"
+					request = make(map[string]interface{})
+					query = make(map[string]interface{})
+					request["OIDCProviderName"] = d.Id()
 
-		if removed.Len() > 0 {
-			fingerprints := removed.List()
+					if v, ok := item.(string); ok {
+						jsonPathResult, err := jsonpath.Get("$", v)
+						if err != nil {
+							return WrapError(err)
+						}
+						request["Fingerprint"] = jsonPathResult
+					}
+					wait := incrementalWait(3*time.Second, 5*time.Second)
+					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, request)
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+				}
 
-			for _, item := range fingerprints {
+				// Step 3: Remove the last old fingerprint
+				lastItem := removedList[removed.Len()-1]
 				action := "RemoveFingerprintFromOIDCProvider"
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["OIDCProviderName"] = d.Id()
 
-				if v, ok := item.(string); ok {
+				if v, ok := lastItem.(string); ok {
 					jsonPathResult, err := jsonpath.Get("$", v)
 					if err != nil {
 						return WrapError(err)
@@ -285,7 +325,141 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
+			} else {
+				// Can add all new ones first without exceeding limit, then remove old ones
+				// Step 1: Add all new fingerprints
+				for _, item := range addedList {
+					action := "AddFingerprintToOIDCProvider"
+					request = make(map[string]interface{})
+					query = make(map[string]interface{})
+					request["OIDCProviderName"] = d.Id()
 
+					if v, ok := item.(string); ok {
+						jsonPathResult, err := jsonpath.Get("$", v)
+						if err != nil {
+							return WrapError(err)
+						}
+						request["Fingerprint"] = jsonPathResult
+					}
+					wait := incrementalWait(3*time.Second, 5*time.Second)
+					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, request)
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+				}
+
+				// Step 2: Remove all old fingerprints
+				for _, item := range removedList {
+					action := "RemoveFingerprintFromOIDCProvider"
+					request = make(map[string]interface{})
+					query = make(map[string]interface{})
+					request["OIDCProviderName"] = d.Id()
+
+					if v, ok := item.(string); ok {
+						jsonPathResult, err := jsonpath.Get("$", v)
+						if err != nil {
+							return WrapError(err)
+						}
+						request["Fingerprint"] = jsonPathResult
+					}
+					wait := incrementalWait(3*time.Second, 5*time.Second)
+					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, request)
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+				}
+			}
+		} else {
+			// Remove first to avoid exceeding the limit of 5 when adding
+			if removed.Len() > 0 {
+				fingerprints := removed.List()
+				for _, item := range fingerprints {
+					action := "RemoveFingerprintFromOIDCProvider"
+					request = make(map[string]interface{})
+					query = make(map[string]interface{})
+					request["OIDCProviderName"] = d.Id()
+
+					if v, ok := item.(string); ok {
+						jsonPathResult, err := jsonpath.Get("$", v)
+						if err != nil {
+							return WrapError(err)
+						}
+						request["Fingerprint"] = jsonPathResult
+					}
+					wait := incrementalWait(3*time.Second, 5*time.Second)
+					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, request)
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+				}
+			}
+
+			// Then add new fingerprints
+			if added.Len() > 0 {
+				fingerprints := added.List()
+				for _, item := range fingerprints {
+					action := "AddFingerprintToOIDCProvider"
+					request = make(map[string]interface{})
+					query = make(map[string]interface{})
+					request["OIDCProviderName"] = d.Id()
+
+					if v, ok := item.(string); ok {
+						jsonPathResult, err := jsonpath.Get("$", v)
+						if err != nil {
+							return WrapError(err)
+						}
+						request["Fingerprint"] = jsonPathResult
+					}
+					wait := incrementalWait(3*time.Second, 5*time.Second)
+					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, request)
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+				}
 			}
 		}
 
