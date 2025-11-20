@@ -72,7 +72,7 @@ func resourceAliCloudEsaCertificate() *schema.Resource {
 				Computed: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -212,7 +212,9 @@ func resourceAliCloudEsaCertificateRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.Set("certificate", objectRaw["Certificate"])
-	d.Set("site_id", formatInt(objectRaw["SiteId"]))
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	resultRawObj, _ := jsonpath.Get("$.Result", objectRaw)
 	resultRaw := make(map[string]interface{})
@@ -250,22 +252,22 @@ func resourceAliCloudEsaCertificateUpdate(d *schema.ResourceData, meta interface
 		request["PrivateKey"] = v
 	}
 	request["Type"] = d.Get("created_type")
-	if _, ok := d.GetOk("region"); ok || d.HasChange("region") {
+	if d.HasChange("region") {
 		update = true
 		request["Region"] = d.Get("region")
 	}
 
-	if _, ok := d.GetOk("cas_id"); ok || d.HasChange("cas_id") {
+	if d.HasChange("cas_id") {
 		update = true
 		request["CasId"] = d.Get("cas_id")
 	}
 
-	if _, ok := d.GetOk("certificate"); ok || d.HasChange("certificate") {
+	if d.HasChange("certificate") {
 		update = true
 		request["Certificate"] = d.Get("certificate")
 	}
 
-	if _, ok := d.GetOk("cert_name"); ok || d.HasChange("cert_name") {
+	if d.HasChange("cert_name") {
 		update = true
 		request["Name"] = d.Get("cert_name")
 	}
