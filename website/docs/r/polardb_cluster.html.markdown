@@ -176,7 +176,7 @@ The following arguments are supported:
 * `gdn_id` - (Optional, Available since 1.179.0) The ID of the global database network (GDN).
 -> **NOTE:** This parameter is required if CreationOption is set to CreateGdnStandby.
 * `clone_data_point` - (Optional, Available since 1.179.0) The time point of data to be cloned. Valid values are `LATEST`,`BackupID`,`Timestamp`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CloneDataPoint`.
--> **NOTE:** If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
+-> **NOTE:** If CreationOption is set to CloneFromRDS, the value of this parameter must be `LATEST`. When clone to a historical backup set, you must specify a specific backup set ID. When clone to a specific point in time, specify a YYYY-MM-DDThh:mm:ssZ format UTC timestamp.
 * `vpc_id` - (Optional, ForceNew, Computed, Available since v1.185.0) The id of the VPC.
 * `storage_type` - (Optional, Available since v1.203.0) The storage type of the cluster. Enterprise storage type values are `PSL5`, `PSL4`. The standard version storage type values are `ESSDPL1`, `ESSDPL2`, `ESSDPL3`, `ESSDPL0`, `ESSDAUTOPL`. The standard version only supports MySQL and PostgreSQL.
 * `provisioned_iops` - (Optional, Available since v1.229.1) The provisioned read/write IOPS of the ESSD AutoPL disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS}. Baseline IOPS = min{1,800 + 50 × Capacity, 50,000}.

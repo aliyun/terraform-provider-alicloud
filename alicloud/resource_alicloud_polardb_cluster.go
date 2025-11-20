@@ -269,9 +269,8 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional: true,
 			},
 			"clone_data_point": {
-				Type:         schema.TypeString,
-				ValidateFunc: StringInSlice([]string{"LATEST", "BackupID", "Timestamp"}, false),
-				Optional:     true,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"storage_type": {
 				Type:         schema.TypeString,
