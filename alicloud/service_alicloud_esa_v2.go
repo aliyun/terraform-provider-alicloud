@@ -739,15 +739,15 @@ func (s *EsaServiceV2) DescribeEsaRecord(id string) (object map[string]interface
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetRecord"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RecordId"] = id
-	query["RegionId"] = client.RegionId
+
+	action := "GetRecord"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcGet("ESA", "2024-09-10", action, query, nil)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
@@ -772,15 +772,18 @@ func (s *EsaServiceV2) DescribeEsaRecord(id string) (object map[string]interface
 }
 
 func (s *EsaServiceV2) EsaRecordStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaRecordStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaRecord)
+}
+
+func (s *EsaServiceV2) EsaRecordStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaRecord(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
