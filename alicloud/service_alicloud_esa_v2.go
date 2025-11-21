@@ -1031,6 +1031,7 @@ func (s *EsaServiceV2) DescribeEsaRewriteUrlRule(id string) (object map[string]i
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -1053,15 +1054,8 @@ func (s *EsaServiceV2) DescribeEsaRewriteUrlRule(id string) (object map[string]i
 		return nil
 	})
 	addDebug(action, response, request)
-	if IsExpectedErrors(err, []string{"SiteNotFound.NotFound"}) {
-		return object, WrapErrorf(NotFoundErr("RewriteUrlRule", id), NotFoundMsg, response)
-	}
-	configId, _ := jsonpath.Get("$.ConfigId", response)
-	if configId == nil {
-		return object, WrapErrorf(NotFoundErr("RewriteUrlRule", id), NotFoundMsg, response)
-	}
 	code, _ := jsonpath.Get("$.Code", response)
-	if InArray(fmt.Sprint(code), []string{"32", "SiteNotFound", "101", "0"}) {
+	if InArray(fmt.Sprint(code), []string{"32", "SiteNotFound", "101"}) {
 		return object, WrapErrorf(NotFoundErr("RewriteUrlRule", id), NotFoundMsg, response)
 	}
 
