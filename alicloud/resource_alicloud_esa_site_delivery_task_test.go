@@ -42,7 +42,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_test(t *testing
 						},
 					},
 					"site_id":       "${alicloud_esa_site.resource_Site_task_test.id}",
-					"data_center":   "cn",
+					"data_center":   "global",
 					"discard_rate":  "0.0",
 					"task_name":     "dcdn-test-task",
 					"business_type": "dcdn_log_access_l1",
@@ -181,7 +181,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_http_test(t *te
 							"max_batch_mb":      "5",
 						},
 					},
-					"data_center":   "oversea",
+					"data_center":   "global",
 					"discard_rate":  "0.0",
 					"task_name":     "dcdn-test-task",
 					"business_type": "dcdn_log_access_l1",
@@ -269,7 +269,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_oss_test_test(t
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"site_id":       "${alicloud_esa_site.resource_Site_http_test.id}",
-					"data_center":   "oversea",
+					"data_center":   "global",
 					"discard_rate":  "0.0",
 					"task_name":     "dcdn-test-task",
 					"business_type": "dcdn_log_access_l1",
@@ -365,7 +365,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_kafka_test_test
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"site_id":       "${alicloud_esa_site.resource_Site_http_test.id}",
-					"data_center":   "oversea",
+					"data_center":   "global",
 					"discard_rate":  "0.0",
 					"task_name":     "dcdn-test-task",
 					"business_type": "dcdn_log_access_l1",
@@ -467,7 +467,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_aws3_test_test(
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"site_id":      "${alicloud_esa_site.resource_Site_http_test.id}",
-					"data_center":  "oversea",
+					"data_center":  "global",
 					"discard_rate": "0.0",
 					"task_name":    "dcdn-test-task",
 					"s3_delivery": []map[string]interface{}{

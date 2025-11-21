@@ -2486,6 +2486,7 @@ func (s *EsaServiceV2) EsaCacheReserveInstanceStateRefreshFunc(id string, field 
 }
 
 // DescribeEsaCacheReserveInstance >>> Encapsulated.
+
 // DescribeEsaSiteDeliveryTask <<< Encapsulated get interface for Esa SiteDeliveryTask.
 
 func (s *EsaServiceV2) DescribeEsaSiteDeliveryTask(id string) (object map[string]interface{}, err error) {
@@ -2496,12 +2497,13 @@ func (s *EsaServiceV2) DescribeEsaSiteDeliveryTask(id string) (object map[string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["TaskName"] = parts[1]
-	query["RegionId"] = client.RegionId
+
 	action := "GetSiteDeliveryTask"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -2526,15 +2528,18 @@ func (s *EsaServiceV2) DescribeEsaSiteDeliveryTask(id string) (object map[string
 }
 
 func (s *EsaServiceV2) EsaSiteDeliveryTaskStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaSiteDeliveryTaskStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaSiteDeliveryTask)
+}
+
+func (s *EsaServiceV2) EsaSiteDeliveryTaskStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaSiteDeliveryTask(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
