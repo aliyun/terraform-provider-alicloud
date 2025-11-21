@@ -14,7 +14,7 @@ Provides a Express Connect Router Interface resource.
 
 For information about Express Connect Router Interface and how to use it, see [What is Router Interface](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/CreateRouterInterface).
 
--> **NOTE:** Available since v1.263.0.
+-> **NOTE:** Available since v1.199.0.
 
 ## Example Usage
 
