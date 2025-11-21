@@ -238,7 +238,7 @@ func resourceAliCloudEsaSiteDeliveryTask() *schema.Resource {
 				},
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -293,218 +293,217 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("task_name"); ok {
 		request["TaskName"] = v
 	}
-	request["RegionId"] = client.RegionId
 
-	objectDataLocalMap := make(map[string]interface{})
+	httpDelivery := make(map[string]interface{})
 
 	if v := d.Get("http_delivery"); !IsNil(v) {
 		transformTimeout1, _ := jsonpath.Get("$[0].transform_timeout", v)
 		if transformTimeout1 != nil && transformTimeout1 != "" {
-			objectDataLocalMap["TransformTimeout"] = transformTimeout1
+			httpDelivery["TransformTimeout"] = transformTimeout1
 		}
 		standardAuthParam := make(map[string]interface{})
-		privateKey1, _ := jsonpath.Get("$[0].standard_auth_param[0].private_key", v)
+		privateKey1, _ := jsonpath.Get("$[0].standard_auth_param[0].private_key", d.Get("http_delivery"))
 		if privateKey1 != nil && privateKey1 != "" {
 			standardAuthParam["PrivateKey"] = privateKey1
 		}
-		expiredTime1, _ := jsonpath.Get("$[0].standard_auth_param[0].expired_time", v)
+		expiredTime1, _ := jsonpath.Get("$[0].standard_auth_param[0].expired_time", d.Get("http_delivery"))
 		if expiredTime1 != nil && expiredTime1 != "" {
 			standardAuthParam["ExpiredTime"] = expiredTime1
 		}
-		urlPath1, _ := jsonpath.Get("$[0].standard_auth_param[0].url_path", v)
+		urlPath1, _ := jsonpath.Get("$[0].standard_auth_param[0].url_path", d.Get("http_delivery"))
 		if urlPath1 != nil && urlPath1 != "" {
 			standardAuthParam["UrlPath"] = urlPath1
 		}
 
-		objectDataLocalMap["StandardAuthParam"] = standardAuthParam
+		httpDelivery["StandardAuthParam"] = standardAuthParam
 		maxBatchMB1, _ := jsonpath.Get("$[0].max_batch_mb", v)
 		if maxBatchMB1 != nil && maxBatchMB1 != "" {
-			objectDataLocalMap["MaxBatchMB"] = maxBatchMB1
+			httpDelivery["MaxBatchMB"] = maxBatchMB1
 		}
 		logBodyPrefix1, _ := jsonpath.Get("$[0].log_body_prefix", v)
 		if logBodyPrefix1 != nil && logBodyPrefix1 != "" {
-			objectDataLocalMap["LogBodyPrefix"] = logBodyPrefix1
+			httpDelivery["LogBodyPrefix"] = logBodyPrefix1
 		}
 		destUrl1, _ := jsonpath.Get("$[0].dest_url", v)
 		if destUrl1 != nil && destUrl1 != "" {
-			objectDataLocalMap["DestUrl"] = destUrl1
+			httpDelivery["DestUrl"] = destUrl1
 		}
 		headerParam1, _ := jsonpath.Get("$[0].header_param", v)
 		if headerParam1 != nil && headerParam1 != "" {
-			objectDataLocalMap["HeaderParam"] = headerParam1
+			httpDelivery["HeaderParam"] = headerParam1
 		}
 		compress1, _ := jsonpath.Get("$[0].compress", v)
 		if compress1 != nil && compress1 != "" {
-			objectDataLocalMap["Compress"] = compress1
+			httpDelivery["Compress"] = compress1
 		}
 		maxRetry1, _ := jsonpath.Get("$[0].max_retry", v)
 		if maxRetry1 != nil && maxRetry1 != "" {
-			objectDataLocalMap["MaxRetry"] = maxRetry1
+			httpDelivery["MaxRetry"] = maxRetry1
 		}
 		standardAuthOn1, _ := jsonpath.Get("$[0].standard_auth_on", v)
 		if standardAuthOn1 != nil && standardAuthOn1 != "" {
-			objectDataLocalMap["StandardAuthOn"] = standardAuthOn1
+			httpDelivery["StandardAuthOn"] = standardAuthOn1
 		}
 		queryParam1, _ := jsonpath.Get("$[0].query_param", v)
 		if queryParam1 != nil && queryParam1 != "" {
-			objectDataLocalMap["QueryParam"] = queryParam1
+			httpDelivery["QueryParam"] = queryParam1
 		}
 		maxBatchSize1, _ := jsonpath.Get("$[0].max_batch_size", v)
 		if maxBatchSize1 != nil && maxBatchSize1 != "" {
-			objectDataLocalMap["MaxBatchSize"] = maxBatchSize1
+			httpDelivery["MaxBatchSize"] = maxBatchSize1
 		}
 		logBodySuffix1, _ := jsonpath.Get("$[0].log_body_suffix", v)
 		if logBodySuffix1 != nil && logBodySuffix1 != "" {
-			objectDataLocalMap["LogBodySuffix"] = logBodySuffix1
+			httpDelivery["LogBodySuffix"] = logBodySuffix1
 		}
 
-		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+		httpDeliveryJson, err := json.Marshal(httpDelivery)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["HttpDelivery"] = string(objectDataLocalMapJson)
+		request["HttpDelivery"] = string(httpDeliveryJson)
 	}
 
-	objectDataLocalMap1 := make(map[string]interface{})
+	ossDelivery := make(map[string]interface{})
 
 	if v := d.Get("oss_delivery"); !IsNil(v) {
 		bucketName1, _ := jsonpath.Get("$[0].bucket_name", v)
 		if bucketName1 != nil && bucketName1 != "" {
-			objectDataLocalMap1["BucketName"] = bucketName1
+			ossDelivery["BucketName"] = bucketName1
 		}
 		region1, _ := jsonpath.Get("$[0].region", v)
 		if region1 != nil && region1 != "" {
-			objectDataLocalMap1["Region"] = region1
+			ossDelivery["Region"] = region1
 		}
 		aliuid1, _ := jsonpath.Get("$[0].aliuid", v)
 		if aliuid1 != nil && aliuid1 != "" {
-			objectDataLocalMap1["Aliuid"] = aliuid1
+			ossDelivery["Aliuid"] = aliuid1
 		}
 		prefixPath1, _ := jsonpath.Get("$[0].prefix_path", v)
 		if prefixPath1 != nil && prefixPath1 != "" {
-			objectDataLocalMap1["PrefixPath"] = prefixPath1
+			ossDelivery["PrefixPath"] = prefixPath1
 		}
 
-		objectDataLocalMap1Json, err := json.Marshal(objectDataLocalMap1)
+		ossDeliveryJson, err := json.Marshal(ossDelivery)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["OssDelivery"] = string(objectDataLocalMap1Json)
+		request["OssDelivery"] = string(ossDeliveryJson)
 	}
 
-	objectDataLocalMap2 := make(map[string]interface{})
+	kafkaDelivery := make(map[string]interface{})
 
 	if v := d.Get("kafka_delivery"); !IsNil(v) {
 		compress3, _ := jsonpath.Get("$[0].compress", v)
 		if compress3 != nil && compress3 != "" {
-			objectDataLocalMap2["Compress"] = compress3
+			kafkaDelivery["Compress"] = compress3
 		}
 		machanismType1, _ := jsonpath.Get("$[0].machanism_type", v)
 		if machanismType1 != nil && machanismType1 != "" {
-			objectDataLocalMap2["MachanismType"] = machanismType1
+			kafkaDelivery["MachanismType"] = machanismType1
 		}
 		userAuth1, _ := jsonpath.Get("$[0].user_auth", v)
 		if userAuth1 != nil && userAuth1 != "" {
-			objectDataLocalMap2["UserAuth"] = userAuth1
+			kafkaDelivery["UserAuth"] = userAuth1
 		}
 		password1, _ := jsonpath.Get("$[0].password", v)
 		if password1 != nil && password1 != "" {
-			objectDataLocalMap2["Password"] = password1
+			kafkaDelivery["Password"] = password1
 		}
 		topic1, _ := jsonpath.Get("$[0].topic", v)
 		if topic1 != nil && topic1 != "" {
-			objectDataLocalMap2["Topic"] = topic1
+			kafkaDelivery["Topic"] = topic1
 		}
 		userName1, _ := jsonpath.Get("$[0].user_name", v)
 		if userName1 != nil && userName1 != "" {
-			objectDataLocalMap2["UserName"] = userName1
+			kafkaDelivery["UserName"] = userName1
 		}
 		brokers1, _ := jsonpath.Get("$[0].brokers", v)
 		if brokers1 != nil && brokers1 != "" {
-			objectDataLocalMap2["Brokers"] = brokers1
+			kafkaDelivery["Brokers"] = brokers1
 		}
 		balancer1, _ := jsonpath.Get("$[0].balancer", v)
 		if balancer1 != nil && balancer1 != "" {
-			objectDataLocalMap2["Balancer"] = balancer1
+			kafkaDelivery["Balancer"] = balancer1
 		}
 
-		objectDataLocalMap2Json, err := json.Marshal(objectDataLocalMap2)
+		kafkaDeliveryJson, err := json.Marshal(kafkaDelivery)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["KafkaDelivery"] = string(objectDataLocalMap2Json)
+		request["KafkaDelivery"] = string(kafkaDeliveryJson)
 	}
 
 	request["FieldName"] = d.Get("field_name")
-	objectDataLocalMap3 := make(map[string]interface{})
+	slsDelivery := make(map[string]interface{})
 
 	if v := d.Get("sls_delivery"); !IsNil(v) {
 		sLSProject1, _ := jsonpath.Get("$[0].sls_project", v)
 		if sLSProject1 != nil && sLSProject1 != "" {
-			objectDataLocalMap3["SLSProject"] = sLSProject1
+			slsDelivery["SLSProject"] = sLSProject1
 		}
 		sLSRegion1, _ := jsonpath.Get("$[0].sls_region", v)
 		if sLSRegion1 != nil && sLSRegion1 != "" {
-			objectDataLocalMap3["SLSRegion"] = sLSRegion1
+			slsDelivery["SLSRegion"] = sLSRegion1
 		}
 		sLSLogStore1, _ := jsonpath.Get("$[0].sls_log_store", v)
 		if sLSLogStore1 != nil && sLSLogStore1 != "" {
-			objectDataLocalMap3["SLSLogStore"] = sLSLogStore1
+			slsDelivery["SLSLogStore"] = sLSLogStore1
 		}
 
-		objectDataLocalMap3Json, err := json.Marshal(objectDataLocalMap3)
+		slsDeliveryJson, err := json.Marshal(slsDelivery)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["SlsDelivery"] = string(objectDataLocalMap3Json)
+		request["SlsDelivery"] = string(slsDeliveryJson)
 	}
 
 	request["DataCenter"] = d.Get("data_center")
-	objectDataLocalMap4 := make(map[string]interface{})
+	s3Delivery := make(map[string]interface{})
 
 	if v := d.Get("s3_delivery"); !IsNil(v) {
 		prefixPath3, _ := jsonpath.Get("$[0].prefix_path", v)
 		if prefixPath3 != nil && prefixPath3 != "" {
-			objectDataLocalMap4["PrefixPath"] = prefixPath3
+			s3Delivery["PrefixPath"] = prefixPath3
 		}
 		accessKey1, _ := jsonpath.Get("$[0].access_key", v)
 		if accessKey1 != nil && accessKey1 != "" {
-			objectDataLocalMap4["AccessKey"] = accessKey1
+			s3Delivery["AccessKey"] = accessKey1
 		}
 		s3Cmpt1, _ := jsonpath.Get("$[0].s3_cmpt", v)
 		if s3Cmpt1 != nil && s3Cmpt1 != "" {
-			objectDataLocalMap4["S3Cmpt"] = s3Cmpt1
+			s3Delivery["S3Cmpt"] = s3Cmpt1
 		}
 		region3, _ := jsonpath.Get("$[0].region", v)
 		if region3 != nil && region3 != "" {
-			objectDataLocalMap4["Region"] = region3
+			s3Delivery["Region"] = region3
 		}
 		serverSideEncryption1, _ := jsonpath.Get("$[0].server_side_encryption", v)
 		if serverSideEncryption1 != nil && serverSideEncryption1 != "" {
-			objectDataLocalMap4["ServerSideEncryption"] = serverSideEncryption1
+			s3Delivery["ServerSideEncryption"] = serverSideEncryption1
 		}
 		vertifyType1, _ := jsonpath.Get("$[0].vertify_type", v)
 		if vertifyType1 != nil && vertifyType1 != "" {
-			objectDataLocalMap4["VertifyType"] = vertifyType1
+			s3Delivery["VertifyType"] = vertifyType1
 		}
 		bucketPath1, _ := jsonpath.Get("$[0].bucket_path", v)
 		if bucketPath1 != nil && bucketPath1 != "" {
-			objectDataLocalMap4["BucketPath"] = bucketPath1
+			s3Delivery["BucketPath"] = bucketPath1
 		}
 		endpoint1, _ := jsonpath.Get("$[0].endpoint", v)
 		if endpoint1 != nil && endpoint1 != "" {
-			objectDataLocalMap4["Endpoint"] = endpoint1
+			s3Delivery["Endpoint"] = endpoint1
 		}
 		secretKey1, _ := jsonpath.Get("$[0].secret_key", v)
 		if secretKey1 != nil && secretKey1 != "" {
-			objectDataLocalMap4["SecretKey"] = secretKey1
+			s3Delivery["SecretKey"] = secretKey1
 		}
 
-		objectDataLocalMap4Json, err := json.Marshal(objectDataLocalMap4)
+		s3DeliveryJson, err := json.Marshal(s3Delivery)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["S3Delivery"] = string(objectDataLocalMap4Json)
+		request["S3Delivery"] = string(s3DeliveryJson)
 	}
 
 	request["BusinessType"] = d.Get("business_type")
@@ -555,7 +554,10 @@ func resourceAliCloudEsaSiteDeliveryTaskRead(d *schema.ResourceData, meta interf
 	d.Set("discard_rate", objectRaw["DiscardRate"])
 	d.Set("field_name", objectRaw["FieldList"])
 	d.Set("status", objectRaw["Status"])
-	d.Set("site_id", objectRaw["SiteId"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
+
 	d.Set("task_name", objectRaw["TaskName"])
 
 	return nil
@@ -576,7 +578,7 @@ func resourceAliCloudEsaSiteDeliveryTaskUpdate(d *schema.ResourceData, meta inte
 	query = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["TaskName"] = parts[1]
-	request["RegionId"] = client.RegionId
+
 	if !d.IsNewResource() && d.HasChange("discard_rate") {
 		update = true
 		request["DiscardRate"] = d.Get("discard_rate")
@@ -615,12 +617,12 @@ func resourceAliCloudEsaSiteDeliveryTaskUpdate(d *schema.ResourceData, meta inte
 	query = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["TaskName"] = parts[1]
-	query["RegionId"] = client.RegionId
+
 	if d.HasChange("status") {
 		update = true
 	}
 	if v, ok := d.GetOk("status"); ok {
-		query["Method"] = StringPointer(v.(string))
+		query["Method"] = v.(string)
 	}
 
 	if update {
@@ -658,12 +660,10 @@ func resourceAliCloudEsaSiteDeliveryTaskDelete(d *schema.ResourceData, meta inte
 	request = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["TaskName"] = parts[1]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
