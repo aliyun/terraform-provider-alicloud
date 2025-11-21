@@ -21,7 +21,7 @@ For information about IMS Oidc Provider and how to use it, see [What is Oidc Pro
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ims_oidc_provider&exampleId=1355a006-fc5d-9448-1312-766bba94262fe1d28596&activeTab=example&spm=docs.r.ims_oidc_provider.0.1355a006fc&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ims_oidc_provider&exampleId=abc2abcb-cdd3-2451-c9f0-58155748ebecc4587a83&activeTab=example&spm=docs.r.ims_oidc_provider.0.abc2abcbcd&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

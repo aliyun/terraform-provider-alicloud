@@ -20,6 +20,12 @@ For information about Polar Db Parameter Group and how to use it, see [What is P
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_parameter_group&exampleId=913a6c26-912e-966d-761a-0dc09e1eb18070b69337&activeTab=example&spm=docs.r.polardb_parameter_group.0.913a6c2691&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_polardb_parameter_group" "example" {
   parameter_group_name = "example_value"

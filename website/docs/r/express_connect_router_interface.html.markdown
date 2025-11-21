@@ -20,6 +20,12 @@ For information about Express Connect Router Interface and how to use it, see [W
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_express_connect_router_interface&exampleId=3a2f412a-b537-67bb-ebdb-b260d6067b93b2ab432d&activeTab=example&spm=docs.r.express_connect_router_interface.0.3a2f412ab5&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"

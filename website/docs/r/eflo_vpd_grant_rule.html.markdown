@@ -20,6 +20,12 @@ For information about Eflo Vpd Grant Rule and how to use it, see [What is Vpd Gr
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_vpd_grant_rule&exampleId=26277719-74f4-2182-e98c-6bb7408d0229b75ac7c0&activeTab=example&spm=docs.r.eflo_vpd_grant_rule.0.2627771974&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"

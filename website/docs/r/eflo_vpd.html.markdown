@@ -21,7 +21,7 @@ For information about Eflo Vpd and how to use it, see [What is Vpd](https://next
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_vpd&exampleId=befafc06-85e5-7365-f8bc-16b6760e59a82cb4f3b4&activeTab=example&spm=docs.r.eflo_vpd.0.befafc0685&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_vpd&exampleId=edc0fc00-a156-b20c-85bf-aefa6b7f253ef3c739f5&activeTab=example&spm=docs.r.eflo_vpd.0.edc0fc00a1&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
