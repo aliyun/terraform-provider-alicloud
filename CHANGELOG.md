@@ -1,4 +1,52 @@
 ## 1.263.0 (Unreleased)
+
+- **New Resource:** `alicloud_wafv3_defense_resource_group` [GH-9157]
+- **New Resource:** `alicloud_eflo_vpd_grant_rule` [GH-9168]
+- **New Resource:** `alicloud_cloud_firewall_ai_traffic_analysis_status` [GH-9175]
+
+ENHANCEMENTS:
+
+- provider: Supported new region us-southeast-1. [GH-9165]
+- provider: Added new common function convertYamlToObject. [GH-9167]
+- resource/alicloud_dts_synchronization_job: Support updating 'synchronization_job_parameter' on dts job. [GH-9109]
+- resource/alicloud_ess_scaling_configuration: add attributes of minimum_cpu_core_count, maximum_cpu_core_count, minimum_memory_size, maximum_memory_size,minimum_eni_quantity,minimum_eni_private_ip_address_quantity,minimum_eni_ipv6_address_quantity,minimum_baseline_credit,minimum_gpu_amount,maximum_gpu_amount,dedicated_host_cluster_id, minimum_initial_credit, physical_processor_models,cpu_architectures, gpu_specs, instance_categories, instance_type_families and http_endpoint. [GH-9121]
+- resource/alicloud_mongodb_account: Refactored the resource and improve the docs. [GH-9149]
+- resource/alicloud_bastionhost_instance: Added the field slave_vswitch_id; Removed the ForceNew for field bandwidth. [GH-9150]
+- resource/alicloud_express_connect_router_interface: Added the field auto_renew, fast_link_mode, opposite_interface_business_status, resource_group_id, tags. [GH-9152]
+- resource/alicloud_mongodb_audit_policy: Refactored the resource and optimized docs. [GH-9154]
+- resource/alicloud_express_connect_grant_rule_to_cen: Refactored the resource alicloud_express_connect_grant_rule_to_cen; Added the field create_time. [GH-9155]
+- resource/alicloud_eflo_vpd: Refactored the resource alicloud_eflo_vpd; Added the field secondary_cidr_blocks, tags, region_id; Removed the ForceNew for field resource_group_id. [GH-9156]
+- resource/alicloud_polardb_parameter_group: Added the field parameter_group_name. [GH-9158]
+- resource/alicloud_log_store_index: sls index support new attributes. [GH-9160]
+- resource/alicloud_mongodb_private_srv_network_address: Refactored the resource and improve the docs. [GH-9164]
+- resource/alicloud_wafv3_defense_template: add resource_groups and test. [GH-9170]
+- resource/alicloud_esa_http_request_header_modification_rule: Added the field type, sequence. [GH-9171]
+- resource/alicloud_esa_origin_pool: Refactored the resource and improve the docs. [GH-9172]
+- resource/alicloud_esa_site_origin_client_certificate: Refactored the resource and improve the docs. [GH-9174]
+- resource/alicloud_esa_load_balancer: Change site_id to TypeString. [GH-9176]
+- resource/alicloud_wafv3_domain: Added the field cname. [GH-9177]
+- resource/alicloud_esa_origin_ca_certificate: Modify site_id to TypeString. [GH-9178]
+- resource/alicloud_esa_waf_ruleset: Change site_id attribute type to TypeString. [GH-9180]
+- resource/alicloud_esa_client_ca_certificate: Change site_id attribute type to TypeString. [GH-9181]
+- resource/alicloud_esa_waiting_room: Change site_id attribute type to TypeString. [GH-9182]
+- resource/alicloud_esa_scheduled_preload_job: Change site_id attribute type to TypeString. [GH-9186]
+- resource/alicloud_esa_network_optimization: Change site_id attribute type to TypeString. [GH-9187]
+- resource/alicloud_esa_compression_rule: Change site_id attribute type to TypeString. [GH-9189]
+- resource/alicloud_express_connect_virtual_border_router: Refactored the resource alicloud_express_connect_virtual_border_router; Added the field mtu, resource_group_id, sitelink_enable, tags, create_time; Deprecated the field associated_physical_connections; Removed the field include_cross_account_vbr. [GH-9192]
+- resource/alicloud_esa_record: Refactored the resource and improve the docs. [GH-9196]
+- resource/alicloud_esa_certificate: Change site_id attribute type to TypeString. [GH-9199]
+- docs: Improves description for polardb_parameter_group. [GH-9161]
+- testcase: Improves test for common utils. [GH-9183]
+- testcase: Improves test for common utils. [GH-9184]
+
+BUG FIXES:
+
+- resource/alicloud_rocketmq_instance: Fixed the create invalid error caused by tags. [GH-9163]
+- resource/alicloud_ecs_instance_set: Fixed tags invalid error. [GH-9173]
+- resource/alicloud_wafv3_defense_resource_group: Fixed set Description. [GH-9191]
+- resource/alicloud_polardb_cluster: fix clone_data_point value range check. [GH-9197]
+- resource/alicloud_ims_oidc_provider: Fixed bug while increase to 5 new fingerprints. [GH-9198]
+
 ## 1.262.1 (November 7, 2025)
 
 ENHANCEMENTS:
