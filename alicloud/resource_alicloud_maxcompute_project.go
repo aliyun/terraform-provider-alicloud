@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAliCloudMaxComputeProject() *schema.Resource {
@@ -24,13 +25,12 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"comment": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -65,10 +65,6 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"product_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"project_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -90,10 +86,7 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 						"sql_metering_max": {
 							Type:     schema.TypeString,
 							Optional: true,
-						},
-						"type_system": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Computed: true,
 						},
 						"table_lifecycle": {
 							Type:     schema.TypeList,
@@ -115,9 +108,15 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 								},
 							},
 						},
+						"type_system": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
 						"retention_days": {
 							Type:     schema.TypeInt,
 							Optional: true,
+							Computed: true,
 						},
 						"encryption": {
 							Type:     schema.TypeList,
@@ -128,6 +127,7 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 									"enable": {
 										Type:     schema.TypeBool,
 										Optional: true,
+										Computed: true,
 									},
 									"algorithm": {
 										Type:     schema.TypeString,
@@ -147,10 +147,12 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 						"enable_dr": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 						"enable_decimal2": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -201,8 +203,9 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 										Optional: true,
 									},
 									"exception_policy": {
-										Type:     schema.TypeString,
-										Optional: true,
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: validation.ValidateJsonString,
 										DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 											equal, _ := compareJsonTemplateAreEquivalent(old, new)
 											return equal
@@ -230,6 +233,10 @@ func resourceAliCloudMaxComputeProject() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"product_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -249,42 +256,42 @@ func resourceAliCloudMaxComputeProjectCreate(d *schema.ResourceData, meta interf
 		request["name"] = v
 	}
 
-	objectDataLocalMap := make(map[string]interface{})
-
-	if v := d.Get("properties"); !IsNil(v) {
-		sqlMeteringMax1, _ := jsonpath.Get("$[0].sql_metering_max", v)
-		if sqlMeteringMax1 != nil && sqlMeteringMax1 != "" {
-			objectDataLocalMap["sqlMeteringMax"] = sqlMeteringMax1
-		}
-		typeSystem1, _ := jsonpath.Get("$[0].type_system", v)
-		if typeSystem1 != nil && typeSystem1 != "" {
-			objectDataLocalMap["typeSystem"] = typeSystem1
-		}
-		encryption := make(map[string]interface{})
-		enable1, _ := jsonpath.Get("$[0].encryption[0].enable", v)
-		if enable1 != nil && enable1 != "" {
-			encryption["enable"] = enable1
-		}
-		algorithm1, _ := jsonpath.Get("$[0].encryption[0].algorithm", v)
-		if algorithm1 != nil && algorithm1 != "" {
-			encryption["algorithm"] = algorithm1
-		}
-		key1, _ := jsonpath.Get("$[0].encryption[0].key", v)
-		if key1 != nil && key1 != "" {
-			encryption["key"] = key1
-		}
-
-		objectDataLocalMap["encryption"] = encryption
-
-		request["properties"] = objectDataLocalMap
-	}
-
 	if v, ok := d.GetOk("default_quota"); ok {
 		request["defaultQuota"] = v
 	}
 	if v, ok := d.GetOk("comment"); ok {
 		request["comment"] = v
 	}
+	dataList := make(map[string]interface{})
+
+	if v := d.Get("properties"); !IsNil(v) {
+		encryption := make(map[string]interface{})
+		enable1, _ := jsonpath.Get("$[0].encryption[0].enable", d.Get("properties"))
+		if enable1 != nil && enable1 != "" {
+			encryption["enable"] = enable1
+		}
+		algorithm1, _ := jsonpath.Get("$[0].encryption[0].algorithm", d.Get("properties"))
+		if algorithm1 != nil && algorithm1 != "" {
+			encryption["algorithm"] = algorithm1
+		}
+		key1, _ := jsonpath.Get("$[0].encryption[0].key", d.Get("properties"))
+		if key1 != nil && key1 != "" {
+			encryption["key"] = key1
+		}
+
+		dataList["encryption"] = encryption
+		sqlMeteringMax1, _ := jsonpath.Get("$[0].sql_metering_max", v)
+		if sqlMeteringMax1 != nil && sqlMeteringMax1 != "" {
+			dataList["sqlMeteringMax"] = sqlMeteringMax1
+		}
+		typeSystem1, _ := jsonpath.Get("$[0].type_system", v)
+		if typeSystem1 != nil && typeSystem1 != "" {
+			dataList["typeSystem"] = typeSystem1
+		}
+
+		request["properties"] = dataList
+	}
+
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -335,13 +342,13 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 
 	ipWhiteListMaps := make([]map[string]interface{}, 0)
 	ipWhiteListMap := make(map[string]interface{})
-	ipWhiteList1Raw := make(map[string]interface{})
+	ipWhiteListRaw := make(map[string]interface{})
 	if objectRaw["ipWhiteList"] != nil {
-		ipWhiteList1Raw = objectRaw["ipWhiteList"].(map[string]interface{})
+		ipWhiteListRaw = objectRaw["ipWhiteList"].(map[string]interface{})
 	}
-	if len(ipWhiteList1Raw) > 0 {
-		ipWhiteListMap["ip_list"] = ipWhiteList1Raw["ipList"]
-		ipWhiteListMap["vpc_ip_list"] = ipWhiteList1Raw["vpcIpList"]
+	if len(ipWhiteListRaw) > 0 {
+		ipWhiteListMap["ip_list"] = ipWhiteListRaw["ipList"]
+		ipWhiteListMap["vpc_ip_list"] = ipWhiteListRaw["vpcIpList"]
 
 		ipWhiteListMaps = append(ipWhiteListMaps, ipWhiteListMap)
 	}
@@ -350,42 +357,42 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 	}
 	propertiesMaps := make([]map[string]interface{}, 0)
 	propertiesMap := make(map[string]interface{})
-	properties1Raw := make(map[string]interface{})
+	propertiesRaw := make(map[string]interface{})
 	if objectRaw["properties"] != nil {
-		properties1Raw = objectRaw["properties"].(map[string]interface{})
+		propertiesRaw = objectRaw["properties"].(map[string]interface{})
 	}
-	if len(properties1Raw) > 0 {
-		propertiesMap["allow_full_scan"] = properties1Raw["allowFullScan"]
-		propertiesMap["enable_dr"] = properties1Raw["enableDr"]
-		propertiesMap["enable_decimal2"] = properties1Raw["enableDecimal2"]
-		propertiesMap["retention_days"] = properties1Raw["retentionDays"]
-		propertiesMap["sql_metering_max"] = properties1Raw["sqlMeteringMax"]
-		propertiesMap["timezone"] = properties1Raw["timezone"]
-		propertiesMap["type_system"] = properties1Raw["typeSystem"]
+	if len(propertiesRaw) > 0 {
+		propertiesMap["allow_full_scan"] = propertiesRaw["allowFullScan"]
+		propertiesMap["enable_decimal2"] = propertiesRaw["enableDecimal2"]
+		propertiesMap["enable_dr"] = propertiesRaw["enableDr"]
+		propertiesMap["retention_days"] = propertiesRaw["retentionDays"]
+		propertiesMap["sql_metering_max"] = propertiesRaw["sqlMeteringMax"]
+		propertiesMap["timezone"] = propertiesRaw["timezone"]
+		propertiesMap["type_system"] = propertiesRaw["typeSystem"]
 
 		encryptionMaps := make([]map[string]interface{}, 0)
 		encryptionMap := make(map[string]interface{})
-		encryption1Raw := make(map[string]interface{})
-		if properties1Raw["encryption"] != nil {
-			encryption1Raw = properties1Raw["encryption"].(map[string]interface{})
+		encryptionRaw := make(map[string]interface{})
+		if propertiesRaw["encryption"] != nil {
+			encryptionRaw = propertiesRaw["encryption"].(map[string]interface{})
 		}
-		if len(encryption1Raw) > 0 {
-			encryptionMap["algorithm"] = encryption1Raw["algorithm"]
-			encryptionMap["enable"] = encryption1Raw["enable"]
-			encryptionMap["key"] = encryption1Raw["key"]
+		if len(encryptionRaw) > 0 {
+			encryptionMap["algorithm"] = encryptionRaw["algorithm"]
+			encryptionMap["enable"] = encryptionRaw["enable"]
+			encryptionMap["key"] = encryptionRaw["key"]
 
 			encryptionMaps = append(encryptionMaps, encryptionMap)
 		}
 		propertiesMap["encryption"] = encryptionMaps
 		tableLifecycleMaps := make([]map[string]interface{}, 0)
 		tableLifecycleMap := make(map[string]interface{})
-		tableLifecycle1Raw := make(map[string]interface{})
-		if properties1Raw["tableLifecycle"] != nil {
-			tableLifecycle1Raw = properties1Raw["tableLifecycle"].(map[string]interface{})
+		tableLifecycleRaw := make(map[string]interface{})
+		if propertiesRaw["tableLifecycle"] != nil {
+			tableLifecycleRaw = propertiesRaw["tableLifecycle"].(map[string]interface{})
 		}
-		if len(tableLifecycle1Raw) > 0 {
-			tableLifecycleMap["type"] = tableLifecycle1Raw["type"]
-			tableLifecycleMap["value"] = tableLifecycle1Raw["value"]
+		if len(tableLifecycleRaw) > 0 {
+			tableLifecycleMap["type"] = tableLifecycleRaw["type"]
+			tableLifecycleMap["value"] = tableLifecycleRaw["value"]
 
 			tableLifecycleMaps = append(tableLifecycleMaps, tableLifecycleMap)
 		}
@@ -395,30 +402,29 @@ func resourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interfac
 	if err := d.Set("properties", propertiesMaps); err != nil {
 		return err
 	}
-
 	securityPropertiesMaps := make([]map[string]interface{}, 0)
 	securityPropertiesMap := make(map[string]interface{})
-	securityProperties1Raw := make(map[string]interface{})
+	securityPropertiesRaw := make(map[string]interface{})
 	if objectRaw["securityProperties"] != nil {
-		securityProperties1Raw = objectRaw["securityProperties"].(map[string]interface{})
+		securityPropertiesRaw = objectRaw["securityProperties"].(map[string]interface{})
 	}
-	if len(securityProperties1Raw) > 0 {
-		securityPropertiesMap["enable_download_privilege"] = securityProperties1Raw["enableDownloadPrivilege"]
-		securityPropertiesMap["label_security"] = securityProperties1Raw["labelSecurity"]
-		securityPropertiesMap["object_creator_has_access_permission"] = securityProperties1Raw["objectCreatorHasAccessPermission"]
-		securityPropertiesMap["object_creator_has_grant_permission"] = securityProperties1Raw["objectCreatorHasGrantPermission"]
-		securityPropertiesMap["using_acl"] = securityProperties1Raw["usingAcl"]
-		securityPropertiesMap["using_policy"] = securityProperties1Raw["usingPolicy"]
+	if len(securityPropertiesRaw) > 0 {
+		securityPropertiesMap["enable_download_privilege"] = securityPropertiesRaw["enableDownloadPrivilege"]
+		securityPropertiesMap["label_security"] = securityPropertiesRaw["labelSecurity"]
+		securityPropertiesMap["object_creator_has_access_permission"] = securityPropertiesRaw["objectCreatorHasAccessPermission"]
+		securityPropertiesMap["object_creator_has_grant_permission"] = securityPropertiesRaw["objectCreatorHasGrantPermission"]
+		securityPropertiesMap["using_acl"] = securityPropertiesRaw["usingAcl"]
+		securityPropertiesMap["using_policy"] = securityPropertiesRaw["usingPolicy"]
 
 		projectProtectionMaps := make([]map[string]interface{}, 0)
 		projectProtectionMap := make(map[string]interface{})
-		projectProtection1Raw := make(map[string]interface{})
-		if securityProperties1Raw["projectProtection"] != nil {
-			projectProtection1Raw = securityProperties1Raw["projectProtection"].(map[string]interface{})
+		projectProtectionRaw := make(map[string]interface{})
+		if securityPropertiesRaw["projectProtection"] != nil {
+			projectProtectionRaw = securityPropertiesRaw["projectProtection"].(map[string]interface{})
 		}
-		if len(projectProtection1Raw) > 0 {
-			projectProtectionMap["exception_policy"] = projectProtection1Raw["exceptionPolicy"]
-			projectProtectionMap["protected"] = projectProtection1Raw["protected"]
+		if len(projectProtectionRaw) > 0 {
+			projectProtectionMap["exception_policy"] = projectProtectionRaw["exceptionPolicy"]
+			projectProtectionMap["protected"] = projectProtectionRaw["protected"]
 
 			projectProtectionMaps = append(projectProtectionMaps, projectProtectionMap)
 		}
@@ -448,19 +454,16 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	var query map[string]*string
 	var body map[string]interface{}
-	maxComputeServiceV2 := MaxComputeServiceV2{client}
 	update := false
 	d.Partial(true)
 
+	maxComputeServiceV2 := MaxComputeServiceV2{client}
+	objectRaw, _ := maxComputeServiceV2.DescribeMaxComputeProject(d.Id())
+
 	if d.HasChange("three_tier_model") {
 		var err error
-		object, err := maxComputeServiceV2.DescribeMaxComputeProject(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-
 		target := d.Get("three_tier_model").(bool)
-		if object["threeTierModel"].(bool) != target && target {
+		if objectRaw["threeTierModel"].(bool) != target {
 			if target == true {
 				projectName := d.Id()
 				action := fmt.Sprintf("/api/v1/projects/%s/modelTier", projectName)
@@ -491,110 +494,9 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 		}
 	}
 
-	projectName := d.Id()
-	action := fmt.Sprintf("/api/v1/projects/%s/meta", projectName)
 	var err error
-	request = make(map[string]interface{})
-	query = make(map[string]*string)
-	body = make(map[string]interface{})
-	request["projectName"] = d.Id()
-
-	if d.HasChange("status") {
-		update = true
-	}
-	if v, ok := d.GetOk("status"); ok || d.HasChange("status") {
-		request["status"] = v
-	}
-	if d.HasChange("properties") {
-		update = true
-	}
-	objectDataLocalMap := make(map[string]interface{})
-
-	if v := d.Get("properties"); v != nil {
-		timezone1, _ := jsonpath.Get("$[0].timezone", v)
-		if timezone1 != nil && (d.HasChange("properties.0.timezone") || timezone1 != "") {
-			objectDataLocalMap["timezone"] = timezone1
-		}
-		retentionDays1, _ := jsonpath.Get("$[0].retention_days", v)
-		if retentionDays1 != nil && (d.HasChange("properties.0.retention_days") || retentionDays1 != "") {
-			objectDataLocalMap["retentionDays"] = retentionDays1
-		}
-		allowFullScan1, _ := jsonpath.Get("$[0].allow_full_scan", v)
-		if allowFullScan1 != nil && (d.HasChange("properties.0.allow_full_scan") || allowFullScan1 != "") {
-			objectDataLocalMap["allowFullScan"] = allowFullScan1
-		}
-		enableDecimal21, _ := jsonpath.Get("$[0].enable_decimal2", v)
-		if enableDecimal21 != nil && (d.HasChange("properties.0.enable_decimal2") || enableDecimal21 != "") {
-			objectDataLocalMap["enableDecimal2"] = enableDecimal21
-		}
-		tableLifecycle := make(map[string]interface{})
-		value1, _ := jsonpath.Get("$[0].table_lifecycle[0].value", v)
-		if value1 != nil && (d.HasChange("properties.0.table_lifecycle.0.value") || value1 != "") {
-			tableLifecycle["value"] = value1
-		}
-		type1, _ := jsonpath.Get("$[0].table_lifecycle[0].type", v)
-		if type1 != nil && (d.HasChange("properties.0.table_lifecycle.0.type") || type1 != "") {
-			tableLifecycle["type"] = type1
-		}
-
-		objectDataLocalMap["tableLifecycle"] = tableLifecycle
-		enableDr1, _ := jsonpath.Get("$[0].enable_dr", v)
-		if enableDr1 != nil && (d.HasChange("properties.0.enable_dr") || enableDr1 != "") {
-			objectDataLocalMap["enableDr"] = enableDr1
-		}
-
-		objectDataLocalMap["tableLifecycle"] = tableLifecycle
-		sqlMeteringMax1, _ := jsonpath.Get("$[0].sql_metering_max", v)
-		if sqlMeteringMax1 != nil && (d.HasChange("properties.0.sql_metering_max") || sqlMeteringMax1 != "") {
-			objectDataLocalMap["sqlMeteringMax"] = sqlMeteringMax1
-		}
-		typeSystem1, _ := jsonpath.Get("$[0].type_system", v)
-		if typeSystem1 != nil && (d.HasChange("properties.0.type_system") || typeSystem1 != "") {
-			objectDataLocalMap["typeSystem"] = typeSystem1
-		}
-		encryption := make(map[string]interface{})
-		enable1, _ := jsonpath.Get("$[0].encryption[0].enable", v)
-		if enable1 != nil && (d.HasChange("properties.0.encryption.0.enable") || enable1 != "") {
-			encryption["enable"] = enable1
-		}
-		algorithm1, _ := jsonpath.Get("$[0].encryption[0].algorithm", v)
-		if algorithm1 != nil && (d.HasChange("properties.0.encryption.0.algorithm") || algorithm1 != "") {
-			encryption["algorithm"] = algorithm1
-		}
-		key1, _ := jsonpath.Get("$[0].encryption[0].key", v)
-		if key1 != nil && (d.HasChange("properties.0.encryption.0.key") || key1 != "") {
-			encryption["key"] = key1
-		}
-
-		if encryption["enable"] == "true" {
-			objectDataLocalMap["encryption"] = encryption
-		}
-
-		request["properties"] = objectDataLocalMap
-	}
-
-	body = request
-	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-	}
-	update = false
-	projectName = d.Id()
-	action = fmt.Sprintf("/api/v1/projects/%s/quota", projectName)
+	projectName := d.Id()
+	action := fmt.Sprintf("/api/v1/projects/%s/quota", projectName)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -636,19 +538,19 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	if d.HasChange("ip_white_list") {
 		update = true
 	}
-	objectDataLocalMap = make(map[string]interface{})
+	dataList := make(map[string]interface{})
 
 	if v := d.Get("ip_white_list"); v != nil {
 		ipList1, _ := jsonpath.Get("$[0].ip_list", v)
 		if ipList1 != nil && (d.HasChange("ip_white_list.0.ip_list") || ipList1 != "") {
-			objectDataLocalMap["ipList"] = ipList1
+			dataList["ipList"] = ipList1
 		}
 		vpcIpList1, _ := jsonpath.Get("$[0].vpc_ip_list", v)
 		if vpcIpList1 != nil && (d.HasChange("ip_white_list.0.vpc_ip_list") || vpcIpList1 != "") {
-			objectDataLocalMap["vpcIpList"] = vpcIpList1
+			dataList["vpcIpList"] = vpcIpList1
 		}
 
-		request["ipWhiteList"] = objectDataLocalMap
+		request["ipWhiteList"] = dataList
 	}
 
 	body = request
@@ -678,78 +580,78 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 	body = make(map[string]interface{})
 	request["projectName"] = d.Id()
 
+	if d.HasChange("security_properties.0.object_creator_has_grant_permission") {
+		update = true
+	}
+	if v, ok := d.GetOk("security_properties"); ok || d.HasChange("security_properties") {
+		securityPropertiesObjectCreatorHasGrantPermissionJsonPath, err := jsonpath.Get("$[0].object_creator_has_grant_permission", v)
+		if err == nil && securityPropertiesObjectCreatorHasGrantPermissionJsonPath != "" {
+			request["objectCreatorHasGrantPermission"] = securityPropertiesObjectCreatorHasGrantPermissionJsonPath
+		}
+	}
+	if d.HasChange("security_properties") {
+		update = true
+	}
+	dataList = make(map[string]interface{})
+
+	if v := d.Get("security_properties"); v != nil {
+		protected1, _ := jsonpath.Get("$[0].project_protection[0].protected", v)
+		if protected1 != nil && (d.HasChange("security_properties.0.project_protection.0.protected") || protected1 != "") {
+			dataList["protected"] = protected1
+		}
+		exceptionPolicy1, _ := jsonpath.Get("$[0].project_protection[0].exception_policy", v)
+		if exceptionPolicy1 != nil && (d.HasChange("security_properties.0.project_protection.0.exception_policy") || exceptionPolicy1 != "") {
+			dataList["exceptionPolicy"] = exceptionPolicy1
+		}
+
+		request["projectProtection"] = dataList
+	}
+
 	if d.HasChange("security_properties.0.using_acl") {
 		update = true
 	}
 	if v, ok := d.GetOk("security_properties"); ok || d.HasChange("security_properties") {
-		jsonPathResult, err := jsonpath.Get("$[0].using_acl", v)
-		if err == nil && jsonPathResult != "" {
-			request["usingAcl"] = jsonPathResult
+		securityPropertiesUsingAclJsonPath, err := jsonpath.Get("$[0].using_acl", v)
+		if err == nil && securityPropertiesUsingAclJsonPath != "" {
+			request["usingAcl"] = securityPropertiesUsingAclJsonPath
 		}
 	}
 	if d.HasChange("security_properties.0.using_policy") {
 		update = true
 	}
 	if v, ok := d.GetOk("security_properties"); ok || d.HasChange("security_properties") {
-		jsonPathResult1, err := jsonpath.Get("$[0].using_policy", v)
-		if err == nil && jsonPathResult1 != "" {
-			request["usingPolicy"] = jsonPathResult1
+		securityPropertiesUsingPolicyJsonPath, err := jsonpath.Get("$[0].using_policy", v)
+		if err == nil && securityPropertiesUsingPolicyJsonPath != "" {
+			request["usingPolicy"] = securityPropertiesUsingPolicyJsonPath
 		}
 	}
 	if d.HasChange("security_properties.0.object_creator_has_access_permission") {
 		update = true
 	}
 	if v, ok := d.GetOk("security_properties"); ok || d.HasChange("security_properties") {
-		jsonPathResult2, err := jsonpath.Get("$[0].object_creator_has_access_permission", v)
-		if err == nil && jsonPathResult2 != "" {
-			request["objectCreatorHasAccessPermission"] = jsonPathResult2
-		}
-	}
-	if d.HasChange("security_properties.0.object_creator_has_grant_permission") {
-		update = true
-	}
-	if v, ok := d.GetOk("security_properties"); ok || d.HasChange("security_properties") {
-		jsonPathResult3, err := jsonpath.Get("$[0].object_creator_has_grant_permission", v)
-		if err == nil && jsonPathResult3 != "" {
-			request["objectCreatorHasGrantPermission"] = jsonPathResult3
-		}
-	}
-	if d.HasChange("security_properties.0.label_security") {
-		update = true
-	}
-	if v, ok := d.GetOk("security_properties"); ok || d.HasChange("security_properties") {
-		jsonPathResult4, err := jsonpath.Get("$[0].label_security", v)
-		if err == nil && jsonPathResult4 != "" {
-			request["labelSecurity"] = jsonPathResult4
+		securityPropertiesObjectCreatorHasAccessPermissionJsonPath, err := jsonpath.Get("$[0].object_creator_has_access_permission", v)
+		if err == nil && securityPropertiesObjectCreatorHasAccessPermissionJsonPath != "" {
+			request["objectCreatorHasAccessPermission"] = securityPropertiesObjectCreatorHasAccessPermissionJsonPath
 		}
 	}
 	if d.HasChange("security_properties.0.enable_download_privilege") {
 		update = true
 	}
 	if v, ok := d.GetOk("security_properties"); ok || d.HasChange("security_properties") {
-		jsonPathResult5, err := jsonpath.Get("$[0].enable_download_privilege", v)
-		if err == nil && jsonPathResult5 != "" {
-			request["enableDownloadPrivilege"] = jsonPathResult5
+		securityPropertiesEnableDownloadPrivilegeJsonPath, err := jsonpath.Get("$[0].enable_download_privilege", v)
+		if err == nil && securityPropertiesEnableDownloadPrivilegeJsonPath != "" {
+			request["enableDownloadPrivilege"] = securityPropertiesEnableDownloadPrivilegeJsonPath
 		}
 	}
-	if d.HasChange("security_properties") {
+	if d.HasChange("security_properties.0.label_security") {
 		update = true
 	}
-	objectDataLocalMap = make(map[string]interface{})
-
-	if v := d.Get("security_properties"); v != nil {
-		protected1, _ := jsonpath.Get("$[0].project_protection[0].protected", v)
-		if protected1 != nil && (d.HasChange("security_properties.0.project_protection.0.protected") || protected1 != "") {
-			objectDataLocalMap["protected"] = protected1
+	if v, ok := d.GetOk("security_properties"); ok || d.HasChange("security_properties") {
+		securityPropertiesLabelSecurityJsonPath, err := jsonpath.Get("$[0].label_security", v)
+		if err == nil && securityPropertiesLabelSecurityJsonPath != "" {
+			request["labelSecurity"] = securityPropertiesLabelSecurityJsonPath
 		}
-		exceptionPolicy1, _ := jsonpath.Get("$[0].project_protection[0].exception_policy", v)
-		if exceptionPolicy1 != nil && (d.HasChange("security_properties.0.project_protection.0.exception_policy") || exceptionPolicy1 != "") {
-			objectDataLocalMap["exceptionPolicy"] = exceptionPolicy1
-		}
-
-		request["projectProtection"] = objectDataLocalMap
 	}
-
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -802,8 +704,112 @@ func resourceAliCloudMaxComputeProjectUpdate(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
+	update = false
+	projectName = d.Id()
+	action = fmt.Sprintf("/api/v1/projects/%s/meta", projectName)
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	request["projectName"] = d.Id()
+
+	if !d.IsNewResource() && d.HasChange("comment") {
+		update = true
+	}
+	if v, ok := d.GetOk("comment"); ok || d.HasChange("comment") {
+		request["comment"] = v
+	}
+	if d.HasChange("properties") {
+		update = true
+	}
+	dataList = make(map[string]interface{})
+
+	if v := d.Get("properties"); v != nil {
+		encryption := make(map[string]interface{})
+		algorithm1, _ := jsonpath.Get("$[0].encryption[0].algorithm", d.Get("properties"))
+		if algorithm1 != nil && (d.HasChange("properties.0.encryption.0.algorithm") || algorithm1 != "") {
+			encryption["algorithm"] = algorithm1
+		}
+		enable1, _ := jsonpath.Get("$[0].encryption[0].enable", d.Get("properties"))
+		if enable1 != nil && (d.HasChange("properties.0.encryption.0.enable") || enable1 != "") {
+			encryption["enable"] = enable1
+		}
+		key1, _ := jsonpath.Get("$[0].encryption[0].key", d.Get("properties"))
+		if key1 != nil && (d.HasChange("properties.0.encryption.0.key") || key1 != "") {
+			encryption["key"] = key1
+		}
+
+		dataList["encryption"] = encryption
+		sqlMeteringMax1, _ := jsonpath.Get("$[0].sql_metering_max", v)
+		if sqlMeteringMax1 != nil && (d.HasChange("properties.0.sql_metering_max") || sqlMeteringMax1 != "") {
+			dataList["sqlMeteringMax"] = sqlMeteringMax1
+		}
+		typeSystem1, _ := jsonpath.Get("$[0].type_system", v)
+		if typeSystem1 != nil && (d.HasChange("properties.0.type_system") || typeSystem1 != "") {
+			dataList["typeSystem"] = typeSystem1
+		}
+		retentionDays1, _ := jsonpath.Get("$[0].retention_days", v)
+		if retentionDays1 != nil && (d.HasChange("properties.0.retention_days") || retentionDays1 != "") {
+			dataList["retentionDays"] = retentionDays1
+		}
+		tableLifecycle := make(map[string]interface{})
+		value1, _ := jsonpath.Get("$[0].table_lifecycle[0].value", d.Get("properties"))
+		if value1 != nil && (d.HasChange("properties.0.table_lifecycle.0.value") || value1 != "") {
+			tableLifecycle["value"] = value1
+		}
+		type1, _ := jsonpath.Get("$[0].table_lifecycle[0].type", d.Get("properties"))
+		if type1 != nil && (d.HasChange("properties.0.table_lifecycle.0.type") || type1 != "") {
+			tableLifecycle["type"] = type1
+		}
+
+		dataList["tableLifecycle"] = tableLifecycle
+		enableDr1, _ := jsonpath.Get("$[0].enable_dr", v)
+		if enableDr1 != nil && (d.HasChange("properties.0.enable_dr") || enableDr1 != "") {
+			dataList["enableDr"] = enableDr1
+		}
+		timezone1, _ := jsonpath.Get("$[0].timezone", v)
+		if timezone1 != nil && (d.HasChange("properties.0.timezone") || timezone1 != "") {
+			dataList["timezone"] = timezone1
+		}
+		allowFullScan1, _ := jsonpath.Get("$[0].allow_full_scan", v)
+		if allowFullScan1 != nil && (d.HasChange("properties.0.allow_full_scan") || allowFullScan1 != "") {
+			dataList["allowFullScan"] = allowFullScan1
+		}
+		enableDecimal21, _ := jsonpath.Get("$[0].enable_decimal2", v)
+		if enableDecimal21 != nil && (d.HasChange("properties.0.enable_decimal2") || enableDecimal21 != "") {
+			dataList["enableDecimal2"] = enableDecimal21
+		}
+
+		request["properties"] = dataList
+	}
+
+	if d.HasChange("status") {
+		update = true
+	}
+	if v, ok := d.GetOk("status"); ok || d.HasChange("status") {
+		request["status"] = v
+	}
+	body = request
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
 
 	if d.HasChange("tags") {
+		maxComputeServiceV2 := MaxComputeServiceV2{client}
 		if err := maxComputeServiceV2.SetResourceTags(d, "project"); err != nil {
 			return WrapError(err)
 		}
@@ -820,7 +826,6 @@ func resourceAliCloudMaxComputeProjectDelete(d *schema.ResourceData, meta interf
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
 	request["projectName"] = d.Id()
@@ -830,11 +835,9 @@ func resourceAliCloudMaxComputeProjectDelete(d *schema.ResourceData, meta interf
 		query["isLogical"] = StringPointer(v.(string))
 	}
 
-	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RoaDelete("MaxCompute", "2022-01-04", action, query, nil, body, true)
-
+		response, err = client.RoaDelete("MaxCompute", "2022-01-04", action, query, nil, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
