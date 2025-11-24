@@ -95,15 +95,15 @@ func resourceAliCloudNlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v, ok := d.GetOkExists("server_id"); ok {
+	if v, ok := d.GetOk("server_id"); ok {
 		objectDataLocalMap["ServerId"] = v
 	}
 
-	if v, ok := d.GetOkExists("server_type"); ok {
+	if v, ok := d.GetOk("server_type"); ok {
 		objectDataLocalMap["ServerType"] = v
 	}
 
-	if v, ok := d.GetOkExists("server_ip"); ok {
+	if v, ok := d.GetOk("server_ip"); ok {
 		objectDataLocalMap["ServerIp"] = v
 	}
 
@@ -115,7 +115,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 		objectDataLocalMap["Weight"] = v
 	}
 
-	if v, ok := d.GetOkExists("description"); ok {
+	if v, ok := d.GetOk("description"); ok {
 		objectDataLocalMap["Description"] = v
 	}
 
@@ -160,7 +160,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudNlbServerGroupServerAttachmentUpdate(d, meta)
+	return resourceAliCloudNlbServerGroupServerAttachmentRead(d, meta)
 }
 
 func resourceAliCloudNlbServerGroupServerAttachmentRead(d *schema.ResourceData, meta interface{}) error {
@@ -207,31 +207,10 @@ func resourceAliCloudNlbServerGroupServerAttachmentUpdate(d *schema.ResourceData
 	request["ClientToken"] = buildClientToken(action)
 	objectDataLocalMap := make(map[string]interface{})
 
-	if d.HasChange("server_id") {
-		update = true
-	}
-	if v, ok := d.GetOk("server_id"); ok {
-		objectDataLocalMap["ServerId"] = v
-	}
-
-	if d.HasChange("server_type") {
-		update = true
-	}
-	if v, ok := d.GetOk("server_type"); ok {
-		objectDataLocalMap["ServerType"] = v
-	}
-
-	if d.HasChange("port") {
-		update = true
-	}
-	if v, ok := d.GetOk("port"); ok {
-		objectDataLocalMap["Port"] = v
-	}
-
 	if d.HasChange("weight") {
 		update = true
 	}
-	if v, ok := d.GetOk("weight"); ok {
+	if v, ok := d.GetOkExists("weight"); ok {
 		objectDataLocalMap["Weight"] = v
 	}
 
@@ -240,13 +219,6 @@ func resourceAliCloudNlbServerGroupServerAttachmentUpdate(d *schema.ResourceData
 	}
 	if v, ok := d.GetOk("description"); ok {
 		objectDataLocalMap["Description"] = v
-	}
-
-	if d.HasChange("server_ip") {
-		update = true
-	}
-	if v, ok := d.GetOk("server_ip"); ok {
-		objectDataLocalMap["ServerIp"] = v
 	}
 
 	ServersMap := make([]interface{}, 0)
