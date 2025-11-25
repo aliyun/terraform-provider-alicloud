@@ -1261,6 +1261,7 @@ func (s *EsaServiceV2) DescribeEsaHttpsBasicConfiguration(id string) (object map
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -1285,10 +1286,6 @@ func (s *EsaServiceV2) DescribeEsaHttpsBasicConfiguration(id string) (object map
 	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	configId, _ := jsonpath.Get("$.ConfigId", response)
-	if configId == nil {
-		return object, WrapErrorf(NotFoundErr("HttpsBasicConfiguration", id), NotFoundMsg, response)
 	}
 
 	return response, nil
