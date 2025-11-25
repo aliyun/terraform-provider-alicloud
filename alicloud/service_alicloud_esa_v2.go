@@ -1261,6 +1261,7 @@ func (s *EsaServiceV2) DescribeEsaHttpsBasicConfiguration(id string) (object map
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -1285,10 +1286,6 @@ func (s *EsaServiceV2) DescribeEsaHttpsBasicConfiguration(id string) (object map
 	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	configId, _ := jsonpath.Get("$.ConfigId", response)
-	if configId == nil {
-		return object, WrapErrorf(NotFoundErr("HttpsBasicConfiguration", id), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -3534,7 +3531,6 @@ func (s *EsaServiceV2) EsaOriginCaCertificateStateRefreshFunc(id string, field s
 }
 
 // DescribeEsaOriginCaCertificate >>> Encapsulated.
-
 // DescribeEsaOriginProtection <<< Encapsulated get interface for Esa OriginProtection.
 
 func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string]interface{}, err error) {
@@ -3545,7 +3541,7 @@ func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-
+	query["RegionId"] = client.RegionId
 	action := "GetOriginProtection"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -3570,18 +3566,15 @@ func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string
 }
 
 func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return s.EsaOriginProtectionStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginProtection)
-}
-
-func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := call(id)
+		object, err := s.DescribeEsaOriginProtection(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
+
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
