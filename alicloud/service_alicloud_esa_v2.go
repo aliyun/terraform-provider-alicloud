@@ -3534,6 +3534,7 @@ func (s *EsaServiceV2) EsaOriginCaCertificateStateRefreshFunc(id string, field s
 }
 
 // DescribeEsaOriginCaCertificate >>> Encapsulated.
+
 // DescribeEsaOriginProtection <<< Encapsulated get interface for Esa OriginProtection.
 
 func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string]interface{}, err error) {
@@ -3544,7 +3545,7 @@ func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetOriginProtection"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -3569,15 +3570,18 @@ func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string
 }
 
 func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaOriginProtectionStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginProtection)
+}
+
+func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaOriginProtection(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
