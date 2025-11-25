@@ -105,6 +105,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 						"http_check_method": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: StringInSlice([]string{"GET", "HEAD"}, false),
 						},
 						"health_check_exp": {
