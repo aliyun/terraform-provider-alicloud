@@ -80,7 +80,7 @@ func resourceAliCloudEsaWaitingRoomEvent() *schema.Resource {
 				Required: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -134,7 +134,6 @@ func resourceAliCloudEsaWaitingRoomEventCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("waiting_room_id"); ok {
 		request["WaitingRoomId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	request["QueuingMethod"] = d.Get("queuing_method")
 	request["WaitingRoomType"] = d.Get("waiting_room_type")
@@ -229,7 +228,7 @@ func resourceAliCloudEsaWaitingRoomEventRead(d *schema.ResourceData, meta interf
 	d.Set("waiting_room_id", objectRaw["WaitingRoomId"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprintf(parts[0]))
 
 	return nil
 }
@@ -248,7 +247,7 @@ func resourceAliCloudEsaWaitingRoomEventUpdate(d *schema.ResourceData, meta inte
 	query = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["WaitingRoomEventId"] = parts[2]
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("queuing_method") {
 		update = true
 	}
@@ -363,12 +362,10 @@ func resourceAliCloudEsaWaitingRoomEventDelete(d *schema.ResourceData, meta inte
 	request = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["WaitingRoomEventId"] = parts[2]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

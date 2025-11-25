@@ -20,12 +20,6 @@ For information about ESA Waiting Room Event and how to use it, see [What is Wai
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_waiting_room_event&exampleId=20edd2d2-c7c1-982c-e81e-a6f67d2f191166378cb0&activeTab=example&spm=docs.r.esa_waiting_room_event.0.20edd2d2c7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
@@ -92,45 +86,45 @@ The following arguments are supported:
 * `custom_page_html` - (Optional) User-defined waiting room page content, when the waiting room type is custom type, you need to enter. The incoming content needs to be base64 encoded.
 * `description` - (Optional) Waiting room description.
 * `disable_session_renewal_enable` - (Optional) Disable session renewal. Value:
-  -'on': open.
-  -'off': closed.
+  - `on`: open.
+  - `off`: closed.
 * `end_time` - (Required) The timestamp of the end time of the event.
 * `json_response_enable` - (Optional) JSON response switch. Value:
-  -'on': open.
-  -'off': closed.
+  - `on`: open.
+  - `off`: closed.
 * `language` - (Optional) Default language setting. Values include:
-  -'enus': English.
-  -'zhcn': Simplified Chinese.
-  -'zhhk': Traditional Chinese.
+  - `enus`: English.
+  - `zhcn`: Simplified Chinese.
+  - `zhhk`: Traditional Chinese.
 * `new_users_per_minute` - (Required) Number of new users per minute.
 * `pre_queue_enable` - (Optional) Pre-queue switch.
-  -'on': open.
-  -'off': closed.
+  - `on`: open.
+  - `off`: closed.
 * `pre_queue_start_time` - (Optional) Pre-queue start time.
 * `queuing_method` - (Required) Way of queuing. Value:
-  -'random': random.
-  -'fifo': first in, first out.
-  -'passthrough ': through.
-  -'reject-all': reject all.
+  - `random`: random.
+  - `fifo`: first in, first out.
+  - `passthrough`: through.
+  - `reject-all`: reject all.
 * `queuing_status_code` - (Required) Waiting room status code. Value:
-  -'200'
-  -'202'
-  -'429'
+  - `200`
+  - `202`
+  - `429`
 * `random_pre_queue_enable` - (Optional) Random queue switch.
-  -'on': open.
-  -'off': closed.
+  - `on`: open.
+  - `off`: closed.
 * `session_duration` - (Required) User session duration in minutes.
-* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
+* `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the ListSites API.
 * `start_time` - (Required) The timestamp of the event start time.
 * `status` - (Required) Enabled status. Value:
-  -'on': Enable waiting room events
-  -'off': Disable waiting room events
+  - `on`: Enable waiting room events
+  - `off`: Disable waiting room events
 * `total_active_users` - (Required) Total number of active users.
 * `waiting_room_event_name` - (Required) Event name, custom event description.
 * `waiting_room_id` - (Optional, ForceNew, Computed) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://help.aliyun.com/document_detail/2850279.html) interface.
 * `waiting_room_type` - (Required) Waiting room type. The following types are supported:
-  -'default': the default type.
-  -'custom': custom type.
+  - `default`: the default type.
+  - `custom`: custom type.
 
 ## Attributes Reference
 
