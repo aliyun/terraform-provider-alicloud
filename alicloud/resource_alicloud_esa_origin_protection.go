@@ -31,7 +31,7 @@ func resourceAliCloudEsaOriginProtection() *schema.Resource {
 				Optional: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -52,7 +52,6 @@ func resourceAliCloudEsaOriginProtectionCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -92,7 +91,9 @@ func resourceAliCloudEsaOriginProtectionRead(d *schema.ResourceData, meta interf
 	}
 
 	d.Set("origin_converge", objectRaw["OriginConverge"])
-	d.Set("site_id", objectRaw["SiteId"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	d.Set("site_id", d.Id())
 
@@ -111,7 +112,7 @@ func resourceAliCloudEsaOriginProtectionUpdate(d *schema.ResourceData, meta inte
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("origin_converge") {
 		update = true
 	}
@@ -148,12 +149,10 @@ func resourceAliCloudEsaOriginProtectionDelete(d *schema.ResourceData, meta inte
 	var err error
 	request = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

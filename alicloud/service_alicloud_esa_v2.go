@@ -1968,7 +1968,6 @@ func (s *EsaServiceV2) EsaOriginPoolStateRefreshFunc(id string, field string, fa
 }
 
 // DescribeEsaOriginPool >>> Encapsulated.
-
 // DescribeEsaWaitingRoomEvent <<< Encapsulated get interface for Esa WaitingRoomEvent.
 
 func (s *EsaServiceV2) DescribeEsaWaitingRoomEvent(id string) (object map[string]interface{}, err error) {
@@ -1979,14 +1978,13 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomEvent(id string) (object map[string
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
-		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["WaitingRoomEventId"] = parts[2]
 	query["WaitingRoomId"] = parts[1]
-
+	query["RegionId"] = client.RegionId
 	action := "ListWaitingRoomEvents"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -2020,18 +2018,15 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomEvent(id string) (object map[string
 }
 
 func (s *EsaServiceV2) EsaWaitingRoomEventStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return s.EsaWaitingRoomEventStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWaitingRoomEvent)
-}
-
-func (s *EsaServiceV2) EsaWaitingRoomEventStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := call(id)
+		object, err := s.DescribeEsaWaitingRoomEvent(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
+
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -3534,6 +3529,7 @@ func (s *EsaServiceV2) EsaOriginCaCertificateStateRefreshFunc(id string, field s
 }
 
 // DescribeEsaOriginCaCertificate >>> Encapsulated.
+
 // DescribeEsaOriginProtection <<< Encapsulated get interface for Esa OriginProtection.
 
 func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string]interface{}, err error) {
@@ -3544,7 +3540,7 @@ func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetOriginProtection"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -3569,15 +3565,18 @@ func (s *EsaServiceV2) DescribeEsaOriginProtection(id string) (object map[string
 }
 
 func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaOriginProtectionStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginProtection)
+}
+
+func (s *EsaServiceV2) EsaOriginProtectionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaOriginProtection(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
