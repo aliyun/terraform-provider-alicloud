@@ -224,27 +224,47 @@ resource "alicloud_kms_instance" "default" {
 The following arguments are supported:
 * `bind_vpcs` - (Optional, Set) Aucillary VPCs used to access this KMS instance See [`bind_vpcs`](#bind_vpcs) below.
 * `force_delete_without_backup` - (Optional, Available since v1.223.2) Whether to force deletion even without backup.
+
+-> **NOTE:** This parameter only takes effect when deletion is triggered.
+
 * `instance_name` - (Optional, Computed) The name of the resource
 * `key_num` - (Optional, Int) Maximum number of stored keys. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `log` - (Optional, Computed) Instance Audit Log Switch. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `log_storage` - (Optional, Computed, Int) Instance log capacity. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `payment_type` - (Optional, ForceNew, Computed) Payment type, valid values:
-  - `Subscription`: Prepaid.
-  - `PayAsYouGo`: Postpaid.
-* `period` - (Optional, Int) Purchase cycle, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `product_version` - (Optional) KMS Instance commodity type (software/hardware)
-* `renew_period` - (Optional, Int) Automatic renewal period, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `renew_status` - (Optional) Renewal options. Valid values: `AutoRenewal`, `ManualRenewal`. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `renewal_period_unit` - (Optional, Available since v1.257.0) Automatic renewal period unit, valid value:
-  - `M`: Month.
-  - `Y`: Year.
+* `log` - (Optional, Computed) Instance Audit Log Switch. 
+* `log_storage` - (Optional, Computed, Int) Instance log capacity. 
+* `payment_type` - (Optional, ForceNew, Computed) The billing method. Valid values:
+
+  - Subscription: the subscription billing method.
+  - PayAsYouGo: the pay-as-you-go billing method.
+* `period` - (Optional, Int) The subscription duration. Unit: month. The value must be an integral multiple of 12.
+
+-> **NOTE:**   This parameter is required if you create a subscription instance.
+
+
+-> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
+* `product_version` - (Optional, Computed) KMS Instance commodity type (software/hardware)
+* `renew_period` - (Optional, Int) The auto-renewal period. Unit: month.
+
+-> **NOTE:**   This parameter is required if the `RenewalStatus` parameter is set to `AutoRenewal`.
+
+* `renew_status` - (Optional, Computed) The renewal status of the specified instance. Valid values:
+
+  - AutoRenewal: The instance is automatically renewed.
+  - ManualRenewal: The instance is manually renewed.
+  - NotRenewal: The instance is not renewed.
+* `renewal_period_unit` - (Optional, Available since v1.257.0) Automatic renewal period unit, value:
+  - M: Month.
+  - Y: Year.
+
+-> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
 * `secret_num` - (Optional, Int) Maximum number of Secrets. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `spec` - (Optional, Int) The computation performance level of the KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `tags` - (Optional, Map, Available since v1.259.0) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Map, Available since v1.259.0) The tag of the resource
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) that is associated with the KMS instance.
 * `vpc_num` - (Optional, Int) The number of managed accesses. The maximum number of VPCs that can access this KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `vswitch_ids` - (Required, ForceNew, List) Instance bind vswitches
-* `zone_ids` - (Required, ForceNew, List) zone id
+* `vswitch_ids` - (Required, ForceNew, Set) Instance bind vswitches
+* `zone_ids` - (Required, ForceNew, Set) zone id
 
 ### `bind_vpcs`
 
@@ -252,7 +272,7 @@ The bind_vpcs supports the following:
 * `region_id` - (Optional) region id
 * `vswitch_id` - (Optional) vswitch id
 * `vpc_id` - (Optional) VPC ID
-* `vpc_owner_id` - (Optional, Int) VPC owner root user ID
+* `vpc_owner_id` - (Optional) VPC owner root user ID
 
 ## Attributes Reference
 

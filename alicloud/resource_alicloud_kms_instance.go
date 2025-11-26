@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -65,8 +66,9 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				Computed: true,
 			},
 			"force_delete_without_backup": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"true", "false"}, false),
 			},
 			"instance_name": {
 				Type:     schema.TypeString,
@@ -227,9 +229,8 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	action := "CreateInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var endpoint string
-	var err error
 	query := make(map[string]interface{})
+	var err error
 	request = make(map[string]interface{})
 
 	request["ClientToken"] = buildClientToken(action)
@@ -283,30 +284,34 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	}
 	request["Parameter"] = parameterMapList
 
-	request["Period"] = d.Get("period")
-
-	request["ProductCode"] = "kms"
-	request["ProductType"] = "kms_ddi_public_cn"
-	if client.IsInternationalAccount() {
-		request["ProductType"] = "kms_ddi_public_intl"
+	if v, ok := d.GetOkExists("period"); ok {
+		request["Period"] = v
+	}
+	if v, ok := d.GetOkExists("renew_period"); ok && v.(int) > 0 {
+		request["RenewPeriod"] = v
+	}
+	if v, ok := d.GetOk("renew_status"); ok {
+		request["RenewalStatus"] = v
 	}
 	request["SubscriptionType"] = "Subscription"
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["SubscriptionType"] = convertKmsInstanceSubscriptionTypeRequest(v.(string))
+	}
+	var endpoint string
+	request["ProductCode"] = "kms"
+	request["ProductType"] = "kms_ddi_public_cn"
 	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductCode"] = "kms"
 		request["ProductType"] = "kms_ppi_public_cn"
-		request["SubscriptionType"] = v
-		if client.IsInternationalAccount() {
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = "kms"
+		request["ProductType"] = "kms_ddi_public_intl"
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "kms"
 			request["ProductType"] = "kms_ppi_public_intl"
 		}
 	}
-
-	if v, ok := d.GetOkExists("renew_period"); ok && v.(int) > 0 && request["SubscriptionType"] == "Subscription" {
-		request["RenewPeriod"] = v
-	}
-
-	if v, ok := d.GetOk("renew_status"); ok && request["SubscriptionType"] == "Subscription" {
-		request["RenewalStatus"] = v
-	}
-
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
@@ -316,8 +321,10 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 				return resource.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "kms"
 				request["ProductType"] = "kms_ddi_public_intl"
 				if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+					request["ProductCode"] = "kms"
 					request["ProductType"] = "kms_ppi_public_intl"
 				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
@@ -342,26 +349,28 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
-	kmsServiceV2 := KmsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(id)}, d.Timeout(schema.TimeoutCreate), 10*time.Second, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "InstanceId", []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
+	kmsService := KmsServiceV2{client}
+	stateConfig := BuildStateConf([]string{}, []string{fmt.Sprint(id)}, d.Timeout(schema.TimeoutCreate), 10*time.Second, kmsService.KmsInstanceStateRefreshFunc(d.Id(), "InstanceId", []string{}))
+	if _, err := stateConfig.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-
 	action = "ConnectKmsInstance"
 	request = make(map[string]interface{})
-	request["KmsInstanceId"] = d.Id()
-
-	request["VpcId"] = d.Get("vpc_id")
-	request["KMProvider"] = "Aliyun"
-	jsonPathResult1, err := jsonpath.Get("$", d.Get("zone_ids"))
-	if err == nil {
-		request["ZoneIds"] = convertListToCommaSeparate(jsonPathResult1.(*schema.Set).List())
+	if v, ok := d.GetOk("instance_id"); ok {
+		request["KmsInstanceId"] = v
 	}
 
-	jsonPathResult2, err := jsonpath.Get("$", d.Get("vswitch_ids"))
+	request["VpcId"] = d.Get("vpc_id")
+	request["KmsInstanceId"] = d.Id()
+	request["KMProvider"] = "Aliyun"
+	zoneIdsJsonPath, err := jsonpath.Get("$", d.Get("zone_ids"))
 	if err == nil {
-		request["VSwitchIds"] = convertListToCommaSeparate(jsonPathResult2.(*schema.Set).List())
+		request["ZoneIds"] = convertListToCommaSeparate(convertToInterfaceArray(zoneIdsJsonPath))
+	}
+
+	vswitchIdsJsonPath, err := jsonpath.Get("$", d.Get("vswitch_ids"))
+	if err == nil {
+		request["VSwitchIds"] = convertListToCommaSeparate(convertToInterfaceArray(vswitchIdsJsonPath))
 	}
 
 	wait = incrementalWait(3*time.Second, 5*time.Second)
@@ -384,8 +393,8 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 
 	d.SetId(fmt.Sprint(request["KmsInstanceId"]))
 
-	kmsServiceV2 = KmsServiceV2{client}
-	stateConf = BuildStateConf([]string{}, []string{"Connected"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "Status", []string{"Error"}))
+	kmsServiceV2 := KmsServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Connected"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "Status", []string{"Error"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -425,13 +434,15 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	bindVpcRaw, _ := jsonpath.Get("$.BindVpcs.BindVpc", objectRaw)
 	bindVpcsMaps := make([]map[string]interface{}, 0)
 	if bindVpcRaw != nil {
-		for _, bindVpcChildRaw := range bindVpcRaw.([]interface{}) {
+		for _, bindVpcChildRaw := range convertToInterfaceArray(bindVpcRaw) {
 			bindVpcsMap := make(map[string]interface{})
 			bindVpcChildRaw := bindVpcChildRaw.(map[string]interface{})
 			bindVpcsMap["region_id"] = bindVpcChildRaw["RegionId"]
 			bindVpcsMap["vswitch_id"] = bindVpcChildRaw["VSwitchId"]
 			bindVpcsMap["vpc_id"] = bindVpcChildRaw["VpcId"]
-			bindVpcsMap["vpc_owner_id"] = bindVpcChildRaw["VpcOwnerId"]
+			if v, ok := bindVpcChildRaw["VpcOwnerId"]; ok {
+				bindVpcsMap["vpc_owner_id"] = v
+			}
 
 			bindVpcsMaps = append(bindVpcsMaps, bindVpcsMap)
 		}
@@ -446,6 +457,7 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.Set("vswitch_ids", vswitchIds)
+
 	zoneIds := make([]interface{}, 0)
 	if objectRaw["ZoneIds"] != nil {
 		zoneIds = objectRaw["ZoneIds"].([]interface{})
@@ -460,12 +472,15 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("renew_period", objectRaw["RenewalDuration"])
 	d.Set("renew_status", objectRaw["RenewStatus"])
 
-	listTagResourcesObject, err := kmsServiceV2.ListTagResources(d.Id(), "instance")
-	if err != nil {
+	objectRaw, err = kmsServiceV2.DescribeInstanceListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	d.Set("tags", tagsToMap(listTagResourcesObject))
+	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	d.Set("instance_id", d.Id())
 
 	return nil
 }
@@ -478,7 +493,16 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	update := false
 	d.Partial(true)
 
+	kmsServiceV2 := KmsServiceV2{client}
+	objectRaw, _ := kmsServiceV2.DescribeKmsInstance(d.Id())
+
 	var err error
+	objectRaw, _ = kmsServiceV2.DescribeKmsInstance(d.Id())
+	enableModifyInstance1 := false
+	checkValue00 := convertKmsInstanceKmsInstanceChargeTypeResponse(objectRaw["ChargeType"])
+	if checkValue00 == "Subscription" {
+		enableModifyInstance1 = true
+	}
 	action := "ModifyInstance"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -533,22 +557,27 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request["Parameter"] = parameterMapList
 
+	if !d.IsNewResource() && d.HasChange("payment_type") {
+		update = true
+	}
+	request["SubscriptionType"] = d.Get("payment_type")
+	request["ModifyType"] = "Upgrade"
+	var endpoint string
 	request["ProductCode"] = "kms"
 	request["ProductType"] = "kms_ddi_public_cn"
-	if client.IsInternationalAccount() {
-		request["ProductType"] = "kms_ddi_public_intl"
-	}
-	request["SubscriptionType"] = "Subscription"
 	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductCode"] = "kms"
 		request["ProductType"] = "kms_ppi_public_cn"
-		request["SubscriptionType"] = v
-		if client.IsInternationalAccount() {
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = "kms"
+		request["ProductType"] = "kms_ddi_public_intl"
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "kms"
 			request["ProductType"] = "kms_ppi_public_intl"
 		}
 	}
-	request["ModifyType"] = "Upgrade"
-	if update && request["SubscriptionType"] == "Subscription" {
-		var endpoint string
+	if update && enableModifyInstance1 {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
@@ -558,8 +587,10 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 					return resource.RetryableError(err)
 				}
 				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					request["ProductCode"] = "kms"
 					request["ProductType"] = "kms_ddi_public_intl"
 					if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+						request["ProductCode"] = "kms"
 						request["ProductType"] = "kms_ppi_public_intl"
 					}
 					endpoint = connectivity.BssOpenAPIEndpointInternational
@@ -573,9 +604,8 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
 		kmsServiceV2 := KmsServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("key_num"))}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "KeyNum", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "#KeyNum", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -591,19 +621,16 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if v, ok := d.GetOk("bind_vpcs"); ok || d.HasChange("bind_vpcs") {
 		bindVpcsMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.(*schema.Set).List() {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["VpcId"] = dataLoopTmp["vpc_id"]
 
-			if vpcOwnerId, ok := dataLoopTmp["vpc_owner_id"]; ok {
-				vpcOwnerIdNumber, err := strconv.ParseInt(fmt.Sprint(vpcOwnerId), 10, 64)
-				if err != nil {
-					return WrapError(fmt.Errorf("convert vpc_owner_id to int64 failed, value: %v", vpcOwnerId))
-				}
-				dataLoopMap["VpcOwnerId"] = vpcOwnerIdNumber
-			}
+			if vpcOwnerIdRaw, ok := dataLoopTmp["vpc_owner_id"]; ok && vpcOwnerIdRaw != "" {
+				vpcOwnerId1, _ := strconv.ParseInt(vpcOwnerIdRaw.(string), 10, 64)
+				dataLoopMap["VpcOwnerId"] = vpcOwnerId1
 
+			}
 			dataLoopMap["RegionId"] = dataLoopTmp["region_id"]
 			dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
 			bindVpcsMapsArray = append(bindVpcsMapsArray, dataLoopMap)
@@ -634,14 +661,14 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 	update = false
-	action = "UpdateKeyStore"
+	action = "UpdateKmsInstance"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["KeyStoreId"] = d.Id()
+	request["KmsInstanceId"] = d.Id()
 
 	if d.HasChange("instance_name") {
 		update = true
-		request["KeyStoreName"] = d.Get("instance_name")
+		request["InstanceName"] = d.Get("instance_name")
 	}
 
 	if update {
@@ -671,42 +698,35 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	if !d.IsNewResource() && d.HasChange("renew_status") {
 		update = true
 	}
-	if v, ok := d.GetOk("renew_status"); ok {
-		request["RenewalStatus"] = v
-	}
-
+	request["RenewalStatus"] = d.Get("renew_status")
 	if !d.IsNewResource() && d.HasChange("renew_period") {
 		update = true
-
-		if v, ok := d.GetOk("renew_period"); ok {
-			request["RenewalPeriod"] = v
-		}
+		request["RenewalPeriod"] = d.Get("renew_period")
 	}
 
-	if d.HasChange("renewal_period_unit") {
-		update = true
-	}
 	if v, ok := d.GetOk("renewal_period_unit"); ok {
 		request["RenewalPeriodUnit"] = v
 	}
-
-	request["SubscriptionType"] = d.Get("payment_type")
+	if !d.IsNewResource() && d.HasChange("payment_type") {
+		update = true
+		request["SubscriptionType"] = d.Get("payment_type")
+	}
 
 	request["ProductCode"] = "kms"
 	request["ProductType"] = "kms_ddi_public_cn"
-	if client.IsInternationalAccount() {
-		request["ProductType"] = "kms_ddi_public_intl"
-	}
-
 	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductCode"] = "kms"
 		request["ProductType"] = "kms_ppi_public_cn"
-		if client.IsInternationalAccount() {
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = "kms"
+		request["ProductType"] = "kms_ddi_public_intl"
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "kms"
 			request["ProductType"] = "kms_ppi_public_intl"
 		}
 	}
-
 	if update {
-		var endpoint string
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
@@ -716,8 +736,10 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 					return resource.RetryableError(err)
 				}
 				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					request["ProductCode"] = "kms"
 					request["ProductType"] = "kms_ddi_public_intl"
 					if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+						request["ProductCode"] = "kms"
 						request["ProductType"] = "kms_ppi_public_intl"
 					}
 					endpoint = connectivity.BssOpenAPIEndpointInternational
@@ -739,31 +761,46 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 			return WrapError(err)
 		}
 	}
-
 	d.Partial(false)
 	return resourceAliCloudKmsInstanceRead(d, meta)
 }
 
 func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
-	if v, ok := d.GetOk("payment_type"); !ok || v.(string) == "Subscription" {
-		client := meta.(*connectivity.AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	enableDelete := false
+	if v, ok := d.GetOkExists("payment_type"); ok {
+		if InArray(fmt.Sprint(v), []string{"Subscription"}) {
+			enableDelete = true
+		}
+	}
+	if enableDelete {
 		action := "RefundInstance"
 		var request map[string]interface{}
 		var response map[string]interface{}
-		var err error
 		query := make(map[string]interface{})
+		var err error
 		request = make(map[string]interface{})
 		request["InstanceId"] = d.Id()
 
 		request["ClientToken"] = buildClientToken(action)
-		request["ProductCode"] = "kms"
-		request["ProductType"] = "kms_ddi_public_cn"
-		if client.IsInternationalAccount() {
-			request["ProductType"] = "kms_ddi_public_intl"
-		}
+
 		request["ImmediatelyRelease"] = "1"
 		var endpoint string
+		request["ProductCode"] = "kms"
+		request["ProductType"] = "kms_ddi_public_cn"
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "kms"
+			request["ProductType"] = "kms_ppi_public_cn"
+		}
+		if client.IsInternationalAccount() {
+			request["ProductCode"] = "kms"
+			request["ProductType"] = "kms_ddi_public_intl"
+			if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+				request["ProductCode"] = "kms"
+				request["ProductType"] = "kms_ppi_public_intl"
+			}
+		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
@@ -773,7 +810,12 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 					return resource.RetryableError(err)
 				}
 				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					request["ProductCode"] = "kms"
 					request["ProductType"] = "kms_ddi_public_intl"
+					if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+						request["ProductCode"] = "kms"
+						request["ProductType"] = "kms_ppi_public_intl"
+					}
 					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return resource.RetryableError(err)
 				}
@@ -791,32 +833,34 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 		}
 
 		kmsServiceV2 := KmsServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 30*time.Second, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "InstanceId", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 30*time.Second, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "$.InstanceId", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		return nil
 	}
 
-	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "PayAsYouGo" {
-		client := meta.(*connectivity.AliyunClient)
+	enableDelete = false
+	if v, ok := d.GetOkExists("payment_type"); ok {
+		if InArray(fmt.Sprint(v), []string{"PayAsYouGo"}) {
+			enableDelete = true
+		}
+	}
+	if enableDelete {
 		action := "ReleaseKmsInstance"
 		var request map[string]interface{}
 		var response map[string]interface{}
-		var err error
 		query := make(map[string]interface{})
+		var err error
 		request = make(map[string]interface{})
 		request["KmsInstanceId"] = d.Id()
 
 		if v, ok := d.GetOk("force_delete_without_backup"); ok {
 			request["ForceDeleteWithoutBackup"] = v
 		}
-
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 			response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -835,7 +879,6 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		return nil
 	}
 	return nil
 }
