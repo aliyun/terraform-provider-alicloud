@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -31,7 +32,8 @@ func init() {
 }
 
 var (
-	fileNames = flag.String("fileNames", "", "the files to check diff")
+	fileNames    = flag.String("fileNames", "", "the files to check diff")
+	resourceName = flag.String("resource", "", "directly specify a resource name to check (e.g., alicloud_realtime_compute_deployment)")
 
 	resourceFileRegex     = regexp.MustCompile("alicloud/(resource)[0-9a-zA-Z_]*")
 	resourceFileTestRegex = regexp.MustCompile("alicloud/(resource)[0-9a-zA-Z_]*_test.go")
@@ -40,6 +42,17 @@ var (
 func main() {
 	exitCode := 0
 	flag.Parse()
+
+	// Mode 1: Direct resource name check (for local use)
+	if resourceName != nil && len(*resourceName) > 0 {
+		log.Infof("==> Checking resource: %s", *resourceName)
+		if !checkSingleResource(*resourceName) {
+			exitCode = 1
+		}
+		os.Exit(exitCode)
+	}
+
+	// Mode 2: Diff file check (for CI/CD)
 	if fileNames != nil && len(*fileNames) == 0 {
 		log.Infof("the diff file is empty, shipped!")
 		return
@@ -50,81 +63,109 @@ func main() {
 	resourceNameMap := make(map[string]struct{})
 	for _, file := range diff.Files {
 		isNameCorrect = true
-		resourceName := ""
+		resName := ""
 		isResource := true
 		fileType := "resource"
 		if resourceFileTestRegex.MatchString(file.NewName) {
-			resourceName = strings.TrimSuffix(strings.Split(file.NewName, "/")[1], "_test.go")
+			resName = strings.TrimSuffix(strings.Split(file.NewName, "/")[1], "_test.go")
 		} else if resourceFileRegex.MatchString(file.NewName) {
-			resourceName = strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go")
+			resName = strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go")
 		} else {
 			continue
 		}
 
-		if strings.HasPrefix(resourceName, "data_source_") {
+		if strings.HasPrefix(resName, "data_source_") {
 			isResource = false
 			fileType = "data source"
-			resourceName = strings.TrimPrefix(resourceName, "data_source_")
+			resName = strings.TrimPrefix(resName, "data_source_")
 		} else {
-			resourceName = strings.TrimPrefix(resourceName, "resource_")
+			resName = strings.TrimPrefix(resName, "resource_")
 		}
 
-		if _, ok := resourceNameMap[resourceName]; ok {
+		// Remove alicloud_ prefix to get the clean resource name
+		resName = strings.TrimPrefix(resName, "alicloud_")
+
+		if _, ok := resourceNameMap[resName]; ok {
 			continue
 		} else {
-			resourceNameMap[resourceName] = struct{}{}
+			resourceNameMap[resName] = struct{}{}
 		}
 
-		log.Infof("==> Getting %s %s attributes...", fileType, resourceName)
-		var resource = &schema.Resource{}
-		var ok bool
-		if isResource {
-			resource, ok = alicloud.Provider().(*schema.Provider).ResourcesMap[resourceName]
-			if !ok || resource == nil {
-				log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resourceName)
-				exitCode = 1
-				continue
-			}
-		} else {
-			resource, ok = alicloud.Provider().(*schema.Provider).DataSourcesMap[resourceName]
-			if !ok || resource == nil {
-				log.Errorf("data source %s is not found in the provider DataSourcesMap\n\n", resourceName)
-				exitCode = 1
-				continue
-			}
+		if !checkResourceByName(resName, isResource, fileType) {
+			exitCode = 1
 		}
-		schemaAllSet, schemaMustSet, schemaModifySet, schemaForceNewSet :=
-			mapset.NewSet(), mapset.NewSet(), mapset.NewSet(), mapset.NewSet()
-		getSchemaAttr(false, resource.Schema, &schemaAllSet, &schemaMustSet, &schemaModifySet, &schemaForceNewSet)
-
-		log.Infof("==> Getting %s %s attributes in test cases...", fileType, resourceName)
-		testMustSet, testModifySet, testIgnoreSet :=
-			mapset.NewSet(), mapset.NewSet(), mapset.NewSet()
-		filePath := "alicloud/"
-		if isResource {
-			filePath += "resource_" + resourceName + "_test.go"
-		} else {
-			filePath += "data_source_" + resourceName + "_test.go"
-		}
-		check := getTestCaseAttr(filePath, resourceName, &testMustSet, &testModifySet, &testIgnoreSet)
-
-		// "check" denotes the test code is using a standard template
-		if check {
-			log.Infof("==> checking %s %s attributes' coverage rate", fileType, resourceName)
-			if checkAttributeSet(resourceName, fileType, schemaMustSet, testMustSet,
-				schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet) && isNameCorrect {
-				log.Infof("--- PASS!\n\n")
-				continue
-			}
-		}
-
-		log.Errorf("--- Failed!\n\n")
-		exitCode = 1
-
 	}
 
 	os.Exit(exitCode)
+}
 
+// checkSingleResource checks a single resource by its full name (e.g., "alicloud_ecs_instance")
+func checkSingleResource(fullName string) bool {
+	isResource := true
+	fileType := "resource"
+	resName := fullName
+
+	// Determine if it's a data source or resource
+	if strings.HasPrefix(fullName, "data.") {
+		isResource = false
+		fileType = "data source"
+		resName = strings.TrimPrefix(fullName, "data.")
+	}
+
+	// Remove alicloud_ prefix if present
+	resName = strings.TrimPrefix(resName, "alicloud_")
+
+	return checkResourceByName(resName, isResource, fileType)
+}
+
+// checkResourceByName checks a resource by name and type
+func checkResourceByName(resName string, isResource bool, fileType string) bool {
+	isNameCorrect = true
+
+	log.Infof("==> Getting %s %s attributes...", fileType, resName)
+	var resource = &schema.Resource{}
+	var ok bool
+	if isResource {
+		resource, ok = alicloud.Provider().(*schema.Provider).ResourcesMap["alicloud_"+resName]
+		if !ok || resource == nil {
+			log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resName)
+			return false
+		}
+	} else {
+		resource, ok = alicloud.Provider().(*schema.Provider).DataSourcesMap["alicloud_"+resName]
+		if !ok || resource == nil {
+			log.Errorf("data source %s is not found in the provider DataSourcesMap\n\n", resName)
+			return false
+		}
+	}
+
+	schemaAllSet, schemaMustSet, schemaModifySet, schemaForceNewSet :=
+		mapset.NewSet(), mapset.NewSet(), mapset.NewSet(), mapset.NewSet()
+	getSchemaAttr(false, resource.Schema, &schemaAllSet, &schemaMustSet, &schemaModifySet, &schemaForceNewSet)
+
+	log.Infof("==> Getting %s %s attributes in test cases...", fileType, resName)
+	testMustSet, testModifySet, testIgnoreSet :=
+		mapset.NewSet(), mapset.NewSet(), mapset.NewSet()
+	filePath := "alicloud/"
+	if isResource {
+		filePath += "resource_alicloud_" + resName + "_test.go"
+	} else {
+		filePath += "data_source_alicloud_" + resName + "_test.go"
+	}
+	check := getTestCaseAttr(filePath, resName, &testMustSet, &testModifySet, &testIgnoreSet)
+
+	// "check" denotes the test code is using a standard template
+	if check {
+		log.Infof("==> checking %s %s attributes' coverage rate", fileType, resName)
+		if checkAttributeSet(resName, fileType, schemaMustSet, testMustSet,
+			schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet) && isNameCorrect {
+			log.Infof("--- PASS!\n\n")
+			return true
+		}
+	}
+
+	log.Errorf("--- Failed!\n\n")
+	return false
 }
 
 // get the schema
@@ -345,56 +386,68 @@ func parseConfig(resourceTest ResourceTest,
 					valueStr = v[valueIndex+1 : len(v)-2]
 				}
 
-				// "xxx"+xx, "xxx"+xxx+"xxx, `xxx`+"xxx"+`xxx`
-				if strings.Contains(valueStr, "+") {
-					v := valueStr
-					index := strings.Index(v, "+")
-					for index != -1 {
-						beforeStr := v[:index]
-						beforeStr = strings.TrimSpace(beforeStr)
-						if strings.Count(beforeStr, "\"")%2 == 0 ||
-							(beforeStr[0] == '`' && beforeStr[len(beforeStr)-1] == '`') {
-							v = v[index+1:]
-							index = strings.Index(v, "+")
-						} else {
-							break
+				// Check if this is a nested JSON string (contains multi-level escaped quotes like \\\")
+				// This indicates the value is itself a JSON string with internal JSON structure
+				// We need to skip all transformations to preserve its original structure
+				isNestedJSONString := strings.HasPrefix(valueStr, "\"") &&
+					strings.Contains(valueStr, `\\\"`) &&
+					(strings.Contains(valueStr, "{") || strings.Contains(valueStr, "["))
+
+				if !isNestedJSONString {
+					// "xxx"+xx, "xxx"+xxx+"xxx, `xxx`+"xxx"+`xxx`
+					if strings.Contains(valueStr, "+") {
+						v := valueStr
+						index := strings.Index(v, "+")
+						for index != -1 {
+							beforeStr := v[:index]
+							beforeStr = strings.TrimSpace(beforeStr)
+							if strings.Count(beforeStr, "\"")%2 == 0 ||
+								(beforeStr[0] == '`' && beforeStr[len(beforeStr)-1] == '`') {
+								v = v[index+1:]
+								index = strings.Index(v, "+")
+							} else {
+								break
+							}
+						}
+						if index == -1 {
+							valueStr = strings.ReplaceAll(valueStr, "\"", "")
+							valueStr = strings.ReplaceAll(valueStr, "`", "")
+							valueStr = "\"" + valueStr + "\""
 						}
 					}
-					if index == -1 {
+
+					// `xxx`
+					if strings.HasPrefix(valueStr, "`") && strings.HasSuffix(valueStr, "`") {
+						valueStr = "\"" + valueStr[:len(valueStr)-1] + "\"" + valueSuffix
+					} else {
+						valueStr += valueSuffix
+					}
+
+					// value is a map or slice
+					for i := 0; i < len(matchMap); i++ {
+						k := matchMap[i][0]
+						v := matchMap[i][1]
+						if strings.Contains(valueStr, k) {
+							valueStr = strings.ReplaceAll(valueStr, k, v)
+						}
+					}
+
+					// value with variable or func
+					if variableRegex.MatchString(valueStr) || valueFuncRegex.MatchString(valueStr) {
+						valueStr = strings.ReplaceAll(valueStr, "\\\"", "*")
 						valueStr = strings.ReplaceAll(valueStr, "\"", "")
-						valueStr = strings.ReplaceAll(valueStr, "`", "")
-						valueStr = "\"" + valueStr + "\""
+						valueStr = "\"" + valueStr + "\"" + valueSuffix
 					}
-				}
 
-				// `xxx`
-				if strings.HasPrefix(valueStr, "`") && strings.HasSuffix(valueStr, "`") {
-					valueStr = "\"" + valueStr[:len(valueStr)-1] + "\"" + valueSuffix
+					// "xxx/xxx", "xxx/"xxx"
+					if valueOnlySymbol.MatchString(valueStr) {
+						valueStr = strings.ReplaceAll(valueStr, "\\", "*")
+						valueStr = strings.ReplaceAll(valueStr, "\"", "*")
+						valueStr = "\"" + valueStr[1:len(valueStr)-1] + "\"" + valueSuffix
+					}
 				} else {
+					// For nested JSON strings, skip all transformations and just add the suffix
 					valueStr += valueSuffix
-				}
-
-				// value is a map or slice
-				for i := 0; i < len(matchMap); i++ {
-					k := matchMap[i][0]
-					v := matchMap[i][1]
-					if strings.Contains(valueStr, k) {
-						valueStr = strings.ReplaceAll(valueStr, k, v)
-					}
-				}
-
-				// value with variable or func
-				if variableRegex.MatchString(valueStr) || valueFuncRegex.MatchString(valueStr) {
-					valueStr = strings.ReplaceAll(valueStr, "\\\"", "*")
-					valueStr = strings.ReplaceAll(valueStr, "\"", "")
-					valueStr = "\"" + valueStr + "\"" + valueSuffix
-				}
-
-				// "xxx/xxx", "xxx/"xxx"
-				if valueOnlySymbol.MatchString(valueStr) {
-					valueStr = strings.ReplaceAll(valueStr, "\\", "*")
-					valueStr = strings.ReplaceAll(valueStr, "\"", "*")
-					valueStr = "\"" + valueStr[1:len(valueStr)-1] + "\"" + valueSuffix
 				}
 
 				configSlice[i] = v[:valueIndex+1] + valueStr
@@ -529,6 +582,96 @@ type FuncTest struct {
 	stepAttributes map[int]map[string]interface{}
 }
 
+// TreeNode represents a node in the attribute tree
+type TreeNode struct {
+	Name     string
+	Children map[string]*TreeNode
+}
+
+// buildAttributeTree builds a tree structure from attribute paths
+func buildAttributeTree(attributes []string) *TreeNode {
+	root := &TreeNode{
+		Name:     "root",
+		Children: make(map[string]*TreeNode),
+	}
+
+	for _, attr := range attributes {
+		parts := strings.Split(attr, ".")
+		current := root
+		for _, part := range parts {
+			if _, exists := current.Children[part]; !exists {
+				current.Children[part] = &TreeNode{
+					Name:     part,
+					Children: make(map[string]*TreeNode),
+				}
+			}
+			current = current.Children[part]
+		}
+	}
+
+	return root
+}
+
+// printTree prints the tree structure with proper formatting
+func printTree(node *TreeNode, prefix string, isLast bool, buffer *strings.Builder) {
+	if node.Name != "root" {
+		// Determine the branch symbol
+		branch := "├── "
+		if isLast {
+			branch = "└── "
+		}
+		buffer.WriteString(prefix + branch + node.Name + "\n")
+
+		// Update prefix for children
+		if isLast {
+			prefix += "    "
+		} else {
+			prefix += "│   "
+		}
+	}
+
+	// Sort children for consistent output
+	childNames := make([]string, 0, len(node.Children))
+	for name := range node.Children {
+		childNames = append(childNames, name)
+	}
+	sort.Strings(childNames)
+
+	// Print children
+	for i, name := range childNames {
+		child := node.Children[name]
+		isLastChild := i == len(childNames)-1
+		printTree(child, prefix, isLastChild, buffer)
+	}
+}
+
+// formatAttributesAsTree converts attribute list to tree format string
+func formatAttributesAsTree(attributes []interface{}) string {
+	if len(attributes) == 0 {
+		return ""
+	}
+
+	// Convert interface{} slice to string slice
+	attrStrings := make([]string, 0, len(attributes))
+	for _, attr := range attributes {
+		if attrStr, ok := attr.(string); ok {
+			attrStrings = append(attrStrings, attrStr)
+		}
+	}
+
+	// Sort for consistent output
+	sort.Strings(attrStrings)
+
+	// Build tree
+	tree := buildAttributeTree(attrStrings)
+
+	// Print tree
+	var buffer strings.Builder
+	printTree(tree, "", true, &buffer)
+
+	return buffer.String()
+}
+
 func checkAttributeSet(resourceName string, fileType string, schemaMustSet, testMustSet,
 	schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet mapset.Set) bool {
 
@@ -541,8 +684,10 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 		notCoverCount := float64(len(notCoverSlice))
 		coverageRate := 1 - (notCoverCount / schemaCount)
 		log.Infof("resource %s attributes has %.2f%% testing coverage rate ", resourceName, coverageRate*100)
-		notCoverStr, _ := json.Marshal(notCoverSlice)
-		log.Errorf("resource %s attributes %v missing test cases", resourceName, string(notCoverStr))
+
+		// Format as tree structure
+		treeStr := formatAttributesAsTree(notCoverSlice)
+		log.Errorf("resource %s attributes missing test cases (%d attributes):\n%s", resourceName, len(notCoverSlice), treeStr)
 	} else {
 		log.Infof("resource %s attributes has 100%% testing coverage rate ", resourceName)
 	}
@@ -613,8 +758,10 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 		notCoverCount := float64(len(notModifySlice))
 		coverageRate := 1 - (notCoverCount / schemaCount)
 		log.Infof("resource %s attributes has %.2f%% modified coverage rate ", resourceName, coverageRate*100)
-		notModifyStr, _ := json.Marshal(notModifySlice)
-		log.Errorf("resource %s attributes %v missing modification in test cases", resourceName, string(notModifyStr))
+
+		// Format as tree structure
+		treeStr := formatAttributesAsTree(notModifySlice)
+		log.Errorf("resource %s attributes missing modification in test cases (%d attributes):\n%s", resourceName, len(notModifySlice), treeStr)
 	} else {
 		log.Infof("resource %s attributes has 100%% modified coverage rate ", resourceName)
 	}

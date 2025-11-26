@@ -121,6 +121,7 @@ The oss supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
+* `resource_id` - (Available since v1.264.0) The ID of the K8s cluster.
 * `create_time` - The creation time of the resource.
 * `status` - The status of the resource.
 
