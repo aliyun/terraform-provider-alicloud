@@ -111,7 +111,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 													Type:         schema.TypeInt,
 													Optional:     true,
 													Default:      100,
-													ValidateFunc: IntBetween(1, 100),
+													ValidateFunc: IntBetween(0, 100),
 												},
 											},
 										},
@@ -569,7 +569,7 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 				serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 				serverGroupTuplesMap := map[string]interface{}{}
 				serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
-				if v, ok := serverGroupTuplesArg["weight"]; ok && fmt.Sprint(v) != "0" {
+				if v, ok := serverGroupTuplesArg["weight"]; ok {
 					serverGroupTuplesMap["Weight"] = v
 				}
 
@@ -1235,7 +1235,7 @@ func resourceAliCloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 				serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 				serverGroupTuplesMap := map[string]interface{}{}
 				serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
-				if v, ok := serverGroupTuplesArg["weight"]; ok && fmt.Sprint(v) != "0" {
+				if v, ok := serverGroupTuplesArg["weight"]; ok {
 					serverGroupTuplesMap["Weight"] = v
 				}
 
