@@ -94,6 +94,10 @@ func dataSourceAliCloudResourceManagerAccounts() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"deletion_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -133,7 +137,7 @@ func dataSourceAliCloudResourceManagerAccountsRead(d *schema.ResourceData, meta 
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
+			response, err = client.RpcPost("ResourceDirectoryMaster", "2022-04-19", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -190,6 +194,7 @@ func dataSourceAliCloudResourceManagerAccountsRead(d *schema.ResourceData, meta 
 			"join_method":           object["JoinMethod"],
 			"join_time":             object["JoinTime"],
 			"modify_time":           object["ModifyTime"],
+			"deletion_status":       object["DeletionStatus"],
 		}
 
 		if v, ok := object["Tags"]; ok {

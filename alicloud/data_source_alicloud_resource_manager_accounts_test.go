@@ -86,6 +86,7 @@ func TestAccAliCloudResourceManagerAccountsDataSource_basic0(t *testing.T) {
 			"accounts.0.join_method":           CHECKSET,
 			"accounts.0.join_time":             CHECKSET,
 			"accounts.0.modify_time":           CHECKSET,
+			"accounts.0.deletion_status":       CHECKSET,
 		}
 	}
 
@@ -219,6 +220,7 @@ func TestAccAliCloudResourceManagerAccountsDataSource_basic1(t *testing.T) {
 			"accounts.0.join_method":           CHECKSET,
 			"accounts.0.join_time":             CHECKSET,
 			"accounts.0.modify_time":           CHECKSET,
+			"accounts.0.deletion_status":       CHECKSET,
 		}
 	}
 
@@ -243,6 +245,7 @@ func dataSourceResourceManagerAccountsConfig(name string) string {
 	}
 
 	data "alicloud_resource_manager_accounts" "test"{
+      ids = ["1893454309173762"]
 	}
 `, name)
 }

@@ -51,3 +51,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `join_method` - The way in which the member joins the resource directory.
   * `join_time` - The time when the member joined the resource directory.
   * `modify_time` - The time when the member was modified.
+  * `deletion_status` - (Available since v1.264.0) The deletion status of the member.
