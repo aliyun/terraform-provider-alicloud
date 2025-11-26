@@ -54,15 +54,18 @@ func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]inter
 }
 
 func (s *Fcv3ServiceV2) Fcv3FunctionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.Fcv3FunctionStateRefreshFuncWithApi(id, field, failStates, s.DescribeFcv3Function)
+}
+
+func (s *Fcv3ServiceV2) Fcv3FunctionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeFcv3Function(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
