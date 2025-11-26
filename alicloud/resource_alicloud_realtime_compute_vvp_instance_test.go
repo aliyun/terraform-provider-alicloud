@@ -54,7 +54,6 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636(t *testing.T) {
 					testAccCheck(map[string]string{
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
-						"zone_id":           "cn-hangzhou-i",
 						"vswitch_ids.#":     "1",
 						"payment_type":      "PayAsYouGo",
 					}),
@@ -126,7 +125,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle"},
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "zone_id"},
 			},
 		},
 	})
@@ -220,7 +219,6 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
 						"vswitch_ids.#":     "1",
-						"zone_id":           "cn-hangzhou-i",
 						"payment_type":      "Subscription",
 						"pricing_cycle":     "Month",
 						"duration":          "1",
@@ -244,7 +242,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle"},
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "zone_id"},
 			},
 		},
 	})
@@ -326,7 +324,6 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
-						"zone_id":           "cn-hangzhou-i",
 						"vswitch_ids.#":     "1",
 						"payment_type":      "PayAsYouGo",
 					}),
@@ -336,7 +333,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle"},
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "zone_id"},
 			},
 		},
 	})
@@ -396,7 +393,6 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_twin(t *testing.T) {
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
 						"vswitch_ids.#":     "1",
-						"zone_id":           "cn-hangzhou-i",
 						"payment_type":      "Subscription",
 						"pricing_cycle":     "Month",
 						"duration":          "1",
@@ -407,7 +403,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle"},
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "zone_id"},
 			},
 		},
 	})

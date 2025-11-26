@@ -122,6 +122,10 @@ func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"resource_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -253,7 +257,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceRead(d *schema.ResourceData, meta
 	d.Set("status", objectRaw["ClusterStatus"])
 	d.Set("vpc_id", objectRaw["VpcId"])
 	d.Set("vvp_instance_name", objectRaw["InstanceName"])
-	d.Set("zone_id", objectRaw["ZoneId"])
+	d.Set("resource_id", objectRaw["ResourceId"])
 	resourceSpecMaps := make([]map[string]interface{}, 0)
 	resourceSpecMap := make(map[string]interface{})
 	resourceSpec1Raw := make(map[string]interface{})
