@@ -40,7 +40,7 @@ func resourceAliCloudEsaEdgeContainerAppRecord() *schema.Resource {
 				ForceNew: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
@@ -68,7 +68,6 @@ func resourceAliCloudEsaEdgeContainerAppRecordCreate(d *schema.ResourceData, met
 	if v, ok := d.GetOk("record_name"); ok {
 		request["RecordName"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -110,7 +109,9 @@ func resourceAliCloudEsaEdgeContainerAppRecordRead(d *schema.ResourceData, meta 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("app_id", objectRaw["AppId"])
 	d.Set("record_name", objectRaw["RecordName"])
-	d.Set("site_id", objectRaw["SiteId"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	return nil
 }
@@ -128,12 +129,10 @@ func resourceAliCloudEsaEdgeContainerAppRecordDelete(d *schema.ResourceData, met
 	request["AppId"] = parts[1]
 	request["SiteId"] = parts[0]
 	request["RecordName"] = parts[2]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
