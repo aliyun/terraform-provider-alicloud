@@ -229,8 +229,8 @@ The following arguments are supported:
 
 * `instance_name` - (Optional, Computed) The name of the resource
 * `key_num` - (Optional, Int) Maximum number of stored keys. The attribute is valid when the attribute `payment_type` is `Subscription`.
-* `log` - (Optional, Computed) Instance Audit Log Switch. 
-* `log_storage` - (Optional, Computed, Int) Instance log capacity. 
+* `log` - (Optional, Computed) Instance Audit Log Switch. This attribute was limited to Subscription (prepaid) payment type before v1.264.0. As of v1.264.0, it is also supported for PayAsYouGo (postpaid) instances.
+* `log_storage` - (Optional, Computed, Int) Instance log capacity. This attribute was limited to Subscription (prepaid) payment type before v1.264.0. As of v1.264.0, it is also supported for PayAsYouGo (postpaid) instances.
 * `payment_type` - (Optional, ForceNew, Computed) The billing method. Valid values:
 
   - Subscription: the subscription billing method.

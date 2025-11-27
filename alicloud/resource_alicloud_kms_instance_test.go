@@ -1152,4 +1152,108 @@ func TestAccAliCloudKmsInstance_basic5405_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudKmsInstance_postpaid_log_enabled(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsInstanceMapLogEnabled)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmsinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsInstanceBasicDependenceLogEnabled)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":    "PayAsYouGo",
+					"product_version": "3",
+					"log":             "1",
+					"log_storage":     "1000",
+					"vpc_id":          "${alicloud_vpc.vpc-amp-instance-example.id}",
+					"zone_ids": []string{
+						"${alicloud_vswitch.vswitcha.zone_id}", "${alicloud_vswitch.vswitchb.zone_id}"},
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.vswitcha.id}"},
+					"force_delete_without_backup": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":    "PayAsYouGo",
+						"product_version": "3",
+						"log":             "1",
+						"log_storage":     "1000",
+						"vpc_id":          CHECKSET,
+						"zone_ids.#":      "2",
+						"vswitch_ids.#":   "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_storage": "2000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_storage": "2000",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete_without_backup", "log_storage"},
+			},
+		},
+	})
+}
+
+var AlicloudKmsInstanceMapLogEnabled = map[string]string{
+	"status":                   CHECKSET,
+	"create_time":              CHECKSET,
+	"end_date":                 CHECKSET,
+	"instance_name":            CHECKSET,
+	"ca_certificate_chain_pem": CHECKSET,
+	"payment_type":             "PayAsYouGo",
+	"product_version":          "3",
+	"log":                      "1",
+	"log_storage":              "1000",
+}
+
+func AlicloudKmsInstanceBasicDependenceLogEnabled(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "vpc-amp-instance-example" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "vswitcha" {
+  vpc_id     = alicloud_vpc.vpc-amp-instance-example.id
+  zone_id    = "cn-wulanchabu-a"
+  cidr_block = "172.16.1.0/24"
+}
+
+resource "alicloud_vswitch" "vswitchb" {
+  vpc_id     = alicloud_vpc.vpc-amp-instance-example.id
+  zone_id    = "cn-wulanchabu-b"
+  cidr_block = "172.16.2.0/24"
+}
+`, name)
+}
+
 // Test Kms Instance. <<< Resource test cases, automatically generated.
