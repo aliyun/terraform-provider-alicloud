@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -91,24 +90,12 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "PayAsYouGo" {
-						return true
-					}
-					return false
-				},
 			},
 			"log_storage": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: IntBetween(0, 500000),
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "PayAsYouGo" {
-						return true
-					}
-					return false
-				},
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -493,16 +480,7 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	update := false
 	d.Partial(true)
 
-	kmsServiceV2 := KmsServiceV2{client}
-	objectRaw, _ := kmsServiceV2.DescribeKmsInstance(d.Id())
-
 	var err error
-	objectRaw, _ = kmsServiceV2.DescribeKmsInstance(d.Id())
-	enableModifyInstance1 := false
-	checkValue00 := convertKmsInstanceKmsInstanceChargeTypeResponse(objectRaw["ChargeType"])
-	if checkValue00 == "Subscription" {
-		enableModifyInstance1 = true
-	}
 	action := "ModifyInstance"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -577,7 +555,7 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 			request["ProductType"] = "kms_ppi_public_intl"
 		}
 	}
-	if update && enableModifyInstance1 {
+	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
