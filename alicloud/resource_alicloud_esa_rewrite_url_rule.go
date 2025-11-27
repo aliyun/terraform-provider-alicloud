@@ -36,14 +36,12 @@ func resourceAliCloudEsaRewriteUrlRule() *schema.Resource {
 				Optional: true,
 			},
 			"rewrite_query_string_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"static"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"rewrite_uri_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"static"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"rule": {
 				Type:     schema.TypeString,
@@ -64,7 +62,7 @@ func resourceAliCloudEsaRewriteUrlRule() *schema.Resource {
 				Computed: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -171,7 +169,7 @@ func resourceAliCloudEsaRewriteUrlRuleRead(d *schema.ResourceData, meta interfac
 	d.Set("config_id", objectRaw["ConfigId"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprintf(parts[0]))
 
 	return nil
 }
@@ -193,42 +191,59 @@ func resourceAliCloudEsaRewriteUrlRuleUpdate(d *schema.ResourceData, meta interf
 
 	if d.HasChange("sequence") {
 		update = true
-		request["Sequence"] = d.Get("sequence")
+
+		if v, ok := d.GetOkExists("sequence"); ok {
+			request["Sequence"] = v
+		}
 	}
 
 	if d.HasChange("rewrite_query_string_type") {
 		update = true
-		request["RewriteQueryStringType"] = d.Get("rewrite_query_string_type")
+	}
+	if v, ok := d.GetOk("rewrite_query_string_type"); ok {
+		request["RewriteQueryStringType"] = v
 	}
 
 	if d.HasChange("uri") {
 		update = true
-		request["Uri"] = d.Get("uri")
+	}
+	if v, ok := d.GetOk("uri"); ok {
+		request["Uri"] = v
 	}
 
 	if d.HasChange("rule_enable") {
 		update = true
-		request["RuleEnable"] = d.Get("rule_enable")
+	}
+	if v, ok := d.GetOk("rule_enable"); ok {
+		request["RuleEnable"] = v
 	}
 
 	if d.HasChange("query_string") {
 		update = true
-		request["QueryString"] = d.Get("query_string")
+	}
+	if v, ok := d.GetOk("query_string"); ok {
+		request["QueryString"] = v
 	}
 
 	if d.HasChange("rule_name") {
 		update = true
-		request["RuleName"] = d.Get("rule_name")
+	}
+	if v, ok := d.GetOk("rule_name"); ok {
+		request["RuleName"] = v
 	}
 
 	if d.HasChange("rule") {
 		update = true
-		request["Rule"] = d.Get("rule")
+	}
+	if v, ok := d.GetOk("rule"); ok {
+		request["Rule"] = v
 	}
 
 	if d.HasChange("rewrite_uri_type") {
 		update = true
-		request["RewriteUriType"] = d.Get("rewrite_uri_type")
+	}
+	if v, ok := d.GetOk("rewrite_uri_type"); ok {
+		request["RewriteUriType"] = v
 	}
 
 	if update {
