@@ -23,12 +23,12 @@ func resourceAliCloudEsaSite() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(15 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"access_type": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"add_client_geolocation_header": {
@@ -91,6 +91,10 @@ func resourceAliCloudEsaSite() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"paused": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -141,7 +145,6 @@ func resourceAliCloudEsaSiteCreate(d *schema.ResourceData, meta interface{}) err
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["RegionId"] = client.RegionId
 
 	request["Coverage"] = d.Get("coverage")
 	if v, ok := d.GetOk("resource_group_id"); ok {
@@ -304,22 +307,19 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	update := false
 	d.Partial(true)
 
+	esaServiceV2 := EsaServiceV2{client}
+	objectRaw, _ := esaServiceV2.DescribeEsaSite(d.Id())
+
 	if d.HasChange("version_management") {
 		var err error
-		esaServiceV2 := EsaServiceV2{client}
-		object, err := esaServiceV2.DescribeEsaSite(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-
 		target := d.Get("version_management").(bool)
-		if object["VersionManagement"].(bool) != target {
+		if objectRaw["VersionManagement"].(bool) != target {
 			if target == true {
 				action := "ActivateVersionManagement"
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["SiteId"] = d.Id()
-				request["RegionId"] = client.RegionId
+
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
@@ -343,7 +343,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["SiteId"] = d.Id()
-				request["RegionId"] = client.RegionId
+
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
@@ -370,7 +370,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if !d.IsNewResource() && d.HasChange("coverage") {
 		update = true
 	}
@@ -436,7 +436,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("cache_architecture_mode") {
 		update = true
 	}
@@ -464,7 +464,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("add_real_client_ip_header") {
 		update = true
 		request["AddRealClientIpHeader"] = d.Get("add_real_client_ip_header")
@@ -503,7 +503,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("cross_border_optimization") {
 		update = true
 	}
@@ -531,7 +531,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("site_name_exclusive") {
 		update = true
 	}
@@ -559,7 +559,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("flatten_mode") {
 		update = true
 	}
@@ -587,7 +587,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("seo_bypass") {
 		update = true
 	}
@@ -615,7 +615,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("case_insensitive") {
 		update = true
 		request["CaseInsensitive"] = d.Get("case_insensitive")
@@ -654,7 +654,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("development_mode") {
 		update = true
 	}
@@ -682,7 +682,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("paused") {
 		update = true
 	}
@@ -710,7 +710,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["SiteId"] = d.Id()
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("cache_reserve_instance_id") {
 		update = true
 		request["CacheReserveInstanceId"] = d.Get("cache_reserve_instance_id")
@@ -764,7 +764,6 @@ func resourceAliCloudEsaSiteDelete(d *schema.ResourceData, meta interface{}) err
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy"}) || NeedRetry(err) {
 				wait()
