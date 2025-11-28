@@ -13,6 +13,7 @@ import (
 func TestAccAliCloudEssServerGroupAttachment_basic_alb(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
@@ -64,6 +65,8 @@ func TestAccAliCloudEssServerGroupAttachment_basic_alb(t *testing.T) {
 func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_alb(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
@@ -115,6 +118,8 @@ func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_alb(t *testing.T) {
 func TestAccAliCloudEssServerGroupAttachment_basic_nlb(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
@@ -166,6 +171,8 @@ func TestAccAliCloudEssServerGroupAttachment_basic_nlb(t *testing.T) {
 func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_nlb(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
@@ -217,6 +224,8 @@ func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_nlb(t *testing.T) {
 func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_mutil(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default.1"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
@@ -296,12 +305,12 @@ func testAccEssScalingGroupServerGroupNotForceAttach(name string) string {
 	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
 	}
 	data "alicloud_images" "default2" {
-		name_regex  = "^aliyun"
+		name_regex  = "^win"
   		most_recent = true
   		owners      = "system"
 	}
 	data "alicloud_instance_types" "c6" {
-      instance_type_family = "ecs.c6"
+      instance_type_family = "ecs.n4"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 	data "alicloud_resource_manager_resource_groups" "default" {}
@@ -374,12 +383,12 @@ func testAccEssScalingGroupServerGroupNotForceAttachMutil(name string) string {
 	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
 	}
 	data "alicloud_images" "default2" {
-		name_regex  = "^aliyun"
+		name_regex  = "^win"
   		most_recent = true
   		owners      = "system"
 	}
 	data "alicloud_instance_types" "c6" {
-      instance_type_family = "ecs.c6"
+      instance_type_family = "ecs.n4"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 	data "alicloud_resource_manager_resource_groups" "default" {}
@@ -454,12 +463,12 @@ func testAccEssScalingGroupServerGroup(name string) string {
 	}
 
 	data "alicloud_images" "default2" {
-		name_regex  = "^aliyun"
+		name_regex  = "^win"
   		most_recent = true
   		owners      = "system"
 	}
 	data "alicloud_instance_types" "c6" {
-      instance_type_family = "ecs.c6"
+      instance_type_family = "ecs.n4"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 	data "alicloud_resource_manager_resource_groups" "default" {}
