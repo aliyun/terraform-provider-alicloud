@@ -20,12 +20,6 @@ For information about ESA Url Observation and how to use it, see [What is Url Ob
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_url_observation&exampleId=2684f741-8d30-ce29-9784-432d82e6f746e7bad433&activeTab=example&spm=docs.r.esa_url_observation.0.2684f7418d&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -55,7 +49,7 @@ The following arguments are supported:
 * `sdk_type` - (Required) SDK integration mode. Value:
   - `automatic`: automatic integration.
   - `manual`: manual integration.
-* `site_id` - (Required, ForceNew, Int) The site ID.
+* `site_id` - (Required, ForceNew) The site ID.
 * `url` - (Required, ForceNew) The URL of the page to monitor.
 
 ## Attributes Reference

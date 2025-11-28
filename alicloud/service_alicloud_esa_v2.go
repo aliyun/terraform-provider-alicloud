@@ -3703,6 +3703,7 @@ func (s *EsaServiceV2) DescribeEsaUrlObservation(id string) (object map[string]i
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -3742,15 +3743,18 @@ func (s *EsaServiceV2) DescribeEsaUrlObservation(id string) (object map[string]i
 }
 
 func (s *EsaServiceV2) EsaUrlObservationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaUrlObservationStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaUrlObservation)
+}
+
+func (s *EsaServiceV2) EsaUrlObservationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaUrlObservation(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
