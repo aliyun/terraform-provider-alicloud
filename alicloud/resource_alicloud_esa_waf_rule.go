@@ -589,7 +589,7 @@ func resourceAliCloudEsaWafRule() *schema.Resource {
 				},
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -619,7 +619,7 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 			request["SiteId"] = v
 		}
 
-		dataList := make(map[string]interface{})
+		configsDataList := make(map[string]interface{})
 
 		if v := d.Get("config"); !IsNil(v) {
 			if v, ok := d.GetOk("config"); ok {
@@ -650,7 +650,7 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 					dataLoopMap["ManagedRules"] = localMaps1
 					localMaps = append(localMaps, dataLoopMap)
 				}
-				dataList["ManagedRulesets"] = localMaps
+				configsDataList["ManagedRulesets"] = localMaps
 			}
 
 		}
@@ -658,14 +658,14 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("config"); ok {
 			sigchl1, _ := jsonpath.Get("$[0].sigchl", v)
 			if sigchl1 != nil && sigchl1 != "" {
-				dataList["Sigchl"] = convertToInterfaceArray(sigchl1)
+				configsDataList["Sigchl"] = convertToInterfaceArray(sigchl1)
 			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			type1, _ := jsonpath.Get("$[0].type", v)
 			if type1 != nil && type1 != "" {
-				dataList["Type"] = type1
+				configsDataList["Type"] = type1
 			}
 		}
 
@@ -694,7 +694,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				responseStatus["Code"] = code1
 			}
 
-			threshold["ResponseStatus"] = responseStatus
+			if len(responseStatus) > 0 {
+				threshold["ResponseStatus"] = responseStatus
+			}
 			request1, _ := jsonpath.Get("$[0].rate_limit[0].threshold[0].request", d.Get("config"))
 			if request1 != nil && request1 != "" {
 				threshold["Request"] = request1
@@ -704,7 +706,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				threshold["DistinctManagedRules"] = distinctManagedRules1
 			}
 
-			rateLimit["Threshold"] = threshold
+			if len(threshold) > 0 {
+				rateLimit["Threshold"] = threshold
+			}
 			characteristics := make(map[string]interface{})
 			if v, ok := d.GetOk("config"); ok {
 				localData2, err := jsonpath.Get("$[0].rate_limit[0].characteristics[0].criteria", v)
@@ -749,7 +753,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				characteristics["Logic"] = logic5
 			}
 
-			rateLimit["Characteristics"] = characteristics
+			if len(characteristics) > 0 {
+				rateLimit["Characteristics"] = characteristics
+			}
 			interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
 			if interval1 != nil && interval1 != "" {
 				rateLimit["Interval"] = interval1
@@ -763,7 +769,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				rateLimit["TTL"] = ttl
 			}
 
-			dataList["RateLimit"] = rateLimit
+			if len(rateLimit) > 0 {
+				configsDataList["RateLimit"] = rateLimit
+			}
 		}
 
 		if v := d.Get("config"); !IsNil(v) {
@@ -824,34 +832,36 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				timer["Scopes"] = scopes1
 			}
 
-			dataList["Timer"] = timer
+			if len(timer) > 0 {
+				configsDataList["Timer"] = timer
+			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			status3, _ := jsonpath.Get("$[0].status", v)
 			if status3 != nil && status3 != "" {
-				dataList["Status"] = status3
+				configsDataList["Status"] = status3
 			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			id3, _ := jsonpath.Get("$[0].id", v)
 			if id3 != nil && id3 != "" {
-				dataList["Id"] = id3
+				configsDataList["Id"] = id3
 			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			notes1, _ := jsonpath.Get("$[0].notes", v)
 			if notes1 != nil && notes1 != "" {
-				dataList["Notes"] = notes1
+				configsDataList["Notes"] = notes1
 			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			action5, _ := jsonpath.Get("$[0].action", v)
 			if action5 != nil && action5 != "" {
-				dataList["Action"] = action5
+				configsDataList["Action"] = action5
 			}
 		}
 
@@ -867,7 +877,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				customSign["Key"] = key1
 			}
 
-			appSdk["CustomSign"] = customSign
+			if len(customSign) > 0 {
+				appSdk["CustomSign"] = customSign
+			}
 			customSignStatus1, _ := jsonpath.Get("$[0].app_sdk[0].custom_sign_status", d.Get("config"))
 			if customSignStatus1 != nil && customSignStatus1 != "" {
 				appSdk["CustomSignStatus"] = customSignStatus1
@@ -877,7 +889,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				appSdk["FeatureAbnormal"] = convertToInterfaceArray(featureAbnormal1)
 			}
 
-			dataList["AppSdk"] = appSdk
+			if len(appSdk) > 0 {
+				configsDataList["AppSdk"] = appSdk
+			}
 		}
 
 		if v := d.Get("config"); !IsNil(v) {
@@ -887,34 +901,36 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				securityLevel["Value"] = value3
 			}
 
-			dataList["SecurityLevel"] = securityLevel
+			if len(securityLevel) > 0 {
+				configsDataList["SecurityLevel"] = securityLevel
+			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			value5, _ := jsonpath.Get("$[0].value", v)
 			if value5 != nil && value5 != "" {
-				dataList["Value"] = value5
+				configsDataList["Value"] = value5
 			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			expression1, _ := jsonpath.Get("$[0].expression", v)
 			if expression1 != nil && expression1 != "" {
-				dataList["Expression"] = expression1
+				configsDataList["Expression"] = expression1
 			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			managedGroupId1, _ := jsonpath.Get("$[0].managed_group_id", v)
 			if managedGroupId1 != nil && managedGroupId1 != "" {
-				dataList["ManagedGroupId"] = managedGroupId1
+				configsDataList["ManagedGroupId"] = managedGroupId1
 			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			managedList1, _ := jsonpath.Get("$[0].managed_list", v)
 			if managedList1 != nil && managedList1 != "" {
-				dataList["ManagedList"] = managedList1
+				configsDataList["ManagedList"] = managedList1
 			}
 		}
 
@@ -939,13 +955,15 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				appPackage["PackageSigns"] = localMaps8
 			}
 
-			dataList["AppPackage"] = appPackage
+			if len(appPackage) > 0 {
+				configsDataList["AppPackage"] = appPackage
+			}
 		}
 
 		if v, ok := d.GetOk("config"); ok {
 			name3, _ := jsonpath.Get("$[0].name", v)
 			if name3 != nil && name3 != "" {
-				dataList["Name"] = name3
+				configsDataList["Name"] = name3
 			}
 		}
 
@@ -973,55 +991,61 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				bypass["Tags"] = convertToInterfaceArray(tags1)
 			}
 
-			actions["Bypass"] = bypass
+			if len(bypass) > 0 {
+				actions["Bypass"] = bypass
+			}
 			response := make(map[string]interface{})
 			code3, _ := jsonpath.Get("$[0].actions[0].response[0].code", d.Get("config"))
 			if code3 != nil && code3 != "" {
 				response["Code"] = code3
 			}
-			id5, _ := jsonpath.Get("$[0].actions[0].response[0].id", d.Get("config"))
-			if id5 != nil && id5 != "" {
-				response["Id"] = id5
+			id3, _ := jsonpath.Get("$[0].actions[0].response[0].id", d.Get("config"))
+			if id3 != nil && id3 != "" {
+				response["Id"] = id3
 			}
 
-			actions["Response"] = response
+			if len(response) > 0 {
+				actions["Response"] = response
+			}
 
-			dataList["Actions"] = actions
+			if len(actions) > 0 {
+				configsDataList["Actions"] = actions
+			}
 		}
 
 		ConfigsMap := make([]interface{}, 0)
-		ConfigsMap = append(ConfigsMap, dataList)
-		dataListJson, err := json.Marshal(ConfigsMap)
+		ConfigsMap = append(ConfigsMap, configsDataList)
+		configsDataListJson, err := json.Marshal(ConfigsMap)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["Configs"] = string(dataListJson)
+		request["Configs"] = string(configsDataListJson)
 
 		if v, ok := d.GetOkExists("site_version"); ok {
 			request["SiteVersion"] = v
 		}
-		dataList1 := make(map[string]interface{})
+		shared := make(map[string]interface{})
 
 		if v := d.Get("shared"); !IsNil(v) {
 			name5, _ := jsonpath.Get("$[0].name", v)
 			if name5 != nil && name5 != "" {
-				dataList1["Name"] = name5
+				shared["Name"] = name5
 			}
 			action7, _ := jsonpath.Get("$[0].action", v)
 			if action7 != nil && action7 != "" {
-				dataList1["Action"] = action7
+				shared["Action"] = action7
 			}
 			crossSiteId1, _ := jsonpath.Get("$[0].cross_site_id", v)
 			if crossSiteId1 != nil && crossSiteId1 != "" {
-				dataList1["CrossSiteId"] = crossSiteId1
+				shared["CrossSiteId"] = crossSiteId1
 			}
 			expression3, _ := jsonpath.Get("$[0].expression", v)
 			if expression3 != nil && expression3 != "" {
-				dataList1["Expression"] = expression3
+				shared["Expression"] = expression3
 			}
 			target1, _ := jsonpath.Get("$[0].target", v)
 			if target1 != nil && target1 != "" {
-				dataList1["Target"] = target1
+				shared["Target"] = target1
 			}
 			match := make(map[string]interface{})
 			if v, ok := d.GetOk("shared"); ok {
@@ -1071,10 +1095,12 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				match["Logic"] = logic11
 			}
 
-			dataList1["Match"] = match
+			if len(match) > 0 {
+				shared["Match"] = match
+			}
 			mode1, _ := jsonpath.Get("$[0].mode", v)
 			if mode1 != nil && mode1 != "" {
-				dataList1["Mode"] = mode1
+				shared["Mode"] = mode1
 			}
 			actions1 := make(map[string]interface{})
 			response1 := make(map[string]interface{})
@@ -1082,20 +1108,24 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 			if code5 != nil && code5 != "" {
 				response1["Code"] = code5
 			}
-			id7, _ := jsonpath.Get("$[0].actions[0].response[0].id", d.Get("shared"))
-			if id7 != nil && id7 != "" {
-				response1["Id"] = id7
+			id5, _ := jsonpath.Get("$[0].actions[0].response[0].id", d.Get("shared"))
+			if id5 != nil && id5 != "" {
+				response1["Id"] = id5
 			}
 
-			actions1["Response"] = response1
+			if len(response1) > 0 {
+				actions1["Response"] = response1
+			}
 
-			dataList1["Actions"] = actions1
+			if len(actions1) > 0 {
+				shared["Actions"] = actions1
+			}
 
-			dataList1Json, err := json.Marshal(dataList1)
+			sharedJson, err := json.Marshal(shared)
 			if err != nil {
 				return WrapError(err)
 			}
-			request["Shared"] = string(dataList1Json)
+			request["Shared"] = string(sharedJson)
 		}
 
 		if v, ok := d.GetOkExists("ruleset_id"); ok {
@@ -1143,7 +1173,7 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 			request["SiteId"] = v
 		}
 
-		dataList := make(map[string]interface{})
+		config := make(map[string]interface{})
 
 		if v := d.Get("config"); !IsNil(v) {
 			if v, ok := d.GetOk("config"); ok {
@@ -1174,16 +1204,16 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 					dataLoopMap["ManagedRules"] = localMaps1
 					localMaps = append(localMaps, dataLoopMap)
 				}
-				dataList["ManagedRulesets"] = localMaps
+				config["ManagedRulesets"] = localMaps
 			}
 
 			sigchl1, _ := jsonpath.Get("$[0].sigchl", v)
 			if sigchl1 != nil && sigchl1 != "" {
-				dataList["Sigchl"] = convertToInterfaceArray(sigchl1)
+				config["Sigchl"] = convertToInterfaceArray(sigchl1)
 			}
 			type1, _ := jsonpath.Get("$[0].type", v)
 			if type1 != nil && type1 != "" {
-				dataList["Type"] = type1
+				config["Type"] = type1
 			}
 			rateLimit := make(map[string]interface{})
 			threshold := make(map[string]interface{})
@@ -1209,7 +1239,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				responseStatus["Code"] = code1
 			}
 
-			threshold["ResponseStatus"] = responseStatus
+			if len(responseStatus) > 0 {
+				threshold["ResponseStatus"] = responseStatus
+			}
 			request1, _ := jsonpath.Get("$[0].rate_limit[0].threshold[0].request", d.Get("config"))
 			if request1 != nil && request1 != "" {
 				threshold["Request"] = request1
@@ -1219,7 +1251,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				threshold["DistinctManagedRules"] = distinctManagedRules1
 			}
 
-			rateLimit["Threshold"] = threshold
+			if len(threshold) > 0 {
+				rateLimit["Threshold"] = threshold
+			}
 			characteristics := make(map[string]interface{})
 			if v, ok := d.GetOk("config"); ok {
 				localData2, err := jsonpath.Get("$[0].rate_limit[0].characteristics[0].criteria", v)
@@ -1264,7 +1298,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				characteristics["Logic"] = logic5
 			}
 
-			rateLimit["Characteristics"] = characteristics
+			if len(characteristics) > 0 {
+				rateLimit["Characteristics"] = characteristics
+			}
 			interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
 			if interval1 != nil && interval1 != "" {
 				rateLimit["Interval"] = interval1
@@ -1278,7 +1314,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				rateLimit["TTL"] = ttl
 			}
 
-			dataList["RateLimit"] = rateLimit
+			if len(rateLimit) > 0 {
+				config["RateLimit"] = rateLimit
+			}
 			timer := make(map[string]interface{})
 			if v, ok := d.GetOk("config"); ok {
 				localData5, err := jsonpath.Get("$[0].timer[0].periods", v)
@@ -1336,22 +1374,24 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				timer["Scopes"] = scopes1
 			}
 
-			dataList["Timer"] = timer
+			if len(timer) > 0 {
+				config["Timer"] = timer
+			}
 			status3, _ := jsonpath.Get("$[0].status", v)
 			if status3 != nil && status3 != "" {
-				dataList["Status"] = status3
+				config["Status"] = status3
 			}
 			id3, _ := jsonpath.Get("$[0].id", v)
 			if id3 != nil && id3 != "" {
-				dataList["Id"] = id3
+				config["Id"] = id3
 			}
 			notes1, _ := jsonpath.Get("$[0].notes", v)
 			if notes1 != nil && notes1 != "" {
-				dataList["Notes"] = notes1
+				config["Notes"] = notes1
 			}
 			action5, _ := jsonpath.Get("$[0].action", v)
 			if action5 != nil && action5 != "" {
-				dataList["Action"] = action5
+				config["Action"] = action5
 			}
 			appSdk := make(map[string]interface{})
 			customSign := make(map[string]interface{})
@@ -1364,7 +1404,9 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				customSign["Key"] = key1
 			}
 
-			appSdk["CustomSign"] = customSign
+			if len(customSign) > 0 {
+				appSdk["CustomSign"] = customSign
+			}
 			customSignStatus1, _ := jsonpath.Get("$[0].app_sdk[0].custom_sign_status", d.Get("config"))
 			if customSignStatus1 != nil && customSignStatus1 != "" {
 				appSdk["CustomSignStatus"] = customSignStatus1
@@ -1374,29 +1416,33 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				appSdk["FeatureAbnormal"] = convertToInterfaceArray(featureAbnormal1)
 			}
 
-			dataList["AppSdk"] = appSdk
+			if len(appSdk) > 0 {
+				config["AppSdk"] = appSdk
+			}
 			securityLevel := make(map[string]interface{})
 			value3, _ := jsonpath.Get("$[0].security_level[0].value", d.Get("config"))
 			if value3 != nil && value3 != "" {
 				securityLevel["Value"] = value3
 			}
 
-			dataList["SecurityLevel"] = securityLevel
+			if len(securityLevel) > 0 {
+				config["SecurityLevel"] = securityLevel
+			}
 			value5, _ := jsonpath.Get("$[0].value", v)
 			if value5 != nil && value5 != "" {
-				dataList["Value"] = value5
+				config["Value"] = value5
 			}
 			expression1, _ := jsonpath.Get("$[0].expression", v)
 			if expression1 != nil && expression1 != "" {
-				dataList["Expression"] = expression1
+				config["Expression"] = expression1
 			}
 			managedGroupId1, _ := jsonpath.Get("$[0].managed_group_id", v)
 			if managedGroupId1 != nil && managedGroupId1 != "" {
-				dataList["ManagedGroupId"] = managedGroupId1
+				config["ManagedGroupId"] = managedGroupId1
 			}
 			managedList1, _ := jsonpath.Get("$[0].managed_list", v)
 			if managedList1 != nil && managedList1 != "" {
-				dataList["ManagedList"] = managedList1
+				config["ManagedList"] = managedList1
 			}
 			appPackage := make(map[string]interface{})
 			if v, ok := d.GetOk("config"); ok {
@@ -1418,10 +1464,12 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				appPackage["PackageSigns"] = localMaps8
 			}
 
-			dataList["AppPackage"] = appPackage
+			if len(appPackage) > 0 {
+				config["AppPackage"] = appPackage
+			}
 			name3, _ := jsonpath.Get("$[0].name", v)
 			if name3 != nil && name3 != "" {
-				dataList["Name"] = name3
+				config["Name"] = name3
 			}
 			actions := make(map[string]interface{})
 			bypass := make(map[string]interface{})
@@ -1446,26 +1494,32 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 				bypass["Tags"] = convertToInterfaceArray(tags1)
 			}
 
-			actions["Bypass"] = bypass
+			if len(bypass) > 0 {
+				actions["Bypass"] = bypass
+			}
 			response := make(map[string]interface{})
 			code3, _ := jsonpath.Get("$[0].actions[0].response[0].code", d.Get("config"))
 			if code3 != nil && code3 != "" {
 				response["Code"] = code3
 			}
-			id5, _ := jsonpath.Get("$[0].actions[0].response[0].id", d.Get("config"))
-			if id5 != nil && id5 != "" {
-				response["Id"] = id5
+			id3, _ = jsonpath.Get("$[0].actions[0].response[0].id", d.Get("config"))
+			if id3 != nil && id3 != "" {
+				response["Id"] = id3
 			}
 
-			actions["Response"] = response
+			if len(response) > 0 {
+				actions["Response"] = response
+			}
 
-			dataList["Actions"] = actions
+			if len(actions) > 0 {
+				config["Actions"] = actions
+			}
 
-			dataListJson, err := json.Marshal(dataList)
+			configJson, err := json.Marshal(config)
 			if err != nil {
 				return WrapError(err)
 			}
-			request["Config"] = string(dataListJson)
+			request["Config"] = string(configJson)
 		}
 
 		if v, ok := d.GetOkExists("site_version"); ok {
@@ -1497,7 +1551,7 @@ func resourceAliCloudEsaWafRuleCreate(d *schema.ResourceData, meta interface{}) 
 
 	}
 
-	return resourceAliCloudEsaWafRuleUpdate(d, meta)
+	return resourceAliCloudEsaWafRuleRead(d, meta)
 }
 
 func resourceAliCloudEsaWafRuleRead(d *schema.ResourceData, meta interface{}) error {
@@ -1844,7 +1898,7 @@ func resourceAliCloudEsaWafRuleRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprint(parts[0]))
 
 	return nil
 }
@@ -1861,10 +1915,11 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 	objectRaw, _ := esaServiceV2.DescribeEsaWafRule(d.Id())
 
 	var err error
-	enableBatchUpdateWafRules := false
+	objectRaw, _ = esaServiceV2.DescribeEsaWafRule(d.Id())
+	enableBatchUpdateWafRules1 := false
 	checkValue00 := objectRaw["Phase"]
 	if InArray(fmt.Sprint(checkValue00), []string{"http_anti_scan", "http_bot"}) {
-		enableBatchUpdateWafRules = true
+		enableBatchUpdateWafRules1 = true
 	}
 	parts := strings.Split(d.Id(), ":")
 	action := "BatchUpdateWafRules"
@@ -1872,7 +1927,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 	query = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 
-	dataList := make(map[string]interface{})
+	configsDataList := make(map[string]interface{})
 
 	if d.HasChange("config") {
 		update = true
@@ -1905,7 +1960,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 					dataLoopMap["ManagedRules"] = localMaps1
 					localMaps = append(localMaps, dataLoopMap)
 				}
-				dataList["ManagedRulesets"] = localMaps
+				configsDataList["ManagedRulesets"] = localMaps
 			}
 
 		}
@@ -1915,7 +1970,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		sigchl1, _ := jsonpath.Get("$[0].sigchl", d.Get("config"))
 		if sigchl1 != nil && (d.HasChange("config.0.sigchl") || sigchl1 != "") {
-			dataList["Sigchl"] = convertToInterfaceArray(sigchl1)
+			configsDataList["Sigchl"] = convertToInterfaceArray(sigchl1)
 		}
 	}
 
@@ -1923,7 +1978,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		type1, _ := jsonpath.Get("$[0].type", d.Get("config"))
 		if type1 != nil && (d.HasChange("config.0.type") || type1 != "") {
-			dataList["Type"] = type1
+			configsDataList["Type"] = type1
 		}
 	}
 
@@ -1954,7 +2009,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				responseStatus["Code"] = code1
 			}
 
-			threshold["ResponseStatus"] = responseStatus
+			if len(responseStatus) > 0 {
+				threshold["ResponseStatus"] = responseStatus
+			}
 			request1, _ := jsonpath.Get("$[0].rate_limit[0].threshold[0].request", d.Get("config"))
 			if request1 != nil && (d.HasChange("config.0.rate_limit.0.threshold.0.request") || request1 != "") {
 				threshold["Request"] = request1
@@ -1964,7 +2021,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				threshold["DistinctManagedRules"] = distinctManagedRules1
 			}
 
-			rateLimit["Threshold"] = threshold
+			if len(threshold) > 0 {
+				rateLimit["Threshold"] = threshold
+			}
 			characteristics := make(map[string]interface{})
 			if v, ok := d.GetOk("config"); ok {
 				localData2, err := jsonpath.Get("$[0].rate_limit[0].characteristics[0].criteria", v)
@@ -2009,7 +2068,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				characteristics["Logic"] = logic5
 			}
 
-			rateLimit["Characteristics"] = characteristics
+			if len(characteristics) > 0 {
+				rateLimit["Characteristics"] = characteristics
+			}
 			interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
 			if interval1 != nil && (d.HasChange("config.0.rate_limit.0.interval") || interval1 != "") {
 				rateLimit["Interval"] = interval1
@@ -2023,7 +2084,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				rateLimit["TTL"] = ttl
 			}
 
-			dataList["RateLimit"] = rateLimit
+			if len(rateLimit) > 0 {
+				configsDataList["RateLimit"] = rateLimit
+			}
 		}
 	}
 
@@ -2087,7 +2150,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				timer["Scopes"] = scopes1
 			}
 
-			dataList["Timer"] = timer
+			if len(timer) > 0 {
+				configsDataList["Timer"] = timer
+			}
 		}
 	}
 
@@ -2095,7 +2160,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		status3, _ := jsonpath.Get("$[0].status", d.Get("config"))
 		if status3 != nil && (d.HasChange("config.0.status") || status3 != "") {
-			dataList["Status"] = status3
+			configsDataList["Status"] = status3
 		}
 	}
 
@@ -2103,7 +2168,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		notes1, _ := jsonpath.Get("$[0].notes", d.Get("config"))
 		if notes1 != nil && (d.HasChange("config.0.notes") || notes1 != "") {
-			dataList["Notes"] = notes1
+			configsDataList["Notes"] = notes1
 		}
 	}
 
@@ -2111,7 +2176,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		action5, _ := jsonpath.Get("$[0].action", d.Get("config"))
 		if action5 != nil && (d.HasChange("config.0.action") || action5 != "") {
-			dataList["Action"] = action5
+			configsDataList["Action"] = action5
 		}
 	}
 
@@ -2129,7 +2194,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				customSign["Key"] = key1
 			}
 
-			appSdk["CustomSign"] = customSign
+			if len(customSign) > 0 {
+				appSdk["CustomSign"] = customSign
+			}
 			customSignStatus1, _ := jsonpath.Get("$[0].app_sdk[0].custom_sign_status", d.Get("config"))
 			if customSignStatus1 != nil && (d.HasChange("config.0.app_sdk.0.custom_sign_status") || customSignStatus1 != "") {
 				appSdk["CustomSignStatus"] = customSignStatus1
@@ -2139,7 +2206,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				appSdk["FeatureAbnormal"] = convertToInterfaceArray(featureAbnormal1)
 			}
 
-			dataList["AppSdk"] = appSdk
+			if len(appSdk) > 0 {
+				configsDataList["AppSdk"] = appSdk
+			}
 		}
 	}
 
@@ -2152,7 +2221,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				securityLevel["Value"] = value3
 			}
 
-			dataList["SecurityLevel"] = securityLevel
+			if len(securityLevel) > 0 {
+				configsDataList["SecurityLevel"] = securityLevel
+			}
 		}
 	}
 
@@ -2160,7 +2231,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		value5, _ := jsonpath.Get("$[0].value", d.Get("config"))
 		if value5 != nil && (d.HasChange("config.0.value") || value5 != "") {
-			dataList["Value"] = value5
+			configsDataList["Value"] = value5
 		}
 	}
 
@@ -2168,7 +2239,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		expression1, _ := jsonpath.Get("$[0].expression", d.Get("config"))
 		if expression1 != nil && (d.HasChange("config.0.expression") || expression1 != "") {
-			dataList["Expression"] = expression1
+			configsDataList["Expression"] = expression1
 		}
 	}
 
@@ -2176,7 +2247,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		managedGroupId1, _ := jsonpath.Get("$[0].managed_group_id", d.Get("config"))
 		if managedGroupId1 != nil && (d.HasChange("config.0.managed_group_id") || managedGroupId1 != "") {
-			dataList["ManagedGroupId"] = managedGroupId1
+			configsDataList["ManagedGroupId"] = managedGroupId1
 		}
 	}
 
@@ -2184,7 +2255,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		managedList1, _ := jsonpath.Get("$[0].managed_list", d.Get("config"))
 		if managedList1 != nil && (d.HasChange("config.0.managed_list") || managedList1 != "") {
-			dataList["ManagedList"] = managedList1
+			configsDataList["ManagedList"] = managedList1
 		}
 	}
 
@@ -2211,7 +2282,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				appPackage["PackageSigns"] = localMaps8
 			}
 
-			dataList["AppPackage"] = appPackage
+			if len(appPackage) > 0 {
+				configsDataList["AppPackage"] = appPackage
+			}
 		}
 	}
 
@@ -2219,16 +2292,16 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		name3, _ := jsonpath.Get("$[0].name", d.Get("config"))
 		if name3 != nil && (d.HasChange("config.0.name") || name3 != "") {
-			dataList["Name"] = name3
+			configsDataList["Name"] = name3
 		}
 	}
 
-	dataList["Id"] = parts[1]
+	configsDataList["Id"] = parts[1]
 	if d.HasChange("waf_rule_id") {
 		update = true
-	}
-	if v, ok := d.GetOk("waf_rule_id"); ok {
-		dataList["Id"] = v
+		if v, ok := d.GetOkExists("waf_rule_id"); ok {
+			configsDataList["Id"] = v
+		}
 	}
 
 	if d.HasChange("config") {
@@ -2257,7 +2330,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				bypass["Tags"] = convertToInterfaceArray(tags1)
 			}
 
-			actions["Bypass"] = bypass
+			if len(bypass) > 0 {
+				actions["Bypass"] = bypass
+			}
 			response := make(map[string]interface{})
 			code3, _ := jsonpath.Get("$[0].actions[0].response[0].code", d.Get("config"))
 			if code3 != nil && (d.HasChange("config.0.actions.0.response.0.code") || code3 != "") {
@@ -2268,45 +2343,49 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				response["Id"] = id4
 			}
 
-			actions["Response"] = response
+			if len(response) > 0 {
+				actions["Response"] = response
+			}
 
-			dataList["Actions"] = actions
+			if len(actions) > 0 {
+				configsDataList["Actions"] = actions
+			}
 		}
 	}
 
 	ConfigsMap := make([]interface{}, 0)
-	ConfigsMap = append(ConfigsMap, dataList)
-	dataListJson, err := json.Marshal(ConfigsMap)
+	ConfigsMap = append(ConfigsMap, configsDataList)
+	configsDataListJson, err := json.Marshal(ConfigsMap)
 	if err != nil {
 		return WrapError(err)
 	}
-	request["Configs"] = string(dataListJson)
+	request["Configs"] = string(configsDataListJson)
 
-	if v, ok := d.GetOk("site_version"); ok {
+	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
 	}
-	dataList1 := make(map[string]interface{})
+	shared := make(map[string]interface{})
 
 	if v := d.Get("shared"); v != nil {
 		name5, _ := jsonpath.Get("$[0].name", v)
 		if name5 != nil && (d.HasChange("shared.0.name") || name5 != "") {
-			dataList1["Name"] = name5
+			shared["Name"] = name5
 		}
 		action7, _ := jsonpath.Get("$[0].action", v)
 		if action7 != nil && (d.HasChange("shared.0.action") || action7 != "") {
-			dataList1["Action"] = action7
+			shared["Action"] = action7
 		}
 		crossSiteId1, _ := jsonpath.Get("$[0].cross_site_id", v)
 		if crossSiteId1 != nil && (d.HasChange("shared.0.cross_site_id") || crossSiteId1 != "") {
-			dataList1["CrossSiteId"] = crossSiteId1
+			shared["CrossSiteId"] = crossSiteId1
 		}
 		expression3, _ := jsonpath.Get("$[0].expression", v)
 		if expression3 != nil && (d.HasChange("shared.0.expression") || expression3 != "") {
-			dataList1["Expression"] = expression3
+			shared["Expression"] = expression3
 		}
 		target1, _ := jsonpath.Get("$[0].target", v)
 		if target1 != nil && (d.HasChange("shared.0.target") || target1 != "") {
-			dataList1["Target"] = target1
+			shared["Target"] = target1
 		}
 		match := make(map[string]interface{})
 		if v, ok := d.GetOk("shared"); ok {
@@ -2356,10 +2435,12 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 			match["Logic"] = logic11
 		}
 
-		dataList1["Match"] = match
+		if len(match) > 0 {
+			shared["Match"] = match
+		}
 		mode1, _ := jsonpath.Get("$[0].mode", v)
 		if mode1 != nil && (d.HasChange("shared.0.mode") || mode1 != "") {
-			dataList1["Mode"] = mode1
+			shared["Mode"] = mode1
 		}
 		actions1 := make(map[string]interface{})
 		response1 := make(map[string]interface{})
@@ -2372,23 +2453,28 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 			response1["Id"] = id6
 		}
 
-		actions1["Response"] = response1
+		if len(response1) > 0 {
+			actions1["Response"] = response1
+		}
 
-		dataList1["Actions"] = actions1
+		if len(actions1) > 0 {
+			shared["Actions"] = actions1
+		}
 
-		dataList1Json, err := json.Marshal(dataList1)
+		sharedJson, err := json.Marshal(shared)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["Shared"] = string(dataList1Json)
+		request["Shared"] = string(sharedJson)
 	}
 
-	if !d.IsNewResource() && d.HasChange("ruleset_id") {
+	if d.HasChange("ruleset_id") {
 		update = true
+		request["RulesetId"] = d.Get("ruleset_id")
 	}
-	request["RulesetId"] = d.Get("ruleset_id")
 
-	if !d.IsNewResource() && d.HasChange("phase") {
+	request["RulesetId"] = d.Get("ruleset_id")
+	if d.HasChange("phase") {
 		update = true
 	}
 	request["Phase"] = d.Get("phase")
@@ -2396,7 +2482,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 	jsonString, _ = sjson.Set(jsonString, "Configs.0.Id", parts[1])
 	_ = json.Unmarshal([]byte(jsonString), &request)
 
-	if update && enableBatchUpdateWafRules {
+	if update && enableBatchUpdateWafRules1 {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
@@ -2415,10 +2501,11 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	update = false
-	enableUpdateWafRule := false
+	objectRaw, _ = esaServiceV2.DescribeEsaWafRule(d.Id())
+	enableUpdateWafRule1 := false
 	checkValue00 = objectRaw["Phase"]
 	if !(InArray(fmt.Sprint(checkValue00), []string{"http_anti_scan", "http_bot"})) {
-		enableUpdateWafRule = true
+		enableUpdateWafRule1 = true
 	}
 	parts = strings.Split(d.Id(), ":")
 	action = "UpdateWafRule"
@@ -2427,9 +2514,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 	request["SiteId"] = parts[0]
 	request["Id"] = parts[1]
 
-	if !d.IsNewResource() && d.HasChange("config") {
+	if d.HasChange("config") {
 		update = true
-		dataList := make(map[string]interface{})
+		config := make(map[string]interface{})
 
 		if v := d.Get("config"); v != nil {
 			if v, ok := d.GetOk("config"); ok {
@@ -2460,16 +2547,16 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 					dataLoopMap["ManagedRules"] = localMaps1
 					localMaps = append(localMaps, dataLoopMap)
 				}
-				dataList["ManagedRulesets"] = localMaps
+				config["ManagedRulesets"] = localMaps
 			}
 
 			sigchl1, _ := jsonpath.Get("$[0].sigchl", v)
 			if sigchl1 != nil && (d.HasChange("config.0.sigchl") || sigchl1 != "") {
-				dataList["Sigchl"] = convertToInterfaceArray(sigchl1)
+				config["Sigchl"] = convertToInterfaceArray(sigchl1)
 			}
 			type1, _ := jsonpath.Get("$[0].type", v)
 			if type1 != nil && (d.HasChange("config.0.type") || type1 != "") {
-				dataList["Type"] = type1
+				config["Type"] = type1
 			}
 			rateLimit := make(map[string]interface{})
 			threshold := make(map[string]interface{})
@@ -2495,7 +2582,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				responseStatus["Code"] = code1
 			}
 
-			threshold["ResponseStatus"] = responseStatus
+			if len(responseStatus) > 0 {
+				threshold["ResponseStatus"] = responseStatus
+			}
 			request1, _ := jsonpath.Get("$[0].rate_limit[0].threshold[0].request", d.Get("config"))
 			if request1 != nil && (d.HasChange("config.0.rate_limit.0.threshold.0.request") || request1 != "") {
 				threshold["Request"] = request1
@@ -2505,7 +2594,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				threshold["DistinctManagedRules"] = distinctManagedRules1
 			}
 
-			rateLimit["Threshold"] = threshold
+			if len(threshold) > 0 {
+				rateLimit["Threshold"] = threshold
+			}
 			characteristics := make(map[string]interface{})
 			if v, ok := d.GetOk("config"); ok {
 				localData2, err := jsonpath.Get("$[0].rate_limit[0].characteristics[0].criteria", v)
@@ -2550,7 +2641,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				characteristics["Logic"] = logic5
 			}
 
-			rateLimit["Characteristics"] = characteristics
+			if len(characteristics) > 0 {
+				rateLimit["Characteristics"] = characteristics
+			}
 			interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
 			if interval1 != nil && (d.HasChange("config.0.rate_limit.0.interval") || interval1 != "") {
 				rateLimit["Interval"] = interval1
@@ -2564,7 +2657,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				rateLimit["TTL"] = ttl
 			}
 
-			dataList["RateLimit"] = rateLimit
+			if len(rateLimit) > 0 {
+				config["RateLimit"] = rateLimit
+			}
 			timer := make(map[string]interface{})
 			if v, ok := d.GetOk("config"); ok {
 				localData5, err := jsonpath.Get("$[0].timer[0].periods", v)
@@ -2622,14 +2717,16 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				timer["Scopes"] = scopes1
 			}
 
-			dataList["Timer"] = timer
+			if len(timer) > 0 {
+				config["Timer"] = timer
+			}
 			notes1, _ := jsonpath.Get("$[0].notes", v)
 			if notes1 != nil && (d.HasChange("config.0.notes") || notes1 != "") {
-				dataList["Notes"] = notes1
+				config["Notes"] = notes1
 			}
 			action5, _ := jsonpath.Get("$[0].action", v)
 			if action5 != nil && (d.HasChange("config.0.action") || action5 != "") {
-				dataList["Action"] = action5
+				config["Action"] = action5
 			}
 			appSdk := make(map[string]interface{})
 			customSign := make(map[string]interface{})
@@ -2642,7 +2739,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				customSign["Key"] = key1
 			}
 
-			appSdk["CustomSign"] = customSign
+			if len(customSign) > 0 {
+				appSdk["CustomSign"] = customSign
+			}
 			customSignStatus1, _ := jsonpath.Get("$[0].app_sdk[0].custom_sign_status", d.Get("config"))
 			if customSignStatus1 != nil && (d.HasChange("config.0.app_sdk.0.custom_sign_status") || customSignStatus1 != "") {
 				appSdk["CustomSignStatus"] = customSignStatus1
@@ -2652,29 +2751,33 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				appSdk["FeatureAbnormal"] = convertToInterfaceArray(featureAbnormal1)
 			}
 
-			dataList["AppSdk"] = appSdk
+			if len(appSdk) > 0 {
+				config["AppSdk"] = appSdk
+			}
 			securityLevel := make(map[string]interface{})
 			value3, _ := jsonpath.Get("$[0].security_level[0].value", d.Get("config"))
 			if value3 != nil && (d.HasChange("config.0.security_level.0.value") || value3 != "") {
 				securityLevel["Value"] = value3
 			}
 
-			dataList["SecurityLevel"] = securityLevel
+			if len(securityLevel) > 0 {
+				config["SecurityLevel"] = securityLevel
+			}
 			value5, _ := jsonpath.Get("$[0].value", v)
 			if value5 != nil && (d.HasChange("config.0.value") || value5 != "") {
-				dataList["Value"] = value5
+				config["Value"] = value5
 			}
 			expression1, _ := jsonpath.Get("$[0].expression", v)
 			if expression1 != nil && (d.HasChange("config.0.expression") || expression1 != "") {
-				dataList["Expression"] = expression1
+				config["Expression"] = expression1
 			}
 			managedGroupId1, _ := jsonpath.Get("$[0].managed_group_id", v)
 			if managedGroupId1 != nil && (d.HasChange("config.0.managed_group_id") || managedGroupId1 != "") {
-				dataList["ManagedGroupId"] = managedGroupId1
+				config["ManagedGroupId"] = managedGroupId1
 			}
 			managedList1, _ := jsonpath.Get("$[0].managed_list", v)
 			if managedList1 != nil && (d.HasChange("config.0.managed_list") || managedList1 != "") {
-				dataList["ManagedList"] = managedList1
+				config["ManagedList"] = managedList1
 			}
 			appPackage := make(map[string]interface{})
 			if v, ok := d.GetOk("config"); ok {
@@ -2696,10 +2799,12 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				appPackage["PackageSigns"] = localMaps8
 			}
 
-			dataList["AppPackage"] = appPackage
+			if len(appPackage) > 0 {
+				config["AppPackage"] = appPackage
+			}
 			name3, _ := jsonpath.Get("$[0].name", v)
 			if name3 != nil && (d.HasChange("config.0.name") || name3 != "") {
-				dataList["Name"] = name3
+				config["Name"] = name3
 			}
 			actions := make(map[string]interface{})
 			bypass := make(map[string]interface{})
@@ -2724,7 +2829,9 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				bypass["Tags"] = convertToInterfaceArray(tags1)
 			}
 
-			actions["Bypass"] = bypass
+			if len(bypass) > 0 {
+				actions["Bypass"] = bypass
+			}
 			response := make(map[string]interface{})
 			code3, _ := jsonpath.Get("$[0].actions[0].response[0].code", d.Get("config"))
 			if code3 != nil && (d.HasChange("config.0.actions.0.response.0.code") || code3 != "") {
@@ -2735,22 +2842,26 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				response["Id"] = id3
 			}
 
-			actions["Response"] = response
+			if len(response) > 0 {
+				actions["Response"] = response
+			}
 
-			dataList["Actions"] = actions
+			if len(actions) > 0 {
+				config["Actions"] = actions
+			}
 
-			dataListJson, err := json.Marshal(dataList)
+			configJson, err := json.Marshal(config)
 			if err != nil {
 				return WrapError(err)
 			}
-			request["Config"] = string(dataListJson)
+			request["Config"] = string(configJson)
 		}
 	}
 
-	if v, ok := d.GetOk("site_version"); ok {
+	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
 	}
-	if !d.IsNewResource() && d.HasChange("config.0.status") {
+	if d.HasChange("config.0.status") {
 		update = true
 		configStatusJsonPath, err := jsonpath.Get("$[0].status", d.Get("config"))
 		if err == nil {
@@ -2758,7 +2869,7 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if update && enableUpdateWafRule {
+	if update && enableUpdateWafRule1 {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
@@ -2793,7 +2904,6 @@ func resourceAliCloudEsaWafRuleDelete(d *schema.ResourceData, meta interface{}) 
 	request = make(map[string]interface{})
 	request["Id"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
@@ -2801,7 +2911,6 @@ func resourceAliCloudEsaWafRuleDelete(d *schema.ResourceData, meta interface{}) 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

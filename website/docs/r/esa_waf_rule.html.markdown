@@ -66,16 +66,22 @@ The following arguments are supported:
 * `config` - (Optional, List) The specific configuration of the WAF rule. See [`config`](#config) below.
 * `phase` - (Required, ForceNew) The phase in which the WAF processes this rule.
 * `ruleset_id` - (Optional, ForceNew, Int) The ID of the WAF ruleset, which can be obtained by calling the [ListWafRulesets](https://www.alibabacloud.com/help/en/doc-detail/2850233.html) operation.
-* `shared` - (Optional, List) Shared configuration attributes used across multiple rules. **Note: The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.** See [`shared`](#shared) below.
-* `site_id` - (Required, ForceNew, Int) The unique identifier of the website, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
+* `shared` - (Optional, List) Shared configuration attributes used across multiple rules. See [`shared`](#shared) below.
+
+-> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
+* `site_id` - (Required, ForceNew) The unique identifier of the website, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
 * `site_version` - (Optional, Int) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
+
+-> **NOTE:** This parameter only applies during resource creation, update or deletion. If modified in isolation without other property changes, Terraform will not trigger any action.
+
 
 ### `config`
 
 The config supports the following:
 * `action` - (Optional) The action to perform when a request matches this rule.
 * `actions` - (Optional, List) Extended action configurations, including custom responses and bypass settings. See [`actions`](#config-actions) below.
-* `app_package` - (Optional, Computed, List) Security mechanism to prevent apps from being repackaged. See [`app_package`](#config-app_package) below.
+* `app_package` - (Optional, List) Security mechanism to prevent apps from being repackaged. See [`app_package`](#config-app_package) below.
 * `app_sdk` - (Optional, List) Mobile app SDK-related configurations. See [`app_sdk`](#config-app_sdk) below.
 * `expression` - (Optional) The match expression used to evaluate incoming requests.
 * `managed_list` - (Optional) The name of the managed list applied to this rule.
@@ -83,11 +89,18 @@ The config supports the following:
 * `name` - (Optional) The display name of the WAF rule.
 * `notes` - (Optional) Additional notes about this rule.
 * `rate_limit` - (Optional, List) Configuration of the rate limiting rule. See [`rate_limit`](#config-rate_limit) below.
-* `security_level` - (Optional, List) The overall security protection level of WAF. See [`security_level`](#config-security_level) below.
+* `security_level` - (Optional, List) The overall security protection level of WAF.
+Valid values:
+  - off
+  - essentially_off
+  - low
+  - medium
+  - high
+  - under_attack See [`security_level`](#config-security_level) below.
 * `sigchl` - (Optional, Set) Configuration items for token verification mechanisms.
-* `status` - (Optional, Computed) The status of the WAF rule: whether it is enabled or disabled.
+* `status` - (Optional) The status of the WAF rule: whether it is enabled or disabled.
 * `timer` - (Optional, List) Configuration for the time schedule when the rule takes effect. See [`timer`](#config-timer) below.
-* `type` - (Optional, ForceNew, Computed) The type category of the WAF rule.
+* `type` - (Optional, ForceNew) The type category of the WAF rule.
 * `value` - (Optional) The IP address allowed or denied in IP access control.
 
 ### `config-actions`
