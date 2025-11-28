@@ -36,7 +36,7 @@ func resourceAliCloudEsaUrlObservation() *schema.Resource {
 				Required: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -107,7 +107,7 @@ func resourceAliCloudEsaUrlObservationRead(d *schema.ResourceData, meta interfac
 	d.Set("config_id", objectRaw["ConfigId"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprint(parts[0]))
 
 	return nil
 }
@@ -169,7 +169,6 @@ func resourceAliCloudEsaUrlObservationDelete(d *schema.ResourceData, meta interf
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
