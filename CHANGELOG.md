@@ -1,4 +1,32 @@
 ## 1.264.0 (Unreleased)
+
+- **New Resource:** `alicloud_milvus_instance` [GH-9153]
+- **New Resource:** `alicloud_eflo_hyper_node` [GH-9214]
+- **New Resource:** `alicloud_polar_db_extension` [GH-9227]
+- **New Resource:** `alicloud_cloud_firewall_private_dns` [GH-9232]
+- **New Data Source:** `alicloud_fcv3_functions` [GH-9223]
+
+ENHANCEMENTS:
+
+- resource/alicloud_config_aggregate_config_rule: Removed the config_rule_trigger_types enums limitation. [GH-9128]
+- resource/alicloud_kms_instance: Refactored the resource and improve the docs. [GH-9148]
+- resource/alicloud_esa_site_delivery_task: Change site_id attribute type to TypeString. [GH-9201]
+- resource/alicloud_esa_waiting_room_event: Change site_id attribute type to TypeString. [GH-9208]
+- resource/alicloud_esa_origin_protection: Change site_id attribute type to TypeString. [GH-9212]
+- resource/alicloud_realtime_compute_vvp_instance: Added the field resource_id. [GH-9218]
+- resource/alicloud_alb_rule: Supported rule_actions.forward_group_config.server_group_tuples.weight set to 0. [GH-9224]
+- resource/alicloud_actiontrail_trail: Added the field data_event_trail_region, event_selectors. [GH-9229]
+- resource/alicloud_kms_instance: support set log and log_storage for PayAsYouGo instance. [GH-9230]
+- resource/alicloud_esa_rewrite_url_rule: Changed the field site_id from TypeInt to TypeString; Removed the rewrite_query_string_type, rewrite_uri_type enums limitation; Improved alicloud_esa_rewrite_url_rule testcase. [GH-9231]
+- resource/alicloud_esa_image_transform: Change site_id attribute type to TypeString. [GH-9234]
+- resource/alicloud_esa_url_observation: Change site_id attribute type to TypeString. [GH-9236]
+- data-source/alicloud_resource_manager_accounts: add new attribute deletion_status. [GH-9225]
+
+BUG FIXES:
+
+- resource/alicloud_nlb_server_group_server_attachment: Fixed the update invalid error caused by weight; Improved alicloud_nlb_server_group_server_attachment testcase. [GH-9205]
+- resource/alicloud_nlb_server_group: Fixed the update invalid error caused by health_check.health_check_enabled; Improved alicloud_nlb_server_group testcase. [GH-9210]
+
 ## 1.263.0 (November 21, 2025)
 
 - **New Resource:** `alicloud_wafv3_defense_resource_group` ([#9157](https://github.com/aliyun/terraform-provider-alicloud/issues/9157))
