@@ -20,6 +20,12 @@ For information about ESA Origin Protection and how to use it, see [What is Orig
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_origin_protection&exampleId=19722de5-6c6f-2c8f-a4f8-d985bd346a7c59875725&activeTab=example&spm=docs.r.esa_origin_protection.0.19722de56c&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "tf-example"
