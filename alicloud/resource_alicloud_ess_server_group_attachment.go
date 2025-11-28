@@ -90,7 +90,7 @@ func resourceAliyunEssServerGroupAttachmentCreate(d *schema.ResourceData, meta i
 			return essClient.AttachServerGroups(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus", "InvalidOperation.Conflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus", "InvalidOperation.Conflict", "ScalingActivityInProgress"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -169,7 +169,7 @@ func resourceAliyunEssServerGroupAttachmentDelete(d *schema.ResourceData, meta i
 			return essClient.DetachServerGroups(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus", "InvalidOperation.Conflict"}) {
+			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus", "InvalidOperation.Conflict", "ScalingActivityInProgress"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

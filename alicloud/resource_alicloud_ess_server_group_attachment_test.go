@@ -13,6 +13,7 @@ import (
 func TestAccAliCloudEssServerGroupAttachment_basic_alb(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
@@ -64,6 +65,8 @@ func TestAccAliCloudEssServerGroupAttachment_basic_alb(t *testing.T) {
 func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_alb(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
@@ -115,6 +118,8 @@ func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_alb(t *testing.T) {
 func TestAccAliCloudEssServerGroupAttachment_basic_nlb(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
@@ -166,6 +171,8 @@ func TestAccAliCloudEssServerGroupAttachment_basic_nlb(t *testing.T) {
 func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_nlb(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
@@ -217,6 +224,8 @@ func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_nlb(t *testing.T) {
 func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_mutil(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default.1"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
