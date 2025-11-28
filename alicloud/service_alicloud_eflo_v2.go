@@ -1333,3 +1333,172 @@ func (s *EfloServiceV2) EfloVpdGrantRuleStateRefreshFuncWithApi(id string, field
 }
 
 // DescribeEfloVpdGrantRule >>> Encapsulated.
+
+// DescribeEfloHyperNode <<< Encapsulated get interface for Eflo HyperNode.
+
+func (s *EfloServiceV2) DescribeEfloHyperNode(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["HyperNodeId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeHyperNode"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidHyperNodeId.NotFound", "RESOURCE_NOT_FOUND"}) {
+			return object, WrapErrorf(NotFoundErr("HyperNode", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *EfloServiceV2) DescribeHyperNodeQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
+	client := s.client
+	id := d.Id()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceIDs"] = id
+
+	var endpoint string
+	request["ProductCode"] = "bccluster"
+	request["ProductType"] = "bccluster_eflocomputing_public_cn"
+	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductCode"] = "bccluster"
+		request["ProductType"] = "bccluster_computinginstance_public_cn"
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = "bccluster"
+		request["ProductType"] = "bccluster_eflocomputing_public_intl"
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "bccluster"
+			request["ProductType"] = "bccluster_computinginstance_public_intl"
+		}
+	}
+	action := "QueryAvailableInstances"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "bccluster"
+				request["ProductType"] = "bccluster_eflocomputing_public_intl"
+				if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+					request["ProductCode"] = "bccluster"
+					request["ProductType"] = "bccluster_computinginstance_public_intl"
+				}
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data.InstanceList[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("HyperNode", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+func (s *EfloServiceV2) DescribeHyperNodeListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId.1"] = id
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "HyperNode"
+	action := "ListTagResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *EfloServiceV2) EfloHyperNodeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EfloHyperNodeStateRefreshFuncWithApi(id, field, failStates, s.DescribeEfloHyperNode)
+}
+
+func (s *EfloServiceV2) EfloHyperNodeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEfloHyperNode >>> Encapsulated.

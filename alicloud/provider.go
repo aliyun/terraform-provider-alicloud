@@ -917,6 +917,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_cloud_firewall_private_dns":                           resourceAliCloudCloudFirewallPrivateDns(),
+			"alicloud_eflo_hyper_node":                                      resourceAliCloudEfloHyperNode(),
 			"alicloud_polar_db_extension":                                   resourceAliCloudPolarDbExtension(),
 			"alicloud_cloud_firewall_ai_traffic_analysis_status":            resourceAliCloudCloudFirewallAiTrafficAnalysisStatus(),
 			"alicloud_eflo_vpd_grant_rule":                                  resourceAliCloudEfloVpdGrantRule(),
