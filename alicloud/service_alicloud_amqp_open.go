@@ -319,7 +319,7 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 			}
 		}
 
-		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+		if nextToken, ok := response["Data"].(map[string]interface{})["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
 			break

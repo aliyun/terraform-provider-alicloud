@@ -2,23 +2,19 @@ package alicloud
 
 import (
 	"fmt"
-
 	"os"
 	"reflect"
-
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
-	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/stretchr/testify/assert"
-
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudAmqpBinding_basic0(t *testing.T) {
@@ -46,16 +42,16 @@ func TestAccAliCloudAmqpBinding_basic0(t *testing.T) {
 					"instance_id":       "${alicloud_amqp_exchange.source.instance_id}",
 					"virtual_host_name": "${alicloud_amqp_exchange.source.virtual_host_name}",
 					"source_exchange":   "${alicloud_amqp_exchange.source.exchange_name}",
-					"destination_name":  name,
+					"destination_name":  "${alicloud_amqp_exchange.destination.exchange_name}",
 					"binding_type":      "EXCHANGE",
-					"binding_key":       "${alicloud_amqp_exchange.key.exchange_name}",
+					"binding_key":       "${alicloud_amqp_exchange.destination.exchange_name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id":       CHECKSET,
 						"virtual_host_name": CHECKSET,
 						"source_exchange":   CHECKSET,
-						"destination_name":  name,
+						"destination_name":  CHECKSET,
 						"binding_type":      "EXCHANGE",
 						"binding_key":       CHECKSET,
 					}),
@@ -95,9 +91,9 @@ func TestAccAliCloudAmqpBinding_basic0_twin(t *testing.T) {
 					"instance_id":       "${alicloud_amqp_exchange.source.instance_id}",
 					"virtual_host_name": "${alicloud_amqp_exchange.source.virtual_host_name}",
 					"source_exchange":   "${alicloud_amqp_exchange.source.exchange_name}",
-					"destination_name":  name,
+					"destination_name":  "${alicloud_amqp_exchange.destination.exchange_name}",
 					"binding_type":      "EXCHANGE",
-					"binding_key":       "${alicloud_amqp_exchange.key.exchange_name}",
+					"binding_key":       "${alicloud_amqp_exchange.destination.exchange_name}",
 					"argument":          "x-match:any",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -105,7 +101,7 @@ func TestAccAliCloudAmqpBinding_basic0_twin(t *testing.T) {
 						"instance_id":       CHECKSET,
 						"virtual_host_name": CHECKSET,
 						"source_exchange":   CHECKSET,
-						"destination_name":  name,
+						"destination_name":  CHECKSET,
 						"binding_type":      "EXCHANGE",
 						"binding_key":       CHECKSET,
 						"argument":          "x-match:any",
@@ -146,7 +142,7 @@ func TestAccAliCloudAmqpBinding_basic1(t *testing.T) {
 					"instance_id":       "${alicloud_amqp_exchange.source.instance_id}",
 					"virtual_host_name": "${alicloud_amqp_exchange.source.virtual_host_name}",
 					"source_exchange":   "${alicloud_amqp_exchange.source.exchange_name}",
-					"destination_name":  name,
+					"destination_name":  "${alicloud_amqp_queue.default.queue_name}",
 					"binding_type":      "QUEUE",
 					"binding_key":       "${alicloud_amqp_queue.default.queue_name}",
 				}),
@@ -155,7 +151,7 @@ func TestAccAliCloudAmqpBinding_basic1(t *testing.T) {
 						"instance_id":       CHECKSET,
 						"virtual_host_name": CHECKSET,
 						"source_exchange":   CHECKSET,
-						"destination_name":  name,
+						"destination_name":  CHECKSET,
 						"binding_type":      "QUEUE",
 						"binding_key":       CHECKSET,
 					}),
@@ -195,7 +191,7 @@ func TestAccAliCloudAmqpBinding_basic1_twin(t *testing.T) {
 					"instance_id":       "${alicloud_amqp_exchange.source.instance_id}",
 					"virtual_host_name": "${alicloud_amqp_exchange.source.virtual_host_name}",
 					"source_exchange":   "${alicloud_amqp_exchange.source.exchange_name}",
-					"destination_name":  name,
+					"destination_name":  "${alicloud_amqp_queue.default.queue_name}",
 					"binding_type":      "QUEUE",
 					"binding_key":       "${alicloud_amqp_queue.default.queue_name}",
 					"argument":          "x-match:any",
@@ -205,7 +201,7 @@ func TestAccAliCloudAmqpBinding_basic1_twin(t *testing.T) {
 						"instance_id":       CHECKSET,
 						"virtual_host_name": CHECKSET,
 						"source_exchange":   CHECKSET,
-						"destination_name":  name,
+						"destination_name":  CHECKSET,
 						"binding_type":      "QUEUE",
 						"binding_key":       CHECKSET,
 						"argument":          "x-match:any",
@@ -249,10 +245,10 @@ func AliCloudAmqpBindingBasicDependence0(name string) string {
   		internal          = false
 	}
 
-	resource "alicloud_amqp_exchange" "key" {
+	resource "alicloud_amqp_exchange" "destination" {
   		instance_id       = alicloud_amqp_virtual_host.default.instance_id
   		virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
-  		exchange_name     = "${var.name}-key"
+  		exchange_name     = "${var.name}-destination"
   		exchange_type     = "HEADERS"
   		auto_delete_state = true
   		internal          = false

@@ -79,8 +79,8 @@ func resourceAliCloudAmqpBindingCreate(d *schema.ResourceData, meta interface{})
 		request["Argument"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("amqp-open", "2019-12-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
@@ -152,8 +152,8 @@ func resourceAliCloudAmqpBindingDelete(d *schema.ResourceData, meta interface{})
 		"BindingKey":      d.Get("binding_key"),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("amqp-open", "2019-12-12", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
@@ -167,7 +167,7 @@ func resourceAliCloudAmqpBindingDelete(d *schema.ResourceData, meta interface{})
 	addDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) || IsExpectedErrors(err, []string{"ExchangeNotExist"}) {
+		if IsExpectedErrors(err, []string{"ExchangeNotExist"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
