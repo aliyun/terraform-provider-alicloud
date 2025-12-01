@@ -1827,9 +1827,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
-	if len(tags) > 0 {
-		d.Set("tags", rdsService.tagsToMap(tags))
-	}
+	d.Set("tags", rdsService.tagsToMap(tags))
 
 	monitoringPeriod, err := rdsService.DescribeDbInstanceMonitor(d.Id())
 	if err != nil {
