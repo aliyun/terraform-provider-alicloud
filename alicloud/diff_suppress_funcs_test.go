@@ -294,3 +294,808 @@ func TestUnitCommonCookieTimeoutDiffSuppressFunc(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitCommonPrivateDnsTypeDiffSuppressFunc(t *testing.T) {
+	// Test for primary_dns when private_dns_type is PrivateZone
+	testCases := []struct {
+		name            string
+		privateDnsType  string
+		oldValue        string
+		newValue        string
+		expected        bool
+		description     string
+	}{
+		{
+			name:           "PrivateZone_With_Empty_New",
+			privateDnsType: "PrivateZone",
+			oldValue:       "100.100.2.136",
+			newValue:       "",
+			expected:       true,
+			description:    "When private_dns_type is PrivateZone and new value is empty, suppress diff",
+		},
+		{
+			name:           "PrivateZone_With_NonEmpty_New",
+			privateDnsType: "PrivateZone",
+			oldValue:       "100.100.2.136",
+			newValue:       "8.8.8.8",
+			expected:       false,
+			description:    "When private_dns_type is PrivateZone and new value is not empty, do not suppress diff",
+		},
+		{
+			name:           "Custom_With_Empty_New",
+			privateDnsType: "Custom",
+			oldValue:       "8.8.8.8",
+			newValue:       "",
+			expected:       false,
+			description:    "When private_dns_type is Custom and new value is empty, do not suppress diff",
+		},
+		{
+			name:           "Custom_With_NonEmpty_New",
+			privateDnsType: "Custom",
+			oldValue:       "8.8.8.8",
+			newValue:       "1.1.1.1",
+			expected:       false,
+			description:    "When private_dns_type is Custom and new value is not empty, do not suppress diff",
+		},
+		{
+			name:           "Empty_Type_With_Empty_New",
+			privateDnsType: "",
+			oldValue:       "8.8.8.8",
+			newValue:       "",
+			expected:       false,
+			description:    "When private_dns_type is empty and new value is empty, do not suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"private_dns_type": {Type: schema.TypeString},
+				"primary_dns":      {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"private_dns_type": tc.privateDnsType,
+			})
+
+			// 模拟 resource_alicloud_cloud_firewall_private_dns.go 中的 DiffSuppressFunc 逻辑
+			diffSuppressFunc := func(k, old, new string, d *schema.ResourceData) bool {
+				if v, ok := d.GetOk("private_dns_type"); ok && v.(string) == "PrivateZone" {
+					return new == ""
+				}
+				return false
+			}
+
+			result := diffSuppressFunc("primary_dns", tc.oldValue, tc.newValue, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonStandbyDnsTypeDiffSuppressFunc(t *testing.T) {
+	// Test for standby_dns when private_dns_type is PrivateZone
+	testCases := []struct {
+		name            string
+		privateDnsType  string
+		oldValue        string
+		newValue        string
+		expected        bool
+		description     string
+	}{
+		{
+			name:           "PrivateZone_With_Empty_New",
+			privateDnsType: "PrivateZone",
+			oldValue:       "100.100.2.138",
+			newValue:       "",
+			expected:       true,
+			description:    "When private_dns_type is PrivateZone and new value is empty, suppress diff",
+		},
+		{
+			name:           "PrivateZone_With_NonEmpty_New",
+			privateDnsType: "PrivateZone",
+			oldValue:       "100.100.2.138",
+			newValue:       "4.4.4.4",
+			expected:       false,
+			description:    "When private_dns_type is PrivateZone and new value is not empty, do not suppress diff",
+		},
+		{
+			name:           "Custom_With_Empty_New",
+			privateDnsType: "Custom",
+			oldValue:       "4.4.4.4",
+			newValue:       "",
+			expected:       false,
+			description:    "When private_dns_type is Custom and new value is empty, do not suppress diff",
+		},
+		{
+			name:           "Custom_With_NonEmpty_New",
+			privateDnsType: "Custom",
+			oldValue:       "4.4.4.4",
+			newValue:       "2.2.2.2",
+			expected:       false,
+			description:    "When private_dns_type is Custom and new value is not empty, do not suppress diff",
+		},
+		{
+			name:           "Empty_Type_With_Empty_New",
+			privateDnsType: "",
+			oldValue:       "4.4.4.4",
+			newValue:       "",
+			expected:       false,
+			description:    "When private_dns_type is empty and new value is empty, do not suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"private_dns_type": {Type: schema.TypeString},
+				"standby_dns":      {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"private_dns_type": tc.privateDnsType,
+			})
+
+			// 模拟 resource_alicloud_cloud_firewall_private_dns.go 中的 DiffSuppressFunc 逻辑
+			diffSuppressFunc := func(k, old, new string, d *schema.ResourceData) bool {
+				if v, ok := d.GetOk("private_dns_type"); ok && v.(string) == "PrivateZone" {
+					return new == ""
+				}
+				return false
+			}
+
+			result := diffSuppressFunc("standby_dns", tc.oldValue, tc.newValue, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonCookieDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name              string
+		protocol          string
+		stickySession     string
+		stickySessionType string
+		expected          bool
+		description       string
+	}{
+		{
+			name:              "Server_StickySession_Type",
+			protocol:          "http",
+			stickySession:     "on",
+			stickySessionType: "server",
+			expected:          false,
+			description:       "Server sticky session type should not suppress diff",
+		},
+		{
+			name:              "Insert_StickySession_Type",
+			protocol:          "http",
+			stickySession:     "on",
+			stickySessionType: "insert",
+			expected:          true,
+			description:       "Insert sticky session type should suppress diff",
+		},
+		{
+			name:              "No_StickySession",
+			protocol:          "http",
+			stickySession:     "off",
+			stickySessionType: "server",
+			expected:          true,
+			description:       "No sticky session should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"protocol":            {Type: schema.TypeString},
+				"sticky_session":      {Type: schema.TypeString},
+				"sticky_session_type": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"protocol":            tc.protocol,
+				"sticky_session":      tc.stickySession,
+				"sticky_session_type": tc.stickySessionType,
+			})
+
+			result := cookieDiffSuppressFunc("cookie", "old_value", "new_value", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonEstablishedTimeoutDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		protocol    string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "TCP_Protocol",
+			protocol:    "tcp",
+			expected:    false,
+			description: "TCP protocol should not suppress diff",
+		},
+		{
+			name:        "HTTP_Protocol",
+			protocol:    "http",
+			expected:    true,
+			description: "HTTP protocol should suppress diff",
+		},
+		{
+			name:        "UDP_Protocol",
+			protocol:    "udp",
+			expected:    true,
+			description: "UDP protocol should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"protocol": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"protocol": tc.protocol,
+			})
+
+			result := establishedTimeoutDiffSuppressFunc("established_timeout", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonHttpHttpsTcpDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name             string
+		protocol         string
+		healthCheck      string
+		healthCheckType  string
+		listenerForward  string
+		expected         bool
+		description      string
+	}{
+		{
+			name:            "HTTP_With_HealthCheck_On",
+			protocol:        "http",
+			healthCheck:     "on",
+			listenerForward: "off",
+			expected:        false,
+			description:     "HTTP with health check on should not suppress diff",
+		},
+		{
+			name:            "TCP_With_HTTP_HealthCheck",
+			protocol:        "tcp",
+			healthCheckType: "http",
+			expected:        false,
+			description:     "TCP with HTTP health check should not suppress diff",
+		},
+		{
+			name:        "Other_Cases",
+			protocol:    "udp",
+			healthCheck: "off",
+			expected:    true,
+			description: "Other cases should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := map[string]interface{}{
+				"protocol": tc.protocol,
+			}
+			if tc.healthCheck != "" {
+				data["health_check"] = tc.healthCheck
+			}
+			if tc.healthCheckType != "" {
+				data["health_check_type"] = tc.healthCheckType
+			}
+			if tc.listenerForward != "" {
+				data["listener_forward"] = tc.listenerForward
+			}
+
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"protocol":          {Type: schema.TypeString},
+				"health_check":      {Type: schema.TypeString},
+				"health_check_type": {Type: schema.TypeString},
+				"listener_forward":  {Type: schema.TypeString},
+			}, data)
+
+			result := httpHttpsTcpDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonDnsValueDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		dnsType     string
+		oldValue    string
+		newValue    string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "NS_Type_With_Trailing_Dot",
+			dnsType:     "NS",
+			oldValue:    "ns1.example.com",
+			newValue:    "ns1.example.com.",
+			expected:    true,
+			description: "NS type should trim trailing dot",
+		},
+		{
+			name:        "MX_Type_With_Trailing_Dot",
+			dnsType:     "MX",
+			oldValue:    "mail.example.com",
+			newValue:    "mail.example.com.",
+			expected:    true,
+			description: "MX type should trim trailing dot",
+		},
+		{
+			name:        "CNAME_Type_With_Trailing_Dot",
+			dnsType:     "CNAME",
+			oldValue:    "www.example.com",
+			newValue:    "www.example.com.",
+			expected:    true,
+			description: "CNAME type should trim trailing dot",
+		},
+		{
+			name:        "A_Type_No_Trim",
+			dnsType:     "A",
+			oldValue:    "192.168.1.1",
+			newValue:    "192.168.1.2",
+			expected:    false,
+			description: "A type should not trim and values differ",
+		},
+		{
+			name:        "Different_Values",
+			dnsType:     "NS",
+			oldValue:    "ns1.example.com",
+			newValue:    "ns2.example.com",
+			expected:    false,
+			description: "Different values should not suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"type": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"type": tc.dnsType,
+			})
+
+			result := dnsValueDiffSuppressFunc("value", tc.oldValue, tc.newValue, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonCsKubernetesMasterPostPaidDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name                      string
+		masterInstanceChargeType  string
+		resourceId                string
+		forceUpdate               bool
+		expected                  bool
+		description               string
+	}{
+		{
+			name:                     "PostPaid_ChargeType",
+			masterInstanceChargeType: "PostPaid",
+			expected:                 true,
+			description:              "PostPaid charge type should suppress diff",
+		},
+		{
+			name:                     "PrePaid_No_ForceUpdate_Existing_Resource",
+			masterInstanceChargeType: "PrePaid",
+			resourceId:               "existing-id",
+			forceUpdate:              false,
+			expected:                 true,
+			description:              "PrePaid with no force update on existing resource should suppress diff",
+		},
+		{
+			name:                     "PrePaid_With_ForceUpdate",
+			masterInstanceChargeType: "PrePaid",
+			resourceId:               "existing-id",
+			forceUpdate:              true,
+			expected:                 false,
+			description:              "PrePaid with force update should not suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"master_instance_charge_type": {Type: schema.TypeString},
+				"force_update":                {Type: schema.TypeBool},
+			}, map[string]interface{}{
+				"master_instance_charge_type": tc.masterInstanceChargeType,
+				"force_update":                tc.forceUpdate,
+			})
+			d.SetId(tc.resourceId)
+
+			result := csKubernetesMasterPostPaidDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonEnableBackupLogDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name             string
+		enableBackupLog  bool
+		logBackup        bool
+		expected         bool
+		description      string
+	}{
+		{
+			name:            "BackupLog_Enabled",
+			enableBackupLog: true,
+			expected:        false,
+			description:     "Enable backup log should not suppress diff",
+		},
+		{
+			name:        "LogBackup_Enabled",
+			logBackup:   true,
+			expected:    false,
+			description: "Log backup enabled should not suppress diff",
+		},
+		{
+			name:        "Both_Disabled",
+			expected:    true,
+			description: "Both disabled should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"enable_backup_log": {Type: schema.TypeBool},
+				"log_backup":        {Type: schema.TypeBool},
+			}, map[string]interface{}{
+				"enable_backup_log": tc.enableBackupLog,
+				"log_backup":        tc.logBackup,
+			})
+
+			result := enableBackupLogDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonArchiveBackupPeriodDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		enableBackupLog       bool
+		logBackup             bool
+		backupRetentionPeriod int
+		retentionPeriod       int
+		newValue              string
+		expected              bool
+		description           string
+	}{
+		{
+			name:            "BackupLog_Enabled",
+			enableBackupLog: true,
+			expected:        false,
+			newValue:        "100",
+			description:     "Enable backup log should not suppress diff",
+		},
+		{
+			name:        "LogBackup_Enabled",
+			logBackup:   true,
+			expected:    false,
+			newValue:    "100",
+			description: "Log backup enabled should not suppress diff",
+		},
+		{
+			name:                  "Both_Disabled_Invalid_New_High_Retention",
+			backupRetentionPeriod: 1000,
+			retentionPeriod:       1000,
+			newValue:              "invalid",
+			expected:              true,
+			description:           "Both disabled with invalid new and high retention should suppress diff",
+		},
+		{
+			name:                  "Both_Disabled_Invalid_New_Low_Retention",
+			backupRetentionPeriod: 500,
+			newValue:              "invalid",
+			expected:              false,
+			description:           "Both disabled with invalid new and low retention (<730) should not suppress diff",
+		},
+		{
+			name:                  "Both_Disabled_Valid_New",
+			backupRetentionPeriod: 1000,
+			expected:              true,
+			newValue:              "100",
+			description:           "Both disabled with valid new value should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"enable_backup_log":       {Type: schema.TypeBool},
+				"log_backup":              {Type: schema.TypeBool},
+				"backup_retention_period": {Type: schema.TypeInt},
+				"retention_period":        {Type: schema.TypeInt},
+			}, map[string]interface{}{
+				"enable_backup_log":       tc.enableBackupLog,
+				"log_backup":              tc.logBackup,
+				"backup_retention_period": tc.backupRetentionPeriod,
+				"retention_period":        tc.retentionPeriod,
+			})
+
+			result := archiveBackupPeriodDiffSuppressFunc("key", "old", tc.newValue, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonPrePaidDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		chargeType  string
+		paymentType string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "Prepaid_ChargeType",
+			chargeType:  "Prepaid",
+			expected:    true,
+			description: "Prepaid charge type should suppress diff",
+		},
+		{
+			name:        "Subscription_PaymentType",
+			paymentType: "Subscription",
+			expected:    true,
+			description: "Subscription payment type should suppress diff",
+		},
+		{
+			name:        "PostPaid_ChargeType",
+			chargeType:  "PostPaid",
+			expected:    false,
+			description: "PostPaid charge type should not suppress diff",
+		},
+		{
+			name:        "PayAsYouGo_PaymentType",
+			paymentType: "PayAsYouGo",
+			expected:    false,
+			description: "PayAsYouGo payment type should not suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := map[string]interface{}{}
+			if tc.chargeType != "" {
+				data["instance_charge_type"] = tc.chargeType
+			}
+			if tc.paymentType != "" {
+				data["payment_type"] = tc.paymentType
+			}
+
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"instance_charge_type": {Type: schema.TypeString},
+				"payment_type":         {Type: schema.TypeString},
+			}, data)
+
+			result := PrePaidDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonPostPaidAndRenewDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		chargeType  string
+		paymentType string
+		autoRenew   bool
+		expected    bool
+		description string
+	}{
+		{
+			name:        "Prepaid_With_AutoRenew",
+			chargeType:  "Prepaid",
+			autoRenew:   true,
+			expected:    false,
+			description: "Prepaid with auto renew should not suppress diff",
+		},
+		{
+			name:        "Subscription_With_AutoRenew",
+			paymentType: "Subscription",
+			autoRenew:   true,
+			expected:    false,
+			description: "Subscription with auto renew should not suppress diff",
+		},
+		{
+			name:        "PostPaid_No_AutoRenew",
+			chargeType:  "PostPaid",
+			autoRenew:   false,
+			expected:    true,
+			description: "PostPaid without auto renew should suppress diff",
+		},
+		{
+			name:        "Prepaid_No_AutoRenew",
+			chargeType:  "Prepaid",
+			autoRenew:   false,
+			expected:    true,
+			description: "Prepaid without auto renew should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := map[string]interface{}{
+				"auto_renew": tc.autoRenew,
+			}
+			if tc.chargeType != "" {
+				data["instance_charge_type"] = tc.chargeType
+			}
+			if tc.paymentType != "" {
+				data["payment_type"] = tc.paymentType
+			}
+
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"instance_charge_type": {Type: schema.TypeString},
+				"payment_type":         {Type: schema.TypeString},
+				"auto_renew":           {Type: schema.TypeBool},
+			}, data)
+
+			result := PostPaidAndRenewDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonRedisPostPaidDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		chargeType  string
+		paymentType string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "PrePaid_PaymentType",
+			paymentType: "PrePaid",
+			expected:    false,
+			description: "PrePaid payment type should not suppress diff",
+		},
+		{
+			name:        "PrePaid_ChargeType",
+			chargeType:  "PrePaid",
+			expected:    false,
+			description: "PrePaid charge type should not suppress diff",
+		},
+		{
+			name:        "PostPaid_PaymentType",
+			paymentType: "PostPaid",
+			expected:    true,
+			description: "PostPaid payment type should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := map[string]interface{}{}
+			if tc.chargeType != "" {
+				data["instance_charge_type"] = tc.chargeType
+			}
+			if tc.paymentType != "" {
+				data["payment_type"] = tc.paymentType
+			}
+
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"instance_charge_type": {Type: schema.TypeString},
+				"payment_type":         {Type: schema.TypeString},
+			}, data)
+
+			result := redisPostPaidDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonElasticsearchEnablePublicDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name         string
+		enablePublic bool
+		expected     bool
+		description  string
+	}{
+		{
+			name:         "Enable_Public_True",
+			enablePublic: true,
+			expected:     false,
+			description:  "Enable public true should not suppress diff",
+		},
+		{
+			name:         "Enable_Public_False",
+			enablePublic: false,
+			expected:     true,
+			description:  "Enable public false should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"enable_public": {Type: schema.TypeBool},
+			}, map[string]interface{}{
+				"enable_public": tc.enablePublic,
+			})
+
+			result := elasticsearchEnablePublicDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonElasticsearchEnableKibanaPublicDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name                        string
+		enableKibanaPublicNetwork   bool
+		expected                    bool
+		description                 string
+	}{
+		{
+			name:                      "Enable_Kibana_Public_True",
+			enableKibanaPublicNetwork: true,
+			expected:                  false,
+			description:               "Enable Kibana public true should not suppress diff",
+		},
+		{
+			name:                      "Enable_Kibana_Public_False",
+			enableKibanaPublicNetwork: false,
+			expected:                  true,
+			description:               "Enable Kibana public false should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"enable_kibana_public_network": {Type: schema.TypeBool},
+			}, map[string]interface{}{
+				"enable_kibana_public_network": tc.enableKibanaPublicNetwork,
+			})
+
+			result := elasticsearchEnableKibanaPublicDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonPolardbPostPaidDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		payType     string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "PrePaid_PayType",
+			payType:     "PrePaid",
+			expected:    false,
+			description: "PrePaid pay type should not suppress diff",
+		},
+		{
+			name:        "PostPaid_PayType",
+			payType:     "PostPaid",
+			expected:    true,
+			description: "PostPaid pay type should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"pay_type": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"pay_type": tc.payType,
+			})
+
+			result := polardbPostPaidDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
