@@ -920,6 +920,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_kubernetes_policy_instance":                        resourceAliCloudCSKubernetesPolicyInstance(),
 			"alicloud_polardb_global_security_ip_group":                     resourceAliCloudPolardbGlobalSecurityIpGroup(),
 			"alicloud_gpdb_supabase_project":                                resourceAliCloudGpdbSupabaseProject(),
+			"alicloud_esa_http_incoming_request_header_modification_rule":   resourceAliCloudEsaHttpIncomingRequestHeaderModificationRule(),
 			"alicloud_mongodb_node":                                         resourceAliCloudMongodbNode(),
 			"alicloud_ehpc_cluster_v2":                                      resourceAliCloudEhpcClusterV2(),
 			"alicloud_open_api_explorer_api_mcp_server":                     resourceAliCloudOpenApiExplorerApiMcpServer(),
