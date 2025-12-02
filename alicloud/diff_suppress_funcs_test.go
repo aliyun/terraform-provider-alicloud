@@ -1099,3 +1099,505 @@ func TestUnitCommonPolardbPostPaidDiffSuppressFunc(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitCommonElasticsearchEnableKibanaPrivateDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name                         string
+		enableKibanaPrivateNetwork   bool
+		expected                     bool
+		description                  string
+	}{
+		{
+			name:                       "Enable_Kibana_Private_True",
+			enableKibanaPrivateNetwork: true,
+			expected:                   false,
+			description:                "Enable Kibana private true should not suppress diff",
+		},
+		{
+			name:                       "Enable_Kibana_Private_False",
+			enableKibanaPrivateNetwork: false,
+			expected:                   true,
+			description:                "Enable Kibana private false should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"enable_kibana_private_network": {Type: schema.TypeBool},
+			}, map[string]interface{}{
+				"enable_kibana_private_network": tc.enableKibanaPrivateNetwork,
+			})
+
+			result := elasticsearchEnableKibanaPrivateDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonEcsNotAutoRenewDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name              string
+		instanceChargeType string
+		renewalStatus      string
+		expected           bool
+		description        string
+	}{
+		{
+			name:               "PostPaid_ChargeType",
+			instanceChargeType: "PostPaid",
+			expected:           true,
+			description:        "PostPaid should suppress diff",
+		},
+		{
+			name:               "PrePaid_With_AutoRenewal",
+			instanceChargeType: "PrePaid",
+			renewalStatus:      "AutoRenewal",
+			expected:           false,
+			description:        "PrePaid with auto renewal should not suppress diff",
+		},
+		{
+			name:               "PrePaid_Without_AutoRenewal",
+			instanceChargeType: "PrePaid",
+			renewalStatus:      "Normal",
+			expected:           true,
+			description:        "PrePaid without auto renewal should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"instance_charge_type": {Type: schema.TypeString},
+				"renewal_status":       {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"instance_charge_type": tc.instanceChargeType,
+				"renewal_status":       tc.renewalStatus,
+			})
+
+			result := ecsNotAutoRenewDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonPolardbDBClusterVersionDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		oldValue             string
+		clusterLatestVersion string
+		hasLatestVersion     bool
+		expected             bool
+		description          string
+	}{
+		{
+			name:             "No_Latest_Version",
+			oldValue:         "5.7",
+			hasLatestVersion: false,
+			expected:         true,
+			description:      "No latest version should suppress diff",
+		},
+		{
+			name:                 "Old_Equals_Latest",
+			oldValue:             "8.0",
+			clusterLatestVersion: "8.0",
+			hasLatestVersion:     true,
+			expected:             true,
+			description:          "Old equals latest version should suppress diff",
+		},
+		{
+			name:                 "Old_Not_Equals_Latest",
+			oldValue:             "5.7",
+			clusterLatestVersion: "8.0",
+			hasLatestVersion:     true,
+			expected:             false,
+			description:          "Old not equals latest version should not suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := map[string]interface{}{}
+			if tc.hasLatestVersion {
+				data["cluster_latest_version"] = tc.clusterLatestVersion
+			}
+
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"cluster_latest_version": {Type: schema.TypeString},
+			}, data)
+
+			result := polardbDBClusterVersionDiffSuppressFunc("key", tc.oldValue, "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonPolardbTDEAndEnabledDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		tdeStatus   string
+		oldValue    string
+		newValue    string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "TDE_Enabled_With_Different_Values",
+			tdeStatus:   "Enabled",
+			oldValue:    "key1",
+			newValue:    "key2",
+			expected:    true,
+			description: "TDE enabled with different non-empty values should suppress diff",
+		},
+		{
+			name:        "TDE_Disabled",
+			tdeStatus:   "Disabled",
+			oldValue:    "key1",
+			newValue:    "key2",
+			expected:    false,
+			description: "TDE disabled should not suppress diff",
+		},
+		{
+			name:        "TDE_Enabled_With_Empty_Old",
+			tdeStatus:   "Enabled",
+			oldValue:    "",
+			newValue:    "key2",
+			expected:    false,
+			description: "TDE enabled with empty old value should not suppress diff",
+		},
+		{
+			name:        "TDE_Enabled_With_Empty_New",
+			tdeStatus:   "Enabled",
+			oldValue:    "key1",
+			newValue:    "",
+			expected:    false,
+			description:  "TDE enabled with empty new value should not suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"tde_status": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"tde_status": tc.tdeStatus,
+			})
+
+			result := polardbTDEAndEnabledDiffSuppressFunc("key", tc.oldValue, tc.newValue, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonPolardbPostPaidAndRenewDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name           string
+		payType        string
+		renewalStatus  string
+		expected       bool
+		description    string
+	}{
+		{
+			name:          "PrePaid_With_AutoRenewal",
+			payType:       "PrePaid",
+			renewalStatus: "AutoRenewal",
+			expected:      false,
+			description:   "PrePaid with auto renewal should not suppress diff",
+		},
+		{
+			name:          "PrePaid_Without_Renewal",
+			payType:       "PrePaid",
+			renewalStatus: "NotRenewal",
+			expected:      true,
+			description:   "PrePaid without renewal should suppress diff",
+		},
+		{
+			name:          "PostPaid",
+			payType:       "PostPaid",
+			renewalStatus: "NotRenewal",
+			expected:      true,
+			description:   "PostPaid should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"pay_type":        {Type: schema.TypeString},
+				"renewal_status":  {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"pay_type":       tc.payType,
+				"renewal_status": tc.renewalStatus,
+			})
+
+			result := polardbPostPaidAndRenewDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonAdbPostPaidDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		payType     string
+		paymentType string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "PrePaid_PayType",
+			payType:     "PrePaid",
+			expected:    false,
+			description: "PrePaid pay type should not suppress diff",
+		},
+		{
+			name:        "Subscription_PaymentType",
+			paymentType: "Subscription",
+			expected:    false,
+			description: "Subscription payment type should not suppress diff",
+		},
+		{
+			name:        "PostPaid_PayType",
+			payType:     "PostPaid",
+			expected:    true,
+			description: "PostPaid pay type should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := map[string]interface{}{}
+			if tc.payType != "" {
+				data["pay_type"] = tc.payType
+			}
+			if tc.paymentType != "" {
+				data["payment_type"] = tc.paymentType
+			}
+
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"pay_type":     {Type: schema.TypeString},
+				"payment_type": {Type: schema.TypeString},
+			}, data)
+
+			result := adbPostPaidDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonEcsSpotStrategyDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name              string
+		instanceChargeType string
+		hasChargeType      bool
+		expected           bool
+		description        string
+	}{
+		{
+			name:              "PostPaid_ChargeType",
+			instanceChargeType: "PostPaid",
+			hasChargeType:      true,
+			expected:           false,
+			description:        "PostPaid should not suppress diff",
+		},
+		{
+			name:          "No_ChargeType",
+			hasChargeType: false,
+			expected:      false,
+			description:   "No charge type should not suppress diff",
+		},
+		{
+			name:              "PrePaid_ChargeType",
+			instanceChargeType: "PrePaid",
+			hasChargeType:      true,
+			expected:           true,
+			description:        "PrePaid should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := map[string]interface{}{}
+			if tc.hasChargeType {
+				data["instance_charge_type"] = tc.instanceChargeType
+			}
+
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"instance_charge_type": {Type: schema.TypeString},
+			}, data)
+
+			result := ecsSpotStrategyDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonEcsSpotPriceLimitDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name              string
+		instanceChargeType string
+		spotStrategy       string
+		expected           bool
+		description        string
+	}{
+		{
+			name:              "PostPaid_With_SpotWithPriceLimit",
+			instanceChargeType: "PostPaid",
+			spotStrategy:       "SpotWithPriceLimit",
+			expected:           false,
+			description:        "PostPaid with SpotWithPriceLimit should not suppress diff",
+		},
+		{
+			name:              "PostPaid_Without_SpotWithPriceLimit",
+			instanceChargeType: "PostPaid",
+			spotStrategy:       "NoSpot",
+			expected:           true,
+			description:        "PostPaid without SpotWithPriceLimit should suppress diff",
+		},
+		{
+			name:              "PrePaid",
+			instanceChargeType: "PrePaid",
+			spotStrategy:       "SpotWithPriceLimit",
+			expected:           true,
+			description:        "PrePaid should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"instance_charge_type": {Type: schema.TypeString},
+				"spot_strategy":        {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"instance_charge_type": tc.instanceChargeType,
+				"spot_strategy":        tc.spotStrategy,
+			})
+
+			result := ecsSpotPriceLimitDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonVpcTypeResourceDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		vswitchId   string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "With_VSwitch_ID",
+			vswitchId:   "vsw-123456",
+			expected:    false,
+			description: "With vswitch_id should not suppress diff",
+		},
+		{
+			name:        "Empty_VSwitch_ID",
+			vswitchId:   "",
+			expected:    true,
+			description: "Empty vswitch_id should suppress diff",
+		},
+		{
+			name:        "Whitespace_VSwitch_ID",
+			vswitchId:   "   ",
+			expected:    true,
+			description: "Whitespace vswitch_id should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"vswitch_id": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"vswitch_id": tc.vswitchId,
+			})
+
+			result := vpcTypeResourceDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonWhiteIpListDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		oldValue    string
+		newValue    string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "Same_IPs_Different_Order",
+			oldValue:    "192.168.1.1,192.168.1.2,192.168.1.3",
+			newValue:    "192.168.1.3,192.168.1.1,192.168.1.2",
+			expected:    true,
+			description: "Same IPs in different order should suppress diff",
+		},
+		{
+			name:        "Different_IPs",
+			oldValue:    "192.168.1.1,192.168.1.2",
+			newValue:    "192.168.1.3,192.168.1.4",
+			expected:    false,
+			description: "Different IPs should not suppress diff",
+		},
+		{
+			name:        "Different_Count",
+			oldValue:    "192.168.1.1,192.168.1.2",
+			newValue:    "192.168.1.1",
+			expected:    false,
+			description: "Different count of IPs should not suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]interface{}{})
+
+			result := whiteIpListDiffSuppressFunc("key", tc.oldValue, tc.newValue, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonUpperLowerCaseDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		oldValue    string
+		newValue    string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "Same_Case_Insensitive",
+			oldValue:    "MySQL",
+			newValue:    "mysql",
+			expected:    true,
+			description: "Same string different case should suppress diff",
+		},
+		{
+			name:        "Different_String",
+			oldValue:    "MySQL",
+			newValue:    "PostgreSQL",
+			expected:    false,
+			description: "Different strings should not suppress diff",
+		},
+		{
+			name:        "Same_String_Same_Case",
+			oldValue:    "MySQL",
+			newValue:    "MySQL",
+			expected:    true,
+			description: "Same string same case should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]interface{}{})
+
+			result := UpperLowerCaseDiffSuppressFunc("key", tc.oldValue, tc.newValue, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
