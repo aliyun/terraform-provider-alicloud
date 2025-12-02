@@ -926,6 +926,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_scan_rule":                                         resourceAliCloudCrScanRule(),
 			"alicloud_realtime_compute_deployment":                          resourceAliCloudRealtimeComputeDeployment(),
 			"alicloud_realtime_compute_job":                                 resourceAliCloudRealtimeComputeJob(),
+			"alicloud_esa_http_incoming_response_header_modification_rule":  resourceAliCloudEsaHttpIncomingResponseHeaderModificationRule(),
 			"alicloud_cloud_firewall_private_dns":                           resourceAliCloudCloudFirewallPrivateDns(),
 			"alicloud_eflo_hyper_node":                                      resourceAliCloudEfloHyperNode(),
 			"alicloud_polar_db_extension":                                   resourceAliCloudPolarDbExtension(),
