@@ -2053,6 +2053,7 @@ func (s *EsaServiceV2) EsaWaitingRoomEventStateRefreshFuncWithApi(id string, fie
 }
 
 // DescribeEsaWaitingRoomEvent >>> Encapsulated.
+
 // DescribeEsaWaitingRoomRule <<< Encapsulated get interface for Esa WaitingRoomRule.
 
 func (s *EsaServiceV2) DescribeEsaWaitingRoomRule(id string) (object map[string]interface{}, err error) {
@@ -2063,13 +2064,14 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomRule(id string) (object map[string]
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["WaitingRoomId"] = parts[1]
 	query["WaitingRoomRuleId"] = parts[2]
-	query["RegionId"] = client.RegionId
+
 	action := "ListWaitingRoomRules"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -2103,15 +2105,18 @@ func (s *EsaServiceV2) DescribeEsaWaitingRoomRule(id string) (object map[string]
 }
 
 func (s *EsaServiceV2) EsaWaitingRoomRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaWaitingRoomRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaWaitingRoomRule)
+}
+
+func (s *EsaServiceV2) EsaWaitingRoomRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaWaitingRoomRule(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
