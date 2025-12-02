@@ -36,7 +36,7 @@ func resourceAliCloudEsaWaitingRoomRule() *schema.Resource {
 				Required: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -73,7 +73,6 @@ func resourceAliCloudEsaWaitingRoomRuleCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("waiting_room_id"); ok {
 		request["WaitingRoomId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	request["RuleEnable"] = d.Get("status")
 	request["RuleName"] = d.Get("rule_name")
@@ -121,7 +120,7 @@ func resourceAliCloudEsaWaitingRoomRuleRead(d *schema.ResourceData, meta interfa
 	d.Set("waiting_room_rule_id", objectRaw["WaitingRoomRuleId"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprint(parts[0]))
 	d.Set("waiting_room_id", parts[1])
 
 	return nil
@@ -188,12 +187,10 @@ func resourceAliCloudEsaWaitingRoomRuleDelete(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	request["SiteId"] = parts[0]
 	request["WaitingRoomRuleId"] = parts[2]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

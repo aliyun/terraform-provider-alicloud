@@ -20,12 +20,6 @@ For information about ESA Waiting Room Rule and how to use it, see [What is Wait
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_waiting_room_rule&exampleId=4fcf141c-b3a7-abce-a519-49066e7d08b607966cc7&activeTab=example&spm=docs.r.esa_waiting_room_rule.0.4fcf141cb3&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
@@ -75,11 +69,11 @@ resource "alicloud_esa_waiting_room_rule" "default" {
 
 The following arguments are supported:
 * `rule` - (Required) The content of the rule, the implemented policy or conditional expression.
+* `status` - (Required, Available since v1.265.0) Rule switch. When adding global configuration, this parameter does not need to be set. Value range:
+  - on: open.
+  - off: close.
 * `rule_name` - (Required) Rule name, optional, used to query by waiting room bypass rule name.
-* `site_id` - (Required, ForceNew, Int) The site ID, which can be obtained by calling the ListSites API.
-* `status` - (Required) Rule enabled status, supporting:
-  -'on': means enabled.
-  -'off': means disabled.
+* `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the ListSites API.
 * `waiting_room_id` - (Required, ForceNew) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://help.aliyun.com/document_detail/2850279.html) interface.
 
 ## Attributes Reference
