@@ -3631,11 +3631,12 @@ func (s *EsaServiceV2) DescribeEsaRoutineRelatedRecord(id string) (object map[st
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Name"] = parts[0]
-	request["RegionId"] = client.RegionId
+
 	action := "ListRoutineRelatedRecords"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -3680,15 +3681,18 @@ func (s *EsaServiceV2) DescribeEsaRoutineRelatedRecord(id string) (object map[st
 }
 
 func (s *EsaServiceV2) EsaRoutineRelatedRecordStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaRoutineRelatedRecordStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaRoutineRelatedRecord)
+}
+
+func (s *EsaServiceV2) EsaRoutineRelatedRecordStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaRoutineRelatedRecord(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

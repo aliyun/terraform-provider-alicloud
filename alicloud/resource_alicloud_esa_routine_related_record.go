@@ -40,7 +40,7 @@ func resourceAliCloudEsaRoutineRelatedRecord() *schema.Resource {
 				ForceNew: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -102,7 +102,10 @@ func resourceAliCloudEsaRoutineRelatedRecordRead(d *schema.ResourceData, meta in
 	}
 
 	d.Set("record_name", objectRaw["RecordName"])
-	d.Set("site_id", objectRaw["SiteId"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
+
 	d.Set("record_id", objectRaw["RecordId"])
 
 	parts := strings.Split(d.Id(), ":")
@@ -123,14 +126,12 @@ func resourceAliCloudEsaRoutineRelatedRecordDelete(d *schema.ResourceData, meta 
 	request = make(map[string]interface{})
 	request["RecordId"] = parts[1]
 	request["Name"] = parts[0]
-	request["RegionId"] = client.RegionId
 
 	request["SiteId"] = d.Get("site_id")
 	request["RecordName"] = d.Get("record_name")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
