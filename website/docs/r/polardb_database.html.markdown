@@ -2,18 +2,23 @@
 subcategory: "PolarDB"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_polardb_database"
-sidebar_current: "docs-alicloud-resource-polardb-database"
 description: |-
-  Provides a PolarDB database resource.
+  Provides a Alicloud Polar Db Database resource.
 ---
 
 # alicloud_polardb_database
 
-Provides a PolarDB database resource. A database deployed in a PolarDB cluster. A PolarDB cluster can own multiple databases.
+Provides a Polar Db Database resource.
+
+Manage linked databases.
+
+For information about Polar Db Database and how to use it, see [What is Database](https://next.api.alibabacloud.com/document/polardb/2017-08-01/CreateDatabase).
 
 -> **NOTE:** Available since v1.66.0.
 
 ## Example Usage
+
+Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_database&exampleId=150536ad-ef26-da12-83db-3ddff47dbf191e1a5755&activeTab=example&spm=docs.r.polardb_database.0.150536adef&intl_lang=EN_US" target="_blank">
@@ -59,23 +64,37 @@ resource "alicloud_polardb_database" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
-* `db_name` - (Required, ForceNew) Name of the database requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letterand have no more than 64 characters.
-* `character_set_name` - (Optional, ForceNew) Character set. The value range is limited to the following: [ utf8, gbk, latin1, utf8mb4, Chinese_PRC_CI_AS, Chinese_PRC_CS_AS, SQL_Latin1_General_CP1_CI_AS, SQL_Latin1_General_CP1_CS_AS, Chinese_PRC_BIN ], default is "utf8" \(`utf8mb4` only supports versions 5.5 and 5.6\).
-* `db_description` - (Optional) Database description. It must start with a Chinese character or English letter, cannot start with "http://" or "https://". It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length must be 2-256 characters.
-* `account_name` - (Optional, ForceNew) Account name authorized to access the database. Only supports PostgreSQL.
+* `account_name` - (Optional) The name of the account that is authorized to access the database. **NOTE:** From version 1.265.0, `account_name` can be modified. However, only PolarDB for PostgreSQL (Compatible with Oracle) and PolarDB for PostgreSQL cluster can be modified.
+* `character_set_name` - (Optional, ForceNew) The character set that is used by the cluster. For more information, see [Character set tables](https://www.alibabacloud.com/help/en/doc-detail/99716.html).
+* `collate` - (Optional, Available since v1.265.0) The language that defines the collation rules in the database.
+-> **NOTE:** The locale must be compatible with the character set set set by `character_set_name`. This parameter is required for a PolarDB for PostgreSQL (Compatible with Oracle) or PolarDB for PostgreSQL cluster. This parameter is optional for a PolarDB for MySQL cluster.
+* `ctype` - (Optional, Available since v1.265.0) The language that indicates the character type of the database.
+-> **NOTE:** The language must be compatible with the character set that is specified by `character_set_name`. The value that you specify must be the same as the value of `collate`. This parameter is required for PolarDB for PostgreSQL (Compatible with Oracle) clusters or PolarDB for PostgreSQL clusters. This parameter is optional for PolarDB for MySQL clusters.This parameter is required for a PolarDB for PostgreSQL (Compatible with Oracle) or PolarDB for PostgreSQL cluster. This parameter is optional for a PolarDB for MySQL cluster.
+* `db_cluster_id` - (Required, ForceNew) The ID of cluster.
+* `db_name` - (Required, ForceNew) The name of the database. It may consist of lower case letters, numbers, and underlines, and must start with a letterand have no more than 64 characters.
+* `db_description` - (Optional) The description of the database. The description must meet the following requirements:
+  - It cannot start with `http://` or `https://`.
+  - It must be 2 to 256 characters in length.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<db_name>`.
+* `status` - (Available since v1.265.0) The state of the database.
 
-* `id` - The current database resource ID. Composed of cluster ID and database name with format `<cluster_id>:<name>`.
+## Timeouts
+
+-> **NOTE:** Available since v1.265.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Database.
+* `delete` - (Defaults to 30 mins) Used when delete the Database.
+* `update` - (Defaults to 5 mins) Used when update the Database.
 
 ## Import
 
-PolarDB database can be imported using the id, e.g.
+Polar Db Database can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_polardb_database.example "pc-12345:tf_database"
+$ terraform import alicloud_polardb_database.example <db_cluster_id>:<db_name>
 ```
