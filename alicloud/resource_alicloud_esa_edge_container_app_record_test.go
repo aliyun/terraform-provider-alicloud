@@ -84,7 +84,7 @@ resource "alicloud_esa_edge_container_app" "default" {
   health_check_type = "l7"
   service_port = "80"
   health_check_interval = "5"
-  edge_container_app_name = "terraform-app"
+  edge_container_app_name = "terraform-app1"
   health_check_http_code = "http_2xx"
   health_check_uri = "/"
   health_check_timeout = "3"
