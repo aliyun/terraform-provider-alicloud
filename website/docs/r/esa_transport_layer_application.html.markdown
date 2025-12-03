@@ -20,12 +20,6 @@ For information about ESA Transport Layer Application and how to use it, see [Wh
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_transport_layer_application&exampleId=d7581d78-bd76-45fc-e9ae-d43d2b00c25f5db2f209&activeTab=example&spm=docs.r.esa_transport_layer_application.0.d7581d78bd&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -33,6 +27,7 @@ variable "name" {
 
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
+  site_name           = "gositecdn.cn"
 }
 
 resource "alicloud_esa_transport_layer_application" "default" {
@@ -71,7 +66,7 @@ The following arguments are supported:
 * `ipv6` - (Optional) IPv6 switch.
 * `record_name` - (Required, ForceNew) Domain name of the transport layer application
 * `rules` - (Required, List) The list of forwarding rules. Rule details. For each rule, other parameters are required except comments. See [`rules`](#rules) below.
-* `site_id` - (Required, ForceNew, Int) Site ID.
+* `site_id` - (Required, ForceNew) Site ID.
 
 ### `rules`
 
