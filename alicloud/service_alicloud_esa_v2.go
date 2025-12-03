@@ -3172,6 +3172,7 @@ func (s *EsaServiceV2) EsaRoutineRouteStateRefreshFunc(id string, field string, 
 }
 
 // DescribeEsaRoutineRoute >>> Encapsulated.
+
 // DescribeEsaVersion <<< Encapsulated get interface for Esa Version.
 
 func (s *EsaServiceV2) DescribeEsaVersion(id string) (object map[string]interface{}, err error) {
@@ -3182,11 +3183,12 @@ func (s *EsaServiceV2) DescribeEsaVersion(id string) (object map[string]interfac
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = parts[0]
-	query["RegionId"] = client.RegionId
+
 	action := "ListVersions"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -3228,15 +3230,18 @@ func (s *EsaServiceV2) DescribeEsaVersion(id string) (object map[string]interfac
 }
 
 func (s *EsaServiceV2) EsaVersionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaVersionStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaVersion)
+}
+
+func (s *EsaServiceV2) EsaVersionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaVersion(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

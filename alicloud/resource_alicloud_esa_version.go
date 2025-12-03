@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -36,7 +35,7 @@ func resourceAliCloudEsaVersion() *schema.Resource {
 				Optional: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -118,7 +117,7 @@ func resourceAliCloudEsaVersionRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("site_version", objectRaw["SiteVersion"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprint(parts[0]))
 
 	return nil
 }
@@ -137,7 +136,7 @@ func resourceAliCloudEsaVersionUpdate(d *schema.ResourceData, meta interface{}) 
 	query = make(map[string]interface{})
 	request["SiteVersion"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
+
 	if d.HasChange("description") {
 		update = true
 	}
@@ -176,12 +175,10 @@ func resourceAliCloudEsaVersionDelete(d *schema.ResourceData, meta interface{}) 
 	request = make(map[string]interface{})
 	request["SiteVersion"] = parts[1]
 	request["SiteId"] = parts[0]
-	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
