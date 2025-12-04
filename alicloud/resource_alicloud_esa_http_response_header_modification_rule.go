@@ -75,7 +75,7 @@ func resourceAliCloudEsaHttpResponseHeaderModificationRule() *schema.Resource {
 				Computed: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -200,7 +200,7 @@ func resourceAliCloudEsaHttpResponseHeaderModificationRuleRead(d *schema.Resourc
 	}
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprint(parts[0]))
 
 	return nil
 }
