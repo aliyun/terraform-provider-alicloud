@@ -62,8 +62,9 @@ resource "alicloud_actiontrail_trail" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
+* `data_event_trail_region` - (Optional, Available since v1.264.0) The regions where the trail tracks data events. The value is a comma-separated list of region IDs.
 * `event_rw` - (Optional) The read/write type of the events to be delivered. Default value: `All`. Valid values: `Read`, `Write`, `All`.
+* `event_selectors` - (Optional, Available since v1.264.0) The configuration of the data event selector. This parameter is a JSON array that can contain a maximum of 20 elements.
 * `is_organization_trail` - (Optional, ForceNew, Bool) Specifies whether to create a multi-account trail. Default value: `false`. Valid values:
   - `true`: Creates a multi-account trail.
   - `false`: Creates a single-account trail.

@@ -835,6 +835,38 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"event_selectors":         "[{\\\"ServiceName\\\":\\\"PDS\\\"}]",
+					"data_event_trail_region": "cn-hangzhou",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"event_selectors":         CHECKSET,
+						"data_event_trail_region": "cn-hangzhou",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"event_selectors": "[{\\\"ServiceName\\\":\\\"Push\\\"}]",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"event_selectors": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_event_trail_region": "cn-shanghai",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_event_trail_region": "cn-shanghai",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -878,6 +910,8 @@ func TestAccAliCloudActiontrailTrail_basic11012_twin(t *testing.T) {
 					"status":                     "Enable",
 					"trail_region":               defaultRegionToTest,
 					"is_organization_trail":      "false",
+					"event_selectors":            "[{\\\"ServiceName\\\":\\\"PDS\\\"}]",
+					"data_event_trail_region":    "cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -893,6 +927,8 @@ func TestAccAliCloudActiontrailTrail_basic11012_twin(t *testing.T) {
 						"status":                     "Enable",
 						"trail_region":               defaultRegionToTest,
 						"is_organization_trail":      "false",
+						"event_selectors":            CHECKSET,
+						"data_event_trail_region":    "cn-hangzhou",
 					}),
 				),
 			},
@@ -930,7 +966,8 @@ func AliCloudActiontrailTrailBasicDependence11012(name string) string {
 	}
 	
 	resource "alicloud_oss_bucket" "default" {
-  		bucket = var.name
+  		bucket        = var.name
+  		force_destroy = true
 	}
 	
 	resource "alicloud_log_project" "default" {
@@ -1090,6 +1127,38 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"event_selectors":         "[{\\\"ServiceName\\\":\\\"PDS\\\"}]",
+					"data_event_trail_region": "cn-hangzhou",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"event_selectors":         CHECKSET,
+						"data_event_trail_region": "cn-hangzhou",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"event_selectors": "[{\\\"ServiceName\\\":\\\"Push\\\"}]",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"event_selectors": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_event_trail_region": "cn-shanghai",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_event_trail_region": "cn-shanghai",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -1133,6 +1202,8 @@ func TestAccAliCloudActiontrailTrail_basic11016_twin(t *testing.T) {
 					"status":                     "Enable",
 					"trail_region":               defaultRegionToTest,
 					"is_organization_trail":      "false",
+					"event_selectors":            "[{\\\"ServiceName\\\":\\\"PDS\\\"}]",
+					"data_event_trail_region":    "cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1148,6 +1219,8 @@ func TestAccAliCloudActiontrailTrail_basic11016_twin(t *testing.T) {
 						"status":                     "Enable",
 						"trail_region":               defaultRegionToTest,
 						"is_organization_trail":      "false",
+						"event_selectors":            CHECKSET,
+						"data_event_trail_region":    "cn-hangzhou",
 					}),
 				),
 			},

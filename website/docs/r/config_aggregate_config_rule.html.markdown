@@ -68,7 +68,10 @@ The following arguments are supported:
 
 * `aggregate_config_rule_name` - (Required, ForceNew) The name of the rule.
 * `aggregator_id` - (Required, ForceNew) The Aggregator Id.
-* `config_rule_trigger_types` - (Required) The trigger type of the rule. Valid values: `ConfigurationItemChangeNotification`: The rule is triggered upon configuration changes. `ScheduledNotification`: The rule is triggered as scheduled.
+* `config_rule_trigger_types` - (Required) The trigger type of the rule. Valid values:
+  - `ConfigurationItemChangeNotification`: The rule is triggered by configuration changes.
+  - `ScheduledNotification`: The rule is periodically triggered.
+-> **NOTE:** Separate multiple trigger types with commas (,).
 * `description` - (Optional) The description of the rule.
 * `exclude_resource_ids_scope` - (Optional) The rule monitors excluded resource IDs, multiple of which are separated by commas, only applies to rules created based on managed rules, , custom rule this field is empty.
 * `input_parameters` - (Optional) The settings map of the input parameters for the rule.

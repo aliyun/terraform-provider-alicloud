@@ -430,3 +430,4 @@ const FailedToReachTargetStatusWithError = "Resource %s failed to reach target s
 const FailedToReachTargetStatusWithRequestId = FailedToReachTargetStatus + " Last RequestId: %s."
 const FailedToReachTargetAttribute = "Failed to reach value for target attribute. Current value is %s."
 const RequiredWhenMsg = "attribute '%s' is required when '%s' is %v"
+const InvalidAttributeValue = "attribute '%s' must be set to the value '%s'."

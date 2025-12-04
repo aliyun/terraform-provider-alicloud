@@ -59,7 +59,7 @@ func resourceAliCloudEsaOriginClientCertificate() *schema.Resource {
 				Sensitive: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -84,7 +84,6 @@ func resourceAliCloudEsaOriginClientCertificateCreate(d *schema.ResourceData, me
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
-	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("origin_client_certificate_name"); ok {
 		request["Name"] = v
@@ -130,7 +129,9 @@ func resourceAliCloudEsaOriginClientCertificateRead(d *schema.ResourceData, meta
 
 	d.Set("certificate", objectRaw["Certificate"])
 	d.Set("status", objectRaw["Status"])
-	d.Set("site_id", objectRaw["SiteId"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	resultRawObj, _ := jsonpath.Get("$.Result", objectRaw)
 	resultRaw := make(map[string]interface{})
@@ -166,7 +167,8 @@ func resourceAliCloudEsaOriginClientCertificateUpdate(d *schema.ResourceData, me
 		update = true
 	}
 	if v, ok := d.GetOk("hostnames"); ok || d.HasChange("hostnames") {
-		hostnamesMapsArray := v.([]interface{})
+		hostnamesMapsArray := convertToInterfaceArray(v)
+
 		hostnamesMapsJson, err := json.Marshal(hostnamesMapsArray)
 		if err != nil {
 			return WrapError(err)
@@ -208,12 +210,10 @@ func resourceAliCloudEsaOriginClientCertificateDelete(d *schema.ResourceData, me
 	request = make(map[string]interface{})
 	query["SiteId"] = parts[0]
 	query["Id"] = parts[1]
-	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

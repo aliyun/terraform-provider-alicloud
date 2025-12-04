@@ -36,7 +36,7 @@ func testSweepNlbServerGroupServerAttachment(region string) error {
 
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	aliyunClient := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -116,7 +116,7 @@ func testSweepNlbServerGroupServerAttachment(region string) error {
 func TestAccAliCloudNlbServerGroupServerAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group_server_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupServerAttachmentMap0)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupServerAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroupServerAttachment")
@@ -124,10 +124,11 @@ func TestAccAliCloudNlbServerGroupServerAttachment_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroupserverattachment%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupServerAttachmentBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupServerAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -137,21 +138,55 @@ func TestAccAliCloudNlbServerGroupServerAttachment_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"server_type":     "Ecs",
 					"server_id":       "${alicloud_instance.default.id}",
-					"description":     "${var.name}",
-					"port":            "80",
 					"server_group_id": "${alicloud_nlb_server_group.default.id}",
-					"weight":          "100",
-					"server_ip":       "${alicloud_instance.default.private_ip}",
+					"port":            "80",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"server_type":     "Ecs",
 						"server_id":       CHECKSET,
-						"description":     name,
-						"port":            "80",
 						"server_group_id": CHECKSET,
-						"weight":          "100",
-						"server_ip":       CHECKSET,
+						"port":            "80",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"weight": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"weight": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"weight": "100",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"weight": "100",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"weight": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"weight": "0",
 					}),
 				),
 			},
@@ -164,10 +199,10 @@ func TestAccAliCloudNlbServerGroupServerAttachment_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudNlbServerGroupServerAttachment_weight0(t *testing.T) {
+func TestAccAliCloudNlbServerGroupServerAttachment_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group_server_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupServerAttachmentMap0)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupServerAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroupServerAttachment")
@@ -175,10 +210,11 @@ func TestAccAliCloudNlbServerGroupServerAttachment_weight0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroupserverattachment%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupServerAttachmentBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupServerAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -188,7 +224,7 @@ func TestAccAliCloudNlbServerGroupServerAttachment_weight0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"server_type":     "Ecs",
 					"server_id":       "${alicloud_instance.default.id}",
-					"description":     "${var.name}",
+					"description":     name,
 					"port":            "80",
 					"server_group_id": "${alicloud_nlb_server_group.default.id}",
 					"weight":          "0",
@@ -215,77 +251,14 @@ func TestAccAliCloudNlbServerGroupServerAttachment_weight0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudNlbServerGroupServerAttachment_Ip(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_nlb_server_group_server_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupServerAttachmentMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNlbServerGroupServerAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc%snlbservergroupserverattachment%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupServerAttachmentBasicDependenceIp)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-
-					"server_type":     "Ip",
-					"server_id":       "10.0.0.0",
-					"description":     "${var.name}",
-					"port":            "80",
-					"server_group_id": "${alicloud_nlb_server_group.default.id}",
-					"weight":          "100",
-					"server_ip":       "10.0.0.0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"server_type":     "Ip",
-						"server_id":       "10.0.0.0",
-						"description":     name,
-						"port":            "80",
-						"server_group_id": CHECKSET,
-						"weight":          "100",
-						"server_ip":       "10.0.0.0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_update",
-					"weight":      "100",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
-						"weight":      "100",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
+var AliCloudNlbServerGroupServerAttachmentMap0 = map[string]string{
+	"server_ip": CHECKSET,
+	"status":    CHECKSET,
+	"weight":    CHECKSET,
+	"zone_id":   CHECKSET,
 }
 
-var AlicloudNlbServerGroupServerAttachmentMap0 = map[string]string{}
-
-var AlicloudNlbServerGroupServerAttachmentMapWeightDefault = map[string]string{
-	"weight": "100",
-}
-
-func AlicloudNlbServerGroupServerAttachmentBasicDependence0(name string) string {
+func AliCloudNlbServerGroupServerAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -335,10 +308,7 @@ resource "alicloud_instance" "default" {
   vswitch_id                 = data.alicloud_vswitches.default.ids[0]
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {}
-
 resource "alicloud_nlb_server_group" "default" {
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   server_group_name = var.name
   server_group_type = "Instance"
   vpc_id            = data.alicloud_vpcs.default.ids.0
@@ -358,7 +328,7 @@ resource "alicloud_nlb_server_group" "default" {
 func TestAccAliCloudNlbServerGroupServerAttachment_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group_server_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupServerAttachmentMapWeightDefault)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupServerAttachmentMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroupServerAttachment")
@@ -366,7 +336,7 @@ func TestAccAliCloudNlbServerGroupServerAttachment_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroupserverattachment%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupServerAttachmentBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupServerAttachmentBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -377,51 +347,59 @@ func TestAccAliCloudNlbServerGroupServerAttachment_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"server_type":     "Ecs",
-					"server_id":       "${alicloud_instance.default.id}",
-					"description":     "${var.name}",
+					"server_type":     "Ip",
+					"server_id":       "10.0.0.0",
 					"port":            "80",
 					"server_group_id": "${alicloud_nlb_server_group.default.id}",
+					"server_ip":       "10.0.0.0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"server_type":     "Ecs",
-						"server_id":       CHECKSET,
-						"description":     name,
-						"server_group_id": CHECKSET,
+						"server_type":     "Ip",
+						"server_id":       "10.0.0.0",
 						"port":            "80",
+						"server_group_id": CHECKSET,
+						"server_ip":       "10.0.0.0",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"weight": "80",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"weight": "80",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
-					"weight":      "100",
+					"description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name,
-						"weight":      "100",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"weight": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"weight": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"weight": "100",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"weight": "100",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"weight": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"weight": "0",
 					}),
 				),
 			},
@@ -434,9 +412,63 @@ func TestAccAliCloudNlbServerGroupServerAttachment_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudNlbServerGroupServerAttachmentMap1 = map[string]string{}
+func TestAccAliCloudNlbServerGroupServerAttachment_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nlb_server_group_server_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupServerAttachmentMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNlbServerGroupServerAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%snlbservergroupserverattachment%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupServerAttachmentBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_type":     "Ip",
+					"server_id":       "10.0.0.0",
+					"port":            "80",
+					"server_group_id": "${alicloud_nlb_server_group.default.id}",
+					"server_ip":       "10.0.0.0",
+					"description":     name,
+					"weight":          "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_type":     "Ip",
+						"server_id":       "10.0.0.0",
+						"port":            "80",
+						"server_group_id": CHECKSET,
+						"server_ip":       "10.0.0.0",
+						"description":     name,
+						"weight":          "0",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
 
-func AlicloudNlbServerGroupServerAttachmentBasicDependenceIp(name string) string {
+var AliCloudNlbServerGroupServerAttachmentMap1 = map[string]string{
+	"status": CHECKSET,
+	"weight": CHECKSET,
+}
+
+func AliCloudNlbServerGroupServerAttachmentBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -463,7 +495,7 @@ resource "alicloud_nlb_server_group" "default" {
 `, name)
 }
 
-func TestUnitAlicloudNlbServerGroupServerAttachment(t *testing.T) {
+func TestUnitAliCloudNlbServerGroupServerAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_nlb_server_group_server_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_nlb_server_group_server_attachment"].Schema).Data(nil, nil)

@@ -46,7 +46,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST", "ODPS-0420111", "INTERNAL_SERVER_ERROR", "ODPS-0420095"}) {
+		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST", "ODPS-0420111", "ODPS-0420095", "PROJECT_NOT_FOUND", "ODPS-0420061"}) {
 			return object, WrapErrorf(NotFoundErr("Project", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

@@ -20,12 +20,6 @@ For information about ESA Edge Container App Record and how to use it, see [What
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_edge_container_app_record&exampleId=c1ac063c-d7df-2e84-c206-b01fb2bb824fc26479f5&activeTab=example&spm=docs.r.esa_edge_container_app_record.0.c1ac063cd7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform.com"
@@ -52,7 +46,7 @@ resource "alicloud_esa_edge_container_app" "default" {
   health_check_type       = "l7"
   service_port            = "80"
   health_check_interval   = "5"
-  edge_container_app_name = "terraform-app"
+  edge_container_app_name = "terraform-app2"
   health_check_http_code  = "http_2xx"
   health_check_uri        = "/"
   health_check_timeout    = "3"
@@ -76,7 +70,7 @@ resource "alicloud_esa_edge_container_app_record" "default" {
 The following arguments are supported:
 * `app_id` - (Required, ForceNew) The application ID
 * `record_name` - (Required, ForceNew) The associated domain name.
-* `site_id` - (Optional, ForceNew, Computed, Int) The website ID.
+* `site_id` - (Optional, ForceNew, Computed) The website ID.
 
 ## Attributes Reference
 

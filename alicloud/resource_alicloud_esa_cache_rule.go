@@ -122,7 +122,7 @@ func resourceAliCloudEsaCacheRule() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -309,7 +309,7 @@ func resourceAliCloudEsaCacheRuleRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("cache_rule_id", objectRaw["ConfigId"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprint(parts[0]))
 
 	return nil
 }

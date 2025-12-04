@@ -59,32 +59,31 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 
 	return v.(map[string]interface{}), nil
 }
-
 func (s *KmsServiceV2) DescribeInstanceQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
 	client := s.client
+	id := d.Id()
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	id := d.Id()
 	request["InstanceIDs"] = id
 	request["Region"] = client.RegionId
 	var endpoint string
-
 	request["ProductCode"] = "kms"
 	request["ProductType"] = "kms_ddi_public_cn"
-	if client.IsInternationalAccount() {
-		request["ProductType"] = "kms_ddi_public_intl"
-	}
-
 	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductCode"] = "kms"
 		request["ProductType"] = "kms_ppi_public_cn"
-		if client.IsInternationalAccount() {
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = "kms"
+		request["ProductType"] = "kms_ddi_public_intl"
+		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			request["ProductCode"] = "kms"
 			request["ProductType"] = "kms_ppi_public_intl"
 		}
 	}
-
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -97,8 +96,10 @@ func (s *KmsServiceV2) DescribeInstanceQueryAvailableInstances(d *schema.Resourc
 				return resource.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "kms"
 				request["ProductType"] = "kms_ddi_public_intl"
 				if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+					request["ProductCode"] = "kms"
 					request["ProductType"] = "kms_ppi_public_intl"
 				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
@@ -124,17 +125,56 @@ func (s *KmsServiceV2) DescribeInstanceQueryAvailableInstances(d *schema.Resourc
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+func (s *KmsServiceV2) DescribeInstanceListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId.1"] = id
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "instance"
+	action := "ListTagResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Forbidden.DKMSInstanceNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
 
 func (s *KmsServiceV2) KmsInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.KmsInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeKmsInstance)
+}
+
+func (s *KmsServiceV2) KmsInstanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeKmsInstance(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
+		object["ChargeType"] = convertKmsInstanceKmsInstanceChargeTypeResponse(object["ChargeType"])
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -577,27 +617,28 @@ func (s *KmsServiceV2) ListTagResources(id string, resourceType string) (object 
 	return tags, nil
 }
 
+// SetResourceTags <<< Encapsulated tag function for Kms.
 func (s *KmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-
 	resourceIdNum := strings.Count(d.Id(), ":")
-
 	if d.HasChange("tags") {
-		added, removed := parsingTags(d)
+		var action string
+		var err error
 		client := s.client
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+
+		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
-
 		if len(removedTagKeys) > 0 {
-			action := "UntagResources"
-			request := map[string]interface{}{
-				"RegionId":     s.client.RegionId,
-				"ResourceType": resourceType,
-			}
-
+			action = "UntagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			switch resourceIdNum {
 			case 0:
 				request["ResourceId.1"] = d.Id()
@@ -608,36 +649,35 @@ func (s *KmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				}
 				request["ResourceId.1"] = parts[resourceIdNum]
 			}
-
+			request["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
-			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
-
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
+
 		}
 
 		if len(added) > 0 {
-			action := "TagResources"
-			request := map[string]interface{}{
-				"RegionId":     s.client.RegionId,
-				"ResourceType": resourceType,
-			}
-
+			action = "TagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			switch resourceIdNum {
 			case 0:
 				request["ResourceId.1"] = d.Id()
@@ -648,32 +688,36 @@ func (s *KmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				}
 				request["ResourceId.1"] = parts[resourceIdNum]
 			}
-
+			request["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
 				request[fmt.Sprintf("Tag.%d.Value", count)] = value
 				count++
 			}
-			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
-
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
+
 		}
-		d.SetPartial("tags")
 	}
+
 	return nil
 }
+
+// SetResourceTags >>> tag function encapsulated.

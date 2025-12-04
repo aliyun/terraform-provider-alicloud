@@ -90,7 +90,7 @@ func resourceAliCloudEsaTransportLayerApplication() *schema.Resource {
 				},
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -118,7 +118,7 @@ func resourceAliCloudEsaTransportLayerApplicationCreate(d *schema.ResourceData, 
 
 	if v, ok := d.GetOk("rules"); ok {
 		rulesMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["EdgePort"] = dataLoopTmp["edge_port"]
@@ -173,7 +173,7 @@ func resourceAliCloudEsaTransportLayerApplicationCreate(d *schema.ResourceData, 
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudEsaTransportLayerApplicationUpdate(d, meta)
+	return resourceAliCloudEsaTransportLayerApplicationRead(d, meta)
 }
 
 func resourceAliCloudEsaTransportLayerApplicationRead(d *schema.ResourceData, meta interface{}) error {
@@ -196,12 +196,14 @@ func resourceAliCloudEsaTransportLayerApplicationRead(d *schema.ResourceData, me
 	d.Set("record_name", objectRaw["RecordName"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("application_id", objectRaw["ApplicationId"])
-	d.Set("site_id", objectRaw["SiteId"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
 
 	rulesRaw := objectRaw["Rules"]
 	rulesMaps := make([]map[string]interface{}, 0)
 	if rulesRaw != nil {
-		for _, rulesChildRaw := range rulesRaw.([]interface{}) {
+		for _, rulesChildRaw := range convertToInterfaceArray(rulesRaw) {
 			rulesMap := make(map[string]interface{})
 			rulesChildRaw := rulesChildRaw.(map[string]interface{})
 			rulesMap["client_ip_pass_through_mode"] = rulesChildRaw["ClientIPPassThroughMode"]
@@ -238,12 +240,12 @@ func resourceAliCloudEsaTransportLayerApplicationUpdate(d *schema.ResourceData, 
 	request["SiteId"] = parts[0]
 	request["ApplicationId"] = parts[1]
 
-	if !d.IsNewResource() && d.HasChange("rules") {
+	if d.HasChange("rules") {
 		update = true
 	}
 	if v, ok := d.GetOk("rules"); ok || d.HasChange("rules") {
 		rulesMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["EdgePort"] = dataLoopTmp["edge_port"]
@@ -262,17 +264,17 @@ func resourceAliCloudEsaTransportLayerApplicationUpdate(d *schema.ResourceData, 
 		request["Rules"] = string(rulesMapsJson)
 	}
 
-	if !d.IsNewResource() && d.HasChange("ip_access_rule") {
+	if d.HasChange("ip_access_rule") {
 		update = true
 		request["IpAccessRule"] = d.Get("ip_access_rule")
 	}
 
-	if !d.IsNewResource() && d.HasChange("ipv6") {
+	if d.HasChange("ipv6") {
 		update = true
 		request["Ipv6"] = d.Get("ipv6")
 	}
 
-	if !d.IsNewResource() && d.HasChange("cross_border_optimization") {
+	if d.HasChange("cross_border_optimization") {
 		update = true
 		request["CrossBorderOptimization"] = d.Get("cross_border_optimization")
 	}
@@ -306,15 +308,15 @@ func resourceAliCloudEsaTransportLayerApplicationUpdate(d *schema.ResourceData, 
 
 func resourceAliCloudEsaTransportLayerApplicationDelete(d *schema.ResourceData, meta interface{}) error {
 
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
 	enableDelete := false
-	if v, ok := d.GetOk("status"); ok {
+	if v, ok := d.GetOkExists("status"); ok {
 		if InArray(fmt.Sprint(v), []string{"active"}) {
 			enableDelete = true
 		}
 	}
 	if enableDelete {
-		client := meta.(*connectivity.AliyunClient)
-		parts := strings.Split(d.Id(), ":")
 		action := "DeleteTransportLayerApplication"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -327,7 +329,6 @@ func resourceAliCloudEsaTransportLayerApplicationDelete(d *schema.ResourceData, 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

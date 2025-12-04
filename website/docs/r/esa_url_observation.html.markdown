@@ -55,7 +55,7 @@ The following arguments are supported:
 * `sdk_type` - (Required) SDK integration mode. Value:
   - `automatic`: automatic integration.
   - `manual`: manual integration.
-* `site_id` - (Required, ForceNew, Int) The site ID.
+* `site_id` - (Required, ForceNew) The site ID.
 * `url` - (Required, ForceNew) The URL of the page to monitor.
 
 ## Attributes Reference

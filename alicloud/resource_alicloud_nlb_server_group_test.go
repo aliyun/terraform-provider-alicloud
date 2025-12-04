@@ -34,7 +34,7 @@ func init() {
 func testSweepNlbServerGroup(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	aliyunClient := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -109,15 +109,15 @@ func testSweepNlbServerGroup(region string) error {
 func TestAccAliCloudNlbServerGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNLBServerGroupMap0)
+	ra := resourceAttrInit(resourceId, AliCloudNLBServerGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNLBServerGroupBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNLBServerGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -128,52 +128,177 @@ func TestAccAliCloudNlbServerGroup_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id":          "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"server_group_name":          "${var.name}",
-					"server_group_type":          "Instance",
-					"vpc_id":                     "${data.alicloud_vpcs.default.ids.0}",
-					"scheduler":                  "Wrr",
-					"preserve_client_ip_enabled": "true",
-					"protocol":                   "TCP",
-					"health_check": []map[string]interface{}{
-						{
-							"health_check_enabled":         "true",
-							"health_check_type":            "HTTP",
-							"health_check_connect_port":    "0",
-							"healthy_threshold":            "2",
-							"unhealthy_threshold":          "2",
-							"health_check_connect_timeout": "5",
-							"health_check_interval":        "10",
-							"http_check_method":            "GET",
-							"health_check_url":             "/test/index.html",
-							"health_check_domain":          "tf-testAcc.com",
-							"health_check_http_code":       []string{"http_2xx", "http_3xx", "http_4xx"},
-						},
-					},
-					"connection_drain":         "true",
-					"connection_drain_timeout": "60",
-					"tags": map[string]string{
-						"Created": "tfTestAcc0",
-						"For":     "Tftestacc 0",
-					},
-					"address_ip_version": "Ipv4",
+					"server_group_name": name,
+					"vpc_id":            "${data.alicloud_vpcs.default.vpcs.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id":          CHECKSET,
-						"server_group_name":          name,
-						"server_group_type":          "Instance",
-						"vpc_id":                     CHECKSET,
-						"scheduler":                  "Wrr",
-						"preserve_client_ip_enabled": "true",
-						"protocol":                   "TCP",
-						"connection_drain":           "true",
-						"connection_drain_timeout":   "60",
-						"address_ip_version":         "Ipv4",
-						"health_check.#":             "1",
-						"tags.%":                     "2",
-						"tags.Created":               "tfTestAcc0",
-						"tags.For":                   "Tftestacc 0",
+						"server_group_name": name,
+						"vpc_id":            CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_drain_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_drain_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_drain_timeout": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_drain_timeout": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check": []map[string]interface{}{
+						{
+							"health_check_interval":        "2",
+							"health_check_url":             "/tf-testAcc",
+							"unhealthy_threshold":          "3",
+							"health_check_connect_timeout": "1",
+							"health_check_enabled":         "true",
+							"health_check_connect_port":    "46325",
+							"healthy_threshold":            "3",
+							"http_check_method":            "HEAD",
+							"health_check_domain":          "tf-testAcc.com",
+							"health_check_http_code":       []string{"http_2xx", "http_3xx", "http_4xx"},
+							"health_check_type":            "HTTP",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check": []map[string]interface{}{
+						{
+							"health_check_enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check": []map[string]interface{}{
+						{
+							"health_check_interval":        "2",
+							"health_check_url":             "/tf-testAcc",
+							"unhealthy_threshold":          "3",
+							"health_check_connect_timeout": "1",
+							"health_check_enabled":         "true",
+							"health_check_connect_port":    "46325",
+							"healthy_threshold":            "3",
+							"http_check_method":            "HEAD",
+							"health_check_domain":          "tf-testAcc.com",
+							"health_check_http_code":       []string{"http_2xx", "http_3xx", "http_4xx"},
+							"health_check_type":            "HTTP",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"preserve_client_ip_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"preserve_client_ip_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scheduler": "Tch",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scheduler": "Tch",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_group_name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_group_name": name + "-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -186,19 +311,101 @@ func TestAccAliCloudNlbServerGroup_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudNLBServerGroupMap0 = map[string]string{
-	"server_group_name":  CHECKSET,
-	"address_ip_version": CHECKSET,
-	"health_check.#":     CHECKSET,
-	"protocol":           CHECKSET,
-	"server_group_type":  CHECKSET,
-	"status":             CHECKSET,
-	"connection_drain":   CHECKSET,
-	"scheduler":          CHECKSET,
-	"vpc_id":             CHECKSET,
+func TestAccAliCloudNlbServerGroup_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nlb_server_group.default"
+	ra := resourceAttrInit(resourceId, AliCloudNLBServerGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNlbServerGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNLBServerGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"address_ip_version":       "Ipv4",
+					"any_port_enabled":         "true",
+					"connection_drain_enabled": "true",
+					"connection_drain_timeout": "60",
+					"health_check": []map[string]interface{}{
+						{
+							"health_check_interval":        "2",
+							"health_check_url":             "/tf-testAcc",
+							"unhealthy_threshold":          "3",
+							"health_check_connect_timeout": "1",
+							"health_check_enabled":         "true",
+							"health_check_connect_port":    "46325",
+							"healthy_threshold":            "3",
+							"http_check_method":            "HEAD",
+							"health_check_domain":          "tf-testAcc.com",
+							"health_check_http_code":       []string{"http_2xx", "http_3xx", "http_4xx"},
+							"health_check_type":            "HTTP",
+						},
+					},
+					"preserve_client_ip_enabled": "false",
+					"protocol":                   "UDP",
+					"resource_group_id":          "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"scheduler":                  "Tch",
+					"server_group_name":          name,
+					"server_group_type":          "Ip",
+					"vpc_id":                     "${data.alicloud_vpcs.default.vpcs.0.id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_ip_version":         "Ipv4",
+						"any_port_enabled":           "true",
+						"connection_drain_enabled":   "true",
+						"connection_drain_timeout":   "60",
+						"health_check.#":             "1",
+						"preserve_client_ip_enabled": "false",
+						"protocol":                   "UDP",
+						"resource_group_id":          CHECKSET,
+						"scheduler":                  "Tch",
+						"server_group_name":          name,
+						"server_group_type":          "Ip",
+						"vpc_id":                     CHECKSET,
+						"tags.%":                     "2",
+						"tags.Created":               "TF",
+						"tags.For":                   "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
 }
 
-func AlicloudNLBServerGroupBasicDependence0(name string) string {
+var AliCloudNLBServerGroupMap0 = map[string]string{
+	"address_ip_version":         CHECKSET,
+	"health_check.#":             CHECKSET,
+	"preserve_client_ip_enabled": CHECKSET,
+	"protocol":                   CHECKSET,
+	"region_id":                  CHECKSET,
+	"resource_group_id":          CHECKSET,
+	"scheduler":                  CHECKSET,
+	"server_group_type":          CHECKSET,
+	"status":                     CHECKSET,
+}
+
+func AliCloudNLBServerGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -213,15 +420,15 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 func TestAccAliCloudNlbServerGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNLBServerGroupMap0)
+	ra := resourceAttrInit(resourceId, AliCloudNLBServerGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNLBServerGroupBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNLBServerGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -349,7 +556,7 @@ func TestAccAliCloudNlbServerGroup_basic1(t *testing.T) {
 	})
 }
 
-func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
+func TestUnitAccAliCloudNlbServerGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_nlb_server_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_nlb_server_group"].Schema).Data(nil, nil)
@@ -868,7 +1075,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 func TestAccAliCloudNlbServerGroup_basic3734(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap3734)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap3734)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -876,7 +1083,7 @@ func TestAccAliCloudNlbServerGroup_basic3734(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence3734)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence3734)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -997,7 +1204,7 @@ func TestAccAliCloudNlbServerGroup_basic3734(t *testing.T) {
 	})
 }
 
-var AlicloudNlbServerGroupMap3734 = map[string]string{
+var AliCloudNlbServerGroupMap3734 = map[string]string{
 	"status":                     CHECKSET,
 	"address_ip_version":         CHECKSET,
 	"scheduler":                  CHECKSET,
@@ -1010,7 +1217,7 @@ var AlicloudNlbServerGroupMap3734 = map[string]string{
 	"protocol":                   CHECKSET,
 }
 
-func AlicloudNlbServerGroupBasicDependence3734(name string) string {
+func AliCloudNlbServerGroupBasicDependence3734(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1031,7 +1238,7 @@ resource "alicloud_vpc" "defaultxDhVj6" {
 func TestAccAliCloudNlbServerGroup_basic4668(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap4668)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap4668)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -1039,7 +1246,7 @@ func TestAccAliCloudNlbServerGroup_basic4668(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence4668)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence4668)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1273,7 +1480,7 @@ func TestAccAliCloudNlbServerGroup_basic4668(t *testing.T) {
 	})
 }
 
-var AlicloudNlbServerGroupMap4668 = map[string]string{
+var AliCloudNlbServerGroupMap4668 = map[string]string{
 	"status":                     CHECKSET,
 	"address_ip_version":         CHECKSET,
 	"scheduler":                  CHECKSET,
@@ -1286,7 +1493,7 @@ var AlicloudNlbServerGroupMap4668 = map[string]string{
 	"protocol":                   CHECKSET,
 }
 
-func AlicloudNlbServerGroupBasicDependence4668(name string) string {
+func AliCloudNlbServerGroupBasicDependence4668(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1306,7 +1513,7 @@ resource "alicloud_vpc" "defaultEyoN1M" {
 func TestAccAliCloudNlbServerGroup_basic4639(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap4639)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap4639)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -1314,7 +1521,7 @@ func TestAccAliCloudNlbServerGroup_basic4639(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence4639)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence4639)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1553,7 +1760,7 @@ func TestAccAliCloudNlbServerGroup_basic4639(t *testing.T) {
 	})
 }
 
-var AlicloudNlbServerGroupMap4639 = map[string]string{
+var AliCloudNlbServerGroupMap4639 = map[string]string{
 	"status":                     CHECKSET,
 	"address_ip_version":         CHECKSET,
 	"scheduler":                  CHECKSET,
@@ -1566,7 +1773,7 @@ var AlicloudNlbServerGroupMap4639 = map[string]string{
 	"protocol":                   CHECKSET,
 }
 
-func AlicloudNlbServerGroupBasicDependence4639(name string) string {
+func AliCloudNlbServerGroupBasicDependence4639(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1586,7 +1793,7 @@ resource "alicloud_vpc" "testsr" {
 func TestAccAliCloudNlbServerGroup_basic4662(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap4662)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap4662)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -1594,7 +1801,7 @@ func TestAccAliCloudNlbServerGroup_basic4662(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence4662)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence4662)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1825,7 +2032,7 @@ func TestAccAliCloudNlbServerGroup_basic4662(t *testing.T) {
 	})
 }
 
-var AlicloudNlbServerGroupMap4662 = map[string]string{
+var AliCloudNlbServerGroupMap4662 = map[string]string{
 	"status":                     CHECKSET,
 	"address_ip_version":         CHECKSET,
 	"scheduler":                  CHECKSET,
@@ -1838,7 +2045,7 @@ var AlicloudNlbServerGroupMap4662 = map[string]string{
 	"protocol":                   CHECKSET,
 }
 
-func AlicloudNlbServerGroupBasicDependence4662(name string) string {
+func AliCloudNlbServerGroupBasicDependence4662(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1862,7 +2069,7 @@ data "alicloud_resource_manager_resource_groups" "default"{
 func TestAccAliCloudNlbServerGroup_basic5353(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap5353)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap5353)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -1870,7 +2077,7 @@ func TestAccAliCloudNlbServerGroup_basic5353(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence5353)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence5353)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -2019,7 +2226,7 @@ func TestAccAliCloudNlbServerGroup_basic5353(t *testing.T) {
 	})
 }
 
-var AlicloudNlbServerGroupMap5353 = map[string]string{
+var AliCloudNlbServerGroupMap5353 = map[string]string{
 	"status":                     CHECKSET,
 	"address_ip_version":         CHECKSET,
 	"scheduler":                  CHECKSET,
@@ -2032,7 +2239,7 @@ var AlicloudNlbServerGroupMap5353 = map[string]string{
 	"protocol":                   CHECKSET,
 }
 
-func AlicloudNlbServerGroupBasicDependence5353(name string) string {
+func AliCloudNlbServerGroupBasicDependence5353(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -2053,7 +2260,7 @@ resource "alicloud_vpc" "sgtestnlb" {
 func TestAccAliCloudNlbServerGroup_basic3734_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap3734)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap3734)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -2061,7 +2268,7 @@ func TestAccAliCloudNlbServerGroup_basic3734_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence3734)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence3734)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -2109,7 +2316,7 @@ func TestAccAliCloudNlbServerGroup_basic3734_twin(t *testing.T) {
 func TestAccAliCloudNlbServerGroup_basic4668_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap4668)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap4668)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -2117,7 +2324,7 @@ func TestAccAliCloudNlbServerGroup_basic4668_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence4668)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence4668)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -2189,7 +2396,7 @@ func TestAccAliCloudNlbServerGroup_basic4668_twin(t *testing.T) {
 func TestAccAliCloudNlbServerGroup_basic4639_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap4639)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap4639)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -2197,7 +2404,7 @@ func TestAccAliCloudNlbServerGroup_basic4639_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence4639)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence4639)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -2268,7 +2475,7 @@ func TestAccAliCloudNlbServerGroup_basic4639_twin(t *testing.T) {
 func TestAccAliCloudNlbServerGroup_basic4662_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap4662)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap4662)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -2276,7 +2483,7 @@ func TestAccAliCloudNlbServerGroup_basic4662_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence4662)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence4662)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -2349,7 +2556,7 @@ func TestAccAliCloudNlbServerGroup_basic4662_twin(t *testing.T) {
 func TestAccAliCloudNlbServerGroup_basic5353_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudNlbServerGroupMap5353)
+	ra := resourceAttrInit(resourceId, AliCloudNlbServerGroupMap5353)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNlbServerGroup")
@@ -2357,7 +2564,7 @@ func TestAccAliCloudNlbServerGroup_basic5353_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbServerGroupBasicDependence5353)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNlbServerGroupBasicDependence5353)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)

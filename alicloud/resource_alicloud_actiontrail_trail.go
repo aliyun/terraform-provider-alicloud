@@ -3,6 +3,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
 
@@ -30,11 +31,19 @@ func resourceAliCloudActiontrailTrail() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"data_event_trail_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"event_rw": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Write", "Read", "All"}, false),
+			},
+			"event_selectors": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"is_organization_trail": {
 				Type:     schema.TypeBool,
@@ -223,6 +232,25 @@ func resourceAliCloudActiontrailTrailRead(d *schema.ResourceData, meta interface
 	d.Set("trail_name", objectRaw["Name"])
 	d.Set("name", objectRaw["Name"])
 
+	objectRaw, err = actiontrailServiceV2.DescribeTrailGetDataEventSelector(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	d.Set("event_selectors", objectRaw["DataEventSelectors"])
+
+	slsDeliveryConfigsRawArrayObj, _ := jsonpath.Get("$.SlsDeliveryConfigs[*]", objectRaw)
+	slsDeliveryConfigsRawArray := make([]interface{}, 0)
+	if slsDeliveryConfigsRawArrayObj != nil {
+		slsDeliveryConfigsRawArray = convertToInterfaceArray(slsDeliveryConfigsRawArrayObj)
+	}
+	slsDeliveryConfigsRaw := make(map[string]interface{})
+	if len(slsDeliveryConfigsRawArray) > 0 {
+		slsDeliveryConfigsRaw = slsDeliveryConfigsRawArray[0].(map[string]interface{})
+	}
+
+	d.Set("data_event_trail_region", slsDeliveryConfigsRaw["TrailRegion"])
+
 	return nil
 }
 
@@ -391,6 +419,41 @@ func resourceAliCloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
+	update = false
+	action = "PutDataEventSelector"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["TrailName"] = d.Id()
+
+	if d.HasChange("data_event_trail_region") {
+		update = true
+	}
+	if v, ok := d.GetOk("data_event_trail_region"); ok {
+		request["TrailRegionIds"] = v
+	}
+
+	if d.HasChange("event_selectors") {
+		update = true
+	}
+	request["EventSelectors"] = d.Get("event_selectors")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
 
 	d.Partial(false)
 	return resourceAliCloudActiontrailTrailRead(d, meta)
@@ -410,7 +473,6 @@ func resourceAliCloudActiontrailTrailDelete(d *schema.ResourceData, meta interfa
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
