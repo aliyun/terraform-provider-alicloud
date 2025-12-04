@@ -20,12 +20,6 @@ For information about ESA Client Certificate and how to use it, see [What is Cli
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_client_certificate&exampleId=6005b8b7-3b33-6cbf-7750-be15a86377d0bb7bed12&activeTab=example&spm=docs.r.esa_client_certificate.0.6005b8b73b&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
@@ -43,9 +37,18 @@ resource "alicloud_esa_client_certificate" "default" {
 
 The following arguments are supported:
 * `csr` - (Optional) Certificate signing request content.
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
 * `pkey_type` - (Optional) The private key algorithm type.
-* `site_id` - (Required, ForceNew, Int) Site Id
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
+* `site_id` - (Required, ForceNew) Site Id
 * `validity_days` - (Required) Certificate validity period.
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
 * `status` - (Optional) The certificate status. Valid values: `revoked`, `active`.
 
 ## Attributes Reference
