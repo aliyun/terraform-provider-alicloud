@@ -29,11 +29,11 @@ func (s *CrServiceV2) DescribeCrInstance(id string) (object map[string]interface
 	action := "GetInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidAction.NotFound"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -308,3 +308,85 @@ func (s *CrServiceV2) DescribeAsyncGetInstance(d *schema.ResourceData, res map[s
 }
 
 // DescribeAsyncGetInstance >>> Encapsulated.
+
+// DescribeCrScanRule <<< Encapsulated get interface for Cr ScanRule.
+
+func (s *CrServiceV2) DescribeCrScanRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = parts[0]
+	request["ScanRuleId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	action := "GetScanRule"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SCAN_RULE_NOT_EXIST", "INSTANCE_NOT_EXIST"}) {
+			return object, WrapErrorf(NotFoundErr("ScanRule", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.ScanRule", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScanRule", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CrServiceV2) CrScanRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CrScanRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrScanRule)
+}
+
+func (s *CrServiceV2) CrScanRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCrScanRule >>> Encapsulated.
