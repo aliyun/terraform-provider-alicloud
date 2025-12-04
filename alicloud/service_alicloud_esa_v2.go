@@ -2963,6 +2963,7 @@ func (s *EsaServiceV2) EsaKvStateRefreshFunc(id string, field string, failStates
 }
 
 // DescribeEsaKv >>> Encapsulated.
+
 // DescribeEsaVideoProcessing <<< Encapsulated get interface for Esa VideoProcessing.
 
 func (s *EsaServiceV2) DescribeEsaVideoProcessing(id string) (object map[string]interface{}, err error) {
@@ -2973,6 +2974,7 @@ func (s *EsaServiceV2) DescribeEsaVideoProcessing(id string) (object map[string]
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -3003,15 +3005,18 @@ func (s *EsaServiceV2) DescribeEsaVideoProcessing(id string) (object map[string]
 }
 
 func (s *EsaServiceV2) EsaVideoProcessingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaVideoProcessingStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaVideoProcessing)
+}
+
+func (s *EsaServiceV2) EsaVideoProcessingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaVideoProcessing(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
