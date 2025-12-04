@@ -918,6 +918,8 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_cr_storage_domain_routing_rule":                       resourceAliCloudCrStorageDomainRoutingRule(),
 			"alicloud_cr_scan_rule":                                         resourceAliCloudCrScanRule(),
+			"alicloud_realtime_compute_deployment":                          resourceAliCloudRealtimeComputeDeployment(),
+			"alicloud_realtime_compute_job":                                 resourceAliCloudRealtimeComputeJob(),
 			"alicloud_cloud_firewall_private_dns":                           resourceAliCloudCloudFirewallPrivateDns(),
 			"alicloud_eflo_hyper_node":                                      resourceAliCloudEfloHyperNode(),
 			"alicloud_polar_db_extension":                                   resourceAliCloudPolarDbExtension(),
