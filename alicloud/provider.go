@@ -916,6 +916,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_realtime_compute_job":                                 resourceAliCloudRealtimeComputeJob(),
+			"alicloud_realtime_compute_deployment":                          resourceAliCloudRealtimeComputeDeployment(),
 			"alicloud_cr_scan_rule":                                         resourceAliCloudCrScanRule(),
 			"alicloud_cloud_firewall_private_dns":                           resourceAliCloudCloudFirewallPrivateDns(),
 			"alicloud_eflo_hyper_node":                                      resourceAliCloudEfloHyperNode(),
