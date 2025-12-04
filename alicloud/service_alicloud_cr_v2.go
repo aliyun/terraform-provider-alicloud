@@ -390,3 +390,85 @@ func (s *CrServiceV2) CrScanRuleStateRefreshFuncWithApi(id string, field string,
 }
 
 // DescribeCrScanRule >>> Encapsulated.
+
+// DescribeCrStorageDomainRoutingRule <<< Encapsulated get interface for Cr StorageDomainRoutingRule.
+
+func (s *CrServiceV2) DescribeCrStorageDomainRoutingRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = parts[0]
+	request["RuleId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	action := "GetStorageDomainRoutingRule"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST", "InvalidInstanceStorageDomainRoutingRule.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("StorageDomainRoutingRule", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	currentStatus := response["RuleId"]
+	if currentStatus == nil {
+		return object, WrapErrorf(NotFoundErr("StorageDomainRoutingRule", id), NotFoundMsg, response)
+	}
+
+	return response, nil
+}
+
+func (s *CrServiceV2) CrStorageDomainRoutingRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CrStorageDomainRoutingRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrStorageDomainRoutingRule)
+}
+
+func (s *CrServiceV2) CrStorageDomainRoutingRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCrStorageDomainRoutingRule >>> Encapsulated.
