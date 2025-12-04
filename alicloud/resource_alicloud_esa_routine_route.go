@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -34,6 +35,11 @@ func resourceAliCloudEsaRoutineRoute() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"fallback": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"route_enable": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -54,10 +60,9 @@ func resourceAliCloudEsaRoutineRoute() *schema.Resource {
 			"sequence": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"site_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -93,6 +98,9 @@ func resourceAliCloudEsaRoutineRouteCreate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("bypass"); ok {
 		request["Bypass"] = v
+	}
+	if v, ok := d.GetOk("fallback"); ok {
+		request["Fallback"] = v
 	}
 	if v, ok := d.GetOk("rule"); ok {
 		request["Rule"] = v
@@ -135,6 +143,7 @@ func resourceAliCloudEsaRoutineRouteRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("bypass", objectRaw["Bypass"])
+	d.Set("fallback", objectRaw["Fallback"])
 	d.Set("route_enable", objectRaw["RouteEnable"])
 	d.Set("route_name", objectRaw["RouteName"])
 	d.Set("rule", objectRaw["Rule"])
@@ -143,7 +152,7 @@ func resourceAliCloudEsaRoutineRouteRead(d *schema.ResourceData, meta interface{
 	d.Set("routine_name", objectRaw["RoutineName"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", formatInt(parts[0]))
+	d.Set("site_id", fmt.Sprint(parts[0]))
 
 	return nil
 }
@@ -182,6 +191,11 @@ func resourceAliCloudEsaRoutineRouteUpdate(d *schema.ResourceData, meta interfac
 	if d.HasChange("bypass") {
 		update = true
 		request["Bypass"] = d.Get("bypass")
+	}
+
+	if d.HasChange("fallback") {
+		update = true
+		request["Fallback"] = d.Get("fallback")
 	}
 
 	if d.HasChange("rule") {
@@ -227,7 +241,6 @@ func resourceAliCloudEsaRoutineRouteDelete(d *schema.ResourceData, meta interfac
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

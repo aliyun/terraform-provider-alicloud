@@ -59,9 +59,13 @@ func TestAccAliCloudESARoutineRouteresource_RoutineRoute_test(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{}),
+				Config: testAccConfig(map[string]interface{}{
+					"fallback": "on",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"fallback": "on",
+					}),
 				),
 			},
 			{
