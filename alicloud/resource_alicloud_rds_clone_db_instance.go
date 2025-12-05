@@ -518,6 +518,9 @@ func resourceAlicloudRdsCloneDbInstanceCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
+	if v, ok := d.GetOk("db_instance_description"); ok {
+		request["DBInstanceDescription"] = v
+	}
 
 	instance, err := rdsService.DescribeDBInstance(d.Get("source_db_instance_id").(string))
 	if err != nil {
