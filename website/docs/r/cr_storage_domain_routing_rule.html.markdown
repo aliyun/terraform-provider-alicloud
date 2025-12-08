@@ -20,6 +20,12 @@ For information about CR Storage Domain Routing Rule and how to use it, see [Wha
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cr_storage_domain_routing_rule&exampleId=c3f442f1-b7d2-e324-d664-1b610d027b130e11347a&activeTab=example&spm=docs.r.cr_storage_domain_routing_rule.0.c3f442f1b7&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

@@ -1,38 +1,40 @@
-## 1.265.0 (Unreleased)
+## 1.266.0 (Unreleased)
+## 1.265.0 (December 05, 2024)
 
-- **New Resource:** `alicloud_cr_scan_rule` [GH-9190]
-- **New Resource:** `alicloud_cr_storage_domain_routing_rule` [GH-9265]
-- **New Resource:** `alicloud_realtime_compute_deployment` [GH-9266]
-- **New Resource:** `alicloud_realtime_compute_job` [GH-9266]
+- **New Resource:** `alicloud_cr_scan_rule` ([#9190](https://github.com/aliyun/terraform-provider-alicloud/issues/9190))
+- **New Resource:** `alicloud_cr_storage_domain_routing_rule` ([#9265](https://github.com/aliyun/terraform-provider-alicloud/issues/9265))
+- **New Resource:** `alicloud_realtime_compute_deployment` ([#9266](https://github.com/aliyun/terraform-provider-alicloud/issues/9266))
+- **New Resource:** `alicloud_realtime_compute_job` ([#9266](https://github.com/aliyun/terraform-provider-alicloud/issues/9266))
 
 ENHANCEMENTS:
 
-- resource/alicloued_esa_waf_rule: Refactored the resource and improve the docs. [GH-9238]
-- resource/alicloud_ess_server_group_attachment: add error code retry. [GH-9240]
-- resource/alicloud_polardb_account: Refactored the resource alicloud_polardb_account; Added the field account_lock_state, account_password_valid_time, status. [GH-9245]
-- resource/alicloud_esa_waiting_room_rule: Change site_id attribute type to TypeString. [GH-9251]
-- resource/alicloud_esa_cache_rule: Change site_id attribute type to TypeString. [GH-9252]
-- resource/alicloud_esa_https_application_configuration: Change site_id attribute type to TypeString. [GH-9253]
-- resource/alicloud_esa_origin_client_certificate: Change site_id attribute type to TypeString. [GH-9254]
-- resource/alicloud_esa_edge_container_app_record: Change site_id attribute type to TypeString. [GH-9255]
-- resource/alicloud_esa_transport_layer_application: Change site_id attribute type to TypeString. [GH-9256]
-- resource/alicloud_polardb_database: Refactored the resource alicloud_polardb_database; Added the field collate, ctype, status; Removed the ForceNew for field account_name. [GH-9257]
-- resource/alicloud_esa_version: Change site_id attribute type to TypeString. [GH-9258]
-- resource/alicloud_esa_routine_related_record: Refactored the resource and improve the docs. [GH-9259]
-- resource/alicloud_esa_video_processing: Change site_id attribute type to TypeString. [GH-9260]
-- resource/alicloud_esa_client_certificate: Refactored the resource and improve the docs. [GH-9261]
-- resource/alicloud_esa_https_basic_configuration: Change site_id attribute type to TypeString. [GH-9263]
-- resource/alicloud_esa_origin_rule: Change site_id attribute type to TypeString. [GH-9264]
-- resource/alicloud_esa_redirect_rule: Change site_id attribute type to TypeString. [GH-9268]
-- resource/alicloud_esa_routine_route: Added the field fallback. [GH-9269]
-- resource/alicloud_esa_http_response_header_modification_rule: Change site_id attribute type to TypeString. [GH-9270]
-- testcase: Improves test for common utils. [GH-9249]
-- testcase: Improves test for common utils. [GH-9250]
+- resource/alicloued_esa_waf_rule: Refactored the resource and improve the docs. ([#9238](https://github.com/aliyun/terraform-provider-alicloud/issues/9238))
+- resource/alicloud_ess_server_group_attachment: add error code retry. ([#9240](https://github.com/aliyun/terraform-provider-alicloud/issues/9240))
+- resource/alicloud_polardb_account: Refactored the resource alicloud_polardb_account; Added the field account_lock_state, account_password_valid_time, status. ([#9245](https://github.com/aliyun/terraform-provider-alicloud/issues/9245))
+- resource/alicloud_esa_waiting_room_rule: Change site_id attribute type to TypeString. ([#9251](https://github.com/aliyun/terraform-provider-alicloud/issues/9251))
+- resource/alicloud_esa_cache_rule: Change site_id attribute type to TypeString. ([#9252](https://github.com/aliyun/terraform-provider-alicloud/issues/9252))
+- resource/alicloud_esa_https_application_configuration: Change site_id attribute type to TypeString. ([#9253](https://github.com/aliyun/terraform-provider-alicloud/issues/9253))
+- resource/alicloud_esa_origin_client_certificate: Change site_id attribute type to TypeString. ([#9254](https://github.com/aliyun/terraform-provider-alicloud/issues/9254))
+- resource/alicloud_esa_edge_container_app_record: Change site_id attribute type to TypeString. ([#9255](https://github.com/aliyun/terraform-provider-alicloud/issues/9255))
+- resource/alicloud_esa_transport_layer_application: Change site_id attribute type to TypeString. ([#9256](https://github.com/aliyun/terraform-provider-alicloud/issues/9256))
+- resource/alicloud_polardb_database: Refactored the resource alicloud_polardb_database; Added the field collate, ctype, status; Removed the ForceNew for field account_name. ([#9257](https://github.com/aliyun/terraform-provider-alicloud/issues/9257))
+- resource/alicloud_esa_version: Change site_id attribute type to TypeString. ([#9258](https://github.com/aliyun/terraform-provider-alicloud/issues/9258))
+- resource/alicloud_esa_routine_related_record: Refactored the resource and improve the docs. ([#9259](https://github.com/aliyun/terraform-provider-alicloud/issues/9259))
+- resource/alicloud_esa_video_processing: Change site_id attribute type to TypeString. ([#9260](https://github.com/aliyun/terraform-provider-alicloud/issues/9260))
+- resource/alicloud_esa_client_certificate: Refactored the resource and improve the docs. ([#9261](https://github.com/aliyun/terraform-provider-alicloud/issues/9261))
+- resource/alicloud_esa_https_basic_configuration: Change site_id attribute type to TypeString. ([#9263](https://github.com/aliyun/terraform-provider-alicloud/issues/9263))
+- resource/alicloud_esa_origin_rule: Change site_id attribute type to TypeString. ([#9264](https://github.com/aliyun/terraform-provider-alicloud/issues/9264))
+- resource/alicloud_esa_redirect_rule: Change site_id attribute type to TypeString. ([#9268](https://github.com/aliyun/terraform-provider-alicloud/issues/9268))
+- resource/alicloud_esa_routine_route: Added the field fallback. ([#9269](https://github.com/aliyun/terraform-provider-alicloud/issues/9269))
+- resource/alicloud_esa_http_response_header_modification_rule: Change site_id attribute type to TypeString. ([#9270](https://github.com/aliyun/terraform-provider-alicloud/issues/9270))
+- resource/alicloud_eflo_node: supports creating pay-as-you-go node and upgrading node type. ([#9273](https://github.com/aliyun/terraform-provider-alicloud/issues/9273))
+- testcase: Improves test for common utils. ([#9249](https://github.com/aliyun/terraform-provider-alicloud/issues/9249))
+- testcase: Improves test for common utils. ([#9250](https://github.com/aliyun/terraform-provider-alicloud/issues/9250))
 
 BUG FIXES:
 
-- resource/alicloud_amqp_binding: Fixed the read error. [GH-9241]
-- resource/alicloud_db_instance: tags bug fix. [GH-9242]
+- resource/alicloud_amqp_binding: Fixed the read error. ([#9241](https://github.com/aliyun/terraform-provider-alicloud/issues/9241))
+- resource/alicloud_db_instance: tags bug fix. ([#9242](https://github.com/aliyun/terraform-provider-alicloud/issues/9242))
 
 ## 1.264.0 (November 28, 2025)
 
