@@ -1523,6 +1523,62 @@ func (s *EfloServiceV2) DescribeHyperNodeListTagResources(id string) (object map
 
 	return response, nil
 }
+func (s *EfloServiceV2) DescribeHyperNodeListClusterHyperNodes(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["MaxResults"] = PageSizeXLarge
+	action := "ListClusterHyperNodes"
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		v, err := jsonpath.Get("$.HyperNodes[*]", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HyperNodes[*]", response)
+		}
+
+		if len(v.([]interface{})) == 0 {
+			return object, WrapErrorf(NotFoundErr("HyperNode", id), NotFoundMsg, response)
+		}
+
+		result, _ := v.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if fmt.Sprint(item["HyperNodeId"]) != id {
+				continue
+			}
+			return item, nil
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("HyperNode", id), NotFoundMsg, response)
+}
 
 func (s *EfloServiceV2) EfloHyperNodeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.EfloHyperNodeStateRefreshFuncWithApi(id, field, failStates, s.DescribeEfloHyperNode)

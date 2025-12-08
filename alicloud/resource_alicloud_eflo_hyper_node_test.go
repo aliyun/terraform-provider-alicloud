@@ -107,7 +107,7 @@ func TestAccAliCloudEfloHyperNode_basic11893(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"payment_duration", "stage_num"},
+				ImportStateVerifyIgnore: []string{"data_disk", "login_password", "payment_duration", "stage_num"},
 			},
 		},
 	})

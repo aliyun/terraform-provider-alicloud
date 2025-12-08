@@ -12,19 +12,13 @@ Provides a Eflo Hyper Node resource.
 
 Hyper computing node.
 
-For information about Eflo Hyper Node and how to use it, see [What is Hyper Node](https://www.alibabacloud.com/help/en/pai/developer-reference/api-eflo-controller-2022-12-15-overview).
+For information about Eflo Hyper Node and how to use it, see [What is Hyper Node](https://next.api.alibabacloud.com/document/BssOpenApi/2017-12-14/CreateInstance).
 
--> **NOTE:** Available since v1.264.0.
+-> **NOTE:** Available since v1.265.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_hyper_node&exampleId=dcaa54a6-f1bb-2d39-3a0e-702738f2f91afb7f9a84&activeTab=example&spm=docs.r.eflo_hyper_node.0.dcaa54a6f1&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -32,31 +26,36 @@ variable "name" {
 }
 
 provider "alicloud" {
-  region = "ap-southeast-7"
+  region = "cn-hangzhou"
 }
+
 
 resource "alicloud_eflo_hyper_node" "default" {
   zone_id          = "ap-southeast-7a"
+  product_code     = "bccluster"
   machine_type     = "efg3.GN9A.ch72"
+  product_type     = "bccluster_eflocomputing_public_cn"
   hpn_zone         = "A1"
   server_arch      = "bmserver"
   payment_duration = "1"
   payment_type     = "Subscription"
   stage_num        = "1"
-  renewal_duration = 2
-  renewal_status   = "ManualRenewal"
-  tags = {
-    From = "Terraform"
-    Env  = "Product"
-  }
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
+* `cluster_id` - (Optional) Cluster ID
+* `data_disk` - (Optional, List) List of disk information See [`data_disk`](#data_disk) below.
+
+-> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
+* `hostname` - (Optional) Host name
 * `hpn_zone` - (Optional, ForceNew) Number of the cluster to which the supercompute node belongs
+* `login_password` - (Optional) Login Password
 * `machine_type` - (Optional, ForceNew) The model used by the super computing node
+* `node_group_id` - (Optional) Node group ID
 * `payment_duration` - (Optional, Int) The duration of the instance purchase, in units.
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
@@ -71,7 +70,23 @@ The following arguments are supported:
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `tags` - (Optional, Map) The tag of the resource
+* `user_data` - (Optional) Custom Data
+* `vswitch_id` - (Optional) Switch ID
+* `vpc_id` - (Optional) VPC ID
 * `zone_id` - (Optional, ForceNew) The zone where the super compute node is located
+
+### `data_disk`
+
+The data_disk supports the following:
+* `bursting_enabled` - (Optional) Whether to enable Burst (performance Burst).
+* `category` - (Optional) The disk type. Value range:
+  - cloud_essd:ESSD cloud disk.
+* `delete_with_node` - (Optional) Whether the data disk is unsubscribed and deleted with the node.
+* `performance_level` - (Optional) When creating an ESSD cloud disk to use as a system disk, set the performance level of the cloud disk. Value range:
+  - PL0: maximum random read/write IOPS 10000 for a single disk.
+  - PL1: maximum random read/write IOPS 50000 for a single disk.
+* `provisioned_iops` - (Optional, Int) ESSD AutoPL cloud disk (single disk) pre-configuration performance of IOPS.
+* `size` - (Optional, Int) The size of the disk. The unit is GiB.
 
 ## Attributes Reference
 
@@ -86,7 +101,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Hyper Node.
 * `delete` - (Defaults to 5 mins) Used when delete the Hyper Node.
-* `update` - (Defaults to 5 mins) Used when update the Hyper Node.
+* `update` - (Defaults to 38 mins) Used when update the Hyper Node.
 
 ## Import
 
