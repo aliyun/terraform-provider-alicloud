@@ -370,7 +370,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"deletion_protection": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Computed: true,
 			},
 			"enable_rrsa": {
 				Type:     schema.TypeBool,
@@ -927,7 +927,7 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 		request.SetKubernetesVersion(v.(string))
 	}
 
-	if v, ok := d.GetOk("deletion_protection"); ok {
+	if v, ok := d.GetOkExists("deletion_protection"); ok {
 		request.SetDeletionProtection(v.(bool))
 	}
 
