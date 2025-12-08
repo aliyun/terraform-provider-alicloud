@@ -84,17 +84,18 @@ func (s *EfloServiceV2) DescribeNodeListTagResources(id string) (object map[stri
 	return response, nil
 }
 func (s *EfloServiceV2) DescribeNodeQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
+
+	installPai := false
+	if v, ok := d.GetOk("install_pai"); ok && v.(bool) {
+		installPai = true
+	}
 	client := s.client
+	id := d.Id()
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	id := d.Id()
-	installPai := false
-	if v, ok := d.GetOk("install_pai"); ok && v.(bool) {
-		installPai = true
-	}
 	request["InstanceIDs"] = id
 	request["Region"] = client.RegionId
 	var endpoint string
@@ -174,6 +175,60 @@ func (s *EfloServiceV2) DescribeNodeQueryAvailableInstances(d *schema.ResourceDa
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+func (s *EfloServiceV2) DescribeNodeListClusterNodes(d *schema.ResourceData) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["ClusterId"] = d.Get("cluster_id")
+	request["NodeGroupId"] = d.Get("node_group_id")
+	request["MaxResults"] = 100
+	action := "ListClusterNodes"
+	id := d.Id()
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		v, err := jsonpath.Get("$.Nodes[*]", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Nodes[*]", response)
+		}
+
+		if len(v.([]interface{})) == 0 {
+			return object, WrapErrorf(NotFoundErr("Node", id), NotFoundMsg, response)
+		}
+		for _, vv := range v.([]interface{}) {
+			if fmt.Sprint(vv.(map[string]interface{})["NodeId"]) == id {
+				return vv.(map[string]interface{}), nil
+			}
+		}
+		if v, ok := response["NextToken"].(string); ok && v != "" {
+			request["NextToken"] = v
+		} else {
+			break
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("Node", id), NotFoundMsg, response)
+}
 
 func (s *EfloServiceV2) EfloNodeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.EfloNodeStateRefreshFuncWithApi(id, field, failStates, s.DescribeEfloNode)
@@ -184,7 +239,7 @@ func (s *EfloServiceV2) EfloNodeStateRefreshFuncWithApi(id string, field string,
 		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
