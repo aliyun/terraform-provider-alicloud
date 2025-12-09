@@ -492,6 +492,7 @@ var regularProductEndpoint = map[string]string{
 	"dds":                  "mongodb.%s.aliyuncs.com",
 	"cloudcontrol":         "cloudcontrol.aliyuncs.com",
 	"bpstudio":             "bpstudio.cn-hangzhou.aliyuncs.com",
+	"openapiexplorer":      "openapi-mcp.cn-hangzhou.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
@@ -520,6 +521,7 @@ var regularProductEndpointForIntlRegion = map[string]string{
 var regularProductEndpointForIntlAccount = map[string]string{
 	"config":              "config.ap-southeast-1.aliyuncs.com",
 	"mscopensubscription": "mscopensubscription.ap-southeast-1.aliyuncs.com",
+	"openapiexplorer":     "openapi-mcp.ap-southeast-1.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlAccountIntlRegion specially records those product codes that have been confirmed to be
