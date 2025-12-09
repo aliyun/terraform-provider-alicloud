@@ -3,12 +3,14 @@ subcategory: "RabbitMQ (AMQP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_amqp_instance"
 description: |-
-  Provides a Alicloud Amqp Instance resource.
+  Provides a Alicloud RabbitMQ (AMQP) Instance resource.
 ---
 
 # alicloud_amqp_instance
 
-Provides a Amqp Instance resource. The instance of Amqp.
+Provides a RabbitMQ (AMQP) Instance resource.
+
+The instance of Amqp.
 
 For information about RabbitMQ (AMQP) Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/message-queue-for-rabbitmq/latest/createinstance).
 
@@ -81,6 +83,12 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 
 The following arguments are supported:
 * `auto_renew` - (Optional, Available since v1.129.0) Renewal method. Automatic renewal: true; Manual renewal: false. When RenewalStatus has a value, the value of RenewalStatus shall prevail.
+* `edition` - (Optional, Available since v1.266.0) The deployment architecture for Serverless instances. Valid values:
+  - `shared`: Shared architecture, applicable to reserved + elastic (shared) and pay-as-you-go editions.
+  - `dedicated`: Dedicated architecture, applicable to reserved + elastic (dedicated) editions.
+
+-> **NOTE:**  Modifying the Edition parameter triggers instance cluster migration. Before making this change, submit a ticket to the cloud service team. [Submit a Ticket](https://smartservice.console.aliyun.com/service/create-ticket?entrance=100&product=rabbitmq)
+    
 * `instance_name` - (Optional, Computed) The instance name.
 * `instance_type` - (Optional, Computed) Instance type. Valid values: 
   - professional: professional Edition 
@@ -99,6 +107,7 @@ The following arguments are supported:
   - PayAsYouGo: Post-paid, and for serverless Edition.
 * `period` - (Optional) Prepayment cycle, unit: periodCycle. This parameter is valid when PaymentType is set to Subscription.
 * `period_cycle` - (Optional, Available since v1.129.0) Prepaid cycle units. Value: Month, Year.
+* `provisioned_capacity` - (Optional, Int, Available since v1.266.0) The provisioned TPS capacity for reserved + elastic instances.
 * `queue_capacity` - (Optional, Computed) Configure the maximum number of queues. The value range is as follows:  Professional version:[50,1000], minimum modification step size is 5  Enterprise Edition:[200,6000], minimum modification step size is 100  Platinum version:[10000,80000], minimum modification step size is 100.
 * `renewal_duration` - (Optional, Computed) The number of automatic renewal cycles.
 * `renewal_duration_unit` - (Optional, Computed) Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years.

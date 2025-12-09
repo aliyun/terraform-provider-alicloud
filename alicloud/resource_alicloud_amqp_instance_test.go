@@ -20,411 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudAmqpInstance_professional(t *testing.T) {
-	// professional instance only supports minority regions
-	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Qingdao})
-	var v map[string]interface{}
-	resourceId := "alicloud_amqp_instance.default"
-	ra := resourceAttrInit(resourceId, AmqpInstanceBasicMap)
-	serviceFunc := func() interface{} {
-		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpInstanceprofessional%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			//testAccPreCheckWithTime(t, []int{1})
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		//CheckDestroy:  nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name":  "${var.name}",
-					"instance_type":  "professional",
-					"max_tps":        "1000",
-					"payment_type":   "Subscription",
-					"period":         "1",
-					"queue_capacity": "50",
-					"support_eip":    "false",
-					"auto_renew":     "true",
-					"period_cycle":   "Year",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name":         name,
-						"instance_type":         "professional",
-						"max_tps":               "1000",
-						"payment_type":          "Subscription",
-						"queue_capacity":        "50",
-						"support_eip":           "false",
-						"renewal_status":        "AutoRenewal",
-						"renewal_duration_unit": "Month",
-						"status":                "SERVING",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"auto_renew": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"auto_renew": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name": name + "-update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name": name + "-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"modify_type":     "Upgrade",
-					"max_tps":         "1500",
-					"max_eip_tps":     "256",
-					"max_connections": "1500",
-					"queue_capacity":  "150",
-					// "tracing_storage_time": "3",
-					"support_eip": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"max_tps":        "1500",
-						"max_eip_tps":    "256",
-						"support_eip":    "true",
-						"queue_capacity": "150",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"queue_capacity": "200",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"queue_capacity": "200",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"modify_type": "Downgrade",
-					"support_eip": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"modify_type": "Downgrade",
-						"support_eip": "false",
-						"max_eip_tps": "-1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"renewal_duration":      "1",
-					"renewal_duration_unit": "Year",
-					"renewal_status":        "AutoRenewal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"renewal_duration":      "1",
-						"renewal_duration_unit": "Year",
-						"renewal_status":        "AutoRenewal",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"renewal_duration":      "2",
-					"renewal_duration_unit": "Month",
-					"renewal_status":        "AutoRenewal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"renewal_duration":      "2",
-						"renewal_duration_unit": "Month",
-						"renewal_status":        "AutoRenewal",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"renewal_status": "ManualRenewal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"renewal_duration":      CHECKSET,
-						"renewal_duration_unit": CHECKSET,
-						"renewal_status":        "ManualRenewal",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name":  name,
-					"modify_type":    "Downgrade",
-					"max_tps":        "1000",
-					"queue_capacity": "50",
-					"support_eip":    "false",
-					"renewal_status": "NotRenewal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name":         name,
-						"max_tps":               "1000",
-						"queue_capacity":        "50",
-						"support_eip":           "false",
-						"renewal_status":        "NotRenewal",
-						"renewal_duration":      CHECKSET,
-						"renewal_duration_unit": "Month",
-						"max_eip_tps":           "-1",
-					}),
-				),
-			},
-
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "period", "max_tps", "max_eip_tps", "queue_capacity", "auto_renew"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudAmqpInstance_enterprise(t *testing.T) {
-
-	var v map[string]interface{}
-	resourceId := "alicloud_amqp_instance.default"
-	ra := resourceAttrInit(resourceId, AmqpInstanceBasicMap)
-	serviceFunc := func() interface{} {
-		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpInstanceenterprise%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			//testAccPreCheckWithTime(t, []int{1})
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name":  "${var.name}",
-					"instance_type":  "enterprise",
-					"max_tps":        "3000",
-					"payment_type":   "Subscription",
-					"period":         "1",
-					"queue_capacity": "200",
-					"support_eip":    "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name":         name,
-						"instance_type":         "enterprise",
-						"max_tps":               "3000",
-						"payment_type":          "Subscription",
-						"queue_capacity":        "200",
-						"support_eip":           "false",
-						"renewal_status":        "ManualRenewal",
-						"renewal_duration_unit": "Month",
-						"status":                "SERVING",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name": name + "-update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name": name + "-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"modify_type":     "Upgrade",
-					"max_tps":         "5000",
-					"max_connections": "2000",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"max_tps": "5000",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"queue_capacity": "300",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"queue_capacity": "300",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"support_eip": "true",
-					"max_eip_tps": "128",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"support_eip": "true",
-						"max_eip_tps": "128",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"support_tracing":      "true",
-					"tracing_storage_time": "15",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"support_tracing":      "true",
-						"tracing_storage_time": "15",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name":   name,
-					"modify_type":     "Downgrade",
-					"max_tps":         "3000",
-					"queue_capacity":  "200",
-					"support_eip":     "false",
-					"renewal_status":  "NotRenewal",
-					"support_tracing": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name":         name,
-						"max_tps":               "3000",
-						"queue_capacity":        "200",
-						"support_eip":           "false",
-						"renewal_status":        "NotRenewal",
-						"renewal_duration":      CHECKSET,
-						"renewal_duration_unit": "Month",
-						"max_eip_tps":           "-1",
-						"support_tracing":       "false",
-					}),
-				),
-			},
-
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "period", "max_tps", "max_eip_tps", "queue_capacity"},
-			},
-		},
-	})
-}
-
-// Currently, the test account does not support the vip
-func TestAccAliCloudAmqpInstance_vip(t *testing.T) {
-
-	var v map[string]interface{}
-	resourceId := "alicloud_amqp_instance.default"
-	ra := resourceAttrInit(resourceId, AmqpInstanceBasicMap)
-	serviceFunc := func() interface{} {
-		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpInstancevip%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_type":        "vip",
-					"max_tps":              "8000",
-					"max_eip_tps":          "128",
-					"max_connections":      "50000",
-					"payment_type":         "Subscription",
-					"period":               "1",
-					"queue_capacity":       "10000",
-					"storage_size":         "700",
-					"support_eip":          "true",
-					"support_tracing":      "true",
-					"tracing_storage_time": "15",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_type":         "vip",
-						"max_tps":               "8000",
-						"payment_type":          "Subscription",
-						"queue_capacity":        "10000",
-						"storage_size":          "700",
-						"support_eip":           "true",
-						"renewal_status":        "ManualRenewal",
-						"renewal_duration_unit": "Month",
-						"status":                "SERVING",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "period", "max_eip_tps", "queue_capacity", "storage_size"},
-			},
-		},
-	})
-}
-
-func resourceAmqpInstanceConfigDependence(name string) string {
-	return fmt.Sprintf(`
-		variable "name" {
- 			default = "%v"
-		}
-		`, name)
-}
-
-var AmqpInstanceBasicMap = map[string]string{}
-
-func TestUnitAlicloudAmqpInstance(t *testing.T) {
+func TestUnitAliCloudAmqpInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
@@ -1170,7 +766,7 @@ func TestUnitAlicloudAmqpInstance(t *testing.T) {
 func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudAmqpInstanceMap6128)
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap6128)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAmqpInstance")
@@ -1178,9 +774,10 @@ func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%samqpinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAmqpInstanceBasicDependence6128)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence6128)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -1198,24 +795,69 @@ func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
 					}),
 				),
 			},
+			// Currently, Modifying the Edition parameter involves migrating the instance cluster. Before making changes, submit a ticket to the cloud service provider.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"edition": "dedicated",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"edition": "dedicated",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"support_eip":            "true",
-					"support_tracing":        "true",
-					"serverless_charge_type": "onDemand",
-					"payment_type":           "PayAsYouGo",
-					"max_eip_tps":            "128",
-					"tracing_storage_time":   "15",
+					"serverless_charge_type": "provisioned",
+					"provisioned_capacity":   "2000",
 					"modify_type":            "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"support_eip":            "true",
-						"support_tracing":        "true",
-						"serverless_charge_type": "onDemand",
-						"payment_type":           "PayAsYouGo",
-						"max_eip_tps":            "128",
-						"tracing_storage_time":   "15",
+						"provisioned_capacity": "2000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"provisioned_capacity": "20000",
+					"modify_type":          "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"provisioned_capacity": "20000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"support_eip": "true",
+					"modify_type": "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"support_eip": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"support_tracing": "true",
+					"modify_type":     "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"support_tracing": "true",
 					}),
 				),
 			},
@@ -1229,14 +871,324 @@ func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
 	})
 }
 
-var AlicloudAmqpInstanceMap6128 = map[string]string{
-	"support_tracing": "false",
-	"status":          CHECKSET,
-	"create_time":     CHECKSET,
-	"instance_name":   CHECKSET,
+func TestAccAliCloudAmqpInstance_basic6128_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap6128)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%samqpinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence6128)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":           "PayAsYouGo",
+					"serverless_charge_type": "provisioned",
+					"provisioned_capacity":   "20000",
+					"edition":                "dedicated",
+					"instance_name":          name,
+					"support_eip":            "true",
+					"support_tracing":        "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":         "PayAsYouGo",
+						"provisioned_capacity": "20000",
+						"edition":              "dedicated",
+						"instance_name":        name,
+						"support_eip":          "true",
+						"support_tracing":      "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type", "renewal_duration", "renewal_duration_unit", "renewal_status"},
+			},
+		},
+	})
 }
 
-func AlicloudAmqpInstanceBasicDependence6128(name string) string {
+var AliCloudAmqpInstanceMap6128 = map[string]string{
+	"status":        CHECKSET,
+	"create_time":   CHECKSET,
+	"instance_name": CHECKSET,
+}
+
+func AliCloudAmqpInstanceBasicDependence6128(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test Amqp Instance. >>> Resource test cases, automatically generated.
+// Case 创建企业版实例5 11166
+func TestAccAliCloudAmqpInstance_basic11166(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap11166)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccamqp%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence11166)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":    "Subscription",
+					"instance_type":   "enterprise",
+					"max_tps":         "3000",
+					"max_connections": "2000",
+					"queue_capacity":  "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":    "Subscription",
+						"instance_type":   "enterprise",
+						"max_tps":         "3000",
+						"max_connections": "2000",
+						"queue_capacity":  "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type":   "vip",
+					"max_tps":         "8000",
+					"max_connections": "50000",
+					"queue_capacity":  "10000",
+					"modify_type":     "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type":   "vip",
+						"max_tps":         "8000",
+						"max_connections": "50000",
+						"queue_capacity":  "10000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_connections": "51000",
+					"modify_type":     "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_connections": "51000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"support_eip": "true",
+					"modify_type": "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"support_eip": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_eip_tps": "256",
+					"modify_type": "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_eip_tps": "256",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_tps":     "15000",
+					"modify_type": "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_tps": "15000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_capacity": "11000",
+					"modify_type":    "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_capacity": "11000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status":        "AutoRenewal",
+					"renewal_duration":      "1",
+					"renewal_duration_unit": "Year",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status":        "AutoRenewal",
+						"renewal_duration":      "1",
+						"renewal_duration_unit": "Year",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_size": "800",
+					"modify_type":  "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_size": "800",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"support_tracing":      "true",
+					"tracing_storage_time": "15",
+					"modify_type":          "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"support_tracing":      "true",
+						"tracing_storage_time": "15",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAmqpInstance_basic11166_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap11166)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccamqp%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence11166)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew":            "true",
+					"payment_type":          "Subscription",
+					"period":                "1",
+					"period_cycle":          "Year",
+					"instance_type":         "vip",
+					"max_tps":               "8000",
+					"max_connections":       "50000",
+					"queue_capacity":        "10000",
+					"instance_name":         name,
+					"support_eip":           "true",
+					"max_eip_tps":           "128",
+					"renewal_status":        "AutoRenewal",
+					"renewal_duration":      "1",
+					"renewal_duration_unit": "Year",
+					"storage_size":          "800",
+					"support_tracing":       "true",
+					"tracing_storage_time":  "15",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":          "Subscription",
+						"instance_type":         "vip",
+						"max_tps":               "8000",
+						"max_connections":       "50000",
+						"queue_capacity":        "10000",
+						"instance_name":         name,
+						"support_eip":           "true",
+						"max_eip_tps":           "128",
+						"renewal_status":        "AutoRenewal",
+						"renewal_duration":      "1",
+						"renewal_duration_unit": "Year",
+						"storage_size":          "800",
+						"support_tracing":       "true",
+						"tracing_storage_time":  "15",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type"},
+			},
+		},
+	})
+}
+
+var AliCloudAmqpInstanceMap11166 = map[string]string{
+	"status":               CHECKSET,
+	"create_time":          CHECKSET,
+	"instance_name":        CHECKSET,
+	"renewal_status":       CHECKSET,
+	"tracing_storage_time": CHECKSET,
+}
+
+func AliCloudAmqpInstanceBasicDependence11166(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
