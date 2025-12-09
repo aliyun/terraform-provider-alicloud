@@ -16,24 +16,24 @@ func resourceAliCloudSchedulerxNamespace() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudSchedulerxNamespaceCreate,
 		Read:   resourceAliCloudSchedulerxNamespaceRead,
+		Update: resourceAliCloudSchedulerxNamespaceUpdate,
 		Delete: resourceAliCloudSchedulerxNamespaceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"namespace_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"namespace_uid": {
 				Type:     schema.TypeString,
@@ -102,22 +102,91 @@ func resourceAliCloudSchedulerxNamespaceRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	if objectRaw["Description"] != nil {
-		d.Set("description", objectRaw["Description"])
-	}
-	if objectRaw["Name"] != nil {
-		d.Set("namespace_name", objectRaw["Name"])
-	}
-	if objectRaw["UId"] != nil {
-		d.Set("namespace_uid", objectRaw["UId"])
-	}
+	d.Set("description", objectRaw["Description"])
+	d.Set("namespace_name", objectRaw["Name"])
+	d.Set("namespace_uid", objectRaw["UId"])
 
 	d.Set("namespace_uid", d.Id())
 
 	return nil
 }
 
+func resourceAliCloudSchedulerxNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	action := "UpdateNamespace"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Namespace"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("namespace_name") {
+		update = true
+	}
+	request["NamespaceName"] = d.Get("namespace_name")
+	if d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudSchedulerxNamespaceRead(d, meta)
+}
+
 func resourceAliCloudSchedulerxNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Namespace. Terraform will remove this resource from the state file, however resources may remain.")
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteNamespace"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["Namespace"] = d.Id()
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
 	return nil
 }

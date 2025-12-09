@@ -100,11 +100,11 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxNamespace(id string) (object map
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListNamespaces"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Namespace"] = id
 	request["RegionId"] = client.RegionId
+	action := "ListNamespaces"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -137,15 +137,18 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxNamespace(id string) (object map
 }
 
 func (s *SchedulerxServiceV2) SchedulerxNamespaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.SchedulerxNamespaceStateRefreshFuncWithApi(id, field, failStates, s.DescribeSchedulerxNamespace)
+}
+
+func (s *SchedulerxServiceV2) SchedulerxNamespaceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeSchedulerxNamespace(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
