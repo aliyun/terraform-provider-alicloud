@@ -322,7 +322,77 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 }
 
 // Test Schedulerx Namespace. >>> Resource test cases, automatically generated.
-// Case 预发环境_20241220_杭州region 9449
+// Case 预发环境_20251105_乌兰察布egion 11782
+func TestAccAliCloudSchedulerxNamespace_basic11782(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_schedulerx_namespace.default"
+	ra := resourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap11782)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSchedulerxNamespace")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccschedulerx%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxNamespaceBasicDependence11782)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name": name,
+					"description":    "namespace 资源用例自动创建的命名空间",
+					"namespace_uid":  "1765244529",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name": name,
+						"description":    "namespace 资源用例自动创建的命名空间",
+						"namespace_uid":  CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name": name + "_update",
+					"description":    "namespace资源用例自动创建的命名空间",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name": name + "_update",
+						"description":    "namespace资源用例自动创建的命名空间",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudSchedulerxNamespaceMap11782 = map[string]string{}
+
+func AlicloudSchedulerxNamespaceBasicDependence11782(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 线上环境_20241220_杭州region 9449
 func TestAccAliCloudSchedulerxNamespace_basic9449(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_namespace.default"
@@ -333,21 +403,22 @@ func TestAccAliCloudSchedulerxNamespace_basic9449(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sschedulerxnamespace%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccschedulerx%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxNamespaceBasicDependence9449)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"namespace_name": name,
 					"description":    "namespace 资源用例自动创建的命名空间",
-					"namespace_uid":  fmt.Sprint(rand),
+					"namespace_uid":  "1765244530",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
