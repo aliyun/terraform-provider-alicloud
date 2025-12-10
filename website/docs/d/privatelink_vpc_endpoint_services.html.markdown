@@ -2,14 +2,13 @@
 subcategory: "Private Link"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_privatelink_vpc_endpoint_services"
-sidebar_current: "docs-alicloud-datasource-privatelink-vpc-endpoint-services"
 description: |-
-  Provides a list of Privatelink Vpc Endpoint Services to the user.
+  Provides a list of Private Link Vpc Endpoint Services to the user.
 ---
 
 # alicloud_privatelink_vpc_endpoint_services
 
-This data source provides the Privatelink Vpc Endpoint Services of the current Alibaba Cloud user.
+This data source provides the Private Link Vpc Endpoint Services of the current Alibaba Cloud user.
 
 -> **NOTE:** Available since v1.109.0.
 
@@ -18,18 +17,21 @@ This data source provides the Privatelink Vpc Endpoint Services of the current A
 Basic Usage
 
 ```terraform
-resource "alicloud_privatelink_vpc_endpoint_service" "example" {
-  service_description    = "terraform-example"
-  connect_bandwidth      = 103
-  auto_accept_connection = false
+variable "name" {
+  default = "terraform-example"
 }
 
-data "alicloud_privatelink_vpc_endpoint_services" "example" {
-  ids = [alicloud_privatelink_vpc_endpoint_service.example.id]
+resource "alicloud_privatelink_vpc_endpoint_service" "default" {
+  service_description    = var.name
+  auto_accept_connection = true
 }
 
-output "first_privatelink_vpc_endpoint_service_id" {
-  value = data.alicloud_privatelink_vpc_endpoint_services.example.services.0.id
+data "alicloud_privatelink_vpc_endpoint_services" "ids" {
+  ids = [alicloud_privatelink_vpc_endpoint_service.default.id]
+}
+
+output "privatelink_vpc_endpoint_services_id_0" {
+  value = data.alicloud_privatelink_vpc_endpoint_services.ids.services.0.id
 }
 ```
 
@@ -37,28 +39,28 @@ output "first_privatelink_vpc_endpoint_service_id" {
 
 The following arguments are supported:
 
-* `auto_accept_connection` - (Optional, ForceNew) Whether to automatically accept terminal node connections.
-* `ids` - (Optional, ForceNew, Computed)  A list of Vpc Endpoint Service IDs.
+* `ids` (Optional, ForceNew, List)  A list of Vpc Endpoint Service IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Vpc Endpoint Service name.
+* `vpc_endpoint_service_name` - (Optional, ForceNew) The name of the endpoint service.
+* `auto_accept_connection` - (Optional, ForceNew, Bool) Specifies whether to automatically accept endpoint connection requests. Valid values: : `true`, `false`.
+* `service_business_status` - (Optional, ForceNew) The service state of the endpoint service. Default value: `Normal`. Valid values: `Normal`, `FinancialLocked` and `SecurityLocked`.
+* `status` - (Optional, ForceNew) The state of the endpoint service. Valid values: `Active`, `Creating`, `Deleted`, `Deleting` and `Pending`.
+* `tags` - (Optional, ForceNew,  Available since v1.232.0)  A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `service_business_status` - (Optional, ForceNew) The business status of the terminal node service. Valid Value: `Normal`, `FinancialLocked` and `SecurityLocked`.
-* `status` - (Optional, ForceNew) The Status of Vpc Endpoint Service. Valid Value: `Active`, `Creating`, `Deleted`, `Deleting` and `Pending`.
-* `vpc_endpoint_service_name` - (Optional, ForceNew) The name of Vpc Endpoint Service.
-* `tags` - (Optional, Available since v1.232.0) The tags of Vpc Endpoint Service.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Vpc Endpoint Service names.
-* `services` - A list of Privatelink Vpc Endpoint Services. Each element contains the following attributes:
-	* `auto_accept_connection` - Whether to automatically accept terminal node connections..
-	* `connect_bandwidth` - The connection bandwidth.
-	* `id` - The ID of the Vpc Endpoint Service.
-	* `service_business_status` - The business status of the terminal node service..
-	* `service_description` - The description of the terminal node service.
-	* `service_domain` - The domain of service.
-	* `service_id` - The ID of the Vpc Endpoint Service.
-	* `status` - The Status of Vpc Endpoint Service.
-	* `vpc_endpoint_service_name` - The name of Vpc Endpoint Service.
-	* `tags` - The tags of Vpc Endpoint Service.
+* `services` - A list of Vpc Endpoint Services. Each element contains the following attributes:
+  * `id` - The ID of the Vpc Endpoint Service.
+  * `service_id` - The ID of the endpoint service.
+  * `vpc_endpoint_service_name` - The name of the endpoint service.
+  * `service_description` - The description of the endpoint service.
+  * `service_domain` - The domain name of the endpoint service.
+  * `connect_bandwidth` - The default maximum bandwidth of the endpoint connection.
+  * `auto_accept_connection` - Indicates whether endpoint connection requests are automatically accepted.
+  * `service_business_status` - The service state of the endpoint service.
+  * `status` - The state of the endpoint service.
+  * `tags` - The tags added to the resource.
