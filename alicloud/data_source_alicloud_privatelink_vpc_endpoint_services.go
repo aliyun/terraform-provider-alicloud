@@ -2,7 +2,9 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"regexp"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -10,71 +12,70 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudPrivatelinkVpcEndpointServices() *schema.Resource {
+func dataSourceAliCloudPrivateLinkVpcEndpointServices() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudPrivatelinkVpcEndpointServicesRead,
+		Read: dataSourceAliCloudPrivateLinkVpcEndpointServicesRead,
 		Schema: map[string]*schema.Schema{
-			"auto_accept_connection": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-				Default:  false,
-			},
-			"service_business_status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Default:      "Normal",
-				ValidateFunc: validation.StringInSlice([]string{"Normal", "FinancialLocked", "SecurityLocked"}, false),
-			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-			},
-			"status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Pending"}, false),
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
-			},
-			"names": {
-				Type:     schema.TypeList,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"vpc_endpoint_service_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
+			"auto_accept_connection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"service_business_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      "Normal",
+				ValidateFunc: StringInSlice([]string{"Normal", "FinancialLocked", "SecurityLocked"}, false),
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Pending"}, false),
+			},
+			"tags": tagsSchemaForceNew(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"tags": tagsSchema(),
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"services": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"auto_accept_connection": {
-							Type:     schema.TypeBool,
+						"id": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"connect_bandwidth": {
-							Type:     schema.TypeInt,
+						"service_id": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"service_business_status": {
+						"vpc_endpoint_service_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -86,19 +87,19 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServices() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"id": {
-							Type:     schema.TypeString,
+						"connect_bandwidth": {
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"service_id": {
+						"auto_accept_connection": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"service_business_status": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"status": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"vpc_endpoint_service_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -113,45 +114,37 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServices() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudPrivatelinkVpcEndpointServicesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListVpcEndpointServices"
 	request := make(map[string]interface{})
-	if v, ok := d.GetOkExists("auto_accept_connection"); ok {
-		request["AutoAcceptEnabled"] = v
-	}
+
 	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("service_business_status"); ok {
-		request["ServiceBusinessStatus"] = v
-	}
-	if v, ok := d.GetOk("status"); ok {
-		request["ServiceStatus"] = v
-	}
+	request["MaxResults"] = PageSizeLarge
+
 	if v, ok := d.GetOk("vpc_endpoint_service_name"); ok {
 		request["ServiceName"] = v
 	}
-	if v, ok := d.GetOk("tags"); ok {
-		tags := make([]map[string]interface{}, 0)
-		for key, value := range v.(map[string]interface{}) {
-			tags = append(tags, map[string]interface{}{
-				"Key":   key,
-				"Value": value.(string),
-			})
-		}
-		request["Tag"] = tags
-	}
-	request["MaxResults"] = PageSizeLarge
-	var objects []map[string]interface{}
-	var vpcEndpointServiceNameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		r, err := regexp.Compile(v.(string))
-		if err != nil {
-			return WrapError(err)
-		}
-		vpcEndpointServiceNameRegex = r
+
+	if v, ok := d.GetOkExists("auto_accept_connection"); ok {
+		request["AutoAcceptEnabled"] = v
 	}
 
+	if v, ok := d.GetOk("service_business_status"); ok {
+		request["ServiceBusinessStatus"] = v
+	}
+
+	if v, ok := d.GetOk("status"); ok {
+		request["ServiceStatus"] = v
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMaps := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMaps)
+	}
+
+	var objects []map[string]interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -161,75 +154,92 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServicesRead(d *schema.ResourceData
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+
+	var vpcEndpointServiceNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		vpcEndpointServiceNameRegex = r
+	}
+
 	var response map[string]interface{}
 	var err error
+
 	for {
-		response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_services", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Services", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Services", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if vpcEndpointServiceNameRegex != nil {
-				if !vpcEndpointServiceNameRegex.MatchString(fmt.Sprint(item["ServiceName"])) {
-					continue
-				}
-			}
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[fmt.Sprint(item["ServiceId"])]; !ok {
 					continue
 				}
 			}
+
+			if vpcEndpointServiceNameRegex != nil {
+				if !vpcEndpointServiceNameRegex.MatchString(fmt.Sprint(item["ServiceName"])) {
+					continue
+				}
+			}
+
 			objects = append(objects, item)
 		}
+
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
 			break
 		}
 	}
+
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"auto_accept_connection":    object["AutoAcceptEnabled"],
-			"connect_bandwidth":         formatInt(object["ConnectBandwidth"]),
-			"service_business_status":   object["ServiceBusinessStatus"],
-			"service_description":       object["ServiceDescription"],
-			"service_domain":            object["ServiceDomain"],
 			"id":                        fmt.Sprint(object["ServiceId"]),
 			"service_id":                fmt.Sprint(object["ServiceId"]),
-			"status":                    object["ServiceStatus"],
 			"vpc_endpoint_service_name": object["ServiceName"],
+			"service_description":       object["ServiceDescription"],
+			"service_domain":            object["ServiceDomain"],
+			"connect_bandwidth":         formatInt(object["ConnectBandwidth"]),
+			"auto_accept_connection":    object["AutoAcceptEnabled"],
+			"service_business_status":   object["ServiceBusinessStatus"],
+			"status":                    object["ServiceStatus"],
+			"tags":                      tagsToMap(object["Tags"]),
 		}
 
-		tags := make(map[string]interface{})
-		t, _ := jsonpath.Get("$.Tags.Tag", object)
-		if t != nil {
-			for _, t := range t.([]interface{}) {
-				key := t.(map[string]interface{})["Key"].(string)
-				value := t.(map[string]interface{})["Value"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
-				}
-			}
-		}
-		mapping["tags"] = tags
-
-		ids = append(ids, fmt.Sprint(object["ServiceId"]))
+		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["ServiceName"])
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
@@ -241,6 +251,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServicesRead(d *schema.ResourceData
 	if err := d.Set("services", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}

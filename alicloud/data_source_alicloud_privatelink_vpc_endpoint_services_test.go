@@ -4,95 +4,135 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudPrivatelinkVpcEndpointServicesDataSource(t *testing.T) {
+func TestAccAliCloudPrivateLinkVpcEndpointServicesDataSource_basic0(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "data.alicloud_privatelink_vpc_endpoint_services.default"
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccPrivatelinkVpcEndpointServices%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourcePrivatelinkVpcEndpointServicesDependence)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourcePrivateLinkVpcEndpointServicesConfig0)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "com.aliyuncs.privatelink.eu-central-1." + "${alicloud_privatelink_vpc_endpoint_service.default.id}",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "com.aliyuncs.privatelink.eu-central-1." + "${alicloud_privatelink_vpc_endpoint_service.default.id}-fake",
-		}),
-	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"ids":    []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}"},
-			"status": "Active",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":    []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}"},
-			"status": "Creating",
-		}),
-	}
-	serviceBusinessStatusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"ids":                     []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}"},
-			"service_business_status": "Normal",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":                     []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}"},
-			"service_business_status": "FinancialLocked",
-		}),
-	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}-fake"},
+			"ids": []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}_fake"},
 		}),
 	}
-	tagsConf := dataSourceTestAccConfig{
+
+	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"tags": map[string]string{"Created": "TF", "For": "Test"},
+			"name_regex": "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"tags": map[string]string{"Created": "TF", "For": "Test-fake"},
+			"name_regex": "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}_fake",
+		}),
+	}
+
+	vpcEndpointServiceNameConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"vpc_endpoint_service_name": "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"vpc_endpoint_service_name": "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}_fake",
+		}),
+	}
+
+	autoAcceptConnectionConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"auto_accept_connection": "${alicloud_privatelink_vpc_endpoint_service.default.auto_accept_connection}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"vpc_endpoint_service_name": "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}_fake",
+			"auto_accept_connection":    "false",
+		}),
+	}
+
+	serviceBusinessStatusConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"vpc_endpoint_service_name": "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}",
+			"service_business_status":   "${alicloud_privatelink_vpc_endpoint_service.default.service_business_status}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"service_business_status": "FinancialLocked",
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"vpc_endpoint_service_name": "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}",
+			"status":                    "Active",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"status": "Deleting",
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "PrivateLinkVpcEndpointService",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "PrivateLinkVpcEndpointService_Fake",
+			},
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex":              "com.aliyuncs.privatelink.eu-central-1." + "${alicloud_privatelink_vpc_endpoint_service.default.id}",
-			"status":                  "Active",
-			"service_business_status": "Normal",
-			"ids":                     []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}"}}),
+			"ids":                       []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}"},
+			"name_regex":                "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}",
+			"vpc_endpoint_service_name": "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}",
+			"auto_accept_connection":    "${alicloud_privatelink_vpc_endpoint_service.default.auto_accept_connection}",
+			"service_business_status":   "${alicloud_privatelink_vpc_endpoint_service.default.service_business_status}",
+			"status":                    "${alicloud_privatelink_vpc_endpoint_service.default.status}",
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "PrivateLinkVpcEndpointService",
+			},
+		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex":              "com.aliyuncs.privatelink.eu-central-1." + "${alicloud_privatelink_vpc_endpoint_service.default.id}-fake",
-			"status":                  "Creating",
-			"service_business_status": "FinancialLocked",
-			"ids":                     []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}-fake"},
+			"ids":                       []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}_fake"},
+			"name_regex":                "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}_fake",
+			"vpc_endpoint_service_name": "${alicloud_privatelink_vpc_endpoint_service.default.vpc_endpoint_service_name}_fake",
+			"auto_accept_connection":    "false",
+			"service_business_status":   "FinancialLocked",
+			"status":                    "Deleting",
+			"tags": map[string]string{
+				"Created": "TF",
+				"For":     "PrivateLinkVpcEndpointService_Fake",
+			},
 		}),
 	}
-	var existPrivatelinkVpcEndpointServicesMapFunc = func(rand int) map[string]string {
+
+	var existAliCloudPrivateLinkVpcEndpointServicesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                                "1",
-			"ids.0":                                CHECKSET,
 			"names.#":                              "1",
-			"names.0":                              CHECKSET,
 			"services.#":                           "1",
 			"services.0.id":                        CHECKSET,
-			"services.0.auto_accept_connection":    "false",
-			"services.0.connect_bandwidth":         "103",
-			"services.0.service_business_status":   CHECKSET,
-			"services.0.service_description":       name,
-			"services.0.service_domain":            CHECKSET,
 			"services.0.service_id":                CHECKSET,
-			"services.0.status":                    "Active",
 			"services.0.vpc_endpoint_service_name": CHECKSET,
+			"services.0.service_description":       CHECKSET,
+			"services.0.service_domain":            CHECKSET,
+			"services.0.connect_bandwidth":         CHECKSET,
+			"services.0.auto_accept_connection":    CHECKSET,
+			"services.0.service_business_status":   CHECKSET,
+			"services.0.status":                    CHECKSET,
+			"services.0.tags.%":                    "2",
+			"services.0.tags.Created":              "TF",
+			"services.0.tags.For":                  "PrivateLinkVpcEndpointService",
 		}
 	}
 
-	var fakePrivatelinkVpcEndpointServicesMapFunc = func(rand int) map[string]string {
+	var fakeAliCloudPrivateLinkVpcEndpointServicesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":      "0",
 			"names.#":    "0",
@@ -100,29 +140,32 @@ func TestAccAlicloudPrivatelinkVpcEndpointServicesDataSource(t *testing.T) {
 		}
 	}
 
-	var PrivatelinkVpcEndpointServicesInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existPrivatelinkVpcEndpointServicesMapFunc,
-		fakeMapFunc:  fakePrivatelinkVpcEndpointServicesMapFunc,
+	var aliCloudRamRolesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_privatelink_vpc_endpoint_services.default",
+		existMapFunc: existAliCloudPrivateLinkVpcEndpointServicesMapFunc,
+		fakeMapFunc:  fakeAliCloudPrivateLinkVpcEndpointServicesMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+		testAccPreCheck(t)
 	}
 
-	PrivatelinkVpcEndpointServicesInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, statusConf, serviceBusinessStatusConf, idsConf, tagsConf, allConf)
+	aliCloudRamRolesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, vpcEndpointServiceNameConf, autoAcceptConnectionConf, serviceBusinessStatusConf, statusConf, tagsConf, allConf)
 }
 
-func dataSourcePrivatelinkVpcEndpointServicesDependence(name string) string {
+func dataSourcePrivateLinkVpcEndpointServicesConfig0(name string) string {
 	return fmt.Sprintf(`
-	resource "alicloud_privatelink_vpc_endpoint_service" "default" {
-	  service_description = "%s"
-	  connect_bandwidth = 103
-      auto_accept_connection = false
-	  tags = {
-		Created = "TF",
-		For     = "Test",
-	  }
+	variable "name" {
+  		default = "%s"
 	}
-	`, name)
+
+	resource "alicloud_privatelink_vpc_endpoint_service" "default" {
+  		service_description    = var.name
+  		auto_accept_connection = true
+  		tags = {
+    		Created = "TF",
+    		For     = "PrivateLinkVpcEndpointService",
+  		}
+	}
+`, name)
 }
