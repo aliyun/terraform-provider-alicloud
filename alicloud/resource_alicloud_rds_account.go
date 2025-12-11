@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -13,12 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudRdsAccount() *schema.Resource {
+func resourceAliCloudRdsAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRdsAccountCreate,
-		Read:   resourceAlicloudRdsAccountRead,
-		Update: resourceAlicloudRdsAccountUpdate,
-		Delete: resourceAlicloudRdsAccountDelete,
+		Create: resourceAliCloudRdsAccountCreate,
+		Read:   resourceAliCloudRdsAccountRead,
+		Update: resourceAliCloudRdsAccountUpdate,
+		Delete: resourceAliCloudRdsAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -78,8 +79,12 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"Normal", "Super"}, false),
+				ValidateFunc:  validation.StringInSlice([]string{"Normal", "Super", "Sysadmin"}, false),
 				ConflictsWith: []string{"type"},
+			},
+			"check_policy": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"type": {
 				Type:          schema.TypeString,
@@ -108,6 +113,7 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+				Optional: true,
 			},
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
@@ -131,7 +137,8 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 	}
 }
 
-func resourceAlicloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	var response map[string]interface{}
@@ -213,9 +220,9 @@ func resourceAlicloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) 
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudRdsAccountRead(d, meta)
+	return resourceAliCloudRdsAccountRead(d, meta)
 }
-func resourceAlicloudRdsAccountRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRdsAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	object, err := rdsService.DescribeRdsAccount(d.Id())
@@ -235,6 +242,7 @@ func resourceAlicloudRdsAccountRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("name", parts[1])
 	d.Set("db_instance_id", parts[0])
 	d.Set("instance_id", parts[0])
+	d.Set("check_policy", object["CheckPolicy"])
 	d.Set("account_description", object["AccountDescription"])
 	d.Set("description", object["AccountDescription"])
 	d.Set("account_type", object["AccountType"])
@@ -242,7 +250,8 @@ func resourceAlicloudRdsAccountRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("status", object["AccountStatus"])
 	return nil
 }
-func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	var err error
@@ -259,7 +268,64 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		"AccountName":  parts[1],
 		"DBInstanceId": parts[0],
 		"SourceIp":     client.SourceIp,
+		"RegionId":     client.RegionId,
 	}
+
+	rdsServiceV2 := RdsServiceV2{client}
+	objectRaw, _ := rdsServiceV2.DescribeRdsAccount(d.Id())
+
+	if d.HasChange("status") {
+		var err error
+		target := d.Get("status").(string)
+
+		currentStatus, err := jsonpath.Get("AccountStatus", objectRaw)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "AccountStatus", objectRaw)
+		}
+		if fmt.Sprint(currentStatus) != target {
+			if target == "Lock" {
+				action := "LockAccount"
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+			if target == "Available" {
+				action := "UnlockAccount"
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+		}
+	}
+
 	if d.HasChange("account_description") {
 		update = true
 		request["AccountDescription"] = d.Get("account_description")
@@ -360,6 +426,27 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 	}
+
+	if d.HasChange("check_policy") {
+		action := "ModifyAccountCheckPolicy"
+		request["CheckPolicy"] = d.Get("check_policy")
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
 	if resetPermission {
 		if v, ok := d.GetOk("account_password"); ok {
 			resetAccountReq["AccountPassword"] = v.(string)
@@ -391,9 +478,11 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudRdsAccountRead(d, meta)
+	return resourceAliCloudRdsAccountRead(d, meta)
 }
-func resourceAlicloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
