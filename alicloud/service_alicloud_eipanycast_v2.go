@@ -7,7 +7,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -24,14 +23,12 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (ob
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "DescribeAnycastEipAddress"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AnycastId"] = id
-	query["RegionId"] = client.RegionId
+	request["AnycastId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeAnycastEipAddress"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
@@ -43,33 +40,47 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (ob
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.AnycastInstance"}) {
 			return object, WrapErrorf(NotFoundErr("AnycastEipAddress", id), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	currentStatus := response["AnycastId"]
+	if currentStatus == nil {
+		return object, WrapErrorf(NotFoundErr("AnycastEipAddress", id), NotFoundMsg, response)
 	}
 
 	return response, nil
 }
 
 func (s *EipanycastServiceV2) EipanycastAnycastEipAddressStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EipanycastAnycastEipAddressStateRefreshFuncWithApi(id, field, failStates, s.DescribeEipanycastAnycastEipAddress)
+}
+
+func (s *EipanycastServiceV2) EipanycastAnycastEipAddressStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEipanycastAnycastEipAddress(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
+		object["InstanceChargeType"] = convertEipanycastAnycastEipAddressInstanceChargeTypeResponse(object["InstanceChargeType"])
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
@@ -85,8 +96,8 @@ func (s *EipanycastServiceV2) EipanycastAnycastEipAddressStateRefreshFunc(id str
 // SetResourceTags <<< Encapsulated tag function for Eipanycast.
 func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -112,8 +123,7 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, false)
-
+				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -121,9 +131,9 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -146,8 +156,7 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, false)
-
+				response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -155,15 +164,14 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil

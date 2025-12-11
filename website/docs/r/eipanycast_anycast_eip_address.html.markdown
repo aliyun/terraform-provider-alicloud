@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_eipanycast_anycast_eip_address
 
-Provides a Eipanycast Anycast Eip Address resource. Anycast Elastic IP Address.
+Provides a Eipanycast Anycast Eip Address resource.
+
+Anycast Elastic IP Address.
 
 For information about Eipanycast Anycast Eip Address and how to use it, see [What is Anycast Eip Address](https://www.alibabacloud.com/help/en/anycast-eip/latest/api-eipanycast-2020-03-09-allocateanycasteipaddress).
 
@@ -17,12 +19,6 @@ For information about Eipanycast Anycast Eip Address and how to use it, see [Wha
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_eipanycast_anycast_eip_address&exampleId=7c427ec8-74e4-db8e-639d-719bfe5ef3f640407917&activeTab=example&spm=docs.r.eipanycast_anycast_eip_address.0.7c427ec874&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -43,11 +39,11 @@ resource "alicloud_eipanycast_anycast_eip_address" "default" {
 
 The following arguments are supported:
 * `anycast_eip_address_name` - (Optional) Anycast EIP instance name.
-* `bandwidth` - (Optional)  The peak bandwidth of the Anycast EIP instance, in Mbps.
-* `description` - (Optional) Anycast EIP instance description.
+* `bandwidth` - (Optional, Computed, Int)  The peak bandwidth of the Anycast EIP instance, in Mbps.
+* `description` - (Optional) Anycast EIP instance description
 * `internet_charge_type` - (Optional, ForceNew) The billing method of Anycast EIP instance. "PayByBandwidth": refers to the method of billing based on traffic.
-* `payment_type` - (Optional, ForceNew) The payment model of Anycast EIP instance. "PayAsYouGo": Refers to the post-paid mode.
-* `resource_group_id` - (Optional, Available since v1.208.1) The ID of the resource group to which the instance belongs.
+* `payment_type` - (Optional, ForceNew, Computed) The payment model of Anycast EIP instance. "PayAsYouGo": Refers to the post-paid mode
+* `resource_group_id` - (Optional, Computed, Available since v1.208.1) The ID of the resource group to which the instance belongs.
 * `service_location` - (Required, ForceNew) Anycast EIP instance access area. "international": Refers to areas outside of Mainland China.
 * `tags` - (Optional, Map, Available since v1.208.0) List of resource-bound tags.
 
