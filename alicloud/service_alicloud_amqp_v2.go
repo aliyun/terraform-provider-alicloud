@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -22,10 +21,11 @@ func (s *AmqpServiceV2) DescribeAmqpInstance(id string) (object map[string]inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "GetInstance"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = id
+	query["RegionId"] = client.RegionId
+	action := "GetInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -38,20 +38,19 @@ func (s *AmqpServiceV2) DescribeAmqpInstance(id string) (object map[string]inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		addDebug(action, response, request)
+		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotfound"}) {
-			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
 	}
 
@@ -62,20 +61,20 @@ func (s *AmqpServiceV2) DescribeAmqpInstance(id string) (object map[string]inter
 
 	return v.(map[string]interface{}), nil
 }
-func (s *AmqpServiceV2) DescribeQueryAvailableInstances(id string) (object map[string]interface{}, err error) {
+func (s *AmqpServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var endpoint string
 	var query map[string]interface{}
-	action := "QueryAvailableInstances"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceIDs"] = id
-
+	request["Region"] = client.RegionId
 	request["ProductCode"] = "ons"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	var endpoint string
+
+	action := "QueryAvailableInstances"
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
@@ -91,12 +90,10 @@ func (s *AmqpServiceV2) DescribeQueryAvailableInstances(id string) (object map[s
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -124,6 +121,13 @@ func (s *AmqpServiceV2) AmqpInstanceStateRefreshFunc(id string, field string, fa
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
