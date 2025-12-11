@@ -26,39 +26,37 @@ Basic Usage
 </div></div>
 
 ```terraform
-provider "alicloud" {
-  region = "cn-shanghai"
+variable "name" {
+  default = "terraform-example"
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
 resource "alicloud_amqp_instance" "default" {
-  instance_type  = "enterprise"
-  max_tps        = 3000
-  queue_capacity = 200
-  storage_size   = 700
-  support_eip    = false
-  max_eip_tps    = 128
-  payment_type   = "Subscription"
-  period         = 1
+  instance_name         = "${var.name}-${random_integer.default.result}"
+  instance_type         = "enterprise"
+  max_tps               = 3000
+  max_connections       = 2000
+  queue_capacity        = 200
+  payment_type          = "Subscription"
+  renewal_status        = "AutoRenewal"
+  renewal_duration      = 1
+  renewal_duration_unit = "Year"
+  support_eip           = true
 }
 
 resource "alicloud_amqp_virtual_host" "default" {
   instance_id       = alicloud_amqp_instance.default.id
-  virtual_host_name = "tf-example"
+  virtual_host_name = "${var.name}-${random_integer.default.result}"
 }
 
-resource "alicloud_amqp_exchange" "default" {
-  auto_delete_state = false
-  exchange_name     = "tf-example"
-  exchange_type     = "DIRECT"
+resource "alicloud_amqp_queue" "default" {
   instance_id       = alicloud_amqp_instance.default.id
-  internal          = false
   virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
-}
-
-resource "alicloud_amqp_queue" "example" {
-  instance_id       = alicloud_amqp_instance.default.id
-  queue_name        = "tf-example"
-  virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
+  queue_name        = "${var.name}-${random_integer.default.result}"
 }
 ```
 
@@ -66,38 +64,25 @@ resource "alicloud_amqp_queue" "example" {
 
 The following arguments are supported:
 
-* `auto_delete_state` - (Optional, ForceNew) Specifies whether the Auto Delete attribute is configured. Valid values:
-  * true: The Auto Delete attribute is configured. The queue is automatically deleted after the last subscription from consumers to this queue is canceled. 
-  * false: The Auto Delete attribute is not configured.
-  
-* `auto_expire_state` - (Optional) The validity period after which the queue is automatically deleted.
-  If the queue is not accessed within a specified period of time, it is automatically deleted.
-* `dead_letter_exchange` - (Optional) The dead-letter exchange. A dead-letter exchange is used to receive rejected messages. 
-  If a consumer rejects a message that cannot be retried, this message is routed to a specified dead-letter exchange.
-  Then, the dead-letter exchange routes the message to the queue that is bound to the dead-letter exchange.
-* `dead_letter_routing_key` - (Optional) The dead letter routing key.
-* `exclusive_state` - (Optional, ForceNew) Specifies whether the queue is an exclusive queue. Valid values:
-  * true: The queue is an exclusive queue. It can be used only for the connection that declares the exclusive queue. After the connection is closed, the exclusive queue is automatically deleted.
-  * false: The queue is not an exclusive queue.
-  
-* `instance_id` - (Required, ForceNew) The ID of the instance.
+* `instance_id` - (Required, ForceNew) The ID of the ApsaraMQ for RabbitMQ instance to which the queue belongs.
+* `virtual_host_name` - (Required, ForceNew) The name of the vhost to which the queue belongs. The name can contain only letters, digits, hyphens (-), underscores (_), periods (.), number signs (#), forward slashes (/), and at signs (@). The name must be 1 to 255 characters in length.
+* `queue_name` - (Required, ForceNew) The name of the queue to create.
+* `auto_delete_state` - (Optional, Bool, ForceNew) Specifies whether to automatically delete the queue. Valid values:
+  - `true`: The queue is automatically deleted after the last consumer unsubscribes from it.
+  - `false`: The queue is not automatically deleted.
 * `max_length` - (Optional) The maximum number of messages that can be stored in the queue.
-  If this threshold is exceeded, the earliest messages that are routed to the queue are discarded.
-* `maximum_priority` - (Optional) The highest priority supported by the queue. This parameter is set to a positive integer.
-  Valid values: 0 to 255. Recommended values: 1 to 10
-* `message_ttl` - (Optional) The message TTL of the queue.
-  If the retention period of a message in the queue exceeds the message TTL of the queue, the message expires.
-  Message TTL must be set to a non-negative integer, in milliseconds.
-  For example, if the message TTL of the queue is 1000, messages survive for at most 1 second in the queue.
-* `queue_name` - (Required, ForceNew) The name of the queue.
-  The queue name must be 1 to 255 characters in length, and can contain only letters, digits, hyphens (-), underscores (_), periods (.), and at signs (@).
-* `virtual_host_name` - (Required, ForceNew) The name of the virtual host.
+* `maximum_priority` - (Optional, Int) The priority of the queue.
+* `message_ttl` - (Optional) The time to live (TTL) of a message in the queue.
+* `dead_letter_exchange` - (Optional) The dead-letter exchange.
+* `dead_letter_routing_key` - (Optional) The dead-letter routing key.
+* `auto_expire_state` - (Optional) The auto-expiration time for the queue.
+* `exclusive_state` - (Removed since v1.266.0) Field `exclusive_state` has been removed from provider version 1.266.0.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of Queue. The value formats as `<instance_id>:<virtual_host_name>:<queue_name>`.
+* `id` - The resource ID in terraform of Queue. It formats as `<instance_id>:<virtual_host_name>:<queue_name>`.
 
 ## Import
 
