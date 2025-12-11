@@ -2,7 +2,6 @@
 subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_rds_account"
-sidebar_current: "docs-alicloud-resource-rds-account"
 description: |-
   Provides a Alicloud RDS Account resource.
 ---
@@ -11,6 +10,8 @@ description: |-
 
 Provides a RDS Account resource.
 
+
+
 For information about RDS Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-createaccount).
 
 -> **NOTE:** Available since v1.120.0.
@@ -18,7 +19,6 @@ For information about RDS Account and how to use it, see [What is Account](https
 ## Example Usage
 
 Basic Usage
-
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_rds_account&exampleId=4fb8c8f5-60e2-40b7-1de2-c569a0e970826bbb2cb8&activeTab=example&spm=docs.r.rds_account.0.4fb8c8f560&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
@@ -29,15 +29,22 @@ Basic Usage
 variable "name" {
   default = "tf_example"
 }
+
 data "alicloud_db_zones" "default" {
-  engine         = "MySQL"
-  engine_version = "5.6"
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
 }
 
 data "alicloud_db_instance_classes" "default" {
-  zone_id        = data.alicloud_db_zones.default.ids.0
-  engine         = "MySQL"
-  engine_version = "5.6"
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
+  instance_charge_type     = "PostPaid"
 }
 
 resource "alicloud_vpc" "default" {
@@ -53,12 +60,16 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_db_instance" "default" {
-  engine           = "MySQL"
-  engine_version   = "5.6"
-  instance_type    = data.alicloud_db_instance_classes.default.instance_classes.1.instance_class
-  instance_storage = "10"
-  vswitch_id       = alicloud_vswitch.default.id
-  instance_name    = var.name
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id               = alicloud_vswitch.default.id
+  instance_name            = var.name
+  instance_charge_type     = "Postpaid"
+  monitoring_period        = 60
+  db_instance_storage_type = "local_ssd"
+  db_is_ignore_case        = false
 }
 
 resource "alicloud_rds_account" "default" {
@@ -111,6 +122,8 @@ The following arguments are supported:
 
 -> **NOTE**: Only MySQL engine is supported resets permissions of the privileged account.
 * `reset_permission_flag` - (Optional, Available in v1.198.0+) Resets permissions flag of the privileged account. Default to `false`. Set it to `true` can resets permissions of the privileged account.
+* `check_policy` - (Optional, Available since v1.266.0) Whether to apply password policy
+* `status` - (Optional, Computed) The status of the resource
 
 ## Attributes Reference
 
