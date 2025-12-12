@@ -1,11 +1,13 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/tidwall/sjson"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -22,13 +24,8 @@ func dataSourceAliCloudKmsInstances() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
-			"page_number": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				ForceNew: true,
-			},
-			"page_size": {
-				Type:     schema.TypeInt,
+			"instance_name": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
@@ -70,12 +67,25 @@ func dataSourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{})
 
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
 	var query map[string]interface{}
 	action := "ListKmsInstances"
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["PageSize"] = 5
+	jsonString := "{}"
+	if v, ok := d.GetOk("instance_name"); ok {
+		jsonString, _ = sjson.Set(jsonString, "Filters.0.Values.0", v)
+		jsonString, _ = sjson.Set(jsonString, "Filters.0.Key", "InstanceName")
+		err = json.Unmarshal([]byte(jsonString), &request)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Filters"] = convertObjectToJsonString(request["Filters"])
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -109,7 +119,7 @@ func dataSourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{})
 			objects = append(objects, item)
 		}
 
-		if len(result) < 5 {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
