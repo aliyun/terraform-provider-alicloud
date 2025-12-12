@@ -22,7 +22,18 @@ func TestAccAlicloudKmsInstanceDataSource(t *testing.T) {
 		}),
 	}
 
-	KmsInstanceCheckInfo.dataSourceTestCheck(t, rand, idsConf)
+	nameConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKmsInstanceSourceConfig(rand, map[string]string{
+			"instance_name": `"${alicloud_kms_instance.default.instance_name}"`,
+			"ids":           `["${alicloud_kms_instance.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudKmsInstanceSourceConfig(rand, map[string]string{
+			"instance_name": `"${alicloud_kms_instance.default.instance_name}_fake"`,
+			"ids":           `["${alicloud_kms_instance.default.id}"]`,
+		}),
+	}
+
+	KmsInstanceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameConf)
 }
 
 var existKmsInstanceMapFunc = func(rand int) map[string]string {
@@ -106,13 +117,13 @@ resource "alicloud_vswitch" "share-vsw3" {
 data "alicloud_account" "current" {}
 
 resource "alicloud_kms_instance" "default" {
+  instance_name   = var.name
   vpc_num         = "7"
   key_num         = "1000"
   secret_num      = "0"
   spec            = "1000"
   renew_status    = "ManualRenewal"
   product_version = "3"
-  renew_period    = "3"
   vpc_id          = alicloud_vswitch.vswitch.vpc_id
   zone_ids        = ["cn-hangzhou-k", "cn-hangzhou-j"]
   vswitch_ids     = ["${alicloud_vswitch.vswitch.id}"]

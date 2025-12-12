@@ -81,7 +81,6 @@ resource "alicloud_kms_instance" "default" {
   spec            = "1000"
   renew_status    = "ManualRenewal"
   product_version = "3"
-  renew_period    = "3"
   vpc_id          = alicloud_vswitch.vswitch.vpc_id
   zone_ids        = ["cn-hangzhou-k", "cn-hangzhou-j"]
   vswitch_ids     = ["${alicloud_vswitch.vswitch.id}"]
@@ -122,6 +121,7 @@ output "alicloud_kms_instance_example_id" {
 
 The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Instance IDs.
+* `instance_name` - (ForceNew, Optional) The name of the resource
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
 
