@@ -22,7 +22,7 @@ func resourceAliCloudExpressConnectVirtualBorderRouter() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
@@ -30,6 +30,7 @@ func resourceAliCloudExpressConnectVirtualBorderRouter() *schema.Resource {
 			"bandwidth": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"circuit_code": {
 				Type:     schema.TypeString,
@@ -215,12 +216,6 @@ func resourceAliCloudExpressConnectVirtualBorderRouterCreate(d *schema.ResourceD
 
 	d.SetId(fmt.Sprint(response["VbrId"]))
 
-	expressConnectServiceV2 := ExpressConnectServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectServiceV2.ExpressConnectVirtualBorderRouterStateRefreshFunc(d.Id(), "Status", []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
-	}
-
 	return resourceAliCloudExpressConnectVirtualBorderRouterUpdate(d, meta)
 }
 
@@ -287,7 +282,12 @@ func resourceAliCloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 	if d.HasChange("status") {
 		var err error
 		target := d.Get("status").(string)
-		if objectRaw["Status"].(string) != target {
+
+		currentStatus, err := jsonpath.Get("Status", objectRaw)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "Status", objectRaw)
+		}
+		if fmt.Sprint(currentStatus) != target {
 			if target == "terminated" {
 				action := "TerminateVirtualBorderRouter"
 				request = make(map[string]interface{})
