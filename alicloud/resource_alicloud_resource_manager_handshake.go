@@ -92,7 +92,7 @@ func resourceAliCloudResourceManagerHandshakeCreate(d *schema.ResourceData, meta
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
