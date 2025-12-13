@@ -328,7 +328,7 @@ func resourceAliCloudResourceManagerAccountDelete(d *schema.ResourceData, meta i
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "NotSupportedOperation.PreCheckingAccount"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
