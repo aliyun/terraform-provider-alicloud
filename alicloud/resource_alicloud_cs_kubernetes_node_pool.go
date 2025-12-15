@@ -636,7 +636,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 						"max_size": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntBetween(0, 1000),
+							ValidateFunc: IntBetween(0, 2000),
 						},
 						"eip_internet_charge_type": {
 							Type:          schema.TypeString,
@@ -669,7 +669,6 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"security_hardening_os": {
@@ -2399,6 +2398,14 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("system_disk_snapshot_policy_id") {
 		update = true
 		objectDataLocalMap1["worker_system_disk_snapshot_policy_id"] = d.Get("system_disk_snapshot_policy_id")
+	}
+
+	if d.HasChange("security_group_ids") {
+		update = true
+		securityGroupIds, _ := jsonpath.Get("$", d.Get("security_group_ids"))
+		if securityGroupIds != nil && securityGroupIds != "" {
+			objectDataLocalMap1["security_group_ids"] = securityGroupIds
+		}
 	}
 
 	request["scaling_group"] = objectDataLocalMap1
