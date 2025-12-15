@@ -92,6 +92,7 @@ The following arguments are supported:
   - 128 core 512 GB (number of compute nodes: 8)
 -> **NOTE:** Just fill in the audit number. Please submit a work order application for purchasing 1024 or above specifications. Shared instance types do not need to specify specifications. The specification of - 8 core 32GB (number of computing nodes: 1) is only for experience use and cannot be used for production.
 * `duration` - (Optional) The buying cycle. Buy for 2 months. If the Payment type is PayAsYouGo (PostPaid), you do not need to specify it.
+* `enable_ssl` - (Optional, Available since v1.266.0) Specifies whether to enable SSL encryption. Default Value: `false`. Valid values: `true`, `false`.
 * `endpoints` - (Optional) List of domain names. See [`endpoints`](#endpoints) below.
 * `gateway_count` - (Optional) Number of gateway nodes.
 * `initial_databases` - (Optional) Initialize the database and split multiple database names ",".

@@ -156,26 +156,6 @@ func TestAccAliCloudHologramInstance_basic3920(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"gateway_count": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"gateway_count": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"gateway_count": "4",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"gateway_count": "4",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"zone_id":       "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle": "Hour",
 					"cpu":           "64",
@@ -422,6 +402,26 @@ func TestAccAliCloudHologramInstance_basic4132(t *testing.T) {
 						"instance_name": name + "_update",
 						"payment_type":  "PayAsYouGo",
 						"endpoints.#":   "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ssl": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ssl": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ssl": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ssl": "false",
 					}),
 				),
 			},
@@ -1978,6 +1978,7 @@ func TestAccAliCloudHologramInstance_basic4858_twin(t *testing.T) {
 					"instance_name":     name,
 					"payment_type":      "PayAsYouGo",
 					"instance_type":     "Standard",
+					"enable_ssl":        "true",
 					"endpoints": []map[string]interface{}{
 						{
 							"type": "Intranet",
@@ -2008,6 +2009,7 @@ func TestAccAliCloudHologramInstance_basic4858_twin(t *testing.T) {
 						"instance_name":     name,
 						"payment_type":      "PayAsYouGo",
 						"instance_type":     "Standard",
+						"enable_ssl":        "true",
 						"endpoints.#":       "2",
 						"status":            "Running",
 						"initial_databases": "abcd, 123, _underline_db",
