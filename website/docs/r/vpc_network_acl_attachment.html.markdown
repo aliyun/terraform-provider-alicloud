@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_vpc_network_acl_attachment
 
-Provides a VPC Network Acl Attachment resource. Resources associated with network Acl.
+Provides a VPC Network Acl Attachment resource.
+
+Resources associated with network Acl.
 
 For information about VPC Network Acl Attachment and how to use it, see [What is Network Acl Attachment](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/associatenetworkacl).
 
@@ -17,12 +19,6 @@ For information about VPC Network Acl Attachment and how to use it, see [What is
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_network_acl_attachment&exampleId=a640762e-86ca-6d0a-df56-d5a6e3b393fe0e6d9482&activeTab=example&spm=docs.r.vpc_network_acl_attachment.0.a640762e86&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 data "alicloud_zones" "default" {
@@ -53,16 +49,14 @@ resource "alicloud_vpc_network_acl_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `network_acl_id` - (Required, ForceNew) The ID of the network ACL.
-* `resource_id` - (Required, ForceNew) The ID of the associated resource.
+* `network_acl_id` - (Required, ForceNew) The ID of the network ACL instance.
+* `resource_id` - (Required, ForceNew) The ID of the associated  vswitch instance.
 * `resource_type` - (Required, ForceNew) The type of the associated resource. Valid values: `VSwitch`.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Network Acl Attachment. The value formats as `<network_acl_id>:<resource_id>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<network_acl_id>:<resource_id>`.
 * `status` - The status of the Network Acl Attachment.
 
 ## Timeouts

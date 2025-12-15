@@ -72,18 +72,17 @@ func resourceAliCloudVpcNetworkAclAttachmentCreate(d *schema.ResourceData, meta 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
-		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "NetworkStatus.Modifying", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy", "ResourceStatus.Error", "NetworkAclExistBinding"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"LastTokenProcessing", "NetworkStatus.Modifying", "OperationConflict", "SystemBusy", "ResourceStatus.Error", "ServiceUnavailable", "OperationDenied.NetworkAclAttachmentInMiddleStatus", "IncorrectStatus"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_network_acl_attachment", action, AlibabaCloudSdkGoERROR)
@@ -152,18 +151,17 @@ func resourceAliCloudVpcNetworkAclAttachmentDelete(d *schema.ResourceData, meta 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
-		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "NetworkStatus.Modifying", "IncorrectStatus", "SystemBusy", "LastTokenProcessing", "ResourceStatus.Error", "NetworkAclExistBinding"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"LastTokenProcessing", "NetworkStatus.Modifying", "OperationConflict", "SystemBusy", "ResourceStatus.Error", "OperationDenied.NetworkAclAttachmentInMiddleStatus", "IncorrectStatus"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -173,9 +171,10 @@ func resourceAliCloudVpcNetworkAclAttachmentDelete(d *schema.ResourceData, meta 
 	}
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcServiceV2.VpcNetworkAclAttachmentStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcServiceV2.VpcNetworkAclAttachmentStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
