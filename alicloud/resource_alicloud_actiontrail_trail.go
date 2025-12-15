@@ -3,21 +3,21 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudActiontrailTrail() *schema.Resource {
+func resourceAliCloudActionTrailTrail() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudActiontrailTrailCreate,
-		Read:   resourceAliCloudActiontrailTrailRead,
-		Update: resourceAliCloudActiontrailTrailUpdate,
-		Delete: resourceAliCloudActiontrailTrailDelete,
+		Create: resourceAliCloudActionTrailTrailCreate,
+		Read:   resourceAliCloudActionTrailTrailRead,
+		Update: resourceAliCloudActionTrailTrailUpdate,
+		Delete: resourceAliCloudActionTrailTrailDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -85,17 +85,16 @@ func resourceAliCloudActiontrailTrail() *schema.Resource {
 				Computed: true,
 			},
 			"status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "Enable",
-				ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"trail_name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"name"},
+				Type:         schema.TypeString,
+				Optional:     true,
+				ExactlyOneOf: []string{"trail_name", "name"},
+				Computed:     true,
+				ForceNew:     true,
 			},
 			"trail_region": {
 				Type:     schema.TypeString,
@@ -103,12 +102,11 @@ func resourceAliCloudActiontrailTrail() *schema.Resource {
 				Computed: true,
 			},
 			"name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"trail_name"},
-				Deprecated:    "Field `name` has been deprecated from provider version 1.95.0. New field `trail_name` instead.",
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'name' has been deprecated since provider version 1.95.0. New field 'trail_name' instead.",
+				ForceNew:   true,
 			},
 			"mns_topic_arn": {
 				Type:       schema.TypeString,
@@ -124,7 +122,7 @@ func resourceAliCloudActiontrailTrail() *schema.Resource {
 	}
 }
 
-func resourceAliCloudActiontrailTrailCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudActionTrailTrailCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -134,7 +132,6 @@ func resourceAliCloudActiontrailTrailCreate(d *schema.ResourceData, meta interfa
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-
 	if v, ok := d.GetOk("trail_name"); ok {
 		request["Name"] = v
 	} else if v, ok := d.GetOk("name"); ok {
@@ -193,23 +190,23 @@ func resourceAliCloudActiontrailTrailCreate(d *schema.ResourceData, meta interfa
 
 	d.SetId(fmt.Sprint(response["Name"]))
 
-	actiontrailServiceV2 := ActiontrailServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Fresh"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, actiontrailServiceV2.ActiontrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
+	actionTrailServiceV2 := ActionTrailServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Fresh"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, actionTrailServiceV2.ActionTrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudActiontrailTrailUpdate(d, meta)
+	return resourceAliCloudActionTrailTrailUpdate(d, meta)
 }
 
-func resourceAliCloudActiontrailTrailRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudActionTrailTrailRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	actiontrailServiceV2 := ActiontrailServiceV2{client}
+	actionTrailServiceV2 := ActionTrailServiceV2{client}
 
-	objectRaw, err := actiontrailServiceV2.DescribeActiontrailTrail(d.Id())
+	objectRaw, err := actionTrailServiceV2.DescribeActionTrailTrail(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_actiontrail_trail DescribeActiontrailTrail Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_actiontrail_trail DescribeActionTrailTrail Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -230,9 +227,8 @@ func resourceAliCloudActiontrailTrailRead(d *schema.ResourceData, meta interface
 	d.Set("status", objectRaw["Status"])
 	d.Set("trail_region", objectRaw["TrailRegion"])
 	d.Set("trail_name", objectRaw["Name"])
-	d.Set("name", objectRaw["Name"])
 
-	objectRaw, err = actiontrailServiceV2.DescribeTrailGetDataEventSelector(d.Id())
+	objectRaw, err = actionTrailServiceV2.DescribeTrailGetDataEventSelector(d.Id())
 	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
@@ -251,10 +247,13 @@ func resourceAliCloudActiontrailTrailRead(d *schema.ResourceData, meta interface
 
 	d.Set("data_event_trail_region", slsDeliveryConfigsRaw["TrailRegion"])
 
+	d.Set("trail_name", d.Id())
+
+	d.Set("name", d.Get("trail_name"))
 	return nil
 }
 
-func resourceAliCloudActiontrailTrailUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -262,16 +261,18 @@ func resourceAliCloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 	update := false
 	d.Partial(true)
 
+	actionTrailServiceV2 := ActionTrailServiceV2{client}
+	objectRaw, _ := actionTrailServiceV2.DescribeActionTrailTrail(d.Id())
+
 	if d.HasChange("status") {
 		var err error
-		actiontrailServiceV2 := ActiontrailServiceV2{client}
-		object, err := actiontrailServiceV2.DescribeActiontrailTrail(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-
 		target := d.Get("status").(string)
-		if object["Status"].(string) != target {
+
+		currentStatus, err := jsonpath.Get("Status", objectRaw)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "Status", objectRaw)
+		}
+		if fmt.Sprint(currentStatus) != target {
 			if target == "Enable" {
 				action := "StartLogging"
 				request = make(map[string]interface{})
@@ -294,13 +295,13 @@ func resourceAliCloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-
-				stateConf := BuildStateConf([]string{}, []string{"Enable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actiontrailServiceV2.ActiontrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
+				actionTrailServiceV2 := ActionTrailServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"Enable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actionTrailServiceV2.ActionTrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-			}
 
+			}
 			if target == "Disable" {
 				action := "StopLogging"
 				request = make(map[string]interface{})
@@ -323,11 +324,12 @@ func resourceAliCloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-
-				stateConf := BuildStateConf([]string{}, []string{"Disable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actiontrailServiceV2.ActiontrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
+				actionTrailServiceV2 := ActionTrailServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"Disable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actionTrailServiceV2.ActionTrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
+
 			}
 		}
 	}
@@ -338,69 +340,60 @@ func resourceAliCloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 	query = make(map[string]interface{})
 	request["Name"] = d.Id()
 
-	if !d.IsNewResource() && d.HasChange("max_compute_project_arn") {
-		update = true
-	}
-	if v, ok := d.GetOk("max_compute_project_arn"); ok {
-		request["MaxComputeProjectArn"] = v
-	}
-
-	if !d.IsNewResource() && d.HasChange("event_rw") {
-		update = true
-	}
-	if v, ok := d.GetOk("event_rw"); ok {
-		request["EventRW"] = v
-	}
-
-	if !d.IsNewResource() && d.HasChange("oss_write_role_arn") {
-		update = true
-	}
-	if v, ok := d.GetOk("oss_write_role_arn"); ok {
-		request["OssWriteRoleArn"] = v
-	}
-
-	if !d.IsNewResource() && d.HasChange("oss_bucket_name") {
-		update = true
-	}
-	if v, ok := d.GetOk("oss_bucket_name"); ok {
-		request["OssBucketName"] = v
-	}
-
-	if !d.IsNewResource() && d.HasChange("oss_key_prefix") {
-		update = true
-	}
-	if v, ok := d.GetOk("oss_key_prefix"); ok {
-		request["OssKeyPrefix"] = v
-	}
-
 	if !d.IsNewResource() && d.HasChange("sls_project_arn") {
 		update = true
 	}
-	if v, ok := d.GetOk("sls_project_arn"); ok {
+	if v, ok := d.GetOk("sls_project_arn"); ok || d.HasChange("sls_project_arn") {
 		request["SlsProjectArn"] = v
 	}
-
+	if !d.IsNewResource() && d.HasChange("max_compute_project_arn") {
+		update = true
+	}
+	if v, ok := d.GetOk("max_compute_project_arn"); ok || d.HasChange("max_compute_project_arn") {
+		request["MaxComputeProjectArn"] = v
+	}
+	if !d.IsNewResource() && d.HasChange("event_rw") {
+		update = true
+	}
+	if v, ok := d.GetOk("event_rw"); ok || d.HasChange("event_rw") {
+		request["EventRW"] = v
+	}
+	if !d.IsNewResource() && d.HasChange("oss_write_role_arn") {
+		update = true
+	}
+	if v, ok := d.GetOk("oss_write_role_arn"); ok || d.HasChange("oss_write_role_arn") {
+		request["OssWriteRoleArn"] = v
+	}
+	if !d.IsNewResource() && d.HasChange("oss_bucket_name") {
+		update = true
+	}
+	if v, ok := d.GetOk("oss_bucket_name"); ok || d.HasChange("oss_bucket_name") {
+		request["OssBucketName"] = v
+	}
+	if !d.IsNewResource() && d.HasChange("oss_key_prefix") {
+		update = true
+	}
+	if v, ok := d.GetOk("oss_key_prefix"); ok || d.HasChange("oss_key_prefix") {
+		request["OssKeyPrefix"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("sls_write_role_arn") {
 		update = true
 	}
-	if v, ok := d.GetOk("sls_write_role_arn"); ok {
+	if v, ok := d.GetOk("sls_write_role_arn"); ok || d.HasChange("sls_write_role_arn") {
 		request["SlsWriteRoleArn"] = v
 	}
-
 	if !d.IsNewResource() && d.HasChange("trail_region") {
 		update = true
 	}
-	if v, ok := d.GetOk("trail_region"); ok {
+	if v, ok := d.GetOk("trail_region"); ok || d.HasChange("trail_region") {
 		request["TrailRegion"] = v
 	}
-
 	if !d.IsNewResource() && d.HasChange("max_compute_write_role_arn") {
 		update = true
 	}
-	if v, ok := d.GetOk("max_compute_write_role_arn"); ok {
+	if v, ok := d.GetOk("max_compute_write_role_arn"); ok || d.HasChange("max_compute_write_role_arn") {
 		request["MaxComputeWriteRoleArn"] = v
 	}
-
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -428,10 +421,9 @@ func resourceAliCloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("data_event_trail_region") {
 		update = true
 	}
-	if v, ok := d.GetOk("data_event_trail_region"); ok {
+	if v, ok := d.GetOk("data_event_trail_region"); ok || d.HasChange("data_event_trail_region") {
 		request["TrailRegionIds"] = v
 	}
-
 	if d.HasChange("event_selectors") {
 		update = true
 	}
@@ -456,10 +448,10 @@ func resourceAliCloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	d.Partial(false)
-	return resourceAliCloudActiontrailTrailRead(d, meta)
+	return resourceAliCloudActionTrailTrailRead(d, meta)
 }
 
-func resourceAliCloudActiontrailTrailDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudActionTrailTrailDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTrail"

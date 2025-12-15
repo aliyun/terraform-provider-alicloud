@@ -272,7 +272,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudActiontrailTrailCreate(d, rawClient)
+		err := resourceAliCloudActionTrailTrailCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -289,7 +289,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailCreate(d, rawClient)
+		err := resourceAliCloudActionTrailTrailCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -306,7 +306,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailCreate(dCreate, rawClient)
+		err := resourceAliCloudActionTrailTrailCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -324,7 +324,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 		})
 
-		err := resourceAliCloudActiontrailTrailUpdate(d, rawClient)
+		err := resourceAliCloudActionTrailTrailUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -359,7 +359,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -394,7 +394,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -432,7 +432,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStopLoggingNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		assert.NotNil(t, err)
@@ -488,7 +488,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 				return object, "Disable", nil
 			}
 		})
-		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		patchActiontrailTrailStateRefreshFunc.Reset()
@@ -528,7 +528,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStartLoggingNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		assert.NotNil(t, err)
@@ -584,7 +584,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 				return object, "Enable", nil
 			}
 		})
-		err := resourceAliCloudActiontrailTrailUpdate(resourceData1, rawClient)
+		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		patchActiontrailTrailStateRefreshFunc.Reset()
@@ -601,7 +601,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudActiontrailTrailDelete(d, rawClient)
+		err := resourceAliCloudActionTrailTrailDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -618,7 +618,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailDelete(d, rawClient)
+		err := resourceAliCloudActionTrailTrailDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -635,7 +635,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailDelete(d, rawClient)
+		err := resourceAliCloudActionTrailTrailDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -652,7 +652,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailDelete(d, rawClient)
+		err := resourceAliCloudActionTrailTrailDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -669,7 +669,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailRead(d, rawClient)
+		err := resourceAliCloudActionTrailTrailRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -685,7 +685,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudActiontrailTrailRead(d, rawClient)
+		err := resourceAliCloudActionTrailTrailRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
