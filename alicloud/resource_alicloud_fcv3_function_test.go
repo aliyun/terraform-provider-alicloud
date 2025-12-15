@@ -480,7 +480,6 @@ func TestAccAliCloudFcv3Function_basic6916_raw(t *testing.T) {
 								{
 									"timeout": "1",
 									"handler": "index.init",
-									"command": []string{"curl", "'http://localhost:9000/preWarm'"},
 								},
 							},
 							"pre_stop": []map[string]interface{}{
@@ -1005,7 +1004,6 @@ func TestAccAliCloudFcv3Function_basic6917_raw(t *testing.T) {
 								{
 									"timeout": "3",
 									"handler": "index.initializer",
-									"command": []string{"curl", "'http://localhost:9000/preWarm'"},
 								},
 							},
 							"pre_stop": []map[string]interface{}{
@@ -1282,6 +1280,7 @@ func TestAccAliCloudFcv3Function_basic6936_raw(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"function_name": name,
 					"memory_size":   "512",
+					"idle_timeout":  "500",
 					"runtime":       "custom-container",
 					"timeout":       "3",
 					"handler":       "index.handler",
@@ -1291,7 +1290,7 @@ func TestAccAliCloudFcv3Function_basic6936_raw(t *testing.T) {
 							"initializer": []map[string]interface{}{
 								{
 									"timeout": "3",
-									"handler": "index.init",
+									"command": []string{"curl", "'http://localhost:9000/preWarm'"},
 								},
 							},
 							"pre_stop": []map[string]interface{}{
@@ -1367,6 +1366,22 @@ func TestAccAliCloudFcv3Function_basic6936_raw(t *testing.T) {
 									"period_seconds":        "2",
 									"success_threshold":     "2",
 									"timeout_seconds":       "2",
+								},
+							},
+						},
+					},
+					"instance_lifecycle_config": []map[string]interface{}{
+						{
+							"initializer": []map[string]interface{}{
+								{
+									"timeout": "5",
+									"command": []string{"curl", "'http://localhost:9000/preWarmUpdate'"},
+								},
+							},
+							"pre_stop": []map[string]interface{}{
+								{
+									"timeout": "5",
+									"handler": "index.stop",
 								},
 							},
 						},
@@ -1647,11 +1662,6 @@ func TestAccAliCloudFcv3Function_basic6938_raw(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"memory_size": "512",
 					"cpu":         "0.5",
-					"vpc_config": []map[string]interface{}{
-						{
-							"vswitch_ids": []string{},
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1930,10 +1940,11 @@ func TestAccAliCloudFcv3Function_basic6895(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"memory_size": "2048",
-					"runtime":     "python3.10",
-					"timeout":     "6",
-					"handler":     "index.HandlerX",
+					"session_affinity": "GENERATED_COOKIE",
+					"memory_size":      "2048",
+					"runtime":          "python3.10",
+					"timeout":          "6",
+					"handler":          "index.HandlerX",
 					"code": []map[string]interface{}{
 						{
 							"zip_file": "UEsDBBQACAAIAAAAAAAAAAAAAAAAAAAAAAAIAAAAaW5kZXgucHmEkEFKxEAQRfd9ig9ZJBEncQRhGJgbuHQvPelK0lKpCp3KjHoUz+KdvIJkZHTQhcv+/fiPXxlWVys0GqJ0W8zWrjZL4uIwajKwdl2U7vx8mlScy/CgIPF7JlhPiBIteo6vlNCStzkRit5snLZ13ROPlef4MkvV6FAHbeaBxB4DmY9cr+82tzebqreBS5dhZPITIQ4j04L9FczSWFSBn7An1uPH+5vLEKi9xIpGxejZyq3LgNMMStid91Qd2f0pK8oLoIrSapF/90Tp8tK5pbv3EphSQQcSu8ZPPZCBDobd6TgVqw/TF1W6f8S/tD0xK46aOOTLZyKbk+Ayxzr/DAAA//9QSwcIBlYFIgIBAACxAQAAUEsBAhQAFAAIAAgAAAAAAAZWBSICAQAAsQEAAAgAAAAAAAAAAAAAAAAAAAAAAGluZGV4LnB5UEsFBgAAAAABAAEANgAAADgBAAAAAA==",
@@ -1960,12 +1971,13 @@ func TestAccAliCloudFcv3Function_basic6895(t *testing.T) {
 						},
 					},
 					"cpu":                     "2",
-					"session_affinity_config": "{\\\"sessionConcurrencyPerInstance\\\":1,\\\"sseEndpointPath\\\":\\\"sse\\\"}",
+					"session_affinity_config": "{\\\"disableSessionIdReuse\\\":false,\\\"sessionConcurrencyPerInstance\\\":1,\\\"sessionIdleTimeoutInSeconds\\\":1800,\\\"sessionTTLInSeconds\\\":21600}",
 					"instance_isolation_mode": "SESSION_EXCLUSIVE",
 					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"session_affinity":        "GENERATED_COOKIE",
 						"memory_size":             "2048",
 						"runtime":                 "python3.10",
 						"timeout":                 "6",

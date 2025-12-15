@@ -22,16 +22,17 @@ func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
+	var header map[string]*string
 	functionName := id
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["functionName"] = id
+	header = make(map[string]*string)
 
 	action := fmt.Sprintf("/2023-03-30/functions/%s", functionName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -674,14 +675,16 @@ func (s *Fcv3ServiceV2) Fcv3VpcBindingStateRefreshFunc(id string, field string, 
 }
 
 // DescribeFcv3VpcBinding >>> Encapsulated.
+
 // SetResourceTags <<< Encapsulated tag function for Fcv3.
 func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
-		var err error
 		var action string
+		var err error
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		header := make(map[string]*string)
 		query := make(map[string]*string)
 		body := make(map[string]interface{})
 
@@ -702,11 +705,20 @@ func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 
 			query["TagKey"] = StringPointer(convertListToJsonString(convertListStringToListInterface(removedTagKeys)))
 			query["ResourceId"] = StringPointer(convertListToJsonString(expandSingletonToList(objectRaw["functionArn"])))
+			if v, ok := d.GetOk("function_arn"); ok {
+				localData1, err := jsonpath.Get("$", v)
+				if err != nil {
+					return WrapError(err)
+				}
+				resourceIdMapsArray := convertToInterfaceArray(localData1)
+
+				query["ResourceId"] = StringPointer(convertListToJsonString(resourceIdMapsArray))
+			}
 			query["ResourceType"] = StringPointer(resourceType)
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, body, true)
+				response, err = client.RoaDelete("FC", "2023-03-30", action, query, header, nil, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -740,11 +752,21 @@ func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 			request["Tag"] = tagsMaps
 			request["ResourceId"] = expandSingletonToList(objectRaw["functionArn"])
+			if v, ok := d.GetOk("function_arn"); ok {
+				localData1, err := jsonpath.Get("$", v)
+				if err != nil {
+					return WrapError(err)
+				}
+				resourceIdMapsArray := convertToInterfaceArray(localData1)
+
+				request["ResourceId"] = resourceIdMapsArray
+			}
+
 			request["ResourceType"] = resourceType
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
+				response, err = client.RoaPost("FC", "2023-03-30", action, query, header, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
