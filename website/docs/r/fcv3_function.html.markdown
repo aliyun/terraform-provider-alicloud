@@ -20,12 +20,6 @@ For information about Function Compute Service V3 (FCV3) Function and how to use
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_fcv3_function&exampleId=9c93b29f-29a3-2a4a-410e-7ff176f24eb199f2f587&activeTab=example&spm=docs.r.fcv3_function.0.9c93b29f29&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -118,6 +112,9 @@ resource "alicloud_fcv3_function" "default" {
 
 The following arguments are supported:
 * `code` - (Optional, List) Function code ZIP package. code and customContainerConfig. See [`code`](#code) below.
+
+-> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
 * `cpu` - (Optional, Computed, Float) The CPU specification of the function. The unit is vCPU, which is a multiple of the 0.05 vCPU.
 * `custom_container_config` - (Optional, List) The configuration of the custom container runtime. After the configuration is successful, the function can use the custom container image to execute the function. code and customContainerConfig. See [`custom_container_config`](#custom_container_config) below.
 * `custom_dns` - (Optional, List) Function custom DNS configuration See [`custom_dns`](#custom_dns) below.
@@ -128,8 +125,9 @@ The following arguments are supported:
 * `function_name` - (Optional, ForceNew, Computed) The function name. Consists of uppercase and lowercase letters, digits (0 to 9), underscores (_), and dashes (-). It must begin with an English letter (a ~ z), (A ~ Z), or an underscore (_). Case sensitive. The length is 1~128 characters.
 * `gpu_config` - (Optional, List) Function GPU configuration. See [`gpu_config`](#gpu_config) below.
 * `handler` - (Required) Function Handler: the call entry for the function compute system to run your function.
+* `idle_timeout` - (Optional, ForceNew, Int, Available since v1.266.0) Destroy an instance when the instance no-request duration exceeds this attribute. - 1 means that the threshold is cleared and the system default behavior is used.
 * `instance_concurrency` - (Optional, Computed, Int) Maximum instance concurrency.
-* `instance_isolation_mode` - (Optional, Available since v1.256.0) Instance isolation mode
+* `instance_isolation_mode` - (Optional, Computed, Available since v1.256.0) Instance isolation mode
 * `instance_lifecycle_config` - (Optional, List) Instance lifecycle callback method configuration. See [`instance_lifecycle_config`](#instance_lifecycle_config) below.
 * `internet_access` - (Optional, Computed) Allow function to access public network
 * `invocation_restriction` - (Optional, List, Available since v1.255.0) Invocation Restriction Detail See [`invocation_restriction`](#invocation_restriction) below.
@@ -138,10 +136,10 @@ The following arguments are supported:
 * `memory_size` - (Optional, Computed, Int) The memory specification of the function. The unit is MB. The memory size is a multiple of 64MB. The minimum value is 128MB and the maximum value is 32GB. At the same time, the ratio of cpu to memorySize (calculated by GB) should be between 1:1 and 1:4.
 * `nas_config` - (Optional, Computed, List) NAS configuration. After this parameter is configured, the function can access the specified NAS resource. See [`nas_config`](#nas_config) below.
 * `oss_mount_config` - (Optional, Computed, List) OSS mount configuration See [`oss_mount_config`](#oss_mount_config) below.
-* `resource_group_id` - (Optional, Computed, Available since v1.260.0) Resource Group ID.
+* `resource_group_id` - (Optional, Computed, Available since v1.260.0) Resource Group ID
 * `role` - (Optional) The user is authorized to the RAM role of function compute. After the configuration, function compute will assume this role to generate temporary access credentials. In the function, you can use the temporary access credentials of the role to access the specified Alibaba cloud service, such as OSS and OTS
-* `runtime` - (Required) Function runtime type.
-* `session_affinity` - (Optional, Available since v1.256.0) The affinity policy of the function compute call request. To implement the request affinity of the MCP SSE protocol, set it to MCP_SSE. If Cookie affinity is used, it can be set to GENERATED_COOKIE. If Header affinity is used, it can be set to HEADER_FIELD. If it is not set or set to NONE, the affinity effect is not set, and the request is routed according to the default scheduling policy of the function calculation system.
+* `runtime` - (Required) Function runtime type
+* `session_affinity` - (Optional, Computed, Available since v1.256.0) The affinity policy of the function compute call request. To implement the request affinity of the MCP SSE protocol, set it to MCP_SSE. If Cookie affinity is used, it can be set to GENERATED_COOKIE. If Header affinity is used, it can be set to HEADER_FIELD. If it is not set or set to NONE, the affinity effect is not set, and the request is routed according to the default scheduling policy of the function calculation system.
 * `session_affinity_config` - (Optional, Available since v1.256.0) When you set the sessionAffinity affinity type, you need to set the relevant affinity configuration. For example, the MCP_SSE affinity needs to fill in the mcpssessionaffinityconfig configuration. The Cookie affinity needs to be filled with the CookieSessionAffinityConfig configuration, and the Header Field affinity needs to be filled with the HeaderFieldSessionAffinityConfig configuration.
 * `tags` - (Optional, Map, Available since v1.242.0) The tag of the resource
 * `timeout` - (Optional, Computed, Int) The maximum running time of the function, in seconds.
@@ -225,7 +223,7 @@ The instance_lifecycle_config supports the following:
 ### `instance_lifecycle_config-initializer`
 
 The instance_lifecycle_config-initializer supports the following:
-* `command` - (Optional, List, Available since v1.260.0) Lifecycle Initialization Phase Callback Instructions.
+* `command` - (Optional, List, Available since v1.260.0) Lifecycle Initialization Phase Callback Instructions
 * `handler` - (Optional) The execution entry of the callback method, which is similar to the request handler.
 * `timeout` - (Optional, Int) The timeout time of the callback method, in seconds.
 

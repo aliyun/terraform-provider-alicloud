@@ -120,36 +120,43 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 						"health_check_config": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"initial_delay_seconds": {
 										Type:         schema.TypeInt,
 										Optional:     true,
+										Computed:     true,
 										ValidateFunc: IntBetween(0, 120),
 									},
 									"timeout_seconds": {
 										Type:         schema.TypeInt,
 										Optional:     true,
+										Computed:     true,
 										ValidateFunc: IntBetween(0, 3),
 									},
 									"http_get_url": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"period_seconds": {
 										Type:         schema.TypeInt,
 										Optional:     true,
+										Computed:     true,
 										ValidateFunc: IntBetween(0, 120),
 									},
 									"failure_threshold": {
 										Type:         schema.TypeInt,
 										Optional:     true,
+										Computed:     true,
 										ValidateFunc: IntBetween(0, 120),
 									},
 									"success_threshold": {
 										Type:         schema.TypeInt,
 										Optional:     true,
+										Computed:     true,
 										ValidateFunc: IntBetween(0, 120),
 									},
 								},
@@ -222,26 +229,31 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 						"health_check_config": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"initial_delay_seconds": {
 										Type:         schema.TypeInt,
 										Optional:     true,
+										Computed:     true,
 										ValidateFunc: IntBetween(0, 120),
 									},
 									"timeout_seconds": {
 										Type:         schema.TypeInt,
 										Optional:     true,
+										Computed:     true,
 										ValidateFunc: IntBetween(0, 3),
 									},
 									"http_get_url": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"period_seconds": {
 										Type:         schema.TypeInt,
 										Optional:     true,
+										Computed:     true,
 										ValidateFunc: IntBetween(0, 120),
 									},
 									"failure_threshold": {
@@ -253,6 +265,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 									"success_threshold": {
 										Type:         schema.TypeInt,
 										Optional:     true,
+										Computed:     true,
 										ValidateFunc: IntBetween(0, 120),
 									},
 								},
@@ -312,6 +325,11 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"idle_timeout": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"instance_concurrency": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -321,6 +339,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 			"instance_isolation_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"instance_lifecycle_config": {
 				Type:     schema.TypeList,
@@ -553,6 +572,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 			"session_affinity": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"session_affinity_config": {
 				Type:     schema.TypeString,
@@ -604,6 +624,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 						"vpc_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"vswitch_ids": {
 							Type:     schema.TypeList,
@@ -613,6 +634,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 						"security_group_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -636,46 +658,46 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 		request["functionName"] = v
 	}
 
-	dataList := make(map[string]interface{})
+	gpuConfig := make(map[string]interface{})
 
 	if v := d.Get("gpu_config"); !IsNil(v) {
 		gpuMemorySize1, _ := jsonpath.Get("$[0].gpu_memory_size", v)
 		if gpuMemorySize1 != nil && gpuMemorySize1 != "" {
-			dataList["gpuMemorySize"] = gpuMemorySize1
+			gpuConfig["gpuMemorySize"] = gpuMemorySize1
 		}
 		gpuType1, _ := jsonpath.Get("$[0].gpu_type", v)
 		if gpuType1 != nil && gpuType1 != "" {
-			dataList["gpuType"] = gpuType1
+			gpuConfig["gpuType"] = gpuType1
 		}
 
-		request["gpuConfig"] = dataList
+		request["gpuConfig"] = gpuConfig
 	}
 
-	dataList1 := make(map[string]interface{})
+	logConfig := make(map[string]interface{})
 
 	if v := d.Get("log_config"); !IsNil(v) {
 		logBeginRule1, _ := jsonpath.Get("$[0].log_begin_rule", v)
 		if logBeginRule1 != nil && logBeginRule1 != "" {
-			dataList1["logBeginRule"] = logBeginRule1
+			logConfig["logBeginRule"] = logBeginRule1
 		}
 		project1, _ := jsonpath.Get("$[0].project", v)
 		if project1 != nil && project1 != "" {
-			dataList1["project"] = project1
+			logConfig["project"] = project1
 		}
 		enableInstanceMetrics1, _ := jsonpath.Get("$[0].enable_instance_metrics", v)
 		if enableInstanceMetrics1 != nil && enableInstanceMetrics1 != "" {
-			dataList1["enableInstanceMetrics"] = enableInstanceMetrics1
+			logConfig["enableInstanceMetrics"] = enableInstanceMetrics1
 		}
 		enableRequestMetrics1, _ := jsonpath.Get("$[0].enable_request_metrics", v)
 		if enableRequestMetrics1 != nil && enableRequestMetrics1 != "" {
-			dataList1["enableRequestMetrics"] = enableRequestMetrics1
+			logConfig["enableRequestMetrics"] = enableRequestMetrics1
 		}
 		logstore1, _ := jsonpath.Get("$[0].logstore", v)
 		if logstore1 != nil && logstore1 != "" {
-			dataList1["logstore"] = logstore1
+			logConfig["logstore"] = logstore1
 		}
 
-		request["logConfig"] = dataList1
+		request["logConfig"] = logConfig
 	}
 
 	if v, ok := d.GetOkExists("instance_concurrency"); ok && v.(int) > 0 {
@@ -684,150 +706,158 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("instance_isolation_mode"); ok {
 		request["instanceIsolationMode"] = v
 	}
-	dataList2 := make(map[string]interface{})
+	customRuntimeConfig := make(map[string]interface{})
 
 	if v := d.Get("custom_runtime_config"); !IsNil(v) {
 		healthCheckConfig := make(map[string]interface{})
-		timeoutSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", v)
+		timeoutSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", d.Get("custom_runtime_config"))
 		if timeoutSeconds1 != nil && timeoutSeconds1 != "" && timeoutSeconds1.(int) > 0 {
 			healthCheckConfig["timeoutSeconds"] = timeoutSeconds1
 		}
-		httpGetUrl1, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", v)
+		httpGetUrl1, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", d.Get("custom_runtime_config"))
 		if httpGetUrl1 != nil && httpGetUrl1 != "" {
 			healthCheckConfig["httpGetUrl"] = httpGetUrl1
 		}
-		successThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", v)
+		successThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", d.Get("custom_runtime_config"))
 		if successThreshold1 != nil && successThreshold1 != "" && successThreshold1.(int) > 0 {
 			healthCheckConfig["successThreshold"] = successThreshold1
 		}
-		initialDelaySeconds1, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", v)
+		initialDelaySeconds1, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", d.Get("custom_runtime_config"))
 		if initialDelaySeconds1 != nil && initialDelaySeconds1 != "" {
 			healthCheckConfig["initialDelaySeconds"] = initialDelaySeconds1
 		}
-		periodSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", v)
+		periodSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", d.Get("custom_runtime_config"))
 		if periodSeconds1 != nil && periodSeconds1 != "" && periodSeconds1.(int) > 0 {
 			healthCheckConfig["periodSeconds"] = periodSeconds1
 		}
-		failureThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", v)
+		failureThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", d.Get("custom_runtime_config"))
 		if failureThreshold1 != nil && failureThreshold1 != "" && failureThreshold1.(int) > 0 {
 			healthCheckConfig["failureThreshold"] = failureThreshold1
 		}
 
-		dataList2["healthCheckConfig"] = healthCheckConfig
+		if len(healthCheckConfig) > 0 {
+			customRuntimeConfig["healthCheckConfig"] = healthCheckConfig
+		}
 		args1, _ := jsonpath.Get("$[0].args", v)
 		if args1 != nil && args1 != "" {
-			dataList2["args"] = args1
+			customRuntimeConfig["args"] = args1
 		}
 		command1, _ := jsonpath.Get("$[0].command", v)
 		if command1 != nil && command1 != "" {
-			dataList2["command"] = command1
+			customRuntimeConfig["command"] = command1
 		}
 		port1, _ := jsonpath.Get("$[0].port", v)
 		if port1 != nil && port1 != "" && port1.(int) > 0 {
-			dataList2["port"] = port1
+			customRuntimeConfig["port"] = port1
 		}
 
-		request["customRuntimeConfig"] = dataList2
+		request["customRuntimeConfig"] = customRuntimeConfig
 	}
 
-	dataList3 := make(map[string]interface{})
+	customContainerConfig := make(map[string]interface{})
 
 	if v := d.Get("custom_container_config"); !IsNil(v) {
 		accelerationType1, _ := jsonpath.Get("$[0].acceleration_type", v)
 		if accelerationType1 != nil && accelerationType1 != "" {
-			dataList3["accelerationType"] = accelerationType1
+			customContainerConfig["accelerationType"] = accelerationType1
 		}
 		healthCheckConfig1 := make(map[string]interface{})
-		failureThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", v)
+		failureThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", d.Get("custom_container_config"))
 		if failureThreshold3 != nil && failureThreshold3 != "" && failureThreshold3.(int) > 0 {
 			healthCheckConfig1["failureThreshold"] = failureThreshold3
 		}
-		timeoutSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", v)
+		timeoutSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", d.Get("custom_container_config"))
 		if timeoutSeconds3 != nil && timeoutSeconds3 != "" && timeoutSeconds3.(int) > 0 {
 			healthCheckConfig1["timeoutSeconds"] = timeoutSeconds3
 		}
-		initialDelaySeconds3, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", v)
+		initialDelaySeconds3, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", d.Get("custom_container_config"))
 		if initialDelaySeconds3 != nil && initialDelaySeconds3 != "" {
 			healthCheckConfig1["initialDelaySeconds"] = initialDelaySeconds3
 		}
-		periodSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", v)
+		periodSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", d.Get("custom_container_config"))
 		if periodSeconds3 != nil && periodSeconds3 != "" && periodSeconds3.(int) > 0 {
 			healthCheckConfig1["periodSeconds"] = periodSeconds3
 		}
-		httpGetUrl3, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", v)
+		httpGetUrl3, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", d.Get("custom_container_config"))
 		if httpGetUrl3 != nil && httpGetUrl3 != "" {
 			healthCheckConfig1["httpGetUrl"] = httpGetUrl3
 		}
-		successThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", v)
+		successThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", d.Get("custom_container_config"))
 		if successThreshold3 != nil && successThreshold3 != "" && successThreshold3.(int) > 0 {
 			healthCheckConfig1["successThreshold"] = successThreshold3
 		}
 
-		dataList3["healthCheckConfig"] = healthCheckConfig1
+		if len(healthCheckConfig1) > 0 {
+			customContainerConfig["healthCheckConfig"] = healthCheckConfig1
+		}
 		entrypoint1, _ := jsonpath.Get("$[0].entrypoint", v)
 		if entrypoint1 != nil && entrypoint1 != "" {
-			dataList3["entrypoint"] = entrypoint1
+			customContainerConfig["entrypoint"] = entrypoint1
 		}
 		command3, _ := jsonpath.Get("$[0].command", v)
 		if command3 != nil && command3 != "" {
-			dataList3["command"] = command3
+			customContainerConfig["command"] = command3
 		}
 		image1, _ := jsonpath.Get("$[0].image", v)
 		if image1 != nil && image1 != "" {
-			dataList3["image"] = image1
+			customContainerConfig["image"] = image1
 		}
 		port3, _ := jsonpath.Get("$[0].port", v)
 		if port3 != nil && port3 != "" {
-			dataList3["port"] = port3
+			customContainerConfig["port"] = port3
 		}
 		acrInstanceId1, _ := jsonpath.Get("$[0].acr_instance_id", v)
 		if acrInstanceId1 != nil && acrInstanceId1 != "" {
-			dataList3["acrInstanceId"] = acrInstanceId1
+			customContainerConfig["acrInstanceId"] = acrInstanceId1
 		}
 
-		request["customContainerConfig"] = dataList3
+		request["customContainerConfig"] = customContainerConfig
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["resourceGroupId"] = v
 	}
-	dataList4 := make(map[string]interface{})
+	instanceLifecycleConfig := make(map[string]interface{})
 
 	if v := d.Get("instance_lifecycle_config"); !IsNil(v) {
 		preStop := make(map[string]interface{})
-		timeout1, _ := jsonpath.Get("$[0].pre_stop[0].timeout", v)
+		timeout1, _ := jsonpath.Get("$[0].pre_stop[0].timeout", d.Get("instance_lifecycle_config"))
 		if timeout1 != nil && timeout1 != "" && timeout1.(int) > 0 {
 			preStop["timeout"] = timeout1
 		}
-		handler1, _ := jsonpath.Get("$[0].pre_stop[0].handler", v)
+		handler1, _ := jsonpath.Get("$[0].pre_stop[0].handler", d.Get("instance_lifecycle_config"))
 		if handler1 != nil && handler1 != "" {
 			preStop["handler"] = handler1
 		}
 
-		dataList4["preStop"] = preStop
+		if len(preStop) > 0 {
+			instanceLifecycleConfig["preStop"] = preStop
+		}
 		initializer := make(map[string]interface{})
-		command5, _ := jsonpath.Get("$[0].initializer[0].command", v)
+		command5, _ := jsonpath.Get("$[0].initializer[0].command", d.Get("instance_lifecycle_config"))
 		if command5 != nil && command5 != "" {
 			initializer["command"] = command5
 		}
-		handler3, _ := jsonpath.Get("$[0].initializer[0].handler", v)
+		handler3, _ := jsonpath.Get("$[0].initializer[0].handler", d.Get("instance_lifecycle_config"))
 		if handler3 != nil && handler3 != "" {
 			initializer["handler"] = handler3
 		}
-		timeout3, _ := jsonpath.Get("$[0].initializer[0].timeout", v)
+		timeout3, _ := jsonpath.Get("$[0].initializer[0].timeout", d.Get("instance_lifecycle_config"))
 		if timeout3 != nil && timeout3 != "" && timeout3.(int) > 0 {
 			initializer["timeout"] = timeout3
 		}
 
-		dataList4["initializer"] = initializer
+		if len(initializer) > 0 {
+			instanceLifecycleConfig["initializer"] = initializer
+		}
 
-		request["instanceLifecycleConfig"] = dataList4
+		request["instanceLifecycleConfig"] = instanceLifecycleConfig
 	}
 
 	if v, ok := d.GetOkExists("internet_access"); ok {
 		request["internetAccess"] = v
 	}
-	dataList5 := make(map[string]interface{})
+	ossMountConfig := make(map[string]interface{})
 
 	if v := d.Get("oss_mount_config"); !IsNil(v) {
 		if v, ok := d.GetOk("oss_mount_config"); ok {
@@ -836,7 +866,7 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range localData.([]interface{}) {
+			for _, dataLoop := range convertToInterfaceArray(localData) {
 				dataLoopTmp := make(map[string]interface{})
 				if dataLoop != nil {
 					dataLoopTmp = dataLoop.(map[string]interface{})
@@ -849,37 +879,37 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 				dataLoopMap["endpoint"] = dataLoopTmp["endpoint"]
 				localMaps = append(localMaps, dataLoopMap)
 			}
-			dataList5["mountPoints"] = localMaps
+			ossMountConfig["mountPoints"] = localMaps
 		}
 
-		request["ossMountConfig"] = dataList5
+		request["ossMountConfig"] = ossMountConfig
 	}
 
 	request["runtime"] = d.Get("runtime")
 	if v, ok := d.GetOk("environment_variables"); ok {
 		request["environmentVariables"] = v
 	}
-	dataList6 := make(map[string]interface{})
+	code := make(map[string]interface{})
 
 	if v := d.Get("code"); !IsNil(v) {
 		ossBucketName1, _ := jsonpath.Get("$[0].oss_bucket_name", v)
 		if ossBucketName1 != nil && ossBucketName1 != "" {
-			dataList6["ossBucketName"] = ossBucketName1
+			code["ossBucketName"] = ossBucketName1
 		}
 		zipFile1, _ := jsonpath.Get("$[0].zip_file", v)
 		if zipFile1 != nil && zipFile1 != "" {
-			dataList6["zipFile"] = zipFile1
+			code["zipFile"] = zipFile1
 		}
 		ossObjectName1, _ := jsonpath.Get("$[0].oss_object_name", v)
 		if ossObjectName1 != nil && ossObjectName1 != "" {
-			dataList6["ossObjectName"] = ossObjectName1
+			code["ossObjectName"] = ossObjectName1
 		}
 		checksum1, _ := jsonpath.Get("$[0].checksum", v)
 		if checksum1 != nil && checksum1 != "" {
-			dataList6["checksum"] = checksum1
+			code["checksum"] = checksum1
 		}
 
-		request["code"] = dataList6
+		request["code"] = code
 	}
 
 	if v, ok := d.GetOk("role"); ok {
@@ -891,7 +921,8 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	if v, ok := d.GetOk("layers"); ok {
-		layersMapsArray := v.([]interface{})
+		layersMapsArray := convertToInterfaceArray(v)
+
 		request["layers"] = layersMapsArray
 	}
 
@@ -910,25 +941,28 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("disk_size"); ok && v.(int) > 0 {
 		request["diskSize"] = v
 	}
-	dataList7 := make(map[string]interface{})
+	vpcConfig := make(map[string]interface{})
 
 	if v := d.Get("vpc_config"); !IsNil(v) {
 		vpcId1, _ := jsonpath.Get("$[0].vpc_id", v)
 		if vpcId1 != nil && vpcId1 != "" {
-			dataList7["vpcId"] = vpcId1
+			vpcConfig["vpcId"] = vpcId1
 		}
 		securityGroupId1, _ := jsonpath.Get("$[0].security_group_id", v)
 		if securityGroupId1 != nil && securityGroupId1 != "" {
-			dataList7["securityGroupId"] = securityGroupId1
+			vpcConfig["securityGroupId"] = securityGroupId1
 		}
 		vSwitchIds1, _ := jsonpath.Get("$[0].vswitch_ids", v)
 		if vSwitchIds1 != nil && vSwitchIds1 != "" {
-			dataList7["vSwitchIds"] = vSwitchIds1
+			vpcConfig["vSwitchIds"] = vSwitchIds1
 		}
 
-		request["vpcConfig"] = dataList7
+		request["vpcConfig"] = vpcConfig
 	}
 
+	if v, ok := d.GetOkExists("idle_timeout"); ok {
+		request["idleTimeout"] = v
+	}
 	if v, ok := d.GetOk("description"); ok {
 		request["description"] = v
 	}
@@ -973,6 +1007,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
+
 	d.Set("code_size", objectRaw["codeSize"])
 	d.Set("cpu", objectRaw["cpu"])
 	d.Set("create_time", objectRaw["createdTime"])
@@ -982,6 +1017,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("function_arn", objectRaw["functionArn"])
 	d.Set("function_id", objectRaw["functionId"])
 	d.Set("handler", objectRaw["handler"])
+	d.Set("idle_timeout", objectRaw["idleTimeout"])
 	d.Set("instance_concurrency", objectRaw["instanceConcurrency"])
 	d.Set("instance_isolation_mode", objectRaw["instanceIsolationMode"])
 	d.Set("internet_access", objectRaw["internetAccess"])
@@ -1027,13 +1063,13 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		customContainerConfigMap["acceleration_info"] = accelerationInfoMaps
 		commandRaw := make([]interface{}, 0)
 		if customContainerConfigRaw["command"] != nil {
-			commandRaw = customContainerConfigRaw["command"].([]interface{})
+			commandRaw = convertToInterfaceArray(customContainerConfigRaw["command"])
 		}
 
 		customContainerConfigMap["command"] = commandRaw
 		entrypointRaw := make([]interface{}, 0)
 		if customContainerConfigRaw["entrypoint"] != nil {
-			entrypointRaw = customContainerConfigRaw["entrypoint"].([]interface{})
+			entrypointRaw = convertToInterfaceArray(customContainerConfigRaw["entrypoint"])
 		}
 
 		customContainerConfigMap["entrypoint"] = entrypointRaw
@@ -1070,7 +1106,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		dnsOptionsRaw := customDNSRaw["dnsOptions"]
 		dnsOptionsMaps := make([]map[string]interface{}, 0)
 		if dnsOptionsRaw != nil {
-			for _, dnsOptionsChildRaw := range dnsOptionsRaw.([]interface{}) {
+			for _, dnsOptionsChildRaw := range convertToInterfaceArray(dnsOptionsRaw) {
 				dnsOptionsMap := make(map[string]interface{})
 				dnsOptionsChildRaw := dnsOptionsChildRaw.(map[string]interface{})
 				dnsOptionsMap["name"] = dnsOptionsChildRaw["name"]
@@ -1082,13 +1118,13 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		customDnsMap["dns_options"] = dnsOptionsMaps
 		nameServersRaw := make([]interface{}, 0)
 		if customDNSRaw["nameServers"] != nil {
-			nameServersRaw = customDNSRaw["nameServers"].([]interface{})
+			nameServersRaw = convertToInterfaceArray(customDNSRaw["nameServers"])
 		}
 
 		customDnsMap["name_servers"] = nameServersRaw
 		searchesRaw := make([]interface{}, 0)
 		if customDNSRaw["searches"] != nil {
-			searchesRaw = customDNSRaw["searches"].([]interface{})
+			searchesRaw = convertToInterfaceArray(customDNSRaw["searches"])
 		}
 
 		customDnsMap["searches"] = searchesRaw
@@ -1108,13 +1144,13 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 
 		argsRaw := make([]interface{}, 0)
 		if customRuntimeConfigRaw["args"] != nil {
-			argsRaw = customRuntimeConfigRaw["args"].([]interface{})
+			argsRaw = convertToInterfaceArray(customRuntimeConfigRaw["args"])
 		}
 
 		customRuntimeConfigMap["args"] = argsRaw
 		commandRaw := make([]interface{}, 0)
 		if customRuntimeConfigRaw["command"] != nil {
-			commandRaw = customRuntimeConfigRaw["command"].([]interface{})
+			commandRaw = convertToInterfaceArray(customRuntimeConfigRaw["command"])
 		}
 
 		customRuntimeConfigMap["command"] = commandRaw
@@ -1175,7 +1211,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 
 			commandRaw := make([]interface{}, 0)
 			if initializerRaw["command"] != nil {
-				commandRaw = initializerRaw["command"].([]interface{})
+				commandRaw = convertToInterfaceArray(initializerRaw["command"])
 			}
 
 			initializerMap["command"] = commandRaw
@@ -1247,7 +1283,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		mountPointsRaw := nasConfigRaw["mountPoints"]
 		mountPointsMaps := make([]map[string]interface{}, 0)
 		if mountPointsRaw != nil {
-			for _, mountPointsChildRaw := range mountPointsRaw.([]interface{}) {
+			for _, mountPointsChildRaw := range convertToInterfaceArray(mountPointsRaw) {
 				mountPointsMap := make(map[string]interface{})
 				mountPointsChildRaw := mountPointsChildRaw.(map[string]interface{})
 				mountPointsMap["enable_tls"] = mountPointsChildRaw["enableTLS"]
@@ -1269,7 +1305,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 
 	mountPointsMaps := make([]map[string]interface{}, 0)
 	if mountPointsRaw != nil {
-		for _, mountPointsChildRaw := range mountPointsRaw.([]interface{}) {
+		for _, mountPointsChildRaw := range convertToInterfaceArray(mountPointsRaw) {
 			mountPointsMap := make(map[string]interface{})
 			mountPointsChildRaw := mountPointsChildRaw.(map[string]interface{})
 			mountPointsMap["bucket_name"] = mountPointsChildRaw["bucketName"]
@@ -1315,7 +1351,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 
 		vSwitchIdsRaw := make([]interface{}, 0)
 		if vpcConfigRaw["vSwitchIds"] != nil {
-			vSwitchIdsRaw = vpcConfigRaw["vSwitchIds"].([]interface{})
+			vSwitchIdsRaw = convertToInterfaceArray(vpcConfigRaw["vSwitchIds"])
 		}
 
 		vpcConfigMap["vswitch_ids"] = vSwitchIdsRaw
@@ -1334,6 +1370,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var header map[string]*string
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
@@ -1367,7 +1404,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 				body = request
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
+					response, err = client.RoaPost("FC", "2023-03-30", action, query, header, body, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
 							wait()
@@ -1394,7 +1431,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 				body = request
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
+					response, err = client.RoaPost("FC", "2023-03-30", action, query, header, body, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -1423,55 +1460,55 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 
 	if !d.IsNewResource() && d.HasChange("gpu_config") {
 		update = true
-		dataList := make(map[string]interface{})
+		gpuConfig := make(map[string]interface{})
 
 		if v := d.Get("gpu_config"); v != nil {
 			gpuMemorySize1, _ := jsonpath.Get("$[0].gpu_memory_size", v)
-			if gpuMemorySize1 != nil && (d.HasChange("gpu_config.0.gpu_memory_size") || gpuMemorySize1 != "") {
-				dataList["gpuMemorySize"] = gpuMemorySize1
+			if gpuMemorySize1 != nil && gpuMemorySize1 != "" {
+				gpuConfig["gpuMemorySize"] = gpuMemorySize1
 			}
 			gpuType1, _ := jsonpath.Get("$[0].gpu_type", v)
-			if gpuType1 != nil && (d.HasChange("gpu_config.0.gpu_type") || gpuType1 != "") {
-				dataList["gpuType"] = gpuType1
+			if gpuType1 != nil && gpuType1 != "" {
+				gpuConfig["gpuType"] = gpuType1
 			}
 
-			request["gpuConfig"] = dataList
+			request["gpuConfig"] = gpuConfig
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("log_config") {
 		update = true
-		dataList1 := make(map[string]interface{})
+		logConfig := make(map[string]interface{})
 
 		if v := d.Get("log_config"); v != nil {
 			logBeginRule1, _ := jsonpath.Get("$[0].log_begin_rule", v)
-			if logBeginRule1 != nil && (d.HasChange("log_config.0.log_begin_rule") || logBeginRule1 != "") {
-				dataList1["logBeginRule"] = logBeginRule1
+			if logBeginRule1 != nil && logBeginRule1 != "" {
+				logConfig["logBeginRule"] = logBeginRule1
 			}
 			project1, _ := jsonpath.Get("$[0].project", v)
-			if project1 != nil && (d.HasChange("log_config.0.project") || project1 != "") {
-				dataList1["project"] = project1
+			if project1 != nil && project1 != "" {
+				logConfig["project"] = project1
 			}
 			enableInstanceMetrics1, _ := jsonpath.Get("$[0].enable_instance_metrics", v)
-			if enableInstanceMetrics1 != nil && (d.HasChange("log_config.0.enable_instance_metrics") || enableInstanceMetrics1 != "") {
-				dataList1["enableInstanceMetrics"] = enableInstanceMetrics1
+			if enableInstanceMetrics1 != nil && enableInstanceMetrics1 != "" {
+				logConfig["enableInstanceMetrics"] = enableInstanceMetrics1
 			}
 			enableRequestMetrics1, _ := jsonpath.Get("$[0].enable_request_metrics", v)
-			if enableRequestMetrics1 != nil && (d.HasChange("log_config.0.enable_request_metrics") || enableRequestMetrics1 != "") {
-				dataList1["enableRequestMetrics"] = enableRequestMetrics1
+			if enableRequestMetrics1 != nil && enableRequestMetrics1 != "" {
+				logConfig["enableRequestMetrics"] = enableRequestMetrics1
 			}
 			logstore1, _ := jsonpath.Get("$[0].logstore", v)
-			if logstore1 != nil && (d.HasChange("log_config.0.logstore") || logstore1 != "") {
-				dataList1["logstore"] = logstore1
+			if logstore1 != nil && logstore1 != "" {
+				logConfig["logstore"] = logstore1
 			}
 
-			request["logConfig"] = dataList1
+			request["logConfig"] = logConfig
 		}
 	}
 
 	if d.HasChange("nas_config") {
 		update = true
-		dataList2 := make(map[string]interface{})
+		nasConfig := make(map[string]interface{})
 
 		if v := d.Get("nas_config"); v != nil {
 			if v, ok := d.GetOk("nas_config"); ok {
@@ -1480,7 +1517,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					localData = make([]interface{}, 0)
 				}
 				localMaps := make([]interface{}, 0)
-				for _, dataLoop := range localData.([]interface{}) {
+				for _, dataLoop := range convertToInterfaceArray(localData) {
 					dataLoopTmp := make(map[string]interface{})
 					if dataLoop != nil {
 						dataLoopTmp = dataLoop.(map[string]interface{})
@@ -1491,19 +1528,19 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					dataLoopMap["mountDir"] = dataLoopTmp["mount_dir"]
 					localMaps = append(localMaps, dataLoopMap)
 				}
-				dataList2["mountPoints"] = localMaps
+				nasConfig["mountPoints"] = localMaps
 			}
 
 			userId1, _ := jsonpath.Get("$[0].user_id", v)
-			if userId1 != nil && (d.HasChange("nas_config.0.user_id") || userId1 != "") {
-				dataList2["userId"] = userId1
+			if userId1 != nil && userId1 != "" {
+				nasConfig["userId"] = userId1
 			}
 			groupId1, _ := jsonpath.Get("$[0].group_id", v)
-			if groupId1 != nil && (d.HasChange("nas_config.0.group_id") || groupId1 != "") {
-				dataList2["groupId"] = groupId1
+			if groupId1 != nil && groupId1 != "" {
+				nasConfig["groupId"] = groupId1
 			}
 
-			request["nasConfig"] = dataList2
+			request["nasConfig"] = nasConfig
 		}
 	}
 
@@ -1517,124 +1554,128 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 		request["instanceIsolationMode"] = d.Get("instance_isolation_mode")
 	}
 
-	if !d.IsNewResource() && d.HasChange("custom_runtime_config") {
+	if d.HasChange("custom_runtime_config") {
 		update = true
-		dataList3 := make(map[string]interface{})
+		customRuntimeConfig := make(map[string]interface{})
 
 		if v := d.Get("custom_runtime_config"); v != nil {
 			healthCheckConfig := make(map[string]interface{})
-			timeoutSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", v)
-			if timeoutSeconds1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.timeout_seconds") || timeoutSeconds1 != "") && timeoutSeconds1.(int) > 0 {
+			timeoutSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", d.Get("custom_runtime_config"))
+			if timeoutSeconds1 != nil && timeoutSeconds1 != "" && timeoutSeconds1.(int) > 0 {
 				healthCheckConfig["timeoutSeconds"] = timeoutSeconds1
 			}
-			httpGetUrl1, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", v)
-			if httpGetUrl1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.http_get_url") || httpGetUrl1 != "") {
+			httpGetUrl1, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", d.Get("custom_runtime_config"))
+			if httpGetUrl1 != nil && httpGetUrl1 != "" {
 				healthCheckConfig["httpGetUrl"] = httpGetUrl1
 			}
-			successThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", v)
-			if successThreshold1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.success_threshold") || successThreshold1 != "") && successThreshold1.(int) > 0 {
+			successThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", d.Get("custom_runtime_config"))
+			if successThreshold1 != nil && successThreshold1 != "" && successThreshold1.(int) > 0 {
 				healthCheckConfig["successThreshold"] = successThreshold1
 			}
-			initialDelaySeconds1, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", v)
-			if initialDelaySeconds1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.initial_delay_seconds") || initialDelaySeconds1 != "") {
+			initialDelaySeconds1, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", d.Get("custom_runtime_config"))
+			if initialDelaySeconds1 != nil && initialDelaySeconds1 != "" {
 				healthCheckConfig["initialDelaySeconds"] = initialDelaySeconds1
 			}
-			periodSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", v)
-			if periodSeconds1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.period_seconds") || periodSeconds1 != "") && periodSeconds1.(int) > 0 {
+			periodSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", d.Get("custom_runtime_config"))
+			if periodSeconds1 != nil && periodSeconds1 != "" && periodSeconds1.(int) > 0 {
 				healthCheckConfig["periodSeconds"] = periodSeconds1
 			}
-			failureThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", v)
-			if failureThreshold1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.failure_threshold") || failureThreshold1 != "") && failureThreshold1.(int) > 0 {
+			failureThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", d.Get("custom_runtime_config"))
+			if failureThreshold1 != nil && failureThreshold1 != "" && failureThreshold1.(int) > 0 {
 				healthCheckConfig["failureThreshold"] = failureThreshold1
 			}
 
-			dataList3["healthCheckConfig"] = healthCheckConfig
-			args1, _ := jsonpath.Get("$[0].args", d.Get("custom_runtime_config"))
-			if args1 != nil && (d.HasChange("custom_runtime_config.0.args") || args1 != "") {
-				dataList3["args"] = args1
+			if len(healthCheckConfig) > 0 {
+				customRuntimeConfig["healthCheckConfig"] = healthCheckConfig
 			}
-			command1, _ := jsonpath.Get("$[0].command", d.Get("custom_runtime_config"))
-			if command1 != nil && (d.HasChange("custom_runtime_config.0.command") || command1 != "") {
-				dataList3["command"] = command1
+			args1, _ := jsonpath.Get("$[0].args", v)
+			if args1 != nil && args1 != "" {
+				customRuntimeConfig["args"] = args1
+			}
+			command1, _ := jsonpath.Get("$[0].command", v)
+			if command1 != nil && command1 != "" {
+				customRuntimeConfig["command"] = command1
 			}
 			port1, _ := jsonpath.Get("$[0].port", v)
-			if port1 != nil && (d.HasChange("custom_runtime_config.0.port") || port1 != "") && port1.(int) > 0 {
-				dataList3["port"] = port1
+			if port1 != nil && port1 != "" && port1.(int) > 0 {
+				customRuntimeConfig["port"] = port1
 			}
 
-			request["customRuntimeConfig"] = dataList3
+			request["customRuntimeConfig"] = customRuntimeConfig
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("custom_container_config") {
 		update = true
-		dataList4 := make(map[string]interface{})
+		customContainerConfig := make(map[string]interface{})
 
 		if v := d.Get("custom_container_config"); v != nil {
 			accelerationType1, _ := jsonpath.Get("$[0].acceleration_type", v)
-			if accelerationType1 != nil && (d.HasChange("custom_container_config.0.acceleration_type") || accelerationType1 != "") {
-				dataList4["accelerationType"] = accelerationType1
+			if accelerationType1 != nil && accelerationType1 != "" {
+				customContainerConfig["accelerationType"] = accelerationType1
 			}
 			healthCheckConfig1 := make(map[string]interface{})
-			failureThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", v)
-			if failureThreshold3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.failure_threshold") || failureThreshold3 != "") && failureThreshold3.(int) > 0 {
+			failureThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", d.Get("custom_container_config"))
+			if failureThreshold3 != nil && failureThreshold3 != "" && failureThreshold3.(int) > 0 {
 				healthCheckConfig1["failureThreshold"] = failureThreshold3
 			}
-			timeoutSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", v)
-			if timeoutSeconds3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.timeout_seconds") || timeoutSeconds3 != "") && timeoutSeconds3.(int) > 0 {
+			timeoutSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", d.Get("custom_container_config"))
+			if timeoutSeconds3 != nil && timeoutSeconds3 != "" && timeoutSeconds3.(int) > 0 {
 				healthCheckConfig1["timeoutSeconds"] = timeoutSeconds3
 			}
-			initialDelaySeconds3, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", v)
-			if initialDelaySeconds3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.initial_delay_seconds") || initialDelaySeconds3 != "") {
+			initialDelaySeconds3, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", d.Get("custom_container_config"))
+			if initialDelaySeconds3 != nil && initialDelaySeconds3 != "" {
 				healthCheckConfig1["initialDelaySeconds"] = initialDelaySeconds3
 			}
-			periodSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", v)
-			if periodSeconds3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.period_seconds") || periodSeconds3 != "") && periodSeconds3.(int) > 0 {
+			periodSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", d.Get("custom_container_config"))
+			if periodSeconds3 != nil && periodSeconds3 != "" && periodSeconds3.(int) > 0 {
 				healthCheckConfig1["periodSeconds"] = periodSeconds3
 			}
-			httpGetUrl3, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", v)
-			if httpGetUrl3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.http_get_url") || httpGetUrl3 != "") {
+			httpGetUrl3, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", d.Get("custom_container_config"))
+			if httpGetUrl3 != nil && httpGetUrl3 != "" {
 				healthCheckConfig1["httpGetUrl"] = httpGetUrl3
 			}
-			successThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", v)
-			if successThreshold3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.success_threshold") || successThreshold3 != "") && successThreshold3.(int) > 0 {
+			successThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", d.Get("custom_container_config"))
+			if successThreshold3 != nil && successThreshold3 != "" && successThreshold3.(int) > 0 {
 				healthCheckConfig1["successThreshold"] = successThreshold3
 			}
 
-			dataList4["healthCheckConfig"] = healthCheckConfig1
-			entrypoint1, _ := jsonpath.Get("$[0].entrypoint", d.Get("custom_container_config"))
-			if entrypoint1 != nil && (d.HasChange("custom_container_config.0.entrypoint") || entrypoint1 != "") {
-				dataList4["entrypoint"] = entrypoint1
+			if len(healthCheckConfig1) > 0 {
+				customContainerConfig["healthCheckConfig"] = healthCheckConfig1
 			}
-			command3, _ := jsonpath.Get("$[0].command", d.Get("custom_container_config"))
-			if command3 != nil && (d.HasChange("custom_container_config.0.command") || command3 != "") {
-				dataList4["command"] = command3
+			entrypoint1, _ := jsonpath.Get("$[0].entrypoint", v)
+			if entrypoint1 != nil && entrypoint1 != "" {
+				customContainerConfig["entrypoint"] = entrypoint1
+			}
+			command3, _ := jsonpath.Get("$[0].command", v)
+			if command3 != nil && command3 != "" {
+				customContainerConfig["command"] = command3
 			}
 			image1, _ := jsonpath.Get("$[0].image", v)
-			if image1 != nil && (d.HasChange("custom_container_config.0.image") || image1 != "") {
-				dataList4["image"] = image1
+			if image1 != nil && image1 != "" {
+				customContainerConfig["image"] = image1
 			}
 			port3, _ := jsonpath.Get("$[0].port", v)
-			if port3 != nil && (d.HasChange("custom_container_config.0.port") || port3 != "") {
-				dataList4["port"] = port3
+			if port3 != nil && port3 != "" {
+				customContainerConfig["port"] = port3
 			}
 			acrInstanceId1, _ := jsonpath.Get("$[0].acr_instance_id", v)
-			if acrInstanceId1 != nil && (d.HasChange("custom_container_config.0.acr_instance_id") || acrInstanceId1 != "") {
-				dataList4["acrInstanceId"] = acrInstanceId1
+			if acrInstanceId1 != nil && acrInstanceId1 != "" {
+				customContainerConfig["acrInstanceId"] = acrInstanceId1
 			}
 
-			request["customContainerConfig"] = dataList4
+			request["customContainerConfig"] = customContainerConfig
 		}
 	}
 
 	if d.HasChange("custom_dns") {
 		update = true
-		dataList5 := make(map[string]interface{})
+		customDNS := make(map[string]interface{})
 
 		if v := d.Get("custom_dns"); v != nil {
-			searches1, _ := jsonpath.Get("$[0].searches", d.Get("custom_dns"))
-			if searches1 != nil && (d.HasChange("custom_dns.0.searches") || searches1 != "") {
-				dataList5["searches"] = searches1
+			searches1, _ := jsonpath.Get("$[0].searches", v)
+			if searches1 != nil && searches1 != "" {
+				customDNS["searches"] = searches1
 			}
 			if v, ok := d.GetOk("custom_dns"); ok {
 				localData1, err := jsonpath.Get("$[0].dns_options", v)
@@ -1642,7 +1683,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					localData1 = make([]interface{}, 0)
 				}
 				localMaps1 := make([]interface{}, 0)
-				for _, dataLoop1 := range localData1.([]interface{}) {
+				for _, dataLoop1 := range convertToInterfaceArray(localData1) {
 					dataLoop1Tmp := make(map[string]interface{})
 					if dataLoop1 != nil {
 						dataLoop1Tmp = dataLoop1.(map[string]interface{})
@@ -1652,51 +1693,55 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					dataLoop1Map["name"] = dataLoop1Tmp["name"]
 					localMaps1 = append(localMaps1, dataLoop1Map)
 				}
-				dataList5["dnsOptions"] = localMaps1
+				customDNS["dnsOptions"] = localMaps1
 			}
 
-			nameServers1, _ := jsonpath.Get("$[0].name_servers", d.Get("custom_dns"))
-			if nameServers1 != nil && (d.HasChange("custom_dns.0.name_servers") || nameServers1 != "") {
-				dataList5["nameServers"] = nameServers1
+			nameServers1, _ := jsonpath.Get("$[0].name_servers", v)
+			if nameServers1 != nil && nameServers1 != "" {
+				customDNS["nameServers"] = nameServers1
 			}
 
-			request["customDNS"] = dataList5
+			request["customDNS"] = customDNS
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("instance_lifecycle_config") {
+	if d.HasChange("instance_lifecycle_config") {
 		update = true
-		dataList6 := make(map[string]interface{})
+		instanceLifecycleConfig := make(map[string]interface{})
 
 		if v := d.Get("instance_lifecycle_config"); v != nil {
 			preStop := make(map[string]interface{})
-			timeout1, _ := jsonpath.Get("$[0].pre_stop[0].timeout", v)
-			if timeout1 != nil && (d.HasChange("instance_lifecycle_config.0.pre_stop.0.timeout") || timeout1 != "") && timeout1.(int) > 0 {
+			timeout1, _ := jsonpath.Get("$[0].pre_stop[0].timeout", d.Get("instance_lifecycle_config"))
+			if timeout1 != nil && timeout1 != "" && timeout1.(int) > 0 {
 				preStop["timeout"] = timeout1
 			}
-			handler1, _ := jsonpath.Get("$[0].pre_stop[0].handler", v)
-			if handler1 != nil && (d.HasChange("instance_lifecycle_config.0.pre_stop.0.handler") || handler1 != "") {
+			handler1, _ := jsonpath.Get("$[0].pre_stop[0].handler", d.Get("instance_lifecycle_config"))
+			if handler1 != nil && handler1 != "" {
 				preStop["handler"] = handler1
 			}
 
-			dataList6["preStop"] = preStop
+			if len(preStop) > 0 {
+				instanceLifecycleConfig["preStop"] = preStop
+			}
 			initializer := make(map[string]interface{})
 			command5, _ := jsonpath.Get("$[0].initializer[0].command", d.Get("instance_lifecycle_config"))
-			if command5 != nil && (d.HasChange("instance_lifecycle_config.0.initializer.0.command") || command5 != "") {
+			if command5 != nil && command5 != "" {
 				initializer["command"] = command5
 			}
-			handler3, _ := jsonpath.Get("$[0].initializer[0].handler", v)
-			if handler3 != nil && (d.HasChange("instance_lifecycle_config.0.initializer.0.handler") || handler3 != "") {
+			handler3, _ := jsonpath.Get("$[0].initializer[0].handler", d.Get("instance_lifecycle_config"))
+			if handler3 != nil && handler3 != "" {
 				initializer["handler"] = handler3
 			}
-			timeout3, _ := jsonpath.Get("$[0].initializer[0].timeout", v)
-			if timeout3 != nil && (d.HasChange("instance_lifecycle_config.0.initializer.0.timeout") || timeout3 != "") && timeout3.(int) > 0 {
+			timeout3, _ := jsonpath.Get("$[0].initializer[0].timeout", d.Get("instance_lifecycle_config"))
+			if timeout3 != nil && timeout3 != "" && timeout3.(int) > 0 {
 				initializer["timeout"] = timeout3
 			}
 
-			dataList6["initializer"] = initializer
+			if len(initializer) > 0 {
+				instanceLifecycleConfig["initializer"] = initializer
+			}
 
-			request["instanceLifecycleConfig"] = dataList6
+			request["instanceLifecycleConfig"] = instanceLifecycleConfig
 		}
 	}
 
@@ -1707,7 +1752,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 
 	if !d.IsNewResource() && d.HasChange("oss_mount_config") {
 		update = true
-		dataList7 := make(map[string]interface{})
+		ossMountConfig := make(map[string]interface{})
 
 		if v := d.Get("oss_mount_config"); v != nil {
 			if v, ok := d.GetOk("oss_mount_config"); ok {
@@ -1716,7 +1761,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					localData2 = make([]interface{}, 0)
 				}
 				localMaps2 := make([]interface{}, 0)
-				for _, dataLoop2 := range localData2.([]interface{}) {
+				for _, dataLoop2 := range convertToInterfaceArray(localData2) {
 					dataLoop2Tmp := make(map[string]interface{})
 					if dataLoop2 != nil {
 						dataLoop2Tmp = dataLoop2.(map[string]interface{})
@@ -1729,10 +1774,10 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					dataLoop2Map["endpoint"] = dataLoop2Tmp["endpoint"]
 					localMaps2 = append(localMaps2, dataLoop2Map)
 				}
-				dataList7["mountPoints"] = localMaps2
+				ossMountConfig["mountPoints"] = localMaps2
 			}
 
-			request["ossMountConfig"] = dataList7
+			request["ossMountConfig"] = ossMountConfig
 		}
 	}
 
@@ -1747,27 +1792,27 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 
 	if !d.IsNewResource() && d.HasChange("code") {
 		update = true
-		dataList8 := make(map[string]interface{})
+		code := make(map[string]interface{})
 
 		if v := d.Get("code"); v != nil {
 			ossBucketName1, _ := jsonpath.Get("$[0].oss_bucket_name", v)
-			if ossBucketName1 != nil && (d.HasChange("code.0.oss_bucket_name") || ossBucketName1 != "") {
-				dataList8["ossBucketName"] = ossBucketName1
+			if ossBucketName1 != nil && ossBucketName1 != "" {
+				code["ossBucketName"] = ossBucketName1
 			}
 			zipFile1, _ := jsonpath.Get("$[0].zip_file", v)
-			if zipFile1 != nil && (d.HasChange("code.0.zip_file") || zipFile1 != "") {
-				dataList8["zipFile"] = zipFile1
+			if zipFile1 != nil && zipFile1 != "" {
+				code["zipFile"] = zipFile1
 			}
 			ossObjectName1, _ := jsonpath.Get("$[0].oss_object_name", v)
-			if ossObjectName1 != nil && (d.HasChange("code.0.oss_object_name") || ossObjectName1 != "") {
-				dataList8["ossObjectName"] = ossObjectName1
+			if ossObjectName1 != nil && ossObjectName1 != "" {
+				code["ossObjectName"] = ossObjectName1
 			}
 			checksum1, _ := jsonpath.Get("$[0].checksum", v)
-			if checksum1 != nil && (d.HasChange("code.0.checksum") || checksum1 != "") {
-				dataList8["checksum"] = checksum1
+			if checksum1 != nil && checksum1 != "" {
+				code["checksum"] = checksum1
 			}
 
-			request["code"] = dataList8
+			request["code"] = code
 		}
 	}
 
@@ -1779,7 +1824,8 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && d.HasChange("layers") {
 		update = true
 		if v, ok := d.GetOk("layers"); ok || d.HasChange("layers") {
-			layersMapsArray := v.([]interface{})
+			layersMapsArray := convertToInterfaceArray(v)
+
 			request["layers"] = layersMapsArray
 		}
 	}
@@ -1811,24 +1857,29 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 
 	if !d.IsNewResource() && d.HasChange("vpc_config") {
 		update = true
-		dataList9 := make(map[string]interface{})
+		vpcConfig := make(map[string]interface{})
 
 		if v := d.Get("vpc_config"); v != nil {
 			vpcId1, _ := jsonpath.Get("$[0].vpc_id", v)
-			if vpcId1 != nil && (d.HasChange("vpc_config.0.vpc_id") || vpcId1 != "") {
-				dataList9["vpcId"] = vpcId1
+			if vpcId1 != nil && vpcId1 != "" {
+				vpcConfig["vpcId"] = vpcId1
 			}
 			securityGroupId1, _ := jsonpath.Get("$[0].security_group_id", v)
-			if securityGroupId1 != nil && (d.HasChange("vpc_config.0.security_group_id") || securityGroupId1 != "") {
-				dataList9["securityGroupId"] = securityGroupId1
+			if securityGroupId1 != nil && securityGroupId1 != "" {
+				vpcConfig["securityGroupId"] = securityGroupId1
 			}
-			vSwitchIds1, _ := jsonpath.Get("$[0].vswitch_ids", d.Get("vpc_config"))
-			if vSwitchIds1 != nil && (d.HasChange("vpc_config.0.vswitch_ids") || vSwitchIds1 != "") {
-				dataList9["vSwitchIds"] = vSwitchIds1
+			vSwitchIds1, _ := jsonpath.Get("$[0].vswitch_ids", v)
+			if vSwitchIds1 != nil && vSwitchIds1 != "" {
+				vpcConfig["vSwitchIds"] = vSwitchIds1
 			}
 
-			request["vpcConfig"] = dataList9
+			request["vpcConfig"] = vpcConfig
 		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("idle_timeout") {
+		update = true
+		request["idleTimeout"] = d.Get("idle_timeout")
 	}
 
 	if !d.IsNewResource() && d.HasChange("description") {
@@ -1849,7 +1900,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
+			response, err = client.RoaPut("FC", "2023-03-30", action, query, header, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1862,13 +1913,6 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-	}
-
-	if !d.IsNewResource() && d.HasChange("tags") {
-		fcv3ServiceV2 := Fcv3ServiceV2{client}
-		if err := fcv3ServiceV2.SetResourceTags(d, "function"); err != nil {
-			return WrapError(err)
 		}
 	}
 	update = false
@@ -1888,7 +1932,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
+			response, err = client.RoaPut("FC", "2023-03-30", action, query, header, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1904,6 +1948,12 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
+	if d.HasChange("tags") {
+		fcv3ServiceV2 := Fcv3ServiceV2{client}
+		if err := fcv3ServiceV2.SetResourceTags(d, "function"); err != nil {
+			return WrapError(err)
+		}
+	}
 	d.Partial(false)
 	return resourceAliCloudFcv3FunctionRead(d, meta)
 }
@@ -1918,12 +1968,10 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	query := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
-	request["functionName"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"429"}) || NeedRetry(err) {
 				wait()
