@@ -56,8 +56,10 @@ resource "alicloud_ram_role" "default" {
   description                 = "this is a role test."
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_role&spm=docs.r.ram_role.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_role&spm=docs.r.ram_role.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -74,8 +74,10 @@ resource "alicloud_cen_vbr_health_check" "example" {
   healthy_threshold      = 8
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_vbr_health_check&spm=docs.r.cen_vbr_health_check.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_vbr_health_check&spm=docs.r.cen_vbr_health_check.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

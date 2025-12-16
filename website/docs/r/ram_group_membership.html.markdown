@@ -51,8 +51,10 @@ resource "alicloud_ram_group_membership" "membership" {
   user_names = [alicloud_ram_user.user.name, alicloud_ram_user.user1.name]
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_group_membership&spm=docs.r.ram_group_membership.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_group_membership&spm=docs.r.ram_group_membership.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

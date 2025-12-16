@@ -96,8 +96,10 @@ resource "alicloud_ecs_disk_attachment" "default" {
   instance_id = alicloud_instance.default.id
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk_attachment&spm=docs.r.ecs_disk_attachment.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk_attachment&spm=docs.r.ecs_disk_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

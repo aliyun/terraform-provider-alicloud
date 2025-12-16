@@ -24,8 +24,10 @@ resource "alicloud_dns" "dns" {
   group_id = "85ab8713-4a30-4de4-9d20-155ff830f651"
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns&spm=docs.r.dns.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns&spm=docs.r.dns.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

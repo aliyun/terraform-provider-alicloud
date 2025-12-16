@@ -131,8 +131,10 @@ resource "alicloud_vpn_route_entry" "default" {
   publish_vpc    = false
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpn_route_entry&spm=docs.r.vpn_route_entry.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpn_route_entry&spm=docs.r.vpn_route_entry.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:
