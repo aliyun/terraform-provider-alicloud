@@ -54,10 +54,70 @@ func TestAccAliCloudSslCertificatesServicePcaCertificate_basic11010(t *testing.T
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"alias_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"alias_name"},
 			},
 		},
 	})
@@ -94,6 +154,12 @@ func TestAccAliCloudSslCertificatesServicePcaCertificate_basic11010_twin(t *test
 					"country_code":      "cn",
 					"common_name":       "cbc.certqa.cn",
 					"algorithm":         "RSA_1024",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"alias_name":        name,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -105,6 +171,10 @@ func TestAccAliCloudSslCertificatesServicePcaCertificate_basic11010_twin(t *test
 						"country_code":      "cn",
 						"common_name":       "cbc.certqa.cn",
 						"algorithm":         "RSA_1024",
+						"resource_group_id": CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "Test",
 					}),
 				),
 			},
@@ -112,7 +182,7 @@ func TestAccAliCloudSslCertificatesServicePcaCertificate_basic11010_twin(t *test
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"alias_name"},
 			},
 		},
 	})
@@ -128,6 +198,8 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {
+}
 
 `, name)
 }
