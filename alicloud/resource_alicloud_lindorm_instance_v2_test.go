@@ -11,6 +11,133 @@ import (
 )
 
 // Test Lindorm InstanceV2. >>> Resource test cases, automatically generated.
+// Case InstanceV2修改删除白名单测试用例 11876
+func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_lindorm_instance_v2.default"
+	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11876)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeLindormInstanceV2")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacclindorm%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormInstanceV2BasicDependence11876)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TABLE",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "2",
+									"node_spec":           "lindorm.g.2xlarge",
+									"resource_group_name": "yn-rg-ips",
+								},
+							},
+						},
+					},
+					"cloud_storage_size": "320",
+					"zone_id":            "cn-beijing-l",
+					"cloud_storage_type": "PerformanceStorage",
+					"arch_version":       "1.0",
+					"vswitch_id":         "${alicloud_vswitch.default9rq7dN.id}",
+					"vpc_id":             "${alicloud_vpc.defaultVLjfBs.id}",
+					"instance_alias":     "preTest-modify-ips",
+					"payment_type":       "POSTPAY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#":      "1",
+						"cloud_storage_size": "320",
+						"zone_id":            "cn-beijing-l",
+						"cloud_storage_type": "PerformanceStorage",
+						"arch_version":       CHECKSET,
+						"vswitch_id":         CHECKSET,
+						"vpc_id":             CHECKSET,
+						"instance_alias":     "preTest-modify-ips",
+						"payment_type":       "POSTPAY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TABLE",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "2",
+									"node_spec":           "lindorm.c.2xlarge",
+									"resource_group_name": "yn-rg-ips",
+								},
+							},
+						},
+					},
+					"instance_alias": "preTest-modify-ips-x",
+					"white_ip_list": []map[string]interface{}{
+						{
+							"group_name": "user001",
+							"ip_list":    "127.0.0.1",
+						},
+						{
+							"group_name": "user002",
+							"ip_list":    "127.0.0.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#":   "1",
+						"instance_alias":  "preTest-modify-ips-x",
+						"white_ip_list.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"arch_version", "auto_renew_duration", "auto_renewal", "duration", "pricing_cycle"},
+			},
+		},
+	})
+}
+
+var AlicloudLindormInstanceV2Map11876 = map[string]string{
+	"region_id": CHECKSET,
+}
+
+func AlicloudLindormInstanceV2BasicDependence11876(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "defaultVLjfBs" {
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "default9rq7dN" {
+  vpc_id     = alicloud_vpc.defaultVLjfBs.id
+  cidr_block = "10.0.0.0/16"
+  zone_id    = "cn-beijing-l"
+}
+
+
+`, name)
+}
+
 // Case InstanceV2单可用区预付费实例 11753
 func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 	var v map[string]interface{}
