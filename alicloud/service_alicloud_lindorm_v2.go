@@ -164,7 +164,7 @@ func (s *LindormServiceV2) LindormInstanceV2StateRefreshFuncWithApi(id string, f
 		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}

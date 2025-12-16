@@ -208,6 +208,23 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"white_ip_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"group_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"ip_list": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -411,6 +428,21 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 	if err := d.Set("engine_list", engineListMaps); err != nil {
 		return err
 	}
+	whiteIpListRaw := objectRaw["WhiteIpList"]
+	whiteIpListMaps := make([]map[string]interface{}, 0)
+	if whiteIpListRaw != nil {
+		for _, whiteIpListChildRaw := range convertToInterfaceArray(whiteIpListRaw) {
+			whiteIpListMap := make(map[string]interface{})
+			whiteIpListChildRaw := whiteIpListChildRaw.(map[string]interface{})
+			whiteIpListMap["group_name"] = whiteIpListChildRaw["GroupName"]
+			whiteIpListMap["ip_list"] = whiteIpListChildRaw["IpList"]
+
+			whiteIpListMaps = append(whiteIpListMaps, whiteIpListMap)
+		}
+	}
+	if err := d.Set("white_ip_list", whiteIpListMaps); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -561,6 +593,45 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+	update = false
+	action = "UpdateLindormV2WhiteIpList"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("white_ip_list") {
+		update = true
+	}
+	if v, ok := d.GetOk("white_ip_list"); ok || d.HasChange("white_ip_list") {
+		whiteIpGroupListMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(v) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["WhiteIpList"] = dataLoopTmp["ip_list"]
+			dataLoopMap["GroupName"] = dataLoopTmp["group_name"]
+			whiteIpGroupListMapsArray = append(whiteIpGroupListMapsArray, dataLoopMap)
+		}
+		request["WhiteIpGroupList"] = whiteIpGroupListMapsArray
+	}
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
 
 	d.Partial(false)
 	return resourceAliCloudLindormInstanceV2Read(d, meta)
@@ -601,7 +672,7 @@ func resourceAliCloudLindormInstanceV2Delete(d *schema.ResourceData, meta interf
 	}
 
 	lindormServiceV2 := LindormServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Minute, lindormServiceV2.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 10*time.Minute, lindormServiceV2.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
