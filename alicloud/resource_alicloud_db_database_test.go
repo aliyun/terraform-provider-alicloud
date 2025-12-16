@@ -42,11 +42,16 @@ func TestAccAliCloudRdsDBDatabaseMySQL(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_db_instance.default.id}",
-					"name":        "${var.name}",
+					"instance_id":    "${alicloud_db_instance.default.id}",
+					"data_base_name": "${var.name}",
+					"character_set":  "utf8",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"instance_id":    CHECKSET,
+						"data_base_name": CHECKSET,
+						"character_set":  "utf8",
+					}),
 				),
 			},
 			{
@@ -99,15 +104,16 @@ func TestAccAliCloudRdsDBDatabaseMySQL1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_db_instance.default.id}",
-					"name":        "${var.name}",
-					"description": "from terraform",
+					"instance_id":   "${alicloud_db_instance.default.id}",
+					"name":          "${var.name}",
+					"character_set": "utf8",
+					"description":   "from terraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id":   CHECKSET,
 						"name":          CHECKSET,
-						"character_set": CHECKSET,
+						"character_set": "utf8",
 						"description":   "from terraform",
 					}),
 				),
@@ -127,7 +133,6 @@ func TestAccAliCloudRdsDBDatabaseMySQL2(t *testing.T) {
 
 	var dbDatabaseBasicMap = map[string]string{
 		"instance_id": CHECKSET,
-		"description": "",
 	}
 
 	ra := resourceAttrInit(resourceId, dbDatabaseBasicMap)
@@ -152,17 +157,17 @@ func TestAccAliCloudRdsDBDatabaseMySQL2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":   "${alicloud_db_instance.default.id}",
-					"name":          "${var.name}",
-					"character_set": "gbk",
-					"description":   "from terraform",
+					"instance_id":    "${alicloud_db_instance.default.id}",
+					"data_base_name": "${var.name}",
+					"character_set":  "gbk",
+					"description":    "from terraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":   CHECKSET,
-						"name":          CHECKSET,
-						"character_set": CHECKSET,
-						"description":   "from terraform",
+						"instance_id":    CHECKSET,
+						"data_base_name": CHECKSET,
+						"character_set":  CHECKSET,
+						"description":    "from terraform",
 					}),
 				),
 			},
@@ -195,6 +200,7 @@ func TestAccAliCloudRdsDBDatabasePostgreSQL(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBDatabaseConfigPostgreSQLDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 
@@ -206,16 +212,17 @@ func TestAccAliCloudRdsDBDatabasePostgreSQL(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_db_instance.default.id}",
-					"name":        "${var.name}",
-					"description": "from terraform",
+					"instance_id":    "${alicloud_db_instance.default.id}",
+					"data_base_name": "${var.name}",
+					"description":    "from terraform",
+					"character_set":  "UTF8,C,en_US.utf8",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":   CHECKSET,
-						"name":          CHECKSET,
-						"character_set": CHECKSET,
-						"description":   "from terraform",
+						"instance_id":    CHECKSET,
+						"data_base_name": CHECKSET,
+						"character_set":  "UTF8,C,en_US.utf8",
+						"description":    "from terraform",
 					}),
 				),
 			},
@@ -302,6 +309,7 @@ func TestAccAliCloudRdsDBDatabasePostgreSQL2(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBDatabaseConfigPostgreSQLDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 
@@ -313,17 +321,17 @@ func TestAccAliCloudRdsDBDatabasePostgreSQL2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":   "${alicloud_db_instance.default.id}",
-					"name":          "${var.name}",
-					"character_set": "UTF8,fo_FO.utf8,bo_CN",
-					"description":   "from terraform",
+					"instance_id":    "${alicloud_db_instance.default.id}",
+					"data_base_name": "${var.name}",
+					"character_set":  "UTF8,fo_FO.utf8,bo_CN",
+					"description":    "from terraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":   CHECKSET,
-						"name":          CHECKSET,
-						"character_set": CHECKSET,
-						"description":   "from terraform",
+						"instance_id":    CHECKSET,
+						"data_base_name": CHECKSET,
+						"character_set":  CHECKSET,
+						"description":    "from terraform",
 					}),
 				),
 			},
@@ -342,7 +350,6 @@ func TestAccAliCloudRdsDBDatabasePostgreSQL3(t *testing.T) {
 
 	var dbDatabaseBasicMap = map[string]string{
 		"instance_id": CHECKSET,
-		"description": "",
 	}
 
 	ra := resourceAttrInit(resourceId, dbDatabaseBasicMap)
@@ -356,6 +363,7 @@ func TestAccAliCloudRdsDBDatabasePostgreSQL3(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBDatabaseConfigPostgreSQLDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 
@@ -368,17 +376,17 @@ func TestAccAliCloudRdsDBDatabasePostgreSQL3(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":   "${alicloud_db_instance.default.id}",
-					"name":          "${var.name}",
-					"character_set": "KOI8U,ru_UA.koi8u,ru_UA.koi8u",
-					"description":   "from terraform",
+					"instance_id":    "${alicloud_db_instance.default.id}",
+					"data_base_name": "${var.name}",
+					"character_set":  "KOI8U,ru_UA.koi8u,ru_UA.koi8u",
+					"description":    "from terraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":   CHECKSET,
-						"name":          CHECKSET,
-						"character_set": CHECKSET,
-						"description":   "from terraform",
+						"instance_id":    CHECKSET,
+						"data_base_name": CHECKSET,
+						"character_set":  CHECKSET,
+						"description":    "from terraform",
 					}),
 				),
 			},
@@ -411,6 +419,7 @@ func TestAccAliCloudRdsDBDatabaseSQLServer(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBDatabaseConfigSQLServerDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 
@@ -422,17 +431,17 @@ func TestAccAliCloudRdsDBDatabaseSQLServer(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":   "${alicloud_db_instance.default.id}",
-					"name":          "${var.name}",
-					"character_set": "Chinese_PRC_CI_AS",
-					"description":   "from terraform",
+					"instance_id":    "${alicloud_db_instance.default.id}",
+					"data_base_name": "${var.name}",
+					"character_set":  "Chinese_PRC_CI_AS",
+					"description":    "from terraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":   CHECKSET,
-						"name":          CHECKSET,
-						"character_set": CHECKSET,
-						"description":   "from terraform",
+						"instance_id":    CHECKSET,
+						"data_base_name": CHECKSET,
+						"character_set":  CHECKSET,
+						"description":    "from terraform",
 					}),
 				),
 			},
