@@ -187,8 +187,10 @@ resource "alicloud_log_audit" "example" {
   resource_directory_type = "custom"
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_audit&spm=docs.r.log_audit.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_audit&spm=docs.r.log_audit.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

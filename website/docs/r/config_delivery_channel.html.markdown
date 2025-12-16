@@ -53,8 +53,10 @@ resource "alicloud_config_delivery_channel" "example" {
     EOF
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_delivery_channel&spm=docs.r.config_delivery_channel.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_delivery_channel&spm=docs.r.config_delivery_channel.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

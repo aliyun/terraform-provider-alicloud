@@ -41,8 +41,10 @@ resource "alicloud_cloud_connect_network" "default" {
   is_default  = true
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_connect_network&spm=docs.r.cloud_connect_network.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_connect_network&spm=docs.r.cloud_connect_network.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -89,8 +89,10 @@ resource "alicloud_cen_bandwidth_limit" "example" {
   bandwidth_limit = 4
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_bandwidth_limit&spm=docs.r.cen_bandwidth_limit.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_bandwidth_limit&spm=docs.r.cen_bandwidth_limit.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

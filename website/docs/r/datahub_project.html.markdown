@@ -34,8 +34,10 @@ resource "alicloud_datahub_project" "example" {
   comment = "created by terraform"
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_datahub_project&spm=docs.r.datahub_project.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_datahub_project&spm=docs.r.datahub_project.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

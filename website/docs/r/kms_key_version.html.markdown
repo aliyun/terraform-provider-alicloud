@@ -30,8 +30,10 @@ resource "alicloud_kms_key_version" "keyversion" {
   key_id = alicloud_kms_key.this.id
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_key_version&spm=docs.r.kms_key_version.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_key_version&spm=docs.r.kms_key_version.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

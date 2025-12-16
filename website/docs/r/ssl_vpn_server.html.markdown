@@ -71,8 +71,10 @@ resource "alicloud_ssl_vpn_server" "default" {
   compress       = "false"
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_vpn_server&spm=docs.r.ssl_vpn_server.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_vpn_server&spm=docs.r.ssl_vpn_server.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

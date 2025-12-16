@@ -47,8 +47,10 @@ resource "alicloud_alidns_domain_attachment" "default" {
   domain_names = [alicloud_alidns_domain.default.domain_name]
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_domain_attachment&spm=docs.r.alidns_domain_attachment.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_domain_attachment&spm=docs.r.alidns_domain_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

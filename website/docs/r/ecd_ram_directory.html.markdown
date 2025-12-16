@@ -49,8 +49,10 @@ resource "alicloud_ecd_ram_directory" "default" {
   vswitch_ids         = [alicloud_vswitch.default.id]
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecd_ram_directory&spm=docs.r.ecd_ram_directory.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecd_ram_directory&spm=docs.r.ecd_ram_directory.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

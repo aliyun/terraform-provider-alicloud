@@ -33,8 +33,10 @@ resource "alicloud_key_pair" "publickey" {
   public_key = "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg"
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_key_pair&spm=docs.r.key_pair.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_key_pair&spm=docs.r.key_pair.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -179,8 +179,10 @@ resource "alicloud_emrv2_cluster" "default" {
   cluster_type      = "DATAFLOW"
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_emrv2_cluster&spm=docs.r.emrv2_cluster.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_emrv2_cluster&spm=docs.r.emrv2_cluster.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

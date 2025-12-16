@@ -53,8 +53,10 @@ resource "alicloud_simple_application_server_firewall_rule" "default" {
   remark        = var.name
 }
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_simple_application_server_firewall_rule&spm=docs.r.simple_application_server_firewall_rule.example&intl_lang=EN_US)
 ```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_simple_application_server_firewall_rule&spm=docs.r.simple_application_server_firewall_rule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:
