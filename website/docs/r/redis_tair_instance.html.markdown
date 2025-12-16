@@ -75,6 +75,8 @@ The `alicloud_redis_tair_instance` resource allows you to manage  `payment_type 
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_redis_tair_instance&spm=docs.r.redis_tair_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

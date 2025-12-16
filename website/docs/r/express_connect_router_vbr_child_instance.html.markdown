@@ -61,6 +61,8 @@ resource "alicloud_express_connect_router_vbr_child_instance" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_express_connect_router_vbr_child_instance&spm=docs.r.express_connect_router_vbr_child_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

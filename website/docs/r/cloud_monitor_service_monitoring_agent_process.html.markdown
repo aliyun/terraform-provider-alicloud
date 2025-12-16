@@ -82,6 +82,8 @@ resource "alicloud_cloud_monitor_service_monitoring_agent_process" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_monitor_service_monitoring_agent_process&spm=docs.r.cloud_monitor_service_monitoring_agent_process.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

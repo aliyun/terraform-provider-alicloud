@@ -45,6 +45,8 @@ resource "alicloud_scdn_domain_config" "config" {
     arg_value = "110.110.110.110"
   }
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_scdn_domain_config&spm=docs.r.scdn_domain_config.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

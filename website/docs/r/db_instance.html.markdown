@@ -528,6 +528,8 @@ The `alicloud_db_instance` resource allows you to manage `instance_charge_type =
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the DB Instance.
 You can resume managing the subscription db instance via the AlibabaCloud Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_db_instance&spm=docs.r.db_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

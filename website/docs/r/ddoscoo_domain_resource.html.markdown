@@ -68,6 +68,8 @@ resource "alicloud_ddoscoo_domain_resource" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ddoscoo_domain_resource&spm=docs.r.ddoscoo_domain_resource.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

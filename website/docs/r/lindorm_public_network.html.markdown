@@ -80,6 +80,8 @@ resource "alicloud_lindorm_public_network" "default" {
 
 Terraform cannot destroy resource `alicloud_lindorm_public_network`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_lindorm_public_network&spm=docs.r.lindorm_public_network.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

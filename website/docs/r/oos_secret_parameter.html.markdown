@@ -49,6 +49,8 @@ resource "alicloud_oos_secret_parameter" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oos_secret_parameter&spm=docs.r.oos_secret_parameter.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

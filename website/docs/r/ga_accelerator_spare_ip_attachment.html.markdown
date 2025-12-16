@@ -57,6 +57,8 @@ resource "alicloud_ga_accelerator_spare_ip_attachment" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ga_accelerator_spare_ip_attachment&spm=docs.r.ga_accelerator_spare_ip_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

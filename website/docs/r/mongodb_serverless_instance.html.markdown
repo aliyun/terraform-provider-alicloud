@@ -62,6 +62,8 @@ resource "alicloud_mongodb_serverless_instance" "example" {
 
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mongodb_serverless_instance&spm=docs.r.mongodb_serverless_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

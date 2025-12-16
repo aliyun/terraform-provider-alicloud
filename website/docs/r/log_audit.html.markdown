@@ -186,6 +186,8 @@ resource "alicloud_log_audit" "example" {
   multi_account           = [] //Put your member accounts here, separated by ","
   resource_directory_type = "custom"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_audit&spm=docs.r.log_audit.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

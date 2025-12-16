@@ -44,6 +44,8 @@ resource "alicloud_open_search_app_group" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_open_search_app_group&spm=docs.r.open_search_app_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

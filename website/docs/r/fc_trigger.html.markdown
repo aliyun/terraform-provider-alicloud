@@ -609,6 +609,8 @@ resource "alicloud_fc_trigger" "rabbitmq_trigger" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fc_trigger&spm=docs.r.fc_trigger.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 

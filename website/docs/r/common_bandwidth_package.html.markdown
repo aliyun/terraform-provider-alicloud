@@ -55,6 +55,8 @@ The `alicloud_common_bandwidth_package` resource allows you to manage  `internet
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_common_bandwidth_package&spm=docs.r.common_bandwidth_package.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

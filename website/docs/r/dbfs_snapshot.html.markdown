@@ -45,6 +45,8 @@ resource "alicloud_dbfs_snapshot" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dbfs_snapshot&spm=docs.r.dbfs_snapshot.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

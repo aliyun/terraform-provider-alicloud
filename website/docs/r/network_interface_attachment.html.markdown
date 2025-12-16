@@ -87,6 +87,8 @@ resource "alicloud_network_interface_attachment" "attachment" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_network_interface_attachment&spm=docs.r.network_interface_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following argument are supported:

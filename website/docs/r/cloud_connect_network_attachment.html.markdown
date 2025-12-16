@@ -48,6 +48,8 @@ resource "alicloud_cloud_connect_network_attachment" "default" {
   ccn_id = alicloud_cloud_connect_network.default.id
   sag_id = var.sag_id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_connect_network_attachment&spm=docs.r.cloud_connect_network_attachment.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

@@ -39,6 +39,8 @@ resource "alicloud_ecd_simple_office_site" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecd_simple_office_site&spm=docs.r.ecd_simple_office_site.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

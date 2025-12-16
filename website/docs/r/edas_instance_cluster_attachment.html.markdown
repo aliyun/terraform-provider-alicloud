@@ -83,6 +83,8 @@ resource "alicloud_edas_instance_cluster_attachment" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_edas_instance_cluster_attachment&spm=docs.r.edas_instance_cluster_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

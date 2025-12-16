@@ -65,6 +65,8 @@ resource "alicloud_cloud_phone_key_pair" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_phone_key_pair&spm=docs.r.cloud_phone_key_pair.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

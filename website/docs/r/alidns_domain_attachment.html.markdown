@@ -46,6 +46,8 @@ resource "alicloud_alidns_domain_attachment" "default" {
   instance_id  = alicloud_alidns_instance.default.id
   domain_names = [alicloud_alidns_domain.default.domain_name]
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_domain_attachment&spm=docs.r.alidns_domain_attachment.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

@@ -43,6 +43,8 @@ resource "alicloud_esa_waf_ruleset" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_waf_ruleset&spm=docs.r.esa_waf_ruleset.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

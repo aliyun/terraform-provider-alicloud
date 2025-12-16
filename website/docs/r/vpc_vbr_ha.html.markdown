@@ -79,6 +79,8 @@ resource "alicloud_vpc_vbr_ha" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_vbr_ha&spm=docs.r.vpc_vbr_ha.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

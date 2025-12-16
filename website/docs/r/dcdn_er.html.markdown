@@ -45,6 +45,8 @@ resource "alicloud_dcdn_er" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dcdn_er&spm=docs.r.dcdn_er.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

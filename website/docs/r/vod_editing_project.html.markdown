@@ -54,6 +54,8 @@ resource "alicloud_vod_editing_project" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vod_editing_project&spm=docs.r.vod_editing_project.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

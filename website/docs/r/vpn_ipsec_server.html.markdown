@@ -71,6 +71,8 @@ resource "alicloud_vpn_ipsec_server" "foo" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpn_ipsec_server&spm=docs.r.vpn_ipsec_server.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

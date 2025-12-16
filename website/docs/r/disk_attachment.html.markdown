@@ -50,6 +50,8 @@ resource "alicloud_disk_attachment" "ecs_disk_att" {
   disk_id     = alicloud_disk.ecs_disk.id
   instance_id = alicloud_instance.ecs_instance.id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_disk_attachment&spm=docs.r.disk_attachment.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

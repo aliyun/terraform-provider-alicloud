@@ -58,6 +58,8 @@ locals {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_sso_user&spm=docs.r.cloud_sso_user.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

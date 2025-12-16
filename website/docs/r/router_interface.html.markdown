@@ -35,6 +35,8 @@ resource "alicloud_router_interface" "interface" {
   name            = "test1"
   description     = "test1"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_router_interface&spm=docs.r.router_interface.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

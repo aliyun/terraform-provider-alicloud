@@ -59,6 +59,8 @@ resource "alicloud_oss_bucket_versioning" "default" {
 
 Terraform cannot destroy resource `alicloud_oss_bucket_versioning`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_versioning&spm=docs.r.oss_bucket_versioning.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

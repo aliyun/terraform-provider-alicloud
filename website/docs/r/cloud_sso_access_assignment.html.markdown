@@ -79,6 +79,8 @@ locals {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_sso_access_assignment&spm=docs.r.cloud_sso_access_assignment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

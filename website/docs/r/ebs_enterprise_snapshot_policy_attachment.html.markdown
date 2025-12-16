@@ -64,6 +64,8 @@ resource "alicloud_ebs_enterprise_snapshot_policy_attachment" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ebs_enterprise_snapshot_policy_attachment&spm=docs.r.ebs_enterprise_snapshot_policy_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

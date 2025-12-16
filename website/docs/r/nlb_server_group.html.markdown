@@ -63,6 +63,8 @@ resource "alicloud_nlb_server_group" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nlb_server_group&spm=docs.r.nlb_server_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

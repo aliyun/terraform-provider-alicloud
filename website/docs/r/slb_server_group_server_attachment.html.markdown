@@ -97,6 +97,8 @@ resource "alicloud_slb_server_group_server_attachment" "server_attachment" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_server_group_server_attachment&spm=docs.r.slb_server_group_server_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

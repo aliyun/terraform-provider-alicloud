@@ -62,6 +62,8 @@ resource "alicloud_governance_account" "default" {
 
 Terraform cannot destroy resource `alicloud_governance_account`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_governance_account&spm=docs.r.governance_account.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

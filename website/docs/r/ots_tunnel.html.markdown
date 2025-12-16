@@ -72,6 +72,8 @@ resource "alicloud_ots_tunnel" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ots_tunnel&spm=docs.r.ots_tunnel.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

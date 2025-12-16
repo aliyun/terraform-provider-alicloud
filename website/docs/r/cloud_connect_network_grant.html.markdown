@@ -77,6 +77,8 @@ resource "alicloud_cloud_connect_network_grant" "default" {
   cen_id   = alicloud_cen_instance.cen.id
   cen_uid  = var.another_uid
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_connect_network_grant&spm=docs.r.cloud_connect_network_grant.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

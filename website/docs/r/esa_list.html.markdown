@@ -47,6 +47,8 @@ resource "alicloud_esa_list" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_list&spm=docs.r.esa_list.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -29,6 +29,8 @@ resource "alicloud_actiontrail_global_events_storage_region" "foo" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_actiontrail_global_events_storage_region&spm=docs.r.actiontrail_global_events_storage_region.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

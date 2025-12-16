@@ -38,6 +38,8 @@ resource "alicloud_wafv3_instance" "example" {
 ```
 
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_wafv3_instance&spm=docs.r.wafv3_instance.example&intl_lang=EN_US)
+
 ## Attributes Reference
 
 The following attributes are exported:

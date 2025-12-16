@@ -40,6 +40,8 @@ resource "alicloud_cen_bandwidth_package_attachment" "example" {
   instance_id          = alicloud_cen_instance.example.id
   bandwidth_package_id = alicloud_cen_bandwidth_package.example.id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_bandwidth_package_attachment&spm=docs.r.cen_bandwidth_package_attachment.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

@@ -41,6 +41,8 @@ resource "alicloud_eflo_vpd" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eflo_vpd&spm=docs.r.eflo_vpd.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

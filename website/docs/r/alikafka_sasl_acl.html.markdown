@@ -91,6 +91,8 @@ resource "alicloud_alikafka_sasl_acl" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alikafka_sasl_acl&spm=docs.r.alikafka_sasl_acl.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

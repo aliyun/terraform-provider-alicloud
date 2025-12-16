@@ -38,6 +38,8 @@ resource "alicloud_ebs_replica_pair_drill" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ebs_replica_pair_drill&spm=docs.r.ebs_replica_pair_drill.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

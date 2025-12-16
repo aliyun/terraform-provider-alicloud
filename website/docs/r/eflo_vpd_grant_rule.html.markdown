@@ -55,6 +55,8 @@ resource "alicloud_eflo_vpd_grant_rule" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eflo_vpd_grant_rule&spm=docs.r.eflo_vpd_grant_rule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

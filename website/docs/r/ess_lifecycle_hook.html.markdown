@@ -81,6 +81,8 @@ resource "alicloud_ess_lifecycle_hook" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_lifecycle_hook&spm=docs.r.ess_lifecycle_hook.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use to the existing [autoscaling module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling/alicloud) 

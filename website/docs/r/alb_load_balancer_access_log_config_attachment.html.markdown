@@ -100,6 +100,8 @@ resource "alicloud_alb_load_balancer_access_log_config_attachment" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alb_load_balancer_access_log_config_attachment&spm=docs.r.alb_load_balancer_access_log_config_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

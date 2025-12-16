@@ -110,6 +110,8 @@ resource "alicloud_realtime_compute_job" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_realtime_compute_job&spm=docs.r.realtime_compute_job.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -127,6 +127,8 @@ resource "alicloud_data_works_di_job" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_data_works_di_job&spm=docs.r.data_works_di_job.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

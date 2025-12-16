@@ -39,6 +39,8 @@ The `alicloud_message_service_service` resource is unique per account; repeated 
 
 Terraform cannot destroy resource `alicloud_message_service_service`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_message_service_service&spm=docs.r.message_service_service.example&intl_lang=EN_US)
+
 ## Attributes Reference
 
 The following attributes are exported:

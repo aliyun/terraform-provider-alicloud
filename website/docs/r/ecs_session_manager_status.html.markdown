@@ -31,6 +31,8 @@ resource "alicloud_ecs_session_manager_status" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_session_manager_status&spm=docs.r.ecs_session_manager_status.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

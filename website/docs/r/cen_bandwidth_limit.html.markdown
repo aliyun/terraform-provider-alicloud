@@ -88,6 +88,8 @@ resource "alicloud_cen_bandwidth_limit" "example" {
   region_ids      = [alicloud_cen_instance_attachment.example1.child_instance_region_id, alicloud_cen_instance_attachment.example2.child_instance_region_id]
   bandwidth_limit = 4
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_bandwidth_limit&spm=docs.r.cen_bandwidth_limit.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

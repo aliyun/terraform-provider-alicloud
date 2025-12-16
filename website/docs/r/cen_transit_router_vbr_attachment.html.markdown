@@ -66,6 +66,8 @@ resource "alicloud_cen_transit_router_vbr_attachment" "default" {
   transit_router_attachment_name        = var.name
   transit_router_attachment_description = var.name
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_vbr_attachment&spm=docs.r.cen_transit_router_vbr_attachment.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

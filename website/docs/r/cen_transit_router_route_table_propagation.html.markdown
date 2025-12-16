@@ -82,6 +82,8 @@ resource "alicloud_cen_transit_router_route_table_propagation" "example" {
   transit_router_route_table_id = alicloud_cen_transit_router_route_table.example.transit_router_route_table_id
   transit_router_attachment_id  = alicloud_cen_transit_router_vpc_attachment.example.transit_router_attachment_id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_route_table_propagation&spm=docs.r.cen_transit_router_route_table_propagation.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

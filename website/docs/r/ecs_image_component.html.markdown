@@ -44,6 +44,8 @@ resource "alicloud_ecs_image_component" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_image_component&spm=docs.r.ecs_image_component.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

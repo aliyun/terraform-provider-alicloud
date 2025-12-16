@@ -54,6 +54,8 @@ resource "alicloud_adb_db_cluster_lake_version" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_adb_db_cluster_lake_version&spm=docs.r.adb_db_cluster_lake_version.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -101,6 +101,8 @@ resource "alicloud_hbr_hana_backup_client" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_hana_backup_client&spm=docs.r.hbr_hana_backup_client.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -45,6 +45,8 @@ resource "alicloud_aligreen_audit_callback" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_aligreen_audit_callback&spm=docs.r.aligreen_audit_callback.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

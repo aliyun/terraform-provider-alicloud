@@ -57,6 +57,8 @@ resource "alicloud_polardb_cluster_endpoint" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_cluster_endpoint&spm=docs.r.polardb_cluster_endpoint.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

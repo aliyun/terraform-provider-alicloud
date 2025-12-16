@@ -96,6 +96,8 @@ resource "alicloud_vpc_ipv6_internet_bandwidth" "example" {
 ```
 
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_ipv6_internet_bandwidth&spm=docs.r.vpc_ipv6_internet_bandwidth.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -38,6 +38,8 @@ resource "alicloud_service_catalog_portfolio" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_service_catalog_portfolio&spm=docs.r.service_catalog_portfolio.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

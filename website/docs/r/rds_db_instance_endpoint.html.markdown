@@ -97,6 +97,8 @@ resource "alicloud_rds_db_instance_endpoint" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_db_instance_endpoint&spm=docs.r.rds_db_instance_endpoint.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

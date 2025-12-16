@@ -53,6 +53,8 @@ resource "alicloud_cen_flowlog" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_flowlog&spm=docs.r.cen_flowlog.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

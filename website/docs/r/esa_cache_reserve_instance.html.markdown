@@ -46,6 +46,8 @@ resource "alicloud_esa_cache_reserve_instance" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_cache_reserve_instance&spm=docs.r.esa_cache_reserve_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

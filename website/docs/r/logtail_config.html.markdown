@@ -68,6 +68,8 @@ resource "alicloud_logtail_config" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_logtail_config&spm=docs.r.logtail_config.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use the existing [sls-logtail module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls-logtail/alicloud)

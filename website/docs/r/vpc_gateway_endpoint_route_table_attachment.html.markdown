@@ -67,6 +67,8 @@ resource "alicloud_vpc_gateway_endpoint_route_table_attachment" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_gateway_endpoint_route_table_attachment&spm=docs.r.vpc_gateway_endpoint_route_table_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

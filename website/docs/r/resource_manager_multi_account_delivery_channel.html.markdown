@@ -81,6 +81,8 @@ resource "alicloud_resource_manager_multi_account_delivery_channel" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_multi_account_delivery_channel&spm=docs.r.resource_manager_multi_account_delivery_channel.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -54,6 +54,8 @@ resource "alicloud_oss_bucket_request_payment" "default" {
 
 Terraform cannot destroy resource `alicloud_oss_bucket_request_payment`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_request_payment&spm=docs.r.oss_bucket_request_payment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

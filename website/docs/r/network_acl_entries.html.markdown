@@ -78,6 +78,8 @@ resource "alicloud_network_acl_entries" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_network_acl_entries&spm=docs.r.network_acl_entries.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

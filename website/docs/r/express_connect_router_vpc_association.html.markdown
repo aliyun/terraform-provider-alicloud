@@ -58,6 +58,8 @@ resource "alicloud_express_connect_router_vpc_association" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_express_connect_router_vpc_association&spm=docs.r.express_connect_router_vpc_association.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

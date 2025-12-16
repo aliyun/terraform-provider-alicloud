@@ -27,6 +27,8 @@ resource "alicloud_brain_industrial_pid_project" "example" {
 
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_brain_industrial_pid_project&spm=docs.r.brain_industrial_pid_project.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

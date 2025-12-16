@@ -54,6 +54,8 @@ resource "alicloud_cr_ee_namespace" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_ee_namespace&spm=docs.r.cr_ee_namespace.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -57,6 +57,8 @@ resource "alicloud_esa_network_optimization" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_network_optimization&spm=docs.r.esa_network_optimization.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

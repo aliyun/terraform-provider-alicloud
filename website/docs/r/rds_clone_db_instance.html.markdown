@@ -81,6 +81,8 @@ resource "alicloud_rds_clone_db_instance" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_clone_db_instance&spm=docs.r.rds_clone_db_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

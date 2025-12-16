@@ -40,6 +40,8 @@ resource "alicloud_dts_synchronization_instance" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_synchronization_instance&spm=docs.r.dts_synchronization_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -43,6 +43,8 @@ resource "alicloud_actiontrail_advanced_query_template" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_actiontrail_advanced_query_template&spm=docs.r.actiontrail_advanced_query_template.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

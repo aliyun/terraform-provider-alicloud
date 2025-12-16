@@ -103,6 +103,8 @@ resource "alicloud_rocketmq_acl" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rocketmq_acl&spm=docs.r.rocketmq_acl.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

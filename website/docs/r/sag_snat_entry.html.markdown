@@ -40,6 +40,8 @@ resource "alicloud_sag_snat_entry" "default" {
   cidr_block = "192.168.7.0/24"
   snat_ip    = "192.0.0.2"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sag_snat_entry&spm=docs.r.sag_snat_entry.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

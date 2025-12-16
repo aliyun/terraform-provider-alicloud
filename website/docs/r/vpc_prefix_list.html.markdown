@@ -54,6 +54,8 @@ resource "alicloud_vpc_prefix_list" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_prefix_list&spm=docs.r.vpc_prefix_list.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

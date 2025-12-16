@@ -71,6 +71,8 @@ resource "alicloud_kvstore_connection" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kvstore_connection&spm=docs.r.kvstore_connection.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -45,6 +45,8 @@ resource "alicloud_nas_smb_acl_attachment" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_smb_acl_attachment&spm=docs.r.nas_smb_acl_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -52,6 +52,8 @@ resource "alicloud_esa_custom_scene_policy" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_custom_scene_policy&spm=docs.r.esa_custom_scene_policy.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

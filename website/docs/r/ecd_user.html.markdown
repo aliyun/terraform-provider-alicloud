@@ -38,6 +38,8 @@ resource "alicloud_ecd_user" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecd_user&spm=docs.r.ecd_user.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

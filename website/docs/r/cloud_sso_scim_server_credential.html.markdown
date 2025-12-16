@@ -46,6 +46,8 @@ resource "alicloud_cloud_sso_scim_server_credential" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_sso_scim_server_credential&spm=docs.r.cloud_sso_scim_server_credential.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

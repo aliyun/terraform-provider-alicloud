@@ -72,6 +72,8 @@ resource "alicloud_nas_mount_target" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_mount_target&spm=docs.r.nas_mount_target.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

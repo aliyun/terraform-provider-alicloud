@@ -84,6 +84,8 @@ resource "alicloud_ecs_instance_set" "beijing_k" {
 ```
 
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_instance_set&spm=docs.r.ecs_instance_set.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

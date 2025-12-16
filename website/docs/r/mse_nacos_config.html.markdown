@@ -74,6 +74,8 @@ resource "alicloud_mse_nacos_config" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mse_nacos_config&spm=docs.r.mse_nacos_config.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

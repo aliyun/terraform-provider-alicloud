@@ -67,6 +67,8 @@ resource "alicloud_hbase_instance" "default" {
 
 this is a example for class netType instance. you can find more detail with the examples/hbase dir.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbase_instance&spm=docs.r.hbase_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

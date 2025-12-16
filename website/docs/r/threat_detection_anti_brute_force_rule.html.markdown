@@ -36,6 +36,8 @@ resource "alicloud_threat_detection_anti_brute_force_rule" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_threat_detection_anti_brute_force_rule&spm=docs.r.threat_detection_anti_brute_force_rule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -73,6 +73,8 @@ resource "alicloud_config_remediation" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_remediation&spm=docs.r.config_remediation.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

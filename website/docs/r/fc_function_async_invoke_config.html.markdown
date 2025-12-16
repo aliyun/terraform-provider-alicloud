@@ -146,6 +146,8 @@ resource "alicloud_fc_function_async_invoke_config" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fc_function_async_invoke_config&spm=docs.r.fc_function_async_invoke_config.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 * `service_name` - (Required, ForceNew) Name of the Function Compute Function, omitting any version or alias qualifier.

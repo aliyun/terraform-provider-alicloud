@@ -72,6 +72,8 @@ resource "alicloud_sls_etl" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_etl&spm=docs.r.sls_etl.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

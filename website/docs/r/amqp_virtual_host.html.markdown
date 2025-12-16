@@ -55,6 +55,8 @@ resource "alicloud_amqp_virtual_host" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_amqp_virtual_host&spm=docs.r.amqp_virtual_host.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

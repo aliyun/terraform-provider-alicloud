@@ -34,6 +34,8 @@ provider "alicloud" {
 resource "alicloud_sag_qos" "default" {
   name = "terraform-example"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sag_qos&spm=docs.r.sag_qos.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

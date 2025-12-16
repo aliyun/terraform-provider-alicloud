@@ -54,6 +54,8 @@ resource "alicloud_esa_scheduled_preload_execution" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_scheduled_preload_execution&spm=docs.r.esa_scheduled_preload_execution.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

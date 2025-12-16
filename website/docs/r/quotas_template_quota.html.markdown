@@ -46,6 +46,8 @@ resource "alicloud_quotas_template_quota" "default" {
 ```
 
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_quotas_template_quota&spm=docs.r.quotas_template_quota.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

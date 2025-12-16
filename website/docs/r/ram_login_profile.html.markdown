@@ -42,6 +42,8 @@ resource "alicloud_ram_login_profile" "profile" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_login_profile&spm=docs.r.ram_login_profile.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -41,6 +41,8 @@ resource "alicloud_vpc_public_ip_address_pool" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_public_ip_address_pool&spm=docs.r.vpc_public_ip_address_pool.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

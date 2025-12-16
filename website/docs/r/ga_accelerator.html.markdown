@@ -33,6 +33,8 @@ resource "alicloud_ga_accelerator" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ga_accelerator&spm=docs.r.ga_accelerator.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

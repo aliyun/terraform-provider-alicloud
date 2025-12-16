@@ -50,6 +50,8 @@ A maximum of 10 mailing addresses can be added.
 Individual users: Up to 10 mailing addresses can be deleted within a month.
 Enterprise users: Up to 10 mailing addresses can be deleted within a month.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_direct_mail_mail_address&spm=docs.r.direct_mail_mail_address.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

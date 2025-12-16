@@ -25,6 +25,8 @@ Provides a Alidns Domain Group resource. For information about Alidns Domain Gro
 resource "alicloud_alidns_domain_group" "default" {
   domain_group_name = "tf-example"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_domain_group&spm=docs.r.alidns_domain_group.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

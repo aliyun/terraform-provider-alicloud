@@ -35,6 +35,8 @@ resource "alicloud_esa_kv_account" "open" {
 
 Terraform cannot destroy resource `alicloud_esa_kv_account`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_kv_account&spm=docs.r.esa_kv_account.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

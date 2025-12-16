@@ -93,6 +93,8 @@ resource "alicloud_instance" "instance" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_instance&spm=docs.r.instance.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use the existing [ecs-instance module](https://registry.terraform.io/modules/alibaba/ecs-instance/alicloud)

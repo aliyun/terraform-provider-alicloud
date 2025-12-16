@@ -51,6 +51,8 @@ resource "alicloud_hbr_nas_backup_plan" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_nas_backup_plan&spm=docs.r.hbr_nas_backup_plan.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

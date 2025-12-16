@@ -56,6 +56,8 @@ resource "alicloud_event_bridge_api_destination" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_event_bridge_api_destination&spm=docs.r.event_bridge_api_destination.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

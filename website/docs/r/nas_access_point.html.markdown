@@ -92,6 +92,8 @@ resource "alicloud_nas_access_point" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_access_point&spm=docs.r.nas_access_point.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

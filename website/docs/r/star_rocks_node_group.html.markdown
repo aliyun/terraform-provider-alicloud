@@ -103,6 +103,8 @@ resource "alicloud_star_rocks_node_group" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_star_rocks_node_group&spm=docs.r.star_rocks_node_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

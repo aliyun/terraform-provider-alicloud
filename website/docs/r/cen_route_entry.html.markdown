@@ -90,6 +90,8 @@ resource "alicloud_cen_route_entry" "example" {
   route_table_id = alicloud_vpc.example.route_table_id
   cidr_block     = alicloud_route_entry.example.destination_cidrblock
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_route_entry&spm=docs.r.cen_route_entry.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

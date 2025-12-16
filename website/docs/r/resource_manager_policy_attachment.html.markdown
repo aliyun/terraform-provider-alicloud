@@ -61,6 +61,8 @@ resource "alicloud_resource_manager_policy_attachment" "example" {
   principal_type    = "IMSUser"
   resource_group_id = data.alicloud_resource_manager_resource_groups.example.ids.0
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_policy_attachment&spm=docs.r.resource_manager_policy_attachment.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

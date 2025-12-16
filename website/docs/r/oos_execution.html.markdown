@@ -69,6 +69,8 @@ resource "alicloud_oos_execution" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oos_execution&spm=docs.r.oos_execution.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

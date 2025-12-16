@@ -36,6 +36,8 @@ resource "alicloud_chatbot_publish_task" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_chatbot_publish_task&spm=docs.r.chatbot_publish_task.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

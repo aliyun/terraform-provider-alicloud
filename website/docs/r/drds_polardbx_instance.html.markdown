@@ -57,6 +57,8 @@ resource "alicloud_drds_polardbx_instance" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_drds_polardbx_instance&spm=docs.r.drds_polardbx_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

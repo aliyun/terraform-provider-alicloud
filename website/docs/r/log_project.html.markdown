@@ -83,6 +83,8 @@ EOF
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_project&spm=docs.r.log_project.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use the existing [sls module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls/alicloud) 

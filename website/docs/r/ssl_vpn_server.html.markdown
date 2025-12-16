@@ -70,6 +70,8 @@ resource "alicloud_ssl_vpn_server" "default" {
   port           = "1194"
   compress       = "false"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_vpn_server&spm=docs.r.ssl_vpn_server.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

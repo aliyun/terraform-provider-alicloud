@@ -76,6 +76,8 @@ resource "alicloud_config_compliance_pack" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_compliance_pack&spm=docs.r.config_compliance_pack.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

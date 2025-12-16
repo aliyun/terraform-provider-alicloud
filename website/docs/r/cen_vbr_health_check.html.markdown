@@ -73,6 +73,8 @@ resource "alicloud_cen_vbr_health_check" "example" {
   health_check_interval  = 2
   healthy_threshold      = 8
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_vbr_health_check&spm=docs.r.cen_vbr_health_check.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

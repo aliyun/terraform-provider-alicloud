@@ -34,6 +34,8 @@ resource "alicloud_dbfs_service_linked_role" "service_linked_role" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dbfs_service_linked_role&spm=docs.r.dbfs_service_linked_role.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

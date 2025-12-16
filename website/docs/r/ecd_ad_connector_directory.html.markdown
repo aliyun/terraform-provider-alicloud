@@ -65,6 +65,8 @@ resource "alicloud_ecd_ad_connector_directory" "default" {
   sub_domain_name        = "child.example.com"
   vswitch_ids            = [alicloud_vswitch.default.id]
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecd_ad_connector_directory&spm=docs.r.ecd_ad_connector_directory.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

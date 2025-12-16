@@ -89,6 +89,8 @@ resource "alicloud_aligreen_oss_stock_task" "default" {
 
 Terraform cannot destroy resource `alicloud_aligreen_oss_stock_task`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_aligreen_oss_stock_task&spm=docs.r.aligreen_oss_stock_task.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -34,6 +34,8 @@ resource "alicloud_security_center_group" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_security_center_group&spm=docs.r.security_center_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

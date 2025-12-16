@@ -85,6 +85,8 @@ resource "alicloud_lindorm_instance_v2" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_lindorm_instance_v2&spm=docs.r.lindorm_instance_v2.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

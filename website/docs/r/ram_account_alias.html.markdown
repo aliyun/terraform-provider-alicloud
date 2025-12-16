@@ -39,6 +39,8 @@ resource "alicloud_ram_account_alias" "alias" {
 
 Terraform cannot destroy resource `alicloud_ram_account_alias`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_account_alias&spm=docs.r.ram_account_alias.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -101,6 +101,8 @@ resource "alicloud_sae_load_balancer_internet" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sae_load_balancer_internet&spm=docs.r.sae_load_balancer_internet.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

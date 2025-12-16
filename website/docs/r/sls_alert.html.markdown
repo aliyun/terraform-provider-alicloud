@@ -189,6 +189,8 @@ resource "alicloud_sls_alert" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_alert&spm=docs.r.sls_alert.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

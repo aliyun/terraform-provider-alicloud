@@ -40,6 +40,8 @@ resource "alicloud_message_service_endpoint" "default" {
 
 Terraform cannot destroy resource `alicloud_message_service_endpoint`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_message_service_endpoint&spm=docs.r.message_service_endpoint.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

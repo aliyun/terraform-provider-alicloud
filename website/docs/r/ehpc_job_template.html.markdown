@@ -33,6 +33,8 @@ resource "alicloud_ehpc_job_template" "default" {
 
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ehpc_job_template&spm=docs.r.ehpc_job_template.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

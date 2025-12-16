@@ -89,6 +89,8 @@ resource "alicloud_polar_db_extension" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polar_db_extension&spm=docs.r.polar_db_extension.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

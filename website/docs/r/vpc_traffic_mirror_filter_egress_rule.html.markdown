@@ -39,6 +39,8 @@ resource "alicloud_vpc_traffic_mirror_filter_egress_rule" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_traffic_mirror_filter_egress_rule&spm=docs.r.vpc_traffic_mirror_filter_egress_rule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

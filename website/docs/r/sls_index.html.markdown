@@ -105,6 +105,8 @@ resource "alicloud_sls_index" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_index&spm=docs.r.sls_index.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

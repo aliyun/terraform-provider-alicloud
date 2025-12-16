@@ -39,6 +39,8 @@ resource "alicloud_api_gateway_model" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_api_gateway_model&spm=docs.r.api_gateway_model.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

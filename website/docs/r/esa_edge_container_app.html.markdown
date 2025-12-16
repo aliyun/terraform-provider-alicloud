@@ -49,6 +49,8 @@ resource "alicloud_esa_edge_container_app" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_edge_container_app&spm=docs.r.esa_edge_container_app.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -73,6 +73,8 @@ resource "alicloud_polardb_zonal_account" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_zonal_account&spm=docs.r.polardb_zonal_account.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

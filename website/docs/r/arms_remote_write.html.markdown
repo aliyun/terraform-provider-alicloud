@@ -67,6 +67,8 @@ resource "alicloud_arms_remote_write" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_arms_remote_write&spm=docs.r.arms_remote_write.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

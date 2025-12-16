@@ -87,6 +87,8 @@ resource "alicloud_ots_secondary_index" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ots_secondary_index&spm=docs.r.ots_secondary_index.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -83,6 +83,8 @@ resource "alicloud_cloud_storage_gateway_gateway_logging" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_storage_gateway_gateway_logging&spm=docs.r.cloud_storage_gateway_gateway_logging.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

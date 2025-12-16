@@ -87,6 +87,8 @@ resource "alicloud_alidns_monitor_config" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_monitor_config&spm=docs.r.alidns_monitor_config.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

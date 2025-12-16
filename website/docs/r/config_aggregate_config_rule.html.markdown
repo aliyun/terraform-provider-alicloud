@@ -62,6 +62,8 @@ resource "alicloud_config_aggregate_config_rule" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_aggregate_config_rule&spm=docs.r.config_aggregate_config_rule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

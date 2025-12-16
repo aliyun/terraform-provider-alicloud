@@ -51,6 +51,8 @@ resource "alicloud_oss_bucket_user_defined_log_fields" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_user_defined_log_fields&spm=docs.r.oss_bucket_user_defined_log_fields.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

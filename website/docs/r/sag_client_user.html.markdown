@@ -46,6 +46,8 @@ resource "alicloud_sag_client_user" "default" {
   password  = "example1234"
   client_ip = "192.1.10.0"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sag_client_user&spm=docs.r.sag_client_user.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

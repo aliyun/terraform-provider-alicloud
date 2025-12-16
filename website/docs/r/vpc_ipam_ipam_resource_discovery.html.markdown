@@ -45,6 +45,8 @@ resource "alicloud_vpc_ipam_ipam_resource_discovery" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_ipam_ipam_resource_discovery&spm=docs.r.vpc_ipam_ipam_resource_discovery.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

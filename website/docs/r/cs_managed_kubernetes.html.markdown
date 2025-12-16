@@ -337,6 +337,8 @@ resource "alicloud_cs_managed_kubernetes" "auto-mode" {
     name = "managed-aliyun-acr-credential-helper"
   }
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_managed_kubernetes&spm=docs.r.cs_managed_kubernetes.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

@@ -49,6 +49,8 @@ resource "alicloud_ecd_nas_file_system" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecd_nas_file_system&spm=docs.r.ecd_nas_file_system.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

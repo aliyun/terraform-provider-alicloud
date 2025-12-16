@@ -69,6 +69,8 @@ resource "alicloud_bastionhost_host" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_bastionhost_host&spm=docs.r.bastionhost_host.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

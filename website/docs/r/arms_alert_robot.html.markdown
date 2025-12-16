@@ -51,6 +51,8 @@ resource "alicloud_arms_alert_robot" "feishu" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_arms_alert_robot&spm=docs.r.arms_alert_robot.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

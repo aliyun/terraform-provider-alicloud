@@ -49,6 +49,8 @@ resource "alicloud_resource_manager_account" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_account&spm=docs.r.resource_manager_account.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

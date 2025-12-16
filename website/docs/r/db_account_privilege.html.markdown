@@ -76,6 +76,8 @@ resource "alicloud_db_account_privilege" "privilege" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_db_account_privilege&spm=docs.r.db_account_privilege.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

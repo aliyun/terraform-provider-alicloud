@@ -35,6 +35,8 @@ resource "alicloud_ecs_activation" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_activation&spm=docs.r.ecs_activation.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

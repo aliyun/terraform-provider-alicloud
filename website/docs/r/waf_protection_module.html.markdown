@@ -56,6 +56,8 @@ resource "alicloud_waf_protection_module" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_waf_protection_module&spm=docs.r.waf_protection_module.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

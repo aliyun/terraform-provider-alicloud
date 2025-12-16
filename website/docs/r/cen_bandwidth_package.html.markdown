@@ -40,6 +40,8 @@ The `alicloud_cen_bandwidth_package` resource allows you to manage `payment_type
 Deleting the subscription resource or removing it from your configuration will remove it from your statefile and management, but will not destroy the Bandwidth Package.
 You can resume managing the subscription bandwidth package via the AlibabaCloud Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_bandwidth_package&spm=docs.r.cen_bandwidth_package.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

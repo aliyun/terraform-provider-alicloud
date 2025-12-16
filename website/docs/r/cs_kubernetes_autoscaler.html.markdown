@@ -99,6 +99,8 @@ resource "alicloud_cs_kubernetes_autoscaler" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_autoscaler&spm=docs.r.cs_kubernetes_autoscaler.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

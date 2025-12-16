@@ -51,6 +51,8 @@ resource "alicloud_oss_bucket_https_config" "default" {
 
 Terraform cannot destroy resource `alicloud_oss_bucket_https_config`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_https_config&spm=docs.r.oss_bucket_https_config.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

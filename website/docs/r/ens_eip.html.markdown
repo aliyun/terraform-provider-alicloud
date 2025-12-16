@@ -42,6 +42,8 @@ resource "alicloud_ens_eip" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_eip&spm=docs.r.ens_eip.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

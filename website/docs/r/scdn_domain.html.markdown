@@ -37,6 +37,8 @@ resource "alicloud_scdn_domain" "example" {
 
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_scdn_domain&spm=docs.r.scdn_domain.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -37,6 +37,8 @@ resource "alicloud_direct_mail_tag" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_direct_mail_tag&spm=docs.r.direct_mail_tag.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

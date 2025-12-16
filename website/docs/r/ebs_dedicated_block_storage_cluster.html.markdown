@@ -35,6 +35,8 @@ resource "alicloud_ebs_dedicated_block_storage_cluster" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ebs_dedicated_block_storage_cluster&spm=docs.r.ebs_dedicated_block_storage_cluster.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

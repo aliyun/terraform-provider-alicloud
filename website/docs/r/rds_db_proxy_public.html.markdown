@@ -108,6 +108,8 @@ resource "alicloud_rds_db_proxy_public" "default" {
 
 -> **NOTE:** Resource `alicloud_rds_db_proxy_public` should be created after `alicloud_rds_db_proxy`, so the `depends_on` statement is necessary.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_db_proxy_public&spm=docs.r.rds_db_proxy_public.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

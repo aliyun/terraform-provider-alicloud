@@ -51,6 +51,8 @@ resource "alicloud_quotas_quota_alarm" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_quotas_quota_alarm&spm=docs.r.quotas_quota_alarm.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

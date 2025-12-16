@@ -194,6 +194,8 @@ resource "alicloud_vpc" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_open_api_explorer_api_mcp_server&spm=docs.r.open_api_explorer_api_mcp_server.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:
