@@ -28,27 +28,35 @@ for index in "${!arr[@]}"; do
   sed -i '' "$((${element} - 6 * ${index})),$((${element} - 6 * index + 5))d" "$file_path"
 done
 
-# Add "Need more examples" link at the bottom of ## Example Usage header section
 example_usage_header="## Example Usage"
 more_examples_line="📚 Need more examples\\? \\[VIEW MORE EXAMPLES\\]\\(https:\\/\\/api\\.aliyun\\.com\\/terraform\\?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_${file_name}&spm=docs\\.r\\.${file_name}\\.example&intl_lang=EN_US\\)"
 
-# Check if the line already exists
 if ! grep -q "Need more examples" "$file_path"; then
-  # Find the line number of "## Example Usage"
   example_usage_line=$(grep -n "$example_usage_header" "$file_path" | head -1 | cut -d':' -f1)
   if [[ -n "$example_usage_line" ]]; then
     next_header_line=$(awk -v start_line="$example_usage_line" 'NR > start_line && /^## / {print NR; exit}' "$file_path")
     
     if [[ -n "$next_header_line" ]]; then
-      end_of_section=$((next_header_line - 1))
+      insert_line=$next_header_line
+      sed_cmd="i"
     else
-      end_of_section=$(wc -l < "$file_path" | tr -d ' ')
+      insert_line=$(wc -l < "$file_path" | tr -d ' ')
+      sed_cmd="a"
     fi
     
-    sed -i '' "${end_of_section}i\\
+    if [[ `uname` == "Darwin" ]]; then
+      sed -i '' "${insert_line}${sed_cmd}\\
 \\
 ${more_examples_line}\\
+\\
 " "$file_path"
+    else
+      sed -i.bak "${insert_line}${sed_cmd}\\
+\\
+${more_examples_line}\\
+\\
+" "$file_path"
+    fi
   fi
 fi
 
