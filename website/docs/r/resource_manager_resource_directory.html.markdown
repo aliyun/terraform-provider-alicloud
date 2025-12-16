@@ -36,6 +36,8 @@ resource "alicloud_resource_manager_resource_directory" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_resource_directory&spm=docs.r.resource_manager_resource_directory.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -62,6 +62,8 @@ Deleting the subscription resource or removing it from your configuration will r
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mse_cluster&spm=docs.r.mse_cluster.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

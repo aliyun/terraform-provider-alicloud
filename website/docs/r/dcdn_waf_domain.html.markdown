@@ -53,6 +53,8 @@ resource "alicloud_dcdn_waf_domain" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dcdn_waf_domain&spm=docs.r.dcdn_waf_domain.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

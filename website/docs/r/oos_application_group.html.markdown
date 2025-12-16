@@ -62,6 +62,8 @@ resource "alicloud_oos_application_group" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oos_application_group&spm=docs.r.oos_application_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

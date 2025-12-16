@@ -72,6 +72,8 @@ resource "alicloud_mongodb_private_srv_network_address" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mongodb_private_srv_network_address&spm=docs.r.mongodb_private_srv_network_address.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

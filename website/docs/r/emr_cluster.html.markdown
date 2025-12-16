@@ -540,6 +540,8 @@ resource "alicloud_emr_cluster" "gateway" {
 ```
 
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_emr_cluster&spm=docs.r.emr_cluster.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -28,6 +28,8 @@ resource "alicloud_actiontrail" "foo" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_actiontrail&spm=docs.r.actiontrail.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

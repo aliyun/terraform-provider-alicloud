@@ -38,6 +38,8 @@ resource "alicloud_dms_enterprise_proxy_access" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dms_enterprise_proxy_access&spm=docs.r.dms_enterprise_proxy_access.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

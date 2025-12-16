@@ -60,6 +60,8 @@ resource "alicloud_log_store_index" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_store_index&spm=docs.r.log_store_index.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use the existing [sls module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls/alicloud) 

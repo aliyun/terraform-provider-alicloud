@@ -35,6 +35,8 @@ resource "alicloud_video_surveillance_system_group" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_video_surveillance_system_group&spm=docs.r.video_surveillance_system_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

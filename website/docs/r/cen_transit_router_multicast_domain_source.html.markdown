@@ -124,6 +124,8 @@ resource "alicloud_cen_transit_router_multicast_domain_source" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_multicast_domain_source&spm=docs.r.cen_transit_router_multicast_domain_source.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

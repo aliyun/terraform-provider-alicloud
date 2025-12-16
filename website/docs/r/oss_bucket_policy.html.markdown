@@ -54,6 +54,8 @@ resource "alicloud_oss_bucket_policy" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_policy&spm=docs.r.oss_bucket_policy.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

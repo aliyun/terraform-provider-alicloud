@@ -54,6 +54,8 @@ resource "alicloud_network_interface" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_network_interface&spm=docs.r.network_interface.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

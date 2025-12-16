@@ -35,6 +35,8 @@ resource "alicloud_resource_manager_handshake" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_handshake&spm=docs.r.resource_manager_handshake.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

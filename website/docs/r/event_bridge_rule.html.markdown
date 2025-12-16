@@ -76,6 +76,8 @@ resource "alicloud_event_bridge_rule" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_event_bridge_rule&spm=docs.r.event_bridge_rule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

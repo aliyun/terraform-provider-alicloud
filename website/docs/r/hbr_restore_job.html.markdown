@@ -95,6 +95,8 @@ resource "alicloud_hbr_restore_job" "ecsJob" {
 
 -> **NOTE:** This resource can only be created, cannot be modified or deleted. Therefore, any modification of the resource attribute will not affect exist resource.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_restore_job&spm=docs.r.hbr_restore_job.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

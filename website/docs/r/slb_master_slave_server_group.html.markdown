@@ -142,6 +142,8 @@ resource "alicloud_slb_listener" "tcp" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_master_slave_server_group&spm=docs.r.slb_master_slave_server_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

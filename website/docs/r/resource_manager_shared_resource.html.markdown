@@ -63,6 +63,8 @@ resource "alicloud_resource_manager_shared_resource" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_shared_resource&spm=docs.r.resource_manager_shared_resource.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

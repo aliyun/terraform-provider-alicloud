@@ -66,6 +66,8 @@ resource "alicloud_eci_image_cache" "default" {
   vswitch_id        = alicloud_vswitch.default.id
   eip_instance_id   = alicloud_eip_address.default.id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eci_image_cache&spm=docs.r.eci_image_cache.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

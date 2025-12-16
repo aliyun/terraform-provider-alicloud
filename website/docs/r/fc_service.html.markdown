@@ -268,6 +268,8 @@ resource "alicloud_fc_service" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fc_service&spm=docs.r.fc_service.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) to create a service and a function quickly and then set several triggers for it.

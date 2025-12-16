@@ -35,6 +35,8 @@ resource "alicloud_security_center_service_linked_role" "service_linked_role" {
 
 
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_security_center_service_linked_role&spm=docs.r.security_center_service_linked_role.example&intl_lang=EN_US)
+
 ## Attributes Reference
 
 The following attributes are exported:

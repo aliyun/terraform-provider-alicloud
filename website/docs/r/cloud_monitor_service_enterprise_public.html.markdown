@@ -38,6 +38,8 @@ resource "alicloud_cloud_monitor_service_enterprise_public" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_monitor_service_enterprise_public&spm=docs.r.cloud_monitor_service_enterprise_public.example&intl_lang=EN_US)
+
 ## Attributes Reference
 
 The following attributes are exported:

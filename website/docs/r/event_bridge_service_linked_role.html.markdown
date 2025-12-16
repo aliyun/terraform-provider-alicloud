@@ -33,6 +33,8 @@ resource "alicloud_event_bridge_service_linked_role" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_event_bridge_service_linked_role&spm=docs.r.event_bridge_service_linked_role.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

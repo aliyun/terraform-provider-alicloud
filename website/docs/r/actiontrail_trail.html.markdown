@@ -59,6 +59,8 @@ resource "alicloud_actiontrail_trail" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_actiontrail_trail&spm=docs.r.actiontrail_trail.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -36,6 +36,8 @@ resource "alicloud_msc_sub_webhook" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_msc_sub_webhook&spm=docs.r.msc_sub_webhook.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

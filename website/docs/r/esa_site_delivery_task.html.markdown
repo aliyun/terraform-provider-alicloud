@@ -75,6 +75,8 @@ resource "alicloud_esa_site_delivery_task" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_site_delivery_task&spm=docs.r.esa_site_delivery_task.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -44,6 +44,8 @@ resource "alicloud_cr_repo" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_repo&spm=docs.r.cr_repo.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

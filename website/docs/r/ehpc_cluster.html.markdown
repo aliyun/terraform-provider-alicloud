@@ -86,6 +86,8 @@ resource "alicloud_ehpc_cluster" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ehpc_cluster&spm=docs.r.ehpc_cluster.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -112,6 +112,8 @@ The `alicloud_ess_instance_refresh` resource allows you to manage  `status = "Ro
 Deleting will remove it from your state file and management, but will not destroy the Instance Refresh.
 You can resume managing the instance refresh via the AlibabaCloud Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_instance_refresh&spm=docs.r.ess_instance_refresh.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -44,6 +44,8 @@ resource "alicloud_route_table" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_route_table&spm=docs.r.route_table.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

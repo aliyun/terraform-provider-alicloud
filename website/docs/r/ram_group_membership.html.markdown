@@ -50,6 +50,8 @@ resource "alicloud_ram_group_membership" "membership" {
   group_name = alicloud_ram_group.group.name
   user_names = [alicloud_ram_user.user.name, alicloud_ram_user.user1.name]
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_group_membership&spm=docs.r.ram_group_membership.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

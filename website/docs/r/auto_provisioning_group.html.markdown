@@ -77,6 +77,8 @@ data "alicloud_images" "default" {
 ```
 
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_auto_provisioning_group&spm=docs.r.auto_provisioning_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

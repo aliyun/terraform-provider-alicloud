@@ -64,6 +64,8 @@ resource "alicloud_mse_engine_namespace" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mse_engine_namespace&spm=docs.r.mse_engine_namespace.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

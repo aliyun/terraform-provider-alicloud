@@ -118,6 +118,8 @@ resource "alicloud_oss_bucket_replication" "cross-region-replication" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_replication&spm=docs.r.oss_bucket_replication.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

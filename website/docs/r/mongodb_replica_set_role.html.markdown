@@ -80,6 +80,8 @@ resource "alicloud_mongodb_replica_set_role" "public" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mongodb_replica_set_role&spm=docs.r.mongodb_replica_set_role.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

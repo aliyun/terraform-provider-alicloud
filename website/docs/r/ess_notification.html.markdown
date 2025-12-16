@@ -77,6 +77,8 @@ resource "alicloud_ess_notification" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_notification&spm=docs.r.ess_notification.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

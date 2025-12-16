@@ -49,6 +49,8 @@ resource "alicloud_oss_bucket_meta_query" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_meta_query&spm=docs.r.oss_bucket_meta_query.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

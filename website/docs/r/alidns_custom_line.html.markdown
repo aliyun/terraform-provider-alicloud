@@ -36,6 +36,8 @@ resource "alicloud_alidns_custom_line" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_custom_line&spm=docs.r.alidns_custom_line.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -112,6 +112,8 @@ resource "alicloud_ram_role_attachment" "attach" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_role_attachment&spm=docs.r.ram_role_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

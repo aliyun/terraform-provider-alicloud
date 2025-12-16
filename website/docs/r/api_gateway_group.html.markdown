@@ -41,6 +41,8 @@ resource "alicloud_api_gateway_group" "default" {
     jwt_claims       = "*"
   }
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_api_gateway_group&spm=docs.r.api_gateway_group.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

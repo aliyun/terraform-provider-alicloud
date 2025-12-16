@@ -72,6 +72,8 @@ resource "alicloud_cdn_real_time_log_delivery" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cdn_real_time_log_delivery&spm=docs.r.cdn_real_time_log_delivery.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

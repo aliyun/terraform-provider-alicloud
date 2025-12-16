@@ -42,6 +42,8 @@ resource "alicloud_resource_manager_policy" "example" {
 		}
     EOF
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_policy&spm=docs.r.resource_manager_policy.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

@@ -67,6 +67,8 @@ resource "alicloud_mse_znode" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mse_znode&spm=docs.r.mse_znode.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

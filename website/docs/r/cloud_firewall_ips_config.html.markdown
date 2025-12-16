@@ -58,6 +58,8 @@ resource "alicloud_cloud_firewall_ips_config" "default" {
 
 Terraform cannot destroy resource `alicloud_cloud_firewall_ips_config`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_ips_config&spm=docs.r.cloud_firewall_ips_config.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

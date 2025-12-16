@@ -120,6 +120,8 @@ resource "alicloud_cloud_firewall_nat_firewall_control_policy" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_nat_firewall_control_policy&spm=docs.r.cloud_firewall_nat_firewall_control_policy.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

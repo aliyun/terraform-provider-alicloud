@@ -50,6 +50,8 @@ resource "alicloud_ddosbgp_instance" "instance" {
 
 Terraform cannot destroy resource `alicloud_ddosbgp_instance`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ddosbgp_instance&spm=docs.r.ddosbgp_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

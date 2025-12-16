@@ -50,6 +50,8 @@ resource "alicloud_data_works_project" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_data_works_project&spm=docs.r.data_works_project.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

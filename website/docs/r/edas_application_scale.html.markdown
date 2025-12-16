@@ -107,6 +107,8 @@ resource "alicloud_edas_application_scale" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_edas_application_scale&spm=docs.r.edas_application_scale.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

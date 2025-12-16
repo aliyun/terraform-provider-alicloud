@@ -79,6 +79,8 @@ resource "alicloud_cen_transit_router_route_entry" "example" {
   transit_router_route_entry_description            = var.name
   transit_router_route_entry_next_hop_id            = alicloud_cen_transit_router_vbr_attachment.example.transit_router_attachment_id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_route_entry&spm=docs.r.cen_transit_router_route_entry.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

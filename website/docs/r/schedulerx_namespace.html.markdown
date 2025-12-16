@@ -36,6 +36,8 @@ resource "alicloud_schedulerx_namespace" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_schedulerx_namespace&spm=docs.r.schedulerx_namespace.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

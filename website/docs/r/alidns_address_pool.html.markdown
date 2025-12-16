@@ -79,6 +79,8 @@ resource "alicloud_alidns_address_pool" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_address_pool&spm=docs.r.alidns_address_pool.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

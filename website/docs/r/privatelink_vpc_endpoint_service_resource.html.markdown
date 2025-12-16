@@ -77,6 +77,8 @@ resource "alicloud_privatelink_vpc_endpoint_service_resource" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_privatelink_vpc_endpoint_service_resource&spm=docs.r.privatelink_vpc_endpoint_service_resource.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

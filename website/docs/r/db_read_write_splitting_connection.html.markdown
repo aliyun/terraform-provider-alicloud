@@ -86,6 +86,8 @@ resource "alicloud_db_read_write_splitting_connection" "example" {
 
 -> **NOTE:** Resource `alicloud_db_read_write_splitting_connection` should be created after `alicloud_db_readonly_instance`, so the `depends_on` statement is necessary.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_db_read_write_splitting_connection&spm=docs.r.db_read_write_splitting_connection.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

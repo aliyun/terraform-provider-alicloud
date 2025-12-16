@@ -70,6 +70,8 @@ resource "alicloud_ecs_network_interface_permission" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_network_interface_permission&spm=docs.r.ecs_network_interface_permission.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

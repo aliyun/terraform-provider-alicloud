@@ -67,6 +67,8 @@ resource "alicloud_gpdb_instance" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_gpdb_instance&spm=docs.r.gpdb_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

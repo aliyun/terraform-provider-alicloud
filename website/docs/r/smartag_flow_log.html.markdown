@@ -38,6 +38,8 @@ resource "alicloud_smartag_flow_log" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_smartag_flow_log&spm=docs.r.smartag_flow_log.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

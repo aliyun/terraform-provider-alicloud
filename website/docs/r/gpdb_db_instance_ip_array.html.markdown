@@ -76,6 +76,8 @@ resource "alicloud_gpdb_db_instance_ip_array" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_gpdb_db_instance_ip_array&spm=docs.r.gpdb_db_instance_ip_array.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -58,6 +58,8 @@ resource "alicloud_hbr_policy" "defaultoqWvHQ" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_policy&spm=docs.r.hbr_policy.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -104,6 +104,8 @@ resource "alicloud_ess_scaling_configuration" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_scaling_configuration&spm=docs.r.ess_scaling_configuration.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use to the existing [autoscaling module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling/alicloud) 

@@ -111,6 +111,8 @@ resource "alicloud_dms_enterprise_instance" "default" {
   export_timeout = 600
   ecs_region     = data.alicloud_regions.default.regions.0.id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dms_enterprise_instance&spm=docs.r.dms_enterprise_instance.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

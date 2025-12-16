@@ -83,6 +83,8 @@ resource "alicloud_key_pair_attachment" "attachment" {
   key_name     = alicloud_key_pair.pair.id
   instance_ids = alicloud_instance.instance.*.id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_key_pair_attachment&spm=docs.r.key_pair_attachment.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

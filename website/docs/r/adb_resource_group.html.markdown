@@ -76,6 +76,8 @@ resource "alicloud_adb_resource_group" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_adb_resource_group&spm=docs.r.adb_resource_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

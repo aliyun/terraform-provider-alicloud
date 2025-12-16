@@ -56,6 +56,8 @@ resource "alicloud_edas_application" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_edas_application&spm=docs.r.edas_application.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

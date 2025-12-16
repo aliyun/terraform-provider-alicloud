@@ -56,6 +56,8 @@ but Terraform cannot destroy it. Deleting the subscription resource or removing 
 remove it from your state file and management, but will not destroy it.
 If you want to delete it, you can change it to `PayAsYouGo` and setting `delete_with_instance = true` and detach it from instance.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_disk&spm=docs.r.ecs_disk.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

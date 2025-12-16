@@ -68,6 +68,8 @@ resource "alicloud_vpc_ha_vip" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_ha_vip&spm=docs.r.vpc_ha_vip.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

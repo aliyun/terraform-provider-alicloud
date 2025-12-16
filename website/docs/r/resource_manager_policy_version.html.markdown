@@ -58,6 +58,8 @@ resource "alicloud_resource_manager_policy_version" "example" {
 		}
     EOF
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_policy_version&spm=docs.r.resource_manager_policy_version.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

@@ -89,6 +89,8 @@ resource "alicloud_vpc_peer_connection_accepter" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_peer_connection_accepter&spm=docs.r.vpc_peer_connection_accepter.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

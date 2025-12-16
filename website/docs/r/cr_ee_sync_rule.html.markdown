@@ -101,6 +101,8 @@ resource "alicloud_cr_ee_sync_rule" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_ee_sync_rule&spm=docs.r.cr_ee_sync_rule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

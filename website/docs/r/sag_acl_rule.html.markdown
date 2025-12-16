@@ -51,6 +51,8 @@ resource "alicloud_sag_acl_rule" "default" {
   dest_port_range   = "-1/-1"
   priority          = "1"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sag_acl_rule&spm=docs.r.sag_acl_rule.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

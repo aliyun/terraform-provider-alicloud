@@ -305,6 +305,8 @@ resource "alicloud_fcv2_function" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fcv2_function&spm=docs.r.fcv2_function.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

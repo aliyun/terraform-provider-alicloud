@@ -81,6 +81,8 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_serverless_kubernetes&spm=docs.r.cs_serverless_kubernetes.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -109,6 +109,8 @@ resource "alicloud_adb_lake_account" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_adb_lake_account&spm=docs.r.adb_lake_account.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

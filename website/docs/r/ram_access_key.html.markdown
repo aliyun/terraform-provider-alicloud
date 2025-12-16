@@ -112,6 +112,8 @@ output "encrypted_secret" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_access_key&spm=docs.r.ram_access_key.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

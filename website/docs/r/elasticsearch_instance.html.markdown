@@ -68,6 +68,8 @@ The `alicloud_elasticsearch_instance` resource allows you to manage `instance_ch
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Elasticsearch Instance.
 You can resume managing the subscription Elasticsearch instance via the AlibabaCloud Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_elasticsearch_instance&spm=docs.r.elasticsearch_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

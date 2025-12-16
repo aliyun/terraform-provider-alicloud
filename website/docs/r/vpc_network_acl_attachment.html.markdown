@@ -46,6 +46,8 @@ resource "alicloud_vpc_network_acl_attachment" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_network_acl_attachment&spm=docs.r.vpc_network_acl_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

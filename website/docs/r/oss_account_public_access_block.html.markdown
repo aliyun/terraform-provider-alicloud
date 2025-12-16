@@ -39,6 +39,8 @@ resource "alicloud_oss_account_public_access_block" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_account_public_access_block&spm=docs.r.oss_account_public_access_block.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -152,6 +152,8 @@ resource "alicloud_alb_listener" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alb_listener&spm=docs.r.alb_listener.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

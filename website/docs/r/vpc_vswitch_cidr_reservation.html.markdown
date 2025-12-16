@@ -59,6 +59,8 @@ resource "alicloud_vpc_vswitch_cidr_reservation" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_vswitch_cidr_reservation&spm=docs.r.vpc_vswitch_cidr_reservation.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

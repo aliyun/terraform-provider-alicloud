@@ -63,6 +63,8 @@ resource "alicloud_cen_private_zone" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_private_zone&spm=docs.r.cen_private_zone.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

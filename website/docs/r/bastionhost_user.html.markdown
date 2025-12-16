@@ -85,6 +85,8 @@ resource "alicloud_bastionhost_user" "ram_user" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_bastionhost_user&spm=docs.r.bastionhost_user.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -122,6 +122,8 @@ resource "alicloud_fc_function" "foo" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fc_function&spm=docs.r.fc_function.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 

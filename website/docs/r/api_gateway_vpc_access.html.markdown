@@ -76,6 +76,8 @@ resource "alicloud_api_gateway_vpc_access" "example" {
   instance_id = alicloud_instance.example.id
   port        = 8080
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_api_gateway_vpc_access&spm=docs.r.api_gateway_vpc_access.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

@@ -64,6 +64,8 @@ resource "alicloud_oss_bucket_referer" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_referer&spm=docs.r.oss_bucket_referer.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -37,6 +37,8 @@ resource "alicloud_maxcompute_project" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_maxcompute_project&spm=docs.r.maxcompute_project.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

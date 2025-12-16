@@ -33,6 +33,8 @@ resource "alicloud_datahub_project" "example" {
   name    = var.name
   comment = "created by terraform"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_datahub_project&spm=docs.r.datahub_project.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

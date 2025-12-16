@@ -37,6 +37,8 @@ resource "alicloud_threat_detection_baseline_strategy" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_threat_detection_baseline_strategy&spm=docs.r.threat_detection_baseline_strategy.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

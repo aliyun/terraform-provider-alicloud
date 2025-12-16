@@ -47,6 +47,8 @@ resource "alicloud_wafv3_defense_template" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_wafv3_defense_template&spm=docs.r.wafv3_defense_template.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

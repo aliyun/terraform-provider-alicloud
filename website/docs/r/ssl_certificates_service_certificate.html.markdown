@@ -91,6 +91,8 @@ EOF
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_certificates_service_certificate&spm=docs.r.ssl_certificates_service_certificate.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

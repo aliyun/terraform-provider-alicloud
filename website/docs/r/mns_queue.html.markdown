@@ -30,6 +30,8 @@ resource "alicloud_mns_queue" "queue" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_queue&spm=docs.r.mns_queue.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

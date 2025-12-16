@@ -39,6 +39,8 @@ resource "alicloud_threat_detection_web_lock_config" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_threat_detection_web_lock_config&spm=docs.r.threat_detection_web_lock_config.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

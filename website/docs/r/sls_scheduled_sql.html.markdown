@@ -84,6 +84,8 @@ resource "alicloud_sls_scheduled_sql" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_scheduled_sql&spm=docs.r.sls_scheduled_sql.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

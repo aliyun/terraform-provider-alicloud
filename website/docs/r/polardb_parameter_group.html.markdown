@@ -39,6 +39,8 @@ resource "alicloud_polardb_parameter_group" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_parameter_group&spm=docs.r.polardb_parameter_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -112,6 +112,8 @@ resource "alicloud_arms_env_feature" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_arms_env_feature&spm=docs.r.arms_env_feature.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

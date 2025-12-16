@@ -152,6 +152,8 @@ resource "alicloud_sls_collection_policy" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_collection_policy&spm=docs.r.sls_collection_policy.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

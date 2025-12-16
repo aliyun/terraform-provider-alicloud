@@ -48,6 +48,8 @@ resource "alicloud_ecd_network_package" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecd_network_package&spm=docs.r.ecd_network_package.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

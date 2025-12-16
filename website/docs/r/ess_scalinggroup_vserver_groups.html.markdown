@@ -144,6 +144,8 @@ resource "alicloud_ess_scalinggroup_vserver_groups" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_scalinggroup_vserver_groups&spm=docs.r.ess_scalinggroup_vserver_groups.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

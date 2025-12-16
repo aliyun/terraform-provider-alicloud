@@ -58,6 +58,8 @@ resource "alicloud_schedulerx_app_group" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_schedulerx_app_group&spm=docs.r.schedulerx_app_group.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

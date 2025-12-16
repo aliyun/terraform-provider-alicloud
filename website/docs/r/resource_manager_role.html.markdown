@@ -47,6 +47,8 @@ resource "alicloud_resource_manager_role" "example" {
      }
 	 EOF
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_role&spm=docs.r.resource_manager_role.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

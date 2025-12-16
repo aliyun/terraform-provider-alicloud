@@ -42,6 +42,8 @@ resource "alicloud_cr_namespace" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_namespace&spm=docs.r.cr_namespace.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

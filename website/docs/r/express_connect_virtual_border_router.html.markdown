@@ -55,6 +55,8 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_express_connect_virtual_border_router&spm=docs.r.express_connect_virtual_border_router.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

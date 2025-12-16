@@ -96,6 +96,8 @@ resource "alicloud_alidns_access_strategy" "default" {
     line_code = "default"
   }
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_access_strategy&spm=docs.r.alidns_access_strategy.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

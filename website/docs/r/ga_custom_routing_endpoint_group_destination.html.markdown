@@ -79,6 +79,8 @@ resource "alicloud_ga_custom_routing_endpoint_group_destination" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ga_custom_routing_endpoint_group_destination&spm=docs.r.ga_custom_routing_endpoint_group_destination.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

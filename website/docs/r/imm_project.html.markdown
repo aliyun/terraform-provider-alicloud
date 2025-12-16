@@ -56,6 +56,8 @@ resource "alicloud_imm_project" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_imm_project&spm=docs.r.imm_project.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

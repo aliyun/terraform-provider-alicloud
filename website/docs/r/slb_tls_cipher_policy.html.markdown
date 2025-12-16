@@ -33,6 +33,8 @@ resource "alicloud_slb_tls_cipher_policy" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_tls_cipher_policy&spm=docs.r.slb_tls_cipher_policy.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

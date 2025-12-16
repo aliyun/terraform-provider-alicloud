@@ -85,6 +85,8 @@ resource "alicloud_slb_domain_extension" "example1" {
   domain                = "www.test.com"
   server_certificate_id = alicloud_slb_server_certificate.domain_extension.id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_domain_extension&spm=docs.r.slb_domain_extension.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

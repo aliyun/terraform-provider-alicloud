@@ -60,6 +60,8 @@ resource "alicloud_quotas_template_applications" "default" {
 
 Terraform cannot destroy resource `alicloud_quotas_template_applications`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_quotas_template_applications&spm=docs.r.quotas_template_applications.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

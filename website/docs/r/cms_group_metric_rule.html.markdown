@@ -69,6 +69,8 @@ resource "alicloud_cms_group_metric_rule" "this" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_group_metric_rule&spm=docs.r.cms_group_metric_rule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -87,6 +87,8 @@ resource "alicloud_image_share_permission" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_image_share_permission&spm=docs.r.image_share_permission.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

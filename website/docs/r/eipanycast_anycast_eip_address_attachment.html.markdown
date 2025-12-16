@@ -223,6 +223,8 @@ resource "alicloud_eipanycast_anycast_eip_address_attachment" "normal" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eipanycast_anycast_eip_address_attachment&spm=docs.r.eipanycast_anycast_eip_address_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

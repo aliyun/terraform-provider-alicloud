@@ -48,6 +48,8 @@ resource "alicloud_mhub_app" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mhub_app&spm=docs.r.mhub_app.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

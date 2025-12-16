@@ -74,6 +74,8 @@ resource "alicloud_pvtz_endpoint" "default" {
 
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_endpoint&spm=docs.r.pvtz_endpoint.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

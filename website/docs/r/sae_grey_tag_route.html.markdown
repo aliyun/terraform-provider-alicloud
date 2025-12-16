@@ -117,6 +117,8 @@ resource "alicloud_sae_grey_tag_route" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sae_grey_tag_route&spm=docs.r.sae_grey_tag_route.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

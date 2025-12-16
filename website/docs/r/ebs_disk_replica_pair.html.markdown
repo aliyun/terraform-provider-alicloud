@@ -85,6 +85,8 @@ resource "alicloud_ebs_disk_replica_pair" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ebs_disk_replica_pair&spm=docs.r.ebs_disk_replica_pair.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

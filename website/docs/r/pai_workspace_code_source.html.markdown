@@ -56,6 +56,8 @@ resource "alicloud_pai_workspace_code_source" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pai_workspace_code_source&spm=docs.r.pai_workspace_code_source.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

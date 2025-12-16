@@ -46,6 +46,8 @@ resource "alicloud_vpc_dhcp_options_set_attachment" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_dhcp_options_set_attachment&spm=docs.r.vpc_dhcp_options_set_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

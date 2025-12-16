@@ -79,6 +79,8 @@ resource "alicloud_ssl_vpn_client_cert" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ssl_vpn_client_cert&spm=docs.r.ssl_vpn_client_cert.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -79,6 +79,8 @@ resource "alicloud_dcdn_domain_config" "filetype_based_ttl_set" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dcdn_domain_config&spm=docs.r.dcdn_domain_config.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

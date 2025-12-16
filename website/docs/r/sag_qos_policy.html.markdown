@@ -54,6 +54,8 @@ resource "alicloud_sag_qos_policy" "default" {
   start_time        = replace(time_static.example.rfc3339, "Z", "+0800")
   end_time          = replace(timeadd(time_static.example.rfc3339, "24h"), "Z", "+0800")
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sag_qos_policy&spm=docs.r.sag_qos_policy.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

@@ -22,6 +22,8 @@ resource "alicloud_dns_domain_attachment" "dns" {
   instance_id  = "dns-cn-mp91lyq9xxxx"
   domain_names = ["test111.abc", "test222.abc"]
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dns_domain_attachment&spm=docs.r.dns_domain_attachment.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

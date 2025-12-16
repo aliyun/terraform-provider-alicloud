@@ -35,6 +35,8 @@ resource "alicloud_pvtz_zone_record" "foo" {
   value   = "bbb.test.com"
   ttl     = 60
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_zone_record&spm=docs.r.pvtz_zone_record.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

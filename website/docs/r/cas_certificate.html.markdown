@@ -89,6 +89,8 @@ LILJ+e7bLw8RrM0HfgFnl8c=
 -----END PRIVATE KEY-----
 EOF
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cas_certificate&spm=docs.r.cas_certificate.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

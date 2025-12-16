@@ -88,6 +88,8 @@ resource "alicloud_nlb_loadbalancer_common_bandwidth_package_attachment" "defaul
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nlb_loadbalancer_common_bandwidth_package_attachment&spm=docs.r.nlb_loadbalancer_common_bandwidth_package_attachment.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

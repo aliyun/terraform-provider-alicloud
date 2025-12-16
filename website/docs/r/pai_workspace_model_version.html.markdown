@@ -95,6 +95,8 @@ resource "alicloud_pai_workspace_model_version" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pai_workspace_model_version&spm=docs.r.pai_workspace_model_version.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

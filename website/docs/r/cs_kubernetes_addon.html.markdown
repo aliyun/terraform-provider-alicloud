@@ -89,6 +89,8 @@ When a cluster is created, some system addons and those specified at the time of
 * If the addon already exists in the cluster and its version is different from the specified version, the addon will be upgraded.
 * If the addon does not exist in the cluster, it will be installed.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_addon&spm=docs.r.cs_kubernetes_addon.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

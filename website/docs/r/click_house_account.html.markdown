@@ -70,6 +70,8 @@ resource "alicloud_click_house_account" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_click_house_account&spm=docs.r.click_house_account.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

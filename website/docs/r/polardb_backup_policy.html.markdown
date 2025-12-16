@@ -60,6 +60,8 @@ resource "alicloud_polardb_backup_policy" "default" {
 ### Removing alicloud_polardb_cluster from your configuration
  
 The alicloud_polardb_backup_policy resource allows you to manage your polardb cluster policy, but Terraform cannot destroy it. Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the cluster policy. You can resume managing the cluster via the polardb Console.
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_backup_policy&spm=docs.r.polardb_backup_policy.example&intl_lang=EN_US)
  
 ## Argument Reference
 

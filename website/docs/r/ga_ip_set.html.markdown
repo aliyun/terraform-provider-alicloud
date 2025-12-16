@@ -62,6 +62,8 @@ resource "alicloud_ga_ip_set" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ga_ip_set&spm=docs.r.ga_ip_set.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

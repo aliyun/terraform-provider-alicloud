@@ -33,6 +33,8 @@ resource "alicloud_sms_short_url" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sms_short_url&spm=docs.r.sms_short_url.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

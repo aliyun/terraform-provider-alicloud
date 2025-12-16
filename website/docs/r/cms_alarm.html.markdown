@@ -99,6 +99,8 @@ resource "alicloud_cms_alarm" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_alarm&spm=docs.r.cms_alarm.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

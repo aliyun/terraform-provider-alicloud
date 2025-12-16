@@ -119,6 +119,8 @@ resource "alicloud_resource_manager_policy_attachment" "default" {
 
 The alicloud_polardb_cluster resource allows you to manage your polardb cluster, but Terraform cannot destroy it if your cluster type is pre paid(post paid type can destroy normally). Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the cluster. You can resume managing the cluster via the polardb Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_cluster&spm=docs.r.polardb_cluster.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

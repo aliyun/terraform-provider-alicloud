@@ -41,6 +41,8 @@ resource "alicloud_cdn_fc_trigger" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cdn_fc_trigger&spm=docs.r.cdn_fc_trigger.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

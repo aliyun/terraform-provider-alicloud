@@ -78,6 +78,8 @@ resource "alicloud_cen_instance_grant" "child_account" {
   child_instance_id = alicloud_vpc.child_account.id
   cen_owner_id      = data.alicloud_account.your_account.id
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_instance_grant&spm=docs.r.cen_instance_grant.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

@@ -33,6 +33,8 @@ resource "alicloud_ecs_storage_capacity_unit" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ecs_storage_capacity_unit&spm=docs.r.ecs_storage_capacity_unit.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

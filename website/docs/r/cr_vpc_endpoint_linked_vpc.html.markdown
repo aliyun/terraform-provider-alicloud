@@ -68,6 +68,8 @@ resource "alicloud_cr_vpc_endpoint_linked_vpc" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_vpc_endpoint_linked_vpc&spm=docs.r.cr_vpc_endpoint_linked_vpc.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

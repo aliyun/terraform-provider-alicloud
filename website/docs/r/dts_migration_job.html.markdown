@@ -137,6 +137,8 @@ resource "alicloud_dts_migration_job" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_dts_migration_job&spm=docs.r.dts_migration_job.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments supported:

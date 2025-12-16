@@ -47,6 +47,8 @@ resource "alicloud_threat_detection_asset_selection_config" "default" {
 
 Terraform cannot destroy resource `alicloud_threat_detection_asset_selection_config`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_threat_detection_asset_selection_config&spm=docs.r.threat_detection_asset_selection_config.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

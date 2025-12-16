@@ -133,6 +133,8 @@ resource "alicloud_slb_rule" "rule" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_rule&spm=docs.r.slb_rule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -112,6 +112,8 @@ resource "alicloud_ots_search_index" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ots_search_index&spm=docs.r.ots_search_index.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

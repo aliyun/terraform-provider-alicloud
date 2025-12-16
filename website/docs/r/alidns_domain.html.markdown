@@ -35,6 +35,8 @@ resource "alicloud_alidns_domain" "default" {
     For     = "example",
   }
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_domain&spm=docs.r.alidns_domain.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

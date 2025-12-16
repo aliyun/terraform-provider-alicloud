@@ -85,6 +85,8 @@ resource "alicloud_route_entry" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_route_entry&spm=docs.r.route_entry.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use to the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 

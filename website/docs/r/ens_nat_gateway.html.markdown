@@ -62,6 +62,8 @@ resource "alicloud_ens_nat_gateway" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ens_nat_gateway&spm=docs.r.ens_nat_gateway.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

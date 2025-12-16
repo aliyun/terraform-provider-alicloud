@@ -53,6 +53,8 @@ resource "alicloud_ddoscoo_port" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ddoscoo_port&spm=docs.r.ddoscoo_port.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -53,6 +53,8 @@ resource "alicloud_fnf_schedule" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fnf_schedule&spm=docs.r.fnf_schedule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

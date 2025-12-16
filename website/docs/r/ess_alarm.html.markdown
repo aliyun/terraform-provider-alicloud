@@ -120,6 +120,8 @@ resource "alicloud_ess_alarm" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ess_alarm&spm=docs.r.ess_alarm.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud) 

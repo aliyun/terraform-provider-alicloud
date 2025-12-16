@@ -32,6 +32,8 @@ resource "alicloud_cms_namespace" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_namespace&spm=docs.r.cms_namespace.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

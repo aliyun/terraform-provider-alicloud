@@ -35,6 +35,8 @@ resource "alicloud_cms_alarm_contact" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cms_alarm_contact&spm=docs.r.cms_alarm_contact.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

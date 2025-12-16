@@ -69,6 +69,8 @@ resource "alicloud_actiontrail_history_delivery_job" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_actiontrail_history_delivery_job&spm=docs.r.actiontrail_history_delivery_job.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

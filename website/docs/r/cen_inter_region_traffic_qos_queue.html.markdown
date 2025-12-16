@@ -104,6 +104,8 @@ resource "alicloud_cen_inter_region_traffic_qos_queue" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_inter_region_traffic_qos_queue&spm=docs.r.cen_inter_region_traffic_qos_queue.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

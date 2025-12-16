@@ -60,6 +60,8 @@ The `alicloud_esa_transport_layer_application` resource allows you to manage  `s
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_transport_layer_application&spm=docs.r.esa_transport_layer_application.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

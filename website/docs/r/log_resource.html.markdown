@@ -59,6 +59,8 @@ resource "alicloud_log_resource" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_resource&spm=docs.r.log_resource.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -84,6 +84,8 @@ resource "alicloud_route_entry" "foo" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_route_entry&spm=docs.r.vpc_route_entry.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

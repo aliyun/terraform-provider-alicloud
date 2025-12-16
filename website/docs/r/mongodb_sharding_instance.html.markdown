@@ -78,6 +78,8 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mongodb_sharding_instance&spm=docs.r.mongodb_sharding_instance.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use to the existing [mongodb-sharding module](https://registry.terraform.io/modules/terraform-alicloud-modules/mongodb-sharding/alicloud)

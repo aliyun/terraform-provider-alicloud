@@ -29,6 +29,8 @@ Basic Usage
 resource "alicloud_pvtz_zone" "foo" {
   zone_name = "foo.example.com"
 }
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_zone&spm=docs.r.pvtz_zone.example&intl_lang=EN_US)
 ```
 ## Argument Reference
 

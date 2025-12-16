@@ -215,6 +215,8 @@ resource "alicloud_eflo_invocation" "default" {
 
 Terraform cannot destroy resource `alicloud_eflo_invocation`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eflo_invocation&spm=docs.r.eflo_invocation.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

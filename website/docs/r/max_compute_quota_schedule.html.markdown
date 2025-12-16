@@ -171,6 +171,8 @@ resource "alicloud_max_compute_quota_schedule" "default" {
 
 Terraform cannot destroy resource `alicloud_max_compute_quota_schedule`. Terraform will remove this resource from the state file, however resources may remain.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_quota_schedule&spm=docs.r.max_compute_quota_schedule.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

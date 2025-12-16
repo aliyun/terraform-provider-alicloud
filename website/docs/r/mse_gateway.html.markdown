@@ -57,6 +57,8 @@ resource "alicloud_mse_gateway" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mse_gateway&spm=docs.r.mse_gateway.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

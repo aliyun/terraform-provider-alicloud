@@ -36,6 +36,8 @@ resource "alicloud_mns_topic_subscription" "subscription" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_mns_topic_subscription&spm=docs.r.mns_topic_subscription.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

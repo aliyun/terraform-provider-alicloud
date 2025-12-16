@@ -63,6 +63,8 @@ will remove it from your state file and management, but will not destroy the `yu
 You can resume managing the subscription yundun_dbaudit_instance via the AlibabaCloud Console.
 
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_yundun_dbaudit_instance&spm=docs.r.yundun_dbaudit_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -46,6 +46,8 @@ resource "alicloud_cdn_domain_new" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cdn_domain_new&spm=docs.r.cdn_domain_new.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

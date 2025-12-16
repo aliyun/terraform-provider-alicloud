@@ -54,6 +54,8 @@ resource "alicloud_service_catalog_product_portfolio_association" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_service_catalog_product_portfolio_association&spm=docs.r.service_catalog_product_portfolio_association.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

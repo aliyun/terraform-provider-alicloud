@@ -67,6 +67,8 @@ resource "alicloud_oss_bucket_server_side_encryption" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_server_side_encryption&spm=docs.r.oss_bucket_server_side_encryption.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

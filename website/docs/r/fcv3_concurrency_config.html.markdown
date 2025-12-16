@@ -56,6 +56,8 @@ resource "alicloud_fcv3_concurrency_config" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fcv3_concurrency_config&spm=docs.r.fcv3_concurrency_config.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

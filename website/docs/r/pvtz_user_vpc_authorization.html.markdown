@@ -33,6 +33,8 @@ resource "alicloud_pvtz_user_vpc_authorization" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_pvtz_user_vpc_authorization&spm=docs.r.pvtz_user_vpc_authorization.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -130,6 +130,8 @@ resource "alicloud_rds_custom" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_custom&spm=docs.r.rds_custom.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

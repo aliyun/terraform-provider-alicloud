@@ -84,6 +84,8 @@ resource "alicloud_alikafka_instance" "default" {
 
 The alicloud_alikafka_instance resource allows you to manage your alikafka instance, but Terraform cannot destroy it if your instance type is pre paid(post paid type can destroy normally). Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the instance. You can resume managing the instance via the alikafka Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alikafka_instance&spm=docs.r.alikafka_instance.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

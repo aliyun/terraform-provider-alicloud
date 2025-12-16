@@ -130,6 +130,8 @@ resource "alicloud_eflo_cluster" "default" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eflo_cluster&spm=docs.r.eflo_cluster.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

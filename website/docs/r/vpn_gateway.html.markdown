@@ -79,6 +79,8 @@ The `alicloud_vpn_gateway` resource allows you to manage  `payment_type = "Subsc
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpn_gateway&spm=docs.r.vpn_gateway.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:

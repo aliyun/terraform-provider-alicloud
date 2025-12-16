@@ -42,6 +42,8 @@ resource "alicloud_log_machine_group" "example" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_log_machine_group&spm=docs.r.log_machine_group.example&intl_lang=EN_US)
+
 ## Module Support
 
 You can use the existing [sls-logtail module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls-logtail/alicloud) 

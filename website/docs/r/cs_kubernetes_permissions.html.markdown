@@ -120,6 +120,8 @@ resource "alicloud_cs_kubernetes_permissions" "attach" {
 }
 ```
 
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_permissions&spm=docs.r.cs_kubernetes_permissions.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported.
