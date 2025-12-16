@@ -57,13 +57,18 @@ The following arguments are supported:
   - `ECC_512`: The signature algorithm is Sha256WithECDSA.
   - `SM2_256`: The corresponding signature algorithm is SM3WithSM2.
 The encryption algorithm of the root CA certificate must be the same as the **certificate algorithm** of the private Root CA you purchased. Example: If the **certificate algorithm** selected when you purchase a private Root CA is `RSA`, the key algorithm of the root CA certificate must be **RSA\_1024**, **RSA\_2048**, or **RSA\_4096**.
+* `alias_name` - (Optional, Available since v1.266.0) A custom alias for the certificate, used to define a user-friendly name.
+
+-> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
 * `common_name` - (Required, ForceNew) The common name or abbreviation of the organization. Support the use of Chinese, English characters.
 * `country_code` - (Optional, ForceNew) The code of the country or region in which the organization is located, using a two-digit capital abbreviation. For example, `CN` represents China and `US` represents the United States.
 * `locality` - (Required, ForceNew) Name of the city where the organization is located. Support the use of Chinese, English characters.
 * `organization` - (Required, ForceNew) The name of the organization (corresponding to your enterprise or company) associated with the root CA certificate. Support the use of Chinese, English characters.
 * `organization_unit` - (Required, ForceNew) The name of the department or branch under the organization. Support the use of Chinese, English characters.
+* `resource_group_id` - (Optional, Available since v1.266.0) A resource property field representing the resource group.
 * `state` - (Required, ForceNew)  The name of the province, municipality, or autonomous region in which the organization is located. Support the use of Chinese, English characters. 
- Name of the province or state where the organization is located. Support the use of Chinese, English characters. 
+* `tags` - (Optional, Map, Available since v1.266.0) The tag of the resource.
 * `years` - (Required, ForceNew, Int) The validity period of the root CA certificate, in years.
 -> **NOTE:**  It is recommended to set to `5` to `10` years.
 
