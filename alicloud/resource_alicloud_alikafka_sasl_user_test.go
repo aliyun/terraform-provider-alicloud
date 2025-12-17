@@ -116,18 +116,18 @@ func testSweepAlikafkaSaslUser(region string) error {
 	return nil
 }
 
-func TestAccAliCloudAlikafkaSaslUser_basic0(t *testing.T) {
+func TestAccAliCloudAliKafkaSaslUser_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_sasl_user.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaSaslUserMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAliKafkaSaslUserMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAliKafkaSaslUser")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salikafkasasluserbasic%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaSaslUserBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAliKafkaSaslUserBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -163,24 +163,24 @@ func TestAccAliCloudAlikafkaSaslUser_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "kms_encrypted_password", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"kms_encrypted_password", "kms_encryption_context"},
 			},
 		},
 	})
 }
 
-func TestAccAliCloudAlikafkaSaslUser_basic0_twin(t *testing.T) {
+func TestAccAliCloudAliKafkaSaslUser_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_sasl_user.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaSaslUserMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAliKafkaSaslUserMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAliKafkaSaslUser")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salikafkasasluserbasic%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaSaslUserBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAliKafkaSaslUserBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -208,24 +208,24 @@ func TestAccAliCloudAlikafkaSaslUser_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "kms_encrypted_password", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"kms_encrypted_password", "kms_encryption_context"},
 			},
 		},
 	})
 }
 
-func TestAccAliCloudAlikafkaSaslUser_basic1(t *testing.T) {
+func TestAccAliCloudAliKafkaSaslUser_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_sasl_user.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaSaslUserMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAliKafkaSaslUserMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAliKafkaSaslUser")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salikafkasasluserbasic%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaSaslUserBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAliKafkaSaslUserBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -270,24 +270,24 @@ func TestAccAliCloudAlikafkaSaslUser_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "kms_encrypted_password", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"kms_encrypted_password", "kms_encryption_context"},
 			},
 		},
 	})
 }
 
-func TestAccAliCloudAlikafkaSaslUser_basic1_twin(t *testing.T) {
+func TestAccAliCloudAliKafkaSaslUser_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_sasl_user.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaSaslUserMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAliKafkaSaslUserMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAliKafkaSaslUser")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salikafkasasluserbasic%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaSaslUserBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAliKafkaSaslUserBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -301,6 +301,7 @@ func TestAccAliCloudAlikafkaSaslUser_basic1_twin(t *testing.T) {
 					"instance_id":            "${alicloud_alikafka_instance.default.id}",
 					"username":               name,
 					"type":                   "scram",
+					"mechanism":              "SCRAM-SHA-256",
 					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
 					"kms_encryption_context": map[string]string{
 						"name": name,
@@ -311,6 +312,7 @@ func TestAccAliCloudAlikafkaSaslUser_basic1_twin(t *testing.T) {
 						"instance_id": CHECKSET,
 						"username":    name,
 						"type":        "scram",
+						"mechanism":   "SCRAM-SHA-256",
 					}),
 				),
 			},
@@ -318,17 +320,22 @@ func TestAccAliCloudAlikafkaSaslUser_basic1_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "kms_encrypted_password", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"kms_encrypted_password", "kms_encryption_context"},
 			},
 		},
 	})
 }
 
-var AliCloudAlikafkaSaslUserMap0 = map[string]string{
+var AliCloudAliKafkaSaslUserMap0 = map[string]string{
 	"type": CHECKSET,
 }
 
-func AliCloudAlikafkaSaslUserBasicDependence0(name string) string {
+var AliCloudAliKafkaSaslUserMap1 = map[string]string{
+	"password":  CHECKSET,
+	"mechanism": CHECKSET,
+}
+
+func AliCloudAliKafkaSaslUserBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -367,6 +374,48 @@ func AliCloudAlikafkaSaslUserBasicDependence0(name string) string {
   		vswitch_id      = alicloud_vswitch.default.id
   		security_group  = alicloud_security_group.default.id
 	}
+`, name)
+}
+
+func AliCloudAliKafkaSaslUserBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "10.4.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "10.4.0.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		vpc_id = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_alikafka_instance" "default" {
+  		deploy_type     = "4"
+  		instance_type   = "alikafka_serverless"
+  		vswitch_id      = alicloud_vswitch.default.id
+  		spec_type       = "normal"
+  		service_version = "3.3.1"
+  		security_group  = alicloud_security_group.default.id
+  		config          = "{\"enable.acl\":\"true\"}"
+  		serverless_config {
+    		reserved_publish_capacity   = 60
+    		reserved_subscribe_capacity = 60
+  		}
+	}
 
 	resource "alicloud_kms_key" "default" {
   		description            = var.name
@@ -392,7 +441,7 @@ func AliCloudAlikafkaSaslUserBasicDependence0(name string) string {
 `, name)
 }
 
-func TestUnitAliCloudAlikafkaSaslUser(t *testing.T) {
+func TestUnitAliCloudAliKafkaSaslUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alikafka_sasl_user"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_alikafka_sasl_user"].Schema).Data(nil, nil)
@@ -462,7 +511,7 @@ func TestUnitAliCloudAlikafkaSaslUser(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudAlikafkaSaslUserCreate(dInit, rawClient)
+	err = resourceAliCloudAliKafkaSaslUserCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "ONS_SYSTEM_FLOW_CONTROL", "nil"}
@@ -484,7 +533,7 @@ func TestUnitAliCloudAlikafkaSaslUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudAlikafkaSaslUserCreate(dInit, rawClient)
+		err := resourceAliCloudAliKafkaSaslUserCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -510,7 +559,7 @@ func TestUnitAliCloudAlikafkaSaslUser(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudAlikafkaSaslUserUpdate(dExisted, rawClient)
+	err = resourceAliCloudAliKafkaSaslUserUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//CreateSaslUser
@@ -554,7 +603,7 @@ func TestUnitAliCloudAlikafkaSaslUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudAlikafkaSaslUserUpdate(dExisted, rawClient)
+		err := resourceAliCloudAliKafkaSaslUserUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -598,7 +647,7 @@ func TestUnitAliCloudAlikafkaSaslUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudAlikafkaSaslUserRead(dExisted, rawClient)
+		err := resourceAliCloudAliKafkaSaslUserRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -615,7 +664,7 @@ func TestUnitAliCloudAlikafkaSaslUser(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudAlikafkaSaslUserDelete(dExisted, rawClient)
+	err = resourceAliCloudAliKafkaSaslUserDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -645,7 +694,7 @@ func TestUnitAliCloudAlikafkaSaslUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudAlikafkaSaslUserDelete(dExisted, rawClient)
+		err := resourceAliCloudAliKafkaSaslUserDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

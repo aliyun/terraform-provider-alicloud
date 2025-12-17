@@ -2,21 +2,19 @@
 subcategory: "AliKafka"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alikafka_sasl_user"
-sidebar_current: "docs-alicloud-resource-alikafka-sasl-user"
 description: |-
-  Provides a Alicloud Alikafka Sasl User resource.
+  Provides a Alicloud AliKafka Sasl User resource.
 ---
 
 # alicloud_alikafka_sasl_user
 
-Provides an Alikafka Sasl User resource.
+Provides an AliKafka Sasl User resource.
+
+
+
+For information about AliKafka Sasl User and how to use it, see [What is Sasl User](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-createsasluser).
 
 -> **NOTE:** Available since v1.66.0.
-
--> **NOTE:**  Only the following regions support create alikafka Sasl User.
-[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
-
-For information about Alikafka Sasl User and how to use it, see [What is Sasl User](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-createsasluser).
 
 ## Example Usage
 
@@ -30,7 +28,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
@@ -88,10 +86,16 @@ resource "alicloud_alikafka_sasl_user" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `instance_id` - (Required, ForceNew) ID of the ALIKAFKA Instance that owns the groups.
+* `instance_id` - (Required, ForceNew) The instance ID.
+* `mechanism` - (Optional, ForceNew, Available since v1.266.0) The encryption method. Valid values:
+  - SCRAM-SHA-512. This is the default value.
+  - SCRAM-SHA-256
+-> **NOTE:**   This parameter is available only for serverless ApsaraMQ for Kafka instances.
 * `username` - (Required, ForceNew) The name of the SASL user. The length should between `1` to `64` characters. The characters can only contain `a`-`z`, `A`-`Z`, `0`-`9`, `_` and `-`.
-* `type` - (Optional, ForceNew, Available since v1.159.0) The authentication mechanism. Default value: `plain`. Valid values: `plain`, `scram`.
+* `type` - (Optional, ForceNew, Available since v1.159.0) The authentication mechanism. Default value: `plain`. Valid values:
+  - `plain`: A simple user name and password verification mechanism. Kafka optimizes the PLAIN mechanism and supports the dynamic addition of SASL users without restarting the instance.
+  - `scram`: A user name and password verification mechanism with higher security than PLAIN. Message Queue for Kafka uses SCRAM-SHA-256.
+  - `LDAP`: This user type is displayed only for Confluent instances.
 * `password` - (Optional, Sensitive) The password of the SASL user. It may consist of letters, digits, or underlines, with a length of 1 to 64 characters. You have to specify one of `password` and `kms_encrypted_password` fields.
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. You have to specify one of `password` and `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a user with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
@@ -99,12 +103,11 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-
 * `id` - The resource ID in terraform of Sasl User. It formats as `<instance_id>:<username>`.
 
 ## Import
 
-Alikafka Sasl User can be imported using the id, e.g.
+AliKafka Sasl User can be imported using the id, e.g.
 
 ```shell
 terraform import alicloud_alikafka_sasl_user.example <instance_id>:<username>
