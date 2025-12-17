@@ -1947,6 +1947,7 @@ func normalizeValue(value interface{}) (interface{}, error) {
 	switch val := value.(type) {
 	case string:
 		trimmed := strings.TrimSpace(val)
+		// handle JSON array
 		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
 			var arr []interface{}
 			if err := json.Unmarshal([]byte(val), &arr); err == nil {
@@ -1962,9 +1963,19 @@ func normalizeValue(value interface{}) (interface{}, error) {
 			}
 		}
 
-		if val == "true" {
+		// handle JSON object
+		if strings.HasPrefix(trimmed, "{") && strings.HasSuffix(trimmed, "}") {
+			var obj map[string]interface{}
+			if err := json.Unmarshal([]byte(val), &obj); err == nil {
+				normalizedObj := NormalizeMap(obj)
+				return normalizedObj, nil
+			}
+		}
+
+		switch val {
+		case "true":
 			return true, nil
-		} else if val == "false" {
+		case "false":
 			return false, nil
 		}
 
