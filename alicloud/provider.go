@@ -917,6 +917,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_mongodb_node":                                         resourceAliCloudMongodbNode(),
+			"alicloud_ehpc_cluster_v2":                                      resourceAliCloudEhpcClusterV2(),
 			"alicloud_open_api_explorer_api_mcp_server":                     resourceAliCloudOpenApiExplorerApiMcpServer(),
 			"alicloud_cr_storage_domain_routing_rule":                       resourceAliCloudCrStorageDomainRoutingRule(),
 			"alicloud_cr_scan_rule":                                         resourceAliCloudCrScanRule(),
