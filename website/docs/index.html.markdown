@@ -237,6 +237,21 @@ provider "alicloud" {
 }
 ```
 
+### Using an External Credentials Process
+
+To use an external process to source credentials, the process must be configured in a named profile, including the default profile. 
+The profile is configured in a shared configuration file. For information on how to configure external access credentials, please refer to the [Alibaba Cloud CLI documentation](https://www.alibabacloud.com/help/en/cli/configure-credentials).
+
+Usage:
+
+```terraform
+provider "alicloud" {
+  region                  = "cn-hangzhou"
+  shared_credentials_file = "~/.aliyun/config.json"
+  profile                 = "ExternalProfile" # Replace this with your own External type profile name.
+}
+```
+
 ### Custom User-Agent Information
 
 By default, the underlying AlibabaCloud client used by the Terraform AliCloud Provider creates requests with User-Agent headers including information about Terraform and AlibabaCloud Go SDK versions. 
