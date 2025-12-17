@@ -2053,8 +2053,10 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 
 	// TODO: supports all of profile modes after credentials supporting setting timeout
 	profileMode := fmt.Sprint(providerConfig["mode"])
+	// Support advanced profile modes: CloudSSO, ChainableRamRoleArn, External, OAuth
 	if (accessKey == "" || secretKey == "") && profileName != "" &&
-		(profileMode == "ChainableRamRoleArn" || profileMode == "CloudSSO") {
+		(profileMode == "ChainableRamRoleArn" || profileMode == "CloudSSO" ||
+			profileMode == "External" || profileMode == "OAuth") {
 		var profileFile string
 		if v, ok := d.GetOk("shared_credentials_file"); ok && v.(string) != "" {
 			profileFile = absPath(v.(string))
@@ -4082,7 +4084,9 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 	if ProfileKey == "region_id" {
 		return providerConfig["region_id"], nil
 	}
-	if mode == "ChainableRamRoleArn" || mode == "CloudSSO" {
+	// For advanced profile modes, credentials are obtained dynamically via CLIProfileCredentialsProvider
+	if mode == "ChainableRamRoleArn" || mode == "CloudSSO" ||
+		mode == "External" || mode == "OAuth" {
 		return nil, nil
 	}
 	switch ProfileKey {
