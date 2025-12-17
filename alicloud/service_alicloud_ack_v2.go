@@ -25,6 +25,7 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
+	var header map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
@@ -34,12 +35,13 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 	NodepoolId := parts[1]
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
+	header = make(map[string]*string)
 
 	action := fmt.Sprintf("/clusters/%s/nodepools/%s", ClusterId, NodepoolId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RoaGet("CS", "2015-12-15", action, query, nil, nil)
+		response, err = client.RoaGet("CS", "2015-12-15", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -62,15 +64,18 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 }
 
 func (s *AckServiceV2) AckNodepoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.AckNodepoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeAckNodepool)
+}
+
+func (s *AckServiceV2) AckNodepoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAckNodepool(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -98,7 +103,6 @@ func (s *AckServiceV2) DescribeAsyncAckNodepoolStateRefreshFunc(d *schema.Resour
 				return object, "", nil
 			}
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -130,17 +134,22 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
+	var header map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	action := fmt.Sprintf("/tasks/%s", res["task_id"])
+	header = make(map[string]*string)
+	task_id, err := jsonpath.Get("$.task_id", res)
+
+	action := fmt.Sprintf("/tasks/%s", task_id)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RoaGet("CS", "2015-12-15", action, query, nil, nil)
+		response, err = client.RoaGet("CS", "2015-12-15", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -155,6 +164,7 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 	if err != nil {
 		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	return response, nil
 }
 
