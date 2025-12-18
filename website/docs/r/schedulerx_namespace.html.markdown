@@ -43,7 +43,7 @@ resource "alicloud_schedulerx_namespace" "default" {
 The following arguments are supported:
 * `description` - (Optional) Namespace description.
 * `namespace_name` - (Required) Namespace name.
-* `namespace_uid` - (Optional, ForceNew, Computed) namespace uid
+* `namespace_uid` - (Optional, ForceNew, Computed, Available since v1.240.0) namespace uid
 
 ## Attributes Reference
 

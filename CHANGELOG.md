@@ -1,4 +1,41 @@
 ## 1.266.0 (Unreleased)
+
+- **New Resource:** `alicloud_open_api_explorer_api_mcp_server` [GH-9277]
+- **New Resource:** `alicloud_ehpc_cluster_v2` [GH-9297]
+- **New Resource:** `alicloud_mongodb_node` [GH-9303]
+- **New Resource:** `alicloud_gpdb_supabase_project` [GH-9306]
+- **New Resource:** `alicloud_polardb_global_security_ip_group` [GH-9312]
+- **New Resource:** `alicloud_cs_kubernetes_policy_instance` [GH-9313]
+
+ENHANCEMENTS:
+
+- provider: Supported new authentication OAuth and External. [GH-9287]
+- client: Update openapiexplorer endpoint. [GH-9278]
+- resource/alicloud_schedulerx_namespace: Support modify description and namespace_name. [GH-9276]
+- resource/alicloud_amqp_instance: Refactored the resource alicloud_amqp_instance; Added the field edition, provisioned_capacity. [GH-9281]
+- resource/alicloud_resource_manager_account: Added retry strategy for error code NotSupportedOperation.PreCheckingAccount; resource/alicloud_resource_manager_control_policy_attachment: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_folder: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_handshake: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_resource_directory: Added retry strategy for error code ConcurrentCallNotSupported. [GH-9290]
+- resource/alicloud_actiontrail_trail: Refactored the resource and improve the docs. [GH-9291]
+- resource/alicloud_fcv3_function: Added the field idle_timeout. [GH-9292]
+- resource/alicloud_vpc_network_acl_attachment: Add retry code OperationDenied.NetworkAclAttachmentInMiddleStatus. [GH-9293]
+- resource/alicloud_hologram_instance: Added the field enable_ssl. [GH-9294]
+- resource/alicloud_actiontrail_history_delivery_job: Added the field create_time. [GH-9295]
+- resource/alicloud_ssl_certificates_service_pca_certificate: Added the field resource_group_id, tags, alias_name. [GH-9300]
+- resource/alicloud_lindorm_instance_v2: Added the field white_ip_list. [GH-9302]
+- resource/alicloud_alikafka_sasl_user: Refactored the resource alicloud_alikafka_sasl_user; Added the field mechanism. [GH-9307]
+- resource/alicloud_esa_site: Added the field paused. [GH-9310]
+- resource/alicloud_network_acl: Add retry code OperationDenied.NetworkAclAttachmentInMiddleStatus. [GH-9314]
+- data-source/alicloud_privatelink_vpc_endpoint_services: Refactored the data source alicloud_privatelink_vpc_endpoint_services; Removed the default value of the field auto_accept_connection; Improved alicloud_privatelink_vpc_endpoint_services testcase and document. [GH-9283]
+- data-source/alicloud_kms_instances: add new attribute instance_name. [GH-9288]
+- docs: add explorer link. [GH-9301]
+- docs: fix explorer link. [GH-9304]
+
+BUG FIXES:
+
+- resource/alicloud_express_connect_virtual_border_router: Fixed the diff error caused by field bandwidth. [GH-9275]
+- resource/alicloud_eipanycast_anycast_eip_address: Fixed bug while deleting anycast_eip_address. [GH-9285]
+- resource/alicloud_amqp_queue: Fixed the read error. [GH-9286]
+- resource/alicloud_schedulerx_app_group: Fixed the read invalid error caused by enable_log. [GH-9315]
+
 ## 1.265.0 (December 05, 2024)
 
 - **New Resource:** `alicloud_cr_scan_rule` ([#9190](https://github.com/aliyun/terraform-provider-alicloud/issues/9190))

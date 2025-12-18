@@ -121,7 +121,7 @@ output "alicloud_kms_instance_example_id" {
 
 The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Instance IDs.
-* `instance_name` - (ForceNew, Optional) The name of the resource
+* `instance_name` - (Optional, ForceNew, Available since v1.266.0) The name of the resource.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
 
