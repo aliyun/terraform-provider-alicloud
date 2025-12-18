@@ -782,9 +782,9 @@ The following arguments are supported:
   - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
 
 * `serverless_config` - (Optional, Available since v1.200.0) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for Serverless instance. See [`serverless_config`](#serverless_config) below.
-* `role_arn` - (ForceNew, Optional, Available since v1.208.0) The Alibaba Cloud Resource Name (ARN) of the RAM role.
+* `role_arn` - (Optional, Available since v1.208.0) The Alibaba Cloud Resource Name (ARN) of the RAM role.
 
--> **NOTE:**  This parameter is not required when you create an instance that runs MySQL, PostgreSQL, or SQL Server. You need to only specify the RoleARN parameter to create an instance that has cloud disk encryption enabled by using the obtained key ID.
+-> **NOTE:**  This parameter is not required when creating an instance running MySQL, PostgreSQL, or SQL Server.It is required only when you need to create an instance with cloud disk encryption enabled using a specified key ID.
   You can configure RAM authorization to require a RAM user to enable cloud disk encryption when the RAM user is used to create an instance. If cloud disk encryption is disabled during the instance creation, the creation operation fails. To complete the configuration, you can attach the following policy to the RAM user: {"Version":"1","Statement":[{"Effect":"Deny","Action":"rds:CreateDBInstance","Resource":"*","Condition":{"StringEquals":{"rds:DiskEncryptionRequired":"false"}}}]}
 * `direction` - (Optional, Available since v1.209.1) The instance configuration type. Valid values: ["Up", "Down", "TempUpgrade", "Serverless"]
 * `bursting_enabled` - (Optional, Available since v1.242.0) Specifies whether to enable the I/O burst feature of general
