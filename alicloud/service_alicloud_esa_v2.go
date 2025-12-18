@@ -28,7 +28,7 @@ func (s *EsaServiceV2) DescribeEsaSite(id string) (object map[string]interface{}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetSite"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -102,7 +102,7 @@ func (s *EsaServiceV2) DescribeSiteGetManagedTransform(id string) (object map[st
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetManagedTransform"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -136,7 +136,7 @@ func (s *EsaServiceV2) DescribeSiteGetCacheTag(id string) (object map[string]int
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetCacheTag"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -204,7 +204,7 @@ func (s *EsaServiceV2) DescribeSiteGetCacheReserve(id string) (object map[string
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetCacheReserve"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -238,7 +238,7 @@ func (s *EsaServiceV2) DescribeSiteGetTieredCache(id string) (object map[string]
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetTieredCache"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -272,7 +272,7 @@ func (s *EsaServiceV2) DescribeSiteGetCrossBorderOptimization(id string) (object
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetCrossBorderOptimization"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -306,7 +306,7 @@ func (s *EsaServiceV2) DescribeSiteGetSiteNameExclusive(id string) (object map[s
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetSiteNameExclusive"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -340,7 +340,7 @@ func (s *EsaServiceV2) DescribeSiteGetCnameFlattening(id string) (object map[str
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetCnameFlattening"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -374,7 +374,7 @@ func (s *EsaServiceV2) DescribeSiteGetSeoBypass(id string) (object map[string]in
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetSeoBypass"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -408,7 +408,7 @@ func (s *EsaServiceV2) DescribeSiteGetDevelopmentMode(id string) (object map[str
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetDevelopmentMode"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -442,7 +442,7 @@ func (s *EsaServiceV2) DescribeSiteGetSitePause(id string) (object map[string]in
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = id
-	query["RegionId"] = client.RegionId
+
 	action := "GetSitePause"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -470,15 +470,18 @@ func (s *EsaServiceV2) DescribeSiteGetSitePause(id string) (object map[string]in
 }
 
 func (s *EsaServiceV2) EsaSiteStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaSiteStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaSite)
+}
+
+func (s *EsaServiceV2) EsaSiteStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaSite(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -503,10 +506,9 @@ func (s *EsaServiceV2) DescribeAsyncEsaSiteStateRefreshFunc(d *schema.ResourceDa
 		object, err := s.DescribeAsyncGetSite(d, res)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -1341,7 +1343,7 @@ func (s *EsaServiceV2) DescribeAsyncGetSite(d *schema.ResourceData, res map[stri
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["SiteId"] = d.Id()
-	query["RegionId"] = client.RegionId
+
 	action := "GetSite"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
