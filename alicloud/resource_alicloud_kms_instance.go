@@ -460,7 +460,7 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("renew_status", objectRaw["RenewStatus"])
 
 	objectRaw, err = kmsServiceV2.DescribeInstanceListTagResources(d.Id())
-	if err != nil && !NotFoundError(err) {
+	if err != nil && !NotFoundError(err) && !IsExpectedErrors(err, []string{"Rejected.Uninitialized"}) {
 		return WrapError(err)
 	}
 
