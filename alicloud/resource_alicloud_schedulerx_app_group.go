@@ -40,6 +40,7 @@ func resourceAliCloudSchedulerxAppGroup() *schema.Resource {
 			"app_version": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"delete_jobs": {
 				Type:     schema.TypeBool,
@@ -66,6 +67,7 @@ func resourceAliCloudSchedulerxAppGroup() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"monitor_config_json": {
 				Type:     schema.TypeString,
@@ -142,7 +144,7 @@ func resourceAliCloudSchedulerxAppGroupCreate(d *schema.ResourceData, meta inter
 		query["NamespaceName"] = StringPointer(v.(string))
 	}
 
-	if v, ok := d.GetOk("enable_log"); ok {
+	if v, ok := d.GetOkExists("enable_log"); ok {
 		query["EnableLog"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
@@ -195,30 +197,15 @@ func resourceAliCloudSchedulerxAppGroupRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	if objectRaw["AppName"] != nil {
-		d.Set("app_name", objectRaw["AppName"])
-	}
-	if objectRaw["AppVersion"] != nil {
-		d.Set("app_version", objectRaw["AppVersion"])
-	}
-	if objectRaw["Description"] != nil {
-		d.Set("description", objectRaw["Description"])
-	}
-	if objectRaw["MaxJobs"] != nil {
-		d.Set("max_jobs", objectRaw["MaxJobs"])
-	}
-	if objectRaw["MonitorConfigJson"] != nil {
-		d.Set("monitor_config_json", objectRaw["MonitorConfigJson"])
-	}
-	if objectRaw["MonitorContactsJson"] != nil {
-		d.Set("monitor_contacts_json", objectRaw["MonitorContactsJson"])
-	}
-	if objectRaw["GroupId"] != nil {
-		d.Set("group_id", objectRaw["GroupId"])
-	}
-	if objectRaw["Namespace"] != nil {
-		d.Set("namespace", objectRaw["Namespace"])
-	}
+	d.Set("app_name", objectRaw["AppName"])
+	d.Set("app_version", objectRaw["AppVersion"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("enable_log", objectRaw["EnableLog"])
+	d.Set("max_jobs", objectRaw["MaxJobs"])
+	d.Set("monitor_config_json", objectRaw["MonitorConfigJson"])
+	d.Set("monitor_contacts_json", objectRaw["MonitorContactsJson"])
+	d.Set("group_id", objectRaw["GroupId"])
+	d.Set("namespace", objectRaw["Namespace"])
 
 	return nil
 }
@@ -230,9 +217,9 @@ func resourceAliCloudSchedulerxAppGroupUpdate(d *schema.ResourceData, meta inter
 	var query map[string]interface{}
 	update := false
 
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateAppGroup"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Namespace"] = parts[0]
@@ -245,17 +232,30 @@ func resourceAliCloudSchedulerxAppGroupUpdate(d *schema.ResourceData, meta inter
 
 	if d.HasChange("monitor_config_json") {
 		update = true
-		request["MonitorConfigJson"] = d.Get("monitor_config_json")
+	}
+	if v, ok := d.GetOk("monitor_config_json"); ok {
+		request["MonitorConfigJson"] = v
+	}
+
+	if d.HasChange("enable_log") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("enable_log"); ok {
+		request["EnableLog"] = v
 	}
 
 	if d.HasChange("app_version") {
 		update = true
-		request["AppVersion"] = d.Get("app_version")
+	}
+	if v, ok := d.GetOk("app_version"); ok {
+		request["AppVersion"] = v
 	}
 
 	if d.HasChange("monitor_contacts_json") {
 		update = true
-		request["MonitorContactsJson"] = d.Get("monitor_contacts_json")
+	}
+	if v, ok := d.GetOk("monitor_contacts_json"); ok {
+		request["MonitorContactsJson"] = v
 	}
 
 	if v, ok := d.GetOkExists("max_concurrency"); ok {
@@ -303,7 +303,6 @@ func resourceAliCloudSchedulerxAppGroupDelete(d *schema.ResourceData, meta inter
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

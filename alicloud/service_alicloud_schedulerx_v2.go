@@ -180,6 +180,7 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -203,7 +204,7 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"groupid not exist"}) {
+		if IsExpectedErrors(err, []string{"groupid not exist", "-10001", "-10003"}) {
 			return object, WrapErrorf(NotFoundErr("AppGroup", id), NotFoundMsg, err)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -218,15 +219,18 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxAppGroup(id string) (object map[
 }
 
 func (s *SchedulerxServiceV2) SchedulerxAppGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.SchedulerxAppGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeSchedulerxAppGroup)
+}
+
+func (s *SchedulerxServiceV2) SchedulerxAppGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeSchedulerxAppGroup(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
