@@ -620,7 +620,6 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			"role_arn": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"direction": {
