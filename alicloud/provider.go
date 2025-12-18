@@ -916,6 +916,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_config_report_template":                               resourceAliCloudConfigReportTemplate(),
 			"alicloud_redis_backup":                                         resourceAliCloudRedisBackup(),
 			"alicloud_cs_kubernetes_policy_instance":                        resourceAliCloudCSKubernetesPolicyInstance(),
 			"alicloud_polardb_global_security_ip_group":                     resourceAliCloudPolardbGlobalSecurityIpGroup(),
