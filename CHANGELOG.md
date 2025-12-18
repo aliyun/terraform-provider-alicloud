@@ -1,42 +1,52 @@
-## 1.266.0 (Unreleased)
+## 1.267.0 (Unreleased)
+## 1.266.0 (December 19, 2025)
 
-- **New Resource:** `alicloud_open_api_explorer_api_mcp_server` [GH-9277]
-- **New Resource:** `alicloud_ehpc_cluster_v2` [GH-9297]
-- **New Resource:** `alicloud_mongodb_node` [GH-9303]
-- **New Resource:** `alicloud_gpdb_supabase_project` [GH-9306]
-- **New Resource:** `alicloud_polardb_global_security_ip_group` [GH-9312]
-- **New Resource:** `alicloud_cs_kubernetes_policy_instance` [GH-9313]
+- **New Resource:** `alicloud_open_api_explorer_api_mcp_server` ([#9277](https://github.com/aliyun/terraform-provider-alicloud/issues/9277))
+- **New Resource:** `alicloud_ehpc_cluster_v2` ([#9297](https://github.com/aliyun/terraform-provider-alicloud/issues/9297))
+- **New Resource:** `alicloud_mongodb_node` ([#9303](https://github.com/aliyun/terraform-provider-alicloud/issues/9303))
+- **New Resource:** `alicloud_gpdb_supabase_project` ([#9306](https://github.com/aliyun/terraform-provider-alicloud/issues/9306))
+- **New Resource:** `alicloud_polardb_global_security_ip_group` ([#9312](https://github.com/aliyun/terraform-provider-alicloud/issues/9312))
+- **New Resource:** `alicloud_cs_kubernetes_policy_instance` ([#9313](https://github.com/aliyun/terraform-provider-alicloud/issues/9313))
+- **New Resource:** `alicloud_esa_http_incoming_request_header_modification_rule` ([#9246](https://github.com/aliyun/terraform-provider-alicloud/issues/9246))
+- **New Resource:** `alicloud_esa_http_incoming_response_header_modification_rule` ([#9247](https://github.com/aliyun/terraform-provider-alicloud/issues/9247))
+- **New Resource:** `alicloud_redis_backup` ([#9317](https://github.com/aliyun/terraform-provider-alicloud/issues/9317))
+- **New Resource:** `alicloud_config_report_template` ([#9319](https://github.com/aliyun/terraform-provider-alicloud/issues/9319))
 
 ENHANCEMENTS:
 
-- provider: Supported new authentication OAuth and External. [GH-9287]
-- client: Update openapiexplorer endpoint. [GH-9278]
-- resource/alicloud_schedulerx_namespace: Support modify description and namespace_name. [GH-9276]
-- resource/alicloud_amqp_instance: Refactored the resource alicloud_amqp_instance; Added the field edition, provisioned_capacity. [GH-9281]
-- resource/alicloud_resource_manager_account: Added retry strategy for error code NotSupportedOperation.PreCheckingAccount; resource/alicloud_resource_manager_control_policy_attachment: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_folder: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_handshake: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_resource_directory: Added retry strategy for error code ConcurrentCallNotSupported. [GH-9290]
-- resource/alicloud_actiontrail_trail: Refactored the resource and improve the docs. [GH-9291]
-- resource/alicloud_fcv3_function: Added the field idle_timeout. [GH-9292]
-- resource/alicloud_vpc_network_acl_attachment: Add retry code OperationDenied.NetworkAclAttachmentInMiddleStatus. [GH-9293]
-- resource/alicloud_hologram_instance: Added the field enable_ssl. [GH-9294]
-- resource/alicloud_actiontrail_history_delivery_job: Added the field create_time. [GH-9295]
-- resource/alicloud_ssl_certificates_service_pca_certificate: Added the field resource_group_id, tags, alias_name. [GH-9300]
-- resource/alicloud_lindorm_instance_v2: Added the field white_ip_list. [GH-9302]
-- resource/alicloud_alikafka_sasl_user: Refactored the resource alicloud_alikafka_sasl_user; Added the field mechanism. [GH-9307]
-- resource/alicloud_esa_site: Added the field paused. [GH-9310]
-- resource/alicloud_network_acl: Add retry code OperationDenied.NetworkAclAttachmentInMiddleStatus. [GH-9314]
-- data-source/alicloud_privatelink_vpc_endpoint_services: Refactored the data source alicloud_privatelink_vpc_endpoint_services; Removed the default value of the field auto_accept_connection; Improved alicloud_privatelink_vpc_endpoint_services testcase and document. [GH-9283]
-- data-source/alicloud_kms_instances: add new attribute instance_name. [GH-9288]
-- docs: add explorer link. [GH-9301]
-- docs: fix explorer link. [GH-9304]
+- provider: Supported new authentication OAuth and External. ([#9287](https://github.com/aliyun/terraform-provider-alicloud/issues/9287))
+- client: Update openapiexplorer endpoint. ([#9278](https://github.com/aliyun/terraform-provider-alicloud/issues/9278))
+- resource/alicloud_cs_kubernetes_node_pool: Added the field auto_mode, instance_metadata_options etc; resource/alicloud_cs_managed_kubernetes: Mark deletion_protection as Computed. ([#9271](https://github.com/aliyun/terraform-provider-alicloud/issues/9271))
+- resource/alicloud_schedulerx_namespace: Support modify description and namespace_name. ([#9276](https://github.com/aliyun/terraform-provider-alicloud/issues/9276))
+- resource/alicloud_amqp_instance: Refactored the resource alicloud_amqp_instance; Added the field edition, provisioned_capacity. ([#9281](https://github.com/aliyun/terraform-provider-alicloud/issues/9281))
+- resource/alicloud_resource_manager_account: Added retry strategy for error code NotSupportedOperation.PreCheckingAccount; resource/alicloud_resource_manager_control_policy_attachment: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_folder: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_handshake: Added retry strategy for error code ConcurrentCallNotSupported; resource/alicloud_resource_manager_resource_directory: Added retry strategy for error code ConcurrentCallNotSupported. ([#9290](https://github.com/aliyun/terraform-provider-alicloud/issues/9290))
+- resource/alicloud_actiontrail_trail: Refactored the resource and improve the docs. ([#9291](https://github.com/aliyun/terraform-provider-alicloud/issues/9291))
+- resource/alicloud_fcv3_function: Added the field idle_timeout. ([#9292](https://github.com/aliyun/terraform-provider-alicloud/issues/9292))
+- resource/alicloud_vpc_network_acl_attachment: Add retry code OperationDenied.NetworkAclAttachmentInMiddleStatus. ([#9293](https://github.com/aliyun/terraform-provider-alicloud/issues/9293))
+- resource/alicloud_hologram_instance: Added the field enable_ssl. ([#9294](https://github.com/aliyun/terraform-provider-alicloud/issues/9294))
+- resource/alicloud_actiontrail_history_delivery_job: Added the field create_time. ([#9295](https://github.com/aliyun/terraform-provider-alicloud/issues/9295))
+- resource/alicloud_rds_account: add new filed check_policy. ([#9299](https://github.com/aliyun/terraform-provider-alicloud/issues/9299))
+- resource/alicloud_ssl_certificates_service_pca_certificate: Added the field resource_group_id, tags, alias_name. ([#9300](https://github.com/aliyun/terraform-provider-alicloud/issues/9300))
+- resource/alicloud_lindorm_instance_v2: Added the field white_ip_list. ([#9302](https://github.com/aliyun/terraform-provider-alicloud/issues/9302))
+- resource/alicloud_alikafka_sasl_user: Refactored the resource alicloud_alikafka_sasl_user; Added the field mechanism. ([#9307](https://github.com/aliyun/terraform-provider-alicloud/issues/9307))
+- resource/alicloud_esa_site: Added the field paused. ([#9310](https://github.com/aliyun/terraform-provider-alicloud/issues/9310))
+- resource/alicloud_network_acl: Add retry code OperationDenied.NetworkAclAttachmentInMiddleStatus. ([#9314](https://github.com/aliyun/terraform-provider-alicloud/issues/9314))
+- resource/alicloud_kms_instance: Fix bug while creating instance failed. ([#9320](https://github.com/aliyun/terraform-provider-alicloud/issues/9320))
+- resource/alicloud_db_instance: dbinstance role_arn delete forcenew. ([#9321](https://github.com/aliyun/terraform-provider-alicloud/issues/9321))
+- data-source/alicloud_privatelink_vpc_endpoint_services: Refactored the data source alicloud_privatelink_vpc_endpoint_services; Removed the default value of the field auto_accept_connection; Improved alicloud_privatelink_vpc_endpoint_services testcase and document. ([#9283](https://github.com/aliyun/terraform-provider-alicloud/issues/9283))
+- data-source/alicloud_kms_instances: add new attribute instance_name. ([#9288](https://github.com/aliyun/terraform-provider-alicloud/issues/9288))
+- docs: add explorer link. ([#9301](https://github.com/aliyun/terraform-provider-alicloud/issues/9301))
+- docs: fix explorer link. ([#9304](https://github.com/aliyun/terraform-provider-alicloud/issues/9304))
+- docs: Improves description for redis_backup. ([#9318](https://github.com/aliyun/terraform-provider-alicloud/issues/9318))
 
 BUG FIXES:
 
-- resource/alicloud_express_connect_virtual_border_router: Fixed the diff error caused by field bandwidth. [GH-9275]
-- resource/alicloud_eipanycast_anycast_eip_address: Fixed bug while deleting anycast_eip_address. [GH-9285]
-- resource/alicloud_amqp_queue: Fixed the read error. [GH-9286]
-- resource/alicloud_schedulerx_app_group: Fixed the read invalid error caused by enable_log. [GH-9315]
+- resource/alicloud_express_connect_virtual_border_router: Fixed the diff error caused by field bandwidth. ([#9275](https://github.com/aliyun/terraform-provider-alicloud/issues/9275))
+- resource/alicloud_eipanycast_anycast_eip_address: Fixed bug while deleting anycast_eip_address. ([#9285](https://github.com/aliyun/terraform-provider-alicloud/issues/9285))
+- resource/alicloud_amqp_queue: Fixed the read error. ([#9286](https://github.com/aliyun/terraform-provider-alicloud/issues/9286))
+- resource/alicloud_schedulerx_app_group: Fixed the read invalid error caused by enable_log. ([#9315](https://github.com/aliyun/terraform-provider-alicloud/issues/9315))
 
-## 1.265.0 (December 05, 2024)
+## 1.265.0 (December 05, 2025)
 
 - **New Resource:** `alicloud_cr_scan_rule` ([#9190](https://github.com/aliyun/terraform-provider-alicloud/issues/9190))
 - **New Resource:** `alicloud_cr_storage_domain_routing_rule` ([#9265](https://github.com/aliyun/terraform-provider-alicloud/issues/9265))

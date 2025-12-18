@@ -20,6 +20,12 @@ For information about AnalyticDB for PostgreSQL (GPDB) Supabase Project and how 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_gpdb_supabase_project&exampleId=58149365-9e76-fd96-a75e-3f54eed136f19e4b5ab8&activeTab=example&spm=docs.r.gpdb_supabase_project.0.581493659e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
@@ -46,6 +52,9 @@ resource "alicloud_gpdb_supabase_project" "default" {
   account_password       = "YourPassword123!"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_gpdb_supabase_project&spm=docs.r.gpdb_supabase_project.example&intl_lang=EN_US)
 
 ## Argument Reference
 

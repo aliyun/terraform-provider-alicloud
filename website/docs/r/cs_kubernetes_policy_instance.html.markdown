@@ -18,6 +18,12 @@ For information about Container Service for Kubernetes (ACK) Policy Instance and
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_policy_instance&exampleId=ddc22fa8-f24d-5735-a4e8-4238ce9f99e3efa68476&activeTab=example&spm=docs.r.cs_kubernetes_policy_instance.0.ddc22fa8f2&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "vpc_cidr" {
   default = "10.0.0.0/8"
@@ -109,6 +115,9 @@ resource "alicloud_cs_kubernetes_policy_instance" "default" {
   }
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cs_kubernetes_policy_instance&spm=docs.r.cs_kubernetes_policy_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
