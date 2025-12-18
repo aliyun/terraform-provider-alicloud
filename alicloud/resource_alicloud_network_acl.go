@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -46,7 +45,7 @@ func resourceAliCloudVpcNetworkAcl() *schema.Resource {
 						"policy": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"accept", "drop"}, true),
+							ValidateFunc: StringInSlice([]string{"accept", "drop"}, false),
 						},
 						"destination_cidr_ip": {
 							Type:     schema.TypeString,
@@ -74,7 +73,7 @@ func resourceAliCloudVpcNetworkAcl() *schema.Resource {
 						"protocol": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"icmp", "gre", "tcp", "udp", "all", "icmpv6"}, true),
+							ValidateFunc: StringInSlice([]string{"icmp", "gre", "tcp", "udp", "all", "icmpv6"}, false),
 						},
 						"network_acl_entry_name": {
 							Type:         schema.TypeString,
@@ -93,7 +92,7 @@ func resourceAliCloudVpcNetworkAcl() *schema.Resource {
 						"policy": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"accept", "drop"}, true),
+							ValidateFunc: StringInSlice([]string{"accept", "drop"}, false),
 						},
 						"description": {
 							Type:         schema.TypeString,
@@ -134,8 +133,8 @@ func resourceAliCloudVpcNetworkAcl() *schema.Resource {
 			"network_acl_name": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				Computed:      true,
 				ConflictsWith: []string{"name"},
+				Computed:      true,
 				ValidateFunc:  StringLenBetween(2, 128),
 			},
 			"resources": {
@@ -218,18 +217,16 @@ func resourceAliCloudVpcNetworkAclCreate(d *schema.ResourceData, meta interface{
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"LastTokenProcessing", "OperationConflict", "SystemBusy", "ServiceUnavailable", "IncorrectStatus.Vpc", "IncorrectStatus"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_network_acl", action, AlibabaCloudSdkGoERROR)
@@ -339,11 +336,12 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 	var query map[string]interface{}
 	update := false
 	d.Partial(true)
-	action := "ModifyNetworkAclAttributes"
+
 	var err error
+	action := "ModifyNetworkAclAttributes"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["NetworkAclId"] = d.Id()
+	request["NetworkAclId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("name") {
@@ -362,23 +360,19 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-			request["ClientToken"] = buildClientToken(action)
-
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"LastTokenProcessing", "OperationConflict", "SystemBusy", "ServiceUnavailable", "IncorrectStatus.Vpc", "IncorrectStatus"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -387,14 +381,12 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("network_acl_name")
-		d.SetPartial("description")
 	}
 	update = false
 	action = "UpdateNetworkAclEntries"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["NetworkAclId"] = d.Id()
+	request["NetworkAclId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	if d.HasChange("ingress_acl_entries") {
@@ -442,23 +434,19 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-			request["ClientToken"] = buildClientToken(action)
-
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"LastTokenProcessing", "OperationConflict", "SystemBusy", "NetworkAclExistBinding", "ServiceUnavailable", "IncorrectStatus.Vpc", "IncorrectStatus"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -472,7 +460,7 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 	action = "CopyNetworkAclEntries"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["NetworkAclId"] = d.Id()
+	request["NetworkAclId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	if v, ok := d.GetOk("source_network_acl_id"); ok && d.HasChange("source_network_acl_id") {
@@ -480,23 +468,19 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 		request["SourceNetworkAclId"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-			request["ClientToken"] = buildClientToken(action)
-
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"LastTokenProcessing", "OperationConflict", "SystemBusy", "ServiceUnavailable", "IncorrectStatus.Vpc", "IncorrectStatus"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -505,7 +489,6 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("source_network_acl_id")
 	}
 
 	if d.HasChange("resources") {
@@ -519,37 +502,33 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 			action := "UnassociateNetworkAcl"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
-			query["NetworkAclId"] = d.Id()
+			request["NetworkAclId"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
 			localData := removed.List()
-			resourceMaps := make([]map[string]interface{}, 0)
+			resourceMapsArray := make([]interface{}, 0)
 			for _, dataLoop := range localData {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["ResourceType"] = dataLoopTmp["resource_type"]
 				dataLoopMap["ResourceId"] = dataLoopTmp["resource_id"]
-				resourceMaps = append(resourceMaps, dataLoopMap)
+				resourceMapsArray = append(resourceMapsArray, dataLoopMap)
 			}
-			request["Resource"] = resourceMaps
+			request["Resource"] = resourceMapsArray
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-				request["ClientToken"] = buildClientToken(action)
-
 				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy", "ResourceStatus.Error", "NetworkAclExistBinding"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"LastTokenProcessing", "OperationConflict", "SystemBusy", "ResourceStatus.Error", "ServiceUnavailable", "OperationDenied.NetworkAclAttachmentInMiddleStatus", "IncorrectStatus.Vpc", "IncorrectStatus"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -565,37 +544,33 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 			action := "AssociateNetworkAcl"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
-			query["NetworkAclId"] = d.Id()
+			request["NetworkAclId"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
 			localData := added.List()
-			resourceMaps := make([]map[string]interface{}, 0)
+			resourceMapsArray := make([]interface{}, 0)
 			for _, dataLoop := range localData {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["ResourceType"] = dataLoopTmp["resource_type"]
 				dataLoopMap["ResourceId"] = dataLoopTmp["resource_id"]
-				resourceMaps = append(resourceMaps, dataLoopMap)
+				resourceMapsArray = append(resourceMapsArray, dataLoopMap)
 			}
-			request["Resource"] = resourceMaps
+			request["Resource"] = resourceMapsArray
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-				request["ClientToken"] = buildClientToken(action)
-
 				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy", "ResourceStatus.Error", "NetworkAclExistBinding"}) || NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"LastTokenProcessing", "OperationConflict", "SystemBusy", "ServiceUnavailable", "OperationDenied.NetworkAclAttachmentInMiddleStatus", "IncorrectStatus.Vpc", "IncorrectStatus", "ResourceStatus.Error"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -613,7 +588,6 @@ func resourceAliCloudVpcNetworkAclUpdate(d *schema.ResourceData, meta interface{
 		if err := vpcServiceV2.SetResourceTags(d, "NETWORKACL"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	d.Partial(false)
 	return resourceAliCloudVpcNetworkAclRead(d, meta)
@@ -632,30 +606,28 @@ func resourceAliCloudVpcNetworkAclDelete(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	query := make(map[string]interface{})
 	request = make(map[string]interface{})
-	query["NetworkAclId"] = d.Id()
+	request["NetworkAclId"] = d.Id()
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
-			if IsExpectedErrors(err, []string{"NetworkAclExistBinding", "IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"LastTokenProcessing", "OperationConflict", "SystemBusy", "ServiceUnavailable", "OperationDenied.NetworkAclAttachmentInMiddleStatus", "IncorrectStatus.Vpc", "IncorrectStatus"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -664,5 +636,6 @@ func resourceAliCloudVpcNetworkAclDelete(d *schema.ResourceData, meta interface{
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
