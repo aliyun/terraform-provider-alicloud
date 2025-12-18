@@ -75,7 +75,7 @@ resource "alicloud_redis_backup" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `backup_retention_period` - (Optional, Int, Available since v1.266.0) 本次手动备份的过期时长，取值范围为 7~730 天。当您传入-1 时，表示本次手动备份数据不过期（实例生命周期内）；当您不传入任何值（默认情况），表示与当前自动备份策略一致。
+* `backup_retention_period` - (Optional, Int, Available since v1.266.0) The expiration period for this manual backup ranges from 7 to 730 days. When you pass in -1, it indicates that this manual backup will not expire (during the instance's lifecycle). If you do not pass any value (default case), it means the expiration policy will be consistent with the current automatic backup strategy.
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
