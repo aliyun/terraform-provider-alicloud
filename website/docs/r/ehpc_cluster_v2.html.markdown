@@ -1,5 +1,5 @@
 ---
-subcategory: "Elastic High Performance Computing(ehpc)"
+subcategory: "Elastic High Performance Computing (Ehpc)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ehpc_cluster_v2"
 description: |-
