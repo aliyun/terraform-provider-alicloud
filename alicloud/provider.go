@@ -919,6 +919,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_report_template":                               resourceAliCloudConfigReportTemplate(),
 			"alicloud_redis_backup":                                         resourceAliCloudRedisBackup(),
 			"alicloud_cs_kubernetes_policy_instance":                        resourceAliCloudCSKubernetesPolicyInstance(),
+			"alicloud_ehpc_queue":                                           resourceAliCloudEhpcQueue(),
 			"alicloud_polardb_global_security_ip_group":                     resourceAliCloudPolardbGlobalSecurityIpGroup(),
 			"alicloud_gpdb_supabase_project":                                resourceAliCloudGpdbSupabaseProject(),
 			"alicloud_esa_http_incoming_request_header_modification_rule":   resourceAliCloudEsaHttpIncomingRequestHeaderModificationRule(),
