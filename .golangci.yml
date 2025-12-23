@@ -1,12 +1,31 @@
+version: "2"
+linters:
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+        path: scripts/
+    paths:
+      - examples
+      - scripts
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-dirs:
-    - examples
-    - scripts
-  exclude-rules:
-    - path: scripts/
-      linters:
-        - errcheck
-  new: true
   new-from-rev: HEAD
+  new: true
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 run:
   timeout: 10m
