@@ -2,7 +2,7 @@ name: Golangci-Lint
 on:
   pull_request:
     paths:
-      - .github/workflows/acctest-terraform-lint.yml.yml
+      - .github/workflows/acctest-terraform-lint.yml
       - alicloud/*.go
 jobs:
 #  golangci-lint-review-log:
@@ -29,9 +29,9 @@ jobs:
       - name: errcheck
         uses: reviewdog/action-golangci-lint@v2
         with:
-          golangci_lint_flags: '--tests=false --timeout=25m --disable-all -E errcheck'
+          golangci_lint_flags: '--tests=false --timeout=25m --default=none -E errcheck'
           tool_name: errcheck
           level: info
-          reviewdog_version: 'v0.20.2'
-          golangci_lint_version: 'v1.59.1'
+          reviewdog_version: 'v0.21.0'
+          golangci_lint_version: 'v2.7.2'
 
