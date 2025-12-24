@@ -85,7 +85,7 @@ func testAccPreCheckForCleanUpInstances(t *testing.T, instanceRegion, productCod
 		select {
 		case <-ticker.C:
 			if time.Now().After(deadline) {
-				fmt.Println("Deadline reached, stopping waiting.")
+				log.Println("Deadline reached, stopping waiting.")
 				return
 			}
 			instances, err := bssOpenApiService.QueryAvailableInstanceList(instanceRegion, productCode, productType, productCodeIntl, productTypeIntl)
@@ -199,16 +199,26 @@ func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivi
 
 	if (find && !supported) || (!find && supported) {
 		if supported {
+			// Try to use backup region first
 			if backupRegionFind {
 				t.Logf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, backupRegion)
 				os.Setenv("ALICLOUD_REGION", backupRegion)
 				defaultRegionToTest = backupRegion
 				return
 			}
+			// Try to use Hangzhou region
 			if hangzhouRegionFind {
 				t.Logf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, connectivity.Hangzhou)
 				os.Setenv("ALICLOUD_REGION", string(connectivity.Hangzhou))
 				defaultRegionToTest = string(connectivity.Hangzhou)
+				return
+			}
+			// If neither backup region nor Hangzhou region is available, use the first supported region
+			if len(regions) > 0 {
+				targetRegion := string(regions[0])
+				t.Logf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, targetRegion)
+				os.Setenv("ALICLOUD_REGION", targetRegion)
+				defaultRegionToTest = targetRegion
 				return
 			}
 			t.Skipf("Skipping unsupported region %s. Supported regions: %s.", region, regions)
@@ -497,14 +507,14 @@ func sendMessage(msg string) {
 	// 将消息内容转换为 JSON 格式
 	jsonData, err := json.Marshal(message)
 	if err != nil {
-		fmt.Println("[ERROR] send dingTalk message failed. Error:", err)
+		log.Println("[ERROR] send dingTalk message failed. Error:", err)
 		return
 	}
 
 	// 发送 POST 请求
 	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		fmt.Println("[ERROR] send dingTalk message failed. Error:", err)
+		log.Println("[ERROR] send dingTalk message failed. Error:", err)
 		return
 	}
 	defer resp.Body.Close()
