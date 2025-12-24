@@ -35,9 +35,15 @@ func sharedClientForRegionWithBackendRegions(region string, supported bool, regi
 
 	if (find && !supported) || (!find && supported) {
 		if supported {
+			// Try to use backup region first
 			if backupRegionFind {
 				log.Printf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, backupRegion)
 				region = backupRegion
+			} else if len(regions) > 0 {
+				// If backup region is not available, use the first supported region
+				targetRegion := string(regions[0])
+				log.Printf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, targetRegion)
+				region = targetRegion
 			}
 		} else {
 			if !backupRegionFind {
