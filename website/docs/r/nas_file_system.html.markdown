@@ -20,12 +20,6 @@ For information about File Storage (NAS) File System and how to use it, see [Wha
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=e4c2e56e-d616-5a3d-e56d-56aa3caacf29cd5c0a18&activeTab=example&spm=docs.r.nas_file_system.0.e4c2e56ed6&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -55,8 +49,6 @@ resource "alicloud_nas_file_system" "default" {
   zone_id = data.alicloud_nas_zones.default.zones.0.zone_id
 }
 ```
-
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_file_system&spm=docs.r.nas_file_system.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -91,7 +83,13 @@ Value:
   - extreme: extreme NAS
   - cpfs: file storage CPFS
 * `keytab` - (Optional, Available since v1.248.0) String of keytab file content encrypted by base64
+
+-> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
 * `keytab_md5` - (Optional, Available since v1.248.0) String of the keytab file content encrypted by MD5
+
+-> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
 * `kms_key_id` - (Optional, ForceNew, Computed, Available since v1.140.0) The ID of the KMS key.
 This parameter is required only when EncryptType = 2.
 * `nfs_acl` - (Optional, Computed, List, Available since v1.236.0) NFS ACL See [`nfs_acl`](#nfs_acl) below.
@@ -101,11 +99,16 @@ This parameter is required only when EncryptType = 2.
   - When FileSystemType = extreme, the value is NFS.
   - When FileSystemType = cpfs, the value is cpfs.
 * `recycle_bin` - (Optional, Computed, List) Recycle Bin See [`recycle_bin`](#recycle_bin) below.
+* `redundancy_type` - (Optional, ForceNew, Computed, Available since v1.267.0) Storage redundancy type. Only effective for General CPFS.Options: Locally Redundant Storage (LRS), Zone-Redundant Storage (ZRS) Default value: LRS
+* `redundancy_vswitch_ids` - (Optional, ForceNew, List, Available since v1.267.0) Redundancy vSwitch ID list. Only set when the file system's storage redundancy type is Zone-Redundant Storage (ZRS), and must set vSwitch IDs from three different availability zones under the same VPC.
 * `resource_group_id` - (Optional, Computed, Available since v1.236.0) The ID of the resource group.
 * `smb_acl` - (Optional, Computed, List, Available since v1.248.0) SMB ACL See [`smb_acl`](#smb_acl) below.
 * `snapshot_id` - (Optional, Available since v1.236.0) Only extreme NAS is supported.
 
 -> **NOTE:** A file system is created from a snapshot. The version of the created file system is the same as that of the snapshot source file system. For example, if the source file system version of the snapshot is 1 and you need to create A file system of version 2, you can first create A file system A from the snapshot, then create A file system B that meets the configuration of version 2, copy the data in file system A to file system B, and migrate the business to file system B after the copy is completed.
+
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `storage_type` - (Required, ForceNew) The storage type.
   - When FileSystemType = standard, the values are Performance, Capacity, and Premium.

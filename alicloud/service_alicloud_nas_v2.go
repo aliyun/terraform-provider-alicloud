@@ -359,15 +359,18 @@ func (s *NasServiceV2) DescribeFileSystemDescribeNfsAcl(id string) (object map[s
 }
 
 func (s *NasServiceV2) NasFileSystemStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.NasFileSystemStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasFileSystem)
+}
+
+func (s *NasServiceV2) NasFileSystemStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeNasFileSystem(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -395,7 +398,6 @@ func (s *NasServiceV2) DescribeAsyncNasFileSystemStateRefreshFunc(d *schema.Reso
 				return object, "", nil
 			}
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
