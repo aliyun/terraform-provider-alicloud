@@ -722,6 +722,31 @@ func resourceAliCloudInstance() *schema.Resource {
 					},
 				},
 			},
+			"cpu_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"core_count": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"threads_per_core": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"topology_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1170,6 +1195,18 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
+	if coreCount, ok := d.GetOkExists("cpu_options.0.core_count"); ok {
+		request["CpuOptions.Core"] = coreCount
+	}
+
+	if threadsPerCore, ok := d.GetOkExists("cpu_options.0.threads_per_core"); ok {
+		request["CpuOptions.ThreadsPerCore"] = threadsPerCore
+	}
+
+	if topologyType, ok := d.GetOk("cpu_options.0.topology_type"); ok {
+		request["CpuOptions.TopologyType"] = topologyType
+	}
+
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
@@ -1570,6 +1607,33 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("private_pool_options_match_criteria", instanceAttachmentAttribute["PrivatePoolOptionsMatchCriteria"])
 	d.Set("private_pool_options_id", instanceAttachmentAttribute["PrivatePoolOptionsId"])
 
+	ecsInstanceAttribute, err := ecsService.DescribeEcsInstance(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if cpuOptions, ok := ecsInstanceAttribute["CpuOptions"]; ok {
+		cpuOptionsArg := cpuOptions.(map[string]interface{})
+		cpuOptionsMaps := make([]map[string]interface{}, 0)
+		cpuOptionsMap := map[string]interface{}{}
+
+		if coreCount, ok := cpuOptionsArg["CoreCount"]; ok {
+			cpuOptionsMap["core_count"] = coreCount
+		}
+
+		if threadsPerCore, ok := cpuOptionsArg["ThreadsPerCore"]; ok {
+			cpuOptionsMap["threads_per_core"] = threadsPerCore
+		}
+
+		if topologyType, ok := cpuOptionsArg["TopologyType"]; ok {
+			cpuOptionsMap["topology_type"] = topologyType
+		}
+
+		cpuOptionsMaps = append(cpuOptionsMaps, cpuOptionsMap)
+
+		d.Set("cpu_options", cpuOptionsMaps)
+	}
+
 	return nil
 }
 
@@ -1803,6 +1867,11 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
+	cpuOptionsUpdate, err := modifyInstanceAttributeNeedStopped(d, meta, run)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	if err := modifyInstanceChargeType(d, meta, false); err != nil {
 		return WrapError(err)
 	}
@@ -1812,7 +1881,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	if d.IsNewResource() && targetExist && target.(string) == string(Running) {
 		statusUpdate = false
 	}
-	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
+	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || cpuOptionsUpdate || statusUpdate {
 		run = true
 		instance, errDesc := ecsService.DescribeInstance(d.Id())
 		if errDesc != nil {
@@ -1858,6 +1927,10 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if _, err := modifyInstanceType(d, meta, run); err != nil {
+			return WrapError(err)
+		}
+
+		if _, err := modifyInstanceAttributeNeedStopped(d, meta, run); err != nil {
 			return WrapError(err)
 		}
 
@@ -2416,7 +2489,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 		request.IncludeDataDisks = requests.NewBoolean(d.Get("include_data_disks").(bool))
 		request.AutoPay = requests.NewBoolean(true)
 		request.DryRun = requests.NewBoolean(d.Get("dry_run").(bool))
-		request.ClientToken = fmt.Sprintf("terraform-modify-instance-charge-type-%s", d.Id())
+		request.ClientToken = buildClientToken(request.GetActionName())
 		if chargeType == string(PrePaid) {
 			if v, ok := d.GetOk("period"); ok {
 				request.Period = requests.NewInteger(v.(int))
@@ -2847,6 +2920,70 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 		d.SetPartial("instance_type")
 	}
 	return update, nil
+}
+
+func modifyInstanceAttributeNeedStopped(d *schema.ResourceData, meta interface{}, run bool) (bool, error) {
+	if d.IsNewResource() {
+		d.Partial(false)
+		return false, nil
+	}
+
+	update := false
+	reboot := false
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "ModifyInstanceAttribute"
+	request := make(map[string]interface{})
+	var err error
+
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	request["InstanceId"] = d.Id()
+
+	if d.HasChange("cpu_options") {
+		d.SetPartial("cpu_options")
+
+		if coreCount, ok := d.GetOkExists("cpu_options.0.core_count"); ok {
+			request["CpuOptions.Core"] = coreCount
+		}
+
+		if threadsPerCore, ok := d.GetOkExists("cpu_options.0.threads_per_core"); ok {
+			request["CpuOptions.ThreadsPerCore"] = threadsPerCore
+		}
+
+		if topologyType, ok := d.GetOk("cpu_options.0.topology_type"); ok {
+			request["CpuOptions.TopologyType"] = topologyType
+		}
+
+		update = true
+	}
+
+	if !run {
+		return update, nil
+	}
+
+	if update {
+		wait := incrementalWait(1*time.Minute, 1*time.Minute)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidChargeType.ValueNotSupported"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return reboot, WrapErrorf(err, DefaultErrorMsg, "alicloud_instance", action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return reboot, nil
 }
 
 func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
