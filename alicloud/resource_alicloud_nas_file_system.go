@@ -53,7 +53,7 @@ func resourceAliCloudNasFileSystem() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"standard", "extreme", "cpfs"}, false),
+				ValidateFunc: StringInSlice([]string{"standard", "extreme", "cpfs", "cpfsse"}, false),
 			},
 			"keytab": {
 				Type:     schema.TypeString,
@@ -144,6 +144,19 @@ func resourceAliCloudNasFileSystem() *schema.Resource {
 						},
 					},
 				},
+			},
+			"redundancy_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"LRS", "ZRS"}, false),
+			},
+			"redundancy_vswitch_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"region_id": {
 				Type:     schema.TypeString,
@@ -238,9 +251,17 @@ func resourceAliCloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 
 	request["ClientToken"] = buildClientToken(action)
 
+	if v, ok := d.GetOk("redundancy_type"); ok {
+		request["RedundancyType"] = v
+	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -260,6 +281,12 @@ func resourceAliCloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
 	}
+	if v, ok := d.GetOk("redundancy_vswitch_ids"); ok {
+		redundancyVSwitchIdsMapsArray := convertToInterfaceArray(v)
+
+		request["RedundancyVSwitchIds"] = redundancyVSwitchIdsMapsArray
+	}
+
 	if v, ok := d.GetOkExists("encrypt_type"); ok {
 		request["EncryptType"] = v
 	}
@@ -321,6 +348,7 @@ func resourceAliCloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 	d.Set("file_system_type", objectRaw["FileSystemType"])
 	d.Set("kms_key_id", objectRaw["KMSKeyId"])
 	d.Set("protocol_type", objectRaw["ProtocolType"])
+	d.Set("redundancy_type", objectRaw["RedundancyType"])
 	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("status", objectRaw["Status"])
@@ -343,6 +371,8 @@ func resourceAliCloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 	if err := d.Set("options", optionsMaps); err != nil {
 		return err
 	}
+	redundancyVSwitchIdRaw, _ := jsonpath.Get("$.RedundancyVSwitchIds.RedundancyVSwitchId", objectRaw)
+	d.Set("redundancy_vswitch_ids", redundancyVSwitchIdRaw)
 
 	checkValue00 := d.Get("file_system_type")
 	checkValue01 := d.Get("protocol_type")
@@ -429,25 +459,29 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	update := false
 	d.Partial(true)
 
-	if d.HasChange("recycle_bin.0.status") {
-		var err error
+	nasServiceV2 := NasServiceV2{client}
+	objectRaw, _ := nasServiceV2.DescribeNasFileSystem(d.Id())
 
+	if d.HasChange("recycle_bin.0.status") {
+		objectRaw1, _ := nasServiceV2.DescribeFileSystemGetRecycleBinAttribute(d.Id())
+		var err error
 		target := d.Get("recycle_bin.0.status").(string)
-		enableEnableRecycleBin := false
-		checkValue01 := d.Get("file_system_type")
-		if checkValue01 == "standard" {
-			enableEnableRecycleBin = true
+		enableEnableRecycleBinEnable := false
+		checkValue00 := objectRaw1["Status"]
+		checkValue01 := objectRaw["FileSystemType"]
+		if (checkValue00 == "Disable") && (checkValue01 == "standard") {
+			enableEnableRecycleBinEnable = true
 		}
-		if enableEnableRecycleBin && target == "Enable" {
+		if enableEnableRecycleBinEnable && target == "Enable" {
 			action := "EnableRecycleBin"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["FileSystemId"] = d.Id()
 
 			if v, ok := d.GetOkExists("recycle_bin"); ok {
-				jsonPathResult, err := jsonpath.Get("$[0].reserved_days", v)
-				if err == nil && jsonPathResult != "" {
-					request["ReservedDays"] = jsonPathResult
+				recycleBinReservedDaysJsonPath, err := jsonpath.Get("$[0].reserved_days", v)
+				if err == nil && recycleBinReservedDaysJsonPath != "" {
+					request["ReservedDays"] = recycleBinReservedDaysJsonPath
 				}
 			}
 			wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -468,12 +502,13 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 			}
 
 		}
-		enableDisableAndCleanRecycleBin := false
-		checkValue01 = d.Get("file_system_type")
-		if checkValue01 == "standard" {
-			enableDisableAndCleanRecycleBin = true
+		enableDisableAndCleanRecycleBinDisable := false
+
+		checkValue01 = objectRaw["FileSystemType"]
+		if (checkValue00 == "Enable") && (checkValue01 == "standard") {
+			enableDisableAndCleanRecycleBinDisable = true
 		}
-		if enableDisableAndCleanRecycleBin && target == "Disable" {
+		if enableDisableAndCleanRecycleBinDisable && target == "Disable" {
 			action := "DisableAndCleanRecycleBin"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
@@ -498,17 +533,19 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 
 		}
 	}
-	if d.HasChange("nfs_acl.0.enabled") {
-		var err error
 
+	if d.HasChange("nfs_acl.0.enabled") {
+		objectRaw2, _ := nasServiceV2.DescribeFileSystemDescribeNfsAcl(d.Id())
+		var err error
 		target := d.Get("nfs_acl.0.enabled").(bool)
-		enableEnableNfsAcl := false
-		checkValue00 := d.Get("file_system_type")
-		checkValue02 := d.Get("protocol_type")
-		if (checkValue00 == "standard") && (checkValue02 == "NFS") {
-			enableEnableNfsAcl = true
+		enableEnableNfsAclTrue := false
+		checkValue00 := objectRaw["FileSystemType"]
+		checkValue01 := objectRaw2["Enabled"]
+		checkValue02 := objectRaw["ProtocolType"]
+		if (checkValue00 == "standard") && (checkValue01 == false) && (checkValue02 == "NFS") {
+			enableEnableNfsAclTrue = true
 		}
-		if enableEnableNfsAcl && target == true {
+		if enableEnableNfsAclTrue && target == true {
 			action := "EnableNfsAcl"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
@@ -532,13 +569,14 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 			}
 
 		}
-		enableDisableNfsAcl := false
-		checkValue00 = d.Get("file_system_type")
-		checkValue02 = d.Get("protocol_type")
-		if (checkValue00 == "standard") && (checkValue02 == "NFS") {
-			enableDisableNfsAcl = true
+		enableDisableNfsAclFalse := false
+		checkValue00 = objectRaw["FileSystemType"]
+
+		checkValue02 = objectRaw["ProtocolType"]
+		if (checkValue00 == "standard") && (checkValue01 == true) && (checkValue02 == "NFS") {
+			enableDisableNfsAclFalse = true
 		}
-		if enableDisableNfsAcl && target == false {
+		if enableDisableNfsAclFalse && target == false {
 			action := "DisableNfsAcl"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
@@ -563,17 +601,19 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 
 		}
 	}
+
 	if d.HasChange("smb_acl.0.enabled") {
 		var err error
-
+		objectRaw3, err := nasServiceV2.DescribeFileSystemDescribeSmbAcl(d.Id())
 		target := d.Get("smb_acl.0.enabled").(bool)
-		enableEnableSmbAcl := false
-		checkValue00 := d.Get("file_system_type")
-		checkValue01 := d.Get("protocol_type")
-		if (checkValue00 == "standard") && (checkValue01 == "SMB") {
-			enableEnableSmbAcl = true
+		enableEnableSmbAclTrue := false
+		checkValue00 := objectRaw["FileSystemType"]
+		checkValue01 := objectRaw["ProtocolType"]
+		checkValue02 := objectRaw3["Enabled"]
+		if (checkValue00 == "standard") && (checkValue01 == "SMB") && (checkValue02 == false) {
+			enableEnableSmbAclTrue = true
 		}
-		if enableEnableSmbAcl && target == true {
+		if enableEnableSmbAclTrue && target == true {
 			action := "EnableSmbAcl"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
@@ -599,13 +639,14 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 			}
 
 		}
-		enableDisableSmbAcl := false
-		checkValue00 = d.Get("file_system_type")
-		checkValue01 = d.Get("protocol_type")
-		if (checkValue00 == "standard") && (checkValue01 == "SMB") {
-			enableDisableSmbAcl = true
+		enableDisableSmbAclFalse := false
+		checkValue00 = objectRaw["FileSystemType"]
+		checkValue01 = objectRaw["ProtocolType"]
+
+		if (checkValue00 == "standard") && (checkValue01 == "SMB") && (checkValue02 == true) {
+			enableDisableSmbAclFalse = true
 		}
-		if enableDisableSmbAcl && target == false {
+		if enableDisableSmbAclFalse && target == false {
 			action := "DisableSmbAcl"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
@@ -639,19 +680,19 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("options") {
 		update = true
-		objectDataLocalMap := make(map[string]interface{})
+		options := make(map[string]interface{})
 
 		if v := d.Get("options"); v != nil {
 			enableOplock1, _ := jsonpath.Get("$[0].enable_oplock", v)
-			if enableOplock1 != nil && (d.HasChange("options.0.enable_oplock") || enableOplock1 != "") {
-				objectDataLocalMap["EnableOplock"] = enableOplock1
+			if enableOplock1 != nil && enableOplock1 != "" {
+				options["EnableOplock"] = enableOplock1
 			}
 
-			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+			optionsJson, err := json.Marshal(options)
 			if err != nil {
 				return WrapError(err)
 			}
-			request["Options"] = string(objectDataLocalMapJson)
+			request["Options"] = string(optionsJson)
 		}
 	}
 
@@ -679,10 +720,11 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 	update = false
-	enableUpgradeFileSystem := false
-	checkValue00 := d.Get("file_system_type")
+	objectRaw, _ = nasServiceV2.DescribeNasFileSystem(d.Id())
+	enableUpgradeFileSystem1 := false
+	checkValue00 := objectRaw["FileSystemType"]
 	if !(checkValue00 == "standard") {
-		enableUpgradeFileSystem = true
+		enableUpgradeFileSystem1 = true
 	}
 	action = "UpgradeFileSystem"
 	request = make(map[string]interface{})
@@ -695,7 +737,7 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	}
 	request["Capacity"] = d.Get("capacity")
 	request["DryRun"] = "false"
-	if update && enableUpgradeFileSystem {
+	if update && enableUpgradeFileSystem1 {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
@@ -748,11 +790,12 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 	update = false
-	enableUpdateRecycleBinAttribute := false
-	checkValue00 = d.Get("recycle_bin.0.status")
-	checkValue01 := d.Get("file_system_type")
+	objectRaw, _ = nasServiceV2.DescribeNasFileSystem(d.Id())
+	enableUpdateRecycleBinAttribute1 := false
+
+	checkValue01 := objectRaw["FileSystemType"]
 	if (checkValue00 == "Enable") && (checkValue01 == "standard") {
-		enableUpdateRecycleBinAttribute = true
+		enableUpdateRecycleBinAttribute1 = true
 	}
 	action = "UpdateRecycleBinAttribute"
 	request = make(map[string]interface{})
@@ -762,11 +805,11 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("recycle_bin.0.reserved_days") {
 		update = true
 	}
-	if v, ok := d.GetOk("recycle_bin.0.reserved_days"); ok {
+	if v, ok := d.GetOkExists("recycle_bin.0.reserved_days"); ok {
 		query["ReservedDays"] = strconv.Itoa(v.(int))
 	}
 
-	if update && enableUpdateRecycleBinAttribute {
+	if update && enableUpdateRecycleBinAttribute1 {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcGet("NAS", "2017-06-26", action, query, request)
@@ -785,12 +828,14 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 	update = false
-	enableModifySmbAcl := false
-	checkValue00 = d.Get("file_system_type")
-	checkValue01 = d.Get("protocol_type")
-	checkValue02 := d.Get("smb_acl.0.enabled")
+	objectRaw, _ = nasServiceV2.DescribeNasFileSystem(d.Id())
+	objectRaw3, err := nasServiceV2.DescribeFileSystemDescribeSmbAcl(d.Id())
+	enableModifySmbAcl1 := false
+	checkValue00 = objectRaw["FileSystemType"]
+	checkValue01 = objectRaw["ProtocolType"]
+	checkValue02 := objectRaw3["Enabled"]
 	if (checkValue00 == "standard") && (checkValue01 == "SMB") && (checkValue02 == true) {
-		enableModifySmbAcl = true
+		enableModifySmbAcl1 = true
 	}
 	action = "ModifySmbAcl"
 	request = make(map[string]interface{})
@@ -799,17 +844,17 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("smb_acl.0.super_admin_sid") {
 		update = true
-		jsonPathResult, err := jsonpath.Get("$[0].super_admin_sid", d.Get("smb_acl"))
+		smbAclSuperAdminSidJsonPath, err := jsonpath.Get("$[0].super_admin_sid", d.Get("smb_acl"))
 		if err == nil {
-			request["SuperAdminSid"] = jsonPathResult
+			request["SuperAdminSid"] = smbAclSuperAdminSidJsonPath
 		}
 	}
 
 	if d.HasChange("smb_acl.0.home_dir_path") {
 		update = true
-		jsonPathResult1, err := jsonpath.Get("$[0].home_dir_path", d.Get("smb_acl"))
+		smbAclHomeDirPathJsonPath, err := jsonpath.Get("$[0].home_dir_path", d.Get("smb_acl"))
 		if err == nil {
-			request["HomeDirPath"] = jsonPathResult1
+			request["HomeDirPath"] = smbAclHomeDirPathJsonPath
 		}
 	}
 
@@ -818,32 +863,32 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	}
 	if d.HasChange("smb_acl.0.enable_anonymous_access") {
 		update = true
-		jsonPathResult3, err := jsonpath.Get("$[0].enable_anonymous_access", d.Get("smb_acl"))
+		smbAclEnableAnonymousAccessJsonPath, err := jsonpath.Get("$[0].enable_anonymous_access", d.Get("smb_acl"))
 		if err == nil {
-			request["EnableAnonymousAccess"] = jsonPathResult3
+			request["EnableAnonymousAccess"] = smbAclEnableAnonymousAccessJsonPath
 		}
 	}
 
 	if d.HasChange("smb_acl.0.encrypt_data") {
 		update = true
-		jsonPathResult4, err := jsonpath.Get("$[0].encrypt_data", d.Get("smb_acl"))
+		smbAclEncryptDataJsonPath, err := jsonpath.Get("$[0].encrypt_data", d.Get("smb_acl"))
 		if err == nil {
-			request["EncryptData"] = jsonPathResult4
+			request["EncryptData"] = smbAclEncryptDataJsonPath
 		}
 	}
 
 	if d.HasChange("smb_acl.0.reject_unencrypted_access") {
 		update = true
-		jsonPathResult5, err := jsonpath.Get("$[0].reject_unencrypted_access", d.Get("smb_acl"))
+		smbAclRejectUnencryptedAccessJsonPath, err := jsonpath.Get("$[0].reject_unencrypted_access", d.Get("smb_acl"))
 		if err == nil {
-			request["RejectUnencryptedAccess"] = jsonPathResult5
+			request["RejectUnencryptedAccess"] = smbAclRejectUnencryptedAccessJsonPath
 		}
 	}
 
 	if v, ok := d.GetOk("keytab"); ok {
 		request["Keytab"] = v
 	}
-	if update && enableModifySmbAcl {
+	if update && enableModifySmbAcl1 {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
@@ -886,7 +931,6 @@ func resourceAliCloudNasFileSystemDelete(d *schema.ResourceData, meta interface{
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

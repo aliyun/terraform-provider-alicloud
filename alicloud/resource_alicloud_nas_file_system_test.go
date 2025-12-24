@@ -483,7 +483,6 @@ func TestAccAliCloudNasFileSystem_basic1_twin(t *testing.T) {
 
 func TestAccAliCloudNasFileSystem_basic2(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.NasClassicSupportedRegions)
 	resourceId := "alicloud_nas_file_system.default"
 	ra := resourceAttrInit(resourceId, AliCloudNasFileSystem0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -493,10 +492,11 @@ func TestAccAliCloudNasFileSystem_basic2(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sAliCloudNasFileSystem%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasFileSystemBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasFileSystemBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -506,17 +506,17 @@ func TestAccAliCloudNasFileSystem_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type":    "cpfs",
 					"storage_type":     "advance_100",
-					"capacity":         "5000",
+					"capacity":         "3600",
 					"file_system_type": "cpfs",
-					"vswitch_id":       "${data.alicloud_vswitches.default.ids.0}",
-					"vpc_id":           "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":          "${data.alicloud_nas_zones.cpfs.zones.1.zone_id}",
+					"vswitch_id":       "${alicloud_vswitch.CreateVswitchC.id}",
+					"vpc_id":           "${alicloud_vswitch.CreateVswitchC.vpc_id}",
+					"zone_id":          "${alicloud_vswitch.CreateVswitchC.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type":    "cpfs",
 						"storage_type":     "advance_100",
-						"capacity":         "5000",
+						"capacity":         "3600",
 						"file_system_type": "cpfs",
 						"vswitch_id":       CHECKSET,
 						"vpc_id":           CHECKSET,
@@ -526,11 +526,11 @@ func TestAccAliCloudNasFileSystem_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"capacity": "6000",
+					"capacity": "4800",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"capacity": "6000",
+						"capacity": "4800",
 					}),
 				),
 			},
@@ -581,7 +581,6 @@ func TestAccAliCloudNasFileSystem_basic2(t *testing.T) {
 
 func TestAccAliCloudNasFileSystem_basic2_twin(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.NasClassicSupportedRegions)
 	resourceId := "alicloud_nas_file_system.default"
 	ra := resourceAttrInit(resourceId, AliCloudNasFileSystem0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -591,10 +590,11 @@ func TestAccAliCloudNasFileSystem_basic2_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sAliCloudNasFileSystem%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasFileSystemBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasFileSystemBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -604,7 +604,7 @@ func TestAccAliCloudNasFileSystem_basic2_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type":     "cpfs",
 					"storage_type":      "advance_100",
-					"capacity":          "5000",
+					"capacity":          "4800",
 					"description":       name,
 					"file_system_type":  "cpfs",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
@@ -612,15 +612,15 @@ func TestAccAliCloudNasFileSystem_basic2_twin(t *testing.T) {
 						"Created": "TF",
 						"For":     "FileSystem",
 					},
-					"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
-					"vpc_id":     "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":    "${data.alicloud_nas_zones.cpfs.zones.1.zone_id}",
+					"vswitch_id": "${alicloud_vswitch.CreateVswitchC.id}",
+					"vpc_id":     "${alicloud_vswitch.CreateVswitchC.vpc_id}",
+					"zone_id":    "${alicloud_vswitch.CreateVswitchC.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type":     "cpfs",
 						"storage_type":      "advance_100",
-						"capacity":          "5000",
+						"capacity":          "4800",
 						"description":       name,
 						"file_system_type":  "cpfs",
 						"resource_group_id": CHECKSET,
@@ -680,6 +680,38 @@ func AliCloudNasFileSystemBasicDependence0(name string) string {
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
   		zone_id = data.alicloud_nas_zones.cpfs.zones.0.zone_id
+	}
+
+	resource "alicloud_kms_key" "default" {
+  		description            = var.name
+  		pending_window_in_days = "7"
+  		key_state              = "Enabled"
+	}
+`, name)
+}
+
+func AliCloudNasFileSystemBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	resource "alicloud_vpc" "createEVpc_Cpfs" {
+	  is_default  = false
+	  cidr_block  = "192.168.0.0/16"
+	  vpc_name    = "nas-teste1031-vpc"
+	  enable_ipv6 = true
+	}
+	
+	resource "alicloud_vswitch" "CreateVswitchC" {
+	  is_default   = false
+	  vpc_id       = alicloud_vpc.createEVpc_Cpfs.id
+	  zone_id      = "cn-beijing-i"
+	  cidr_block   = "192.168.2.0/24"
+	  vswitch_name = "nas-teste1031-vsw1sdw-F"
 	}
 
 	resource "alicloud_kms_key" "default" {
@@ -1055,6 +1087,178 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
+}
+
+// Case create_cpfs_file_system 12182
+func TestAccAliCloudNasFileSystem_basic12182(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystemMap12182)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccnas%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence12182)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":       "cpfs-文件系统同城冗余测试-wyf",
+					"storage_type":      "advance_100",
+					"encrypt_type":      "0",
+					"vpc_id":            "${alicloud_vpc.createEVpc_Cpfs.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"vswitch_id":        "${alicloud_vswitch.CreateVswitchC.id}",
+					"zone_id":           "${alicloud_vswitch.CreateVswitchC.zone_id}",
+					"capacity":          "3600",
+					"protocol_type":     "cpfs",
+					"file_system_type":  "cpfs",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":       "cpfs-文件系统同城冗余测试-wyf",
+						"storage_type":      "advance_100",
+						"encrypt_type":      "0",
+						"vpc_id":            CHECKSET,
+						"resource_group_id": CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"capacity":          "3600",
+						"protocol_type":     "cpfs",
+						"file_system_type":  "cpfs",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "cpfs-文件系统同城冗余测试-wyf01",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "cpfs-文件系统同城冗余测试-wyf01",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"keytab", "keytab_md5", "snapshot_id"},
+			},
+		},
+	})
+}
+
+var AlicloudNasFileSystemMap12182 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudNasFileSystemBasicDependence12182(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "createEVpc_Cpfs" {
+  is_default  = false
+  cidr_block  = "192.168.0.0/16"
+  vpc_name    = "nas-teste1031-vpc"
+  enable_ipv6 = true
+}
+
+resource "alicloud_vswitch" "CreateVswitchC" {
+  is_default   = false
+  vpc_id       = alicloud_vpc.createEVpc_Cpfs.id
+  zone_id      = "cn-beijing-l"
+  cidr_block   = "192.168.3.0/24"
+  vswitch_name = "nas-teste1031-vsw2sdw-C"
+}
+
+
+`, name)
 }
 
 // Test Nas FileSystem. >>> Resource test cases, automatically generated.
@@ -1521,6 +1725,154 @@ resource "alicloud_nas_snapshot" "defaultLXp8tf" {
   file_system_id = alicloud_nas_file_system.defaultEHlvST.id
   retention_days = "1"
   snapshot_name  = "testSnapshotCreateFs"
+}
+
+
+`, name)
+}
+
+// Case   12188
+func TestAccAliCloudNasFileSystem_basic12188(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystemMap12188)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccnas%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence12188)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":  "cpfsse-文件系统同城冗余测试-wyf",
+					"storage_type": "advance_100",
+					"encrypt_type": "0",
+					"vpc_id":       "${alicloud_vpc.createEVpc_Cpfs.id}",
+					"redundancy_vswitch_ids": []string{
+						"${alicloud_vswitch.CreateVswitchC.id}", "${alicloud_vswitch.CreateVswitchD.id}", "${alicloud_vswitch.CreateVswitchF.id}"},
+					"capacity":         "500",
+					"protocol_type":    "cpfs",
+					"file_system_type": "cpfsse",
+					"redundancy_type":  "ZRS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":              "cpfsse-文件系统同城冗余测试-wyf",
+						"storage_type":             "advance_100",
+						"encrypt_type":             "0",
+						"vpc_id":                   CHECKSET,
+						"redundancy_vswitch_ids.#": "3",
+						"capacity":                 "500",
+						"protocol_type":            "cpfs",
+						"file_system_type":         "cpfsse",
+						"redundancy_type":          "ZRS",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"keytab", "keytab_md5", "snapshot_id"},
+			},
+		},
+	})
+}
+
+var AlicloudNasFileSystemMap12188 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudNasFileSystemBasicDependence12188(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "createEVpc_Cpfs" {
+  is_default  = false
+  cidr_block  = "192.168.0.0/16"
+  vpc_name    = "nas-teste1031-vpc"
+  enable_ipv6 = true
+}
+
+resource "alicloud_vswitch" "CreateVswitchF" {
+  is_default   = false
+  vpc_id       = alicloud_vpc.createEVpc_Cpfs.id
+  zone_id      = "cn-beijing-i"
+  cidr_block   = "192.168.2.0/24"
+  vswitch_name = "nas-teste1031-vsw1sdw-F"
+}
+
+resource "alicloud_vswitch" "CreateVswitchC" {
+  is_default   = false
+  vpc_id       = alicloud_vpc.createEVpc_Cpfs.id
+  zone_id      = "cn-beijing-l"
+  cidr_block   = "192.168.3.0/24"
+  vswitch_name = "nas-teste1031-vsw2sdw-C"
+}
+
+resource "alicloud_vswitch" "CreateVswitchD" {
+  is_default   = false
+  vpc_id       = alicloud_vpc.createEVpc_Cpfs.id
+  zone_id      = "cn-beijing-h"
+  cidr_block   = "192.168.4.0/24"
+  vswitch_name = "nas-teste1031-vsw3sdw-D"
 }
 
 
