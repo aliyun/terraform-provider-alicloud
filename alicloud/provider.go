@@ -175,6 +175,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_threat_detection_check_item_configs":        dataSourceAliCloudThreatDetectionCheckItemConfigs(),
 			"alicloud_threat_detection_check_structures":          dataSourceAliCloudThreatDetectionCheckStructures(),
 			"alicloud_fcv3_functions":                             dataSourceAliCloudFcv3Functions(),
 			"alicloud_cloud_firewall_tls_inspect_ca_certificates": dataSourceAliCloudCloudFirewallTlsInspectCaCertificates(),
