@@ -250,6 +250,7 @@ The following arguments are supported:
 * `private_pool_options_id` - (Optional, Available since v1.253.0) The ID of the private pool.
 
 * `image_options` - (Optional, Available since v1.237.0) The options of images. See [`image_options`](#image_options) below.
+* `cpu_options` - (Optional, Available since v1.245.0) The options of cpus. See [`cpu_options`](#cpu_options) below.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -327,6 +328,12 @@ The maintenance_time supports the following:
 The image_options supports the following:
 
 * `login_as_non_root` - (Optional, ForceNew) Whether to allow the instance logging in with the ecs-user user.
+
+### `cpu_options`
+
+The cpu_options supports the following:
+
+* `accelerators` - (Optional) The list of accelerators to enable with the instance.
 
 ## Attributes Reference
 
