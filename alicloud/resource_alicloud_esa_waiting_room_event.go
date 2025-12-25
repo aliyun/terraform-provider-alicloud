@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -228,7 +227,7 @@ func resourceAliCloudEsaWaitingRoomEventRead(d *schema.ResourceData, meta interf
 	d.Set("waiting_room_id", objectRaw["WaitingRoomId"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", fmt.Sprintf(parts[0]))
+	d.Set("site_id", parts[0])
 
 	return nil
 }
