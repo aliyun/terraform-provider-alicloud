@@ -158,6 +158,7 @@ func resourceAliCloudSlsProjectRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("policy", policy)
 	}
 	d.Set("name", d.Get("project_name"))
+	//d.Set("name", d.Get("project_name"))
 	return nil
 }
 
