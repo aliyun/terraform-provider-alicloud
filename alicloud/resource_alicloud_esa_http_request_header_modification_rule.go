@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -201,7 +200,7 @@ func resourceAliCloudEsaHttpRequestHeaderModificationRuleRead(d *schema.Resource
 	}
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", fmt.Sprintf(parts[0]))
+	d.Set("site_id", parts[0])
 
 	return nil
 }

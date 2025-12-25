@@ -125,7 +125,7 @@ func resourceAliCloudEsaWafRulesetRead(d *schema.ResourceData, meta interface{})
 	d.Set("ruleset_id", objectRaw["Id"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("site_id", fmt.Sprintf(parts[1]))
+	d.Set("site_id", parts[1])
 
 	return nil
 }
