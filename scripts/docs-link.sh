@@ -70,7 +70,11 @@ while read -r line; do
     found_example=0
   fi
   if [[ $found_example -eq 1 ]]; then
-    code_sample="${code_sample}\n${line}"
+    if [[ -z "$code_sample" ]]; then
+      code_sample="$line"
+    else
+      code_sample="${code_sample}"$'\n'"${line}"
+    fi
   fi
   if [[ $line == *"$code_section"* ]]; then
     found_example=1
@@ -93,23 +97,27 @@ for index in "${!arr[@]}"; do
   $SED "${element}s/.*/\`\`\`terraform${index}/g" "$file_path"
 done
 
-for index in "${!example_codes[@]}"; do
-  element=${arr[$index]}
-  code_sample=${example_codes[$index]}
+max_index=$((${#example_codes[@]} - 1))
+for ((index=$max_index; index>=0; index--)); do
+  if [[ $index -lt ${#arr[@]} ]]; then
+    element=${arr[$index]}
+    code_sample=${example_codes[$index]}
 
-  code_sample=$(echo "$code_sample" | sed '1d')
-  echo "$code_sample" > example.tf
-  perl -i -pe 'chomp if eof' example.tf
+    code_sample=$(echo "$code_sample" | sed -e '/./,$!d' | awk '{lines[NR]=$0; if(NF) last_non_empty=NR} END {for(i=1;i<=last_non_empty;i++) print lines[i]}')
+    echo "$code_sample" > example.tf
+    perl -i -pe 'chomp if eof' example.tf
 
-  sha1_hash=$(shasum -a 1 "example.tf" | awk '{print $1}')
-  rm example.tf
+    sha1_hash=$(shasum -a 1 "example.tf" | awk '{print $1}')
+    rm example.tf
 
-  spm="docs.r.${file_name}.${index}.${sha1_hash:0:10}"
-  example_id="${sha1_hash:0:8}-${sha1_hash:8:4}-${sha1_hash:12:4}-${sha1_hash:16:4}-${sha1_hash:20:20}"
+    spm="docs.r.${file_name}.${index}.${sha1_hash:0:10}"
+    example_id="${sha1_hash:0:8}-${sha1_hash:8:4}-${sha1_hash:12:4}-${sha1_hash:16:4}-${sha1_hash:20:20}"
 
-  link_section="<div style=\"display: block;margin-bottom: 40px;\"><div class=\"oics-button\" style=\"float: right;position: absolute;margin-bottom: 10px;\">\n  <a href=\"https:\/\/api.aliyun.com\/terraform?resource=alicloud_${file_name}\&exampleId=$example_id\&activeTab=example\&spm=$spm\&intl_lang=EN_US\" target=\"_blank\">\n    <img alt=\"Open in AliCloud\" src=\"https:\/\/img.alicdn.com\/imgextra\/i1\/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg\" style=\"max-height: 44px; max-width: 100%;\">\n  <\/a>\n<\/div><\/div>"
-  link_section="$link_section\n\n\`\`\`terraform"
-  $SED "s/\`\`\`terraform${index}/$link_section/g" "$file_path"
+    link_section="<div style=\"display: block;margin-bottom: 40px;\"><div class=\"oics-button\" style=\"float: right;position: absolute;margin-bottom: 10px;\">\n  <a href=\"https:\/\/api.aliyun.com\/terraform?resource=alicloud_${file_name}\&exampleId=$example_id\&activeTab=example\&spm=$spm\&intl_lang=EN_US\" target=\"_blank\">\n    <img alt=\"Open in AliCloud\" src=\"https:\/\/img.alicdn.com\/imgextra\/i1\/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg\" style=\"max-height: 44px; max-width: 100%;\">\n  <\/a>\n<\/div><\/div>"
+    link_section="$link_section\n\n\`\`\`terraform"
+    
+    $SED "s/\`\`\`terraform${index}/$link_section/g" "$file_path"
+  fi
 done
 
 done < "files.txt"
