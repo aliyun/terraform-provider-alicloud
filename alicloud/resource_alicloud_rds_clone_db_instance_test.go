@@ -100,6 +100,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 					"db_instance_storage_type": "cloud_essd",
 					"payment_type":             "PayAsYouGo",
 					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
+					"db_instance_description":  "tf-testAccDBInstance_instance_name",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -118,11 +119,11 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_description": "tf-testAccDBInstance_instance_name",
+					"db_instance_description": "tf-testAccDBInstance_instance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_description": "tf-testAccDBInstance_instance_name",
+						"db_instance_description": "tf-testAccDBInstance_instance",
 					}),
 				),
 			},
@@ -219,7 +220,6 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_description":     "tf-testAccDBInstance_instance_name",
 					"security_ips":                []string{"10.168.1.12", "100.69.7.112"},
 					"port":                        "3333",
 					"connection_string_prefix":    "${var.name}",
