@@ -38,11 +38,6 @@ variable "name" {
 data "alicloud_mongodb_zones" "default" {
 }
 
-locals {
-  index   = length(data.alicloud_mongodb_zones.default.zones) - 1
-  zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
-}
-
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "172.17.3.0/24"
@@ -52,13 +47,13 @@ resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "172.17.3.0/24"
   vpc_id       = alicloud_vpc.default.id
-  zone_id      = local.zone_id
+  zone_id      = data.alicloud_mongodb_zones.default.zones.1.id
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
   engine_version = "4.2"
   vswitch_id     = alicloud_vswitch.default.id
-  zone_id        = local.zone_id
+  zone_id        = alicloud_vswitch.default.zone_id
   name           = var.name
   mongo_list {
     node_class = "dds.mongos.mid"
@@ -139,6 +134,7 @@ The following arguments are supported:
 * `role_arn` - (Optional, Available since v1.260.0) The Alibaba Cloud Resource Name (ARN) of the specified Resource Access Management (RAM) role.
 * `db_instance_release_protection` - (Optional, Bool, Available since v1.253.0) Indicates whether release protection is enabled for the instance. Valid values: `true`, `false`.
 * `global_security_group_list` - (Optional, List, Available since v1.258.0) The list of Global Security Group Ids.
+* `parameters` - (Optional, Set, Available since v1.268.0) Set of parameters needs to be set after mongodb instance was launched. See [`parameters`](#parameters) below.
 * `mongo_list` - (Required, Set) The Mongo nodes of the instance. The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
 * `shard_list` - (Required, Set) The Shard nodes of the instance. The shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.
 * `config_server_list` - (Optional, ForceNew, Set, Available since v1.223.0) The ConfigServer nodes of the instance. See [`config_server_list`](#config_server_list) below.
@@ -147,6 +143,13 @@ The following arguments are supported:
   - `UPGRADE`: The specifications are upgraded.
   - `DOWNGRADE`: The specifications are downgraded.
 **NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
+
+### `parameters`
+
+The parameters supports the following:
+
+* `name` - (Required) The name of the parameter.
+* `value` - (Required) The value of the parameter.
 
 ### `mongo_list`
 

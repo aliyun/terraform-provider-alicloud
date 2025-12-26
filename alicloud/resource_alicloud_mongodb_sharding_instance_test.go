@@ -318,6 +318,21 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "operationProfiling.slowOpThresholdMs",
+							"value": "80",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "dds.mongos.mid",
@@ -365,7 +380,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters"},
 			},
 		},
 	})
@@ -400,7 +415,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 					"protocol_type":              "mongodb",
 					"vpc_id":                     "${alicloud_vswitch.default.vpc_id}",
 					"vswitch_id":                 "${alicloud_vswitch.default.id}",
-					"zone_id":                    "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"zone_id":                    "${alicloud_vswitch.default.zone_id}",
 					"security_group_id":          "${alicloud_security_group.default.id}",
 					"network_type":               "VPC",
 					"name":                       name,
@@ -412,6 +427,12 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 					"backup_period":              []string{"Monday", "Tuesday", "Wednesday"},
 					"tde_status":                 "enabled",
 					"global_security_group_list": "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "operationProfiling.slowOpThresholdMs",
+							"value": "80",
+						},
+					},
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "dds.mongos.mid",
@@ -456,6 +477,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 						"backup_period.#":              "3",
 						"tde_status":                   "enabled",
 						"global_security_group_list.#": "3",
+						"parameters.#":                 "1",
 						"mongo_list.#":                 "2",
 						"shard_list.#":                 "2",
 						"tags.%":                       "2",
@@ -468,7 +490,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters"},
 			},
 		},
 	})
@@ -537,16 +559,6 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version": "5.0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version": "5.0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"storage_type":     "cloud_auto",
 					"provisioned_iops": "60",
 				}),
@@ -559,7 +571,17 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"secondary_zone_id": "${data.alicloud_mongodb_zones.default.zones.1.id}",
+					"engine_version": "5.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "5.0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_zone_id": "${data.alicloud_mongodb_zones.default.zones.0.id}",
 					"hidden_zone_id":    "${data.alicloud_mongodb_zones.default.zones.2.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -801,6 +823,21 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "operationProfiling.slowOpThresholdMs",
+							"value": "80",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "mdb.shard.8x.large.d",
@@ -849,7 +886,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters"},
 			},
 		},
 	})
@@ -885,8 +922,8 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					"protocol_type":             "mongodb",
 					"vpc_id":                    "${alicloud_vswitch.default.vpc_id}",
 					"vswitch_id":                "${alicloud_vswitch.default.id}",
-					"zone_id":                   "${data.alicloud_mongodb_zones.default.zones.0.id}",
-					"secondary_zone_id":         "${data.alicloud_mongodb_zones.default.zones.1.id}",
+					"zone_id":                   "${alicloud_vswitch.default.zone_id}",
+					"secondary_zone_id":         "${data.alicloud_mongodb_zones.default.zones.0.id}",
 					"hidden_zone_id":            "${data.alicloud_mongodb_zones.default.zones.2.id}",
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"network_type":              "VPC",
@@ -911,6 +948,12 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					//"maintain_end_time":                           "03:00Z",
 					"db_instance_release_protection": "false",
 					"global_security_group_list":     "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "operationProfiling.slowOpThresholdMs",
+							"value": "80",
+						},
+					},
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "mdb.shard.8x.large.d",
@@ -975,6 +1018,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 						//"maintain_end_time":                           "03:00Z",
 						"db_instance_release_protection": "false",
 						"global_security_group_list.#":   "3",
+						"parameters.#":                   "1",
 						"mongo_list.#":                   "2",
 						"shard_list.#":                   "2",
 						"config_server_list.#":           "1",
@@ -988,7 +1032,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters"},
 			},
 		},
 	})
@@ -1032,7 +1076,7 @@ func AliCloudMongoDBShardingInstanceBasicDependence0(name string) string {
 
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+  		zone_id = data.alicloud_mongodb_zones.default.zones.1.id
 	}
 
 	resource "alicloud_security_group" "default" {
@@ -1076,7 +1120,7 @@ func AliCloudMongoDBShardingInstanceBasicDependence1(name string) string {
   		vswitch_name = var.name
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = "192.168.192.0/24"
-  		zone_id      = data.alicloud_mongodb_zones.default.zones.0.id
+  		zone_id      = data.alicloud_mongodb_zones.default.zones.1.id
 	}
 
 	resource "alicloud_security_group" "default" {
