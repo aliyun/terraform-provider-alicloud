@@ -250,6 +250,24 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"parameters": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Set:      parameterToHash,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 			"mongo_list": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -680,6 +698,10 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	}
 
 	d.Set("global_security_group_list", globalSecurityGroupIds)
+
+	if err = ddsService.RefreshParameters(d, "parameters"); err != nil {
+		return WrapError(err)
+	}
 
 	if MongosListMap, ok := object["MongosList"].(map[string]interface{}); ok && MongosListMap != nil {
 		if MongosList, ok := MongosListMap["MongosAttribute"]; ok && MongosList != nil {
@@ -1363,6 +1385,12 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if err := ddsService.setInstanceTags(d); err != nil {
 		return WrapError(err)
+	}
+
+	if d.HasChange("parameters") {
+		if err := ddsService.ModifyParameters(d, "parameters"); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("mongo_list") {
