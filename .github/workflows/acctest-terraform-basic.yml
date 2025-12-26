@@ -10,6 +10,8 @@ on:
 jobs:
   BreakingChange:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -26,6 +28,8 @@ jobs:
 
   Consistency:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -42,6 +46,8 @@ jobs:
 
   Formatter:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v3
         with:
@@ -90,6 +96,8 @@ jobs:
 
   Compile:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v3
         with:

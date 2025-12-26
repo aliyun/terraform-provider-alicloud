@@ -15,6 +15,8 @@ on:
 jobs:
   markdown-link:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v2
       - uses: gaurav-nelson/github-action-markdown-link-check@v1
@@ -27,12 +29,16 @@ jobs:
 
   markdown-lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v2
       - uses: avto-dev/markdown-lint@v1
 
   misspell:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Check out code.
         uses: actions/checkout@v1
@@ -47,6 +53,8 @@ jobs:
 
   terrafmt:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v2
       - run: echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
@@ -61,6 +69,8 @@ jobs:
 
   basic-check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v2
         with:
@@ -72,6 +82,8 @@ jobs:
 
   Content:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v3
       - name: Setup Go
@@ -94,6 +106,8 @@ jobs:
   Consistency:
     needs: Content
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v3
       - name: Setup Go

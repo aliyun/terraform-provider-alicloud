@@ -9,6 +9,8 @@ jobs:
   title:
     runs-on: ubuntu-latest
     name: Pull Request Title
+    permissions:
+      contents: read
     steps:
       - uses: jitterbit/get-changed-files@v1
         id: files
@@ -128,6 +130,8 @@ jobs:
   commits:
     runs-on: ubuntu-latest
     name: Pull Request Max Commits
+    permissions:
+      contents: read
     steps:
       - name: Checking the max commits number
         run: |
@@ -140,6 +144,8 @@ jobs:
   labeler:
     runs-on: ubuntu-latest
     name: Label the PR size
+    permissions:
+      contents: read
     steps:
       - uses: codelytv/pr-size-labeler@v1
         with:
