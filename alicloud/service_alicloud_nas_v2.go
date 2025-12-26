@@ -934,3 +934,157 @@ func (s *NasServiceV2) NasProtocolServiceStateRefreshFuncWithApi(id string, fiel
 }
 
 // DescribeNasProtocolService >>> Encapsulated.
+
+// DescribeNasFileset <<< Encapsulated get interface for Nas Fileset.
+
+func (s *NasServiceV2) DescribeNasFileset(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["FileSystemId"] = parts[0]
+	request["FsetId"] = parts[1]
+
+	action := "GetFileset"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Resource.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("Fileset", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *NasServiceV2) NasFilesetStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.NasFilesetStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasFileset)
+}
+
+func (s *NasServiceV2) NasFilesetStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+func (s *NasServiceV2) DescribeAsyncNasFilesetStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAsyncGetFileset(d, res)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeNasFileset >>> Encapsulated.
+
+// DescribeAsyncGetFileset <<< Encapsulated for Nas.
+func (s *NasServiceV2) DescribeAsyncGetFileset(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+	client := s.client
+	id := d.Id()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["FsetId"] = parts[1]
+	request["FileSystemId"] = parts[0]
+
+	action := "GetFileset"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeAsyncGetFileset >>> Encapsulated.

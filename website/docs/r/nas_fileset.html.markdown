@@ -2,7 +2,6 @@
 subcategory: "File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_fileset"
-sidebar_current: "docs-alicloud-resource-nas-fileset"
 description: |-
   Provides a Alicloud File Storage (NAS) Fileset resource.
 ---
@@ -11,6 +10,8 @@ description: |-
 
 Provides a File Storage (NAS) Fileset resource.
 
+Fileset of CPFS file system.
+
 For information about File Storage (NAS) Fileset and how to use it, see [What is Fileset](https://www.alibabacloud.com/help/en/doc-detail/27530.html).
 
 -> **NOTE:** Available since v1.153.0.
@@ -18,12 +19,6 @@ For information about File Storage (NAS) Fileset and how to use it, see [What is
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_fileset&exampleId=9ac6c599-20fe-16ea-081e-20448496b4141b8987b4&activeTab=example&spm=docs.r.nas_fileset.0.9ac6c59920&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 provider "alicloud" {
@@ -63,31 +58,31 @@ resource "alicloud_nas_fileset" "example" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_fileset&spm=docs.r.nas_fileset.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
-
-* `description` - (Optional) The description of the Fileset. It must be `2` to `128` characters in length and must start with a letter or Chinese, but cannot start with `https://` or `https://`.
-* `dry_run` - (Optional) The dry run.
+* `deletion_protection` - (Optional, Computed, Available since v1.267.0) The instance release protection attribute, which specifies whether the instance can be released through the console or API( DeleteFileset).
+  - true: Enable instance release protection.
+  - false (default): Turn off instance release protection
+* `description` - (Optional) Description of Fileset.
 * `file_system_id` - (Required, ForceNew) The ID of the file system.
-* `file_system_path` - (Required, ForceNew) The path of the fileset.
+* `file_system_path` - (Required, ForceNew) The path of Fileset.
+* `dry_run` - (Optional, Bool) Specifies whether to perform a dry run. Default value: `false`. Valid values: `true`, `false`.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID of the file set. The value formats as `<file_system_id>:<fileset_id>`.
-* `fileset_id` - The first ID of the resource.
-* `status` - The status of the fileset. 
+* `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<fileset_id>`.
+* `create_time` - The time when Fileset was created.
+* `fileset_id` - Fileset ID
+* `status` - The status of Fileset. Includes:
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when create the fileset.
-* `delete` - (Defaults to 1 mins) Used when delete the fileset.
+* `create` - (Defaults to 20 mins) Used when create the Fileset.
+* `delete` - (Defaults to 20 mins) Used when delete the Fileset.
+* `update` - (Defaults to 5 mins) Used when update the Fileset.
 
 ## Import
 

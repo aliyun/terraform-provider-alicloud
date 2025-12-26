@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudNASFileset_basic0(t *testing.T) {
+func TestAccAliCloudNASFileset_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_fileset.default"
 	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
@@ -43,15 +43,17 @@ func TestAccAlicloudNASFileset_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"file_system_path": "/tf-testAcc-Path/",
-					"description":      name,
-					"file_system_id":   "${alicloud_nas_file_system.default.id}",
+					"file_system_path":    "/tf-testAcc-Path/",
+					"description":         name,
+					"file_system_id":      "${alicloud_nas_file_system.default.id}",
+					"deletion_protection": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"file_system_path": "/tf-testAcc-Path/",
-						"description":      name,
-						"file_system_id":   CHECKSET,
+						"file_system_path":    "/tf-testAcc-Path/",
+						"description":         name,
+						"file_system_id":      CHECKSET,
+						"deletion_protection": "true",
 					}),
 				),
 			},
@@ -62,6 +64,16 @@ func TestAccAlicloudNASFileset_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
 					}),
 				),
 			},
@@ -196,7 +208,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudNasFilesetCreate(d, rawClient)
+		err := resourceAliCloudNasFilesetCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -213,7 +225,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudNasFilesetCreate(d, rawClient)
+		err := resourceAliCloudNasFilesetCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -230,7 +242,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudNasFilesetCreate(dCreate, rawClient)
+		err := resourceAliCloudNasFilesetCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -248,7 +260,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudNasFilesetUpdate(d, rawClient)
+		err := resourceAliCloudNasFilesetUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -284,7 +296,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudNasFilesetUpdate(resourceData1, rawClient)
+		err := resourceAliCloudNasFilesetUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -319,7 +331,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudNasFilesetUpdate(resourceData1, rawClient)
+		err := resourceAliCloudNasFilesetUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -334,7 +346,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudNasFilesetDelete(d, rawClient)
+		err := resourceAliCloudNasFilesetDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -351,7 +363,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudNasFilesetDelete(d, rawClient)
+		err := resourceAliCloudNasFilesetDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -371,7 +383,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 		patcheDescribeNasFileset := gomonkey.ApplyMethod(reflect.TypeOf(&NasService{}), "DescribeNasFileset", func(*NasService, string) (map[string]interface{}, error) {
 			return responseMock["NotFoundError"]("ResourceNotfound")
 		})
-		err := resourceAlicloudNasFilesetDelete(d, rawClient)
+		err := resourceAliCloudNasFilesetDelete(d, rawClient)
 		patches.Reset()
 		patcheDescribeNasFileset.Reset()
 		assert.Nil(t, err)
@@ -389,7 +401,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudNasFilesetRead(d, rawClient)
+		err := resourceAliCloudNasFilesetRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -405,7 +417,7 @@ func TestUnitAlicloudNASFileset(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudNasFilesetRead(d, rawClient)
+		err := resourceAliCloudNasFilesetRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
