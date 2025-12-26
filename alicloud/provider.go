@@ -1467,7 +1467,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_common_bandwidth_package":                              resourceAliCloudCbwpCommonBandwidthPackage(),
 			"alicloud_common_bandwidth_package_attachment":                   resourceAliCloudCbwpCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                                         resourceAlicloudDRDSInstance(),
-			"alicloud_elasticsearch_instance":                                resourceAlicloudElasticsearch(),
+			"alicloud_elasticsearch_instance":                                resourceAliCloudElasticsearchInstance(),
 			"alicloud_cas_certificate":                                       resourceAliCloudSslCertificatesServiceCertificate(),
 			"alicloud_ddoscoo_instance":                                      resourceAliCloudDdoscooInstance(),
 			"alicloud_ddosbgp_instance":                                      resourceAliCloudDdosBgpInstance(),
