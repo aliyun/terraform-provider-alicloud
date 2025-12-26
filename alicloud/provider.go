@@ -920,6 +920,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_kms_value_added_service":                              resourceAliCloudKmsValueAddedService(),
 			"alicloud_nas_protocol_service":                                 resourceAliCloudNasProtocolService(),
+			"alicloud_nas_protocol_mount_target":                            resourceAliCloudNasProtocolMountTarget(),
 			"alicloud_config_report_template":                               resourceAliCloudConfigReportTemplate(),
 			"alicloud_redis_backup":                                         resourceAliCloudRedisBackup(),
 			"alicloud_cs_kubernetes_policy_instance":                        resourceAliCloudCSKubernetesPolicyInstance(),
