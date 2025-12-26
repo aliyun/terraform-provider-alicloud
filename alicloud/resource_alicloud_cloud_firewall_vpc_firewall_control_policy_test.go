@@ -19,405 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
-	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudFirewallVpcFirewallControlPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc%scloudfirewallvpcfirewallcontrolpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vpc_firewall_id":  "${alicloud_cen_instance.default.id}",
-					"application_name": "ANY",
-					"description":      name,
-					"acl_action":       "accept",
-					"source":           "127.0.0.1/32",
-					"source_type":      "net",
-					"destination":      "127.0.0.2/32",
-					"destination_type": "net",
-					"proto":            "TCP",
-					"order":            "1",
-					"dest_port":        "80/88",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vpc_firewall_id":  CHECKSET,
-						"application_name": "ANY",
-						"description":      name,
-						"acl_action":       "accept",
-						"source":           "127.0.0.1/32",
-						"source_type":      "net",
-						"destination":      "127.0.0.2/32",
-						"destination_type": "net",
-						"proto":            "TCP",
-						"order":            "1",
-						"dest_port":        "80/88",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"application_name": "HTTP",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"application_name": "HTTP",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name + "_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl_action": "drop",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl_action": "drop",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source": "127.0.0.2/32",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source": "127.0.0.2/32",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source":      "${alicloud_cloud_firewall_address_book.default.group_name}",
-					"source_type": "group",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source":      CHECKSET,
-						"source_type": "group",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination": "127.0.0.3/32",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination": "127.0.0.3/32",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination":      "${alicloud_cloud_firewall_address_book.default.group_name}",
-					"destination_type": "group",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination":      CHECKSET,
-						"destination_type": "group",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"application_name": "ANY",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"application_name": "ANY",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"proto": "ANY",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"proto": "ANY",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"dest_port": "20/22",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dest_port": "20/22",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"release": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"release": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"lang": "en",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"lang": "en",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"lang"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
-	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudFirewallVpcFirewallControlPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc%scloudfirewallvpcfirewallcontrolpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vpc_firewall_id":  "${alicloud_cen_instance.default.id}",
-					"application_name": "ANY",
-					"description":      name,
-					"acl_action":       "accept",
-					"source":           "127.0.0.1/32",
-					"source_type":      "net",
-					"destination":      "127.0.0.2/32",
-					"destination_type": "net",
-					"proto":            "TCP",
-					"order":            "1",
-					"dest_port":        "80/88",
-					"dest_port_type":   "port",
-					"release":          "false",
-					"member_uid":       "${data.alicloud_account.current.id}",
-					"lang":             "zh",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vpc_firewall_id":  CHECKSET,
-						"application_name": "ANY",
-						"description":      name,
-						"acl_action":       "accept",
-						"source":           "127.0.0.1/32",
-						"source_type":      "net",
-						"destination":      "127.0.0.2/32",
-						"destination_type": "net",
-						"proto":            "TCP",
-						"order":            "1",
-						"dest_port":        "80/88",
-						"dest_port_type":   "port",
-						"release":          "false",
-						"member_uid":       CHECKSET,
-						"lang":             "zh",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"application_name": "HTTP",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"application_name": "HTTP",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name + "_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl_action": "drop",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl_action": "drop",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source": "127.0.0.2/32",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source": "127.0.0.2/32",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source":      "${alicloud_cloud_firewall_address_book.default.group_name}",
-					"source_type": "group",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source":      CHECKSET,
-						"source_type": "group",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination": "127.0.0.3/32",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination": "127.0.0.3/32",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination":      "${alicloud_cloud_firewall_address_book.default.group_name}",
-					"destination_type": "group",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination":      CHECKSET,
-						"destination_type": "group",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"application_name": "ANY",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"application_name": "ANY",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"proto": "UDP",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"proto": "UDP",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"dest_port": "20/22",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dest_port": "20/22",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"release": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"release": "true",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"lang"},
-			},
-		},
-	})
-}
-
-var AliCloudCloudFirewallVpcFirewallControlPolicyMap0 = map[string]string{
-	"acl_uuid":       CHECKSET,
-	"application_id": CHECKSET,
-	"hit_times":      CHECKSET,
-}
-
-func AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-	variable "name" {
-  		default = "%s"
-	}
-
-	data "alicloud_account" "current" {
-	}
-
-	resource "alicloud_cloud_firewall_address_book" "default" {
-  		description      = "tf-testAccAddressBook"
-  		group_name       = var.name
-  		group_type       = "ip"
-  		address_list     = ["10.21.0.0/16", "10.168.0.0/16"]
-	}
-
-	resource "alicloud_cen_instance" "default" {
-  		cen_instance_name = var.name
-  		description       = "tf-testAccCenConfigDescription"
-  		tags = {
-    		Created = "TF"
-    		For     = "acceptance test"
-  		}
-	}
-`, name)
-}
-
 func TestUnitAliCloudCloudFirewallVpcFirewallControlPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_firewall_vpc_firewall_control_policy"].Schema).Data(nil, nil)
@@ -727,3 +328,868 @@ func TestUnitAliCloudCloudFirewallVpcFirewallControlPolicy(t *testing.T) {
 		}
 	}
 }
+
+// Test CloudFirewall VpcFirewallControlPolicy. >>> Resource test cases, automatically generated.
+// Case VPC边界安全策略_ip修改为域名 11929
+func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic11929(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap11929)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallVpcFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence11929)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action":       "accept",
+					"description":      name,
+					"destination":      "127.0.0.2/32",
+					"destination_type": "net",
+					"proto":            "TCP",
+					"order":            "1",
+					"source":           "127.0.0.1/32",
+					"source_type":      "net",
+					"vpc_firewall_id":  "${alicloud_cen_instance.default.id}",
+					"application_name": "ANY",
+					"dest_port":        "80/88",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action":       "accept",
+						"description":      name,
+						"destination":      "127.0.0.2/32",
+						"destination_type": "net",
+						"proto":            "TCP",
+						"order":            "1",
+						"source":           "127.0.0.1/32",
+						"source_type":      "net",
+						"vpc_firewall_id":  CHECKSET,
+						"application_name": "ANY",
+						"dest_port":        "80/88",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action": "drop",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action": "drop",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name": "HTTP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name": "HTTP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port": "20/22",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port": "20/22",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port":       REMOVEKEY,
+					"dest_port_group": "${alicloud_cloud_firewall_address_book.port.group_name}",
+					"dest_port_type":  "group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port":       REMOVEKEY,
+						"dest_port_group": CHECKSET,
+						"dest_port_type":  "group",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination": "127.0.0.3/32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination": "127.0.0.3/32",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination":      "alibaba.com",
+					"destination_type": "domain",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination":      CHECKSET,
+						"destination_type": "domain",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_resolve_type": "DNS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_resolve_type": "DNS",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"repeat_days": []string{
+						"1", "2", "3"},
+					"end_time":          "1766676600",
+					"start_time":        "1765209600",
+					"repeat_end_time":   "19:00",
+					"repeat_type":       "Weekly",
+					"repeat_start_time": "18:00",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"repeat_days.#":     "3",
+						"end_time":          "1766676600",
+						"start_time":        "1765209600",
+						"repeat_end_time":   "19:00",
+						"repeat_type":       "Weekly",
+						"repeat_start_time": "18:00",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name": "ANY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name": "ANY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"proto": "UDP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"proto": "UDP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"release": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"release": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source": "127.0.0.2/32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source": "127.0.0.2/32",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source":      "${alicloud_cloud_firewall_address_book.ip.group_name}",
+					"source_type": "group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source":      CHECKSET,
+						"source_type": "group",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic11929_twin0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap11929)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallVpcFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence11929)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action":          "accept",
+					"description":         name,
+					"destination":         "alibaba.com",
+					"destination_type":    "domain",
+					"proto":               "TCP",
+					"order":               "1",
+					"source":              "127.0.0.1/32",
+					"source_type":         "net",
+					"vpc_firewall_id":     "${alicloud_cen_instance.default.id}",
+					"application_name":    "ANY",
+					"dest_port":           "80/88",
+					"dest_port_type":      "port",
+					"domain_resolve_type": "DNS",
+					"repeat_days": []string{
+						"1", "2", "3"},
+					"end_time":          "1766676600",
+					"start_time":        "1765209600",
+					"repeat_end_time":   "19:00",
+					"repeat_type":       "Weekly",
+					"repeat_start_time": "18:00",
+					"member_uid":        "${data.alicloud_account.current.id}",
+					"release":           "false",
+					"lang":              "zh",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action":          "accept",
+						"description":         name,
+						"destination":         "alibaba.com",
+						"destination_type":    "domain",
+						"proto":               "TCP",
+						"order":               "1",
+						"source":              "127.0.0.1/32",
+						"source_type":         "net",
+						"vpc_firewall_id":     CHECKSET,
+						"application_name":    "ANY",
+						"dest_port":           "80/88",
+						"dest_port_type":      "port",
+						"domain_resolve_type": "DNS",
+						"repeat_days.#":       "3",
+						"end_time":            "1766676600",
+						"start_time":          "1765209600",
+						"repeat_end_time":     "19:00",
+						"repeat_type":         "Weekly",
+						"repeat_start_time":   "18:00",
+						"member_uid":          CHECKSET,
+						"release":             "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic11929_twin1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap11929)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallVpcFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence11929)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action":          "accept",
+					"description":         name,
+					"destination":         "alibaba.com",
+					"destination_type":    "domain",
+					"proto":               "TCP",
+					"order":               "1",
+					"source":              "127.0.0.1/32",
+					"source_type":         "net",
+					"vpc_firewall_id":     "${alicloud_cen_instance.default.id}",
+					"application_name":    "ANY",
+					"dest_port_group":     "${alicloud_cloud_firewall_address_book.port.group_name}",
+					"dest_port_type":      "group",
+					"domain_resolve_type": "DNS",
+					"repeat_days": []string{
+						"1", "2", "3"},
+					"end_time":          "1766676600",
+					"start_time":        "1765209600",
+					"repeat_end_time":   "19:00",
+					"repeat_type":       "Weekly",
+					"repeat_start_time": "18:00",
+					"member_uid":        "${data.alicloud_account.current.id}",
+					"release":           "false",
+					"lang":              "zh",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action":          "accept",
+						"description":         name,
+						"destination":         "alibaba.com",
+						"destination_type":    "domain",
+						"proto":               "TCP",
+						"order":               "1",
+						"source":              "127.0.0.1/32",
+						"source_type":         "net",
+						"vpc_firewall_id":     CHECKSET,
+						"application_name":    "ANY",
+						"dest_port_group":     CHECKSET,
+						"dest_port_type":      "group",
+						"domain_resolve_type": "DNS",
+						"repeat_days.#":       "3",
+						"end_time":            "1766676600",
+						"start_time":          "1765209600",
+						"repeat_end_time":     "19:00",
+						"repeat_type":         "Weekly",
+						"repeat_start_time":   "18:00",
+						"member_uid":          CHECKSET,
+						"release":             "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+var AliCloudCloudFirewallVpcFirewallControlPolicyMap11929 = map[string]string{
+	"acl_uuid":                  CHECKSET,
+	"application_id":            CHECKSET,
+	"create_time":               CHECKSET,
+	"dest_port":                 CHECKSET,
+	"dest_port_group_ports.#":   CHECKSET,
+	"dest_port_type":            CHECKSET,
+	"destination_group_cidrs.#": CHECKSET,
+	"hit_times":                 CHECKSET,
+	"member_uid":                CHECKSET,
+	"release":                   CHECKSET,
+	"repeat_type":               CHECKSET,
+	"source_group_cidrs.#":      CHECKSET,
+}
+
+func AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence11929(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_account" "current" {
+	}
+
+	resource "alicloud_cen_instance" "default" {
+  		cen_instance_name = var.name
+	}
+
+	resource "alicloud_cloud_firewall_address_book" "port" {
+  		description  = "${var.name}-port"
+  		group_name   = "${var.name}-port"
+  		group_type   = "port"
+  		address_list = ["8081/8081"]
+	}
+
+	resource "alicloud_cloud_firewall_address_book" "ip" {
+  		description  = var.name
+  		group_name   = var.name
+  		group_type   = "ip"
+  		address_list = ["10.21.0.0/16", "10.168.0.0/16"]
+	}
+`, name)
+}
+
+// Case VPC边界安全策略_IP_策略有效期(重复周期) 12022
+func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic12022(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap12022)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallVpcFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence12022)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action":            "accept",
+					"description":           name,
+					"destination":           "127.0.0.2/32",
+					"destination_type":      "net",
+					"proto":                 "TCP",
+					"order":                 "1",
+					"source":                "127.0.0.1/32",
+					"source_type":           "net",
+					"vpc_firewall_id":       "${alicloud_cen_instance.default.id}",
+					"application_name_list": []string{"ANY"},
+					"dest_port":             "80/88",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action":              "accept",
+						"description":             name,
+						"destination":             "127.0.0.2/32",
+						"destination_type":        "net",
+						"proto":                   "TCP",
+						"order":                   "1",
+						"source":                  "127.0.0.1/32",
+						"source_type":             "net",
+						"vpc_firewall_id":         CHECKSET,
+						"application_name_list.#": "1",
+						"dest_port":               "80/88",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action": "drop",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action": "drop",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name_list": []string{"HTTP", "SMTP", "HTTPS"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port": "20/22",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port": "20/22",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port":       REMOVEKEY,
+					"dest_port_group": "${alicloud_cloud_firewall_address_book.port.group_name}",
+					"dest_port_type":  "group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port":       REMOVEKEY,
+						"dest_port_group": CHECKSET,
+						"dest_port_type":  "group",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination": "127.0.0.3/32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination": "127.0.0.3/32",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination":      "alibaba.com",
+					"destination_type": "domain",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination":      CHECKSET,
+						"destination_type": "domain",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_resolve_type": "DNS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_resolve_type": "DNS",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"repeat_days": []string{
+						"1", "2", "3"},
+					"end_time":          "1766676600",
+					"start_time":        "1765209600",
+					"repeat_end_time":   "19:00",
+					"repeat_type":       "Weekly",
+					"repeat_start_time": "18:00",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"repeat_days.#":     "3",
+						"end_time":          "1766676600",
+						"start_time":        "1765209600",
+						"repeat_end_time":   "19:00",
+						"repeat_type":       "Weekly",
+						"repeat_start_time": "18:00",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name_list": []string{"ANY"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"proto": "UDP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"proto": "UDP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"release": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"release": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source": "127.0.0.2/32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source": "127.0.0.2/32",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source":      "${alicloud_cloud_firewall_address_book.ip.group_name}",
+					"source_type": "group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source":      CHECKSET,
+						"source_type": "group",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic12022_twin0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap12022)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallVpcFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence12022)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action":            "accept",
+					"description":           name,
+					"destination":           "alibaba.com",
+					"destination_type":      "domain",
+					"proto":                 "TCP",
+					"order":                 "1",
+					"source":                "127.0.0.1/32",
+					"source_type":           "net",
+					"vpc_firewall_id":       "${alicloud_cen_instance.default.id}",
+					"application_name_list": []string{"ANY"},
+					"dest_port":             "80/88",
+					"dest_port_type":        "port",
+					"domain_resolve_type":   "DNS",
+					"repeat_days": []string{
+						"1", "2", "3"},
+					"end_time":          "1766676600",
+					"start_time":        "1765209600",
+					"repeat_end_time":   "19:00",
+					"repeat_type":       "Weekly",
+					"repeat_start_time": "18:00",
+					"member_uid":        "${data.alicloud_account.current.id}",
+					"release":           "false",
+					"lang":              "zh",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action":              "accept",
+						"description":             name,
+						"destination":             "alibaba.com",
+						"destination_type":        "domain",
+						"proto":                   "TCP",
+						"order":                   "1",
+						"source":                  "127.0.0.1/32",
+						"source_type":             "net",
+						"vpc_firewall_id":         CHECKSET,
+						"application_name_list.#": "1",
+						"dest_port":               "80/88",
+						"dest_port_type":          "port",
+						"domain_resolve_type":     "DNS",
+						"repeat_days.#":           "3",
+						"end_time":                "1766676600",
+						"start_time":              "1765209600",
+						"repeat_end_time":         "19:00",
+						"repeat_type":             "Weekly",
+						"repeat_start_time":       "18:00",
+						"member_uid":              CHECKSET,
+						"release":                 "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic12022_twin1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap12022)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallVpcFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence12022)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action":            "accept",
+					"description":           name,
+					"destination":           "alibaba.com",
+					"destination_type":      "domain",
+					"proto":                 "TCP",
+					"order":                 "1",
+					"source":                "127.0.0.1/32",
+					"source_type":           "net",
+					"vpc_firewall_id":       "${alicloud_cen_instance.default.id}",
+					"application_name_list": []string{"ANY"},
+					"dest_port_group":       "${alicloud_cloud_firewall_address_book.port.group_name}",
+					"dest_port_type":        "group",
+					"domain_resolve_type":   "DNS",
+					"repeat_days": []string{
+						"1", "2", "3"},
+					"end_time":          "1766676600",
+					"start_time":        "1765209600",
+					"repeat_end_time":   "19:00",
+					"repeat_type":       "Weekly",
+					"repeat_start_time": "18:00",
+					"member_uid":        "${data.alicloud_account.current.id}",
+					"release":           "false",
+					"lang":              "zh",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action":              "accept",
+						"description":             name,
+						"destination":             "alibaba.com",
+						"destination_type":        "domain",
+						"proto":                   "TCP",
+						"order":                   "1",
+						"source":                  "127.0.0.1/32",
+						"source_type":             "net",
+						"vpc_firewall_id":         CHECKSET,
+						"application_name_list.#": "1",
+						"dest_port_group":         CHECKSET,
+						"dest_port_type":          "group",
+						"domain_resolve_type":     "DNS",
+						"repeat_days.#":           "3",
+						"end_time":                "1766676600",
+						"start_time":              "1765209600",
+						"repeat_end_time":         "19:00",
+						"repeat_type":             "Weekly",
+						"repeat_start_time":       "18:00",
+						"member_uid":              CHECKSET,
+						"release":                 "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+var AliCloudCloudFirewallVpcFirewallControlPolicyMap12022 = map[string]string{
+	"acl_uuid":                  CHECKSET,
+	"application_id":            CHECKSET,
+	"create_time":               CHECKSET,
+	"dest_port":                 CHECKSET,
+	"dest_port_group_ports.#":   CHECKSET,
+	"dest_port_type":            CHECKSET,
+	"destination_group_cidrs.#": CHECKSET,
+	"hit_times":                 CHECKSET,
+	"member_uid":                CHECKSET,
+	"release":                   CHECKSET,
+	"repeat_type":               CHECKSET,
+	"source_group_cidrs.#":      CHECKSET,
+}
+
+func AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence12022(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_account" "current" {
+	}
+
+	resource "alicloud_cen_instance" "default" {
+  		cen_instance_name = var.name
+	}
+
+	resource "alicloud_cloud_firewall_address_book" "port" {
+  		description  = "${var.name}-port"
+  		group_name   = "${var.name}-port"
+  		group_type   = "port"
+  		address_list = ["8081/8081"]
+	}
+
+	resource "alicloud_cloud_firewall_address_book" "ip" {
+  		description  = var.name
+  		group_name   = var.name
+  		group_type   = "ip"
+  		address_list = ["10.21.0.0/16", "10.168.0.0/16"]
+	}
+`, name)
+}
+
+// Test CloudFirewall VpcFirewallControlPolicy. <<< Resource test cases, automatically generated.
