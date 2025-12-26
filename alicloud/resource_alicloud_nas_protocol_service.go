@@ -22,9 +22,9 @@ func resourceAliCloudNasProtocolService() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(20 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"create_time": {
@@ -121,7 +121,7 @@ func resourceAliCloudNasProtocolServiceCreate(d *schema.ResourceData, meta inter
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) {
+			if IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -192,12 +192,8 @@ func resourceAliCloudNasProtocolServiceUpdate(d *schema.ResourceData, meta inter
 	request["ClientToken"] = buildClientToken(action)
 	if d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
-
+	request["Description"] = d.Get("description")
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
@@ -250,7 +246,7 @@ func resourceAliCloudNasProtocolServiceDelete(d *schema.ResourceData, meta inter
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) {
+			if IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

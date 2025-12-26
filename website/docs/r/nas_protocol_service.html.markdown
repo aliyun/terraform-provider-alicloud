@@ -90,7 +90,7 @@ Value:
 * `protocol_spec` - (Required, ForceNew) The specification of the protocol machine cluster.
   - Value range: General、CL1、CL2
   - Default value: General
-* `protocol_throughput` - (Optional, ForceNew, Int) The throughput of the protocol service. Unit: MB/s.
+* `protocol_throughput` - (Optional, ForceNew, Computed, Int) The throughput of the protocol service. Unit: MB/s.
 * `protocol_type` - (Required, ForceNew) The protocol type supported by the protocol service.
 
 Value range:
@@ -103,14 +103,14 @@ Value range:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<file_system_id>:<protocol_service_id>`.
 * `create_time` - The time when the protocol server service was created. The UTC time.
-* `protocol_service_id` - The ID of protocol server.
+* `protocol_service_id` - Protocol Service ID
 * `status` - Agreement service status.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 10 mins) Used when create the Protocol Service.
-* `delete` - (Defaults to 10 mins) Used when delete the Protocol Service.
+* `create` - (Defaults to 20 mins) Used when create the Protocol Service.
+* `delete` - (Defaults to 20 mins) Used when delete the Protocol Service.
 * `update` - (Defaults to 10 mins) Used when update the Protocol Service.
 
 ## Import
