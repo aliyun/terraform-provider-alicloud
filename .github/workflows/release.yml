@@ -18,6 +18,8 @@ jobs:
   goreleaser:
     #runs-on: ubuntu-20.04
     runs-on: terraform-releaser
+    permissions:
+      contents: write
     steps:
       -
         name: Checkout
