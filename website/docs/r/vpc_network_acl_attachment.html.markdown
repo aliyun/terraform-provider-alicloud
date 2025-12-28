@@ -16,6 +16,8 @@ For information about VPC Network Acl Attachment and how to use it, see [What is
 
 -> **NOTE:** Available since v1.193.0.
 
+-> **WARNING:** Do not mix the use of this resource with the `resources` field in the `alicloud_network_acl` resource to bind VSW (Virtual Switch) to the same ACL. Using both methods simultaneously can cause conflicts and result in repeated apply operations that toggle between binding and unbinding VSWs. Choose one method and stick with it to avoid these issues.
+
 ## Example Usage
 
 Basic Usage
