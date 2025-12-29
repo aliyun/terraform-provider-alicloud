@@ -501,3 +501,84 @@ func (s *ConfigServiceV2) ConfigReportTemplateStateRefreshFuncWithApi(id string,
 }
 
 // DescribeConfigReportTemplate >>> Encapsulated.
+// DescribeConfigAggregateRemediation <<< Encapsulated get interface for Config AggregateRemediation.
+
+func (s *ConfigServiceV2) DescribeConfigAggregateRemediation(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AggregatorId"] = parts[0]
+	request["RemediationId"] = parts[1]
+
+	action := "DescribeAggregateRemediation"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"RemediationNotExist", "Invalid.AggregatorId.Value"}) {
+			return object, WrapErrorf(NotFoundErr("AggregateRemediation", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Remediation", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Remediation", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *ConfigServiceV2) ConfigAggregateRemediationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ConfigAggregateRemediationStateRefreshFuncWithApi(id, field, failStates, s.DescribeConfigAggregateRemediation)
+}
+
+func (s *ConfigServiceV2) ConfigAggregateRemediationStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeConfigAggregateRemediation >>> Encapsulated.
