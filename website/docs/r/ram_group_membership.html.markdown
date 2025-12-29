@@ -11,7 +11,11 @@ description: |-
 
 Provides a RAM Group membership resource. 
 
--> **NOTE:** Available since v1.0.0+.
+-> **NOTE:** Available since v1.0.0.
+
+-> **DEPRECATED:**  This resource has been deprecated since version `1.267.0`. Replace by `alicloud_ram_user_group_attachment`.
+
+~> **WARNING:** When you delete this resource, any other users in the group will also be deleted—even if those users were not added to the group via this Terraform resource. Therefore, it is strongly recommended to use `alicloud_ram_user_group_attachment` instead of this resource.
 
 ## Example Usage
 
