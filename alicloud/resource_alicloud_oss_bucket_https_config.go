@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"log"
-	"time"
 )
 
 func resourceAliCloudOssBucketHttpsConfig() *schema.Resource {
@@ -29,6 +30,35 @@ func resourceAliCloudOssBucketHttpsConfig() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"cipher_suit": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"custom_cipher_suite": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"tls13_custom_cipher_suite": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"strong_cipher_suite": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
 			},
 			"enable": {
 				Type:     schema.TypeBool,
@@ -57,7 +87,7 @@ func resourceAliCloudOssBucketHttpsConfigCreate(d *schema.ResourceData, meta int
 	request = make(map[string]interface{})
 	hostMap["bucket"] = StringPointer(d.Get("bucket").(string))
 
-	objectDataLocalMap := make(map[string]interface{})
+	httpsConfiguration := make(map[string]interface{})
 
 	tLS := make(map[string]interface{})
 	nodeNative1, _ := jsonpath.Get("$", d.Get("tls_versions"))
@@ -66,9 +96,33 @@ func resourceAliCloudOssBucketHttpsConfigCreate(d *schema.ResourceData, meta int
 		tLS["TLSVersion"] = nodeNative1.(*schema.Set).List()
 	}
 	tLS["Enable"] = d.Get("enable")
+	httpsConfiguration["TLS"] = tLS
 
-	objectDataLocalMap["TLS"] = tLS
-	request["HttpsConfiguration"] = objectDataLocalMap
+	if v := d.Get("cipher_suit"); !IsNil(v) {
+		cipherSuite := make(map[string]interface{})
+		enable3, _ := jsonpath.Get("$[0].enable", d.Get("cipher_suit"))
+		if enable3 != nil && enable3 != "" {
+			cipherSuite["Enable"] = enable3
+		}
+		strongCipherSuite1, _ := jsonpath.Get("$[0].strong_cipher_suite", d.Get("cipher_suit"))
+		if strongCipherSuite1 != nil && strongCipherSuite1 != "" {
+			cipherSuite["StrongCipherSuite"] = strongCipherSuite1
+		}
+		customCipherSuite1, _ := jsonpath.Get("$[0].custom_cipher_suite", d.Get("cipher_suit"))
+		if customCipherSuite1 != nil && customCipherSuite1 != "" {
+			cipherSuite["CustomCipherSuite"] = convertToInterfaceArray(customCipherSuite1)
+		}
+		tls13CustomCipherSuite, _ := jsonpath.Get("$[0].tls13_custom_cipher_suite", d.Get("cipher_suit"))
+		if tls13CustomCipherSuite != nil && tls13CustomCipherSuite != "" {
+			cipherSuite["TLS13CustomCipherSuite"] = convertToInterfaceArray(tls13CustomCipherSuite)
+		}
+
+		if len(cipherSuite) > 0 {
+			httpsConfiguration["CipherSuite"] = cipherSuite
+		}
+	}
+
+	request["HttpsConfiguration"] = httpsConfiguration
 
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -81,9 +135,9 @@ func resourceAliCloudOssBucketHttpsConfigCreate(d *schema.ResourceData, meta int
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket_https_config", action, AlibabaCloudSdkGoERROR)
@@ -92,7 +146,7 @@ func resourceAliCloudOssBucketHttpsConfigCreate(d *schema.ResourceData, meta int
 	d.SetId(fmt.Sprint(*hostMap["bucket"]))
 
 	ossServiceV2 := OssServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketHttpsConfigStateRefreshFunc(d.Id(), "#Enable", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketHttpsConfigStateRefreshFunc(d.Id(), "#TLS.Enable", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -114,16 +168,43 @@ func resourceAliCloudOssBucketHttpsConfigRead(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	d.Set("enable", objectRaw["Enable"])
-
-	tLSVersion1Raw := make([]interface{}, 0)
-	if objectRaw["TLSVersion"] != nil {
-		tLSVersion1Raw = objectRaw["TLSVersion"].([]interface{})
+	tLSRawObj, _ := jsonpath.Get("$.TLS", objectRaw)
+	tLSRaw := make(map[string]interface{})
+	if tLSRawObj != nil {
+		tLSRaw = tLSRawObj.(map[string]interface{})
 	}
-	if len(tLSVersion1Raw) > 0 {
-		d.Set("tls_versions", tLSVersion1Raw)
+	d.Set("enable", tLSRaw["Enable"])
 
+	cipherSuitMaps := make([]map[string]interface{}, 0)
+	cipherSuitMap := make(map[string]interface{})
+	cipherSuiteRaw := make(map[string]interface{})
+	if objectRaw["CipherSuite"] != nil {
+		cipherSuiteRaw = objectRaw["CipherSuite"].(map[string]interface{})
 	}
+	if len(cipherSuiteRaw) > 0 {
+		cipherSuitMap["enable"] = cipherSuiteRaw["Enable"]
+		cipherSuitMap["strong_cipher_suite"] = cipherSuiteRaw["StrongCipherSuite"]
+
+		customCipherSuiteRaw := make([]interface{}, 0)
+		if cipherSuiteRaw["CustomCipherSuite"] != nil {
+			customCipherSuiteRaw = convertToInterfaceArray(cipherSuiteRaw["CustomCipherSuite"])
+		}
+
+		cipherSuitMap["custom_cipher_suite"] = customCipherSuiteRaw
+		tLS13CustomCipherSuiteRaw := make([]interface{}, 0)
+		if cipherSuiteRaw["TLS13CustomCipherSuite"] != nil {
+			tLS13CustomCipherSuiteRaw = convertToInterfaceArray(cipherSuiteRaw["TLS13CustomCipherSuite"])
+		}
+
+		cipherSuitMap["tls13_custom_cipher_suite"] = tLS13CustomCipherSuiteRaw
+		cipherSuitMaps = append(cipherSuitMaps, cipherSuitMap)
+	}
+	if err := d.Set("cipher_suit", cipherSuitMaps); err != nil {
+		return err
+	}
+	tLSVersionRaw, _ := jsonpath.Get("$.TLS.TLSVersion", objectRaw)
+	d.Set("tls_versions", tLSVersionRaw)
+
 	d.Set("bucket", d.Id())
 
 	return nil
@@ -145,21 +226,55 @@ func resourceAliCloudOssBucketHttpsConfigUpdate(d *schema.ResourceData, meta int
 	hostMap := make(map[string]*string)
 	hostMap["bucket"] = StringPointer(d.Id())
 
-	objectDataLocalMap := make(map[string]interface{})
+	httpsConfiguration := make(map[string]interface{})
 
 	if d.HasChanges("enable", "tls_versions") {
 		update = true
 	}
-	tLS := make(map[string]interface{})
-	tLS["TLSVersion"] = make([]interface{}, 0)
-	nodeNative1, _ := jsonpath.Get("$", d.Get("tls_versions"))
-	if nodeNative1 != nil && nodeNative1 != "" {
-		tLS["TLSVersion"] = nodeNative1.(*schema.Set).List()
-	}
-	tLS["Enable"] = d.Get("enable")
+	if v := d.Get("enable"); !IsNil(v) || d.HasChange("enable") {
+		tLS := make(map[string]interface{})
+		if v, ok := d.GetOkExists("enable"); ok {
+			tLS["Enable"] = v
+		}
+		tlsVersions, _ := jsonpath.Get("$", d.Get("tls_versions"))
+		if tlsVersions != nil && tlsVersions != "" {
+			tLS["TLSVersion"] = convertToInterfaceArray(tlsVersions)
+		}
 
-	objectDataLocalMap["TLS"] = tLS
-	request["HttpsConfiguration"] = objectDataLocalMap
+		if len(tLS) > 0 {
+			httpsConfiguration["TLS"] = tLS
+		}
+	}
+
+	if d.HasChange("cipher_suit") {
+		update = true
+	}
+	if v := d.Get("cipher_suit"); !IsNil(v) || d.HasChange("cipher_suit") {
+		cipherSuite := make(map[string]interface{})
+		enable3, _ := jsonpath.Get("$[0].enable", d.Get("cipher_suit"))
+		if enable3 != nil && enable3 != "" {
+			cipherSuite["Enable"] = enable3
+		}
+		strongCipherSuite1, _ := jsonpath.Get("$[0].strong_cipher_suite", d.Get("cipher_suit"))
+		if strongCipherSuite1 != nil && strongCipherSuite1 != "" {
+			cipherSuite["StrongCipherSuite"] = strongCipherSuite1
+		}
+		customCipherSuite1, _ := jsonpath.Get("$[0].custom_cipher_suite", d.Get("cipher_suit"))
+		if customCipherSuite1 != nil && customCipherSuite1 != "" {
+			cipherSuite["CustomCipherSuite"] = convertToInterfaceArray(customCipherSuite1)
+		}
+		tls13CustomCipherSuite, _ := jsonpath.Get("$[0].tls13_custom_cipher_suite", d.Get("cipher_suit"))
+		if tls13CustomCipherSuite != nil && tls13CustomCipherSuite != "" {
+			cipherSuite["TLS13CustomCipherSuite"] = convertToInterfaceArray(tls13CustomCipherSuite)
+		}
+
+		if len(cipherSuite) > 0 {
+			httpsConfiguration["CipherSuite"] = cipherSuite
+		}
+	}
+
+	request["HttpsConfiguration"] = httpsConfiguration
+
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -172,14 +287,14 @@ func resourceAliCloudOssBucketHttpsConfigUpdate(d *schema.ResourceData, meta int
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ossServiceV2 := OssServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketHttpsConfigStateRefreshFunc(d.Id(), "#Enable", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketHttpsConfigStateRefreshFunc(d.Id(), "#TLS.Enable", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
