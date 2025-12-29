@@ -202,9 +202,9 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 		return object, WrapErrorf(NotFoundErr("BucketHttpsConfig", id), NotFoundMsg, response)
 	}
 
-	v, err := jsonpath.Get("$.HttpsConfiguration.TLS", response)
+	v, err := jsonpath.Get("$.HttpsConfiguration", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HttpsConfiguration.TLS", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HttpsConfiguration", response)
 	}
 
 	return v.(map[string]interface{}), nil

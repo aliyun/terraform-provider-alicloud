@@ -8,21 +8,17 @@ description: |-
 
 # alicloud_oss_bucket_https_config
 
-Provides a OSS Bucket Https Config resource. Whether the bucket can only be accessed with specific TLS versions.
+Provides a OSS Bucket Https Config resource.
 
-For information about OSS Bucket Https Config and how to use it, see [What is Bucket Https Config](https://www.alibabacloud.com/help/en/oss/developer-reference/transport-layer-security).
+Whether the bucket can only be accessed with specific TLS versions.
+
+For information about OSS Bucket Https Config and how to use it, see [What is Bucket Https Config](https://next.api.alibabacloud.com/document/Oss/2019-05-17/PutBucketHttpsConfig).
 
 -> **NOTE:** Available since v1.220.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_https_config&exampleId=8a2350a9-65c6-3aac-f7d3-d9f0af141a49f2978d0c&activeTab=example&spm=docs.r.oss_bucket_https_config.0.8a2350a965&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -51,14 +47,25 @@ resource "alicloud_oss_bucket_https_config" "default" {
 
 Terraform cannot destroy resource `alicloud_oss_bucket_https_config`. Terraform will remove this resource from the state file, however resources may remain.
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_https_config&spm=docs.r.oss_bucket_https_config.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
-* `bucket` - (Required, ForceNew) The name of the bucket.
+* `bucket` - (Required, ForceNew) The name of the bucket
+* `cipher_suit` - (Optional, List, Available since v1.267.0.) TLS encryption algorithm suite configuration See [`cipher_suit`](#cipher_suit) below.
 * `enable` - (Required) Specifies whether to enable TLS version management for the bucket. Valid values: true, false.
-* `tls_versions` - (Optional) Specifies the TLS versions allowed to access this buckets.
+* `tls_versions` - (Optional, Set) Specifies the TLS versions allowed to access this buckets.
+
+### `cipher_suit`
+
+The cipher_suit supports the following:
+* `custom_cipher_suite` - (Optional, Set) This field is used to configure custom encryption algorithm suites for TLS 1.2.
+* `enable` - (Optional, Computed) Configures TLS encryption algorithm suites. Valid values:
+true: strong encryption algorithm suites or custom encryption algorithm suites.
+false: all encryption algorithm suites (default).
+* `strong_cipher_suite` - (Optional) Specifies whether to use strong encryption algorithm suites. Valid values:
+true: uses strong encryption algorithm suites.
+false: uses custom encryption algorithm suites.
+* `tls13_custom_cipher_suite` - (Optional, Set) Specifies custom encryption algorithm suites. You can specify multiple suites. This field is used to configure custom encryption algorithm suites for TLS 1.3.
 
 ## Attributes Reference
 
