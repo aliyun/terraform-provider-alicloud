@@ -107,6 +107,10 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 					return PayType(d.Get("charge_type").(string)) == PostPaid || PayType(d.Get("payment_type").(string)) == PostPaid
 				},
 			},
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"expired_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -176,6 +180,10 @@ func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta inte
 
 	if v, ok := d.GetOk("period"); ok {
 		request.Period = requests.NewInteger(v.(int))
+	}
+
+	if v, ok := d.GetOkExists("auto_renew"); ok {
+		request.AutoRenew = requests.NewBoolean(v.(bool))
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)

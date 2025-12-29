@@ -57,10 +57,12 @@ The following arguments are supported:
 * `geographic_region_b_id` - (Optional, ForceNew, Available since v1.98.0) The area B to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
 * `payment_type` - (Optional, ForceNew, Available since v1.98.0) The billing method. Valid value: `PostPaid` | `PrePaid`. Default to `PrePaid`. If set to PrePaid, the bandwidth package can't be deleted before expired time.
 * `cen_bandwidth_package_name` - (Optional, Available since v1.98.0) The name of the bandwidth package. Defaults to null.
+* `auto_renew` - (Optional, Available since v1.267.0) Whether to enable auto-renewal for the bandwidth package. Only applicable when `payment_type` is `PrePaid`. Valid values: `true`, `false`. Default to `false`.
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 ->**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time. 
 
-->**NOTE:** The PostPaid mode is only for test. Please open a ticket if you need.
 
 ## Attributes Reference
 

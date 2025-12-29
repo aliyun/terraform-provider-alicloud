@@ -220,7 +220,7 @@ func SkipTestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
 }
 
 // Skip this testcase because of the account cannot purchase non-internal products.
-func SkipTestAccAlicloudCenBandwidthPackage_multi(t *testing.T) {
+func SkipTestAccAliCloudCenBandwidthPackage_multi(t *testing.T) {
 	var cenBwp cbn.CenBandwidthPackage
 
 	resourceId := "alicloud_cen_bandwidth_package.default"
@@ -263,7 +263,7 @@ func SkipTestAccAlicloudCenBandwidthPackage_multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenBandwidthPackage_upgrade(t *testing.T) {
+func TestAccAliCloudCenBandwidthPackage_upgrade(t *testing.T) {
 	var v cbn.CenBandwidthPackage
 	resourceId := "alicloud_cen_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -302,7 +302,7 @@ func TestAccAlicloudCenBandwidthPackage_upgrade(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period"},
+				ImportStateVerifyIgnore: []string{"period", "auto_renew"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -352,7 +352,7 @@ func TestAccAlicloudCenBandwidthPackage_upgrade(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenBandwidthPackage_basic1(t *testing.T) {
+func TestAccAliCloudCenBandwidthPackage_basic1(t *testing.T) {
 	var v cbn.CenBandwidthPackage
 	resourceId := "alicloud_cen_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -395,13 +395,13 @@ func TestAccAlicloudCenBandwidthPackage_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period"},
+				ImportStateVerifyIgnore: []string{"period", "auto_renew"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudCenBandwidthPackage_basic2(t *testing.T) {
+func TestAccAliCloudCenBandwidthPackage_basic2(t *testing.T) {
 	var v cbn.CenBandwidthPackage
 	resourceId := "alicloud_cen_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -444,13 +444,13 @@ func TestAccAlicloudCenBandwidthPackage_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period"},
+				ImportStateVerifyIgnore: []string{"period", "auto_renew"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudCenBandwidthPackage_basic3(t *testing.T) {
+func TestAccAliCloudCenBandwidthPackage_basic3(t *testing.T) {
 	var v cbn.CenBandwidthPackage
 	resourceId := "alicloud_cen_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -491,13 +491,13 @@ func TestAccAlicloudCenBandwidthPackage_basic3(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period"},
+				ImportStateVerifyIgnore: []string{"period", "auto_renew"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudCenBandwidthPackage_basic4(t *testing.T) {
+func TestAccAliCloudCenBandwidthPackage_basic4(t *testing.T) {
 	var v cbn.CenBandwidthPackage
 	resourceId := "alicloud_cen_bandwidth_package.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -538,7 +538,58 @@ func TestAccAlicloudCenBandwidthPackage_basic4(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period"},
+				ImportStateVerifyIgnore: []string{"period", "auto_renew"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCenBandwidthPackage_basic5(t *testing.T) {
+	var v cbn.CenBandwidthPackage
+	resourceId := "alicloud_cen_bandwidth_package.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenBandwidthPackage")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCen%sBandwidthPackage-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenBandwidthPackageConfigDependence_upgrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":                  "5",
+					"geographic_region_ids":      []string{"China", "China"},
+					"cen_bandwidth_package_name": "${var.name}",
+					"payment_type":               "PrePaid",
+					"period":                     "1",
+					"auto_renew":                 "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":                  "5",
+						"geographic_region_ids.#":    "1",
+						"cen_bandwidth_package_name": name,
+						"payment_type":               "PrePaid",
+						"period":                     "1",
+						"auto_renew":                 "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "auto_renew"},
 			},
 		},
 	})
