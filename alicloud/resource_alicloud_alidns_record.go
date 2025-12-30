@@ -11,15 +11,14 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudAlidnsRecord() *schema.Resource {
+func resourceAliCloudAlidnsRecord() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAlidnsRecordCreate,
-		Read:   resourceAlicloudAlidnsRecordRead,
-		Update: resourceAlicloudAlidnsRecordUpdate,
-		Delete: resourceAlicloudAlidnsRecordDelete,
+		Create: resourceAliCloudAlidnsRecordCreate,
+		Read:   resourceAliCloudAlidnsRecordRead,
+		Update: resourceAliCloudAlidnsRecordUpdate,
+		Delete: resourceAliCloudAlidnsRecordDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -59,7 +58,7 @@ func resourceAlicloudAlidnsRecord() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ENABLE", "DISABLE"}, false),
+				ValidateFunc: StringInSlice([]string{"ENABLE", "DISABLE"}, false),
 				Default:      "ENABLE",
 			},
 			"ttl": {
@@ -68,9 +67,8 @@ func resourceAlicloudAlidnsRecord() *schema.Resource {
 				Default:  600,
 			},
 			"type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"A", "NS", "MX", "TXT", "CNAME", "SRV", "AAAA", "CAA", "REDIRECT_URL", "FORWORD_URL"}, false),
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"user_client_ip": {
 				Type:     schema.TypeString,
@@ -85,7 +83,7 @@ func resourceAlicloudAlidnsRecord() *schema.Resource {
 	}
 }
 
-func resourceAlicloudAlidnsRecordCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlidnsRecordCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := alidns.CreateAddDomainRecordRequest()
@@ -135,10 +133,10 @@ func resourceAlicloudAlidnsRecordCreate(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alidns_record", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	return resourceAlicloudAlidnsRecordUpdate(d, meta)
+	return resourceAliCloudAlidnsRecordUpdate(d, meta)
 }
 
-func resourceAlicloudAlidnsRecordRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlidnsRecordRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	alidnsService := AlidnsService{client}
 	object, err := alidnsService.DescribeAlidnsRecord(d.Id())
@@ -163,7 +161,7 @@ func resourceAlicloudAlidnsRecordRead(d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func resourceAlicloudAlidnsRecordUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlidnsRecordUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	d.Partial(true)
 
@@ -272,10 +270,10 @@ func resourceAlicloudAlidnsRecordUpdate(d *schema.ResourceData, meta interface{}
 	}
 	d.Partial(false)
 
-	return resourceAlicloudAlidnsRecordRead(d, meta)
+	return resourceAliCloudAlidnsRecordRead(d, meta)
 }
 
-func resourceAlicloudAlidnsRecordDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlidnsRecordDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := alidns.CreateDeleteDomainRecordRequest()
 	request.RecordId = d.Id()
