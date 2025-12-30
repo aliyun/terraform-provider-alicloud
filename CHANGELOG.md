@@ -1,4 +1,35 @@
 ## 1.267.0 (Unreleased)
+
+- **New Resource:** `alicloud_config_aggregate_remediation` [GH-9296]
+- **New Resource:** `alicloud_kms_value_added_service` [GH-9322]
+- **New Resource:** `alicloud_nas_protocol_service` [GH-9332]
+- **New Resource:** `alicloud_nas_protocol_mount_target` [GH-9334]
+- **New Data Source:** `alicloud_threat_detection_check_structures` [GH-9340]
+- **New Data Source:** `alicloud_threat_detection_check_item_configs` [GH-9341]
+
+ENHANCEMENTS:
+
+- resource/alicloud_eflo_hyper_node: supports to extend cluster and shrink cluster for hyper node. [GH-9274]
+- resource/alicloud_cloud_firewall_vpc_firewall_control_policy: Refactored the resource alicloud_cloud_firewall_vpc_firewall_control_policy; Added the field application_name_list, domain_resolve_type, end_time, repeat_days, repeat_end_time, repeat_start_time, repeat_type, start_time, create_time. [GH-9326]
+- resource/alicloud_elasticsearch_instance: Added the field arch_type, auto_renew_duration, client_node_configuration, disk_type, amount, spec, disk, create_time, data_node_configuration, disk_encryption. [GH-9328]
+- resource/alicloud_instance: Added the field cpu_options. [GH-9329]
+- resource/alicloud_nas_file_system: Added the field redundancy_type, redundancy_vswitch_ids. [GH-9330]
+- resource/alicloud_nas_fileset: Add retry code; resource/alicloud_nas_protocol_service: Add retry code. [GH-9333]
+- resource/alicloud_nas_protocol_service: Refactored the resource and improve the docs. [GH-9345]
+- resource/alicloud_nas_fileset: Added the field create_time, deletion_protection. [GH-9347]
+- resource/alicloud_oss_bucket_https_config: Added the field cipher_suit. [GH-9352]
+- resource/alicloud_cen_bandwidth_package: Added the field auto_renew. [GH-9354]
+- resource/alicloud_alidns_record: Removed the type enums limitation. [GH-9355]
+- docs: Improves subcategory for ehpc. [GH-9325]
+- docs: Improves description for vpc_network_acl. [GH-9351]
+- docs: Improves description for ram_group_membership. [GH-9353]
+- docs: update the version to 1.267.0. [GH-9356]
+
+BUG FIXES:
+
+- resource/alicloud_db_database: Fixed the field and test. [GH-9298]
+- resource/alicloud_esa_*: Fix non-constant format string in call to fmt.Sprintf. [GH-9344]
+
 ## 1.266.0 (December 19, 2025)
 
 - **New Resource:** `alicloud_open_api_explorer_api_mcp_server` ([#9277](https://github.com/aliyun/terraform-provider-alicloud/issues/9277))
@@ -11,6 +42,7 @@
 - **New Resource:** `alicloud_esa_http_incoming_response_header_modification_rule` ([#9247](https://github.com/aliyun/terraform-provider-alicloud/issues/9247))
 - **New Resource:** `alicloud_redis_backup` ([#9317](https://github.com/aliyun/terraform-provider-alicloud/issues/9317))
 - **New Resource:** `alicloud_config_report_template` ([#9319](https://github.com/aliyun/terraform-provider-alicloud/issues/9319))
+- **New Resource:** `alicloud_ehpc_queue` ([#9323](https://github.com/aliyun/terraform-provider-alicloud/issues/9323))
 
 ENHANCEMENTS:
 
