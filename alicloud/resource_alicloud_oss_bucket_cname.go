@@ -276,15 +276,15 @@ func resourceAliCloudOssBucketCnameUpdate(d *schema.ResourceData, meta interface
 		certificateConfiguration["PreviousCertId"] = d.Get("previous_cert_id")
 		certificateConfiguration["Force"] = d.Get("force")
 		certificateConfiguration["DeleteCertificate"] = d.Get("delete_certificate")
-		certId1, _ := jsonpath.Get("$[0].cert_id", v)
+		certId1, _ := jsonpath.Get("$[0].cert_id", d.Get("certificate"))
 		if certId1 != nil && (d.HasChange("certificate.0.cert_id") || certId1 != "") {
 			certificateConfiguration["CertId"] = certId1
 		}
-		certificate1, _ := jsonpath.Get("$[0].certificate", v)
+		certificate1, _ := jsonpath.Get("$[0].certificate", d.Get("certificate"))
 		if certificate1 != nil && (d.HasChange("certificate.0.certificate") || certificate1 != "") {
 			certificateConfiguration["Certificate"] = certificate1
 		}
-		privateKey1, _ := jsonpath.Get("$[0].private_key", v)
+		privateKey1, _ := jsonpath.Get("$[0].private_key", d.Get("certificate"))
 		if privateKey1 != nil && (d.HasChange("certificate.0.private_key") || privateKey1 != "") {
 			certificateConfiguration["PrivateKey"] = privateKey1
 		}

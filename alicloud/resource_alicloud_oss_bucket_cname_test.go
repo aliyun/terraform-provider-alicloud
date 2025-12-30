@@ -95,7 +95,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 
 resource "alicloud_oss_bucket_cname_token" "defaultZaWJfG" {
   bucket = alicloud_oss_bucket.CreateBucket.bucket
-  domain = "tftestacc.com"
+  domain = "songwenpeng.alivetest.asia"
 }
 
 resource "alicloud_alidns_record" "defaultnHqm5p" {
@@ -103,7 +103,7 @@ resource "alicloud_alidns_record" "defaultnHqm5p" {
   line        = "default"
   rr          = "_dnsauth"
   type        = "TXT"
-  domain_name = "tftestacc.com"
+  domain_name = "songwenpeng.alivetest.asia"
   priority    = "1"
   value       = alicloud_oss_bucket_cname_token.defaultZaWJfG.token
   ttl         = "600"
@@ -145,7 +145,7 @@ func TestAccAliCloudOssBucketCname_basic8542(t *testing.T) {
 					"domain": "${alicloud_alidns_record.defaultnHqm5p.domain_name}",
 					"certificate": []map[string]interface{}{
 						{
-							"cert_id": "15582268-cn-hangzhou",
+							"cert_id": "22495571-cn-hangzhou",
 						},
 					},
 				}),
@@ -193,7 +193,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 
 resource "alicloud_oss_bucket_cname_token" "defaultZaWJfG" {
   bucket = alicloud_oss_bucket.CreateBucket.bucket
-  domain = "tftestacc.com"
+  domain = "songwenpeng.alivetest.asia"
 }
 
 resource "alicloud_alidns_record" "defaultnHqm5p" {
@@ -201,7 +201,7 @@ resource "alicloud_alidns_record" "defaultnHqm5p" {
   line        = "default"
   rr          = "_dnsauth"
   type        = "TXT"
-  domain_name = "tftestacc.com"
+  domain_name = "songwenpeng.alivetest.asia"
   priority    = "1"
   value       = alicloud_oss_bucket_cname_token.defaultZaWJfG.token
   ttl         = "600"
@@ -240,7 +240,7 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket": "${alicloud_oss_bucket.CreateBucket.bucket}",
-					"domain": "${alicloud_alidns_record.defaultnHqm5p.domain_name}",
+					"domain": "songwenpeng.${alicloud_alidns_record.defaultnHqm5p.domain_name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -254,8 +254,8 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 					"force": "true",
 					"certificate": []map[string]interface{}{
 						{
-							"certificate": "-----BEGIN CERTIFICATE-----\\nMIIFaTCCA1ECFGaJhRg/DJ8cZEsVlMhSd/fiqAqbMA0GCSqGSIb3DQEBCwUAMHEx\\nCzAJBgNVBAYTAkNOMREwDwYDVQQIDAhaaGVqaWFuZzERMA8GA1UEBwwISGFuZ3po\\nb3UxETAPBgNVBAoMCEFsaUNMb3VkMREwDwYDVQQLDAhzaGFucXVhbjEWMBQGA1UE\\nAwwNYmouZGluYXJ5LnRvcDAeFw0yNDEwMTUwNjAyMTdaFw0yNTEwMTUwNjAyMTda\\nMHExCzAJBgNVBAYTAkNOMREwDwYDVQQIDAhaaGVqaWFuZzERMA8GA1UEBwwISGFu\\nZ3pob3UxETAPBgNVBAoMCEFsaUNMb3VkMREwDwYDVQQLDAhzaGFucXVhbjEWMBQG\\nA1UEAwwNYmouZGluYXJ5LnRvcDCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoC\\nggIBAKRUVwPmfHhbXbV4VE07M6+2ANSgjYwZ6z2T3X5APsMR0o5daquh6rSsxI7P\\nSWv4a4lYHjM+4uiyQTYXDjnkDgNXMD+oIA7Dgmamw014pmRzECcERkw70LmK6vBS\\n5exyfjfF1Uo6dqVcoaxUWzBhufImPvPuYVGKF0pQfr8QKGmjMi6w5USXSSo1DRV3\\nqmvLQjlm/sVjkeTcvc9FryxQm00gzPfTRbrETOd1Urk76ZGw41CfldlRXiDGt6Xo\\nwWPUyJZpQu2afzuoXj3PW3DDWMNmJ3QyIXq91l7z/HiLshxwAxfajjn1jqrqFgG/\\nE2/61/WOnb1Fg9unheeZcEH4sBstHx5TbIX//r5RFNZtyRpkLyuQZhaESb6sB9A7\\nVAoUCFoYJZQF0tnKj5MjwYhkcwnjB1H6o+QeOb4EWEW3ZYiD2ijS1LW/fdiDH4N4\\n8H5wQoYLt7MtBoNw6G5qR9pk2X0xt3SaPjSRzxgLEMHfAu8UEbspf3l/OVeM7GGn\\n9km3s3k/dKWBOHOcczlhRPFBqffkeDxnW4f7q9TXwUR3gf2e8Cp4IvLgGPJGbrgY\\nYApM6w2VOR6nVThIq7fVnjSbAUZNTjMnfrZe6KZ59s194UreFoPKJfgr1RXvoTyc\\n8LGYpAG1qSG/Zo8IrAquyWL68D/9T0c/HtX8qK4YM8aHOs35AgMBAAEwDQYJKoZI\\nhvcNAQELBQADggIBAImsy4pnNMc9D3jDd1GlzRSwvHX4NRgLxAT1a+yNQDZgylFO\\n35En9HzZLnqJPzl8uG+we4UoxQ3oBA4hwfUZRHrrORTApW7D+YP4h52q5PJALOpI\\njaGnY+zJcXUA081b2eF7MZCMqUVeum9S/UudHXFXn20WgMJ69rcutvYTGmEKAZ4a\\nwyMiAvzWsGl5nkSfxDjOwt01KUQbjt7e/Cnm/snHCg4zokLuJm/G4AEw159jyQt0\\nqJqZGGENfFPFRJvkxMJF7qtIIPYR1D1R2jaJ7d88r7N2MzruZSLpukbcrFXkU4t/\\n3FaZQdAnn/B3JjkljR6UdCn/gd9UrTqGPsaIMMJTZxbtgTtG3kQWJd3KAsQhVkeo\\nyJnnhSk664JuzwdisXweyl7EvBKheACflSHDFX+77su4/+f5Kt+xnNqwVHQTGR1E\\n/inIX2evRUM5XqlOE9oBiz3+KpiMf7RHVl7HCdI5cAX7oOuMcoEyleR86h9BL1kj\\nZ7f6LuaJwSuh+15rnR1ULSRaUUfIq6Csvc6ck4Rme2Mj38FO3njF3M8yJwPQOZS8\\nZKfuCKKdX2isgCLr7NXmpUbctjYvbvVfM+UgDHNW/XB61iRwhi0qYd7leO6bMwnK\\nCjrC5/2JaR/9AUmVWg7RXy+5i4zM9RDqfSvhLAn23qR/lUFeMFQyU7MjKaYT\\n-----END CERTIFICATE-----",
-							"private_key": "-----BEGIN PRIVATE KEY-----\\n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\\nrh0lVGuFTYg5jMnM3UyUCGuDmFw3Zw==\\n-----END PRIVATE KEY-----",
+							"certificate": "-----BEGIN CERTIFICATE-----\\nMIIGLDCCBRSgAwIBAgIQC1haGkCG29WLl7YjhfFqfDANBgkqhkiG9w0BAQsFADBu\\nMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\\nd3cuZGlnaWNlcnQuY29tMS0wKwYDVQQDEyRFbmNyeXB0aW9uIEV2ZXJ5d2hlcmUg\\nRFYgVExTIENBIC0gRzIwHhcNMjUxMjI5MDAwMDAwWhcNMjYwMzI4MjM1OTU5WjAl\\nMSMwIQYDVQQDExpzb25nd2VucGVuZy5hbGl2ZXRlc3QuYXNpYTCCASIwDQYJKoZI\\nhvcNAQEBBQADggEPADCCAQoCggEBAM34HhxQW2URornO1y5EAG7wBIW/WxFzP81g\\nASejB5qHzQxeDSwu4QlSW7qFU5njf3toQ4HG5f9XxfNSpmirlpiPSlWLOaws7kIa\\nlmc57pLVsLCgA4OIp2SjgUXNlfPjdQ/uq/Z07BGOZ7EUaZo7qOd2MgGkwNlb4hZW\\ntK2LSTJp9lH2hlgs50LU6UOC8qTya9xpyhrzorZKpGX9Oe5F1OjByDsj21cIeeu3\\nzMXzB8XHX9vLvPf1tAUorlezRX4T2BlslNbHYpdbUpeIyRD5yoOb2I4zPw62nXV9\\nirLt33XhKpM+eMGuldG8wI9m5+WVr2vycswQ2zUjDE2uRCXDYPkCAwEAAaOCAw0w\\nggMJMB8GA1UdIwQYMBaAFHjfkZBf7t6s9sV169VMVVPvJEq2MB0GA1UdDgQWBBQt\\nONdtzvXRX4IKV94S99BzLBk4VzBFBgNVHREEPjA8ghpzb25nd2VucGVuZy5hbGl2\\nZXRlc3QuYXNpYYIed3d3LnNvbmd3ZW5wZW5nLmFsaXZldGVzdC5hc2lhMD4GA1Ud\\nIAQ3MDUwMwYGZ4EMAQIBMCkwJwYIKwYBBQUHAgEWG2h0dHA6Ly93d3cuZGlnaWNl\\ncnQuY29tL0NQUzAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEG\\nCCsGAQUFBwMCMIGABggrBgEFBQcBAQR0MHIwJAYIKwYBBQUHMAGGGGh0dHA6Ly9v\\nY3NwLmRpZ2ljZXJ0LmNvbTBKBggrBgEFBQcwAoY+aHR0cDovL2NhY2VydHMuZGln\\naWNlcnQuY29tL0VuY3J5cHRpb25FdmVyeXdoZXJlRFZUTFNDQS1HMi5jcnQwDAYD\\nVR0TAQH/BAIwADCCAX4GCisGAQQB1nkCBAIEggFuBIIBagFoAHYAlpdkv1VYl633\\nQ4doNwhCd+nwOtX2pPM2bkakPw/KqcYAAAGbae/bnwAABAMARzBFAiBuc7rbM4gK\\ny87P7A5I0B5WQIvXOfgWhwG7u9ygCuRw2AIhAMGOgxpAYUF4rHc4HvZTDpg06iGq\\nqYLs9fqS9qNizksbAHYAFoMtq/CpJQ8P8DqlRf/Iv8gj0IdL9gQpJ/jnHzMT9foA\\nAAGbae/blwAABAMARzBFAiBzu8OJcdPBhEHdUGWPDllNX6AqPBqj1FQkKHohA2mp\\nBwIhAL1t0T+dSN4ZPBi+CmoWL7Uskcds1wBB8O1IrA+lGjT1AHYAZBHEbKQS7KeJ\\nHKICLgC8q08oB9QeNSer6v7VA8l9zfAAAAGbae/bmwAABAMARzBFAiAW/MJQij/I\\npiwZ3SDBr2/TNtHnNu26iCHLMvGRYmaWCAIhAONH4obDKa+Z7wd1eBZGK0r/Mm7i\\neUHKkAb4s3ETy5uZMA0GCSqGSIb3DQEBCwUAA4IBAQCGpNhlNt4NmMRXikaTpD32\\nlGpUV3EZ+XXhmSIt7p362UfB/T/GDozfX2aH009PJ4IIYHibNvFnZFXDn+pVPn9a\\nYm941Vu2Khzt4GGXx76oA5AML8ZOl7GBMBukPZMg53fCr0BLDqvH0BOyenfBPCYt\\nzpk5kdzWT/YufHpoDBRkaz4qE6mkcEt+wggzJWJLyhukFAVVLQPhj54OWX3dRe5W\\nQIe3TSzZWSuIto9+PGd+s93oN0OXi7PUkOQSoOrYMunwgopxcICi8mewAPZEpLxC\\nhiKCoQ7vBVFTQ6t0J+KGFOd9XpwuQg2BR4LGtnmOwnBSCnoOdZiG+dqomku3ztPQ\\n-----END CERTIFICATE-----",
+							"private_key": "-----BEGIN RSA PRIVATE KEY-----\\nMIIEogIBAAKCAQEAzfgeHFBbZRGiuc7XLkQAbvAEhb9bEXM/zWABJ6MHmofNDF4N\\nLC7hCVJbuoVTmeN/e2hDgcbl/1fF81KmaKuWmI9KVYs5rCzuQhqWZznuktWwsKAD\\ng4inZKOBRc2V8+N1D+6r9nTsEY5nsRRpmjuo53YyAaTA2VviFla0rYtJMmn2UfaG\\nWCznQtTpQ4LypPJr3GnKGvOitkqkZf057kXU6MHIOyPbVwh567fMxfMHxcdf28u8\\n9/W0BSiuV7NFfhPYGWyU1sdil1tSl4jJEPnKg5vYjjM/DraddX2Ksu3fdeEqkz54\\nwa6V0bzAj2bn5ZWva/JyzBDbNSMMTa5EJcNg+QIDAQABAoIBABLFNFVHO3UD/Ozq\\n/TAxsUpq5DaeIDoAY0WfpKtMj7JVAupIHfIzWX3EfCiM4vgIxALmlxRaIHa7NIZ+\\ntzyduo0vrcoK9JgMxi/PBXrlzCikgcQu6PMRPpQM1IicejhuN6paiWBd+m+FJ0z7\\ne747BqMFYfxFW+/TEFER2MhiA6ss0/cvr5k5lK7ejPojIjyiObGaTx61bdIXhKMH\\nTQCf9BvqDm4bJnoorsjJpqGnZcpBtqUkl3VBXuCbuxvJCWjrWnCgRFhWm2ToHM9I\\nS9HiS185UPd4l18/5KBc02mf+hxCgf33vW0oKzjkI6GEIyaq3PAmWxMi1VtuLRER\\n76wfYwMCgYEA9xSujmMNX2x+4bs1qM4giQF2RgpAHlDzWBVin/SQQYv6H+JOaHBR\\nmNJ69omcTbAE5w65Q8tHoBNnT/UyF4M5btJ6mbYYYTtGjv4Gerc1UnsU21+PuH9R\\n8dOx/eDjfuOrz0yOv8+5uw1Qc8dkOIDdag7XYBSuxu5aapRVViFyy9sCgYEA1WeE\\nKFqSjsiAr0/jqFy/T/iBVyTYRWLcoq6a/GRwujk3xdRylNtkQ1eVt43XfXhNRFJC\\nWNy/Y5BCLzwSU8P/n1mPdhjy6XaBhRwWQ+JjheCXnJloiAC7wI9HwW/jgwBiDU8k\\nVgr8BJPi8bDEZdlDl89ztFUEJRxDF4BW3Kee6LsCgYAItITV5W2CMCtkPplMYj7J\\nNPD61L+fkdCRCOfZpN80P/9HAk0q5tIpJTlJ2F1Wa14w2dbzKYVTgXuBWK00IN50\\nJhxFsCG5w0HgJdkKl8vcJRP+CqbgpDO55nB99l9tiA30lsjsvx/XFEgCXEMOrpOe\\neflinDfwMFOlL6a2CyWlQwKBgGSvr4n+mdFmRljwv3/rKpSHsja0epnaODFFYnic\\nxxcF8guT3e/fx2GCjHALK1XWkdYfXZBhrqdCJAf3Nspw2kWL0wUsZkfCkv+Drfmf\\nccdznPTU6J3qgqsqrvdUXCqt3pVa9tDl49whDl1sQm2vYZXZ2kSGLCt6Nyl6cwEu\\n0OoLAoGAPJ4cDDs31nSgh4dTDh09QN51Y1ZxS+erY5jj+CzLhXteO5zLBkQVbOKs\\nBfD8wjvhus828NHNxQ9zsLO8aOZkd0yelOIV12a9kWkKduZpYua6Qjmgjri758GI\\nd4nIOAGBXPL/lvFCvgyGzf8KtRdBeau904i6hK1Pt6D87jFGjt0=\\n-----END RSA PRIVATE KEY-----",
 						},
 					},
 				}),
@@ -269,7 +269,7 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"certificate": []map[string]interface{}{
 						{
-							"cert_id": "15687876-cn-hangzhou",
+							"cert_id": "22495571-cn-hangzhou",
 						},
 					},
 					"delete_certificate": "false",
@@ -285,15 +285,15 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 					"force": "false",
 					"certificate": []map[string]interface{}{
 						{
-							"cert_id": "15687876-cn-hangzhou",
+							"cert_id": "22495586-cn-hangzhou",
 						},
 					},
-					"previous_cert_id": "15582268-cn-hangzhou",
+					"previous_cert_id": "22495571-cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"force":            "false",
-						"previous_cert_id": "15582268-cn-hangzhou",
+						"previous_cert_id": "22495571-cn-hangzhou",
 					}),
 				),
 			},
@@ -324,15 +324,15 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 
 resource "alicloud_oss_bucket_cname_token" "defaultZaWJfG" {
   bucket = alicloud_oss_bucket.CreateBucket.bucket
-  domain = "tftestacc.com"
+  domain = "songwenpeng.alivetest.asia"
 }
 
 resource "alicloud_alidns_record" "defaultnHqm5p" {
   status      = "ENABLE"
   line        = "default"
-  rr          = "_dnsauth"
+  rr          = "_dnsauth.songwenpeng"
   type        = "TXT"
-  domain_name = "tftestacc.com"
+  domain_name = "alivetest.asia"
   priority    = "1"
   value       = alicloud_oss_bucket_cname_token.defaultZaWJfG.token
   ttl         = "600"
