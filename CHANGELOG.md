@@ -1,34 +1,37 @@
-## 1.267.0 (Unreleased)
+## 1.268.0 (Unreleased)
+## 1.267.0 (December 30, 2025)
 
-- **New Resource:** `alicloud_config_aggregate_remediation` [GH-9296]
-- **New Resource:** `alicloud_kms_value_added_service` [GH-9322]
-- **New Resource:** `alicloud_nas_protocol_service` [GH-9332]
-- **New Resource:** `alicloud_nas_protocol_mount_target` [GH-9334]
-- **New Data Source:** `alicloud_threat_detection_check_structures` [GH-9340]
-- **New Data Source:** `alicloud_threat_detection_check_item_configs` [GH-9341]
+- **New Resource:** `alicloud_config_aggregate_remediation` ([#9296](https://github.com/aliyun/terraform-provider-alicloud/issues/9296))
+- **New Resource:** `alicloud_kms_value_added_service` ([#9322](https://github.com/aliyun/terraform-provider-alicloud/issues/9322))
+- **New Resource:** `alicloud_nas_protocol_service` ([#9332](https://github.com/aliyun/terraform-provider-alicloud/issues/9332))
+- **New Resource:** `alicloud_nas_protocol_mount_target` ([#9334](https://github.com/aliyun/terraform-provider-alicloud/issues/9334))
+- **New Resource:** `alicloud_threat_detection_check_config` ([#9350](https://github.com/aliyun/terraform-provider-alicloud/issues/9350))
+- **New Data Source:** `alicloud_threat_detection_check_structures` ([#9340](https://github.com/aliyun/terraform-provider-alicloud/issues/9340))
+- **New Data Source:** `alicloud_threat_detection_check_item_configs` ([#9341](https://github.com/aliyun/terraform-provider-alicloud/issues/9341))
 
 ENHANCEMENTS:
 
-- resource/alicloud_eflo_hyper_node: supports to extend cluster and shrink cluster for hyper node. [GH-9274]
-- resource/alicloud_cloud_firewall_vpc_firewall_control_policy: Refactored the resource alicloud_cloud_firewall_vpc_firewall_control_policy; Added the field application_name_list, domain_resolve_type, end_time, repeat_days, repeat_end_time, repeat_start_time, repeat_type, start_time, create_time. [GH-9326]
-- resource/alicloud_elasticsearch_instance: Added the field arch_type, auto_renew_duration, client_node_configuration, disk_type, amount, spec, disk, create_time, data_node_configuration, disk_encryption. [GH-9328]
-- resource/alicloud_instance: Added the field cpu_options. [GH-9329]
-- resource/alicloud_nas_file_system: Added the field redundancy_type, redundancy_vswitch_ids. [GH-9330]
-- resource/alicloud_nas_fileset: Add retry code; resource/alicloud_nas_protocol_service: Add retry code. [GH-9333]
-- resource/alicloud_nas_protocol_service: Refactored the resource and improve the docs. [GH-9345]
-- resource/alicloud_nas_fileset: Added the field create_time, deletion_protection. [GH-9347]
-- resource/alicloud_oss_bucket_https_config: Added the field cipher_suit. [GH-9352]
-- resource/alicloud_cen_bandwidth_package: Added the field auto_renew. [GH-9354]
-- resource/alicloud_alidns_record: Removed the type enums limitation. [GH-9355]
-- docs: Improves subcategory for ehpc. [GH-9325]
-- docs: Improves description for vpc_network_acl. [GH-9351]
-- docs: Improves description for ram_group_membership. [GH-9353]
-- docs: update the version to 1.267.0. [GH-9356]
+- resource/alicloud_eflo_hyper_node: supports to extend cluster and shrink cluster for hyper node. ([#9274](https://github.com/aliyun/terraform-provider-alicloud/issues/9274))
+- resource/alicloud_cloud_firewall_vpc_firewall_control_policy: Refactored the resource alicloud_cloud_firewall_vpc_firewall_control_policy; Added the field application_name_list, domain_resolve_type, end_time, repeat_days, repeat_end_time, repeat_start_time, repeat_type, start_time, create_time. ([#9326](https://github.com/aliyun/terraform-provider-alicloud/issues/9326))
+- resource/alicloud_elasticsearch_instance: Added the field arch_type, auto_renew_duration, client_node_configuration, disk_type, amount, spec, disk, create_time, data_node_configuration, disk_encryption. ([#9328](https://github.com/aliyun/terraform-provider-alicloud/issues/9328))
+- resource/alicloud_instance: Added the field cpu_options. ([#9329](https://github.com/aliyun/terraform-provider-alicloud/issues/9329))
+- resource/alicloud_nas_file_system: Added the field redundancy_type, redundancy_vswitch_ids. ([#9330](https://github.com/aliyun/terraform-provider-alicloud/issues/9330))
+- resource/alicloud_nas_fileset: Add retry code; resource/alicloud_nas_protocol_service: Add retry code. ([#9333](https://github.com/aliyun/terraform-provider-alicloud/issues/9333))
+- resource/alicloud_nas_protocol_service: Refactored the resource and improve the docs. ([#9345](https://github.com/aliyun/terraform-provider-alicloud/issues/9345))
+- resource/alicloud_nas_fileset: Added the field create_time, deletion_protection. ([#9347](https://github.com/aliyun/terraform-provider-alicloud/issues/9347))
+- resource/alicloud_oss_bucket_https_config: Added the field cipher_suit. ([#9352](https://github.com/aliyun/terraform-provider-alicloud/issues/9352))
+- resource/alicloud_cen_bandwidth_package: Added the field auto_renew. ([#9354](https://github.com/aliyun/terraform-provider-alicloud/issues/9354))
+- resource/alicloud_alidns_record: Removed the type enums limitation. ([#9355](https://github.com/aliyun/terraform-provider-alicloud/issues/9355))
+- docs: Improves subcategory for ehpc. ([#9325](https://github.com/aliyun/terraform-provider-alicloud/issues/9325))
+- docs: Improves description for vpc_network_acl. ([#9351](https://github.com/aliyun/terraform-provider-alicloud/issues/9351))
+- docs: Improves description for ram_group_membership. ([#9353](https://github.com/aliyun/terraform-provider-alicloud/issues/9353))
+- docs: update the version to 1.267.0. ([#9356](https://github.com/aliyun/terraform-provider-alicloud/issues/9356))
 
 BUG FIXES:
 
-- resource/alicloud_db_database: Fixed the field and test. [GH-9298]
-- resource/alicloud_esa_*: Fix non-constant format string in call to fmt.Sprintf. [GH-9344]
+- resource/alicloud_db_database: Fixed the field and test. ([#9298](https://github.com/aliyun/terraform-provider-alicloud/issues/9298))
+- resource/alicloud_esa_*: Fix non-constant format string in call to fmt.Sprintf. ([#9344](https://github.com/aliyun/terraform-provider-alicloud/issues/9344))
+- resource/alicloud_oss_bucket_cname: Fixed bug while update certificate. ([#9357](https://github.com/aliyun/terraform-provider-alicloud/issues/9357))
 
 ## 1.266.0 (December 19, 2025)
 

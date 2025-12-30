@@ -20,6 +20,12 @@ For information about File Storage (NAS) Fileset and how to use it, see [What is
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_fileset&exampleId=9ac6c599-20fe-16ea-081e-20448496b4141b8987b4&activeTab=example&spm=docs.r.nas_fileset.0.9ac6c59920&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-beijing"
@@ -57,6 +63,9 @@ resource "alicloud_nas_fileset" "example" {
   file_system_path = "/example_path/"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_fileset&spm=docs.r.nas_fileset.example&intl_lang=EN_US)
 
 ## Argument Reference
 

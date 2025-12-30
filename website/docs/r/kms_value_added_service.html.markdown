@@ -20,6 +20,12 @@ For information about KMS Value Added Service and how to use it, see [What is Va
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_kms_value_added_service&exampleId=9992c85c-9242-5a74-8132-a541ace1dbbfb9a06b79&activeTab=example&spm=docs.r.kms_value_added_service.0.9992c85c92&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -38,6 +44,9 @@ resource "alicloud_kms_value_added_service" "default" {
   renew_status        = "AutoRenewal"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_kms_value_added_service&spm=docs.r.kms_value_added_service.example&intl_lang=EN_US)
 
 ## Argument Reference
 
