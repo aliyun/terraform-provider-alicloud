@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAlidnsRecord_basic(t *testing.T) {
+func TestAccAliCloudAlidnsRecord_basic(t *testing.T) {
 	var v alidns.DescribeDomainRecordInfoResponse
 
 	resourceId := "alicloud_alidns_record.default"

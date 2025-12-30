@@ -1536,7 +1536,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_domain_group":                                   resourceAlicloudAlidnsDomainGroup(),
 			"alicloud_resource_manager_policy_version":                       resourceAlicloudResourceManagerPolicyVersion(),
 			"alicloud_kms_key_version":                                       resourceAlicloudKmsKeyVersion(),
-			"alicloud_alidns_record":                                         resourceAlicloudAlidnsRecord(),
+			"alicloud_alidns_record":                                         resourceAliCloudAlidnsRecord(),
 			"alicloud_ddoscoo_scheduler_rule":                                resourceAlicloudDdoscooSchedulerRule(),
 			"alicloud_cassandra_cluster":                                     resourceAlicloudCassandraCluster(),
 			"alicloud_cassandra_data_center":                                 resourceAlicloudCassandraDataCenter(),
