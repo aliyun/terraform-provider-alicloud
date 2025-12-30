@@ -82,7 +82,7 @@ resource "alicloud_db_database" "default" {
 
 The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The instance ID. You can call the DescribeDBInstances operation to query the instance ID.
-* `data_base_name` - (Optional, ForceNew, Available since v1.266.0) The name of the database.
+* `data_base_name` - (Optional, ForceNew, Available since v1.267.0) The name of the database.
   -> **NOTE:**
   The name must be 2 to 64 characters in length.
   The name must start with a lowercase letter and end with a lowercase letter or digit.
@@ -100,7 +100,7 @@ The following arguments are supported:
 
   More details refer to [API Docs](https://www.alibabacloud.com/help/zh/doc-detail/26258.htm)
 * `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
-* `name` - (Optional, ForceNew, Deprecated from v1.266.0) The attribute has been deprecated from 1.266.0 and using `data_base_name` instead.
+* `name` - (Optional, ForceNew, Deprecated from v1.267.0) The attribute has been deprecated from 1.267.0 and using `data_base_name` instead.
 -> **NOTE:** The value of "data_base_name" or "character_set"  does not support modification.
 
 ## Attributes Reference

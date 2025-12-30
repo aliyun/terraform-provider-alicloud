@@ -14,7 +14,7 @@ Value Added Service.
 
 For information about KMS Value Added Service and how to use it, see [What is Value Added Service](https://next.api.alibabacloud.com/document/BssOpenApi/2017-12-14/CreateInstance).
 
--> **NOTE:** Available since v1.266.0.
+-> **NOTE:** Available since v1.267.0.
 
 ## Example Usage
 
