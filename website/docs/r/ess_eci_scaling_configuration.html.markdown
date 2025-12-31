@@ -57,8 +57,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = local.name
-  vpc_id = alicloud_vpc.default.id
+  security_group_name = local.name
+  vpc_id              = alicloud_vpc.default.id
 }
 
 resource "alicloud_ess_scaling_group" "default" {
@@ -115,6 +115,7 @@ The following arguments are supported:
 * `memory` - (Optional) The amount of memory resources allocated to the container group.
 * `resource_group_id` - (Optional) ID of resource group.
 * `dns_policy` - (Optional) dns policy of contain group.
+* `override` - (Optional, Available since v1.268.0) Specifies whether to overwrite the data. Valid values: true, false.
 * `enable_sls` - (Optional) Enable sls log service.
 * `ram_role_name` - (Optional) The RAM role that the container group assumes. ECI and ECS share the same RAM role.
 * `spot_strategy` - (Optional) The spot strategy for a Pay-As-You-Go instance. Valid values: `NoSpot`, `SpotAsPriceGo`
