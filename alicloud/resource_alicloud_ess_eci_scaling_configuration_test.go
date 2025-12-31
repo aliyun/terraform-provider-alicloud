@@ -92,6 +92,7 @@ func testSweepEciScalingConfiguration(region string) error {
 func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ess_eci_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudEssEciScalingConfigurationMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -586,9 +587,283 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudEssEciScalingConfiguration_override(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ess_eci_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudEssEciScalingConfigurationMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEssEciScalingConfiguration")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-test-acc-alicloud-eci-container-group%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssEciScalingConfiguration)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":                 "${alicloud_ess_scaling_group.default.id}",
+					"scaling_configuration_name":       name,
+					"description":                      "desc",
+					"security_group_id":                "${local.alicloud_security_group_id}",
+					"container_group_name":             name,
+					"restart_policy":                   "restartPolicy",
+					"cpu":                              "2",
+					"memory":                           "4",
+					"resource_group_id":                "resourceGroupId",
+					"dns_policy":                       "dnsPolicy",
+					"enable_sls":                       "true",
+					"image_snapshot_id":                "imageSnapshotId",
+					"ram_role_name":                    "ramRoleName",
+					"termination_grace_period_seconds": "60",
+					"auto_match_image_cache":           "true",
+					"ipv6_address_count":               "1",
+					"active_deadline_seconds":          "60",
+					"spot_strategy":                    "SpotWithPriceLimit",
+					"spot_price_limit":                 "1.1",
+					"auto_create_eip":                  "true",
+					"eip_bandwidth":                    "1",
+					"ephemeral_storage":                "1",
+					"load_balancer_weight":             "1",
+					"host_name":                        "hostname",
+					"ingress_bandwidth":                "1",
+					"egress_bandwidth":                 "1",
+					"tags": map[string]string{
+						"name": "tf-test",
+					},
+					"containers": []map[string]interface{}{
+						{
+							"security_context_capability_adds":            []string{"adds"},
+							"lifecycle_pre_stop_handler_execs":            []string{"echo 1"},
+							"security_context_read_only_root_file_system": "true",
+							"security_context_run_as_user":                "1",
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "protocol",
+									"port":     "1",
+								},
+							},
+							"working_dir":       "workingDir",
+							"args":              []string{"arg"},
+							"cpu":               "1",
+							"gpu":               "1",
+							"memory":            "1",
+							"name":              "name",
+							"image":             "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"image_pull_policy": "policy",
+						},
+					},
+					"init_containers": []map[string]interface{}{
+						{
+							"security_context_capability_adds":            []string{"adds"},
+							"security_context_read_only_root_file_system": "true",
+							"security_context_run_as_user":                "1",
+							"working_dir":                                 "workingDir",
+							"args":                                        []string{"arg"},
+							"cpu":                                         "1",
+							"gpu":                                         "1",
+							"memory":                                      "1",
+							"name":                                        "name",
+							"image":                                       "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"image_pull_policy":                           "policy",
+						},
+					},
+					"volumes": []map[string]interface{}{
+						{
+							"config_file_volume_config_file_to_paths": []map[string]interface{}{
+								{
+									"content": "content",
+									"path":    "path",
+								},
+							},
+							"disk_volume_disk_id":   "disk_volume_disk_id",
+							"disk_volume_fs_type":   "disk_volume_fs_type",
+							"disk_volume_disk_size": "1",
+							"flex_volume_driver":    "flex_volume_driver",
+							"flex_volume_fs_type":   "flex_volume_fs_type",
+							"flex_volume_options":   "flex_volume_options",
+							"nfs_volume_path":       "nfs_volume_path",
+							"nfs_volume_read_only":  "true",
+							"nfs_volume_server":     "nfs_volume_server",
+							"name":                  "name",
+							"type":                  "type",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_id":                 CHECKSET,
+						"scaling_configuration_name":       name,
+						"description":                      "desc",
+						"security_group_id":                CHECKSET,
+						"container_group_name":             name,
+						"restart_policy":                   "restartPolicy",
+						"cpu":                              "2",
+						"memory":                           "4",
+						"resource_group_id":                "resourceGroupId",
+						"dns_policy":                       "dnsPolicy",
+						"enable_sls":                       "true",
+						"image_snapshot_id":                "imageSnapshotId",
+						"ram_role_name":                    "ramRoleName",
+						"termination_grace_period_seconds": "60",
+						"auto_match_image_cache":           "true",
+						"ipv6_address_count":               "1",
+						"active_deadline_seconds":          "60",
+						"spot_strategy":                    "SpotWithPriceLimit",
+						"spot_price_limit":                 "1.1",
+						"auto_create_eip":                  "true",
+						"host_name":                        "hostname",
+						"ingress_bandwidth":                "1",
+						"egress_bandwidth":                 "1",
+						"ephemeral_storage":                "1",
+						"load_balancer_weight":             "1",
+						"tags.name":                        "tf-test",
+						"containers.#":                     "1",
+						"containers.0.security_context_read_only_root_file_system": "true",
+						"containers.0.security_context_run_as_user":                "1",
+						"containers.0.security_context_capability_adds.#":          "1",
+						"containers.0.security_context_capability_adds.0":          "adds",
+						"containers.0.lifecycle_pre_stop_handler_execs.#":          "1",
+						"containers.0.lifecycle_pre_stop_handler_execs.0":          "echo 1",
+						"init_containers.#": "1",
+						"init_containers.0.security_context_run_as_user":                "1",
+						"init_containers.0.security_context_read_only_root_file_system": "true",
+						"init_containers.0.security_context_capability_adds.#":          "1",
+						"init_containers.0.security_context_capability_adds.0":          "adds",
+						"volumes.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":                 "${alicloud_ess_scaling_group.default.id}",
+					"override":                         "true",
+					"scaling_configuration_name":       name,
+					"description":                      "desc",
+					"security_group_id":                "${local.alicloud_security_group_id}",
+					"container_group_name":             name,
+					"restart_policy":                   "restartPolicy",
+					"cpu":                              "2",
+					"memory":                           "4",
+					"resource_group_id":                "resourceGroupId",
+					"dns_policy":                       "dnsPolicy",
+					"enable_sls":                       "true",
+					"image_snapshot_id":                "imageSnapshotId",
+					"ram_role_name":                    "ramRoleName",
+					"termination_grace_period_seconds": "60",
+					"auto_match_image_cache":           "true",
+					"ipv6_address_count":               "1",
+					"active_deadline_seconds":          "60",
+					"spot_strategy":                    "SpotWithPriceLimit",
+					"spot_price_limit":                 "1.1",
+					"auto_create_eip":                  "true",
+					"eip_bandwidth":                    "1",
+					"ephemeral_storage":                "1",
+					"load_balancer_weight":             "1",
+					"host_name":                        "hostname",
+					"ingress_bandwidth":                "1",
+					"egress_bandwidth":                 "1",
+					"tags": map[string]string{
+						"name": "tf-test",
+					},
+					"containers": []map[string]interface{}{
+						{
+							"security_context_capability_adds":            []string{"adds"},
+							"lifecycle_pre_stop_handler_execs":            []string{"echo 1"},
+							"security_context_read_only_root_file_system": "true",
+							"security_context_run_as_user":                "1",
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "protocol",
+									"port":     "1",
+								},
+							},
+							"working_dir":       "workingDir",
+							"args":              []string{"arg"},
+							"cpu":               "1",
+							"gpu":               "1",
+							"memory":            "1",
+							"name":              "name",
+							"image":             "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"image_pull_policy": "policy",
+						},
+					},
+					"init_containers": []map[string]interface{}{
+						{
+							"security_context_capability_adds":            []string{"adds"},
+							"security_context_read_only_root_file_system": "true",
+							"security_context_run_as_user":                "1",
+							"working_dir":                                 "workingDir",
+							"args":                                        []string{"arg"},
+							"cpu":                                         "1",
+							"gpu":                                         "1",
+							"memory":                                      "1",
+							"name":                                        "name",
+							"image":                                       "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"image_pull_policy":                           "policy",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_id":                 CHECKSET,
+						"scaling_configuration_name":       name,
+						"description":                      "desc",
+						"security_group_id":                CHECKSET,
+						"container_group_name":             name,
+						"restart_policy":                   "restartPolicy",
+						"cpu":                              "2",
+						"memory":                           "4",
+						"resource_group_id":                "resourceGroupId",
+						"dns_policy":                       "dnsPolicy",
+						"enable_sls":                       "true",
+						"image_snapshot_id":                "imageSnapshotId",
+						"ram_role_name":                    "ramRoleName",
+						"termination_grace_period_seconds": "60",
+						"auto_match_image_cache":           "true",
+						"ipv6_address_count":               "1",
+						"active_deadline_seconds":          "60",
+						"spot_strategy":                    "SpotWithPriceLimit",
+						"spot_price_limit":                 "1.1",
+						"auto_create_eip":                  "true",
+						"host_name":                        "hostname",
+						"ingress_bandwidth":                "1",
+						"egress_bandwidth":                 "1",
+						"ephemeral_storage":                "1",
+						"load_balancer_weight":             "1",
+						"tags.name":                        "tf-test",
+						"containers.#":                     "1",
+						"containers.0.security_context_read_only_root_file_system": "true",
+						"containers.0.security_context_run_as_user":                "1",
+						"containers.0.security_context_capability_adds.#":          "1",
+						"containers.0.security_context_capability_adds.0":          "adds",
+						"containers.0.lifecycle_pre_stop_handler_execs.#":          "1",
+						"containers.0.lifecycle_pre_stop_handler_execs.0":          "echo 1",
+						"init_containers.#": "1",
+						"init_containers.0.security_context_run_as_user":                "1",
+						"init_containers.0.security_context_read_only_root_file_system": "true",
+						"init_containers.0.security_context_capability_adds.#":          "1",
+						"init_containers.0.security_context_capability_adds.0":          "adds",
+						"override": "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudEssEciScalingConfiguration_test(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ess_eci_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudEssEciScalingConfigurationMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -827,6 +1102,7 @@ func TestAccAliCloudEssEciScalingConfiguration_test(t *testing.T) {
 					"scaling_configuration_name":       "newName",
 					"active":                           "true",
 					"force_delete":                     "true",
+					"override":                         "true",
 					"cpu_options_core":                 "2",
 					"cpu_options_threads_per_core":     "1",
 					"description":                      "newDesc",
@@ -997,6 +1273,7 @@ func TestAccAliCloudEssEciScalingConfiguration_test(t *testing.T) {
 						"scaling_configuration_name":       "newName",
 						"active":                           "true",
 						"force_delete":                     "true",
+						"override":                         "true",
 						"cpu_options_core":                 "2",
 						"cpu_options_threads_per_core":     "1",
 						"description":                      "newDesc",
@@ -1074,6 +1351,7 @@ func TestAccAliCloudEssEciScalingConfiguration_test(t *testing.T) {
 func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ess_eci_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudEssEciScalingConfigurationMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1345,6 +1623,7 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 					"scaling_configuration_name":       name,
 					"description":                      "desc",
 					"cost_optimization":                "true",
+					"override":                         "true",
 					"instance_family_level":            "EntryLevel",
 					"security_group_id":                "${local.alicloud_security_group_id}",
 					"container_group_name":             name,
@@ -1559,6 +1838,7 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 						"scaling_configuration_name":       name,
 						"description":                      "desc",
 						"security_group_id":                CHECKSET,
+						"override":                         "true",
 						"container_group_name":             name,
 						"cost_optimization":                "true",
 						"instance_family_level":            "EntryLevel",
