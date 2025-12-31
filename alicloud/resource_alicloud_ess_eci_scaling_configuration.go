@@ -32,6 +32,11 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"override": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"force_delete": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -1109,24 +1114,27 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	d.Set("tags", o["Tags"])
 	d.Set("instance_types", o["InstanceTypes"])
 	d.Set("spot_strategy", o["SpotStrategy"])
+	d.Set("override", d.Get("override").(bool))
 	if o["spot_price_limit"] != nil {
 		d.Set("spot_price_limit", strconv.FormatFloat(o["SpotPriceLimit"].(float64), 'f', 2, 64))
 	}
 
 	credentials := make([]map[string]interface{}, 0)
-	if credentialList, ok := o["ImageRegistryCredentials"].([]interface{}); ok {
-		for _, v := range credentialList {
-			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
-					"password": m1["Password"],
-					"server":   m1["Server"],
-					"username": m1["UserName"],
+	if o["ImageRegistryCredentials"] != nil && len(o["ImageRegistryCredentials"].([]interface{})) != 0 {
+		if credentialList, ok := o["ImageRegistryCredentials"].([]interface{}); ok {
+			for _, v := range credentialList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					temp1 := map[string]interface{}{
+						"password": m1["Password"],
+						"server":   m1["Server"],
+						"username": m1["UserName"],
+					}
+					credentials = append(credentials, temp1)
 				}
-				credentials = append(credentials, temp1)
 			}
 		}
+		d.Set("image_registry_credentials", credentials)
 	}
-	d.Set("image_registry_credentials", credentials)
 
 	options := make([]map[string]interface{}, 0)
 	if optionList, ok := o["DnsConfigOptions"].([]interface{}); ok {
@@ -1157,20 +1165,22 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	d.Set("security_context_sysctls", sysctls)
 
 	acrRegistryInfos := make([]map[string]interface{}, 0)
-	if acrRegistryInfoList, ok := o["AcrRegistryInfos"].([]interface{}); ok {
-		for _, v := range acrRegistryInfoList {
-			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
-					"domains":       m1["Domains"],
-					"instance_name": m1["InstanceName"],
-					"instance_id":   m1["InstanceId"],
-					"region_id":     m1["RegionId"],
+	if o["AcrRegistryInfos"] != nil && len(o["AcrRegistryInfos"].([]interface{})) != 0 {
+		if acrRegistryInfoList, ok := o["AcrRegistryInfos"].([]interface{}); ok {
+			for _, v := range acrRegistryInfoList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					temp1 := map[string]interface{}{
+						"domains":       m1["Domains"],
+						"instance_name": m1["InstanceName"],
+						"instance_id":   m1["InstanceId"],
+						"region_id":     m1["RegionId"],
+					}
+					acrRegistryInfos = append(acrRegistryInfos, temp1)
 				}
-				acrRegistryInfos = append(acrRegistryInfos, temp1)
 			}
 		}
+		d.Set("acr_registry_infos", acrRegistryInfos)
 	}
-	d.Set("acr_registry_infos", acrRegistryInfos)
 
 	containers := make([]map[string]interface{}, 0)
 	if containersList, ok := o["Containers"].([]interface{}); ok {
@@ -1349,74 +1359,78 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	}
 
 	volumes := make([]map[string]interface{}, 0)
-	if volumesList, ok := o["Volumes"].([]interface{}); ok {
-		for _, v := range volumesList {
-			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
-					"disk_volume_disk_id":     m1["DiskVolumeDiskId"],
-					"disk_volume_fs_type":     m1["DiskVolumeFsType"],
-					"disk_volume_disk_size":   m1["DiskVolumeDiskSize"],
-					"flex_volume_driver":      m1["FlexVolumeDriver"],
-					"flex_volume_fs_type":     m1["FlexVolumeFsType"],
-					"flex_volume_options":     m1["FlexVolumeOptions"],
-					"nfs_volume_path":         m1["NFSVolumePath"],
-					"nfs_volume_read_only":    m1["NFSVolumeReadOnly"],
-					"nfs_volume_server":       m1["NFSVolumeServer"],
-					"name":                    m1["Name"],
-					"type":                    m1["Type"],
-					"empty_dir_volume_medium": m1["EmptyDirVolumeMedium"],
-				}
-				if m1["HostPathVolumeType"] != nil && m1["HostPathVolumeType"] != "" {
-					temp1["host_path_volume_type"] = m1["HostPathVolumeType"]
-				}
-				if m1["EmptyDirVolumeSizeLimit"] != nil && m1["EmptyDirVolumeSizeLimit"] != "" {
-					temp1["empty_dir_volume_size_limit"] = m1["EmptyDirVolumeSizeLimit"]
-				}
-				if m1["HostPathVolumePath"] != nil && m1["HostPathVolumePath"] != "" {
-					temp1["host_path_volume_path"] = m1["HostPathVolumePath"]
-				}
-				if m1["ConfigFileVolumeDefaultMode"] != nil && m1["ConfigFileVolumeDefaultMode"] != 0 {
-					temp1["config_file_volume_default_mode"] = m1["ConfigFileVolumeDefaultMode"]
-				}
-				if m1["ConfigFileVolumeConfigFileToPaths"] != nil {
-					configFileVolumeConfigFileToPathsMaps := make([]map[string]interface{}, 0)
-					for _, configFileVolumeConfigFileToPathsValue := range m1["ConfigFileVolumeConfigFileToPaths"].([]interface{}) {
-						configFileVolumeConfigFileToPaths := configFileVolumeConfigFileToPathsValue.(map[string]interface{})
-						configFileVolumeConfigFileToPathsMap := map[string]interface{}{
-							"content": configFileVolumeConfigFileToPaths["Content"],
-							"path":    configFileVolumeConfigFileToPaths["Path"],
-						}
-						if configFileVolumeConfigFileToPaths["Mode"] != nil && configFileVolumeConfigFileToPaths["Mode"] != 0 {
-							configFileVolumeConfigFileToPathsMap["mode"] = configFileVolumeConfigFileToPaths["Mode"]
-						}
-						configFileVolumeConfigFileToPathsMaps = append(configFileVolumeConfigFileToPathsMaps, configFileVolumeConfigFileToPathsMap)
+	if o["Volumes"] != nil && len(o["Volumes"].([]interface{})) != 0 {
+		if volumesList, ok := o["Volumes"].([]interface{}); ok {
+			for _, v := range volumesList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					temp1 := map[string]interface{}{
+						"disk_volume_disk_id":     m1["DiskVolumeDiskId"],
+						"disk_volume_fs_type":     m1["DiskVolumeFsType"],
+						"disk_volume_disk_size":   m1["DiskVolumeDiskSize"],
+						"flex_volume_driver":      m1["FlexVolumeDriver"],
+						"flex_volume_fs_type":     m1["FlexVolumeFsType"],
+						"flex_volume_options":     m1["FlexVolumeOptions"],
+						"nfs_volume_path":         m1["NFSVolumePath"],
+						"nfs_volume_read_only":    m1["NFSVolumeReadOnly"],
+						"nfs_volume_server":       m1["NFSVolumeServer"],
+						"name":                    m1["Name"],
+						"type":                    m1["Type"],
+						"empty_dir_volume_medium": m1["EmptyDirVolumeMedium"],
 					}
-					temp1["config_file_volume_config_file_to_paths"] = configFileVolumeConfigFileToPathsMaps
-				}
-				volumes = append(volumes, temp1)
+					if m1["HostPathVolumeType"] != nil && m1["HostPathVolumeType"] != "" {
+						temp1["host_path_volume_type"] = m1["HostPathVolumeType"]
+					}
+					if m1["EmptyDirVolumeSizeLimit"] != nil && m1["EmptyDirVolumeSizeLimit"] != "" {
+						temp1["empty_dir_volume_size_limit"] = m1["EmptyDirVolumeSizeLimit"]
+					}
+					if m1["HostPathVolumePath"] != nil && m1["HostPathVolumePath"] != "" {
+						temp1["host_path_volume_path"] = m1["HostPathVolumePath"]
+					}
+					if m1["ConfigFileVolumeDefaultMode"] != nil && m1["ConfigFileVolumeDefaultMode"] != 0 {
+						temp1["config_file_volume_default_mode"] = m1["ConfigFileVolumeDefaultMode"]
+					}
+					if m1["ConfigFileVolumeConfigFileToPaths"] != nil {
+						configFileVolumeConfigFileToPathsMaps := make([]map[string]interface{}, 0)
+						for _, configFileVolumeConfigFileToPathsValue := range m1["ConfigFileVolumeConfigFileToPaths"].([]interface{}) {
+							configFileVolumeConfigFileToPaths := configFileVolumeConfigFileToPathsValue.(map[string]interface{})
+							configFileVolumeConfigFileToPathsMap := map[string]interface{}{
+								"content": configFileVolumeConfigFileToPaths["Content"],
+								"path":    configFileVolumeConfigFileToPaths["Path"],
+							}
+							if configFileVolumeConfigFileToPaths["Mode"] != nil && configFileVolumeConfigFileToPaths["Mode"] != 0 {
+								configFileVolumeConfigFileToPathsMap["mode"] = configFileVolumeConfigFileToPaths["Mode"]
+							}
+							configFileVolumeConfigFileToPathsMaps = append(configFileVolumeConfigFileToPathsMaps, configFileVolumeConfigFileToPathsMap)
+						}
+						temp1["config_file_volume_config_file_to_paths"] = configFileVolumeConfigFileToPathsMaps
+					}
+					volumes = append(volumes, temp1)
 
+				}
 			}
 		}
-	}
-	if err := d.Set("volumes", volumes); err != nil {
-		return WrapError(err)
+		if err := d.Set("volumes", volumes); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	hostAliases := make([]map[string]interface{}, 0)
-	if hostAliasesList, ok := o["HostAliases"].([]interface{}); ok {
-		for _, v := range hostAliasesList {
-			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
-					"hostnames": m1["Hostnames"],
-					"ip":        m1["Ip"],
-				}
-				hostAliases = append(hostAliases, temp1)
+	if o["HostAliases"] != nil && len(o["HostAliases"].([]interface{})) != 0 {
+		if hostAliasesList, ok := o["HostAliases"].([]interface{}); ok {
+			for _, v := range hostAliasesList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					temp1 := map[string]interface{}{
+						"hostnames": m1["Hostnames"],
+						"ip":        m1["Ip"],
+					}
+					hostAliases = append(hostAliases, temp1)
 
+				}
 			}
 		}
-	}
-	if err := d.Set("host_aliases", hostAliases); err != nil {
-		return WrapError(err)
+		if err := d.Set("host_aliases", hostAliases); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	return nil
@@ -1468,13 +1482,17 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		}
 		d.SetPartial("active")
 	}
-
+	//d.Get("override")
 	request := map[string]interface{}{
 		"ScalingConfigurationId": d.Id(),
 		"RegionId":               client.RegionId,
 	}
 	update := false
 
+	if d.HasChange("override") {
+		request["Override"] = d.Get("override")
+		update = true
+	} //必须填的是啥 其次就是没有发生改变的只要override为true 也要重新塞进去
 	if d.HasChange("scaling_configuration_name") {
 		update = true
 		request["ScalingConfigurationName"] = d.Get("scaling_configuration_name")
@@ -1483,7 +1501,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		update = true
 		request["Description"] = d.Get("description")
 	}
-	if d.HasChange("security_group_id") {
+	if d.HasChange("security_group_id") || d.Get("override").(bool) {
 		update = true
 		request["SecurityGroupId"] = d.Get("security_group_id")
 	}
@@ -1491,23 +1509,23 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		update = true
 		request["ContainerGroupName"] = d.Get("container_group_name")
 	}
-	if d.HasChange("restart_policy") {
+	if d.HasChange("restart_policy") || d.Get("override").(bool) {
 		update = true
 		request["RestartPolicy"] = d.Get("restart_policy")
 	}
-	if d.HasChange("cpu") {
+	if d.HasChange("cpu") || d.Get("override").(bool) {
 		update = true
 		request["Cpu"] = d.Get("cpu")
 	}
-	if d.HasChange("memory") {
+	if d.HasChange("memory") || d.Get("override").(bool) {
 		update = true
 		request["Memory"] = d.Get("memory")
 	}
-	if d.HasChange("resource_group_id") {
+	if d.HasChange("resource_group_id") || d.Get("override").(bool) {
 		update = true
 		request["ResourceGroupId"] = d.Get("resource_group_id")
 	}
-	if d.HasChange("dns_policy") {
+	if d.HasChange("dns_policy") || d.Get("override").(bool) {
 		update = true
 		request["DnsPolicy"] = d.Get("dns_policy")
 	}
@@ -1515,11 +1533,11 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		update = true
 		request["CostOptimization"] = d.Get("cost_optimization")
 	}
-	if d.HasChange("enable_sls") {
+	if d.HasChange("enable_sls") || d.Get("override").(bool) {
 		update = true
 		request["EnableSls"] = d.Get("enable_sls")
 	}
-	if d.HasChange("image_snapshot_id") {
+	if d.HasChange("image_snapshot_id") || d.Get("override").(bool) {
 		update = true
 		request["ImageSnapshotId"] = d.Get("image_snapshot_id")
 	}
@@ -1527,19 +1545,19 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		update = true
 		request["InstanceFamilyLevel"] = d.Get("instance_family_level")
 	}
-	if d.HasChange("ram_role_name") {
+	if d.HasChange("ram_role_name") || d.Get("override").(bool) {
 		update = true
 		request["RamRoleName"] = d.Get("ram_role_name")
 	}
-	if d.HasChange("termination_grace_period_seconds") {
+	if d.HasChange("termination_grace_period_seconds") || d.Get("override").(bool) {
 		update = true
 		request["TerminationGracePeriodSeconds"] = d.Get("termination_grace_period_seconds")
 	}
-	if d.HasChange("auto_match_image_cache") {
+	if d.HasChange("auto_match_image_cache") || d.Get("override").(bool) {
 		update = true
 		request["AutoMatchImageCache"] = d.Get("auto_match_image_cache")
 	}
-	if d.HasChange("ipv6_address_count") {
+	if d.HasChange("ipv6_address_count") || d.Get("override").(bool) {
 		update = true
 		request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
 	}
@@ -1564,7 +1582,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		v := d.Get("active_deadline_seconds")
 		request["ActiveDeadlineSeconds"] = v
 	}
-	if d.HasChange("spot_strategy") {
+	if d.HasChange("spot_strategy") || d.Get("override").(bool) {
 		update = true
 		request["SpotStrategy"] = d.Get("spot_strategy")
 	}
@@ -1572,31 +1590,31 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		update = true
 		request["SpotPriceLimit"] = strconv.FormatFloat(d.Get("spot_price_limit").(float64), 'f', 2, 64)
 	}
-	if d.HasChange("auto_create_eip") {
+	if d.HasChange("auto_create_eip") || d.Get("override").(bool) {
 		update = true
 		request["AutoCreateEip"] = d.Get("auto_create_eip")
 	}
-	if d.HasChange("eip_bandwidth") {
+	if d.HasChange("eip_bandwidth") || d.Get("override").(bool) {
 		update = true
 		request["EipBandwidth"] = d.Get("eip_bandwidth")
 	}
-	if d.HasChange("host_name") {
+	if d.HasChange("host_name") || d.Get("override").(bool) {
 		update = true
 		request["HostName"] = d.Get("host_name")
 	}
-	if d.HasChange("ingress_bandwidth") {
+	if d.HasChange("ingress_bandwidth") || d.Get("override").(bool) {
 		update = true
 		request["IngressBandwidth"] = d.Get("ingress_bandwidth")
 	}
-	if d.HasChange("egress_bandwidth") {
+	if d.HasChange("egress_bandwidth") || d.Get("override").(bool) {
 		update = true
 		request["EgressBandwidth"] = d.Get("egress_bandwidth")
 	}
-	if d.HasChange("ephemeral_storage") {
+	if d.HasChange("ephemeral_storage") || d.Get("override").(bool) {
 		update = true
 		request["EphemeralStorage"] = d.Get("ephemeral_storage")
 	}
-	if d.HasChange("load_balancer_weight") {
+	if d.HasChange("load_balancer_weight") || d.Get("override").(bool) {
 		update = true
 		request["LoadBalancerWeight"] = d.Get("load_balancer_weight")
 	}
@@ -1610,7 +1628,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		}
 	}
 
-	if d.HasChange("image_registry_credentials") {
+	if d.HasChange("image_registry_credentials") || d.Get("override").(bool) {
 		update = true
 		if v, ok := d.GetOk("image_registry_credentials"); ok {
 			imageRegisryCredentialMaps := make([]map[string]interface{}, 0)
@@ -1656,7 +1674,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		}
 	}
 
-	if d.HasChange("acr_registry_infos") {
+	if d.HasChange("acr_registry_infos") || d.Get("override").(bool) {
 		update = true
 		if v, ok := d.GetOk("acr_registry_infos"); ok {
 			acrRegistryInfoMaps := make([]map[string]interface{}, 0)
@@ -1876,7 +1894,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		request["Volume"] = Volumes
 	}
 
-	if d.HasChange("host_aliases") {
+	if d.HasChange("host_aliases") || d.Get("override").(bool) {
 		update = true
 		aliases := make([]map[string]interface{}, len(d.Get("host_aliases").(*schema.Set).List()))
 		for i, value := range d.Get("host_aliases").(*schema.Set).List() {
