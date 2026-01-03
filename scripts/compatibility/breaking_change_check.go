@@ -30,12 +30,24 @@ func init() {
 }
 
 var (
-	fileNames = flag.String("fileNames", "", "the files to check diff")
+	fileNames    = flag.String("fileNames", "", "the files to check diff")
+	resourceName = flag.String("resource", "", "directly specify a resource name to check (e.g., alicloud_ecs_instance)")
 )
 
 func main() {
 	exitCode := 0
 	flag.Parse()
+
+	// Mode 1: Direct resource name check (for local use)
+	if resourceName != nil && len(*resourceName) > 0 {
+		log.Infof("==> Checking resource: %s", *resourceName)
+		if !checkSingleResource(*resourceName) {
+			exitCode = 1
+		}
+		os.Exit(exitCode)
+	}
+
+	// Mode 2: Diff file check (for CI/CD)
 	if fileNames != nil && len(*fileNames) == 0 {
 		log.Warningf("the diff file is empty")
 		return
@@ -50,41 +62,67 @@ func main() {
 			if fileTestRegex.MatchString(file.NewName) {
 				continue
 			}
-			resourceName := strings.TrimPrefix(strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go"), "resource_")
-			log.Infof("==> Checking resource %s breaking change...", resourceName)
+			resName := strings.TrimPrefix(strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go"), "resource_")
+			log.Infof("==> Checking resource %s breaking change...", resName)
 
-			// Get file content from git for both versions
-			oldContent, err := getFileContentFromGit(file.NewName, "HEAD^")
-			if err != nil {
-				log.Warningf("Cannot get old version of %s: %v", file.NewName, err)
-				continue
-			}
-			newContent, err := getFileContentFromGit(file.NewName, "HEAD")
-			if err != nil {
-				log.Warningf("Cannot get new version of %s: %v", file.NewName, err)
-				continue
-			}
-
-			// Parse schemas using AST
-			oldAttrs := ParseSchemaFromAST(oldContent)
-			newAttrs := ParseSchemaFromAST(newContent)
-			schemaBreaking := IsBreakingChange(oldAttrs, newAttrs)
-
-			// Check retry error codes changes - parse from full file content
-			oldRetryCodes := ParseRetryErrorCodesFromContent(oldContent)
-			newRetryCodes := ParseRetryErrorCodesFromContent(newContent)
-			retryBreaking := IsRetryCodeBreaking(oldRetryCodes, newRetryCodes)
-
-			if !schemaBreaking && !retryBreaking {
-				log.Infof("--- PASS")
-			} else {
-				log.Errorf("--- FAIL")
+			if !checkResourceBreakingChange(file.NewName, "HEAD^", "HEAD") {
 				exitCode = 1
 			}
 		}
 	}
 
 	os.Exit(exitCode)
+}
+
+// checkSingleResource checks a single resource by its full name (e.g., "alicloud_ecs_instance")
+func checkSingleResource(fullName string) bool {
+	// Remove alicloud_ prefix if present
+	resName := strings.TrimPrefix(fullName, "alicloud_")
+
+	// Construct file path
+	filePath := "alicloud/resource_alicloud_" + resName + ".go"
+
+	// Check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		log.Errorf("Resource file not found: %s", filePath)
+		return false
+	}
+
+	log.Infof("==> Checking resource %s breaking change...", resName)
+	return checkResourceBreakingChange(filePath, "HEAD^", "HEAD")
+}
+
+// checkResourceBreakingChange checks breaking changes for a resource file between two git revisions
+func checkResourceBreakingChange(filePath, oldRevision, newRevision string) bool {
+	// Get file content from git for both versions
+	oldContent, err := getFileContentFromGit(filePath, oldRevision)
+	if err != nil {
+		log.Warningf("Cannot get old version of %s: %v", filePath, err)
+		return false
+	}
+	newContent, err := getFileContentFromGit(filePath, newRevision)
+	if err != nil {
+		log.Warningf("Cannot get new version of %s: %v", filePath, err)
+		return false
+	}
+
+	// Parse schemas using AST
+	oldAttrs := ParseSchemaFromAST(oldContent)
+	newAttrs := ParseSchemaFromAST(newContent)
+	schemaBreaking := IsBreakingChange(oldAttrs, newAttrs)
+
+	// Check retry error codes changes - parse from full file content
+	oldRetryCodes := ParseRetryErrorCodesFromContent(oldContent)
+	newRetryCodes := ParseRetryErrorCodesFromContent(newContent)
+	retryBreaking := IsRetryCodeBreaking(oldRetryCodes, newRetryCodes)
+
+	if !schemaBreaking && !retryBreaking {
+		log.Infof("--- PASS")
+		return true
+	} else {
+		log.Errorf("--- FAIL")
+		return false
+	}
 }
 
 func IsBreakingChange(oldAttrs, newAttrs map[string]map[string]interface{}) (res bool) {
