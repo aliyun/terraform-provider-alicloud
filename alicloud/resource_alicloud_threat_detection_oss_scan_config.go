@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -103,7 +102,8 @@ func resourceAliCloudThreatDetectionOssScanConfigCreate(d *schema.ResourceData, 
 		request["DecompressMaxFileCount"] = v
 	}
 	if v, ok := d.GetOk("key_suffix_list"); ok {
-		keySuffixListMapsArray := v.(*schema.Set).List()
+		keySuffixListMapsArray := convertToInterfaceArray(v)
+
 		request["KeySuffixList"] = keySuffixListMapsArray
 	}
 
@@ -115,7 +115,8 @@ func resourceAliCloudThreatDetectionOssScanConfigCreate(d *schema.ResourceData, 
 		request["DecompressMaxLayer"] = v
 	}
 	if v, ok := d.GetOk("key_prefix_list"); ok {
-		keyPrefixListMapsArray := v.(*schema.Set).List()
+		keyPrefixListMapsArray := convertToInterfaceArray(v)
+
 		request["KeyPrefixList"] = keyPrefixListMapsArray
 	}
 
@@ -124,12 +125,14 @@ func resourceAliCloudThreatDetectionOssScanConfigCreate(d *schema.ResourceData, 
 		request["LastModifiedStartTime"] = v
 	}
 	if v, ok := d.GetOk("decryption_list"); ok {
-		decryptionListMapsArray := v.([]interface{})
+		decryptionListMapsArray := convertToInterfaceArray(v)
+
 		request["DecryptionList"] = decryptionListMapsArray
 	}
 
 	if v, ok := d.GetOk("scan_day_list"); ok {
-		scanDayListMapsArray := v.(*schema.Set).List()
+		scanDayListMapsArray := convertToInterfaceArray(v)
+
 		request["ScanDayList"] = scanDayListMapsArray
 	}
 
@@ -137,7 +140,8 @@ func resourceAliCloudThreatDetectionOssScanConfigCreate(d *schema.ResourceData, 
 		request["Name"] = v
 	}
 	if v, ok := d.GetOk("bucket_name_list"); ok {
-		bucketNameListMapsArray := v.(*schema.Set).List()
+		bucketNameListMapsArray := convertToInterfaceArray(v)
+
 		request["BucketNameList"] = bucketNameListMapsArray
 	}
 
@@ -190,31 +194,31 @@ func resourceAliCloudThreatDetectionOssScanConfigRead(d *schema.ResourceData, me
 
 	bucketNameListRaw := make([]interface{}, 0)
 	if objectRaw["BucketNameList"] != nil {
-		bucketNameListRaw = objectRaw["BucketNameList"].([]interface{})
+		bucketNameListRaw = convertToInterfaceArray(objectRaw["BucketNameList"])
 	}
 
 	d.Set("bucket_name_list", bucketNameListRaw)
 	decryptionListRaw := make([]interface{}, 0)
 	if objectRaw["DecryptionList"] != nil {
-		decryptionListRaw = objectRaw["DecryptionList"].([]interface{})
+		decryptionListRaw = convertToInterfaceArray(objectRaw["DecryptionList"])
 	}
 
 	d.Set("decryption_list", decryptionListRaw)
 	keyPrefixListRaw := make([]interface{}, 0)
 	if objectRaw["KeyPrefixList"] != nil {
-		keyPrefixListRaw = objectRaw["KeyPrefixList"].([]interface{})
+		keyPrefixListRaw = convertToInterfaceArray(objectRaw["KeyPrefixList"])
 	}
 
 	d.Set("key_prefix_list", keyPrefixListRaw)
 	keySuffixListRaw := make([]interface{}, 0)
 	if objectRaw["KeySuffixList"] != nil {
-		keySuffixListRaw = objectRaw["KeySuffixList"].([]interface{})
+		keySuffixListRaw = convertToInterfaceArray(objectRaw["KeySuffixList"])
 	}
 
 	d.Set("key_suffix_list", keySuffixListRaw)
 	scanDayListRaw := make([]interface{}, 0)
 	if objectRaw["ScanDayList"] != nil {
-		scanDayListRaw = objectRaw["ScanDayList"].([]interface{})
+		scanDayListRaw = convertToInterfaceArray(objectRaw["ScanDayList"])
 	}
 
 	d.Set("scan_day_list", scanDayListRaw)
@@ -237,16 +241,16 @@ func resourceAliCloudThreatDetectionOssScanConfigUpdate(d *schema.ResourceData, 
 
 	if d.HasChange("decompress_max_file_count") {
 		update = true
-	}
-	if v, ok := d.GetOkExists("decompress_max_file_count"); ok {
-		request["DecompressMaxFileCount"] = v
+		if v, ok := d.GetOk("decompress_max_file_count"); ok {
+			request["DecompressMaxFileCount"] = v
+		}
 	}
 
 	if d.HasChange("key_suffix_list") {
 		update = true
 	}
 	if v, ok := d.GetOk("key_suffix_list"); ok {
-		keySuffixListMapsArray := v.(*schema.Set).List()
+		keySuffixListMapsArray := convertToInterfaceArray(v)
 		request["KeySuffixList"] = keySuffixListMapsArray
 	}
 
@@ -254,71 +258,61 @@ func resourceAliCloudThreatDetectionOssScanConfigUpdate(d *schema.ResourceData, 
 		update = true
 	}
 	request["StartTime"] = d.Get("start_time")
-
 	if d.HasChange("all_key_prefix") {
 		update = true
-
-		if v, ok := d.GetOkExists("all_key_prefix"); ok {
-			request["AllKeyPrefix"] = v
-		}
+		request["AllKeyPrefix"] = d.Get("all_key_prefix")
 	}
 
 	if d.HasChange("decompress_max_layer") {
 		update = true
-	}
-	if v, ok := d.GetOkExists("decompress_max_layer"); ok {
-		request["DecompressMaxLayer"] = v
+		request["DecompressMaxLayer"] = d.Get("decompress_max_layer")
 	}
 
 	if d.HasChange("key_prefix_list") {
 		update = true
-	}
-	if v, ok := d.GetOk("key_prefix_list"); ok {
-		keyPrefixListMaps := v.(*schema.Set).List()
-		request["KeyPrefixList"] = keyPrefixListMaps
+		if v, ok := d.GetOk("key_prefix_list"); ok {
+			keyPrefixListMapsArray := convertToInterfaceArray(v)
+			request["KeyPrefixList"] = keyPrefixListMapsArray
+		}
 	}
 
 	if d.HasChange("enable") {
 		update = true
 	}
 	request["Enable"] = d.Get("enable")
-
 	if d.HasChange("last_modified_start_time") {
 		update = true
-	}
-	if v, ok := d.GetOkExists("last_modified_start_time"); ok {
-		request["LastModifiedStartTime"] = v
+		request["LastModifiedStartTime"] = d.Get("last_modified_start_time")
 	}
 
 	if d.HasChange("decryption_list") {
 		update = true
-	}
-	if v, ok := d.GetOk("decryption_list"); ok {
-		decryptionListMapsArray := v.([]interface{})
-		request["DecryptionList"] = decryptionListMapsArray
+		if v, ok := d.GetOk("decryption_list"); ok {
+			decryptionListMapsArray := convertToInterfaceArray(v)
+
+			request["DecryptionList"] = decryptionListMapsArray
+		}
 	}
 
 	if d.HasChange("scan_day_list") {
 		update = true
 	}
 	if v, ok := d.GetOk("scan_day_list"); ok {
-		scanDayListMaps := v.(*schema.Set).List()
-		request["ScanDayList"] = scanDayListMaps
+		scanDayListMapsArray := convertToInterfaceArray(v)
+		request["ScanDayList"] = scanDayListMapsArray
 	}
 
 	if d.HasChange("oss_scan_config_name") {
 		update = true
-	}
-	if v, ok := d.GetOk("oss_scan_config_name"); ok {
-		request["Name"] = v
+		request["Name"] = d.Get("oss_scan_config_name")
 	}
 
 	if d.HasChange("bucket_name_list") {
 		update = true
 	}
 	if v, ok := d.GetOk("bucket_name_list"); ok {
-		bucketNameListMaps := v.(*schema.Set).List()
-		request["BucketNameList"] = bucketNameListMaps
+		bucketNameListMapsArray := convertToInterfaceArray(v)
+		request["BucketNameList"] = bucketNameListMapsArray
 	}
 
 	if d.HasChange("end_time") {
@@ -361,7 +355,6 @@ func resourceAliCloudThreatDetectionOssScanConfigDelete(d *schema.ResourceData, 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

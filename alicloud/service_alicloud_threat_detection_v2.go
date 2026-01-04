@@ -699,15 +699,18 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionOssScanConfig(id strin
 }
 
 func (s *ThreatDetectionServiceV2) ThreatDetectionOssScanConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ThreatDetectionOssScanConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeThreatDetectionOssScanConfig)
+}
+
+func (s *ThreatDetectionServiceV2) ThreatDetectionOssScanConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeThreatDetectionOssScanConfig(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
