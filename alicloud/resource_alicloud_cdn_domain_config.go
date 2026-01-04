@@ -266,17 +266,18 @@ func resourceAliCloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 	}
 
 	var funArgs []map[string]string
+	ignoreFunctionArg := []string{"aliyun_id", "scheme_origin_port", "dsl", "session_timeout",
+		"oss_pri_buckets", "private_oss_tbl", "cert", "cert_name",
+		"cert_type", "https", "dkey", "pkey"}
+
 	for _, k := range args {
 
 		arg := k.(map[string]interface{})
 		// This two function args is extra, filter them to pass test check.
-		if arg["ArgName"] == "aliyun_id" || arg["ArgName"] == "scheme_origin_port" || arg["ArgName"] == "dsl" || arg["ArgName"] == "session_timeout" || arg["ArgName"] == "oss_pri_buckets" {
+		if InArray(fmt.Sprint(arg["ArgName"]), ignoreFunctionArg) {
 			continue
 		}
-		// private_oss_tbl always is changed and used to enable Alibaba Cloud OSS Private Bucket Back to Source Authorization
-		if arg["ArgName"] == "private_oss_tbl" {
-			continue
-		}
+
 		funArgs = append(funArgs, map[string]string{
 			"arg_name":  arg["ArgName"].(string),
 			"arg_value": arg["ArgValue"].(string),

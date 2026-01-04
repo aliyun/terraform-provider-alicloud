@@ -461,7 +461,7 @@ func TestAccAliCloudCDNDomainConfig_oss_auth(t *testing.T) {
 					"function_args": []map[string]interface{}{
 						{
 							"arg_name":  "oss_bucket_id",
-							"arg_value": "${alicloud_oss_bucket.default.id}",
+							"arg_value": "${data.alicloud_oss_buckets.default.buckets.0.name}",
 						},
 					},
 				}),
@@ -2413,21 +2413,20 @@ func AliCloudCDNDomainConfigBasicDependence1(name string) string {
 
 func AliCloudCDNDomainConfigBasicDependence2(name string) string {
 	return fmt.Sprintf(`
+	data "alicloud_oss_buckets" "default" {
+	}
+
 	resource "alicloud_cdn_domain_new" "default" {
   		domain_name = "tf-testacc%s-oss.alicloud-provider.cn"
   		cdn_type    = "web"
   		scope       = "overseas"
   		sources {
-    		content  = "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}"
+    		content  = "${data.alicloud_oss_buckets.default.buckets.0.name}.${data.alicloud_oss_buckets.default.buckets.0.extranet_endpoint}"
     		type     = "oss"
     		priority = 20
     		port     = 80
     		weight   = 10
   		}
 	}
-
-	resource "alicloud_oss_bucket" "default" {
-  		bucket = "tf-testacc-domain-config-%s"
-	}
-`, name, name)
+`, name)
 }
