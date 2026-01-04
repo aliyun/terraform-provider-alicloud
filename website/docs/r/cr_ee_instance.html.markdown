@@ -10,19 +10,16 @@ description: |-
 
 Provides a CR Instance resource.
 
-For information about Container Registry Enterprise Edition instances and how to use it, see [Create a Instance](https://www.alibabacloud.com/help/en/doc-detail/208144.htm)
+
+For information about Container Registry Instance and how to use it, see [What is Container Registry](https://www.alibabacloud.com/help/en/acr/product-overview/what-is-container-registry).
+
+For information about CR Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/doc-detail/208144.htm).
 
 -> **NOTE:** Available since v1.124.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cr_ee_instance&exampleId=25749ea8-d0d9-59b9-d587-cf2975510050df3b0d18&activeTab=example&spm=docs.r.cr_ee_instance.0.25749ea8d0&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -73,6 +70,7 @@ The following arguments are supported:
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
+* `namespace_quota` - (Optional, ForceNew, Int, Available since v1.268.0) The number of additional namespaces to purchase. Changing this forces a new resource to be created.
 * `password` - (Optional) Login password, 8-32 digits, must contain at least two letters, symbols, or numbers
 * `payment_type` - (Required, ForceNew) Payment type, value:
   - Subscription: Prepaid.
@@ -87,12 +85,15 @@ The following arguments are supported:
 
 -> **NOTE:**  When `RenewalStatus` is set to `AutoRenewal`, it must be set.
 
-* `renewal_status` - (Optional, ForceNew, Computed) Automatic renewal status, value:
-  - AutoRenewal: automatic renewal.
-  - ManualRenewal: manual renewal.
+* `renewal_status` - (Optional, ForceNew, Computed) Automatic renewal status, possible values are:
+  - `AutoRenewal`: automatic renewal.
+  - `ManualRenewal`: manual renewal.
 
-  Default ManualRenewal.
+  Defaults to `ManualRenewal`.
+
+* `repo_quota` - (Optional, ForceNew, Int, Available since v1.268.0) The number of additional repositories to purchase. Changing this forces a new resource to be created.
 * `resource_group_id` - (Optional, Computed, Available since v1.235.0) The ID of the resource group
+* `vpc_quota` - (Optional, ForceNew, Int, Available since v1.268.0) The number of VPC access controls. Changing this forces a new resource to be created.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `created_time` - (Deprecated since v1.235.0). Field 'created_time' has been deprecated from provider version 1.235.0. New field 'create_time' instead.
@@ -105,7 +106,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
 * `end_time` - Expiration Time
-* `instance_endpoints` - (Available since v1.240.0) Instance Network Access Endpoint List
+* `instance_endpoints` - Instance Network Access Endpoint List
   * `domains` - Domain List
     * `domain` - Domain
     * `type` - Domain Type

@@ -29,11 +29,11 @@ func (s *CrServiceV2) DescribeCrInstance(id string) (object map[string]interface
 	action := "GetInstance"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidAction.NotFound"}) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -49,8 +49,9 @@ func (s *CrServiceV2) DescribeCrInstance(id string) (object map[string]interface
 
 	return response, nil
 }
-func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object map[string]interface{}, err error) {
+func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
 	client := s.client
+	id := d.Id()
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
