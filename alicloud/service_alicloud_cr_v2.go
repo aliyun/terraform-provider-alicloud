@@ -49,8 +49,9 @@ func (s *CrServiceV2) DescribeCrInstance(id string) (object map[string]interface
 
 	return response, nil
 }
-func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(id string) (object map[string]interface{}, err error) {
+func (s *CrServiceV2) DescribeInstanceQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
 	client := s.client
+	id := d.Id()
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
