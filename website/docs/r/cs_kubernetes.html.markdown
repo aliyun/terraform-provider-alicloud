@@ -54,6 +54,10 @@ Please use resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluste
 </div></div>
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-kubernetes-example"
 }
