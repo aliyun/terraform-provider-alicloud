@@ -40,3 +40,5 @@ diff_*.zip
 scan.py
 coverage.html
 coverage.out
+
+.qwenignore
