@@ -414,6 +414,21 @@ func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_access_white_list": []map[string]interface{}{
+						{
+							"db_cluster_ip_array_name": "test1",
+							"security_ip_list":         "192.168.0.2,192.168.0.4",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_access_white_list.#": "1",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"period", "used_time"},
