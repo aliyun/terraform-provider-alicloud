@@ -48,6 +48,10 @@ analyze_changes() {
           test_files+=("$file")
         fi
         ;;
+      website/docs/*)
+        # Prioritize website/docs/ as documentation, not website
+        doc_files+=("$file")
+        ;;
       *.md|docs/*)
         doc_files+=("$file")
         ;;
@@ -62,7 +66,7 @@ analyze_changes() {
         ;;
     esac
   done <<< "$STAGED_FILES"
-  
+
   # Determine primary change type and return files
   if [[ ${#resource_files[@]} -gt 0 ]]; then
     echo "resource"
@@ -73,6 +77,9 @@ analyze_changes() {
     echo "website"
   elif [[ ${#doc_files[@]} -gt 0 ]]; then
     echo "docs"
+    for file in "${doc_files[@]}"; do
+      echo "$file"
+    done
   elif [[ ${#ci_files[@]} -gt 0 ]]; then
     echo "ci"
   else
@@ -84,13 +91,37 @@ analyze_changes() {
 extract_resource_name() {
   local file="$1"
   local basename=$(basename "$file" .go)
-  
+
   if [[ "$basename" =~ ^resource_alicloud_(.+)$ ]]; then
     echo "${BASH_REMATCH[1]}"
   elif [[ "$basename" =~ ^data_source_alicloud_(.+)$ ]]; then
     echo "${BASH_REMATCH[1]}"
   else
     echo ""
+  fi
+}
+
+# Extract document name from file path
+extract_doc_name() {
+  local file="$1"
+  local basename=$(basename "$file")
+
+  # For website/docs paths like website/docs/r/oss_buckets.html.markdown
+  # Extract just the resource name without .html or extensions
+  if [[ "$file" =~ website/docs/[rd]/([^/]+)\.html\.(markdown|md) ]]; then
+    echo "${BASH_REMATCH[1]}"
+  elif [[ "$file" =~ website/docs/[rd]/([^/]+)\.(markdown|md) ]]; then
+    echo "${BASH_REMATCH[1]}"
+  elif [[ "$file" =~ website/docs/([^/]+)\.html\.(markdown|md) ]]; then
+    echo "${BASH_REMATCH[1]}"
+  elif [[ "$file" =~ website/docs/([^/]+)\.(markdown|md) ]]; then
+    echo "${BASH_REMATCH[1]}"
+  else
+    # Remove common extensions
+    local doc_name="${basename%.md}"
+    doc_name="${doc_name%.markdown}"
+    doc_name="${doc_name%.html}"
+    echo "$doc_name"
   fi
 }
 
@@ -196,7 +227,11 @@ generate_suggestions() {
       echo "website: "
       ;;
     "docs")
-      echo "docs: "
+      # Process doc files (starting from index 1)
+      echo "docs"
+      for ((i=1; i<${#lines[@]}; i++)); do
+        echo "${lines[i]}"
+      done
       ;;
     "ci")
       echo "ci: "
@@ -243,12 +278,43 @@ generate_commit_message() {
         commit_message="${selected}Refactored the resource and improve the docs."
         echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (no new fields detected)${NC}" >&2
       fi
-    elif [[ "$selected" =~ ^(docs|ci|website|chore): ]]; then
-      # For other types, add generic description
-      if [[ "$selected" == "docs: " ]]; then
+    elif [[ "$selected" == "docs" ]]; then
+      # For documentation changes, extract specific doc names
+      local doc_names=()
+      local processed_docs=()
+      for ((i=1; i<${#suggestions[@]}; i++)); do
+        local doc_file="${suggestions[i]}"
+        local doc_name=$(extract_doc_name "$doc_file")
+        if [[ -n "$doc_name" ]] && [[ ! " ${processed_docs[*]} " =~ " ${doc_name} " ]]; then
+          processed_docs+=("$doc_name")
+          doc_names+=("$doc_name")
+        fi
+      done
+
+      if [[ ${#doc_names[@]} -eq 1 ]]; then
+        commit_message="docs: Update ${doc_names[0]} document."
+        echo -e "${GREEN}✓ Documentation changes detected: ${doc_names[0]}${NC}" >&2
+      elif [[ ${#doc_names[@]} -gt 1 ]]; then
+        # Multiple docs changed - list them
+        local doc_list=""
+        for i in "${!doc_names[@]}"; do
+          if [[ $i -eq 0 ]]; then
+            doc_list="${doc_names[i]}"
+          elif [[ $i -eq $((${#doc_names[@]} - 1)) ]]; then
+            doc_list="$doc_list and ${doc_names[i]}"
+          else
+            doc_list="$doc_list, ${doc_names[i]}"
+          fi
+        done
+        commit_message="docs: Update $doc_list documents."
+        echo -e "${GREEN}✓ Documentation changes detected: $doc_list${NC}" >&2
+      else
         commit_message="docs: Update documentation."
         echo -e "${GREEN}✓ Documentation changes detected${NC}" >&2
-      elif [[ "$selected" == "ci: " ]]; then
+      fi
+    elif [[ "$selected" =~ ^(ci|website|chore): ]]; then
+      # For other types, add generic description
+      if [[ "$selected" == "ci: " ]]; then
         commit_message="ci: Improve CI configuration."
         echo -e "${GREEN}✓ CI/Scripts changes detected${NC}" >&2
       elif [[ "$selected" == "website: " ]]; then
