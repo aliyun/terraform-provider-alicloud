@@ -112,13 +112,7 @@ test-resource-debug:
 	fi
 
 vet:
-	@echo "go vet ."
-	@go vet $$(go list ./... | grep -v scripts | grep -v vendor/) ; if [ $$? -eq 1 ]; then \
-		echo ""; \
-		echo "Vet found suspicious constructs. Please check the reported constructs"; \
-		echo "and fix them if necessary before submitting the code for review."; \
-		exit 1; \
-	fi
+	"$(CURDIR)/scripts/vetcheck.sh"
 
 fmt:
 	gofmt -w $(GOFMT_FILES)
@@ -157,7 +151,13 @@ endif
 	ln -sf ../../../ext/providers/alicloud/website/alicloud.erb $(GOPATH)/src/github.com/hashicorp/terraform-website/content/source/layouts/alicloud.erb
 	@$(MAKE) -C $(GOPATH)/src/$(WEBSITE_REPO) website-provider-test PROVIDER_PATH=$(shell pwd) PROVIDER_NAME=$(PKG_NAME)
 
-.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test
+commit:
+	@bash "$(CURDIR)/scripts/generate-commit.sh"
+
+ci-check:
+	@bash "$(CURDIR)/scripts/local-ci-check.sh"
+
+.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check
 
 all: mac windows linux
 

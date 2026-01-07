@@ -398,9 +398,21 @@ main() {
   if ! git diff --cached --quiet; then
     echo -e "${GREEN}Found staged changes. Analyzing...${NC}"
   else
-    echo -e "${YELLOW}WARNING: No staged changes found.${NC}"
-    echo "Please stage your changes with 'git add' before generating commit message"
-    exit 1
+    # Check if there are unstaged changes
+    if ! git diff --quiet; then
+      echo -e "${YELLOW}No staged changes found, but detected unstaged changes.${NC}"
+      echo -e "${BLUE}Unstaged files:${NC}"
+      git diff --name-only | sed 's/^/  - /'
+      echo
+      echo -e "${GREEN}Auto-staging all modified files...${NC}"
+      git add -u
+      echo -e "${GREEN}✓ Files staged successfully!${NC}"
+      echo
+    else
+      echo -e "${RED}ERROR: No changes found (neither staged nor unstaged).${NC}"
+      echo "Please make some changes before generating commit message"
+      exit 1
+    fi
   fi
 
   # Get list of staged files

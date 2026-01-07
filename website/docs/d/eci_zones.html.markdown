@@ -7,11 +7,11 @@ description: |-
   Provides a list of ECI available zones to the user.
 ---
 
-# alicloud\_eci\_zones
+# alicloud_eci_zones
 
-This data source provides the available zones with the Application Load Balancer (ALB) Instance of the current Alibaba Cloud user.
+This data source provides the available zones with the Elastic Container Instance (ECI) of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.145.0+.
+-> **NOTE:** Available since v1.145.0.
 
 ## Example Usage
 
@@ -31,7 +31,7 @@ The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
