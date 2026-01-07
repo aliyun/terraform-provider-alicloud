@@ -23,7 +23,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociation() *sc
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(15 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
@@ -69,6 +69,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociation() *sc
 			"transit_router_owner_id": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 		},
@@ -108,7 +109,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationCreate
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Conflict.Lock", "CenYaochi.Operation.Blocking"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -245,7 +246,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationDelete
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Conflict.Lock", "IncorrectStatus.EcrAssociation", "OperationDenied.EcrAttachmentExisted"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
