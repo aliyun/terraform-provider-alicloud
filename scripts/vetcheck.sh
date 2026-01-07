@@ -2,13 +2,8 @@
 
 set -euo pipefail
 
-# Check for unchecked errors
-echo "==> Checking for unchecked errors..."
-
-if ! which errcheck > /dev/null; then
-    echo "==> Installing errcheck..."
-    go install github.com/kisielk/errcheck@latest
-fi
+# Check go vet
+echo "==> Checking for suspicious constructs with go vet..."
 
 # Only check files that were changed relative to the main branch
 base_branch="origin/master"
@@ -55,18 +50,14 @@ if [[ -z "$packages_map" ]]; then
   exit 0
 fi
 
-err_files=$(errcheck -ignoretests \
-                     -ignore 'github.com/hashicorp/terraform/helper/schema:Set' \
-                     -ignore 'bytes:.*' \
-                     -ignore 'io:Close|Write' \
-                     $packages_map 2>&1 || true)
-
-if [[ -n ${err_files} ]]; then
-    echo 'Unchecked errors found in the following places:'
-    echo "${err_files}"
-    echo "Please handle returned errors. You can check directly with \`make errcheck\`"
-    exit 1
+# Run go vet on changed packages
+echo "Checking packages: $packages_map"
+if go vet $packages_map 2>&1; then
+  echo 'All of the changed packages look good!'
+  exit 0
+else
+  echo ""
+  echo "Vet found suspicious constructs. Please check the reported constructs"
+  echo "and fix them if necessary before submitting the code for review."
+  exit 1
 fi
-
-echo 'All of the changed files look good!'
-exit 0
