@@ -25,6 +25,7 @@ SKIP_BUILD=false
 SKIP_TEST=true  # Default: skip tests locally (CI still runs them)
 SKIP_MARKDOWN_LINT=true  # Default: skip markdown lint locally (CI still runs it)
 SKIP_MARKDOWN_LINK_CHECK=true  # Default: skip markdown link check locally (CI still runs it)
+SKIP_EXAMPLE_TEST=false  # Default: run example tests (use --skip-example-test to disable)
 STRICT_MODE=false  # Strict mode checks ALL docs like CI does
 
 while [[ $# -gt 0 ]]; do
@@ -49,6 +50,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_MARKDOWN_LINK_CHECK=false
       shift
       ;;
+    --skip-example-test)
+      SKIP_EXAMPLE_TEST=true
+      shift
+      ;;
     --quick)
       SKIP_BUILD=true
       SKIP_TEST=true
@@ -67,13 +72,15 @@ while [[ $# -gt 0 ]]; do
       echo "  --run-test                Run unit tests"
       echo "  --run-markdown-lint       Run markdown lint (default: skipped locally)"
       echo "  --run-markdown-link-check Run markdown link check (default: skipped locally)"
+      echo "  --skip-example-test       Skip example tests (default: enabled)"
       echo "  --quick                   Skip both build and tests (faster checks)"
       echo "  --strict                  Check ALL docs (like CI), not just changed files"
       echo "  -h, --help                Show this help message"
       echo ""
-      echo "Note: By default, unit tests, markdown lint, and markdown link checks are skipped locally."
+      echo "Note: By default, example tests are ENABLED and will create real resources."
+      echo "      Use --skip-example-test to disable example tests."
+      echo "      Unit tests, markdown lint, and markdown link checks are skipped locally."
       echo "      Use --run-test, --run-markdown-lint, or --run-markdown-link-check to enable them."
-      echo "      Use --strict to match CI behavior (checks all docs)."
       exit 0
       ;;
     *)
@@ -508,6 +515,120 @@ if [ "$SKIP_TEST" = false ]; then
 else
   echo -e "${YELLOW}⚠ Skipping unit tests (--skip-test flag)${NC}"
   echo
+fi
+
+# ============================================================================
+# 5. Example Tests (Documentation Examples)
+# ============================================================================
+
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}  Part 5: Example Tests (Documentation Examples)${NC}"
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo
+
+# Detect changed documentation files
+CHANGED_DOCS=""
+CHANGED_RESOURCES=""
+
+# Check for changed documentation files
+for file in $CHANGED_FILES; do
+  if [[ "$file" == website/docs/r/*.html.markdown ]] || [[ "$file" == website/docs/d/*.html.markdown ]]; then
+    CHANGED_DOCS="${CHANGED_DOCS}${file} "
+  elif [[ "$file" == alicloud/resource_alicloud*.go ]] && [[ "$file" != *_test.go ]]; then
+    # Convert resource file to doc file
+    resource_name=$(echo "$file" | sed 's|alicloud/resource_alicloud_||' | sed 's|\.go||')
+    doc_file="website/docs/r/${resource_name}.html.markdown"
+    if [ -f "$doc_file" ]; then
+      CHANGED_RESOURCES="${CHANGED_RESOURCES}${doc_file} "
+    fi
+  elif [[ "$file" == alicloud/data_source_alicloud*.go ]] && [[ "$file" != *_test.go ]]; then
+    # Convert data source file to doc file
+    resource_name=$(echo "$file" | sed 's|alicloud/data_source_alicloud_||' | sed 's|\.go||')
+    doc_file="website/docs/d/${resource_name}.html.markdown"
+    if [ -f "$doc_file" ]; then
+      CHANGED_RESOURCES="${CHANGED_RESOURCES}${doc_file} "
+    fi
+  fi
+done
+
+# Combine and deduplicate
+ALL_AFFECTED_DOCS=$(echo "$CHANGED_DOCS $CHANGED_RESOURCES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+if [ -z "$ALL_AFFECTED_DOCS" ]; then
+  echo -e "${BLUE}▶ No documentation changes detected${NC}"
+  echo -e "${GREEN}✓ SKIPPED: Example Tests (no docs changed)${NC}"
+  echo
+else
+  # Count examples in affected docs
+  TOTAL_EXAMPLES=0
+  DOCS_WITH_EXAMPLES=""
+
+  echo -e "${BLUE}▶ Analyzing affected documentation files:${NC}"
+  for doc_file in $ALL_AFFECTED_DOCS; do
+    if [ -f "$doc_file" ]; then
+      example_count=$(grep -c '```terraform' "$doc_file" 2>/dev/null || echo "0")
+      if [ "$example_count" -gt 0 ]; then
+        TOTAL_EXAMPLES=$((TOTAL_EXAMPLES + example_count))
+        DOCS_WITH_EXAMPLES="${DOCS_WITH_EXAMPLES}${doc_file} "
+        echo -e "  ${GREEN}✓${NC} $doc_file (${example_count} example(s))"
+      else
+        echo -e "  ${YELLOW}⚠${NC} $doc_file (no examples)"
+      fi
+    fi
+  done
+  echo
+
+  if [ "$TOTAL_EXAMPLES" -eq 0 ]; then
+    echo -e "${YELLOW}⚠ No terraform examples found in changed documentation${NC}"
+    echo -e "${GREEN}✓ SKIPPED: Example Tests (no examples)${NC}"
+    echo
+  else
+    echo -e "${BLUE}Summary:${NC}"
+    echo -e "  Documentation files changed: $(echo "$ALL_AFFECTED_DOCS" | wc -w | tr -d ' ')"
+    echo -e "  Files with examples: $(echo "$DOCS_WITH_EXAMPLES" | wc -w | tr -d ' ')"
+    echo -e "  Total examples to test: ${TOTAL_EXAMPLES}"
+    echo
+
+    # Check if example tests should run
+    if [ "$SKIP_EXAMPLE_TEST" = true ]; then
+      echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+      echo -e "${YELLOW}  Example tests are skipped (use default to enable)${NC}"
+      echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+      echo
+      echo -e "${BLUE}💡 To enable example tests, run:${NC}"
+      echo -e "  ${GREEN}make ci-check${NC}  (default behavior, requires credentials)"
+      echo
+    else
+      # Check credentials
+      if [ -z "$ALICLOUD_ACCESS_KEY" ] || [ -z "$ALICLOUD_SECRET_KEY" ]; then
+        echo -e "${RED}✗ Cannot run example tests: AliCloud credentials not set${NC}"
+        echo
+        echo -e "${YELLOW}Please set the following environment variables:${NC}"
+        echo -e "  ${GREEN}export ALICLOUD_ACCESS_KEY=your_access_key${NC}"
+        echo -e "  ${GREEN}export ALICLOUD_SECRET_KEY=your_secret_key${NC}"
+        echo -e "  ${GREEN}export ALICLOUD_REGION=cn-hangzhou${NC}  ${YELLOW}# optional${NC}"
+        echo
+        echo -e "${BLUE}💡 To skip example tests temporarily:${NC}"
+        echo -e "  ${GREEN}make ci-check SKIP_EXAMPLE=1${NC}"
+        echo
+        FAILED_CHECKS+=("Example Tests (credentials not set)")
+      else
+        echo -e "${YELLOW}⚠ WARNING: Example tests will create REAL resources in your AliCloud account!${NC}"
+        echo
+
+        # Check if example test script exists
+        if [ -f "$SCRIPT_DIR/local-example-check.sh" ]; then
+          run_check "Example Tests (Documentation Examples)" \
+            "\"$SCRIPT_DIR/local-example-check.sh\" --skip-build" \
+            || true
+        else
+          echo -e "${RED}✗ Example test script not found at: $SCRIPT_DIR/local-example-check.sh${NC}"
+          FAILED_CHECKS+=("Example Tests (script not found)")
+          echo
+        fi
+      fi
+    fi
+  fi
 fi
 
 # ============================================================================
