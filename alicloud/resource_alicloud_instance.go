@@ -180,6 +180,7 @@ func resourceAliCloudInstance() *schema.Resource {
 			"system_disk_auto_snapshot_policy_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"system_disk_storage_cluster_id": {
 				Type:     schema.TypeString,
@@ -464,7 +465,6 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"spot_strategy": {
 				Type:             schema.TypeString,
@@ -2366,6 +2366,95 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 
 		d.SetPartial("ipv6_addresses")
+	}
+
+	if !d.IsNewResource() && d.HasChange("key_name") {
+		var response map[string]interface{}
+		instance, err := ecsService.DescribeInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		oldEntry, newEntry := d.GetChange("key_name")
+		oldKeyName := oldEntry.(string)
+		newKeyName := newEntry.(string)
+
+		if oldKeyName != "" {
+			action := "DetachKeyPair"
+
+			detachKeyPairReq := map[string]interface{}{
+				"RegionId":    client.RegionId,
+				"InstanceIds": convertListToJsonString([]interface{}{d.Id()}),
+				"KeyPairName": oldKeyName,
+			}
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, detachKeyPairReq, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, detachKeyPairReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		if newKeyName != "" {
+			action := "AttachKeyPair"
+
+			attachKeyPairReq := map[string]interface{}{
+				"RegionId":    client.RegionId,
+				"InstanceIds": convertListToJsonString([]interface{}{d.Id()}),
+				"KeyPairName": newKeyName,
+			}
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, attachKeyPairReq, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, attachKeyPairReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		if instance.Status == "Stopped" {
+			err := ecsService.StartEcsInstance(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+		}
+
+		if instance.Status == "Running" {
+			err := ecsService.RebootEcsInstance(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("key_name")
 	}
 
 	update := false
