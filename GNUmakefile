@@ -154,10 +154,26 @@ endif
 commit:
 	@bash "$(CURDIR)/scripts/generate-commit.sh"
 
+# Local CI checks
+# Usage:
+#   make ci-check                    # Run all checks including example tests (default)
+#   make ci-check SKIP_EXAMPLE=1     # Run all checks except example tests
+#   make ci-check SKIP_BUILD=1       # Skip build check
+#   make ci-check-quick              # Quick check (skip build and tests)
 ci-check:
-	@bash "$(CURDIR)/scripts/local-ci-check.sh"
+	@if [ "$(SKIP_EXAMPLE)" = "1" ]; then \
+		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-example-test; \
+	elif [ "$(SKIP_BUILD)" = "1" ]; then \
+		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-build; \
+	else \
+		bash "$(CURDIR)/scripts/local-ci-check.sh"; \
+	fi
 
-.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check
+# Quick CI check (skip build and tests)
+ci-check-quick:
+	@bash "$(CURDIR)/scripts/local-ci-check.sh" --quick
+
+.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick
 
 all: mac windows linux
 
