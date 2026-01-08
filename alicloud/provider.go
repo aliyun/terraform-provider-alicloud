@@ -1348,7 +1348,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ons_instance":                  resourceAlicloudOnsInstance(),
 			"alicloud_ons_topic":                     resourceAlicloudOnsTopic(),
 			"alicloud_ons_group":                     resourceAlicloudOnsGroup(),
-			"alicloud_alikafka_consumer_group":       resourceAlicloudAlikafkaConsumerGroup(),
+			"alicloud_alikafka_consumer_group":       resourceAliCloudAliKafkaConsumerGroup(),
 			"alicloud_alikafka_instance":             resourceAliCloudAlikafkaInstance(),
 			"alicloud_alikafka_topic":                resourceAliCloudAlikafkaTopic(),
 			"alicloud_alikafka_sasl_user":            resourceAliCloudAliKafkaSaslUser(),

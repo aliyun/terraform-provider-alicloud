@@ -2,19 +2,19 @@
 subcategory: "AliKafka"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alikafka_consumer_group"
-sidebar_current: "docs-alicloud-resource-alikafka-consumer-group"
 description: |-
-  Provides a Alicloud Alikafka Consumer Group resource.
+  Provides a Alicloud AliKafka Consumer Group resource.
 ---
 
 # alicloud_alikafka_consumer_group
 
-Provides an ALIKAFKA consumer group resource, see [What is alikafka consumer group](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-createconsumergroup).
+Provides a Ali Kafka Consumer Group resource.
+
+Group in kafka.
+
+For information about Ali Kafka Consumer Group and how to use it, see [What is Consumer Group](https://next.api.alibabacloud.com/document/alikafka/2019-09-16/CreateConsumerGroup).
 
 -> **NOTE:** Available since v1.56.0.
-
--> **NOTE:**  Only the following regions support create alikafka consumer group.
-[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
 
 ## Example Usage
 
@@ -28,46 +28,15 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-}
-
-resource "alicloud_security_group" "default" {
-  vpc_id = alicloud_vpc.default.id
-}
-
-resource "alicloud_alikafka_instance" "default" {
-  name           = "${var.name}-${random_integer.default.result}"
-  partition_num  = "50"
-  disk_type      = "1"
-  disk_size      = "500"
-  deploy_type    = "5"
-  io_max         = "20"
-  vswitch_id     = alicloud_vswitch.default.id
-  security_group = alicloud_security_group.default.id
+data "alicloud_alikafka_instances" "default" {
 }
 
 resource "alicloud_alikafka_consumer_group" "default" {
+  instance_id = data.alicloud_alikafka_instances.default.instances.0.id
   consumer_id = var.name
-  instance_id = alicloud_alikafka_instance.default.id
 }
 ```
 
@@ -78,20 +47,31 @@ resource "alicloud_alikafka_consumer_group" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) ID of the ALIKAFKA Instance that owns the groups.
-* `consumer_id` - (Required, ForceNew) ID of the consumer group. The length cannot exceed 64 characters.
-* `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
-* `description` - (Optional, ForceNew, Available in v1.157.0+) The description of the resource.
+* `consumer_id` - (Required, ForceNew) ID of the consumer group.
+* `tags` - (Optional, Available since v1.63.0) A mapping of tags to assign to the resource.
+* `remark` - (Optional, ForceNew, Available since v1.268.0) The remark of the resource.
+* `description` - (Deprecated since v1.268.0) Field `description` has been deprecated from provider version 1.268.0. New field `remark` instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<consumer_id>`.
+* `create_time` - (Available since v1.268.0) The timestamp of when the group was created.
+* `region_id` - (Available since v1.268.0) The region ID.
 
-* `id` - The `key` of the resource supplied above. The value is formulated as `<instance_id>:<consumer_id>`.
+## Timeouts
+
+-> **NOTE:** Available since v1.268.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Consumer Group.
+* `delete` - (Defaults to 5 mins) Used when delete the Consumer Group.
+* `update` - (Defaults to 5 mins) Used when update the Consumer Group.
 
 ## Import
 
-ALIKAFKA GROUP can be imported using the id, e.g.
+AliKafka Consumer Group can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_alikafka_consumer_group.group alikafka_post-cn-123455abc:consumerId
+$ terraform import alicloud_alikafka_consumer_group.example <instance_id>:<consumer_id>
 ```
