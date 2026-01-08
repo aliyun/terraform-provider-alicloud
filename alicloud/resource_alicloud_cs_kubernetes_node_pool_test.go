@@ -6805,7 +6805,6 @@ func TestAccAliCloudAckNodepool_basic11829(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccack%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckNodepoolBasicDependence11829)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -6933,73 +6932,443 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_patterns": []map[string]interface{}{
-						{
-							"instance_family_level": "EnterpriseLevel",
-							"min_cpu_cores":         "4",
-							"max_cpu_cores":         "8",
-							"min_memory_size":       "4",
-							"max_memory_size":       "16",
-							"instance_categories": []string{
-								"General-purpose"},
-							"cpu_architectures": []string{
-								"X86"},
-						},
-					},
-					"data_disks": []map[string]interface{}{
-						{
-							"size":     "130",
-							"category": "cloud_essd",
-						},
-					},
-				}),
+				Config: AlicloudAckNodepoolBasicDependence11829(name) + fmt.Sprintf(`
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  node_pool_name = "%s"
+  cluster_id     = alicloud_cs_managed_kubernetes.defaultC02XDz.id
+  vswitch_ids    = ["${alicloud_vswitch.defaultziRRat.id}", "${alicloud_vswitch.defaultT8D8ss.id}", "${alicloud_vswitch.defaultFsk7cj.id}"]
+
+  instance_patterns {
+    instance_family_level = "EnterpriseLevel"
+    min_cpu_cores         = 4
+    max_cpu_cores         = 8
+    min_memory_size       = 4
+    max_memory_size       = 16
+    instance_categories   = ["General-purpose"]
+    cpu_architectures     = ["X86"]
+  }
+
+  data_disks {
+    size     = 130
+    category = "cloud_essd"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      management,
+      install_cloud_monitor,
+      cpu_policy,
+      node_name_mode,
+      runtime_name,
+      runtime_version,
+      unschedulable,
+      user_data,
+      pre_user_data,
+      auto_renew,
+      auto_renew_period,
+      cis_enabled,
+      compensate_with_on_demand,
+      deployment_set_id,
+      image_id,
+      image_type,
+      instance_charge_type,
+      instance_metadata_options,
+      internet_charge_type,
+      internet_max_bandwidth_out,
+      key_name,
+      login_as_non_root,
+      password,
+      multi_az_policy,
+      on_demand_base_capacity,
+      on_demand_percentage_above_base_capacity,
+      period,
+      period_unit,
+      platform,
+      private_pool_options,
+      ram_role_name,
+      rds_instances,
+      scaling_policy,
+      security_group_id,
+      security_group_ids,
+      security_hardening_os,
+      soc_enabled,
+      spot_instance_pools,
+      spot_instance_remedy,
+      spot_price_limit,
+      spot_strategy,
+      system_disk_category,
+      system_disk_categories,
+      system_disk_size,
+      system_disk_bursting_enabled,
+      system_disk_performance_level,
+      system_disk_encrypted,
+      system_disk_kms_key,
+      system_disk_snapshot_policy_id,
+      system_disk_encrypt_algorithm,
+      system_disk_provisioned_iops,
+      tee_config,
+    ]
+  }
+}
+`, name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_patterns.#": "1",
 						"data_disks.#":        "1",
+						"labels.#":            "0",
+						"taints.#":            "0",
 					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
+				Config: AlicloudAckNodepoolBasicDependence11829(name) + fmt.Sprintf(`
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  node_pool_name = "%s"
+  cluster_id     = alicloud_cs_managed_kubernetes.defaultC02XDz.id
+  vswitch_ids    = ["${alicloud_vswitch.defaultziRRat.id}", "${alicloud_vswitch.defaultT8D8ss.id}", "${alicloud_vswitch.defaultFsk7cj.id}"]
+
+  auto_mode {
+    enabled = true
+  }
+
+  scaling_config {
+    max_size = 50
+    min_size = 0
+  }
+
+  instance_patterns {
+    min_cpu_cores           = 4
+    max_cpu_cores           = 8
+    min_memory_size         = 8
+    max_memory_size         = 16
+    instance_family_level   = "EnterpriseLevel"
+    excluded_instance_types = ["ecs.c6.*"]
+    instance_categories     = ["General-purpose"]
+    cpu_architectures       = ["X86"]
+  }
+
+  data_disks {
+    size     = 120
+    encrypted = "false"
+    category = "cloud_essd"
+  }
+
+  labels {
+    key   = "test"
+    value = "test"
+  }
+
+  taints {
+    key    = "test_taint_key"
+    effect = "NoSchedule"
+    value  = "test_taint_val"
+  }
+
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+
+  tags = {
+    Created = "TF"
+    For     = "Test"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      management,
+      install_cloud_monitor,
+      cpu_policy,
+      node_name_mode,
+      runtime_name,
+      runtime_version,
+      unschedulable,
+      user_data,
+      pre_user_data,
+      auto_renew,
+      auto_renew_period,
+      cis_enabled,
+      compensate_with_on_demand,
+      deployment_set_id,
+      image_id,
+      image_type,
+      instance_charge_type,
+      instance_metadata_options,
+      internet_charge_type,
+      internet_max_bandwidth_out,
+      key_name,
+      login_as_non_root,
+      password,
+      multi_az_policy,
+      on_demand_base_capacity,
+      on_demand_percentage_above_base_capacity,
+      period,
+      period_unit,
+      platform,
+      private_pool_options,
+      ram_role_name,
+      rds_instances,
+      scaling_policy,
+      security_group_id,
+      security_group_ids,
+      security_hardening_os,
+      soc_enabled,
+      spot_instance_pools,
+      spot_instance_remedy,
+      spot_price_limit,
+      spot_strategy,
+      system_disk_category,
+      system_disk_categories,
+      system_disk_size,
+      system_disk_bursting_enabled,
+      system_disk_performance_level,
+      system_disk_encrypted,
+      system_disk_kms_key,
+      system_disk_snapshot_policy_id,
+      system_disk_encrypt_algorithm,
+      system_disk_provisioned_iops,
+      tee_config,
+    ]
+  }
+}
+`, name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "Test",
+						"labels.#":     "1",
+						"taints.#":     "1",
 					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
+				Config: AlicloudAckNodepoolBasicDependence11829(name) + fmt.Sprintf(`
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  node_pool_name = "%s"
+  cluster_id     = alicloud_cs_managed_kubernetes.defaultC02XDz.id
+  vswitch_ids    = ["${alicloud_vswitch.defaultziRRat.id}", "${alicloud_vswitch.defaultT8D8ss.id}", "${alicloud_vswitch.defaultFsk7cj.id}"]
+
+  auto_mode {
+    enabled = true
+  }
+
+  scaling_config {
+    max_size = 50
+    min_size = 0
+  }
+
+  instance_patterns {
+    min_cpu_cores           = 4
+    max_cpu_cores           = 8
+    min_memory_size         = 8
+    max_memory_size         = 16
+    instance_family_level   = "EnterpriseLevel"
+    excluded_instance_types = ["ecs.c6.*"]
+    instance_categories     = ["General-purpose"]
+    cpu_architectures       = ["X86"]
+  }
+
+  data_disks {
+    size     = 120
+    encrypted = "false"
+    category = "cloud_essd"
+  }
+
+  labels {
+    key   = "test"
+    value = "test"
+  }
+
+  taints {
+    key    = "test_taint_key"
+    effect = "NoSchedule"
+    value  = "test_taint_val"
+  }
+
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+
+  tags = {
+    Created = "TF-update"
+    For     = "Test-update"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      management,
+      install_cloud_monitor,
+      cpu_policy,
+      node_name_mode,
+      runtime_name,
+      runtime_version,
+      unschedulable,
+      user_data,
+      pre_user_data,
+      auto_renew,
+      auto_renew_period,
+      cis_enabled,
+      compensate_with_on_demand,
+      deployment_set_id,
+      image_id,
+      image_type,
+      instance_charge_type,
+      instance_metadata_options,
+      internet_charge_type,
+      internet_max_bandwidth_out,
+      key_name,
+      login_as_non_root,
+      password,
+      multi_az_policy,
+      on_demand_base_capacity,
+      on_demand_percentage_above_base_capacity,
+      period,
+      period_unit,
+      platform,
+      private_pool_options,
+      ram_role_name,
+      rds_instances,
+      scaling_policy,
+      security_group_id,
+      security_group_ids,
+      security_hardening_os,
+      soc_enabled,
+      spot_instance_pools,
+      spot_instance_remedy,
+      spot_price_limit,
+      spot_strategy,
+      system_disk_category,
+      system_disk_categories,
+      system_disk_size,
+      system_disk_bursting_enabled,
+      system_disk_performance_level,
+      system_disk_encrypted,
+      system_disk_kms_key,
+      system_disk_snapshot_policy_id,
+      system_disk_encrypt_algorithm,
+      system_disk_provisioned_iops,
+      tee_config,
+    ]
+  }
+}
+`, name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
 						"tags.Created": "TF-update",
 						"tags.For":     "Test-update",
+						"labels.#":     "1",
+						"taints.#":     "1",
 					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
+				Config: AlicloudAckNodepoolBasicDependence11829(name) + fmt.Sprintf(`
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  node_pool_name = "%s"
+  cluster_id     = alicloud_cs_managed_kubernetes.defaultC02XDz.id
+  vswitch_ids    = ["${alicloud_vswitch.defaultziRRat.id}", "${alicloud_vswitch.defaultT8D8ss.id}", "${alicloud_vswitch.defaultFsk7cj.id}"]
+
+  auto_mode {
+    enabled = true
+  }
+
+  scaling_config {
+    max_size = 50
+    min_size = 0
+  }
+
+  instance_patterns {
+    min_cpu_cores           = 4
+    max_cpu_cores           = 8
+    min_memory_size         = 8
+    max_memory_size         = 16
+    instance_family_level   = "EnterpriseLevel"
+    excluded_instance_types = ["ecs.c6.*"]
+    instance_categories     = ["General-purpose"]
+    cpu_architectures       = ["X86"]
+  }
+
+  data_disks {
+    size     = 120
+    encrypted = "false"
+    category = "cloud_essd"
+  }
+
+  labels {
+    key   = "test"
+    value = "test"
+  }
+
+  taints {
+    key    = "test_taint_key"
+    effect = "NoSchedule"
+    value  = "test_taint_val"
+  }
+
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+
+  lifecycle {
+    ignore_changes = [
+      management,
+      install_cloud_monitor,
+      cpu_policy,
+      node_name_mode,
+      runtime_name,
+      runtime_version,
+      unschedulable,
+      user_data,
+      pre_user_data,
+      auto_renew,
+      auto_renew_period,
+      cis_enabled,
+      compensate_with_on_demand,
+      deployment_set_id,
+      image_id,
+      image_type,
+      instance_charge_type,
+      instance_metadata_options,
+      internet_charge_type,
+      internet_max_bandwidth_out,
+      key_name,
+      login_as_non_root,
+      password,
+      multi_az_policy,
+      on_demand_base_capacity,
+      on_demand_percentage_above_base_capacity,
+      period,
+      period_unit,
+      platform,
+      private_pool_options,
+      ram_role_name,
+      rds_instances,
+      scaling_policy,
+      security_group_id,
+      security_group_ids,
+      security_hardening_os,
+      soc_enabled,
+      spot_instance_pools,
+      spot_instance_remedy,
+      spot_price_limit,
+      spot_strategy,
+      system_disk_category,
+      system_disk_categories,
+      system_disk_size,
+      system_disk_bursting_enabled,
+      system_disk_performance_level,
+      system_disk_encrypted,
+      system_disk_kms_key,
+      system_disk_snapshot_policy_id,
+      system_disk_encrypt_algorithm,
+      system_disk_provisioned_iops,
+      tee_config,
+    ]
+  }
+}
+`, name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
 						"tags.Created": REMOVEKEY,
 						"tags.For":     REMOVEKEY,
+						"labels.#":     "1",
+						"taints.#":     "1",
 					}),
 				),
 			},
