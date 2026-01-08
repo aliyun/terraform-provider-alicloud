@@ -117,7 +117,7 @@ The following arguments are supported:
 * `system_disk_description` - (Optional, Available since v1.101.0) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}.
 * `system_disk_performance_level` (Optional) The performance level of the ESSD used as the system disk, Valid values: `PL0`, `PL1`, `PL2`, `PL3`, Default to `PL1`;For more information about ESSD, See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/122389.htm).
-* `system_disk_auto_snapshot_policy_id` - (Optional, Available since v1.73.0, Modifiable in 1.169.0) The ID of the automatic snapshot policy applied to the system disk.
+* `system_disk_auto_snapshot_policy_id` - (Optional, Available since v1.73.0, Modifiable in 1.169.0) The ID of the automatic snapshot policy applied to the system disk. **NOTE:** If you want to use `system_disk_auto_snapshot_policy_id`, We recommend you to use the resource [alicloud_ecs_auto_snapshot_policy_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_auto_snapshot_policy_attachment).
 * `system_disk_storage_cluster_id` - (Optional, ForceNew, Available since v1.177.0) The ID of the dedicated block storage cluster. If you want to use disks in a dedicated block storage cluster as system disks when you create instances, you must specify this parameter. For more information about dedicated block storage clusters.
 * `system_disk_encrypted` - (Optional, ForceNew, Available since v1.177.0) Specifies whether to encrypt the system disk. Valid values: `true`,`false`. Default value: `false`.
   - `true`: Encrypts the system disk.
@@ -173,7 +173,8 @@ The following arguments are supported:
   It supports to setting a [base64-encoded value](https://developer.hashicorp.com/terraform/language/functions/base64encode), and it is the recommended usage.
   From version 1.60.0, it can be updated in-place. If updated, the instance will reboot to make the change take effect.
   Note: Not all changes will take effect, and it depends on [cloud-init module type](https://cloudinit.readthedocs.io/en/latest/topics/modules.html).
-* `key_name` - (Optional, ForceNew) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
+* `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid. **NOTE:** From version 1.268.0, `key_name` can be modified. If you want to use `key_name`, We recommend you to use the resource [alicloud_ecs_key_pair_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_key_pair_attachment).
+-> **NOTE:** When modifying `key_name`, if the instance status is `Running`, the ECS instance will be rebooted; If the instance status is `Stopped`, the ECS instance status will be changed to `Running`.
 * `role_name` - (Optional, ForceNew) The name of the Resource Access Management (RAM) role. **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment).
 * `include_data_disks` - (Optional) Whether to change instance disks charge type when changing instance charge type.
 * `dry_run` - (Optional) Specifies whether to send a dry-run request. Default to false.
