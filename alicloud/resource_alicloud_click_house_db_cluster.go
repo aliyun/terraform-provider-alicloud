@@ -507,29 +507,106 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		}
 		d.SetPartial("maintain_time")
 	}
+
 	if d.HasChange("db_cluster_access_white_list") {
 
 		oraw, nraw := d.GetChange("db_cluster_access_white_list")
-		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
-		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
-		if len(remove) > 0 {
-			removeWhiteListReq := map[string]interface{}{
-				"DBClusterId": d.Id(),
-				"ModifyMode":  "Delete",
-			}
+		oldSet := oraw.(*schema.Set)
+		newSet := nraw.(*schema.Set)
 
-			for _, whiteList := range remove {
-				whiteListArg := whiteList.(map[string]interface{})
-				removeWhiteListReq["DBClusterIPArrayAttribute"] = whiteListArg["db_cluster_ip_array_attribute"]
-				removeWhiteListReq["DBClusterIPArrayName"] = whiteListArg["db_cluster_ip_array_name"]
-				removeWhiteListReq["SecurityIps"] = whiteListArg["security_ip_list"]
+		oldMap := make(map[string]map[string]interface{})
+		newMap := make(map[string]map[string]interface{})
+
+		for _, item := range oldSet.List() {
+			itemMap := item.(map[string]interface{})
+			oldMap[itemMap["db_cluster_ip_array_name"].(string)] = itemMap
+		}
+
+		for _, item := range newSet.List() {
+			itemMap := item.(map[string]interface{})
+			newMap[itemMap["db_cluster_ip_array_name"].(string)] = itemMap
+		}
+
+		// entries that need to modified
+		coverList := make([]map[string]interface{}, 0)
+		for name, newRecord := range newMap {
+			if oldRecord, exists := oldMap[name]; exists {
+				// same name but different ip list
+				if oldRecord["security_ip_list"].(string) != newRecord["security_ip_list"].(string) {
+					coverList = append(coverList, newRecord)
+				}
+			}
+		}
+
+		// entries that need to be created
+		createList := make([]map[string]interface{}, 0)
+		for name, newRecord := range newMap {
+			if _, exists := oldMap[name]; !exists {
+				createList = append(createList, newRecord)
+			}
+		}
+
+		// entries that need to be deleted
+		removeList := make([]map[string]interface{}, 0)
+		for name, oldRecord := range oldMap {
+			if _, exists := newMap[name]; !exists {
+				removeList = append(removeList, oldRecord)
+			}
+		}
+
+		// Cover mode
+		if len(coverList) > 0 {
+			for _, whiteList := range coverList {
+				coverWhiteListReq := map[string]interface{}{
+					"DBClusterId":               d.Id(),
+					"ModifyMode":                "Cover",
+					"DBClusterIPArrayAttribute": whiteList["db_cluster_ip_array_attribute"].(string),
+					"DBClusterIPArrayName":      whiteList["db_cluster_ip_array_name"].(string),
+					"SecurityIps":               whiteList["security_ip_list"].(string),
+				}
 
 				action := "ModifyDBClusterAccessWhiteList"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, removeWhiteListReq, false)
+					response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil,
+						coverWhiteListReq, false)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) ||
+							NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, coverWhiteListReq)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action,
+						AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+
+		// Delete mode
+		if len(removeList) > 0 {
+			for _, whiteList := range removeList {
+				removeWhiteListReq := map[string]interface{}{
+					"DBClusterId":               d.Id(),
+					"ModifyMode":                "Delete",
+					"DBClusterIPArrayAttribute": whiteList["db_cluster_ip_array_attribute"].(string),
+					"DBClusterIPArrayName":      whiteList["db_cluster_ip_array_name"].(string),
+					"SecurityIps":               whiteList["security_ip_list"].(string),
+				}
+
+				action := "ModifyDBClusterAccessWhiteList"
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil,
+						removeWhiteListReq, false)
+					if err != nil {
+						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) ||
+							NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -539,28 +616,31 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 				})
 				addDebug(action, response, removeWhiteListReq)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action,
+						AlibabaCloudSdkGoERROR)
 				}
 			}
 		}
-		if len(create) > 0 {
-			createWhiteListReq := map[string]interface{}{
-				"DBClusterId": d.Id(),
-				"ModifyMode":  "Append",
-			}
 
-			for _, whiteList := range create {
-				whiteListArg := whiteList.(map[string]interface{})
-				createWhiteListReq["DBClusterIPArrayAttribute"] = whiteListArg["db_cluster_ip_array_attribute"]
-				createWhiteListReq["DBClusterIPArrayName"] = whiteListArg["db_cluster_ip_array_name"]
-				createWhiteListReq["SecurityIps"] = whiteListArg["security_ip_list"]
+		// Append mode
+		if len(createList) > 0 {
+			for _, whiteList := range createList {
+				createWhiteListReq := map[string]interface{}{
+					"DBClusterId":               d.Id(),
+					"ModifyMode":                "Append",
+					"DBClusterIPArrayAttribute": whiteList["db_cluster_ip_array_attribute"].(string),
+					"DBClusterIPArrayName":      whiteList["db_cluster_ip_array_name"].(string),
+					"SecurityIps":               whiteList["security_ip_list"].(string),
+				}
 
 				action := "ModifyDBClusterAccessWhiteList"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, createWhiteListReq, false)
+					response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil,
+						createWhiteListReq, false)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) ||
+							NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -570,11 +650,11 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 				})
 				addDebug(action, response, createWhiteListReq)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action,
+						AlibabaCloudSdkGoERROR)
 				}
 			}
 		}
-		d.SetPartial("db_cluster_access_white_list")
 	}
 	if d.HasChange("status") {
 		clickhouseService := ClickhouseService{client}
