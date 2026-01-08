@@ -173,7 +173,22 @@ ci-check:
 ci-check-quick:
 	@bash "$(CURDIR)/scripts/local-ci-check.sh" --quick
 
-.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick
+# Calculate minimal test set for a resource (100% coverage)
+# Usage: make minimal-test-set RESOURCE=alicloud_drds_polardbx_instance
+# Usage: make minimal-test-set RESOURCE=alicloud_drds_polardbx_instance FORMAT=json
+minimal-test-set:
+	@if [ -z "$(RESOURCE)" ]; then \
+		echo "Error: RESOURCE is required. Usage: make minimal-test-set RESOURCE=alicloud_drds_polardbx_instance"; \
+		exit 1; \
+	fi
+	@FORMAT=$${FORMAT:-summary}; \
+	if [ "$$FORMAT" != "summary" ] && [ "$$FORMAT" != "json" ]; then \
+		echo "Error: FORMAT must be 'summary' or 'json' (default: summary)"; \
+		exit 1; \
+	fi; \
+	go run scripts/testing/minimal_test_set_calculator.go -resource $(RESOURCE) -format $$FORMAT
+
+.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set
 
 all: mac windows linux
 
