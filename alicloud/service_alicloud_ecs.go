@@ -3762,3 +3762,68 @@ func (s *EcsService) DescribeEcsInstance(id string) (object map[string]interface
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+
+func (s *EcsService) StartEcsInstance(id string) (err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+
+	action := "StartInstance"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "InvalidOperation.Conflict"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
+
+func (s *EcsService) RebootEcsInstance(id string) (err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+	request["ForceStop"] = true
+
+	action := "RebootInstance"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
