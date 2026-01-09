@@ -143,71 +143,87 @@ func resourceAliCloudHbrPolicyBindingCreate(d *schema.ResourceData, meta interfa
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["PolicyId"] = d.Get("policy_id")
-
-	policyBindingListLocalMaps := make([]map[string]interface{}, 0)
-	policyBindingListLocalMap := make(map[string]interface{})
-	policyBindingListLocalMap["DataSourceId"] = d.Get("data_source_id")
-	policyBindingListLocalMap["SourceType"] = d.Get("source_type")
-	if d.HasChange("disabled") {
-		policyBindingListLocalMap["Disabled"] = d.Get("disabled")
+	if v, ok := d.GetOk("policy_id"); ok {
+		request["PolicyId"] = v
 	}
 
-	if v, ok := d.GetOk("source"); ok {
-		policyBindingListLocalMap["Source"] = v
+	policyBindingListDataList := make(map[string]interface{})
+
+	if v, ok := d.GetOkExists("disabled"); ok {
+		policyBindingListDataList["Disabled"] = v
 	}
 
-	if v, ok := d.GetOk("policy_binding_description"); ok {
-		policyBindingListLocalMap["PolicyBindingDescription"] = v
+	if v, ok := d.GetOkExists("include"); ok {
+		policyBindingListDataList["Include"] = v
 	}
 
-	if v, ok := d.GetOk("include"); ok {
-		policyBindingListLocalMap["Include"] = v
+	if v, ok := d.GetOkExists("cross_account_role_name"); ok {
+		policyBindingListDataList["CrossAccountRoleName"] = v
 	}
 
-	if v, ok := d.GetOk("exclude"); ok {
-		policyBindingListLocalMap["Exclude"] = v
+	if v, ok := d.GetOkExists("cross_account_user_id"); ok {
+		policyBindingListDataList["CrossAccountUserId"] = v
 	}
 
-	if v, ok := d.GetOk("speed_limit"); ok {
-		policyBindingListLocalMap["SpeedLimit"] = v
+	if v, ok := d.GetOkExists("data_source_id"); ok {
+		policyBindingListDataList["DataSourceId"] = v
 	}
 
-	if v, ok := d.GetOk("cross_account_role_name"); ok {
-		policyBindingListLocalMap["CrossAccountRoleName"] = v
+	if v, ok := d.GetOkExists("source_type"); ok {
+		policyBindingListDataList["SourceType"] = v
 	}
 
-	if v, ok := d.GetOk("cross_account_type"); ok {
-		policyBindingListLocalMap["CrossAccountType"] = v
+	if v, ok := d.GetOkExists("policy_binding_description"); ok {
+		policyBindingListDataList["PolicyBindingDescription"] = v
 	}
 
-	if v, ok := d.GetOk("cross_account_user_id"); ok {
-		policyBindingListLocalMap["CrossAccountUserId"] = v
+	if v, ok := d.GetOkExists("speed_limit"); ok {
+		policyBindingListDataList["SpeedLimit"] = v
 	}
 
-	if _, ok := d.GetOk("advanced_options"); ok {
-		objectDataLocalMap := make(map[string]interface{})
-		if v := d.Get("advanced_options"); v != nil {
-			udmDetail := make(map[string]interface{})
-			nodeNative, _ := jsonpath.Get("$[0].udm_detail[0].disk_id_list", d.Get("advanced_options"))
-			if nodeNative != nil && nodeNative != "" {
-				udmDetail["DiskIdList"] = nodeNative
+	if v, ok := d.GetOkExists("source"); ok {
+		policyBindingListDataList["Source"] = v
+	}
+
+	if v, ok := d.GetOkExists("cross_account_type"); ok {
+		policyBindingListDataList["CrossAccountType"] = v
+	}
+
+	if v, ok := d.GetOkExists("exclude"); ok {
+		policyBindingListDataList["Exclude"] = v
+	}
+
+	if v := d.Get("advanced_options"); !IsNil(v) {
+		advancedOptions := make(map[string]interface{})
+		udmDetail := make(map[string]interface{})
+		diskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].disk_id_list", d.Get("advanced_options"))
+		if diskIdList1 != nil && diskIdList1 != "" {
+			udmDetail["DiskIdList"] = diskIdList1
+		}
+		excludeDiskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].exclude_disk_id_list", d.Get("advanced_options"))
+		if excludeDiskIdList1 != nil && excludeDiskIdList1 != "" {
+			udmDetail["ExcludeDiskIdList"] = excludeDiskIdList1
+		}
+		destinationKmsKeyId1, _ := jsonpath.Get("$[0].udm_detail[0].destination_kms_key_id", d.Get("advanced_options"))
+		if destinationKmsKeyId1 != nil && destinationKmsKeyId1 != "" {
+			udmDetail["DestinationKmsKeyId"] = destinationKmsKeyId1
+		}
+
+		if len(udmDetail) > 0 {
+			advancedOptions["UdmDetail"] = udmDetail
+			if len(advancedOptions) > 0 {
+				policyBindingListDataList["AdvancedOptions"] = advancedOptions
 			}
-			nodeNative1, _ := jsonpath.Get("$[0].udm_detail[0].destination_kms_key_id", v)
-			if nodeNative1 != nil && nodeNative1 != "" {
-				udmDetail["DestinationKmsKeyId"] = nodeNative1
-			}
-			nodeNative2, _ := jsonpath.Get("$[0].udm_detail[0].exclude_disk_id_list", d.Get("advanced_options"))
-			if nodeNative2 != nil && nodeNative2 != "" {
-				udmDetail["ExcludeDiskIdList"] = nodeNative2
-			}
-
-			objectDataLocalMap["UdmDetail"] = udmDetail
-			policyBindingListLocalMap["AdvancedOptions"] = convertMapToJsonStringIgnoreError(objectDataLocalMap)
 		}
 	}
-	policyBindingListLocalMaps = append(policyBindingListLocalMaps, policyBindingListLocalMap)
-	request["PolicyBindingList"], _ = convertListMapToJsonString(policyBindingListLocalMaps)
+
+	PolicyBindingListMap := make([]interface{}, 0)
+	PolicyBindingListMap = append(PolicyBindingListMap, policyBindingListDataList)
+	policyBindingListDataListJson, err := json.Marshal(PolicyBindingListMap)
+	if err != nil {
+		return WrapError(err)
+	}
+	request["PolicyBindingList"] = string(policyBindingListDataListJson)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -227,9 +243,9 @@ func resourceAliCloudHbrPolicyBindingCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_hbr_policy_binding", action, AlibabaCloudSdkGoERROR)
 	}
 
-	PolicyBindingListSourceType := d.Get("source_type")
-	PolicyBindingListDataSourceId := d.Get("data_source_id")
-	d.SetId(fmt.Sprintf("%v:%v:%v", request["PolicyId"], PolicyBindingListSourceType, PolicyBindingListDataSourceId))
+	PolicyBindingListSourceTypeVar := d.Get("source_type")
+	PolicyBindingListDataSourceIdVar := d.Get("data_source_id")
+	d.SetId(fmt.Sprintf("%v:%v:%v", request["PolicyId"], PolicyBindingListSourceTypeVar, PolicyBindingListDataSourceIdVar))
 
 	return resourceAliCloudHbrPolicyBindingRead(d, meta)
 }
@@ -248,87 +264,54 @@ func resourceAliCloudHbrPolicyBindingRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	if objectRaw["CreatedTime"] != nil {
-		d.Set("create_time", objectRaw["CreatedTime"])
-	}
-	if objectRaw["CrossAccountRoleName"] != nil {
-		d.Set("cross_account_role_name", objectRaw["CrossAccountRoleName"])
-	}
-	if objectRaw["CrossAccountType"] != nil {
-		d.Set("cross_account_type", objectRaw["CrossAccountType"])
-	}
-	if objectRaw["CrossAccountUserId"] != nil {
-		d.Set("cross_account_user_id", objectRaw["CrossAccountUserId"])
-	}
-	if objectRaw["Disabled"] != nil {
-		d.Set("disabled", objectRaw["Disabled"])
-	}
-	if objectRaw["Exclude"] != nil {
-		d.Set("exclude", objectRaw["Exclude"])
-	}
-	if objectRaw["Include"] != nil {
-		d.Set("include", objectRaw["Include"])
-	}
-	if objectRaw["PolicyBindingDescription"] != nil {
-		d.Set("policy_binding_description", objectRaw["PolicyBindingDescription"])
-	}
-	if objectRaw["Source"] != nil {
-		d.Set("source", objectRaw["Source"])
-	}
-	if objectRaw["SpeedLimit"] != nil {
-		d.Set("speed_limit", objectRaw["SpeedLimit"])
-	}
-	if objectRaw["DataSourceId"] != nil {
-		d.Set("data_source_id", objectRaw["DataSourceId"])
-	}
-	if objectRaw["PolicyId"] != nil {
-		d.Set("policy_id", objectRaw["PolicyId"])
-	}
-	if objectRaw["SourceType"] != nil {
-		d.Set("source_type", objectRaw["SourceType"])
-	}
+	d.Set("create_time", objectRaw["CreatedTime"])
+	d.Set("cross_account_role_name", objectRaw["CrossAccountRoleName"])
+	d.Set("cross_account_type", objectRaw["CrossAccountType"])
+	d.Set("cross_account_user_id", objectRaw["CrossAccountUserId"])
+	d.Set("disabled", objectRaw["Disabled"])
+	d.Set("exclude", objectRaw["Exclude"])
+	d.Set("include", objectRaw["Include"])
+	d.Set("policy_binding_description", objectRaw["PolicyBindingDescription"])
+	d.Set("source", objectRaw["Source"])
+	d.Set("speed_limit", objectRaw["SpeedLimit"])
+	d.Set("data_source_id", objectRaw["DataSourceId"])
+	d.Set("policy_id", objectRaw["PolicyId"])
+	d.Set("source_type", objectRaw["SourceType"])
 
 	advancedOptionsMaps := make([]map[string]interface{}, 0)
 	advancedOptionsMap := make(map[string]interface{})
-	udmDetail1RawObj, _ := jsonpath.Get("$.AdvancedOptions.UdmDetail", objectRaw)
-	udmDetail1Raw := make(map[string]interface{})
-	if udmDetail1RawObj != nil {
-		udmDetail1Raw = udmDetail1RawObj.(map[string]interface{})
+	udmDetailRawObj, _ := jsonpath.Get("$.AdvancedOptions.UdmDetail", objectRaw)
+	udmDetailRaw := make(map[string]interface{})
+	if udmDetailRawObj != nil {
+		udmDetailRaw = udmDetailRawObj.(map[string]interface{})
 	}
-	if len(udmDetail1Raw) > 0 {
+	if len(udmDetailRaw) > 0 {
 
 		udmDetailMaps := make([]map[string]interface{}, 0)
 		udmDetailMap := make(map[string]interface{})
-		if len(udmDetail1Raw) > 0 {
-			udmDetailMap["destination_kms_key_id"] = udmDetail1Raw["DestinationKmsKeyId"]
+		if len(udmDetailRaw) > 0 {
+			udmDetailMap["destination_kms_key_id"] = udmDetailRaw["DestinationKmsKeyId"]
 
-			diskIdList1Raw := make([]interface{}, 0)
-			if udmDetail1Raw["DiskIdList"] != nil {
-				diskIdList1Raw = udmDetail1Raw["DiskIdList"].([]interface{})
+			diskIdListRaw := make([]interface{}, 0)
+			if udmDetailRaw["DiskIdList"] != nil {
+				diskIdListRaw = convertToInterfaceArray(udmDetailRaw["DiskIdList"])
 			}
 
-			udmDetailMap["disk_id_list"] = diskIdList1Raw
-			excludeDiskIdList1Raw := make([]interface{}, 0)
-			if udmDetail1Raw["ExcludeDiskIdList"] != nil {
-				excludeDiskIdList1Raw = udmDetail1Raw["ExcludeDiskIdList"].([]interface{})
+			udmDetailMap["disk_id_list"] = diskIdListRaw
+			excludeDiskIdListRaw := make([]interface{}, 0)
+			if udmDetailRaw["ExcludeDiskIdList"] != nil {
+				excludeDiskIdListRaw = convertToInterfaceArray(udmDetailRaw["ExcludeDiskIdList"])
 			}
 
-			udmDetailMap["exclude_disk_id_list"] = excludeDiskIdList1Raw
+			udmDetailMap["exclude_disk_id_list"] = excludeDiskIdListRaw
 			udmDetailMaps = append(udmDetailMaps, udmDetailMap)
 		}
 		advancedOptionsMap["udm_detail"] = udmDetailMaps
 		advancedOptionsMaps = append(advancedOptionsMaps, advancedOptionsMap)
 	}
-	if udmDetail1RawObj != nil {
-		if err := d.Set("advanced_options", advancedOptionsMaps); err != nil {
-			return err
-		}
+	if err := d.Set("advanced_options", advancedOptionsMaps); err != nil {
+		return err
 	}
-
-	parts := strings.Split(d.Id(), ":")
-	d.Set("policy_id", parts[0])
-	d.Set("source_type", parts[1])
-	d.Set("data_source_id", parts[2])
 
 	return nil
 }
@@ -339,28 +322,50 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdatePolicyBinding"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["PolicyId"] = parts[0]
 	request["DataSourceId"] = parts[2]
-	query["SourceType"] = parts[1]
+	request["PolicyId"] = parts[0]
+	request["SourceType"] = parts[1]
+
+	if d.HasChange("advanced_options") {
+		update = true
+		advancedOptions := make(map[string]interface{})
+
+		if v := d.Get("advanced_options"); v != nil {
+			udmDetail := make(map[string]interface{})
+			excludeDiskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].exclude_disk_id_list", d.Get("advanced_options"))
+			if excludeDiskIdList1 != nil && excludeDiskIdList1 != "" {
+				udmDetail["ExcludeDiskIdList"] = excludeDiskIdList1
+			}
+			destinationKmsKeyId1, _ := jsonpath.Get("$[0].udm_detail[0].destination_kms_key_id", d.Get("advanced_options"))
+			if destinationKmsKeyId1 != nil && destinationKmsKeyId1 != "" {
+				udmDetail["DestinationKmsKeyId"] = destinationKmsKeyId1
+			}
+			diskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].disk_id_list", d.Get("advanced_options"))
+			if diskIdList1 != nil && diskIdList1 != "" {
+				udmDetail["DiskIdList"] = diskIdList1
+			}
+
+			if len(udmDetail) > 0 {
+				advancedOptions["UdmDetail"] = udmDetail
+			}
+
+			advancedOptionsJson, err := json.Marshal(advancedOptions)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["AdvancedOptions"] = string(advancedOptionsJson)
+		}
+	}
 
 	if d.HasChange("disabled") {
 		update = true
 		request["Disabled"] = d.Get("disabled")
-	}
-
-	if d.HasChange("source") {
-		update = true
-		request["Source"] = d.Get("source")
-	}
-
-	if d.HasChange("policy_binding_description") {
-		update = true
-		request["PolicyBindingDescription"] = d.Get("policy_binding_description")
 	}
 
 	if d.HasChange("include") {
@@ -368,9 +373,9 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 		request["Include"] = d.Get("include")
 	}
 
-	if d.HasChange("exclude") {
+	if d.HasChange("policy_binding_description") {
 		update = true
-		request["Exclude"] = d.Get("exclude")
+		request["PolicyBindingDescription"] = d.Get("policy_binding_description")
 	}
 
 	if d.HasChange("speed_limit") {
@@ -378,33 +383,14 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 		request["SpeedLimit"] = d.Get("speed_limit")
 	}
 
-	if d.HasChange("advanced_options") {
+	if d.HasChange("source") {
 		update = true
-		objectDataLocalMap := make(map[string]interface{})
+		request["Source"] = d.Get("source")
+	}
 
-		if v := d.Get("advanced_options"); !IsNil(v) {
-			udmDetail := make(map[string]interface{})
-			diskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].disk_id_list", d.Get("advanced_options"))
-			if diskIdList1 != nil && (d.HasChange("advanced_options.0.udm_detail.0.disk_id_list") || diskIdList1 != "") {
-				udmDetail["DiskIdList"] = diskIdList1
-			}
-			destinationKmsKeyId1, _ := jsonpath.Get("$[0].udm_detail[0].destination_kms_key_id", v)
-			if destinationKmsKeyId1 != nil && (d.HasChange("advanced_options.0.udm_detail.0.destination_kms_key_id") || destinationKmsKeyId1 != "") {
-				udmDetail["DestinationKmsKeyId"] = destinationKmsKeyId1
-			}
-			excludeDiskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].exclude_disk_id_list", d.Get("advanced_options"))
-			if excludeDiskIdList1 != nil && (d.HasChange("advanced_options.0.udm_detail.0.exclude_disk_id_list") || excludeDiskIdList1 != "") {
-				udmDetail["ExcludeDiskIdList"] = excludeDiskIdList1
-			}
-
-			objectDataLocalMap["UdmDetail"] = udmDetail
-
-			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
-			if err != nil {
-				return WrapError(err)
-			}
-			request["AdvancedOptions"] = string(objectDataLocalMapJson)
-		}
+	if d.HasChange("exclude") {
+		update = true
+		request["Exclude"] = d.Get("exclude")
 	}
 
 	if update {
@@ -446,7 +432,6 @@ func resourceAliCloudHbrPolicyBindingDelete(d *schema.ResourceData, meta interfa
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

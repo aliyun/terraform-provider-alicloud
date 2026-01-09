@@ -100,13 +100,15 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
 	}
-	action := "DescribePolicyBindings"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["PolicyId"] = parts[0]
-	query["SourceType"] = parts[1]
+	request["SourceType"] = parts[1]
 	request["MaxResults"] = PageSizeLarge
+
+	action := "DescribePolicyBindings"
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -160,15 +162,18 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 }
 
 func (s *HbrServiceV2) HbrPolicyBindingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.HbrPolicyBindingStateRefreshFuncWithApi(id, field, failStates, s.DescribeHbrPolicyBinding)
+}
+
+func (s *HbrServiceV2) HbrPolicyBindingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeHbrPolicyBinding(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
