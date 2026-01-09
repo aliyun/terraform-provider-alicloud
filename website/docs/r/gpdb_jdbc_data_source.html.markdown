@@ -3,16 +3,16 @@ subcategory: "AnalyticDB for PostgreSQL (GPDB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_gpdb_jdbc_data_source"
 description: |-
-  Provides a Alicloud GPDB Jdbc Data Source resource.
+  Provides a Alicloud AnalyticDB for PostgreSQL (GPDB) Jdbc Data Source resource.
 ---
 
 # alicloud_gpdb_jdbc_data_source
 
-Provides a GPDB Jdbc Data Source resource.
+Provides a AnalyticDB for PostgreSQL (GPDB) Jdbc Data Source resource.
 
 
 
-For information about GPDB Jdbc Data Source and how to use it, see [What is Jdbc Data Source](https://www.alibabacloud.com/help/en/analyticdb/analyticdb-for-postgresql/developer-reference/api-gpdb-2016-05-03-createjdbcdatasource).
+For information about AnalyticDB for PostgreSQL (GPDB) Jdbc Data Source and how to use it, see [What is Jdbc Data Source](https://www.alibabacloud.com/help/en/analyticdb/analyticdb-for-postgresql/developer-reference/api-gpdb-2016-05-03-createjdbcdatasource).
 
 -> **NOTE:** Available since v1.230.0.
 
@@ -72,6 +72,7 @@ resource "alicloud_gpdb_account" "defaultsk1eaS" {
   db_instance_id      = alicloud_gpdb_instance.defaulttuqTmM.id
   account_name        = "example_001"
   account_password    = "example_001"
+  account_type        = "Normal"
 }
 
 resource "alicloud_gpdb_external_data_service" "defaultRXkfKL" {
@@ -101,13 +102,9 @@ The following arguments are supported:
 * `data_source_name` - (Optional, ForceNew) Data Source Name
 * `data_source_type` - (Optional) Data Source Type
 * `db_instance_id` - (Required, ForceNew) The instance ID.
-
 * `jdbc_connection_string` - (Optional) The JDBC connection string.
-
 * `jdbc_password` - (Optional) The password of the database account.
-
 * `jdbc_user_name` - (Required) The name of the database account.
-
 
 ## Attributes Reference
 
@@ -115,7 +112,6 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<data_source_id>`.
 * `create_time` - The creation time of the resource
 * `data_source_id` - The data source ID.
-
 * `status` - Data Source Status
 
 ## Timeouts
@@ -127,7 +123,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-GPDB Jdbc Data Source can be imported using the id, e.g.
+AnalyticDB for PostgreSQL (GPDB) Jdbc Data Source can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_jdbc_data_source.example <db_instance_id>:<data_source_id>
