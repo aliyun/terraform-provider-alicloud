@@ -596,12 +596,14 @@ func (s *GpdbServiceV2) DescribeGpdbJdbcDataSource(id string) (object map[string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
-	action := "DescribeJDBCDataSource"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["DataSourceId"] = parts[1]
-	query["DBInstanceId"] = parts[0]
+	request["DataSourceId"] = parts[1]
+	request["DBInstanceId"] = parts[0]
+
+	action := "DescribeJDBCDataSource"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -614,11 +616,10 @@ func (s *GpdbServiceV2) DescribeGpdbJdbcDataSource(id string) (object map[string
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -626,17 +627,27 @@ func (s *GpdbServiceV2) DescribeGpdbJdbcDataSource(id string) (object map[string
 }
 
 func (s *GpdbServiceV2) GpdbJdbcDataSourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.GpdbJdbcDataSourceStateRefreshFuncWithApi(id, field, failStates, s.DescribeGpdbJdbcDataSource)
+}
+
+func (s *GpdbServiceV2) GpdbJdbcDataSourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeGpdbJdbcDataSource(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

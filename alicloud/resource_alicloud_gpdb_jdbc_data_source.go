@@ -83,25 +83,27 @@ func resourceAliCloudGpdbJdbcDataSourceCreate(d *schema.ResourceData, meta inter
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["DBInstanceId"] = d.Get("db_instance_id")
-	query["RegionId"] = client.RegionId
-
-	if v, ok := d.GetOk("data_source_name"); ok {
-		request["DataSourceName"] = v
+	if v, ok := d.GetOk("db_instance_id"); ok {
+		request["DBInstanceId"] = v
 	}
+	request["RegionId"] = client.RegionId
+
 	if v, ok := d.GetOk("data_source_description"); ok {
 		request["DataSourceDescription"] = v
 	}
 	if v, ok := d.GetOk("data_source_type"); ok {
 		request["DataSourceType"] = v
 	}
-	if v, ok := d.GetOk("jdbc_connection_string"); ok {
-		request["JDBCConnectionString"] = v
-	}
-	request["JDBCUserName"] = d.Get("jdbc_user_name")
 	if v, ok := d.GetOk("jdbc_password"); ok {
 		request["JDBCPassword"] = v
 	}
+	if v, ok := d.GetOk("jdbc_connection_string"); ok {
+		request["JDBCConnectionString"] = v
+	}
+	if v, ok := d.GetOk("data_source_name"); ok {
+		request["DataSourceName"] = v
+	}
+	request["JDBCUserName"] = d.Get("jdbc_user_name")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
@@ -112,15 +114,15 @@ func resourceAliCloudGpdbJdbcDataSourceCreate(d *schema.ResourceData, meta inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_gpdb_jdbc_data_source", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", query["DBInstanceId"], response["DataSourceId"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["DBInstanceId"], response["DataSourceId"]))
 
 	gpdbServiceV2 := GpdbServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gpdbServiceV2.GpdbJdbcDataSourceStateRefreshFunc(d.Id(), "DataSourceStatus", []string{}))
@@ -145,37 +147,18 @@ func resourceAliCloudGpdbJdbcDataSourceRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["DataSourceDescription"] != nil {
-		d.Set("data_source_description", objectRaw["DataSourceDescription"])
-	}
-	if objectRaw["DataSourceName"] != nil {
-		d.Set("data_source_name", objectRaw["DataSourceName"])
-	}
-	if objectRaw["DataSourceType"] != nil {
-		d.Set("data_source_type", objectRaw["DataSourceType"])
-	}
-	if objectRaw["JDBCConnectionString"] != nil {
-		d.Set("jdbc_connection_string", objectRaw["JDBCConnectionString"])
-	}
-	if objectRaw["JDBCPassword"] != nil {
-		d.Set("jdbc_password", objectRaw["JDBCPassword"])
-	}
-	if objectRaw["JDBCUserName"] != nil {
-		d.Set("jdbc_user_name", objectRaw["JDBCUserName"])
-	}
-	if objectRaw["DataSourceStatus"] != nil {
-		d.Set("status", objectRaw["DataSourceStatus"])
-	}
-	if objectRaw["DataSourceId"] != nil {
-		d.Set("data_source_id", objectRaw["DataSourceId"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("data_source_description", objectRaw["DataSourceDescription"])
+	d.Set("data_source_name", objectRaw["DataSourceName"])
+	d.Set("data_source_type", objectRaw["DataSourceType"])
+	d.Set("jdbc_connection_string", objectRaw["JDBCConnectionString"])
+	d.Set("jdbc_password", objectRaw["JDBCPassword"])
+	d.Set("jdbc_user_name", objectRaw["JDBCUserName"])
+	d.Set("status", objectRaw["DataSourceStatus"])
+	d.Set("data_source_id", objectRaw["DataSourceId"])
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_instance_id", parts[0])
-	d.Set("data_source_id", parts[1])
 
 	return nil
 }
@@ -186,14 +169,15 @@ func resourceAliCloudGpdbJdbcDataSourceUpdate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyJDBCDataSource"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["DataSourceId"] = parts[1]
-	query["DBInstanceId"] = parts[0]
-	query["RegionId"] = client.RegionId
+	request["DataSourceId"] = parts[1]
+	request["DBInstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
 	if d.HasChange("data_source_description") {
 		update = true
 		request["DataSourceDescription"] = d.Get("data_source_description")
@@ -202,6 +186,11 @@ func resourceAliCloudGpdbJdbcDataSourceUpdate(d *schema.ResourceData, meta inter
 	if d.HasChange("data_source_type") {
 		update = true
 		request["DataSourceType"] = d.Get("data_source_type")
+	}
+
+	if d.HasChange("jdbc_password") {
+		update = true
+		request["JDBCPassword"] = d.Get("jdbc_password")
 	}
 
 	if d.HasChange("jdbc_connection_string") {
@@ -213,11 +202,6 @@ func resourceAliCloudGpdbJdbcDataSourceUpdate(d *schema.ResourceData, meta inter
 		update = true
 	}
 	request["JDBCUserName"] = d.Get("jdbc_user_name")
-	if d.HasChange("jdbc_password") {
-		update = true
-	}
-	request["JDBCPassword"] = d.Get("jdbc_password")
-
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -229,9 +213,9 @@ func resourceAliCloudGpdbJdbcDataSourceUpdate(d *schema.ResourceData, meta inter
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -255,14 +239,13 @@ func resourceAliCloudGpdbJdbcDataSourceDelete(d *schema.ResourceData, meta inter
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["DataSourceId"] = parts[1]
-	query["DBInstanceId"] = parts[0]
-	query["RegionId"] = client.RegionId
+	request["DataSourceId"] = parts[1]
+	request["DBInstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -270,11 +253,14 @@ func resourceAliCloudGpdbJdbcDataSourceDelete(d *schema.ResourceData, meta inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
