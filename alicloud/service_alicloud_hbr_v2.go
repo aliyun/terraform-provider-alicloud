@@ -60,15 +60,18 @@ func (s *HbrServiceV2) DescribeHbrPolicy(id string) (object map[string]interface
 }
 
 func (s *HbrServiceV2) HbrPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.HbrPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeHbrPolicy)
+}
+
+func (s *HbrServiceV2) HbrPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeHbrPolicy(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
