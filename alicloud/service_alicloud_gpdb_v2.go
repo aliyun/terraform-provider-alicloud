@@ -378,6 +378,7 @@ func (s *GpdbServiceV2) GpdbExternalDataServiceStateRefreshFunc(id string, field
 }
 
 // DescribeGpdbExternalDataService >>> Encapsulated.
+
 // DescribeGpdbStreamingDataService <<< Encapsulated get interface for Gpdb StreamingDataService.
 
 func (s *GpdbServiceV2) DescribeGpdbStreamingDataService(id string) (object map[string]interface{}, err error) {
@@ -388,13 +389,14 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingDataService(id string) (object map[
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
-	action := "DescribeStreamingDataService"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["DBInstanceId"] = parts[0]
-	query["ServiceId"] = parts[1]
-	query["RegionId"] = client.RegionId
+	request["DBInstanceId"] = parts[0]
+	request["ServiceId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	action := "DescribeStreamingDataService"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -407,14 +409,13 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingDataService(id string) (object map[
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ExternalService.NotFound"}) {
 			return object, WrapErrorf(NotFoundErr("StreamingDataService", id), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -422,17 +423,27 @@ func (s *GpdbServiceV2) DescribeGpdbStreamingDataService(id string) (object map[
 }
 
 func (s *GpdbServiceV2) GpdbStreamingDataServiceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.GpdbStreamingDataServiceStateRefreshFuncWithApi(id, field, failStates, s.DescribeGpdbStreamingDataService)
+}
+
+func (s *GpdbServiceV2) GpdbStreamingDataServiceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeGpdbStreamingDataService(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

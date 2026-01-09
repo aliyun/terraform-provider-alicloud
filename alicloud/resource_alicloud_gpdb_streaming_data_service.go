@@ -71,14 +71,16 @@ func resourceAliCloudGpdbStreamingDataServiceCreate(d *schema.ResourceData, meta
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["DBInstanceId"] = d.Get("db_instance_id")
+	if v, ok := d.GetOk("db_instance_id"); ok {
+		request["DBInstanceId"] = v
+	}
 	request["RegionId"] = client.RegionId
 
-	request["ServiceName"] = d.Get("service_name")
 	if v, ok := d.GetOk("service_description"); ok {
 		request["ServiceDescription"] = v
 	}
 	request["ServiceSpec"] = d.Get("service_spec")
+	request["ServiceName"] = d.Get("service_name")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
@@ -89,15 +91,15 @@ func resourceAliCloudGpdbStreamingDataServiceCreate(d *schema.ResourceData, meta
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_gpdb_streaming_data_service", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", query["DBInstanceId"], response["ServiceId"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["DBInstanceId"], response["ServiceId"]))
 
 	gpdbServiceV2 := GpdbServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"Running", "running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, gpdbServiceV2.GpdbStreamingDataServiceStateRefreshFunc(d.Id(), "Status", []string{}))
@@ -122,28 +124,15 @@ func resourceAliCloudGpdbStreamingDataServiceRead(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["ServiceDescription"] != nil {
-		d.Set("service_description", objectRaw["ServiceDescription"])
-	}
-	if objectRaw["ServiceName"] != nil {
-		d.Set("service_name", objectRaw["ServiceName"])
-	}
-	if objectRaw["ServiceSpec"] != nil {
-		d.Set("service_spec", objectRaw["ServiceSpec"])
-	}
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
-	if objectRaw["ServiceId"] != nil {
-		d.Set("service_id", objectRaw["ServiceId"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("service_description", objectRaw["ServiceDescription"])
+	d.Set("service_name", objectRaw["ServiceName"])
+	d.Set("service_spec", objectRaw["ServiceSpec"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("service_id", objectRaw["ServiceId"])
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_instance_id", parts[0])
-	d.Set("service_id", parts[1])
 
 	return nil
 }
@@ -154,23 +143,24 @@ func resourceAliCloudGpdbStreamingDataServiceUpdate(d *schema.ResourceData, meta
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyStreamingDataService"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["DBInstanceId"] = parts[0]
-	query["ServiceId"] = parts[1]
+	request["ServiceId"] = parts[1]
+	request["DBInstanceId"] = parts[0]
 	request["RegionId"] = client.RegionId
-	if d.HasChange("service_spec") {
-		update = true
-	}
-	request["ServiceSpec"] = d.Get("service_spec")
 	if d.HasChange("service_description") {
 		update = true
 		request["ServiceDescription"] = d.Get("service_description")
 	}
 
+	if d.HasChange("service_spec") {
+		update = true
+	}
+	request["ServiceSpec"] = d.Get("service_spec")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -182,9 +172,9 @@ func resourceAliCloudGpdbStreamingDataServiceUpdate(d *schema.ResourceData, meta
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -208,14 +198,13 @@ func resourceAliCloudGpdbStreamingDataServiceDelete(d *schema.ResourceData, meta
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["ServiceId"] = parts[1]
-	query["DBInstanceId"] = parts[0]
+	request["ServiceId"] = parts[1]
+	request["DBInstanceId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -223,11 +212,14 @@ func resourceAliCloudGpdbStreamingDataServiceDelete(d *schema.ResourceData, meta
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

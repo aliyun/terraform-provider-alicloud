@@ -3,16 +3,16 @@ subcategory: "AnalyticDB for PostgreSQL (GPDB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_gpdb_streaming_data_service"
 description: |-
-  Provides a Alicloud GPDB Streaming Data Service resource.
+  Provides a Alicloud AnalyticDB for PostgreSQL (GPDB) Streaming Data Service resource.
 ---
 
 # alicloud_gpdb_streaming_data_service
 
-Provides a GPDB Streaming Data Service resource.
+Provides a AnalyticDB for PostgreSQL (GPDB) Streaming Data Service resource.
 
 
 
-For information about GPDB Streaming Data Service and how to use it, see [What is Streaming Data Service](https://www.alibabacloud.com/help/en/analyticdb/analyticdb-for-postgresql/developer-reference/api-gpdb-2016-05-03-createstreamingdataservice).
+For information about AnalyticDB for PostgreSQL (GPDB) Streaming Data Service and how to use it, see [What is Streaming Data Service](https://www.alibabacloud.com/help/en/analyticdb/analyticdb-for-postgresql/developer-reference/api-gpdb-2016-05-03-createstreamingdataservice).
 
 -> **NOTE:** Available since v1.227.0.
 
@@ -77,13 +77,11 @@ resource "alicloud_gpdb_streaming_data_service" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_gpdb_streaming_data_service&spm=docs.r.gpdb_streaming_data_service.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
 * `db_instance_id` - (Required, ForceNew) The ID of the associated instance.
-* `service_description` - (Optional) The creation time of the resource
+* `service_description` - (Optional) The description of the service.
 * `service_name` - (Required, ForceNew) Service Name
 * `service_spec` - (Required) Resource Specifications
 
@@ -104,7 +102,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-GPDB Streaming Data Service can be imported using the id, e.g.
+AnalyticDB for PostgreSQL (GPDB) Streaming Data Service can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_streaming_data_service.example <db_instance_id>:<service_id>
