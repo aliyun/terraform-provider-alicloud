@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -6,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -22,9 +20,9 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(65 * time.Minute),
-			Update: schema.DefaultTimeout(65 * time.Minute),
-			Delete: schema.DefaultTimeout(65 * time.Minute),
+			Create: schema.DefaultTimeout(61 * time.Minute),
+			Update: schema.DefaultTimeout(61 * time.Minute),
+			Delete: schema.DefaultTimeout(61 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cn_class": {
@@ -42,6 +40,10 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"dn_class": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -53,10 +55,29 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 				Required:     true,
 				ValidateFunc: IntAtLeast(2),
 			},
+			"engine_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"5.7", "8.0"}, false),
+			},
+			"is_read_db_instance": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"primary_db_instance_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"primary_zone": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -104,37 +125,45 @@ func resourceAliCloudDrdsPolardbxInstanceCreate(d *schema.ResourceData, meta int
 	action := "CreateDBInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	request["NetworkType"] = "vpc"
-	request["VPCId"] = d.Get("vpc_id")
-	request["VSwitchId"] = d.Get("vswitch_id")
-	request["EngineVersion"] = "5.7"
-	request["TopologyType"] = d.Get("topology_type")
-	request["PrimaryZone"] = d.Get("primary_zone")
-	if v, ok := d.GetOk("secondary_zone"); ok {
-		request["SecondaryZone"] = v
-	}
 	if v, ok := d.GetOk("tertiary_zone"); ok {
 		request["TertiaryZone"] = v
 	}
-	request["CnClass"] = d.Get("cn_class")
-	request["DnClass"] = d.Get("dn_class")
-	request["CNNodeCount"] = d.Get("cn_node_count")
-	request["DNNodeCount"] = d.Get("dn_node_count")
-	request["PayType"] = "POSTPAY"
-	request["ZoneId"] = "null"
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
+	request["PayType"] = "POSTPAY"
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+	request["VSwitchId"] = d.Get("vswitch_id")
+	request["EngineVersion"] = d.Get("engine_version")
+	request["NetworkType"] = "vpc"
+	request["ZoneId"] = "null"
+	request["PrimaryZone"] = d.Get("primary_zone")
+	request["CnClass"] = d.Get("cn_class")
+	request["TopologyType"] = d.Get("topology_type")
+	request["DnClass"] = d.Get("dn_class")
+	if v, ok := d.GetOk("secondary_zone"); ok {
+		request["SecondaryZone"] = v
+	}
+	request["CNNodeCount"] = d.Get("cn_node_count")
+	request["VPCId"] = d.Get("vpc_id")
+	request["DNNodeCount"] = d.Get("dn_node_count")
+	if v, ok := d.GetOkExists("is_read_db_instance"); ok {
+		request["IsReadDBInstance"] = v
+	}
+	if v, ok := d.GetOk("primary_db_instance_name"); ok {
+		request["PrimaryDBInstanceName"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("polardbx", "2020-02-02", action, nil, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
+		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -142,9 +171,9 @@ func resourceAliCloudDrdsPolardbxInstanceCreate(d *schema.ResourceData, meta int
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_drds_polardbx_instance", action, AlibabaCloudSdkGoERROR)
@@ -178,9 +207,12 @@ func resourceAliCloudDrdsPolardbxInstanceRead(d *schema.ResourceData, meta inter
 	d.Set("cn_class", objectRaw["CnNodeClassCode"])
 	d.Set("cn_node_count", objectRaw["CnNodeCount"])
 	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("description", objectRaw["Description"])
 	d.Set("dn_class", objectRaw["DnNodeClassCode"])
 	d.Set("dn_node_count", objectRaw["DnNodeCount"])
+	d.Set("engine_version", objectRaw["EngineVersion"])
 	d.Set("primary_zone", objectRaw["PrimaryZone"])
+	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("secondary_zone", objectRaw["SecondaryZone"])
 	d.Set("status", objectRaw["Status"])
@@ -196,11 +228,14 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
-	action := "UpdatePolarDBXInstanceNode"
+
 	var err error
+	action := "UpdatePolarDBXInstanceNode"
 	request = make(map[string]interface{})
+	query = make(map[string]interface{})
 	request["DBInstanceName"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -213,13 +248,9 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 	}
 	request["DNNodeCount"] = d.Get("dn_node_count")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("polardbx", "2020-02-02", action, nil, request, true)
-			request["ClientToken"] = buildClientToken(action)
-
+			response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -227,38 +258,33 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
 		drdsServiceV2 := DrdsServiceV2{client}
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, drdsServiceV2.DrdsPolardbxInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-
-		d.SetPartial("cn_node_count")
-		d.SetPartial("dn_node_count")
 	}
 	update = false
 	action = "ChangeResourceGroup"
 	request = make(map[string]interface{})
+	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
-		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
-
+	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "PolarDBXInstance"
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("polardbx", "2020-02-02", action, nil, request, false)
-
+			response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -266,13 +292,40 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+	}
+	update = false
+	action = "ModifyDBInstanceDescription"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DBInstanceName"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("description") {
+		update = true
+	}
+	request["DBInstanceDescription"] = d.Get("description")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	d.Partial(false)
@@ -285,6 +338,7 @@ func resourceAliCloudDrdsPolardbxInstanceDelete(d *schema.ResourceData, meta int
 	action := "DeleteDBInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
 	request["DBInstanceName"] = d.Id()
@@ -292,31 +346,37 @@ func resourceAliCloudDrdsPolardbxInstanceDelete(d *schema.ResourceData, meta int
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("polardbx", "2020-02-02", action, nil, request, false)
-
+		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"DBInstance.InOrder"}) {
+			if IsExpectedErrors(err, []string{"DBInstance.InOrder"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DBInstance.NotFound"}) {
+		if IsExpectedErrors(err, []string{"DBInstance.NotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	drdsServiceV2 := DrdsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 30*time.Minute, drdsServiceV2.DrdsPolardbxInstanceDeleteJobStateRefreshFunc(d, response, []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 60*time.Second, drdsServiceV2.DescribeAsyncDrdsPolardbxInstanceStateRefreshFunc(d, response, "$.Items", []string{}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
 
 	return nil
+}
+
+func convertDrdsPolardbxInstanceDBInstancePayTypeResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
+	switch source {
+	}
+	return source
 }

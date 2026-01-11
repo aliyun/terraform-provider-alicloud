@@ -3,26 +3,22 @@ subcategory: "Distributed Relational Database Service (DRDS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_drds_polardbx_instance"
 description: |-
-  Provides a Alicloud DRDS Polardbx Instance resource.
+  Provides a Alicloud Distributed Relational Database Service (DRDS) Polardbx Instance resource.
 ---
 
 # alicloud_drds_polardbx_instance
 
-Provides a DRDS Polardb X Instance resource.
+Provides a Distributed Relational Database Service (DRDS) Polardbx Instance resource.
 
-For information about DRDS Polardb X Instance and how to use it, see [What is Polardb X Instance](https://www.alibabacloud.com/help/en/polardb/polardb-for-xscale/api-createdbinstance-1).
+PolarDB-X Database Instance.
+
+For information about Distributed Relational Database Service (DRDS) Polardbx Instance and how to use it, see [What is Polardbx Instance](https://www.alibabacloud.com/help/en/polardb/polardb-for-xscale/api-createdbinstance-1).
 
 -> **NOTE:** Available since v1.211.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_drds_polardbx_instance&exampleId=fbf375da-c462-25f1-a343-5a1971bc805bcf3c5f9b&activeTab=example&spm=docs.r.drds_polardbx_instance.0.fbf375dac4&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -57,22 +53,32 @@ resource "alicloud_drds_polardbx_instance" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_drds_polardbx_instance&spm=docs.r.drds_polardbx_instance.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
 * `cn_class` - (Required, ForceNew) Compute node specifications.
-* `cn_node_count` - (Required) Number of computing nodes.
+* `cn_node_count` - (Required, Int) Number of computing nodes.
+* `description` - (Optional, Available since v1.268.0) Instance remarks
 * `dn_class` - (Required, ForceNew) Storage node specifications.
-* `dn_node_count` - (Required) The number of storage nodes.
+* `dn_node_count` - (Required, Int) The number of storage nodes.
+* `engine_version` - (Optional, ForceNew, Computed, Available since v1.268.0) Engine version, default 5.7
+* `is_read_db_instance` - (Optional, Available since v1.268.0) Whether the instance is read-only.
+  - `true`: Yes
+  - `false`: No
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
+* `primary_db_instance_name` - (Optional, Available since v1.268.0) If the instance is a read-only instance, you must specify the primary instance.
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
 * `primary_zone` - (Required, ForceNew) Primary Availability Zone.
 * `resource_group_id` - (Optional, Computed) The resource group ID can be empty. This parameter is not supported for the time being.
 * `secondary_zone` - (Optional, ForceNew) Secondary availability zone.
 * `tertiary_zone` - (Optional, ForceNew) Third Availability Zone.
 * `topology_type` - (Required, ForceNew) Topology type:
-  - **3azones**: three available areas;
-  - **1azone**: Single zone.
+  - `3azones`: three available areas;
+  - `1azone`: Single zone.
 * `vswitch_id` - (Required, ForceNew) The ID of the virtual switch.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 
@@ -80,20 +86,21 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `create_time` - The creation time of the resource.
-* `status` - The status of the resource.
+* `create_time` - The creation time of the resource
+* `region_id` - The region ID of the resource
+* `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Polardbx Instance.
-* `delete` - (Defaults to 5 mins) Used when delete the Polardbx Instance.
-* `update` - (Defaults to 5 mins) Used when update the Polardbx Instance.
+* `create` - (Defaults to 61 mins) Used when create the Polardbx Instance.
+* `delete` - (Defaults to 61 mins) Used when delete the Polardbx Instance.
+* `update` - (Defaults to 61 mins) Used when update the Polardbx Instance.
 
 ## Import
 
-DRDS Polardb X Instance can be imported using the id, e.g.
+Distributed Relational Database Service (DRDS) Polardbx Instance can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_drds_polardb_x_instance.example <id>
+$ terraform import alicloud_drds_polardbx_instance.example <id>
 ```
