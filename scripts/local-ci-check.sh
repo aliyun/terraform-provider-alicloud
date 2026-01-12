@@ -23,6 +23,7 @@ set -e
 # Parse command line arguments
 SKIP_BUILD=false
 SKIP_TEST=true  # Default: skip tests locally (CI still runs them)
+SKIP_DOC_CHECK=false  # Default: run doc checks (use --quick to skip)
 SKIP_MARKDOWN_LINT=true  # Default: skip markdown lint locally (CI still runs it)
 SKIP_MARKDOWN_LINK_CHECK=true  # Default: skip markdown link check locally (CI still runs it)
 SKIP_EXAMPLE_TEST=false  # Default: run example tests (use --skip-example-test to disable)
@@ -57,6 +58,7 @@ while [[ $# -gt 0 ]]; do
     --quick)
       SKIP_BUILD=true
       SKIP_TEST=true
+      SKIP_DOC_CHECK=true
       shift
       ;;
     --strict)
@@ -73,7 +75,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --run-markdown-lint       Run markdown lint (default: skipped locally)"
       echo "  --run-markdown-link-check Run markdown link check (default: skipped locally)"
       echo "  --skip-example-test       Skip example tests (default: enabled)"
-      echo "  --quick                   Skip both build and tests (faster checks)"
+      echo "  --quick                   Skip build, tests, and doc checks (faster checks)"
       echo "  --strict                  Check ALL docs (like CI), not just changed files"
       echo "  -h, --help                Show this help message"
       echo ""
@@ -272,7 +274,10 @@ fi
 # 2. Documentation Checks
 # ============================================================================
 
-if echo "$CHANGED_FILES" | grep -q "website/docs"; then
+if [ "$SKIP_DOC_CHECK" = true ]; then
+  echo -e "${YELLOW}⚠ Skipping documentation checks (--quick flag)${NC}"
+  echo
+elif echo "$CHANGED_FILES" | grep -q "website/docs"; then
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
   echo -e "${GREEN}  Part 2: Documentation Checks${NC}"
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
