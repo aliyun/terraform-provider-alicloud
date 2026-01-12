@@ -77,7 +77,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Cidr.
-* `delete` - (Defaults to 5 mins) Used when delete the Transit Router Cidr.
+* `delete` - (Defaults to 20 mins) Used when delete the Transit Router Cidr.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Cidr.
 
 ## Import
