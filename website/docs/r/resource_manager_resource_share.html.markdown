@@ -36,7 +36,7 @@ The following arguments are supported:
 * `allow_external_targets` - (Optional, Available since v1.261.0) Whether to allow sharing to accounts outside the resource directory. Value:
   - false (default): Only sharing within the resource directory is allowed.
   - true: Allow sharing to any account.
-* `permission_names` - (Optional, List, Available since v1.261.0) Share permission name. When it is empty, the system automatically binds the default permissions associated with the resource type. For more information, see [Permission Library](~~ 465474 ~~).
+* `permission_names` - (Optional, List, Available since v1.261.0) Share permission name. When it is empty, the system automatically binds the default permissions associated with the resource type. For more information, see [Permission Library](https://www.alibabacloud.com/help/en/resource-management/resource-sharing/user-guide/permissions-for-resource-sharing).
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -69,7 +69,7 @@ The value range of N: 1 to 5, that is, a maximum of 5 shared resources are added
 
 The value range of N: 1 to 5, that is, a maximum of 5 shared resources are added at a time.
 
-For the types of resources that support sharing, see [Cloud services that support sharing](~~ 450526 ~~).
+For the types of resources that support sharing, see [Cloud services that support sharing](https://www.alibabacloud.com/help/en/resource-management/resource-sharing/product-overview/services-that-work-with-resource-sharing).
 
 -> **NOTE:**  'Resources.N.ResourceId' and'resources. N.ResourceType' appear in pairs and need to be set at the same time.
 
