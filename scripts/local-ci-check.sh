@@ -23,6 +23,7 @@ set -e
 # Parse command line arguments
 SKIP_BUILD=false
 SKIP_TEST=true  # Default: skip tests locally (CI still runs them)
+SKIP_ERRCHECK=true  # Default: skip errcheck locally (CI still runs it)
 SKIP_MARKDOWN_LINT=true  # Default: skip markdown lint locally (CI still runs it)
 SKIP_MARKDOWN_LINK_CHECK=true  # Default: skip markdown link check locally (CI still runs it)
 SKIP_EXAMPLE_TEST=false  # Default: run example tests (use --skip-example-test to disable)
@@ -50,6 +51,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_MARKDOWN_LINK_CHECK=false
       shift
       ;;
+    --run-errcheck)
+      SKIP_ERRCHECK=false
+      shift
+      ;;
     --skip-example-test)
       SKIP_EXAMPLE_TEST=true
       shift
@@ -57,6 +62,8 @@ while [[ $# -gt 0 ]]; do
     --quick)
       SKIP_BUILD=true
       SKIP_TEST=true
+      SKIP_ERRCHECK=true
+      SKIP_EXAMPLE_TEST=true
       shift
       ;;
     --strict)
@@ -70,17 +77,18 @@ while [[ $# -gt 0 ]]; do
       echo "  --skip-build              Skip build check"
       echo "  --skip-test               Skip unit tests (default: skipped locally)"
       echo "  --run-test                Run unit tests"
+      echo "  --run-errcheck            Run errcheck (default: skipped locally)"
       echo "  --run-markdown-lint       Run markdown lint (default: skipped locally)"
       echo "  --run-markdown-link-check Run markdown link check (default: skipped locally)"
       echo "  --skip-example-test       Skip example tests (default: enabled)"
-      echo "  --quick                   Skip both build and tests (faster checks)"
+      echo "  --quick                   Skip build, tests, errcheck, and example tests (faster checks)"
       echo "  --strict                  Check ALL docs (like CI), not just changed files"
       echo "  -h, --help                Show this help message"
       echo ""
       echo "Note: By default, example tests are ENABLED and will create real resources."
       echo "      Use --skip-example-test to disable example tests."
-      echo "      Unit tests, markdown lint, and markdown link checks are skipped locally."
-      echo "      Use --run-test, --run-markdown-lint, or --run-markdown-link-check to enable them."
+      echo "      Unit tests, errcheck, markdown lint, and markdown link checks are skipped locally."
+      echo "      Use --run-test, --run-errcheck, --run-markdown-lint, or --run-markdown-link-check to enable them."
       exit 0
       ;;
     *)
@@ -195,12 +203,23 @@ if [ -f "$PROJECT_ROOT/.go-version" ]; then
   fi
 fi
 
-# Get changed files compared to master
-CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only HEAD)
+# Get changed files from the latest commit
+# Priority:
+# 1. Uncommitted changes (if any)
+# 2. Latest commit changes
+# 3. All changes from master branch
+CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
 
 if [ -z "$CHANGED_FILES" ]; then
-  echo -e "${YELLOW}No changed files detected. Comparing with last commit...${NC}"
-  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+  # No uncommitted changes, check the latest commit
+  echo -e "${BLUE}Checking latest commit changes...${NC}"
+  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
+fi
+
+if [ -z "$CHANGED_FILES" ]; then
+  # No changes in latest commit, fall back to comparing with master
+  echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
+  CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
 fi
 
 if [ -z "$CHANGED_FILES" ]; then
@@ -257,9 +276,14 @@ run_check "Go Vet" \
   || true
 
 # 1.4 Error Check
-run_check "Error Check (errcheck)" \
-  "\"$SCRIPT_DIR/errcheck.sh\"" \
-  || true
+if [ "$SKIP_ERRCHECK" = true ]; then
+  echo -e "${YELLOW}⚠ Skipping Error Check (errcheck) (disabled locally, use --run-errcheck to enable)${NC}"
+  echo
+else
+  run_check "Error Check (errcheck)" \
+    "\"$SCRIPT_DIR/errcheck.sh\"" \
+    || true
+fi
 
 # 1.5 Basic Check (fmt.Println, etc.)
 if echo "$CHANGED_FILES" | grep -q "\.go$\|website/docs"; then
@@ -564,6 +588,8 @@ else
   DOCS_WITH_EXAMPLES=""
 
   echo -e "${BLUE}▶ Analyzing affected documentation files:${NC}"
+  DOC_COUNT=$(echo "$ALL_AFFECTED_DOCS" | wc -w | tr -d ' ')
+  echo -e "${BLUE}  Total documentation files to check: ${DOC_COUNT}${NC}"
   for doc_file in $ALL_AFFECTED_DOCS; do
     if [ -f "$doc_file" ]; then
       example_count=$(grep -c '```terraform' "$doc_file" 2>/dev/null || echo "0")

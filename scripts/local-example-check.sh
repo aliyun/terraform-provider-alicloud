@@ -123,46 +123,168 @@ if [ "$SKIP_BUILD" = false ] && [ "$DRY_RUN" = false ]; then
     echo -e "${RED}ERROR: Failed to build provider${NC}"
     exit 1
   fi
+fi
 
-  # Setup provider override in ~/.terraformrc
+# Setup provider override in ~/.terraformrc (even if build was skipped)
+if [ "$DRY_RUN" = false ]; then
   echo -e "${BLUE}Setting up provider override in ~/.terraformrc...${NC}"
 
   PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   PROVIDER_DIR="$PROJECT_ROOT/bin"
   TERRAFORMRC="$HOME/.terraformrc"
 
-  # Extract provider binary from tar.gz if needed
-  PLATFORM="$(go env GOOS)_$(go env GOARCH)"
-  PROVIDER_ARCHIVE="$PROVIDER_DIR/terraform-provider-alicloud_${PLATFORM}.tgz"
+  # Determine platform-specific binary name
+  GOOS="$(go env GOOS)"
+  GOARCH="$(go env GOARCH)"
+  PROVIDER_BINARY="terraform-provider-alicloud"
 
-  if [ -f "$PROVIDER_ARCHIVE" ]; then
-    echo -e "${BLUE}  Extracting provider binary from archive...${NC}"
-    cd "$PROVIDER_DIR"
-    tar -xzf "terraform-provider-alicloud_${PLATFORM}.tgz" 2>/dev/null || true
-    cd "$PROJECT_ROOT"
+  # List of possible binary names to try (in order of preference)
+  BINARY_CANDIDATES=()
+
+  # Add exact match first
+  BINARY_CANDIDATES+=("terraform-provider-alicloud_${GOOS}-${GOARCH}")
+
+  # For ARM64 Mac, also try amd64 (works via Rosetta)
+  if [ "$GOOS" = "darwin" ] && [ "$GOARCH" = "arm64" ]; then
+    BINARY_CANDIDATES+=("terraform-provider-alicloud_darwin-amd64")
   fi
 
-  # Verify provider binary exists
-  if [ ! -f "$PROVIDER_DIR/terraform-provider-alicloud" ]; then
-    echo -e "${RED}ERROR: Provider binary not found at $PROVIDER_DIR/terraform-provider-alicloud${NC}"
+  # Try each candidate
+  FOUND_BINARY=""
+  for candidate in "${BINARY_CANDIDATES[@]}"; do
+    if [ -f "$PROVIDER_DIR/$candidate" ]; then
+      echo -e "${BLUE}  Found binary: $candidate${NC}"
+      FOUND_BINARY="$candidate"
+      break
+    fi
+  done
+
+  # If not found, try to extract from archive
+  if [ -z "$FOUND_BINARY" ]; then
+    for candidate in "${BINARY_CANDIDATES[@]}"; do
+      # Try different archive naming conventions
+      ARCHIVE_PLATFORM="${candidate#terraform-provider-alicloud_}"
+
+      # Try with hyphens (darwin-amd64)
+      PROVIDER_ARCHIVE="$PROVIDER_DIR/terraform-provider-alicloud_${ARCHIVE_PLATFORM}.tgz"
+
+      if [ -f "$PROVIDER_ARCHIVE" ]; then
+        echo -e "${BLUE}  Extracting from archive: $(basename $PROVIDER_ARCHIVE)${NC}"
+        cd "$PROVIDER_DIR"
+
+        # Extract the archive (it contains bin/terraform-provider-alicloud)
+        tar -xzf "$(basename $PROVIDER_ARCHIVE)" 2>/dev/null || true
+
+        # The archive contains bin/terraform-provider-alicloud
+        if [ -f "bin/terraform-provider-alicloud" ]; then
+          # Move from bin/ subdirectory and rename to platform-specific name
+          mv "bin/terraform-provider-alicloud" "$candidate"
+          # Remove the now-empty bin directory
+          rmdir "bin" 2>/dev/null || true
+          FOUND_BINARY="$candidate"
+        elif [ -f "terraform-provider-alicloud" ]; then
+          # Fallback: if it's in current directory
+          mv "terraform-provider-alicloud" "$candidate"
+          FOUND_BINARY="$candidate"
+        elif [ -f "$candidate" ]; then
+          # Already has the right name
+          FOUND_BINARY="$candidate"
+        fi
+
+        cd "$PROJECT_ROOT"
+
+        if [ -n "$FOUND_BINARY" ]; then
+          break
+        fi
+      fi
+
+      # Try with underscores (darwin_amd64)
+      ARCHIVE_PLATFORM_ALT="${ARCHIVE_PLATFORM//-/_}"
+      PROVIDER_ARCHIVE_ALT="$PROVIDER_DIR/terraform-provider-alicloud_${ARCHIVE_PLATFORM_ALT}.tgz"
+
+      if [ -f "$PROVIDER_ARCHIVE_ALT" ]; then
+        echo -e "${BLUE}  Extracting from archive: $(basename $PROVIDER_ARCHIVE_ALT)${NC}"
+        cd "$PROVIDER_DIR"
+        tar -xzf "$(basename $PROVIDER_ARCHIVE_ALT)" 2>/dev/null || true
+
+        # Handle bin/ prefix
+        if [ -f "bin/terraform-provider-alicloud" ]; then
+          mv "bin/terraform-provider-alicloud" "$candidate"
+          rmdir "bin" 2>/dev/null || true
+          FOUND_BINARY="$candidate"
+        elif [ -f "terraform-provider-alicloud" ]; then
+          mv "terraform-provider-alicloud" "$candidate"
+          FOUND_BINARY="$candidate"
+        elif [ -f "$candidate" ]; then
+          FOUND_BINARY="$candidate"
+        fi
+
+        cd "$PROJECT_ROOT"
+
+        if [ -n "$FOUND_BINARY" ]; then
+          break
+        fi
+      fi
+    done
+  fi
+
+  # Copy found binary to generic name
+  if [ -n "$FOUND_BINARY" ]; then
+    cp "$PROVIDER_DIR/$FOUND_BINARY" "$PROVIDER_DIR/$PROVIDER_BINARY"
+    chmod +x "$PROVIDER_DIR/$PROVIDER_BINARY"
+    echo -e "${GREEN}  Using binary: $FOUND_BINARY${NC}"
+  else
+    echo -e "${RED}ERROR: Provider binary not found at $PROVIDER_DIR/$PROVIDER_BINARY${NC}"
+    echo -e "${YELLOW}Tried candidates:${NC}"
+    for candidate in "${BINARY_CANDIDATES[@]}"; do
+      echo -e "${YELLOW}  - $candidate${NC}"
+    done
+    echo -e "${YELLOW}Available files in $PROVIDER_DIR:${NC}"
+    ls -la "$PROVIDER_DIR" | grep terraform-provider-alicloud | sed 's/^/  /'
     exit 1
   fi
 
-  # Make sure provider binary is executable
-  chmod +x "$PROVIDER_DIR/terraform-provider-alicloud"
-
-  # Backup existing .terraformrc if it exists
+  # Check if .terraformrc exists and handle appropriately
   if [ -f "$TERRAFORMRC" ]; then
-    TERRAFORMRC_BACKUP="${TERRAFORMRC}.backup.$(date +%s)"
-    cp "$TERRAFORMRC" "$TERRAFORMRC_BACKUP"
-    echo -e "${YELLOW}  Backed up existing ~/.terraformrc to ${TERRAFORMRC_BACKUP}${NC}"
-  else
-    # Mark that we need to clean up (remove the file we're about to create)
-    TERRAFORMRC_BACKUP="CREATED"
-  fi
+    # Check if the file already has the correct dev_overrides
+    if grep -q "\"registry.terraform.io/aliyun/alicloud\".*=.*\"$PROVIDER_DIR\"" "$TERRAFORMRC"; then
+      echo -e "${GREEN}✓ Provider override already configured in ~/.terraformrc${NC}"
+      echo -e "  Provider directory: ${PROVIDER_DIR}"
+      echo -e "  Provider binary: terraform-provider-alicloud"
+      # No backup needed, configuration is already correct
+      echo
+    else
+      # Need to update the file, create backup first
+      TERRAFORMRC_BACKUP="${TERRAFORMRC}.backup.$(date +%s)"
+      cp "$TERRAFORMRC" "$TERRAFORMRC_BACKUP"
+      echo -e "${YELLOW}  Backed up existing ~/.terraformrc to ${TERRAFORMRC_BACKUP}${NC}"
 
-  # Create or update .terraformrc with dev_overrides
-  cat > "$TERRAFORMRC" <<EOF
+      # Update existing file - try to update the dev_overrides section
+      if grep -q "registry.terraform.io/aliyun/alicloud" "$TERRAFORMRC"; then
+        # Entry exists, update it
+        echo -e "${BLUE}  Updating existing dev_overrides entry...${NC}"
+        sed -i.tmp "s|\"registry.terraform.io/aliyun/alicloud\".*=.*\".*\"|\"registry.terraform.io/aliyun/alicloud\" = \"$PROVIDER_DIR\"|g" "$TERRAFORMRC"
+        rm -f "$TERRAFORMRC.tmp"
+      elif grep -q "dev_overrides" "$TERRAFORMRC"; then
+        # dev_overrides block exists, add our entry
+        echo -e "${BLUE}  Adding to existing dev_overrides block...${NC}"
+        sed -i.tmp "/dev_overrides {/a\\
+    \"registry.terraform.io/aliyun/alicloud\" = \"$PROVIDER_DIR\"
+" "$TERRAFORMRC"
+        rm -f "$TERRAFORMRC.tmp"
+      else
+        echo -e "${YELLOW}  Warning: Could not automatically update ~/.terraformrc${NC}"
+        echo -e "${YELLOW}  Please manually add the following to your dev_overrides:${NC}"
+        echo -e "${YELLOW}    \"registry.terraform.io/aliyun/alicloud\" = \"$PROVIDER_DIR\"${NC}"
+      fi
+      echo -e "${GREEN}✓ Provider override updated in ~/.terraformrc${NC}"
+      echo -e "  Provider directory: ${PROVIDER_DIR}"
+      echo
+    fi
+  else
+    # Create new .terraformrc file
+    TERRAFORMRC_BACKUP="CREATED"
+    cat > "$TERRAFORMRC" <<EOF
 provider_installation {
   dev_overrides {
     "registry.terraform.io/aliyun/alicloud" = "$PROVIDER_DIR"
@@ -170,11 +292,11 @@ provider_installation {
   direct {}
 }
 EOF
-
-  echo -e "${GREEN}✓ Provider override configured in ~/.terraformrc${NC}"
-  echo -e "  Provider directory: ${PROVIDER_DIR}"
-  echo -e "  Provider binary: terraform-provider-alicloud"
-  echo
+    echo -e "${GREEN}✓ Provider override configured in new ~/.terraformrc${NC}"
+    echo -e "  Provider directory: ${PROVIDER_DIR}"
+    echo -e "  Provider binary: terraform-provider-alicloud"
+    echo
+  fi
 fi
 
 # Check credentials (skip in dry-run mode)
@@ -211,8 +333,24 @@ elif [ "$CHECK_ALL" = true ]; then
   FILES_TO_CHECK=$(find website/docs/r website/docs/d -name "*.html.markdown" 2>/dev/null || true)
   echo -e "${BLUE}Checking all documentation files${NC}"
 else
-  # Get changed files
-  CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
+  # Get changed files from the latest commit
+  # Priority:
+  # 1. Uncommitted changes (if any)
+  # 2. Latest commit changes (HEAD~1 HEAD)
+  # 3. All changes from master branch
+  CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
+
+  if [ -z "$CHANGED_FILES" ]; then
+    # No uncommitted changes, check the latest commit
+    echo -e "${BLUE}Checking latest commit changes...${NC}"
+    CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
+  fi
+
+  if [ -z "$CHANGED_FILES" ]; then
+    # No changes in latest commit, fall back to comparing with master
+    echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
+    CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
+  fi
 
   if [ -z "$CHANGED_FILES" ]; then
     echo -e "${YELLOW}No changed files detected. Use --all to check all files.${NC}"

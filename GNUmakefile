@@ -159,7 +159,7 @@ commit:
 #   make ci-check                    # Run all checks including example tests (default)
 #   make ci-check SKIP_EXAMPLE=1     # Run all checks except example tests
 #   make ci-check SKIP_BUILD=1       # Skip build check
-#   make ci-check-quick              # Quick check (skip build and tests)
+#   make ci-check-quick              # Quick check (skip build, tests, errcheck, and example tests)
 ci-check:
 	@if [ "$(SKIP_EXAMPLE)" = "1" ]; then \
 		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-example-test; \

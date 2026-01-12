@@ -5,21 +5,34 @@ set -euo pipefail
 # Check gofmt
 echo "==> Checking that code complies with gofmt requirements..."
 
-# Only check files that were changed relative to the main branch
-base_branch="origin/master"
+# Get changed Go files from the latest commit
+# Priority:
+# 1. Uncommitted changes (if any)
+# 2. Latest commit changes (HEAD~1 HEAD)
+# 3. All changes from master branch (for CI/PR checks)
 
 # HACK: If we seem to be running inside a GitHub Actions pull request check
 # then we'll use the PR's target branch from this variable instead.
 if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+  # CI mode: check entire PR branch vs target branch
   base_branch="origin/$GITHUB_BASE_REF"
-fi
+  target_files=$(git diff --name-only ${base_branch} --diff-filter=MA 2>/dev/null | grep "\.go$" | grep -v ".pb.go" | grep -v ".go-version" || true)
+else
+  # Local mode: check latest commit or uncommitted changes
+  # First try uncommitted changes
+  target_files=$(git diff --name-only HEAD --diff-filter=MA 2>/dev/null | grep "\.go$" | grep -v ".pb.go" | grep -v ".go-version" || true)
 
-# Get changed Go files (compatible with Bash 3)
-target_files=$(git diff --name-only ${base_branch} --diff-filter=MA 2>/dev/null | grep "\.go$" | grep -v ".pb.go" | grep -v ".go-version" || true)
+  if [[ -z "$target_files" ]]; then
+    # No uncommitted changes, check latest commit
+    target_files=$(git diff --name-only HEAD~1 HEAD --diff-filter=MA 2>/dev/null | grep "\.go$" | grep -v ".pb.go" | grep -v ".go-version" || true)
+  fi
 
-if [[ -z "$target_files" ]]; then
-  echo "No Go files have changed relative to branch ${base_branch}, so there's nothing to check!"
-  exit 0
+  # If still no changes, don't fall back to master branch
+  # Only check what's actually changed in the latest commit
+  if [[ -z "$target_files" ]]; then
+    echo "No Go files have changed in the latest commit, so there's nothing to check!"
+    exit 0
+  fi
 fi
 
 # Check each file for formatting issues
