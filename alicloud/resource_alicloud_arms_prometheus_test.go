@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudArmsPrometheus_basic0(t *testing.T) {
+func TestAccAliCloudArmsPrometheus_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_prometheus.default"
 	ra := resourceAttrInit(resourceId, AlicloudArmsPrometheusMap)
@@ -87,7 +87,7 @@ func TestAccAlicloudArmsPrometheus_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudArmsPrometheus_basic1(t *testing.T) {
+func TestAccAliCloudArmsPrometheus_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_prometheus.default"
 	ra := resourceAttrInit(resourceId, AlicloudArmsPrometheusMap)
