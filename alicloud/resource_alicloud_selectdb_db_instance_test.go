@@ -396,23 +396,23 @@ func TestAccAliCloudSelectDBDbInstance_deprecated_upgrade_minor_version(t *testi
 }
 
 var AliCloudSelectDBDbInstanceMap0 = map[string]string{
-	"db_instance_class":    CHECKSET,
-	"cache_size":           CHECKSET,
-	"payment_type":         CHECKSET,
-	"zone_id":              CHECKSET,
-	"vpc_id":               CHECKSET,
-	"vswitch_id":           CHECKSET,
+	"db_instance_class": CHECKSET,
+	"cache_size":        CHECKSET,
+	"payment_type":      CHECKSET,
+	"zone_id":           CHECKSET,
+	"vpc_id":            CHECKSET,
+	"vswitch_id":        CHECKSET,
 }
 
 var AliCloudSelectDBDbInstanceMap1 = map[string]string{
-	"db_instance_class":    CHECKSET,
-	"cache_size":           CHECKSET,
-	"payment_type":         CHECKSET,
-	"period":               CHECKSET,
-	"period_time":          CHECKSET,
-	"zone_id":              CHECKSET,
-	"vpc_id":               CHECKSET,
-	"vswitch_id":           CHECKSET,
+	"db_instance_class": CHECKSET,
+	"cache_size":        CHECKSET,
+	"payment_type":      CHECKSET,
+	"period":            CHECKSET,
+	"period_time":       CHECKSET,
+	"zone_id":           CHECKSET,
+	"vpc_id":            CHECKSET,
+	"vswitch_id":        CHECKSET,
 }
 
 func AliCloudSelectDBDbInstanceBasicDependence0(name string) string {

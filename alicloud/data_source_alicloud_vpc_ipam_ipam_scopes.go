@@ -171,7 +171,7 @@ func dataSourceAliCloudVpcIpamIpamScopeRead(d *schema.ResourceData, meta interfa
 		tagsMap := ConvertTags(v.(map[string]interface{}))
 		request = expandTagsToMap(request, tagsMap)
 	}
-	
+
 	request["MaxResults"] = PageSizeLarge
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)

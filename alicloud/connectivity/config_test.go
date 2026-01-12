@@ -380,15 +380,15 @@ func TestUnitCommonGetUserAgent(t *testing.T) {
 
 func TestUnitCommonGetCredentialConfig(t *testing.T) {
 	testCases := []struct {
-		name           string
-		accessKey      string
-		secretKey      string
-		securityToken  string
-		ramRoleArn     string
-		ecsRoleName    string
-		stsSupported   bool
-		expectedType   string
-		description    string
+		name          string
+		accessKey     string
+		secretKey     string
+		securityToken string
+		ramRoleArn    string
+		ecsRoleName   string
+		stsSupported  bool
+		expectedType  string
+		description   string
 	}{
 		{
 			name:         "AccessKey_Credential",

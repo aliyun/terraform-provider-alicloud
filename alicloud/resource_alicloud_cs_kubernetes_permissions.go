@@ -16,7 +16,7 @@ import (
 const ResourceName = "resource_alicloud_cs_kubernetes_permissions"
 
 const (
-//	ModeApply       = "apply"
+	//	ModeApply       = "apply"
 	ModePatch       = "patch"
 	ModeDelete      = "delete"
 	ConflictError   = "ErrAuthorizationConflict"
@@ -93,7 +93,7 @@ func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta 
 	if err != nil {
 		return WrapError(err)
 	}
-	
+
 	d.SetId(uid)
 	return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
 }
@@ -108,12 +108,12 @@ func resourceAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta in
 
 	var perms []*cs.DescribeUserPermissionResponseBody
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-		perms, err = describeUserPermissions(client, uid)	
+		perms, err = describeUserPermissions(client, uid)
 		if isRetryforThrottling(err) {
 			time.Sleep(1 * time.Minute)
-		}else if tea.BoolValue(tea.Retryable(err)){
+		} else if tea.BoolValue(tea.Retryable(err)) {
 			time.Sleep(5 * time.Second)
-		}else {
+		} else {
 			return resource.NonRetryableError(err)
 		}
 
@@ -125,12 +125,12 @@ func resourceAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta in
 	if len(perms) == 0 {
 		err = d.Set("permissions", nil)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceName, "Read set permissions", err)	
+			return WrapErrorf(err, DefaultErrorMsg, ResourceName, "Read set permissions", err)
 		}
 	}
 	err = d.Set("uid", uid)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "Read set uid", err)	
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "Read set uid", err)
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 		oldPermissionsList := oldPermissions.(*schema.Set).List()
 		newPermissionsList := newPermissions.(*schema.Set).List()
 
-		if len(oldPermissionsList) > 0 && len(newPermissionsList) > 0{
+		if len(oldPermissionsList) > 0 && len(newPermissionsList) > 0 {
 			oldPermissionsList, newPermissionsList = diffPermissions(oldPermissionsList, newPermissionsList)
 		}
 
@@ -161,14 +161,14 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 				return WrapError(err)
 			}
 		}
-		
+
 		// create new permissions
 		if len(newPermissionsList) > 0 {
 			err := manageUserPermissions(ModePatch, uid, meta, newPermissionsList)
 			if err != nil {
 				return WrapError(err)
 			}
-    }
+		}
 	}
 
 	return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
@@ -199,13 +199,13 @@ func manageUserPermissions(mode, uid string, meta interface{}, permissions []int
 		_, err := client.UpdateUserPermissions(&uid, updateUserPermissionsRequest)
 		if isRetryforThrottling(err) {
 			time.Sleep(1 * time.Minute)
-		}else if isRetryforConflict(err) || tea.BoolValue(tea.Retryable(err)){
+		} else if isRetryforConflict(err) || tea.BoolValue(tea.Retryable(err)) {
 			time.Sleep(5 * time.Second)
-		}else {
+		} else {
 			return resource.NonRetryableError(err)
 		}
 
-		return resource.RetryableError(Error("[ERROR] Update user permission failed %s error %v",uid, err.Error()))
+		return resource.RetryableError(Error("[ERROR] Update user permission failed %s error %v", uid, err.Error()))
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "UpdatePermissions", AliyunTablestoreGoSdk)
@@ -215,9 +215,9 @@ func manageUserPermissions(mode, uid string, meta interface{}, permissions []int
 		_, err := client.DescribeUserPermission(&uid)
 		if isRetryforThrottling(err) {
 			time.Sleep(1 * time.Minute)
-		}else if tea.BoolValue(tea.Retryable(err)){
+		} else if tea.BoolValue(tea.Retryable(err)) {
 			time.Sleep(5 * time.Second)
-		}else {
+		} else {
 			return resource.NonRetryableError(err)
 		}
 
@@ -246,7 +246,7 @@ func buildUpdateUserPermissionsArgs(permissions []interface{}) *cs.UpdateUserPer
 	return &cs.UpdateUserPermissionsRequest{Body: updateUserPermissions}
 }
 
-func diffPermissions(oldPermissionList, newPermissionList []interface{}) ([]interface{}, []interface{}){
+func diffPermissions(oldPermissionList, newPermissionList []interface{}) ([]interface{}, []interface{}) {
 	for i := 0; i < len(oldPermissionList); {
 		oldMap := oldPermissionList[i].(map[string]interface{})
 		i += 1

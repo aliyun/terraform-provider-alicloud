@@ -134,7 +134,7 @@ func resourceAliCloudArmsPrometheusCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_prometheus", action, AlibabaCloudSdkGoERROR)
 	}
 
-		d.SetId(fmt.Sprint(response["Data"]))
+	d.SetId(fmt.Sprint(response["Data"]))
 
 	return resourceAliCloudArmsPrometheusUpdate(d, meta)
 }
