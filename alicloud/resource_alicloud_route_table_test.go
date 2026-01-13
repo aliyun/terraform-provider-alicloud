@@ -346,6 +346,85 @@ resource "alicloud_vpc" "default" {
 `, name)
 }
 
+func TestAccAliCloudVPCRouteTable_RoutePropagationEnableOnCreate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_route_table.default"
+	ra := resourceAttrInit(resourceId, AlicloudRouteTableMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcRouteTable")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sroutetable%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRouteTableBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":                   "${alicloud_vpc.default.id}",
+					"route_propagation_enable": false,
+					"description":              "test-route-propagation-false",
+					"route_table_name":         name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":                   CHECKSET,
+						"route_propagation_enable": "false",
+						"description":              "test-route-propagation-false",
+						"route_table_name":         name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// 测试更新 route_propagation_enable 为 true
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":                   "${alicloud_vpc.default.id}",
+					"route_propagation_enable": true,
+					"description":              "test-route-propagation-true",
+					"route_table_name":         name + "-updated",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":                   CHECKSET,
+						"route_propagation_enable": "true",
+						"description":              "test-route-propagation-true",
+						"route_table_name":         name + "-updated",
+					}),
+				),
+			},
+			{
+				// 测试再次更新回 false
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":                   "${alicloud_vpc.default.id}",
+					"route_propagation_enable": false,
+					"description":              "test-route-propagation-false-again",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":                   CHECKSET,
+						"route_propagation_enable": "false",
+						"description":              "test-route-propagation-false-again",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_route_table"].Schema).Data(nil, nil)
