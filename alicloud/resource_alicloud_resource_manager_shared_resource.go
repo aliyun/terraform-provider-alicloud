@@ -1,7 +1,7 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -11,18 +11,21 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/tidwall/sjson"
 )
 
 func resourceAliCloudResourceManagerSharedResource() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudResourceManagerSharedResourceCreate,
 		Read:   resourceAliCloudResourceManagerSharedResourceRead,
+		Update: resourceAliCloudResourceManagerSharedResourceUpdate,
 		Delete: resourceAliCloudResourceManagerSharedResourceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -30,9 +33,20 @@ func resourceAliCloudResourceManagerSharedResource() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"permission_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"resource_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"resource_share_id": {
@@ -42,7 +56,8 @@ func resourceAliCloudResourceManagerSharedResource() *schema.Resource {
 			},
 			"resource_type": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"status": {
@@ -63,10 +78,38 @@ func resourceAliCloudResourceManagerSharedResourceCreate(d *schema.ResourceData,
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["ResourceShareId"] = d.Get("resource_share_id")
+	if v, ok := d.GetOk("resource_share_id"); ok {
+		request["ResourceShareId"] = v
+	}
 	request["RegionId"] = client.RegionId
-	request["Resources.1.ResourceId"] = d.Get("resource_id")
-	request["Resources.1.ResourceType"] = d.Get("resource_type")
+
+	if v, ok := d.GetOk("resource_arn"); ok {
+		localData, err := jsonpath.Get("$", v)
+		if err != nil {
+			return WrapError(err)
+		}
+		resourceArnsMapsArray := convertToInterfaceArray(localData)
+
+		request["ResourceArns"] = resourceArnsMapsArray
+	}
+
+	if v, ok := d.GetOk("permission_name"); ok {
+		localData1, err := jsonpath.Get("$", v)
+		if err != nil {
+			return WrapError(err)
+		}
+		permissionNamesMapsArray := convertToInterfaceArray(localData1)
+
+		request["PermissionNames"] = permissionNamesMapsArray
+	}
+
+	// Only set Resources when resource_arn is not specified to avoid API conflict
+	jsonString := convertObjectToJsonString(request)
+	if _, ok := d.GetOk("resource_arn"); !ok {
+		jsonString, _ = sjson.Set(jsonString, "Resources.0.ResourceId", d.Get("resource_id"))
+		jsonString, _ = sjson.Set(jsonString, "Resources.0.ResourceType", d.Get("resource_type"))
+	}
+	_ = json.Unmarshal([]byte(jsonString), &request)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -115,11 +158,17 @@ func resourceAliCloudResourceManagerSharedResourceRead(d *schema.ResourceData, m
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("resource_arn", objectRaw["ResourceArn"])
 	d.Set("status", objectRaw["AssociationStatus"])
 	d.Set("resource_id", objectRaw["EntityId"])
 	d.Set("resource_share_id", objectRaw["ResourceShareId"])
 	d.Set("resource_type", objectRaw["EntityType"])
 
+	return nil
+}
+
+func resourceAliCloudResourceManagerSharedResourceUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[INFO] Cannot update resource Alicloud Resource Shared Resource.")
 	return nil
 }
 
@@ -135,13 +184,15 @@ func resourceAliCloudResourceManagerSharedResourceDelete(d *schema.ResourceData,
 	request = make(map[string]interface{})
 	request["ResourceShareId"] = parts[0]
 	request["RegionId"] = client.RegionId
-	request["Resources.1.ResourceId"] = parts[1]
-	request["Resources.1.ResourceType"] = parts[2]
+
+	jsonString := convertObjectToJsonString(request)
+	jsonString, _ = sjson.Set(jsonString, "Resources.0.ResourceId", parts[1])
+	jsonString, _ = sjson.Set(jsonString, "Resources.0.ResourceType", parts[2])
+	_ = json.Unmarshal([]byte(jsonString), &request)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

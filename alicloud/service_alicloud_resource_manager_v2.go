@@ -785,6 +785,7 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerSharedResource(id stri
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -847,15 +848,18 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerSharedResource(id stri
 }
 
 func (s *ResourceManagerServiceV2) ResourceManagerSharedResourceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ResourceManagerSharedResourceStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerSharedResource)
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerSharedResourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeResourceManagerSharedResource(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
