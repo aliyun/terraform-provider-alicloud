@@ -1,33 +1,34 @@
-## 1.268.0 (Unreleased)
+## 1.268.1 (Unreleased)
+## 1.268.0 (January 13, 2025)
 
-- **New Resource:** `alicloud_rds_ai_instance` [GH-9392]
+- **New Resource:** `alicloud_rds_ai_instance` ([#9392](https://github.com/aliyun/terraform-provider-alicloud/issues/9392))
 
 ENHANCEMENTS:
 
-- resource/alicloud_mongodb_sharding_instance: Added the field parameters. [GH-9348]
-- resource/alicloud_ess_eci_scaling_configuration: add an attribute of override. [GH-9360]
-- resource/alicloud_threat_detection_oss_scan_config: optimize property get set. [GH-9363]
-- resource/alicloud_cr_ee_instance: Add support for quota. [GH-9366]
-- resource/alicloud_alikafka_consumer_group: Refactored the resource alicloud_alikafka_consumer_group; Added the field remark, create_time, region_id; Deprecated the field description. [GH-9373]
-- resource/alicloud_instance: Removed the ForceNew for field key_name; Fixed the diff error caused by system_disk_auto_snapshot_policy_id. [GH-9378]
-- resource/alicloud_hbr_policy_binding: Update CRUD and document. [GH-9380]
-- resource/alicloud_drds_polardbx_instance: Added the field description, engine_version, is_read_db_instance, primary_db_instance_name, region_id. [GH-9383]
-- resource/alicloud_resource_manager_shared_resource: Added the field permission_name, resource_arn. [GH-9384]
-- resource/alicloud_hbr_policy: Add support for tag_filters and data_source_filters #9382. [GH-9386]
-- resource/alicloud_cen_transit_router_cidr: Added expected error code OperationFailed.CidrNotExist. [GH-9387]
-- resource/alicloud_resource_manager_resource_share: Added the field resource_arns. [GH-9390]
-- docs: Improves vpc description. [GH-9371]
-- docs: Update oss_buckets document. [GH-9372]
-- docs: Update eci_zones document. [GH-9374]
-- docs: update alicloud_havip_attachment example. [GH-9375]
-- docs: repair broken links in resource manager resource share. [GH-9391]
+- resource/alicloud_mongodb_sharding_instance: Added the field parameters. ([#9348](https://github.com/aliyun/terraform-provider-alicloud/issues/9348))
+- resource/alicloud_ess_eci_scaling_configuration: add an attribute of override. ([#9360](https://github.com/aliyun/terraform-provider-alicloud/issues/9360))
+- resource/alicloud_threat_detection_oss_scan_config: optimize property get set. ([#9363](https://github.com/aliyun/terraform-provider-alicloud/issues/9363))
+- resource/alicloud_cr_ee_instance: Add support for quota. ([#9366](https://github.com/aliyun/terraform-provider-alicloud/issues/9366))
+- resource/alicloud_alikafka_consumer_group: Refactored the resource alicloud_alikafka_consumer_group; Added the field remark, create_time, region_id; Deprecated the field description. ([#9373](https://github.com/aliyun/terraform-provider-alicloud/issues/9373))
+- resource/alicloud_instance: Removed the ForceNew for field key_name; Fixed the diff error caused by system_disk_auto_snapshot_policy_id. ([#9378](https://github.com/aliyun/terraform-provider-alicloud/issues/9378))
+- resource/alicloud_hbr_policy_binding: Update CRUD and document. ([#9380](https://github.com/aliyun/terraform-provider-alicloud/issues/9380))
+- resource/alicloud_drds_polardbx_instance: Added the field description, engine_version, is_read_db_instance, primary_db_instance_name, region_id. ([#9383](https://github.com/aliyun/terraform-provider-alicloud/issues/9383))
+- resource/alicloud_resource_manager_shared_resource: Added the field permission_name, resource_arn. ([#9384](https://github.com/aliyun/terraform-provider-alicloud/issues/9384))
+- resource/alicloud_hbr_policy: Add support for tag_filters and data_source_filters #9382. ([#9386](https://github.com/aliyun/terraform-provider-alicloud/issues/9386))
+- resource/alicloud_cen_transit_router_cidr: Added expected error code OperationFailed.CidrNotExist. ([#9387](https://github.com/aliyun/terraform-provider-alicloud/issues/9387))
+- resource/alicloud_resource_manager_resource_share: Added the field resource_arns. ([#9390](https://github.com/aliyun/terraform-provider-alicloud/issues/9390))
+- docs: Improves vpc description. ([#9371](https://github.com/aliyun/terraform-provider-alicloud/issues/9371))
+- docs: Update oss_buckets document. ([#9372](https://github.com/aliyun/terraform-provider-alicloud/issues/9372))
+- docs: Update eci_zones document. ([#9374](https://github.com/aliyun/terraform-provider-alicloud/issues/9374))
+- docs: update alicloud_havip_attachment example. ([#9375](https://github.com/aliyun/terraform-provider-alicloud/issues/9375))
+- docs: repair broken links in resource manager resource share. ([#9391](https://github.com/aliyun/terraform-provider-alicloud/issues/9391))
 
 BUG FIXES:
 
-- resource/alicloud_cdn_domain_config: Fixed the diff error caused by field function_args. [GH-9364]
-- resource/alicloud_click_house_db_cluster: fix update db_cluster_access_white_list. [GH-9370]
-- resource/alicloud_gpdb_jdbc_data_source: Fixed the test. [GH-9379]
-- resource/alicloud_gpdb_streaming_data_service: Fixed the test. [GH-9381]
+- resource/alicloud_cdn_domain_config: Fixed the diff error caused by field function_args. ([#9364](https://github.com/aliyun/terraform-provider-alicloud/issues/9364))
+- resource/alicloud_click_house_db_cluster: fix update db_cluster_access_white_list. ([#9370](https://github.com/aliyun/terraform-provider-alicloud/issues/9370))
+- resource/alicloud_gpdb_jdbc_data_source: Fixed the test. ([#9379](https://github.com/aliyun/terraform-provider-alicloud/issues/9379))
+- resource/alicloud_gpdb_streaming_data_service: Fixed the test. ([#9381](https://github.com/aliyun/terraform-provider-alicloud/issues/9381))
 
 ## 1.267.0 (December 30, 2025)
 
