@@ -20,12 +20,6 @@ For information about Resource Manager Shared Resource and how to use it, see [W
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_resource_manager_shared_resource&exampleId=23ef2562-d157-231e-11e2-52a2ebd76c318231d557&activeTab=example&spm=docs.r.resource_manager_shared_resource.0.23ef2562d1&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -63,28 +57,27 @@ resource "alicloud_resource_manager_shared_resource" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_resource_manager_shared_resource&spm=docs.r.resource_manager_shared_resource.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
-* `resource_id` - (Required, ForceNew) The ID of the shared resource.
+* `permission_name` - (Optional, Available since v1.268.0) The name of a permission. If you do not configure this parameter, the system automatically associates the default permission for the specified resource type with the resource share.
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
+* `resource_arn` - (Optional, ForceNew, Available since v1.268.0) Associated resource ARN.
+
+-> **NOTE:**  This parameter is not available when the association type 'AssociationType' is the resource consumer 'Target'.
+
+* `resource_id` - (Optional, ForceNew, Computed) The ID of the shared resource.
 * `resource_share_id` - (Required, ForceNew) The ID of the resource share.
-* `resource_type` - (Required, ForceNew) The type of the shared resource. Valid values:
-  - `VSwitch`. 
-  - The following types are added after v1.173.0: `ROSTemplate` and `ServiceCatalogPortfolio`. 
-  - The following types are added after v1.192.0: `PrefixList` and `Image`.  
-  - The following types are added after v1.194.1: `PublicIpAddressPool`.
-  - The following types are added after v1.208.0: `KMSInstance`.
-  - The following types are added after v1.240.0: `Snapshot`.
-  - For more information about the types of resources that can be shared, see [Services that work with Resource Sharing](https://help.aliyun.com/zh/resource-management/resource-sharing/product-overview/services-that-work-with-resource-sharing?spm=api-workbench.API%20Document.0.0.32fff3cdFveEud)
+* `resource_type` - (Optional, ForceNew, Computed) The type of the shared resource.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<resource_share_id>:<resource_id>:<resource_type>`.
-* `create_time` - (Available since v1.259.0) The time when the shared resource was associated with the resource share.
-* `status` - The status of the Shared Resource.
+* `create_time` - The time when the shared resource was associated with the resource share.
+* `status` - The association status.
 
 ## Timeouts
 

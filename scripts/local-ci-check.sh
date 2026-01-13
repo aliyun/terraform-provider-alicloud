@@ -293,7 +293,59 @@ if echo "$CHANGED_FILES" | grep -q "\.go$\|website/docs"; then
 fi
 
 # ============================================================================
-# 2. Documentation Checks
+# 2. Testing Coverage Rate Check
+# ============================================================================
+
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}  Part 2: Testing Coverage Rate Check${NC}"
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo
+
+# Check if there are any resource or data source changes
+RESOURCE_CHANGES=$(echo "$CHANGED_FILES" | grep -E "alicloud/(resource|data_source).*\.go$" | grep -v "_test\.go$" || true)
+
+if [ -n "$RESOURCE_CHANGES" ]; then
+  echo -e "${BLUE}▶ Running testing coverage rate check...${NC}"
+  
+  # Create a temporary diff file
+  TEMP_DIFF=$(mktemp)
+  
+  # Generate diff: prioritize uncommitted changes, then latest commit, then compare with master
+  if git diff --name-only HEAD 2>/dev/null | grep -q .; then
+    # There are uncommitted changes
+    git diff HEAD > "$TEMP_DIFF"
+  else
+    # No uncommitted changes, check the latest commit
+    git diff HEAD~1 HEAD > "$TEMP_DIFF"
+  fi
+  
+  # If diff is empty, try comparing with master
+  if [ ! -s "$TEMP_DIFF" ]; then
+    git diff origin/master...HEAD > "$TEMP_DIFF" 2>/dev/null || git diff master...HEAD > "$TEMP_DIFF" 2>/dev/null || true
+  fi
+  
+  if [ -s "$TEMP_DIFF" ]; then
+    if go run "$SCRIPT_DIR/testing/testing_coverage_rate_check.go" -fileNames="$TEMP_DIFF"; then
+      echo -e "${GREEN}✓ PASSED: Testing coverage rate check${NC}"
+      PASSED_CHECKS+=("Testing coverage rate check")
+    else
+      echo -e "${RED}✗ FAILED: Testing coverage rate check${NC}"
+      FAILED_CHECKS+=("Testing coverage rate check")
+    fi
+  else
+    echo -e "${YELLOW}⚠ No changes to check${NC}"
+  fi
+  
+  rm -f "$TEMP_DIFF"
+  echo
+else
+  echo -e "${BLUE}▶ No resource or data source changes detected${NC}"
+  echo -e "${GREEN}✓ SKIPPED: Testing coverage rate check (no resource changes)${NC}"
+  echo
+fi
+
+# ============================================================================
+# 3. Documentation Checks
 # ============================================================================
 
 if echo "$CHANGED_FILES" | grep -q "website/docs"; then
@@ -506,12 +558,12 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
 fi
 
 # ============================================================================
-# 3. Build Check
+# 4. Build Check
 # ============================================================================
 
 if [ "$SKIP_BUILD" = false ]; then
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
-  echo -e "${GREEN}  Part 3: Build Check${NC}"
+  echo -e "${GREEN}  Part 4: Build Check${NC}"
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
   echo
 
@@ -524,12 +576,12 @@ else
 fi
 
 # ============================================================================
-# 4. Unit Tests
+# 5. Unit Tests
 # ============================================================================
 
 if [ "$SKIP_TEST" = false ]; then
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
-  echo -e "${GREEN}  Part 4: Unit Tests${NC}"
+  echo -e "${GREEN}  Part 5: Unit Tests${NC}"
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
   echo
 
@@ -542,11 +594,11 @@ else
 fi
 
 # ============================================================================
-# 5. Example Tests (Documentation Examples)
+# 6. Example Tests (Documentation Examples)
 # ============================================================================
 
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  Part 5: Example Tests (Documentation Examples)${NC}"
+echo -e "${GREEN}  Part 6: Example Tests (Documentation Examples)${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo
 
