@@ -40,6 +40,9 @@ func testSweepNlbLoadBalancer(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
 	}
 	action := "ListLoadBalancers"
 	request := map[string]interface{}{}
@@ -79,6 +82,11 @@ func testSweepNlbLoadBalancer(region string) error {
 			skip := true
 			if !sweepAll() {
 				for _, prefix := range prefixes {
+
+					if item["LoadBalancerName"] == nil {
+						item["LoadBalancerName"] = ""
+					}
+
 					if strings.HasPrefix(strings.ToLower(item["LoadBalancerName"].(string)), strings.ToLower(prefix)) {
 						skip = false
 					}
@@ -88,7 +96,23 @@ func testSweepNlbLoadBalancer(region string) error {
 					continue
 				}
 			}
-			action := "DeleteLoadBalancer"
+
+			action = "UpdateLoadBalancerProtection"
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			request["LoadBalancerId"] = item["LoadBalancerId"]
+			request["RegionId"] = aliyunClient.RegionId
+			request["ClientToken"] = buildClientToken(action)
+			request["DeletionProtectionEnabled"] = "false"
+			_, err = aliyunClient.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
+			if err != nil {
+				log.Printf("[ERROR] Failed to UpdateLoadBalancerProtection Nlb Load Balancer (%s): %s", item["LoadBalancerName"].(string), err)
+			}
+			log.Printf("[INFO] UpdateLoadBalancerProtection Nlb Load Balancer success: %s ", item["LoadBalancerName"].(string))
+
+			action = "DeleteLoadBalancer"
 			request := map[string]interface{}{
 				"LoadBalancerId": item["LoadBalancerId"],
 				"RegionId":       aliyunClient.RegionId,

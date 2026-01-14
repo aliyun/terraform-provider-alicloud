@@ -41,6 +41,7 @@ func init() {
 			"alicloud_edas_k8s_cluster",
 			"alicloud_network_acl",
 			"alicloud_cs_kubernetes",
+			"alicloud_instance",
 		},
 	})
 }
@@ -58,6 +59,8 @@ func testSweepVpcs(region string) error {
 		"tf_test_",
 		"tf-test-",
 		"testAcc",
+		"tf-example",
+		"tf-test",
 	}
 
 	vpcIds := make([]string, 0)

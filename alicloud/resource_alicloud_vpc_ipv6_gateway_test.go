@@ -48,6 +48,9 @@ func testSweepVpcIpv6Gateway(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
 	}
 	action := "DescribeIpv6Gateways"
 	request := map[string]interface{}{}
@@ -98,6 +101,7 @@ func testSweepVpcIpv6Gateway(region string) error {
 			action := "DeleteIpv6Gateway"
 			deleteRequest := map[string]interface{}{
 				"Ipv6GatewayId": item["Ipv6GatewayId"],
+				"RegionId":      client.RegionId,
 			}
 			_, err = client.RpcPost("Vpc", "2016-04-28", action, nil, deleteRequest, true)
 			if err != nil {

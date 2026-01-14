@@ -42,6 +42,9 @@ func testSweepRosStack(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf-testacc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
 	}
 	request := map[string]interface{}{
 		"PageSize":   PageSizeLarge,

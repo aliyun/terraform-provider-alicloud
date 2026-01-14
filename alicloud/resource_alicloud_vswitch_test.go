@@ -55,6 +55,8 @@ func init() {
 			"alicloud_cassandra_cluster",
 			"alicloud_network_acl",
 			"alicloud_nat_gateway",
+			"alicloud_alicloud_service_mesh_service_mesh",
+			"alicloud_nlb_load_balancer",
 		},
 	})
 }
@@ -69,6 +71,9 @@ func testSweepVSwitches(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
 	}
 	action := "DescribeVSwitches"
 	var response map[string]interface{}

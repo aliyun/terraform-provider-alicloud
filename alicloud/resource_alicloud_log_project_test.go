@@ -25,8 +25,14 @@ func testSweepLogProjects(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
 		"tf_test_",
 		"tf-test-",
+		"k8s-log-",
+		"dbaudit",
+		"kms-log-",
 	}
 	return testSweepLogProjectsWithPrefixAndSuffix(region, prefixes, []string{})
 }
