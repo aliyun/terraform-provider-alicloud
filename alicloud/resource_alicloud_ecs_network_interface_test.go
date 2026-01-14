@@ -29,7 +29,13 @@ func testAliCloudEcsNetworkInterface(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"fc-eni", // Clean up the eni which created by fc service
+		"tf-example",
+		"tf_example",
+		"terraform-example",
+		// Clean up the eni which created by cloud service
+		"fc-eni",
+		"bastion",
+		"rds-eni",
 	}
 	request := map[string]interface{}{
 		"PageSize":   PageSizeLarge,

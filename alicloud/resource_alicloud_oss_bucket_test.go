@@ -35,6 +35,11 @@ func testSweepOSSBuckets(region string) error {
 		"tf-oss-test-",
 		"tf-object-test-",
 		"test-acc-alicloud-",
+		"tftest",
+		"cri",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
 	}
 
 	var options []oss.Option
@@ -54,6 +59,12 @@ func testSweepOSSBuckets(region string) error {
 		}
 		skip := true
 		if !sweepAll() {
+			if strings.HasPrefix(strings.ToLower(name), "terraform-alicloud-provider") {
+				continue
+			}
+			if strings.HasPrefix(strings.ToLower(name), "terraform-remote-backend") {
+				continue
+			}
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 					skip = false
@@ -72,15 +83,42 @@ func testSweepOSSBuckets(region string) error {
 			return fmt.Errorf("Error getting bucket (%s): %#v", name, err)
 		}
 		bucket, _ := raw.(*oss.Bucket)
-		if objects, err := bucket.ListObjects(options...); err != nil {
-			log.Printf("[ERROR] Failed to list objects: %s", err)
-		} else if len(objects.Objects) > 0 {
-			for _, o := range objects.Objects {
-				if err := bucket.DeleteObject(o.Key); err != nil {
-					log.Printf("[ERROR] Failed to delete object (%s): %s.", o.Key, err)
+		var initialOptions []oss.Option
+		nextMarker := ""
+		for {
+			var options []oss.Option
+			options = append(options, initialOptions...)
+			if nextMarker != "" {
+				options = append(options, oss.Marker(nextMarker))
+			}
+			raw, err := client.WithOssBucketByName(bucket.BucketName, func(bucket *oss.Bucket) (interface{}, error) {
+				return bucket.ListObjects(options...)
+			})
+			if err != nil {
+				continue
+			}
+			response, _ := raw.(oss.ListObjectsResult)
+
+			if response.Objects == nil || len(response.Objects) < 1 {
+				break
+			}
+
+			if len(response.Objects) < 1 {
+				break
+			}
+
+			if len(response.Objects) > 0 {
+				for _, o := range response.Objects {
+					if err := bucket.DeleteObject(o.Key); err != nil {
+						log.Printf("[ERROR] Failed to delete object (%s): %s.", o.Key, err)
+					}
 				}
 			}
 
+			nextMarker = response.NextMarker
+			if nextMarker == "" {
+				break
+			}
 		}
 
 		log.Printf("[INFO] Deleting OSS bucket: %s", name)

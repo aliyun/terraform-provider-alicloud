@@ -31,6 +31,11 @@ func testSweepServiceMeshServiceMesh(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"tf-testacc",
+		"test",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
 	}
 	action := "DescribeServiceMeshes"
 	request := map[string]interface{}{}

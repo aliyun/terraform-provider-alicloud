@@ -32,6 +32,9 @@ func testSweepCenRouteService(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"tf_example",
+		"tf-example",
+		"terraform-example",
 	}
 
 	request := cbn.CreateDescribeCensRequest()
