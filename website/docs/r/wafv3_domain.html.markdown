@@ -165,6 +165,10 @@ Value range: 1~3600. Default value: 5.
 
   - `true`
   - `false`
+* `http2_origin` - (Optional, Available since v1.269.0) Specifies whether to enable HTTP/2 for back-to-origin traffic. Valid values:
+  - `true`: enables HTTP/2 for back-to-origin traffic.
+  - `false`: disables HTTP/2 for back-to-origin traffic.
+* `http2_origin_max_concurrency` - (Optional, Int, Available since v1.269.0) The maximum number of concurrent HTTP/2 back-to-origin requests. Valid values: `1` to `512`. Default value: `128`.
 * `keepalive` - (Optional) Specifies whether to enable the persistent connection feature. Valid values:
 
   - `true` (default)
@@ -183,6 +187,8 @@ Value range: 1~3600. Default value: 5.
   - `iphash`
   - `roundRobin`
   - `leastTime`: This value is available only if you set `ProtectionResource` to `gslb`.
+* `max_body_size` - (Optional, Int, Available since v1.269.0) The maximum size of a request body. Valid values: `2` to `10`. Default value: `2`. Unit: GB.
+-> **NOTE:** This parameter is supported only by the Ultimate edition.
 * `read_timeout` - (Optional, Int) The timeout period of write connections. Unit: seconds. Valid values: 1 to 3600. Default value: 120.
 * `request_headers` - (Optional, List) The traffic marking field and value of the domain name, which is used to mark the traffic processed by WAF.
 By specifying custom request header fields and corresponding values, when the access traffic of the domain name passes through WAF, WAF automatically adds the set custom field value to the request header as a traffic mark, which facilitates the statistics of back-end services. See [`request_headers`](#redirect-request_headers) below.

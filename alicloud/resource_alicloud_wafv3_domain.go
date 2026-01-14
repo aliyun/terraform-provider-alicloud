@@ -144,6 +144,11 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"max_body_size": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
 						"connect_timeout": {
 							Type:         schema.TypeInt,
 							Optional:     true,
@@ -174,6 +179,10 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 							Computed:     true,
 							ValidateFunc: IntBetween(0, 60),
 						},
+						"http2_origin": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 						"sni_host": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -192,6 +201,10 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							ValidateFunc: IntBetween(0, 3600),
+						},
+						"http2_origin_max_concurrency": {
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
 						"retry": {
 							Type:     schema.TypeBool,
@@ -264,169 +277,179 @@ func resourceAliCloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 	}
 	request["RegionId"] = client.RegionId
 
-	dataList := make(map[string]interface{})
+	listen := make(map[string]interface{})
 
 	if v := d.Get("listen"); v != nil {
 		cipherSuite1, _ := jsonpath.Get("$[0].cipher_suite", v)
 		if cipherSuite1 != nil && cipherSuite1 != "" {
-			dataList["CipherSuite"] = cipherSuite1
+			listen["CipherSuite"] = cipherSuite1
 		}
 		httpPorts1, _ := jsonpath.Get("$[0].http_ports", v)
 		if httpPorts1 != nil && httpPorts1 != "" {
-			dataList["HttpPorts"] = httpPorts1
+			listen["HttpPorts"] = httpPorts1
 		}
 		sm2Enabled, _ := jsonpath.Get("$[0].sm2_enabled", v)
 		if sm2Enabled != nil && sm2Enabled != "" {
-			dataList["SM2Enabled"] = sm2Enabled
+			listen["SM2Enabled"] = sm2Enabled
 		}
 		focusHttps1, _ := jsonpath.Get("$[0].focus_https", v)
 		if focusHttps1 != nil && focusHttps1 != "" {
-			dataList["FocusHttps"] = focusHttps1
+			listen["FocusHttps"] = focusHttps1
 		}
 		certId1, _ := jsonpath.Get("$[0].cert_id", v)
 		if certId1 != nil && certId1 != "" {
-			dataList["CertId"] = certId1
+			listen["CertId"] = certId1
 		}
 		tLSVersion1, _ := jsonpath.Get("$[0].tls_version", v)
 		if tLSVersion1 != nil && tLSVersion1 != "" {
-			dataList["TLSVersion"] = tLSVersion1
+			listen["TLSVersion"] = tLSVersion1
 		}
 		customCiphers1, _ := jsonpath.Get("$[0].custom_ciphers", v)
 		if customCiphers1 != nil && customCiphers1 != "" {
-			dataList["CustomCiphers"] = customCiphers1
+			listen["CustomCiphers"] = customCiphers1
 		}
 		protectionResource1, _ := jsonpath.Get("$[0].protection_resource", v)
 		if protectionResource1 != nil && protectionResource1 != "" {
-			dataList["ProtectionResource"] = protectionResource1
+			listen["ProtectionResource"] = protectionResource1
 		}
 		sm2CertId, _ := jsonpath.Get("$[0].sm2_cert_id", v)
 		if sm2CertId != nil && sm2CertId != "" {
-			dataList["SM2CertId"] = sm2CertId
+			listen["SM2CertId"] = sm2CertId
 		}
 		enableTLSv31, _ := jsonpath.Get("$[0].enable_tlsv3", v)
 		if enableTLSv31 != nil && enableTLSv31 != "" {
-			dataList["EnableTLSv3"] = enableTLSv31
+			listen["EnableTLSv3"] = enableTLSv31
 		}
 		exclusiveIp1, _ := jsonpath.Get("$[0].exclusive_ip", v)
 		if exclusiveIp1 != nil && exclusiveIp1 != "" {
-			dataList["ExclusiveIp"] = exclusiveIp1
+			listen["ExclusiveIp"] = exclusiveIp1
 		}
 		xffHeaderMode1, _ := jsonpath.Get("$[0].xff_header_mode", v)
 		if xffHeaderMode1 != nil && xffHeaderMode1 != "" {
-			dataList["XffHeaderMode"] = xffHeaderMode1
+			listen["XffHeaderMode"] = xffHeaderMode1
 		}
 		http2Enabled1, _ := jsonpath.Get("$[0].http2_enabled", v)
 		if http2Enabled1 != nil && http2Enabled1 != "" {
-			dataList["Http2Enabled"] = http2Enabled1
+			listen["Http2Enabled"] = http2Enabled1
 		}
 		xffHeaders1, _ := jsonpath.Get("$[0].xff_headers", v)
 		if xffHeaders1 != nil && xffHeaders1 != "" {
-			dataList["XffHeaders"] = xffHeaders1
+			listen["XffHeaders"] = xffHeaders1
 		}
 		iPv6Enabled1, _ := jsonpath.Get("$[0].ipv6_enabled", v)
 		if iPv6Enabled1 != nil && iPv6Enabled1 != "" {
-			dataList["IPv6Enabled"] = iPv6Enabled1
+			listen["IPv6Enabled"] = iPv6Enabled1
 		}
 		sm2AccessOnly, _ := jsonpath.Get("$[0].sm2_access_only", v)
 		if sm2AccessOnly != nil && sm2AccessOnly != "" {
-			dataList["SM2AccessOnly"] = sm2AccessOnly
+			listen["SM2AccessOnly"] = sm2AccessOnly
 		}
 		httpsPorts1, _ := jsonpath.Get("$[0].https_ports", v)
 		if httpsPorts1 != nil && httpsPorts1 != "" {
-			dataList["HttpsPorts"] = httpsPorts1
+			listen["HttpsPorts"] = httpsPorts1
 		}
 
-		dataListJson, err := json.Marshal(dataList)
+		listenJson, err := json.Marshal(listen)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["Listen"] = string(dataListJson)
+		request["Listen"] = string(listenJson)
 	}
 
-	dataList1 := make(map[string]interface{})
+	redirect := make(map[string]interface{})
 
 	if v := d.Get("redirect"); v != nil {
-		if v, ok := d.GetOk("redirect"); ok {
-			localData, err := jsonpath.Get("$[0].request_headers", v)
-			if err != nil {
-				localData = make([]interface{}, 0)
-			}
-			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(localData) {
-				dataLoopTmp := make(map[string]interface{})
-				if dataLoop != nil {
-					dataLoopTmp = dataLoop.(map[string]interface{})
-				}
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["Key"] = dataLoopTmp["key"]
-				dataLoopMap["Value"] = dataLoopTmp["value"]
-				localMaps = append(localMaps, dataLoopMap)
-			}
-			dataList1["RequestHeaders"] = localMaps
+		localData, err := jsonpath.Get("$[0].request_headers", v)
+		if err != nil {
+			localData = make([]interface{}, 0)
 		}
+		localMaps := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(localData) {
+			dataLoopTmp := make(map[string]interface{})
+			if dataLoop != nil {
+				dataLoopTmp = dataLoop.(map[string]interface{})
+			}
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["Key"] = dataLoopTmp["key"]
+			dataLoopMap["Value"] = dataLoopTmp["value"]
+			localMaps = append(localMaps, dataLoopMap)
+		}
+		redirect["RequestHeaders"] = localMaps
 
 		sniHost1, _ := jsonpath.Get("$[0].sni_host", v)
 		if sniHost1 != nil && sniHost1 != "" {
-			dataList1["SniHost"] = sniHost1
+			redirect["SniHost"] = sniHost1
 		}
 		xffProto1, _ := jsonpath.Get("$[0].xff_proto", v)
 		if xffProto1 != nil && xffProto1 != "" {
-			dataList1["XffProto"] = xffProto1
+			redirect["XffProto"] = xffProto1
 		}
 		retry1, _ := jsonpath.Get("$[0].retry", v)
 		if retry1 != nil && retry1 != "" {
-			dataList1["Retry"] = retry1
+			redirect["Retry"] = retry1
 		}
 		keepalive1, _ := jsonpath.Get("$[0].keepalive", v)
 		if keepalive1 != nil && keepalive1 != "" {
-			dataList1["Keepalive"] = keepalive1
+			redirect["Keepalive"] = keepalive1
+		}
+		http2Origin1, _ := jsonpath.Get("$[0].http2_origin", v)
+		if http2Origin1 != nil && http2Origin1 != "" {
+			redirect["Http2Origin"] = http2Origin1
+		}
+		maxBodySize1, _ := jsonpath.Get("$[0].max_body_size", v)
+		if maxBodySize1 != nil && maxBodySize1 != "" && maxBodySize1.(int) > 0 {
+			redirect["MaxBodySize"] = maxBodySize1
 		}
 		focusHttpBackend1, _ := jsonpath.Get("$[0].focus_http_backend", v)
 		if focusHttpBackend1 != nil && focusHttpBackend1 != "" {
-			dataList1["FocusHttpBackend"] = focusHttpBackend1
+			redirect["FocusHttpBackend"] = focusHttpBackend1
 		}
 		loadbalance1, _ := jsonpath.Get("$[0].loadbalance", v)
 		if loadbalance1 != nil && loadbalance1 != "" {
-			dataList1["Loadbalance"] = loadbalance1
+			redirect["Loadbalance"] = loadbalance1
 		}
 		sniEnabled1, _ := jsonpath.Get("$[0].sni_enabled", v)
 		if sniEnabled1 != nil && sniEnabled1 != "" {
-			dataList1["SniEnabled"] = sniEnabled1
+			redirect["SniEnabled"] = sniEnabled1
 		}
 		keepaliveRequests1, _ := jsonpath.Get("$[0].keepalive_requests", v)
 		if keepaliveRequests1 != nil && keepaliveRequests1 != "" && keepaliveRequests1.(int) > 0 {
-			dataList1["KeepaliveRequests"] = keepaliveRequests1
+			redirect["KeepaliveRequests"] = keepaliveRequests1
 		}
 		connectTimeout1, _ := jsonpath.Get("$[0].connect_timeout", v)
 		if connectTimeout1 != nil && connectTimeout1 != "" && connectTimeout1.(int) > 0 {
-			dataList1["ConnectTimeout"] = connectTimeout1
+			redirect["ConnectTimeout"] = connectTimeout1
+		}
+		http2OriginMaxConcurrency1, _ := jsonpath.Get("$[0].http2_origin_max_concurrency", v)
+		if http2OriginMaxConcurrency1 != nil && http2OriginMaxConcurrency1 != "" && http2OriginMaxConcurrency1.(int) > 0 {
+			redirect["Http2OriginMaxConcurrency"] = http2OriginMaxConcurrency1
 		}
 		writeTimeout1, _ := jsonpath.Get("$[0].write_timeout", v)
 		if writeTimeout1 != nil && writeTimeout1 != "" && writeTimeout1.(int) > 0 {
-			dataList1["WriteTimeout"] = writeTimeout1
+			redirect["WriteTimeout"] = writeTimeout1
 		}
 		backends1, _ := jsonpath.Get("$[0].backends", v)
 		if backends1 != nil && backends1 != "" {
-			dataList1["Backends"] = backends1
+			redirect["Backends"] = backends1
 		}
 		keepaliveTimeout1, _ := jsonpath.Get("$[0].keepalive_timeout", v)
 		if keepaliveTimeout1 != nil && keepaliveTimeout1 != "" && keepaliveTimeout1.(int) > 0 {
-			dataList1["KeepaliveTimeout"] = keepaliveTimeout1
+			redirect["KeepaliveTimeout"] = keepaliveTimeout1
 		}
 		backupBackends1, _ := jsonpath.Get("$[0].backup_backends", v)
 		if backupBackends1 != nil && backupBackends1 != "" {
-			dataList1["BackupBackends"] = backupBackends1
+			redirect["BackupBackends"] = backupBackends1
 		}
 		readTimeout1, _ := jsonpath.Get("$[0].read_timeout", v)
 		if readTimeout1 != nil && readTimeout1 != "" && readTimeout1.(int) > 0 {
-			dataList1["ReadTimeout"] = readTimeout1
+			redirect["ReadTimeout"] = readTimeout1
 		}
 
-		dataList1Json, err := json.Marshal(dataList1)
+		redirectJson, err := json.Marshal(redirect)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["Redirect"] = string(dataList1Json)
+		request["Redirect"] = string(redirectJson)
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
@@ -549,10 +572,13 @@ func resourceAliCloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 	if len(redirectRaw) > 0 {
 		redirectMap["connect_timeout"] = redirectRaw["ConnectTimeout"]
 		redirectMap["focus_http_backend"] = redirectRaw["FocusHttpBackend"]
+		redirectMap["http2_origin"] = redirectRaw["Http2Origin"]
+		redirectMap["http2_origin_max_concurrency"] = redirectRaw["Http2OriginMaxConcurrency"]
 		redirectMap["keepalive"] = redirectRaw["Keepalive"]
 		redirectMap["keepalive_requests"] = redirectRaw["KeepaliveRequests"]
 		redirectMap["keepalive_timeout"] = redirectRaw["KeepaliveTimeout"]
 		redirectMap["loadbalance"] = redirectRaw["Loadbalance"]
+		redirectMap["max_body_size"] = redirectRaw["MaxBodySize"]
 		redirectMap["read_timeout"] = redirectRaw["ReadTimeout"]
 		redirectMap["retry"] = redirectRaw["Retry"]
 		redirectMap["sni_enabled"] = redirectRaw["SniEnabled"]
@@ -624,172 +650,182 @@ func resourceAliCloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{})
 	if !d.IsNewResource() && d.HasChange("listen") {
 		update = true
 	}
-	dataList := make(map[string]interface{})
+	listen := make(map[string]interface{})
 
 	if v := d.Get("listen"); v != nil {
 		enableTLSv31, _ := jsonpath.Get("$[0].enable_tlsv3", v)
 		if enableTLSv31 != nil && (d.HasChange("listen.0.enable_tlsv3") || enableTLSv31 != "") {
-			dataList["EnableTLSv3"] = enableTLSv31
+			listen["EnableTLSv3"] = enableTLSv31
 		}
 		cipherSuite1, _ := jsonpath.Get("$[0].cipher_suite", v)
 		if cipherSuite1 != nil && (d.HasChange("listen.0.cipher_suite") || cipherSuite1 != "") {
-			dataList["CipherSuite"] = cipherSuite1
+			listen["CipherSuite"] = cipherSuite1
 		}
 		exclusiveIp1, _ := jsonpath.Get("$[0].exclusive_ip", v)
 		if exclusiveIp1 != nil && (d.HasChange("listen.0.exclusive_ip") || exclusiveIp1 != "") {
-			dataList["ExclusiveIp"] = exclusiveIp1
+			listen["ExclusiveIp"] = exclusiveIp1
 		}
 		xffHeaderMode1, _ := jsonpath.Get("$[0].xff_header_mode", v)
 		if xffHeaderMode1 != nil && (d.HasChange("listen.0.xff_header_mode") || xffHeaderMode1 != "") {
-			dataList["XffHeaderMode"] = xffHeaderMode1
+			listen["XffHeaderMode"] = xffHeaderMode1
 		}
 		http2Enabled1, _ := jsonpath.Get("$[0].http2_enabled", v)
 		if http2Enabled1 != nil && (d.HasChange("listen.0.http2_enabled") || http2Enabled1 != "") {
-			dataList["Http2Enabled"] = http2Enabled1
+			listen["Http2Enabled"] = http2Enabled1
 		}
 		httpPorts1, _ := jsonpath.Get("$[0].http_ports", v)
 		if httpPorts1 != nil && (d.HasChange("listen.0.http_ports") || httpPorts1 != "") {
-			dataList["HttpPorts"] = httpPorts1
+			listen["HttpPorts"] = httpPorts1
 		}
 		xffHeaders1, _ := jsonpath.Get("$[0].xff_headers", v)
 		if xffHeaders1 != nil && (d.HasChange("listen.0.xff_headers") || xffHeaders1 != "") {
-			dataList["XffHeaders"] = xffHeaders1
+			listen["XffHeaders"] = xffHeaders1
 		}
 		sm2Enabled, _ := jsonpath.Get("$[0].sm2_enabled", v)
 		if sm2Enabled != nil && (d.HasChange("listen.0.sm2_enabled") || sm2Enabled != "") {
-			dataList["SM2Enabled"] = sm2Enabled
+			listen["SM2Enabled"] = sm2Enabled
 		}
 		iPv6Enabled1, _ := jsonpath.Get("$[0].ipv6_enabled", v)
 		if iPv6Enabled1 != nil && (d.HasChange("listen.0.ipv6_enabled") || iPv6Enabled1 != "") {
-			dataList["IPv6Enabled"] = iPv6Enabled1
+			listen["IPv6Enabled"] = iPv6Enabled1
 		}
 		sm2AccessOnly, _ := jsonpath.Get("$[0].sm2_access_only", v)
 		if sm2AccessOnly != nil && (d.HasChange("listen.0.sm2_access_only") || sm2AccessOnly != "") {
-			dataList["SM2AccessOnly"] = sm2AccessOnly
+			listen["SM2AccessOnly"] = sm2AccessOnly
 		}
 		focusHttps1, _ := jsonpath.Get("$[0].focus_https", v)
 		if focusHttps1 != nil && (d.HasChange("listen.0.focus_https") || focusHttps1 != "") {
-			dataList["FocusHttps"] = focusHttps1
+			listen["FocusHttps"] = focusHttps1
 		}
 		certId1, _ := jsonpath.Get("$[0].cert_id", v)
 		if certId1 != nil && (d.HasChange("listen.0.cert_id") || certId1 != "") {
-			dataList["CertId"] = certId1
+			listen["CertId"] = certId1
 		}
 		tLSVersion1, _ := jsonpath.Get("$[0].tls_version", v)
 		if tLSVersion1 != nil && (d.HasChange("listen.0.tls_version") || tLSVersion1 != "") {
-			dataList["TLSVersion"] = tLSVersion1
+			listen["TLSVersion"] = tLSVersion1
 		}
 		customCiphers1, _ := jsonpath.Get("$[0].custom_ciphers", v)
 		if customCiphers1 != nil && (d.HasChange("listen.0.custom_ciphers") || customCiphers1 != "") {
-			dataList["CustomCiphers"] = customCiphers1
+			listen["CustomCiphers"] = customCiphers1
 		}
 		protectionResource1, _ := jsonpath.Get("$[0].protection_resource", v)
 		if protectionResource1 != nil && (d.HasChange("listen.0.protection_resource") || protectionResource1 != "") {
-			dataList["ProtectionResource"] = protectionResource1
+			listen["ProtectionResource"] = protectionResource1
 		}
 		httpsPorts1, _ := jsonpath.Get("$[0].https_ports", v)
 		if httpsPorts1 != nil && (d.HasChange("listen.0.https_ports") || httpsPorts1 != "") {
-			dataList["HttpsPorts"] = httpsPorts1
+			listen["HttpsPorts"] = httpsPorts1
 		}
 		sm2CertId, _ := jsonpath.Get("$[0].sm2_cert_id", v)
 		if sm2CertId != nil && (d.HasChange("listen.0.sm2_cert_id") || sm2CertId != "") {
-			dataList["SM2CertId"] = sm2CertId
+			listen["SM2CertId"] = sm2CertId
 		}
 
-		dataListJson, err := json.Marshal(dataList)
+		listenJson, err := json.Marshal(listen)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["Listen"] = string(dataListJson)
+		request["Listen"] = string(listenJson)
 	}
 
 	if !d.IsNewResource() && d.HasChange("redirect") {
 		update = true
 	}
-	dataList1 := make(map[string]interface{})
+	redirect := make(map[string]interface{})
 
 	if v := d.Get("redirect"); v != nil {
 		sniEnabled1, _ := jsonpath.Get("$[0].sni_enabled", v)
 		if sniEnabled1 != nil && (d.HasChange("redirect.0.sni_enabled") || sniEnabled1 != "") {
-			dataList1["SniEnabled"] = sniEnabled1
+			redirect["SniEnabled"] = sniEnabled1
 		}
-		if v, ok := d.GetOk("redirect"); ok {
-			localData, err := jsonpath.Get("$[0].request_headers", v)
-			if err != nil {
-				localData = make([]interface{}, 0)
-			}
-			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(localData) {
-				dataLoopTmp := make(map[string]interface{})
-				if dataLoop != nil {
-					dataLoopTmp = dataLoop.(map[string]interface{})
-				}
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["Key"] = dataLoopTmp["key"]
-				dataLoopMap["Value"] = dataLoopTmp["value"]
-				localMaps = append(localMaps, dataLoopMap)
-			}
-			dataList1["RequestHeaders"] = localMaps
+		localData, err := jsonpath.Get("$[0].request_headers", v)
+		if err != nil {
+			localData = make([]interface{}, 0)
 		}
+		localMaps := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(localData) {
+			dataLoopTmp := make(map[string]interface{})
+			if dataLoop != nil {
+				dataLoopTmp = dataLoop.(map[string]interface{})
+			}
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["Key"] = dataLoopTmp["key"]
+			dataLoopMap["Value"] = dataLoopTmp["value"]
+			localMaps = append(localMaps, dataLoopMap)
+		}
+		redirect["RequestHeaders"] = localMaps
 
 		sniHost1, _ := jsonpath.Get("$[0].sni_host", v)
 		if sniHost1 != nil && (d.HasChange("redirect.0.sni_host") || sniHost1 != "") {
-			dataList1["SniHost"] = sniHost1
+			redirect["SniHost"] = sniHost1
 		}
 		xffProto1, _ := jsonpath.Get("$[0].xff_proto", v)
 		if xffProto1 != nil && (d.HasChange("redirect.0.xff_proto") || xffProto1 != "") {
-			dataList1["XffProto"] = xffProto1
+			redirect["XffProto"] = xffProto1
 		}
 		keepaliveRequests1, _ := jsonpath.Get("$[0].keepalive_requests", v)
 		if keepaliveRequests1 != nil && (d.HasChange("redirect.0.keepalive_requests") || keepaliveRequests1 != "") && keepaliveRequests1.(int) > 0 {
-			dataList1["KeepaliveRequests"] = keepaliveRequests1
+			redirect["KeepaliveRequests"] = keepaliveRequests1
 		}
 		retry1, _ := jsonpath.Get("$[0].retry", v)
 		if retry1 != nil && (d.HasChange("redirect.0.retry") || retry1 != "") {
-			dataList1["Retry"] = retry1
+			redirect["Retry"] = retry1
 		}
 		connectTimeout1, _ := jsonpath.Get("$[0].connect_timeout", v)
 		if connectTimeout1 != nil && (d.HasChange("redirect.0.connect_timeout") || connectTimeout1 != "") && connectTimeout1.(int) > 0 {
-			dataList1["ConnectTimeout"] = connectTimeout1
+			redirect["ConnectTimeout"] = connectTimeout1
 		}
 		keepalive1, _ := jsonpath.Get("$[0].keepalive", v)
 		if keepalive1 != nil && (d.HasChange("redirect.0.keepalive") || keepalive1 != "") {
-			dataList1["Keepalive"] = keepalive1
+			redirect["Keepalive"] = keepalive1
+		}
+		http2OriginMaxConcurrency1, _ := jsonpath.Get("$[0].http2_origin_max_concurrency", v)
+		if http2OriginMaxConcurrency1 != nil && (d.HasChange("redirect.0.http2_origin_max_concurrency") || http2OriginMaxConcurrency1 != "") && http2OriginMaxConcurrency1.(int) > 0 {
+			redirect["Http2OriginMaxConcurrency"] = http2OriginMaxConcurrency1
+		}
+		http2Origin1, _ := jsonpath.Get("$[0].http2_origin", v)
+		if http2Origin1 != nil && (d.HasChange("redirect.0.http2_origin") || http2Origin1 != "") {
+			redirect["Http2Origin"] = http2Origin1
 		}
 		writeTimeout1, _ := jsonpath.Get("$[0].write_timeout", v)
 		if writeTimeout1 != nil && (d.HasChange("redirect.0.write_timeout") || writeTimeout1 != "") && writeTimeout1.(int) > 0 {
-			dataList1["WriteTimeout"] = writeTimeout1
+			redirect["WriteTimeout"] = writeTimeout1
+		}
+		maxBodySize1, _ := jsonpath.Get("$[0].max_body_size", v)
+		if maxBodySize1 != nil && (d.HasChange("redirect.0.max_body_size") || maxBodySize1 != "") && maxBodySize1.(int) > 0 {
+			redirect["MaxBodySize"] = maxBodySize1
 		}
 		focusHttpBackend1, _ := jsonpath.Get("$[0].focus_http_backend", v)
 		if focusHttpBackend1 != nil && (d.HasChange("redirect.0.focus_http_backend") || focusHttpBackend1 != "") {
-			dataList1["FocusHttpBackend"] = focusHttpBackend1
+			redirect["FocusHttpBackend"] = focusHttpBackend1
 		}
 		loadbalance1, _ := jsonpath.Get("$[0].loadbalance", v)
 		if loadbalance1 != nil && (d.HasChange("redirect.0.loadbalance") || loadbalance1 != "") {
-			dataList1["Loadbalance"] = loadbalance1
+			redirect["Loadbalance"] = loadbalance1
 		}
 		backends1, _ := jsonpath.Get("$[0].backends", v)
 		if backends1 != nil && (d.HasChange("redirect.0.backends") || backends1 != "") {
-			dataList1["Backends"] = backends1
+			redirect["Backends"] = backends1
 		}
 		keepaliveTimeout1, _ := jsonpath.Get("$[0].keepalive_timeout", v)
 		if keepaliveTimeout1 != nil && (d.HasChange("redirect.0.keepalive_timeout") || keepaliveTimeout1 != "") && keepaliveTimeout1.(int) > 0 {
-			dataList1["KeepaliveTimeout"] = keepaliveTimeout1
+			redirect["KeepaliveTimeout"] = keepaliveTimeout1
 		}
 		backupBackends1, _ := jsonpath.Get("$[0].backup_backends", v)
 		if backupBackends1 != nil && (d.HasChange("redirect.0.backup_backends") || backupBackends1 != "") {
-			dataList1["BackupBackends"] = backupBackends1
+			redirect["BackupBackends"] = backupBackends1
 		}
 		readTimeout1, _ := jsonpath.Get("$[0].read_timeout", v)
 		if readTimeout1 != nil && (d.HasChange("redirect.0.read_timeout") || readTimeout1 != "") && readTimeout1.(int) > 0 {
-			dataList1["ReadTimeout"] = readTimeout1
+			redirect["ReadTimeout"] = readTimeout1
 		}
 
-		dataList1Json, err := json.Marshal(dataList1)
+		redirectJson, err := json.Marshal(redirect)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["Redirect"] = string(dataList1Json)
+		request["Redirect"] = string(redirectJson)
 	}
 
 	if d.HasChange("domain_id") {
