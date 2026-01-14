@@ -28,6 +28,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudWafv3DomainBasicDependence2308)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 			testAccPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
 		},
@@ -37,7 +38,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_wafv3_instance.default.id}",
+					"instance_id": "${data.alicloud_wafv3_instances.default.ids.0}",
 					"listen": []map[string]interface{}{
 						{
 							"https_ports":         []string{"443"},
@@ -121,6 +122,56 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"redirect": []map[string]interface{}{
+						{
+							"backends":                     []string{"1.1.1.1"},
+							"loadbalance":                  "iphash",
+							"sni_enabled":                  "true",
+							"sni_host":                     "www.aliyun.com",
+							"focus_http_backend":           "false",
+							"keepalive":                    "true",
+							"retry":                        "true",
+							"keepalive_requests":           "1000",
+							"keepalive_timeout":            "15",
+							"connect_timeout":              "5",
+							"read_timeout":                 "60",
+							"write_timeout":                "60",
+							"http2_origin":                 "true",
+							"http2_origin_max_concurrency": "1",
+							"max_body_size":                "10",
+							"request_headers": []map[string]interface{}{
+								{
+									"key":   "A",
+									"value": "B",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"redirect.#":                              "1",
+						"redirect.0.backends.#":                   "1",
+						"redirect.0.loadbalance":                  "iphash",
+						"redirect.0.sni_enabled":                  "true",
+						"redirect.0.sni_host":                     "www.aliyun.com",
+						"redirect.0.focus_http_backend":           "false",
+						"redirect.0.keepalive":                    "true",
+						"redirect.0.retry":                        "true",
+						"redirect.0.keepalive_requests":           "1000",
+						"redirect.0.keepalive_timeout":            "15",
+						"redirect.0.connect_timeout":              "5",
+						"redirect.0.read_timeout":                 "60",
+						"redirect.0.write_timeout":                "60",
+						"redirect.0.http2_origin":                 "true",
+						"redirect.0.http2_origin_max_concurrency": "1",
+						"redirect.0.max_body_size":                "10",
+						"redirect.0.request_headers.#":            "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"listen": []map[string]interface{}{
 						{
 							"https_ports":         []string{"443"},
@@ -134,7 +185,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 							"http2_enabled":       "false",
 							"custom_ciphers":      []string{},
 							"focus_https":         "true",
-							"exclusive_ip":        "true",
+							"exclusive_ip":        "false",
 							"xff_headers":         []string{"A", "B", "C"},
 							"ipv6_enabled":        "false",
 						},
@@ -153,6 +204,7 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 							"connect_timeout":    "5",
 							"read_timeout":       "60",
 							"write_timeout":      "60",
+							"http2_origin":       "false",
 							"request_headers": []map[string]interface{}{
 								{
 									"key":   "A",
@@ -164,35 +216,37 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"listen.#":                      "1",
-						"listen.0.https_ports.#":        "1",
-						"listen.0.http_ports.#":         "2",
-						"listen.0.cert_id":              CHECKSET,
-						"listen.0.cipher_suite":         "1",
-						"listen.0.xff_header_mode":      "2",
-						"listen.0.protection_resource":  "share",
-						"listen.0.tls_version":          "tlsv1",
-						"listen.0.enable_tlsv3":         "false",
-						"listen.0.http2_enabled":        "false",
-						"listen.0.custom_ciphers.#":     "0",
-						"listen.0.focus_https":          "true",
-						"listen.0.exclusive_ip":         "true",
-						"listen.0.xff_headers.#":        "3",
-						"listen.0.ipv6_enabled":         "false",
-						"redirect.#":                    "1",
-						"redirect.0.backends.#":         "1",
-						"redirect.0.loadbalance":        "iphash",
-						"redirect.0.sni_enabled":        "true",
-						"redirect.0.sni_host":           "www.aliyun.com",
-						"redirect.0.focus_http_backend": "false",
-						"redirect.0.keepalive":          "true",
-						"redirect.0.retry":              "true",
-						"redirect.0.keepalive_requests": "1000",
-						"redirect.0.keepalive_timeout":  "15",
-						"redirect.0.connect_timeout":    "5",
-						"redirect.0.read_timeout":       "60",
-						"redirect.0.write_timeout":      "60",
-						"redirect.0.request_headers.#":  "1",
+						"listen.#":                                "1",
+						"listen.0.https_ports.#":                  "1",
+						"listen.0.http_ports.#":                   "2",
+						"listen.0.cert_id":                        CHECKSET,
+						"listen.0.cipher_suite":                   "1",
+						"listen.0.xff_header_mode":                "2",
+						"listen.0.protection_resource":            "share",
+						"listen.0.tls_version":                    "tlsv1",
+						"listen.0.enable_tlsv3":                   "false",
+						"listen.0.http2_enabled":                  "false",
+						"listen.0.custom_ciphers.#":               "0",
+						"listen.0.focus_https":                    "true",
+						"listen.0.exclusive_ip":                   "false",
+						"listen.0.xff_headers.#":                  "3",
+						"listen.0.ipv6_enabled":                   "false",
+						"redirect.#":                              "1",
+						"redirect.0.backends.#":                   "1",
+						"redirect.0.loadbalance":                  "iphash",
+						"redirect.0.sni_enabled":                  "true",
+						"redirect.0.sni_host":                     "www.aliyun.com",
+						"redirect.0.focus_http_backend":           "false",
+						"redirect.0.keepalive":                    "true",
+						"redirect.0.retry":                        "true",
+						"redirect.0.keepalive_requests":           "1000",
+						"redirect.0.keepalive_timeout":            "15",
+						"redirect.0.connect_timeout":              "5",
+						"redirect.0.read_timeout":                 "60",
+						"redirect.0.write_timeout":                "60",
+						"redirect.0.http2_origin":                 "false",
+						"redirect.0.http2_origin_max_concurrency": "0",
+						"redirect.0.request_headers.#":            "1",
 					}),
 				),
 			},
@@ -321,8 +375,8 @@ ehoKzHPSsE7bB1GDRjbHXC8F
 EOF
 }
 
-resource "alicloud_wafv3_instance" "default" {}
-
+data "alicloud_wafv3_instances" "default" {
+}
 locals {
   certificate_id = join("-", [alicloud_ssl_certificates_service_certificate.default.id, "%s"])
 }
@@ -347,6 +401,7 @@ func TestAccAliCloudWafv3Domain_basic7652(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DomainBasicDependence7652)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
@@ -362,6 +417,7 @@ func TestAccAliCloudWafv3Domain_basic7652(t *testing.T) {
 							"http2_enabled":       "false",
 							"enable_tlsv3":        "false",
 							"ipv6_enabled":        "false",
+							"exclusive_ip":        "false",
 							"protection_resource": "share",
 							"http_ports": []string{
 								"80"},
@@ -406,6 +462,7 @@ func TestAccAliCloudWafv3Domain_basic7652(t *testing.T) {
 							"xff_header_mode": "1",
 							"http2_enabled":   "false",
 							"enable_tlsv3":    "false",
+							"exclusive_ip":    "true",
 						},
 					},
 					"redirect": []map[string]interface{}{
@@ -472,6 +529,7 @@ func TestAccAliCloudWafv3Domain_basic9852(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DomainBasicDependence9852)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
@@ -598,6 +656,7 @@ func TestAccAliCloudWafv3Domain_basic11009(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DomainBasicDependence11009)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
