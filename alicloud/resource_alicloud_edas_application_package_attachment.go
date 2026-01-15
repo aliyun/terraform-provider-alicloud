@@ -2,9 +2,8 @@ package alicloud
 
 import (
 	"strconv"
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"

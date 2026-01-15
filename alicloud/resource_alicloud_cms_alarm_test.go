@@ -4,16 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
-	"strings"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 

@@ -1,11 +1,11 @@
 package alicloud
 
 import (
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUnitCommonHttpHttpsDiffSuppressFunc(t *testing.T) {

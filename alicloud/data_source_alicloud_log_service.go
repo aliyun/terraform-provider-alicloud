@@ -1,14 +1,12 @@
 package alicloud
 
 import (
-	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
+	"fmt"
 	"time"
 
+	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-
-	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 

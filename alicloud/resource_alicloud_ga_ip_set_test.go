@@ -2,21 +2,19 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/stretchr/testify/assert"
-
-	"log"
-
-	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudGaIpSet_basic(t *testing.T) {

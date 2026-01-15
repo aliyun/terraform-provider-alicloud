@@ -3,10 +3,9 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"testing"
-
 	"strconv"
 	"strings"
+	"testing"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"

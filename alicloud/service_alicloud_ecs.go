@@ -6,11 +6,9 @@ import (
 	"log"
 	"regexp"
 	"sort"
-	"strings"
-
-	"time"
-
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"

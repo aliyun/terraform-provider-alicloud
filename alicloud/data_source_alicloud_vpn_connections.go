@@ -2,10 +2,10 @@ package alicloud
 
 import (
 	"encoding/json"
-	"github.com/PaesslerAG/jsonpath"
 	"regexp"
 	"strings"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"

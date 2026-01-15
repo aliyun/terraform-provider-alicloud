@@ -1,14 +1,12 @@
 package alicloud
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
-	"fmt"
 )
 
 // Skip this testcase because of the account cannot purchase non-internal products.

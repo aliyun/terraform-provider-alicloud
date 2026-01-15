@@ -1,12 +1,11 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudKMSCiphertext_basic(t *testing.T) {

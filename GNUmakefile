@@ -4,6 +4,12 @@ WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=alicloud
 RELEASE_ALPHA_VERSION=$(VERSION)-alpha$(shell date +'%Y%m%d')
 RELEASE_ALPHA_NAME=terraform-provider-alicloud_v$(RELEASE_ALPHA_VERSION)
+PARALLEL ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+
+tools:
+	@echo "==> installing required tooling..."
+	go install golang.org/x/tools/cmd/goimports@latest
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH || $$GOPATH)/bin v2.7.2
 
 default: build
 
@@ -14,6 +20,12 @@ test: fmtcheck
 
 testacc: fmtcheck
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+
+goimports: tools
+	@echo "Fixing imports in all Go files..."
+	@find . -name '*.go' -print0 \
+	| xargs -0 -P "$(PARALLEL)" -I {} ./scripts/goimport-file.sh {}
+	@echo "Done. Processed with up to $(PARALLEL) parallel jobs."
 
 # Test a specific resource with debug logs
 # Usage: make test-resource-debug RESOURCE=alicloud_vpc TESTCASE=basic LOGLEVEL=TRACE LOGFILE=vpc-test.log

@@ -2,10 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"strings"
-
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 // TODO: There is an api bug that it always return some cidr blocks whatever accelerator_id whether correct

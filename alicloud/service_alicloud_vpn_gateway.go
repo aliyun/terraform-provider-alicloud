@@ -1,12 +1,10 @@
 package alicloud
 
 import (
-	"time"
-
-	"strings"
-
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"

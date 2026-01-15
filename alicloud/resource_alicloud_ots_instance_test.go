@@ -2,17 +2,15 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
-	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
-
 	"log"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"

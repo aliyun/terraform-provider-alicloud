@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"

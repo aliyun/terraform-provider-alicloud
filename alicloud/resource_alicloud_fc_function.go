@@ -4,16 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"strings"
+	"time"
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudFCFunction() *schema.Resource {

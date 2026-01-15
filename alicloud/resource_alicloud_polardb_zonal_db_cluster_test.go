@@ -3,10 +3,11 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"strings"
 	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func init() {

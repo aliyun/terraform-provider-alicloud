@@ -3,11 +3,9 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"testing"
-
-	"time"
-
 	"strings"
+	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"

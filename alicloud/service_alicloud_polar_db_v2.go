@@ -3,13 +3,12 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/blues/jsonata-go"
 	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )

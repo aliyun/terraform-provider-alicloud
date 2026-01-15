@@ -10,11 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
-	"gopkg.in/yaml.v2"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"gopkg.in/yaml.v2"
 )
 
 // validateCIDRNetworkAddress ensures that the string value is a valid CIDR that

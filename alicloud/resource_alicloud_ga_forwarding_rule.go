@@ -2,12 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/alibabacloud-go/tea/tea"
 	"log"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"

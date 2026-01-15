@@ -5,9 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/json"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"k8s.io/apimachinery/pkg/util/json"
 )
 
 func TestAccAlicloudEmrV2ClustersDataSource(t *testing.T) {

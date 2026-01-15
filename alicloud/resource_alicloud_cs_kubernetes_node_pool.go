@@ -10,13 +10,12 @@ import (
 	"strings"
 	"time"
 
-	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
-	"github.com/denverdino/aliyungo/cs"
-
 	"github.com/PaesslerAG/jsonpath"
+	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )

@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"testing"
-
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"

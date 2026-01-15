@@ -1,20 +1,16 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/alibabacloud-go/tea/tea"
-
-	sls "github.com/aliyun/aliyun-log-go-sdk"
-
-	"fmt"
-
-	"log"
-	"runtime"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"

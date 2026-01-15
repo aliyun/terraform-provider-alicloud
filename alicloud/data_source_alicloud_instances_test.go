@@ -1,12 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
-	"fmt"
 )
 
 func TestAccAliCloudECSInstancesDataSourceBasic(t *testing.T) {

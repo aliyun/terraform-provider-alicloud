@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"

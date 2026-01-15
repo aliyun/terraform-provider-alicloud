@@ -5,10 +5,9 @@ import (
 	"log"
 	"strings"
 	"testing"
-
-	"github.com/PaesslerAG/jsonpath"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"

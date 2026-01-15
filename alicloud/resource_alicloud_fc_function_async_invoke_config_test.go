@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
 	"time"
 
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
