@@ -252,6 +252,7 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 						"cc_effect": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: StringInSlice([]string{"service", "rule"}, false),
 						},
 						"throttle_threhold": {
@@ -263,6 +264,10 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: StringInSlice([]string{"qps", "ratio"}, false),
+						},
+						"auto_update": {
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 						"cc_status": {
 							Type:         schema.TypeInt,
@@ -305,10 +310,55 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 							Optional:     true,
 							ValidateFunc: IntInSlice([]int{0, 1}),
 						},
+						"waf_base_config": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"rule_type": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringInSlice([]string{"system", "custom"}, false),
+									},
+									"rule_detail": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"rule_id": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"rule_action": {
+													Type:         schema.TypeString,
+													Optional:     true,
+													ValidateFunc: StringInSlice([]string{"block", "monitor"}, false),
+												},
+												"rule_status": {
+													Type:         schema.TypeInt,
+													Optional:     true,
+													ValidateFunc: IntInSlice([]int{0, 1}),
+												},
+											},
+										},
+									},
+									"rule_batch_operation_config": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringInSlice([]string{"default", "all_on", "all_off", "all_block", "all_monitor"}, false),
+									},
+								},
+							},
+						},
 						"protocol": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: StringInSlice([]string{"https", "http"}, false),
+						},
+						"codec_list": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 					},
 				},
@@ -323,7 +373,7 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ip_blacklist", "custom_acl", "whitelist", "region_block", "cc", "tamperproof", "dlp", "spike_throttle", "account_identifier"}, false),
+				ValidateFunc: StringInSlice([]string{"ip_blacklist", "custom_acl", "whitelist", "region_block", "cc", "tamperproof", "dlp", "spike_throttle", "account_identifier", "waf_base", "waf_codec"}, false),
 			},
 			"defense_type": {
 				Type:         schema.TypeString,
@@ -383,12 +433,12 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 	}
 	request["RegionId"] = client.RegionId
 
-	dataList := make(map[string]interface{})
+	rulesDataList := make(map[string]interface{})
 
 	if v, ok := d.GetOk("config"); ok {
 		mode1, _ := jsonpath.Get("$[0].mode", v)
 		if mode1 != nil && mode1 != "" {
-			dataList["mode"] = mode1
+			rulesDataList["mode"] = mode1
 		}
 	}
 
@@ -433,69 +483,65 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 		}
 
 		if len(ratelimit) > 0 {
-			dataList["ratelimit"] = ratelimit
+			rulesDataList["ratelimit"] = ratelimit
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		grayStatus1, _ := jsonpath.Get("$[0].gray_status", v)
 		if grayStatus1 != nil && grayStatus1 != "" {
-			dataList["grayStatus"] = grayStatus1
+			rulesDataList["grayStatus"] = grayStatus1
 		}
 	}
 
 	if v := d.Get("config"); !IsNil(v) {
 		timeConfig := make(map[string]interface{})
-		if v, ok := d.GetOk("config"); ok {
-			localData, err := jsonpath.Get("$[0].time_config[0].time_periods", v)
-			if err != nil {
-				localData = make([]interface{}, 0)
-			}
-			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(localData) {
-				dataLoopTmp := make(map[string]interface{})
-				if dataLoop != nil {
-					dataLoopTmp = dataLoop.(map[string]interface{})
-				}
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["start"] = dataLoopTmp["start"]
-				dataLoopMap["end"] = dataLoopTmp["end"]
-				localMaps = append(localMaps, dataLoopMap)
-			}
-			timeConfig["timePeriods"] = localMaps
+		localData, err := jsonpath.Get("$[0].time_config[0].time_periods", v)
+		if err != nil {
+			localData = make([]interface{}, 0)
 		}
+		localMaps := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(localData) {
+			dataLoopTmp := make(map[string]interface{})
+			if dataLoop != nil {
+				dataLoopTmp = dataLoop.(map[string]interface{})
+			}
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["start"] = dataLoopTmp["start"]
+			dataLoopMap["end"] = dataLoopTmp["end"]
+			localMaps = append(localMaps, dataLoopMap)
+		}
+		timeConfig["timePeriods"] = localMaps
 
 		timeZone1, _ := jsonpath.Get("$[0].time_config[0].time_zone", d.Get("config"))
 		if timeZone1 != nil && timeZone1 != "" {
 			timeConfig["timeZone"] = timeZone1
 		}
-		if v, ok := d.GetOk("config"); ok {
-			localData1, err := jsonpath.Get("$[0].time_config[0].week_time_periods", v)
-			if err != nil {
-				localData1 = make([]interface{}, 0)
-			}
-			localMaps1 := make([]interface{}, 0)
-			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
-				dataLoop1Tmp := make(map[string]interface{})
-				if dataLoop1 != nil {
-					dataLoop1Tmp = dataLoop1.(map[string]interface{})
-				}
-				dataLoop1Map := make(map[string]interface{})
-				localMaps2 := make([]interface{}, 0)
-				localData2 := dataLoop1Tmp["day_periods"]
-				for _, dataLoop2 := range convertToInterfaceArray(localData2) {
-					dataLoop2Tmp := dataLoop2.(map[string]interface{})
-					dataLoop2Map := make(map[string]interface{})
-					dataLoop2Map["start"] = dataLoop2Tmp["start"]
-					dataLoop2Map["end"] = dataLoop2Tmp["end"]
-					localMaps2 = append(localMaps2, dataLoop2Map)
-				}
-				dataLoop1Map["dayPeriods"] = localMaps2
-				dataLoop1Map["day"] = dataLoop1Tmp["day"]
-				localMaps1 = append(localMaps1, dataLoop1Map)
-			}
-			timeConfig["weekTimePeriods"] = localMaps1
+		localData1, err := jsonpath.Get("$[0].time_config[0].week_time_periods", v)
+		if err != nil {
+			localData1 = make([]interface{}, 0)
 		}
+		localMaps1 := make([]interface{}, 0)
+		for _, dataLoop1 := range convertToInterfaceArray(localData1) {
+			dataLoop1Tmp := make(map[string]interface{})
+			if dataLoop1 != nil {
+				dataLoop1Tmp = dataLoop1.(map[string]interface{})
+			}
+			dataLoop1Map := make(map[string]interface{})
+			localMaps2 := make([]interface{}, 0)
+			localData2 := dataLoop1Tmp["day_periods"]
+			for _, dataLoop2 := range convertToInterfaceArray(localData2) {
+				dataLoop2Tmp := dataLoop2.(map[string]interface{})
+				dataLoop2Map := make(map[string]interface{})
+				dataLoop2Map["start"] = dataLoop2Tmp["start"]
+				dataLoop2Map["end"] = dataLoop2Tmp["end"]
+				localMaps2 = append(localMaps2, dataLoop2Map)
+			}
+			dataLoop1Map["dayPeriods"] = localMaps2
+			dataLoop1Map["day"] = dataLoop1Tmp["day"]
+			localMaps1 = append(localMaps1, dataLoop1Map)
+		}
+		timeConfig["weekTimePeriods"] = localMaps1
 
 		timeScope1, _ := jsonpath.Get("$[0].time_config[0].time_scope", d.Get("config"))
 		if timeScope1 != nil && timeScope1 != "" {
@@ -503,8 +549,39 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 		}
 
 		if len(timeConfig) > 0 {
-			dataList["timeConfig"] = timeConfig
+			rulesDataList["timeConfig"] = timeConfig
 		}
+	}
+
+	if v := d.Get("config"); !IsNil(v) {
+		localData3, err := jsonpath.Get("$[0].waf_base_config", v)
+		if err != nil {
+			localData3 = make([]interface{}, 0)
+		}
+		localMaps3 := make([]interface{}, 0)
+		for _, dataLoop3 := range convertToInterfaceArray(localData3) {
+			dataLoop3Tmp := make(map[string]interface{})
+			if dataLoop3 != nil {
+				dataLoop3Tmp = dataLoop3.(map[string]interface{})
+			}
+			dataLoop3Map := make(map[string]interface{})
+			dataLoop3Map["ruleBatchOperationConfig"] = dataLoop3Tmp["rule_batch_operation_config"]
+			localMaps4 := make([]interface{}, 0)
+			localData4 := dataLoop3Tmp["rule_detail"]
+			for _, dataLoop4 := range convertToInterfaceArray(localData4) {
+				dataLoop4Tmp := dataLoop4.(map[string]interface{})
+				dataLoop4Map := make(map[string]interface{})
+				dataLoop4Map["ruleId"] = dataLoop4Tmp["rule_id"]
+				dataLoop4Map["ruleStatus"] = dataLoop4Tmp["rule_status"]
+				dataLoop4Map["ruleAction"] = dataLoop4Tmp["rule_action"]
+				localMaps4 = append(localMaps4, dataLoop4Map)
+			}
+			dataLoop3Map["ruleDetail"] = localMaps4
+			dataLoop3Map["ruleType"] = dataLoop3Tmp["rule_type"]
+			localMaps3 = append(localMaps3, dataLoop3Map)
+		}
+		rulesDataList["config"] = localMaps3
+
 	}
 
 	if v := d.Get("config"); !IsNil(v) {
@@ -523,171 +600,181 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 		}
 
 		if len(grayConfig) > 0 {
-			dataList["grayConfig"] = grayConfig
+			rulesDataList["grayConfig"] = grayConfig
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		ccEffect, _ := jsonpath.Get("$[0].cc_effect", v)
 		if ccEffect != nil && ccEffect != "" {
-			dataList["effect"] = ccEffect
+			rulesDataList["effect"] = ccEffect
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		throttleType, _ := jsonpath.Get("$[0].throttle_type", v)
 		if throttleType != nil && throttleType != "" {
-			dataList["type"] = throttleType
+			rulesDataList["type"] = throttleType
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		throttleThrehold, _ := jsonpath.Get("$[0].throttle_threhold", v)
 		if throttleThrehold != nil && throttleThrehold != "" && throttleThrehold.(int) > 0 {
-			dataList["threshold"] = throttleThrehold
+			rulesDataList["threshold"] = throttleThrehold
 		}
 	}
 
 	if v, ok := d.GetOk("rule_name"); ok {
-		dataList["name"] = v
+		rulesDataList["name"] = v
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		url1, _ := jsonpath.Get("$[0].url", v)
 		if url1 != nil && url1 != "" {
-			dataList["url"] = url1
+			rulesDataList["url"] = url1
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		protocol1, _ := jsonpath.Get("$[0].protocol", v)
 		if protocol1 != nil && protocol1 != "" {
-			dataList["protocol"] = protocol1
+			rulesDataList["protocol"] = protocol1
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		ua1, _ := jsonpath.Get("$[0].ua", v)
 		if ua1 != nil && ua1 != "" {
-			dataList["ua"] = ua1
+			rulesDataList["ua"] = ua1
+		}
+	}
+
+	if v, ok := d.GetOk("config"); ok {
+		autoUpdate1, _ := jsonpath.Get("$[0].auto_update", v)
+		if autoUpdate1 != nil && autoUpdate1 != "" {
+			rulesDataList["autoUpdate"] = autoUpdate1
 		}
 	}
 
 	if v := d.Get("config"); !IsNil(v) {
-		if v, ok := d.GetOk("config"); ok {
-			localData3, err := jsonpath.Get("$[0].account_identifiers", v)
-			if err != nil {
-				localData3 = make([]interface{}, 0)
-			}
-			localMaps3 := make([]interface{}, 0)
-			for _, dataLoop3 := range convertToInterfaceArray(localData3) {
-				dataLoop3Tmp := make(map[string]interface{})
-				if dataLoop3 != nil {
-					dataLoop3Tmp = dataLoop3.(map[string]interface{})
-				}
-				dataLoop3Map := make(map[string]interface{})
-				dataLoop3Map["decodeType"] = dataLoop3Tmp["decode_type"]
-				dataLoop3Map["position"] = dataLoop3Tmp["position"]
-				dataLoop3Map["priority"] = dataLoop3Tmp["priority"]
-				dataLoop3Map["subKey"] = dataLoop3Tmp["sub_key"]
-				dataLoop3Map["key"] = dataLoop3Tmp["key"]
-				localMaps3 = append(localMaps3, dataLoop3Map)
-			}
-			dataList["accountIdentifiers"] = localMaps3
+		localData5, err := jsonpath.Get("$[0].account_identifiers", v)
+		if err != nil {
+			localData5 = make([]interface{}, 0)
 		}
+		localMaps5 := make([]interface{}, 0)
+		for _, dataLoop5 := range convertToInterfaceArray(localData5) {
+			dataLoop5Tmp := make(map[string]interface{})
+			if dataLoop5 != nil {
+				dataLoop5Tmp = dataLoop5.(map[string]interface{})
+			}
+			dataLoop5Map := make(map[string]interface{})
+			dataLoop5Map["decodeType"] = dataLoop5Tmp["decode_type"]
+			dataLoop5Map["position"] = dataLoop5Tmp["position"]
+			dataLoop5Map["priority"] = dataLoop5Tmp["priority"]
+			dataLoop5Map["subKey"] = dataLoop5Tmp["sub_key"]
+			dataLoop5Map["key"] = dataLoop5Tmp["key"]
+			localMaps5 = append(localMaps5, dataLoop5Map)
+		}
+		rulesDataList["accountIdentifiers"] = localMaps5
 
 	}
 
 	if v, ok := d.GetOk("config"); ok {
-		ruleAction, _ := jsonpath.Get("$[0].rule_action", v)
-		if ruleAction != nil && ruleAction != "" {
-			dataList["action"] = ruleAction
+		ruleAction2, _ := jsonpath.Get("$[0].rule_action", v)
+		if ruleAction2 != nil && ruleAction2 != "" {
+			rulesDataList["action"] = ruleAction2
 		}
 	}
 
 	if v, ok := d.GetOk("defense_origin"); ok {
-		dataList["origin"] = v
+		rulesDataList["origin"] = v
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		ccStatus1, _ := jsonpath.Get("$[0].cc_status", v)
 		if ccStatus1 != nil && ccStatus1 != "" {
-			dataList["ccStatus"] = ccStatus1
+			rulesDataList["ccStatus"] = ccStatus1
+		}
+	}
+
+	if v, ok := d.GetOk("config"); ok {
+		codecList1, _ := jsonpath.Get("$[0].codec_list", v)
+		if codecList1 != nil && codecList1 != "" {
+			rulesDataList["codecList"] = convertToInterfaceArray(codecList1)
 		}
 	}
 
 	if v := d.Get("config"); !IsNil(v) {
-		if v, ok := d.GetOk("config"); ok {
-			localData4, err := jsonpath.Get("$[0].conditions", v)
-			if err != nil {
-				localData4 = make([]interface{}, 0)
-			}
-			localMaps4 := make([]interface{}, 0)
-			for _, dataLoop4 := range convertToInterfaceArray(localData4) {
-				dataLoop4Tmp := make(map[string]interface{})
-				if dataLoop4 != nil {
-					dataLoop4Tmp = dataLoop4.(map[string]interface{})
-				}
-				dataLoop4Map := make(map[string]interface{})
-				dataLoop4Map["values"] = dataLoop4Tmp["values"]
-				dataLoop4Map["opValue"] = dataLoop4Tmp["op_value"]
-				dataLoop4Map["subKey"] = dataLoop4Tmp["sub_key"]
-				dataLoop4Map["key"] = dataLoop4Tmp["key"]
-				localMaps4 = append(localMaps4, dataLoop4Map)
-			}
-			dataList["conditions"] = localMaps4
+		localData6, err := jsonpath.Get("$[0].conditions", v)
+		if err != nil {
+			localData6 = make([]interface{}, 0)
 		}
+		localMaps6 := make([]interface{}, 0)
+		for _, dataLoop6 := range convertToInterfaceArray(localData6) {
+			dataLoop6Tmp := make(map[string]interface{})
+			if dataLoop6 != nil {
+				dataLoop6Tmp = dataLoop6.(map[string]interface{})
+			}
+			dataLoop6Map := make(map[string]interface{})
+			dataLoop6Map["values"] = dataLoop6Tmp["values"]
+			dataLoop6Map["opValue"] = dataLoop6Tmp["op_value"]
+			dataLoop6Map["subKey"] = dataLoop6Tmp["sub_key"]
+			dataLoop6Map["key"] = dataLoop6Tmp["key"]
+			localMaps6 = append(localMaps6, dataLoop6Map)
+		}
+		rulesDataList["conditions"] = localMaps6
 
 	}
 
 	if v, ok := d.GetOkExists("rule_status"); ok {
-		dataList["status"] = v
+		rulesDataList["status"] = v
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		bypassRegularTypes, _ := jsonpath.Get("$[0].bypass_regular_types", v)
 		if bypassRegularTypes != nil && bypassRegularTypes != "" {
-			dataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
+			rulesDataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		bypassTags, _ := jsonpath.Get("$[0].bypass_tags", v)
 		if bypassTags != nil && bypassTags != "" {
-			dataList["tags"] = convertToInterfaceArray(bypassTags)
+			rulesDataList["tags"] = convertToInterfaceArray(bypassTags)
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		abroadRegions, _ := jsonpath.Get("$[0].abroad_regions", v)
 		if abroadRegions != nil && abroadRegions != "" {
-			dataList["abroadRegionList"] = abroadRegions
+			rulesDataList["abroadRegionList"] = abroadRegions
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		remoteAddr1, _ := jsonpath.Get("$[0].remote_addr", v)
 		if remoteAddr1 != nil && remoteAddr1 != "" {
-			dataList["remoteAddr"] = convertToInterfaceArray(remoteAddr1)
+			rulesDataList["remoteAddr"] = convertToInterfaceArray(remoteAddr1)
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		bypassRegularRules, _ := jsonpath.Get("$[0].bypass_regular_rules", v)
 		if bypassRegularRules != nil && bypassRegularRules != "" {
-			dataList["regularRules"] = convertToInterfaceArray(bypassRegularRules)
+			rulesDataList["regularRules"] = convertToInterfaceArray(bypassRegularRules)
 		}
 	}
 
 	if v, ok := d.GetOk("config"); ok {
 		cnRegions, _ := jsonpath.Get("$[0].cn_regions", v)
 		if cnRegions != nil && cnRegions != "" {
-			dataList["cnRegionList"] = cnRegions
+			rulesDataList["cnRegionList"] = cnRegions
 		}
 	}
 
 	RulesMap := make([]map[string]interface{}, 0)
-	RulesMap = append(RulesMap, dataList)
+	RulesMap = append(RulesMap, rulesDataList)
 	request["Rules"], _ = convertListMapToJsonString(RulesMap)
 
 	if v, ok := d.GetOk("resource"); ok {
@@ -751,6 +838,7 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 	}
 	if len(configRaw) > 0 {
 		configMap["abroad_regions"] = configRaw["abroadRegionList"]
+		configMap["auto_update"] = formatBool(configRaw["autoUpdate"])
 		configMap["cc_effect"] = configRaw["effect"]
 		configMap["cc_status"] = formatInt(configRaw["ccStatus"])
 		configMap["cn_regions"] = configRaw["cnRegionList"]
@@ -797,6 +885,12 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 		}
 
 		configMap["bypass_tags"] = tagsRaw
+		codecListRaw := make([]interface{}, 0)
+		if configRaw["codecList"] != nil {
+			codecListRaw = convertToInterfaceArray(configRaw["codecList"])
+		}
+
+		configMap["codec_list"] = codecListRaw
 		conditionsRaw := configRaw["conditions"]
 		conditionsMaps := make([]map[string]interface{}, 0)
 		if conditionsRaw != nil {
@@ -913,6 +1007,33 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 			timeConfigMaps = append(timeConfigMaps, timeConfigMap)
 		}
 		configMap["time_config"] = timeConfigMaps
+		config1Raw := configRaw["config"]
+		wafBaseConfigMaps := make([]map[string]interface{}, 0)
+		if config1Raw != nil {
+			for _, configChildRaw := range convertToInterfaceArray(config1Raw) {
+				wafBaseConfigMap := make(map[string]interface{})
+				configChildRaw := configChildRaw.(map[string]interface{})
+				wafBaseConfigMap["rule_batch_operation_config"] = configChildRaw["ruleBatchOperationConfig"]
+				wafBaseConfigMap["rule_type"] = configChildRaw["ruleType"]
+
+				ruleDetailRaw := configChildRaw["ruleDetail"]
+				ruleDetailMaps := make([]map[string]interface{}, 0)
+				if ruleDetailRaw != nil {
+					for _, ruleDetailChildRaw := range convertToInterfaceArray(ruleDetailRaw) {
+						ruleDetailMap := make(map[string]interface{})
+						ruleDetailChildRaw := ruleDetailChildRaw.(map[string]interface{})
+						ruleDetailMap["rule_action"] = ruleDetailChildRaw["ruleAction"]
+						ruleDetailMap["rule_id"] = ruleDetailChildRaw["ruleId"]
+						ruleDetailMap["rule_status"] = formatInt(ruleDetailChildRaw["ruleStatus"])
+
+						ruleDetailMaps = append(ruleDetailMaps, ruleDetailMap)
+					}
+				}
+				wafBaseConfigMap["rule_detail"] = ruleDetailMaps
+				wafBaseConfigMaps = append(wafBaseConfigMaps, wafBaseConfigMap)
+			}
+		}
+		configMap["waf_base_config"] = wafBaseConfigMaps
 		configMaps = append(configMaps, configMap)
 	}
 	if err := d.Set("config", configMaps); err != nil {
@@ -941,14 +1062,14 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	request["InstanceId"] = parts[0]
 	request["DefenseType"] = parts[1]
 	request["RegionId"] = client.RegionId
-	dataList := make(map[string]interface{})
+	rulesDataList := make(map[string]interface{})
 
 	if d.HasChange("config") {
 		update = true
 	}
 	mode1, _ := jsonpath.Get("$[0].mode", d.Get("config"))
-	if mode1 != nil && (d.HasChange("config.0.mode") || mode1 != "") {
-		dataList["mode"] = mode1
+	if mode1 != nil && mode1 != "" {
+		rulesDataList["mode"] = mode1
 	}
 
 	if d.HasChange("config") {
@@ -957,20 +1078,20 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if v := d.Get("config"); v != nil {
 		ratelimit := make(map[string]interface{})
 		interval1, _ := jsonpath.Get("$[0].rate_limit[0].interval", d.Get("config"))
-		if interval1 != nil && (d.HasChange("config.0.rate_limit.0.interval") || interval1 != "") && interval1.(int) > 0 {
+		if interval1 != nil && interval1 != "" && interval1.(int) > 0 {
 			ratelimit["interval"] = interval1
 		}
 		status := make(map[string]interface{})
 		count1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].count", d.Get("config"))
-		if count1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.count") || count1 != "") && count1.(int) > 0 {
+		if count1 != nil && count1 != "" && count1.(int) > 0 {
 			status["count"] = count1
 		}
 		code1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].code", d.Get("config"))
-		if code1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.code") || code1 != "") {
+		if code1 != nil && code1 != "" {
 			status["code"] = code1
 		}
 		ratio1, _ := jsonpath.Get("$[0].rate_limit[0].status[0].ratio", d.Get("config"))
-		if ratio1 != nil && (d.HasChange("config.0.rate_limit.0.status.0.ratio") || ratio1 != "") && ratio1.(int) > 0 {
+		if ratio1 != nil && ratio1 != "" && ratio1.(int) > 0 {
 			status["ratio"] = ratio1
 		}
 
@@ -978,24 +1099,24 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 			ratelimit["status"] = status
 		}
 		target1, _ := jsonpath.Get("$[0].rate_limit[0].target", d.Get("config"))
-		if target1 != nil && (d.HasChange("config.0.rate_limit.0.target") || target1 != "") {
+		if target1 != nil && target1 != "" {
 			ratelimit["target"] = target1
 		}
 		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", d.Get("config"))
-		if threshold1 != nil && (d.HasChange("config.0.rate_limit.0.threshold") || threshold1 != "") {
+		if threshold1 != nil && threshold1 != "" {
 			ratelimit["threshold"] = threshold1
 		}
 		ttl1, _ := jsonpath.Get("$[0].rate_limit[0].ttl", d.Get("config"))
-		if ttl1 != nil && (d.HasChange("config.0.rate_limit.0.ttl") || ttl1 != "") && ttl1.(int) > 0 {
+		if ttl1 != nil && ttl1 != "" && ttl1.(int) > 0 {
 			ratelimit["ttl"] = ttl1
 		}
 		subKey1, _ := jsonpath.Get("$[0].rate_limit[0].sub_key", d.Get("config"))
-		if subKey1 != nil && (d.HasChange("config.0.rate_limit.0.sub_key") || subKey1 != "") {
+		if subKey1 != nil && subKey1 != "" {
 			ratelimit["subKey"] = subKey1
 		}
 
 		if len(ratelimit) > 0 {
-			dataList["ratelimit"] = ratelimit
+			rulesDataList["ratelimit"] = ratelimit
 		}
 	}
 
@@ -1003,8 +1124,8 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 		update = true
 	}
 	grayStatus1, _ := jsonpath.Get("$[0].gray_status", d.Get("config"))
-	if grayStatus1 != nil && (d.HasChange("config.0.gray_status") || grayStatus1 != "") {
-		dataList["grayStatus"] = grayStatus1
+	if grayStatus1 != nil && grayStatus1 != "" {
+		rulesDataList["grayStatus"] = grayStatus1
 	}
 
 	if d.HasChange("config") {
@@ -1012,65 +1133,95 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	}
 	if v := d.Get("config"); v != nil {
 		timeConfig := make(map[string]interface{})
-		if v, ok := d.GetOk("config"); ok {
-			localData, err := jsonpath.Get("$[0].time_config[0].time_periods", v)
-			if err != nil {
-				localData = make([]interface{}, 0)
-			}
-			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(localData) {
-				dataLoopTmp := make(map[string]interface{})
-				if dataLoop != nil {
-					dataLoopTmp = dataLoop.(map[string]interface{})
-				}
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["start"] = dataLoopTmp["start"]
-				dataLoopMap["end"] = dataLoopTmp["end"]
-				localMaps = append(localMaps, dataLoopMap)
-			}
-			timeConfig["timePeriods"] = localMaps
+		localData, err := jsonpath.Get("$[0].time_config[0].time_periods", v)
+		if err != nil {
+			localData = make([]interface{}, 0)
 		}
+		localMaps := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(localData) {
+			dataLoopTmp := make(map[string]interface{})
+			if dataLoop != nil {
+				dataLoopTmp = dataLoop.(map[string]interface{})
+			}
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["start"] = dataLoopTmp["start"]
+			dataLoopMap["end"] = dataLoopTmp["end"]
+			localMaps = append(localMaps, dataLoopMap)
+		}
+		timeConfig["timePeriods"] = localMaps
 
 		timeZone1, _ := jsonpath.Get("$[0].time_config[0].time_zone", d.Get("config"))
-		if timeZone1 != nil && (d.HasChange("config.0.time_config.0.time_zone") || timeZone1 != "") {
+		if timeZone1 != nil && timeZone1 != "" {
 			timeConfig["timeZone"] = timeZone1
 		}
-		if v, ok := d.GetOk("config"); ok {
-			localData1, err := jsonpath.Get("$[0].time_config[0].week_time_periods", v)
-			if err != nil {
-				localData1 = make([]interface{}, 0)
-			}
-			localMaps1 := make([]interface{}, 0)
-			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
-				dataLoop1Tmp := make(map[string]interface{})
-				if dataLoop1 != nil {
-					dataLoop1Tmp = dataLoop1.(map[string]interface{})
-				}
-				dataLoop1Map := make(map[string]interface{})
-				localMaps2 := make([]interface{}, 0)
-				localData2 := dataLoop1Tmp["day_periods"]
-				for _, dataLoop2 := range convertToInterfaceArray(localData2) {
-					dataLoop2Tmp := dataLoop2.(map[string]interface{})
-					dataLoop2Map := make(map[string]interface{})
-					dataLoop2Map["start"] = dataLoop2Tmp["start"]
-					dataLoop2Map["end"] = dataLoop2Tmp["end"]
-					localMaps2 = append(localMaps2, dataLoop2Map)
-				}
-				dataLoop1Map["dayPeriods"] = localMaps2
-				dataLoop1Map["day"] = dataLoop1Tmp["day"]
-				localMaps1 = append(localMaps1, dataLoop1Map)
-			}
-			timeConfig["weekTimePeriods"] = localMaps1
+		localData1, err := jsonpath.Get("$[0].time_config[0].week_time_periods", v)
+		if err != nil {
+			localData1 = make([]interface{}, 0)
 		}
+		localMaps1 := make([]interface{}, 0)
+		for _, dataLoop1 := range convertToInterfaceArray(localData1) {
+			dataLoop1Tmp := make(map[string]interface{})
+			if dataLoop1 != nil {
+				dataLoop1Tmp = dataLoop1.(map[string]interface{})
+			}
+			dataLoop1Map := make(map[string]interface{})
+			localMaps2 := make([]interface{}, 0)
+			localData2 := dataLoop1Tmp["day_periods"]
+			for _, dataLoop2 := range convertToInterfaceArray(localData2) {
+				dataLoop2Tmp := dataLoop2.(map[string]interface{})
+				dataLoop2Map := make(map[string]interface{})
+				dataLoop2Map["start"] = dataLoop2Tmp["start"]
+				dataLoop2Map["end"] = dataLoop2Tmp["end"]
+				localMaps2 = append(localMaps2, dataLoop2Map)
+			}
+			dataLoop1Map["dayPeriods"] = localMaps2
+			dataLoop1Map["day"] = dataLoop1Tmp["day"]
+			localMaps1 = append(localMaps1, dataLoop1Map)
+		}
+		timeConfig["weekTimePeriods"] = localMaps1
 
 		timeScope1, _ := jsonpath.Get("$[0].time_config[0].time_scope", d.Get("config"))
-		if timeScope1 != nil && (d.HasChange("config.0.time_config.0.time_scope") || timeScope1 != "") {
+		if timeScope1 != nil && timeScope1 != "" {
 			timeConfig["timeScope"] = timeScope1
 		}
 
 		if len(timeConfig) > 0 {
-			dataList["timeConfig"] = timeConfig
+			rulesDataList["timeConfig"] = timeConfig
 		}
+	}
+
+	if d.HasChange("config") {
+		update = true
+	}
+	if v := d.Get("config"); v != nil {
+		localData3, err := jsonpath.Get("$[0].waf_base_config", v)
+		if err != nil {
+			localData3 = make([]interface{}, 0)
+		}
+		localMaps3 := make([]interface{}, 0)
+		for _, dataLoop3 := range convertToInterfaceArray(localData3) {
+			dataLoop3Tmp := make(map[string]interface{})
+			if dataLoop3 != nil {
+				dataLoop3Tmp = dataLoop3.(map[string]interface{})
+			}
+			dataLoop3Map := make(map[string]interface{})
+			dataLoop3Map["ruleBatchOperationConfig"] = dataLoop3Tmp["rule_batch_operation_config"]
+			localMaps4 := make([]interface{}, 0)
+			localData4 := dataLoop3Tmp["rule_detail"]
+			for _, dataLoop4 := range convertToInterfaceArray(localData4) {
+				dataLoop4Tmp := dataLoop4.(map[string]interface{})
+				dataLoop4Map := make(map[string]interface{})
+				dataLoop4Map["ruleId"] = dataLoop4Tmp["rule_id"]
+				dataLoop4Map["ruleStatus"] = dataLoop4Tmp["rule_status"]
+				dataLoop4Map["ruleAction"] = dataLoop4Tmp["rule_action"]
+				localMaps4 = append(localMaps4, dataLoop4Map)
+			}
+			dataLoop3Map["ruleDetail"] = localMaps4
+			dataLoop3Map["ruleType"] = dataLoop3Tmp["rule_type"]
+			localMaps3 = append(localMaps3, dataLoop3Map)
+		}
+		rulesDataList["config"] = localMaps3
+
 	}
 
 	if d.HasChange("config") {
@@ -1079,20 +1230,20 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	if v := d.Get("config"); v != nil {
 		grayConfig := make(map[string]interface{})
 		grayTarget1, _ := jsonpath.Get("$[0].gray_config[0].gray_target", d.Get("config"))
-		if grayTarget1 != nil && (d.HasChange("config.0.gray_config.0.gray_target") || grayTarget1 != "") {
+		if grayTarget1 != nil && grayTarget1 != "" {
 			grayConfig["grayTarget"] = grayTarget1
 		}
 		graySubKey1, _ := jsonpath.Get("$[0].gray_config[0].gray_sub_key", d.Get("config"))
-		if graySubKey1 != nil && (d.HasChange("config.0.gray_config.0.gray_sub_key") || graySubKey1 != "") {
+		if graySubKey1 != nil && graySubKey1 != "" {
 			grayConfig["graySubKey"] = graySubKey1
 		}
 		grayRate1, _ := jsonpath.Get("$[0].gray_config[0].gray_rate", d.Get("config"))
-		if grayRate1 != nil && (d.HasChange("config.0.gray_config.0.gray_rate") || grayRate1 != "") && grayRate1.(int) > 0 {
+		if grayRate1 != nil && grayRate1 != "" && grayRate1.(int) > 0 {
 			grayConfig["grayRate"] = grayRate1
 		}
 
 		if len(grayConfig) > 0 {
-			dataList["grayConfig"] = grayConfig
+			rulesDataList["grayConfig"] = grayConfig
 		}
 	}
 
@@ -1100,125 +1251,137 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 		update = true
 	}
 	ccEffect, _ := jsonpath.Get("$[0].cc_effect", d.Get("config"))
-	if ccEffect != nil && (d.HasChange("config.0.cc_effect") || ccEffect != "") {
-		dataList["effect"] = ccEffect
+	if ccEffect != nil && ccEffect != "" {
+		rulesDataList["effect"] = ccEffect
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	throttleType, _ := jsonpath.Get("$[0].throttle_type", d.Get("config"))
-	if throttleType != nil && (d.HasChange("config.0.throttle_type") || throttleType != "") {
-		dataList["type"] = throttleType
+	if throttleType != nil && throttleType != "" {
+		rulesDataList["type"] = throttleType
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	throttleThrehold, _ := jsonpath.Get("$[0].throttle_threhold", d.Get("config"))
-	if throttleThrehold != nil && (d.HasChange("config.0.throttle_threhold") || throttleThrehold != "") && throttleThrehold.(int) > 0 {
-		dataList["threshold"] = throttleThrehold
+	if throttleThrehold != nil && throttleThrehold != "" && throttleThrehold.(int) > 0 {
+		rulesDataList["threshold"] = throttleThrehold
 	}
 
 	if d.HasChange("rule_name") {
 		update = true
 	}
 	if v, ok := d.GetOk("rule_name"); ok {
-		dataList["name"] = v
+		rulesDataList["name"] = v
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	url1, _ := jsonpath.Get("$[0].url", d.Get("config"))
-	if url1 != nil && (d.HasChange("config.0.url") || url1 != "") {
-		dataList["url"] = url1
+	if url1 != nil && url1 != "" {
+		rulesDataList["url"] = url1
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	protocol1, _ := jsonpath.Get("$[0].protocol", d.Get("config"))
-	if protocol1 != nil && (d.HasChange("config.0.protocol") || protocol1 != "") {
-		dataList["protocol"] = protocol1
+	if protocol1 != nil && protocol1 != "" {
+		rulesDataList["protocol"] = protocol1
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	ua1, _ := jsonpath.Get("$[0].ua", d.Get("config"))
-	if ua1 != nil && (d.HasChange("config.0.ua") || ua1 != "") {
-		dataList["ua"] = ua1
+	if ua1 != nil && ua1 != "" {
+		rulesDataList["ua"] = ua1
+	}
+
+	if d.HasChange("config") {
+		update = true
+	}
+	autoUpdate1, _ := jsonpath.Get("$[0].auto_update", d.Get("config"))
+	if autoUpdate1 != nil && autoUpdate1 != "" {
+		rulesDataList["autoUpdate"] = autoUpdate1
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	if v := d.Get("config"); v != nil {
-		if v, ok := d.GetOk("config"); ok {
-			localData3, err := jsonpath.Get("$[0].account_identifiers", v)
-			if err != nil {
-				localData3 = make([]interface{}, 0)
-			}
-			localMaps3 := make([]interface{}, 0)
-			for _, dataLoop3 := range convertToInterfaceArray(localData3) {
-				dataLoop3Tmp := make(map[string]interface{})
-				if dataLoop3 != nil {
-					dataLoop3Tmp = dataLoop3.(map[string]interface{})
-				}
-				dataLoop3Map := make(map[string]interface{})
-				dataLoop3Map["decodeType"] = dataLoop3Tmp["decode_type"]
-				dataLoop3Map["position"] = dataLoop3Tmp["position"]
-				dataLoop3Map["priority"] = dataLoop3Tmp["priority"]
-				dataLoop3Map["subKey"] = dataLoop3Tmp["sub_key"]
-				dataLoop3Map["key"] = dataLoop3Tmp["key"]
-				localMaps3 = append(localMaps3, dataLoop3Map)
-			}
-			dataList["accountIdentifiers"] = localMaps3
+		localData5, err := jsonpath.Get("$[0].account_identifiers", v)
+		if err != nil {
+			localData5 = make([]interface{}, 0)
 		}
+		localMaps5 := make([]interface{}, 0)
+		for _, dataLoop5 := range convertToInterfaceArray(localData5) {
+			dataLoop5Tmp := make(map[string]interface{})
+			if dataLoop5 != nil {
+				dataLoop5Tmp = dataLoop5.(map[string]interface{})
+			}
+			dataLoop5Map := make(map[string]interface{})
+			dataLoop5Map["decodeType"] = dataLoop5Tmp["decode_type"]
+			dataLoop5Map["position"] = dataLoop5Tmp["position"]
+			dataLoop5Map["priority"] = dataLoop5Tmp["priority"]
+			dataLoop5Map["subKey"] = dataLoop5Tmp["sub_key"]
+			dataLoop5Map["key"] = dataLoop5Tmp["key"]
+			localMaps5 = append(localMaps5, dataLoop5Map)
+		}
+		rulesDataList["accountIdentifiers"] = localMaps5
 
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
-	ruleAction, _ := jsonpath.Get("$[0].rule_action", d.Get("config"))
-	if ruleAction != nil && (d.HasChange("config.0.rule_action") || ruleAction != "") {
-		dataList["action"] = ruleAction
+	ruleAction2, _ := jsonpath.Get("$[0].rule_action", d.Get("config"))
+	if ruleAction2 != nil && ruleAction2 != "" {
+		rulesDataList["action"] = ruleAction2
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	ccStatus1, _ := jsonpath.Get("$[0].cc_status", d.Get("config"))
-	if ccStatus1 != nil && (d.HasChange("config.0.cc_status") || ccStatus1 != "") {
-		dataList["ccStatus"] = ccStatus1
+	if ccStatus1 != nil && ccStatus1 != "" {
+		rulesDataList["ccStatus"] = ccStatus1
+	}
+
+	if d.HasChange("config") {
+		update = true
+	}
+	codecList1, _ := jsonpath.Get("$[0].codec_list", d.Get("config"))
+	if codecList1 != nil && codecList1 != "" {
+		rulesDataList["codecList"] = convertToInterfaceArray(codecList1)
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	if v := d.Get("config"); v != nil {
-		if v, ok := d.GetOk("config"); ok {
-			localData4, err := jsonpath.Get("$[0].conditions", v)
-			if err != nil {
-				localData4 = make([]interface{}, 0)
-			}
-			localMaps4 := make([]interface{}, 0)
-			for _, dataLoop4 := range convertToInterfaceArray(localData4) {
-				dataLoop4Tmp := make(map[string]interface{})
-				if dataLoop4 != nil {
-					dataLoop4Tmp = dataLoop4.(map[string]interface{})
-				}
-				dataLoop4Map := make(map[string]interface{})
-				dataLoop4Map["values"] = dataLoop4Tmp["values"]
-				dataLoop4Map["opValue"] = dataLoop4Tmp["op_value"]
-				dataLoop4Map["subKey"] = dataLoop4Tmp["sub_key"]
-				dataLoop4Map["key"] = dataLoop4Tmp["key"]
-				localMaps4 = append(localMaps4, dataLoop4Map)
-			}
-			dataList["conditions"] = localMaps4
+		localData6, err := jsonpath.Get("$[0].conditions", v)
+		if err != nil {
+			localData6 = make([]interface{}, 0)
 		}
+		localMaps6 := make([]interface{}, 0)
+		for _, dataLoop6 := range convertToInterfaceArray(localData6) {
+			dataLoop6Tmp := make(map[string]interface{})
+			if dataLoop6 != nil {
+				dataLoop6Tmp = dataLoop6.(map[string]interface{})
+			}
+			dataLoop6Map := make(map[string]interface{})
+			dataLoop6Map["values"] = dataLoop6Tmp["values"]
+			dataLoop6Map["opValue"] = dataLoop6Tmp["op_value"]
+			dataLoop6Map["subKey"] = dataLoop6Tmp["sub_key"]
+			dataLoop6Map["key"] = dataLoop6Tmp["key"]
+			localMaps6 = append(localMaps6, dataLoop6Map)
+		}
+		rulesDataList["conditions"] = localMaps6
 
 	}
 
@@ -1226,60 +1389,60 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 		update = true
 	}
 	bypassRegularTypes, _ := jsonpath.Get("$[0].bypass_regular_types", d.Get("config"))
-	if bypassRegularTypes != nil && (d.HasChange("config.0.bypass_regular_types") || bypassRegularTypes != "") {
-		dataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
+	if bypassRegularTypes != nil && bypassRegularTypes != "" {
+		rulesDataList["regularTypes"] = convertToInterfaceArray(bypassRegularTypes)
 	}
 
-	dataList["id"] = parts[2]
+	rulesDataList["id"] = parts[2]
 	if d.HasChange("rule_id") {
 		update = true
 	}
-	if v, ok := d.GetOk("rule_id"); ok {
-		dataList["id"] = v
+	if v, ok := d.GetOkExists("rule_id"); ok {
+		rulesDataList["id"] = v
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	bypassTags, _ := jsonpath.Get("$[0].bypass_tags", d.Get("config"))
-	if bypassTags != nil && (d.HasChange("config.0.bypass_tags") || bypassTags != "") {
-		dataList["tags"] = convertToInterfaceArray(bypassTags)
+	if bypassTags != nil && bypassTags != "" {
+		rulesDataList["tags"] = convertToInterfaceArray(bypassTags)
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	abroadRegions, _ := jsonpath.Get("$[0].abroad_regions", d.Get("config"))
-	if abroadRegions != nil && (d.HasChange("config.0.abroad_regions") || abroadRegions != "") {
-		dataList["abroadRegionList"] = abroadRegions
+	if abroadRegions != nil && abroadRegions != "" {
+		rulesDataList["abroadRegionList"] = abroadRegions
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	remoteAddr1, _ := jsonpath.Get("$[0].remote_addr", d.Get("config"))
-	if remoteAddr1 != nil && (d.HasChange("config.0.remote_addr") || remoteAddr1 != "") {
-		dataList["remoteAddr"] = convertToInterfaceArray(remoteAddr1)
+	if remoteAddr1 != nil && remoteAddr1 != "" {
+		rulesDataList["remoteAddr"] = convertToInterfaceArray(remoteAddr1)
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	bypassRegularRules, _ := jsonpath.Get("$[0].bypass_regular_rules", d.Get("config"))
-	if bypassRegularRules != nil && (d.HasChange("config.0.bypass_regular_rules") || bypassRegularRules != "") {
-		dataList["regularRules"] = convertToInterfaceArray(bypassRegularRules)
+	if bypassRegularRules != nil && bypassRegularRules != "" {
+		rulesDataList["regularRules"] = convertToInterfaceArray(bypassRegularRules)
 	}
 
 	if d.HasChange("config") {
 		update = true
 	}
 	cnRegions, _ := jsonpath.Get("$[0].cn_regions", d.Get("config"))
-	if cnRegions != nil && (d.HasChange("config.0.cn_regions") || cnRegions != "") {
-		dataList["cnRegionList"] = cnRegions
+	if cnRegions != nil && cnRegions != "" {
+		rulesDataList["cnRegionList"] = cnRegions
 	}
 
 	RulesMap := make([]map[string]interface{}, 0)
-	RulesMap = append(RulesMap, dataList)
+	RulesMap = append(RulesMap, rulesDataList)
 	request["Rules"], _ = convertListMapToJsonString(RulesMap)
 
 	request["InstanceId"] = parts[0]

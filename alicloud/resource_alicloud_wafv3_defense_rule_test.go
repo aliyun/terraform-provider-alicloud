@@ -10,6 +10,366 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// Case  DefenseRule_resource_wafcodec 12317
+func TestAccAliCloudWafv3DefenseRule_basic12317(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_wafv3_defense_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseRuleMap12317)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeWafv3DefenseRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccwafv3%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DefenseRuleBasicDependence12317)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"defense_origin": "custom",
+					"instance_id":    "${data.alicloud_wafv3_instances.default.ids.0}",
+					"config": []map[string]interface{}{
+						{
+							"codec_list": []string{
+								"oct", "js-unicode", "space-zip", "hex", "comment", "url"},
+						},
+					},
+					"resource":      "${alicloud_wafv3_domain.defaultICMRhk.domain_id}",
+					"defense_scene": "waf_codec",
+					"defense_type":  "resource",
+					"rule_status":   "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"defense_origin": "custom",
+						"instance_id":    CHECKSET,
+						"resource":       CHECKSET,
+						"defense_scene":  "waf_codec",
+						"defense_type":   "resource",
+						"rule_status":    "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": []map[string]interface{}{
+						{
+							"codec_list": []string{
+								"oct", "utf7", "base64", "space-zip", "gzip", "url", "java", "form", "xml", "multipart", "js-unicode", "json", "php", "hex", "comment", "html", "graphql"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": []map[string]interface{}{
+						{
+							"codec_list": []string{
+								"oct", "multipart", "js-unicode", "space-zip", "php", "comment", "hex", "url"},
+						},
+					},
+					"rule_status": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_status": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudWafv3DefenseRuleMap12317 = map[string]string{
+	"rule_id": CHECKSET,
+}
+
+func AlicloudWafv3DefenseRuleBasicDependence12317(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-hangzhou"
+}
+
+data "alicloud_wafv3_instances" "default" {
+}
+
+resource "alicloud_wafv3_domain" "defaultICMRhk" {
+  redirect {
+    loadbalance = "iphash"
+    backends    = ["39.98.217.197"]
+    connect_timeout = 5
+    read_timeout    = 120
+    write_timeout   = 120
+  }
+  domain      = "testfromtftest01.wafqax.top"
+  access_type = "share"
+  instance_id = data.alicloud_wafv3_instances.default.ids.0
+  listen {
+    http_ports = ["80"]
+  }
+}
+
+
+`, name)
+}
+
+// Case  DefenseRule_新版基础防护 12303
+func TestAccAliCloudWafv3DefenseRule_basic12303(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_wafv3_defense_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseRuleMap12303)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeWafv3DefenseRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccwafv3%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DefenseRuleBasicDependence12303)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"defense_origin": "custom",
+					"instance_id":    "${data.alicloud_wafv3_instances.default.ids.0}",
+					"config": []map[string]interface{}{
+						{
+							"auto_update": "true",
+							"waf_base_config": []map[string]interface{}{
+								{
+									"rule_type": "system",
+									"rule_detail": []map[string]interface{}{
+										{
+											"rule_id":     "110002",
+											"rule_status": "0",
+											"rule_action": "block",
+										},
+										{
+											"rule_id":     "110006",
+											"rule_status": "1",
+											"rule_action": "monitor",
+										},
+										{
+											"rule_id":     "110008",
+											"rule_status": "0",
+											"rule_action": "monitor",
+										},
+									},
+								},
+							},
+						},
+					},
+					"defense_scene": "waf_base",
+					"rule_status":   "1",
+					"defense_type":  "template",
+					"template_id":   "${alicloud_wafv3_defense_template.defaultD3YVaa.defense_template_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"defense_origin": "custom",
+						"instance_id":    CHECKSET,
+						"defense_scene":  "waf_base",
+						"rule_status":    "1",
+						"defense_type":   "template",
+						"template_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": []map[string]interface{}{
+						{
+							"auto_update": "false",
+							"waf_base_config": []map[string]interface{}{
+								{
+									"rule_type": "system",
+									"rule_detail": []map[string]interface{}{
+										{
+											"rule_id":     "110008",
+											"rule_status": "1",
+											"rule_action": "block",
+										},
+										{
+											"rule_id":     "110006",
+											"rule_status": "0",
+											"rule_action": "monitor",
+										},
+										{
+											"rule_id":     "110010",
+											"rule_status": "1",
+											"rule_action": "block",
+										},
+									},
+								},
+								{
+									"rule_type":                   "custom",
+									"rule_batch_operation_config": "all_on",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": []map[string]interface{}{
+						{
+							"auto_update": "false",
+							"waf_base_config": []map[string]interface{}{
+								{
+									"rule_type": "system",
+									"rule_detail": []map[string]interface{}{
+										{
+											"rule_id":     "110011",
+											"rule_status": "0",
+											"rule_action": "monitor",
+										},
+										{
+											"rule_id":     "110010",
+											"rule_status": "0",
+											"rule_action": "block",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": []map[string]interface{}{
+						{
+							"auto_update": "false",
+							"waf_base_config": []map[string]interface{}{
+								{
+									"rule_type":                   "custom",
+									"rule_batch_operation_config": "all_on",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": []map[string]interface{}{
+						{
+							"auto_update": "false",
+							"waf_base_config": []map[string]interface{}{
+								{
+									"rule_type":                   "system",
+									"rule_batch_operation_config": "all_on",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudWafv3DefenseRuleMap12303 = map[string]string{
+	"rule_id": CHECKSET,
+}
+
+func AlicloudWafv3DefenseRuleBasicDependence12303(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-hangzhou"
+}
+
+data "alicloud_wafv3_instances" "default" {
+}
+
+resource "alicloud_wafv3_domain" "defaultgkyil3" {
+  redirect {
+    loadbalance = "iphash"
+    backends    = ["39.98.217.197"]
+    connect_timeout = 5
+    read_timeout    = 120
+    write_timeout   = 120
+  }
+  domain      = "testfromtftest01.wafqax.top"
+  access_type = "share"
+  instance_id = data.alicloud_wafv3_instances.default.ids.0
+  listen {
+    http_ports = ["80"]
+  }
+}
+
+resource "alicloud_wafv3_defense_template" "defaultD3YVaa" {
+  status                = "1"
+  description           = "testTF"
+  instance_id           = data.alicloud_wafv3_instances.default.ids.0
+  defense_template_name = "testBaseRule"
+  template_origin       = "custom"
+  defense_scene         = "waf_base"
+  template_type         = "user_custom"
+  resources             = ["${alicloud_wafv3_domain.defaultgkyil3.domain_id}"]
+}
+
+
+`, name)
+}
+
 // Case DefenseRule__longitude_header_test 12001
 func TestAccAliCloudWafv3DefenseRule_longitude12001(t *testing.T) {
 	var v map[string]interface{}

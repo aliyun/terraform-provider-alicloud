@@ -87,7 +87,7 @@ resource "alicloud_wafv3_defense_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `config` - (Required, List) Rule configuration content, in JSON format, constructed with a series of parameters.
+* `config` - (Required, Set) Rule configuration content, in JSON format, constructed with a series of parameters.
 
 -> **NOTE:**  Depending on the specified **protection rule type**(`DefenseScene`), the specific parameters vary. For more information, see **Protection Rule Parameter Description**.
  See [`config`](#config) below.
@@ -97,6 +97,7 @@ The following arguments are supported:
 * `defense_scene` - (Required, ForceNew) The WAF protection scenario to be created.
 
 When the protection rule type `DefenseType` is set to `template`, the value is as follows:
+  - `waf_base`: (Available since v1.269.0) indicates new web core protection.
   - `ip_blacklist`: indicates the IP address blacklist.
   - `custom_acl`: indicates a custom rule.
   - `whitelist`: indicates the whitelist.
@@ -108,6 +109,7 @@ When the protection rule type `DefenseType` is set to `template`, the value is a
 
 When the protection rule type `DefenseType` is set to `resource`, the value is as follows:
   - `account_identifier`: indicates account extraction.
+  - `waf_codec`: (Available since v1.269.0) indicates decode setting.
 * `defense_type` - (Required, ForceNew) The protection rule type. Value:
   - `template` (default): indicates the template protection rule.
   - `resource`: indicates the rule of the protected object dimension.
@@ -126,9 +128,12 @@ When the protection rule type `DefenseType` is set to `resource`, the value is a
 
 The config supports the following:
 * `abroad_regions` - (Optional) The regions outside China from which you want to block requests. Separate multiple region codes with commas (,). You can call the DescribeIpAbroadCountryInfos operation to query the countries and regions outside China that can be blocked.
-* `account_identifiers` - (Optional, Set) The policies for account extraction. Up to five policies are supported. Each policy is a JSON string. For more information, see accountIdentifiers description. See [`account_identifiers`](#config-account_identifiers) below.
-* `bypass_regular_rules` - (Optional, Set) The list of regular rule IDs that are not detected. The value is in the ["XX1", "XX2",...] format. This parameter is required only when the module to which the whitelist applies is set to specific regular rules in basic protection (BypassTags is set to regular_rule).
-* `bypass_regular_types` - (Optional, Set) The regular rule type is not detected. This parameter is configured only when the whitelist module is configured as the Web application regular type (the value of the BypassTags parameter is regular_type). Value:
+* `account_identifiers` - (Optional, List) The policies for account extraction. Up to five policies are supported. Each policy is a JSON string. For more information, see accountIdentifiers description. See [`account_identifiers`](#config-account_identifiers) below.
+* `auto_update` - (Optional, Available since v1.269.0) Whether the new Web core protection rules are automatically updated. Values:
+  - `true`: indicates that automatic update is enabled.
+  - `false`: Automatic updates are turned off.
+* `bypass_regular_rules` - (Optional, List) The list of regular rule IDs that are not detected. The value is in the ["XX1", "XX2",...] format. This parameter is required only when the module to which the whitelist applies is set to specific regular rules in basic protection (BypassTags is set to regular_rule).
+* `bypass_regular_types` - (Optional, List) The regular rule type is not detected. This parameter is configured only when the whitelist module is configured as the Web application regular type (the value of the BypassTags parameter is regular_type). Value:
   - sqli: Indicates SQL injection.
   - xss: Indicates cross-site scripting (XSS).
   - cmdi: Indicates OS command injection.
@@ -152,7 +157,7 @@ The config supports the following:
   - csrf: indicates cross-site request forgery.
   - crlf: indicates CRLF.
   - other: indicates other.
-* `bypass_tags` - (Optional, Set) The modules to which the whitelist applies. The value is in the ["XX1", "XX2",...] format. Valid values:
+* `bypass_tags` - (Optional, List) The modules to which the whitelist applies. The value is in the ["XX1", "XX2",...] format. Valid values:
   - waf: indicates all modules.
   - customrule: indicates custom rules.
   - blacklist: indicates IP blacklist.
@@ -174,8 +179,26 @@ The config supports the following:
   - 0: indicates that the speed limit is off.
   - 1: Indicates that the speed limit is on.
 * `cn_regions` - (Optional) The regions in China from which you want to block requests. If you specify "CN", requests from the Chinese mainland (excluding Hong Kong, Macao, and Taiwan) are blocked. Separate multiple regions with commas (,). For more information about region codes, see Description of region codes in China.
-* `conditions` - (Optional, Set) The traffic characteristics of ACL, which are described in JSON format. You can enter up to five matching conditions. For specific configuration information, see detailed configuration of conditions. See [`conditions`](#config-conditions) below.
-* `gray_config` - (Optional, List, Available since v1.262.0) The canary release configuration for the rule. The value is a JSON. This parameter is required only when you set `GrayStatus` to 1. See [`gray_config`](#config-gray_config) below.
+* `codec_list` - (Optional, List, Available since v1.269.0) The type to enable decoding. Value:
+  - `url`: URL decoding (enabled by default and cannot be canceled).
+  - **js-unicode**: indicates Unicode decoding (enabled by default and cannot be canceled).
+  - `oct`: indicates OCT decoding (enabled by default and cannot be canceled).
+  - `hex`: indicates Hex decoding (enabled by default and cannot be canceled).
+  - `comment`: indicates comment decoding (enabled by default and cannot be canceled).
+  - **space-zip**: indicates space decoding (enabled by default and cannot be canceled).
+  - `multipart`: indicates Multipart parsing.
+  - `json`: indicates JSON parsing.
+  - `xml`: indicates XML parsing.
+  - `php`: indicates PHP serialization decoding.
+  - `html`: indicates HTML entity decoding.
+  - `utf7`: indicates UTF-7 decoding.
+  - `base64`: indicates Base64 decoding.
+  - `form`: indicates Form parsing.
+  - `gzip`: indicates Gzip decompression.
+  - `java`: indicates Java deserialization decoding.
+  - `graphql`: indicates GraphQL parsing.
+* `conditions` - (Optional, List) The traffic characteristics of ACL, which are described in JSON format. You can enter up to five matching conditions. For specific configuration information, see detailed configuration of conditions. See [`conditions`](#config-conditions) below.
+* `gray_config` - (Optional, Set, Available since v1.262.0) The canary release configuration for the rule. The value is a JSON. This parameter is required only when you set `GrayStatus` to 1. See [`gray_config`](#config-gray_config) below.
 * `gray_status` - (Optional, Int, Available since v1.262.0) Specifies whether to enable canary release for the rule. Valid values:
   - 0 (default): disables canary release.
   - 1: enables canary release.
@@ -183,8 +206,8 @@ The config supports the following:
   - 0 (default): indicates normal protection.
   - 1: indicates emergency protection.
 * `protocol` - (Optional) The protocol type of the cached page address. Valid values: http, https.
-* `rate_limit` - (Optional, List) The detailed speed limit configuration, which is described in the JSON string format. This information is configured only when CcStatus is set to 1. For specific configuration information, see detailed configuration of Ratelimit. See [`rate_limit`](#config-rate_limit) below.
-* `remote_addr` - (Optional, Set) The IP addresses that you want to add to the blacklist. Specify the value of this parameter in the ["ip1","ip2",...] format.
+* `rate_limit` - (Optional, Set) The detailed speed limit configuration, which is described in the JSON string format. This information is configured only when CcStatus is set to 1. For specific configuration information, see detailed configuration of Ratelimit. See [`rate_limit`](#config-rate_limit) below.
+* `remote_addr` - (Optional, List) The IP addresses that you want to add to the blacklist. Specify the value of this parameter in the ["ip1","ip2",...] format.
 * `rule_action` - (Optional) Protection rule action. Value:
   - block: Indicates an intercept.
   - monitor: indicates observation.
@@ -201,9 +224,10 @@ The config supports the following:
 * `throttle_type` - (Optional) The throttling method. Valid values:
   - qps: indicates throttling based on queries per second (QPS).
   - ratio (default): indicates throttling based on percentage.
-* `time_config` - (Optional, Computed, List, Available since v1.262.0) The scheduled rule configuration. The value is a JSON.  See [`time_config`](#config-time_config) below.
+* `time_config` - (Optional, Computed, Set, Available since v1.262.0) The scheduled rule configuration. The value is a JSON.  See [`time_config`](#config-time_config) below.
 * `ua` - (Optional) The User-Agent string that is allowed for access to the address.
 * `url` - (Optional) The address of the cached page.
+* `waf_base_config` - (Optional, List, Available since v1.269.0) The configuration of the Web core protection rules to be modified. See [`waf_base_config`](#config-waf_base_config) below.
 
 ### `config-account_identifiers`
 
@@ -278,7 +302,7 @@ The config-gray_config supports the following:
 The config-rate_limit supports the following:
 * `interval` - (Optional, Int) The statistical period, in seconds. This parameter specifies the period during which access counts are collected, and works with the Threshold parameter.
 Valid values: 1 to 1800 seconds.
-* `status` - (Optional, List) Response code frequency setting. The description is in the JSON string format. See [`status`](#config-rate_limit-status) below.
+* `status` - (Optional, Set) Response code frequency setting. The description is in the JSON string format. See [`status`](#config-rate_limit-status) below.
 * `sub_key` - (Optional) The characteristics of the statistical object. When the Target parameter is set to cookie, header, or queryarg, you must specify the corresponding information in the Subkey parameter.
 * `target` - (Optional) The type of the statistical object. Valid values:
   - remote_addr (default): indicates IP.
@@ -293,13 +317,36 @@ Valid values: 60 to 86400.
 ### `config-time_config`
 
 The config-time_config supports the following:
-* `time_periods` - (Optional, Set) The time period during which the rule is effective. This parameter is required when you set the `TimeScope` parameter to `period`. A maximum of five time periods can be set. See [`time_periods`](#config-time_config-time_periods) below.
+* `time_periods` - (Optional, List) The time period during which the rule is effective. This parameter is required when you set the `TimeScope` parameter to `period`. A maximum of five time periods can be set. See [`time_periods`](#config-time_config-time_periods) below.
 * `time_scope` - (Optional, Computed) The effective period of the rule. Valid values:
   - `permanent` (default): The rule is always effective.
   - `period`: The rule is effective within a specific time period.
   - `cycle`: The rule is effective periodically.
 * `time_zone` - (Optional, Computed, Int) The time zone in which the rule is effective. The default value is `8`. The value must be in the range of - 12 to 12. `0` indicates UTC. `8` indicates UTC+8. **-8** indicates UTC-8.
-* `week_time_periods` - (Optional, Set) The periodic time period during which the rule is effective. This parameter is required when you set the `TimeScope` parameter to `cycle`. A maximum of five time periods can be set. See [`week_time_periods`](#config-time_config-week_time_periods) below.
+* `week_time_periods` - (Optional, List) The periodic time period during which the rule is effective. This parameter is required when you set the `TimeScope` parameter to `cycle`. A maximum of five time periods can be set. See [`week_time_periods`](#config-time_config-week_time_periods) below.
+
+### `config-waf_base_config`
+
+The config-waf_base_config supports the following:
+* `rule_batch_operation_config` - (Optional, Available since v1.269.0) The batch operation on rules. If this parameter is not empty, the RuleDetail parameter must be empty. Valid values:
+  - `default`: restores the default settings.
+  - `all_on`: enables all rules.
+  - `all_off`: disables all rules.
+  - `all_block`: sets the action of all rules to Block.
+  - `all_monitor`: sets the action of all rules to Monitor.
+* `rule_detail` - (Optional, List, Available since v1.269.0) The configuration of the Web core protection rules to be modified. See [`rule_detail`](#config-waf_base_config-rule_detail) below.
+* `rule_type` - (Optional, Available since v1.269.0) The type of the rule. Valid values:
+  - `system`: a system rule for basic protection.
+  - `custom`: a custom regular expression rule for basic protection.
+
+### `config-waf_base_config-rule_detail`
+
+The config-waf_base_config-rule_detail supports the following:
+* `rule_action` - (Optional, Available since v1.269.0) Web core protection rule action. Valid values:
+  - `block`: blocks requests.
+  - `monitor`: places requests in observation mode.
+* `rule_id` - (Optional, Available since v1.269.0) The ID of the core Web protection rule.
+* `rule_status` - (Optional, Int, Available since v1.269.0) The status of Web core protection rules.
 
 ### `config-time_config-time_periods`
 
@@ -311,7 +358,7 @@ The config-time_config-time_periods supports the following:
 
 The config-time_config-week_time_periods supports the following:
 * `day` - (Optional) The time period of each day when the rule is effective. It includes the start time start and end time end. You can specify multiple time periods.
-* `day_periods` - (Optional, Set) The time period of each day when the rule is effective.  See [`day_periods`](#config-time_config-week_time_periods-day_periods) below.
+* `day_periods` - (Optional, List) The time period of each day when the rule is effective.  See [`day_periods`](#config-time_config-week_time_periods-day_periods) below.
 
 ### `config-time_config-week_time_periods-day_periods`
 
@@ -329,7 +376,7 @@ The config-rate_limit-status supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<defense_type>:<rule_id>`.
+* `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<defense_type>:<rule_id>`.
 * `rule_id` - The protection rule ID.
 
 ## Timeouts
