@@ -53,13 +53,11 @@ resource "alicloud_wafv3_defense_template" "default" {
 
 The following arguments are supported:
 * `defense_scene` - (Required, ForceNew) The WAF protection scenario to be created. Valid values:
-  - `waf_group`: indicates basic protection.
-  - `antiscan`: indicates scan protection.
+  - `waf_base`: (Available since v1.269.0) indicates new web core protection.
   - `ip_blacklist`: indicates the IP address blacklist.
   - `custom_acl`: indicates a custom rule.
   - `whitelist`: indicates the whitelist.
   - `region_block`: indicates that the region is blocked.
-  - `custom_response`: indicates a custom response.
   - `cc`: indicates CC protection.
   - `tamperproof`: Indicates that the web page is tamper-proof.
   - `dlp`: Indicates information leakage protection.
