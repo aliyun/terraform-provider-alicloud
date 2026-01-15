@@ -1,11 +1,12 @@
 package connectivity
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUnitCommonLoadEndpointFromEnv(t *testing.T) {

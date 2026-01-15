@@ -1,12 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-
-	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 

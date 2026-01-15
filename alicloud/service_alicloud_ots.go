@@ -3,23 +3,18 @@ package alicloud
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
-
-	util "github.com/alibabacloud-go/tea-utils/service"
-
-	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
-
-	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
-
 	"time"
 
-	"fmt"
-
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
+	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )

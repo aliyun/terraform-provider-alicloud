@@ -2,11 +2,10 @@ package alicloud
 
 import (
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
-
-	"net/http"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"

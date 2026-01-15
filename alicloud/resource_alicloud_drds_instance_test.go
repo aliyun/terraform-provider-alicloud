@@ -2,17 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
 	"log"
 	"strings"
+	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func init() {

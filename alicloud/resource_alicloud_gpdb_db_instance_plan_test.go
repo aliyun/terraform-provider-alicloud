@@ -2,6 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"reflect"
+	"testing"
+	"time"
+
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -11,11 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/stretchr/testify/assert"
-	"log"
-	"os"
-	"reflect"
-	"testing"
-	"time"
 )
 
 func TestAccAliCloudGpdbDbInstancePlan_basic0(t *testing.T) {

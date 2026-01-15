@@ -3,12 +3,13 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
+
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"regexp"
 )
 
 func dataSourceAliCloudEssScalingRules() *schema.Resource {

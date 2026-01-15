@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"regexp"
-	"strings"
-	"time"
 )
 
 func resourceAlicloudPolarDBPrimaryEndpoint() *schema.Resource {

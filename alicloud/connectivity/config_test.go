@@ -3,10 +3,11 @@ package connectivity
 import (
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestUnitCommonRefreshAuthCredential_ECS_Role(t *testing.T) {

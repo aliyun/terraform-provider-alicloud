@@ -2,10 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
 	"log"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"

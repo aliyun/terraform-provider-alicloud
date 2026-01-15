@@ -6,13 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	log "github.com/sirupsen/logrus"
 )
 
 func resourceAliCloudBastionhostInstance() *schema.Resource {

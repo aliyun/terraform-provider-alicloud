@@ -6,11 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tidwall/sjson"
-
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/tidwall/sjson"
 )
 
 type OssServiceV2 struct {

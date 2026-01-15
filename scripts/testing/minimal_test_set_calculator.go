@@ -56,14 +56,14 @@ type MinimalTestSetResult struct {
 }
 
 type TestCaseDetail struct {
-	CoveredAttributes   []string `json:"covered_attributes"`
-	ModifiedAttributes  []string `json:"modified_attributes"`
-	HasImportTest       bool     `json:"has_import_test"`
-	Steps               int      `json:"steps"`
-	LineNumber          int      `json:"line_number"`
-	IsSelected          bool     `json:"is_selected"`
-	NewAttributesCovered    int  `json:"new_attributes_covered"`
-	NewModificationsCovered int  `json:"new_modifications_covered"`
+	CoveredAttributes       []string `json:"covered_attributes"`
+	ModifiedAttributes      []string `json:"modified_attributes"`
+	HasImportTest           bool     `json:"has_import_test"`
+	Steps                   int      `json:"steps"`
+	LineNumber              int      `json:"line_number"`
+	IsSelected              bool     `json:"is_selected"`
+	NewAttributesCovered    int      `json:"new_attributes_covered"`
+	NewModificationsCovered int      `json:"new_modifications_covered"`
 }
 
 func main() {

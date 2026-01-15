@@ -8,12 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	fc_open20210406 "github.com/alibabacloud-go/fc-open-20210406/v2/client"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 func CreateClient(accessKey, secretKey, accountId, fcRegion string) (_result *fc_open20210406.Client, _err error) {

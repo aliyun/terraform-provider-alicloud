@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"

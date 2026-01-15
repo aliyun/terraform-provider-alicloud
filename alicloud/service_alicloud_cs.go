@@ -1,25 +1,20 @@
 package alicloud
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-
-	"github.com/alibabacloud-go/tea/tea"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
-	"encoding/base64"
-
-	"encoding/json"
-
 	"github.com/alibabacloud-go/cs-20151215/v5/client"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type CsService struct {
