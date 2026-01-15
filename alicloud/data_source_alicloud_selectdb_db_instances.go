@@ -182,9 +182,9 @@ func dataSourceAlicloudSelectDBDbInstancesRead(d *schema.ResourceData, meta inte
 	for _, object := range objects {
 		// summary
 		mapping := map[string]interface{}{
-			"db_instance_id":      object["DBInstanceId"],
-			"engine":              object["Engine"],
-			"engine_version":      object["EngineVersion"],
+			"db_instance_id": object["DBInstanceId"],
+			"engine":         object["Engine"],
+			"engine_version": object["EngineVersion"],
 
 			"db_instance_description": object["Description"],
 			"status":                  object["Status"],

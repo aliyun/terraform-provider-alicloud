@@ -298,12 +298,12 @@ func TestUnitCommonCookieTimeoutDiffSuppressFunc(t *testing.T) {
 func TestUnitCommonPrivateDnsTypeDiffSuppressFunc(t *testing.T) {
 	// Test for primary_dns when private_dns_type is PrivateZone
 	testCases := []struct {
-		name            string
-		privateDnsType  string
-		oldValue        string
-		newValue        string
-		expected        bool
-		description     string
+		name           string
+		privateDnsType string
+		oldValue       string
+		newValue       string
+		expected       bool
+		description    string
 	}{
 		{
 			name:           "PrivateZone_With_Empty_New",
@@ -373,12 +373,12 @@ func TestUnitCommonPrivateDnsTypeDiffSuppressFunc(t *testing.T) {
 func TestUnitCommonStandbyDnsTypeDiffSuppressFunc(t *testing.T) {
 	// Test for standby_dns when private_dns_type is PrivateZone
 	testCases := []struct {
-		name            string
-		privateDnsType  string
-		oldValue        string
-		newValue        string
-		expected        bool
-		description     string
+		name           string
+		privateDnsType string
+		oldValue       string
+		newValue       string
+		expected       bool
+		description    string
 	}{
 		{
 			name:           "PrivateZone_With_Empty_New",
@@ -541,13 +541,13 @@ func TestUnitCommonEstablishedTimeoutDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonHttpHttpsTcpDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name             string
-		protocol         string
-		healthCheck      string
-		healthCheckType  string
-		listenerForward  string
-		expected         bool
-		description      string
+		name            string
+		protocol        string
+		healthCheck     string
+		healthCheckType string
+		listenerForward string
+		expected        bool
+		description     string
 	}{
 		{
 			name:            "HTTP_With_HealthCheck_On",
@@ -668,12 +668,12 @@ func TestUnitCommonDnsValueDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonCsKubernetesMasterPostPaidDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name                      string
-		masterInstanceChargeType  string
-		resourceId                string
-		forceUpdate               bool
-		expected                  bool
-		description               string
+		name                     string
+		masterInstanceChargeType string
+		resourceId               string
+		forceUpdate              bool
+		expected                 bool
+		description              string
 	}{
 		{
 			name:                     "PostPaid_ChargeType",
@@ -718,11 +718,11 @@ func TestUnitCommonCsKubernetesMasterPostPaidDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonEnableBackupLogDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name             string
-		enableBackupLog  bool
-		logBackup        bool
-		expected         bool
-		description      string
+		name            string
+		enableBackupLog bool
+		logBackup       bool
+		expected        bool
+		description     string
 	}{
 		{
 			name:            "BackupLog_Enabled",
@@ -1032,10 +1032,10 @@ func TestUnitCommonElasticsearchEnablePublicDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonElasticsearchEnableKibanaPublicDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name                        string
-		enableKibanaPublicNetwork   bool
-		expected                    bool
-		description                 string
+		name                      string
+		enableKibanaPublicNetwork bool
+		expected                  bool
+		description               string
 	}{
 		{
 			name:                      "Enable_Kibana_Public_True",
@@ -1102,10 +1102,10 @@ func TestUnitCommonPolardbPostPaidDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonElasticsearchEnableKibanaPrivateDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name                         string
-		enableKibanaPrivateNetwork   bool
-		expected                     bool
-		description                  string
+		name                       string
+		enableKibanaPrivateNetwork bool
+		expected                   bool
+		description                string
 	}{
 		{
 			name:                       "Enable_Kibana_Private_True",
@@ -1137,7 +1137,7 @@ func TestUnitCommonElasticsearchEnableKibanaPrivateDiffSuppressFunc(t *testing.T
 
 func TestUnitCommonEcsNotAutoRenewDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name              string
+		name               string
 		instanceChargeType string
 		renewalStatus      string
 		expected           bool
@@ -1271,7 +1271,7 @@ func TestUnitCommonPolardbTDEAndEnabledDiffSuppressFunc(t *testing.T) {
 			oldValue:    "key1",
 			newValue:    "",
 			expected:    false,
-			description:  "TDE enabled with empty new value should not suppress diff",
+			description: "TDE enabled with empty new value should not suppress diff",
 		},
 	}
 
@@ -1291,11 +1291,11 @@ func TestUnitCommonPolardbTDEAndEnabledDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonPolardbPostPaidAndRenewDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name           string
-		payType        string
-		renewalStatus  string
-		expected       bool
-		description    string
+		name          string
+		payType       string
+		renewalStatus string
+		expected      bool
+		description   string
 	}{
 		{
 			name:          "PrePaid_With_AutoRenewal",
@@ -1323,8 +1323,8 @@ func TestUnitCommonPolardbPostPaidAndRenewDiffSuppressFunc(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"pay_type":        {Type: schema.TypeString},
-				"renewal_status":  {Type: schema.TypeString},
+				"pay_type":       {Type: schema.TypeString},
+				"renewal_status": {Type: schema.TypeString},
 			}, map[string]interface{}{
 				"pay_type":       tc.payType,
 				"renewal_status": tc.renewalStatus,
@@ -1387,14 +1387,14 @@ func TestUnitCommonAdbPostPaidDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonEcsSpotStrategyDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name              string
+		name               string
 		instanceChargeType string
 		hasChargeType      bool
 		expected           bool
 		description        string
 	}{
 		{
-			name:              "PostPaid_ChargeType",
+			name:               "PostPaid_ChargeType",
 			instanceChargeType: "PostPaid",
 			hasChargeType:      true,
 			expected:           false,
@@ -1407,7 +1407,7 @@ func TestUnitCommonEcsSpotStrategyDiffSuppressFunc(t *testing.T) {
 			description:   "No charge type should not suppress diff",
 		},
 		{
-			name:              "PrePaid_ChargeType",
+			name:               "PrePaid_ChargeType",
 			instanceChargeType: "PrePaid",
 			hasChargeType:      true,
 			expected:           true,
@@ -1434,28 +1434,28 @@ func TestUnitCommonEcsSpotStrategyDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonEcsSpotPriceLimitDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name              string
+		name               string
 		instanceChargeType string
 		spotStrategy       string
 		expected           bool
 		description        string
 	}{
 		{
-			name:              "PostPaid_With_SpotWithPriceLimit",
+			name:               "PostPaid_With_SpotWithPriceLimit",
 			instanceChargeType: "PostPaid",
 			spotStrategy:       "SpotWithPriceLimit",
 			expected:           false,
 			description:        "PostPaid with SpotWithPriceLimit should not suppress diff",
 		},
 		{
-			name:              "PostPaid_Without_SpotWithPriceLimit",
+			name:               "PostPaid_Without_SpotWithPriceLimit",
 			instanceChargeType: "PostPaid",
 			spotStrategy:       "NoSpot",
 			expected:           true,
 			description:        "PostPaid without SpotWithPriceLimit should suppress diff",
 		},
 		{
-			name:              "PrePaid",
+			name:               "PrePaid",
 			instanceChargeType: "PrePaid",
 			spotStrategy:       "SpotWithPriceLimit",
 			expected:           true,

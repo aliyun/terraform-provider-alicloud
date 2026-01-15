@@ -211,7 +211,7 @@ func resourceAliCloudGaCustomRoutingEndpointGroupDelete(d *schema.ResourceData, 
 		"ClientToken":      buildClientToken("DeleteCustomRoutingEndpointGroups"),
 		"EndpointGroupIds": []string{d.Id()},
 	}
-	
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)

@@ -67,24 +67,32 @@ The following attributes are exported in addition to the arguments listed above:
   * `worker_data_disk_category` - The data disk size of worker node.
   * `worker_data_disk_size` - The data disk category of worker node.
   * `master_nodes` - List of cluster master nodes. It contains several attributes to `Block Nodes`.
+    * `id` - ID of the node.
+    * `name` - Node name.
+    * `private_ip` - The private IP address of node.
   * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
-  * `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
+    * `id` - ID of the node.
+    * `name` - Node name.
+    * `private_ip` - The private IP address of node.
+  * `connections` - Map of kubernetes cluster connection information.
+    * `api_server_internet` - API Server Internet endpoint.
+    * `api_server_intranet` - API Server Intranet endpoint.
+    * `master_public_ip` - Master node SSH IP address.
+    * `service_domain` - Service Access Domain.
   * `node_cidr_mask` - The network mask used on pods for each node.
   * `log_config` - A list of one element containing information about the associated log store. It contains the following attributes:
     * `type` - Type of collecting logs.
     * `project` - Log Service project name.
-  * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-
-### Block Nodes
-
-* `id` - ID of the node.
-* `name` - Node name.
-* `private_ip` - The private IP address of node.
-* `role` - (Deprecated from version 1.9.4)
-
-### Block Connections
-
-* `api_server_internet` - API Server Internet endpoint.
-* `api_server_intranet` - API Server Intranet endpoint.
-* `master_public_ip` - Master node SSH IP address.
-* `service_domain` - Service Access Domain.
+  * `master_instance_charge_type` - Master payment type.
+  * `worker_period` - Worker payment period.
+  * `worker_period_unit` - Worker payment period unit.
+  * `master_auto_renew` - Whether to enable master payment auto-renew
+  * `master_auto_renew_period` - Master payment auto-renew period.
+  * `worker_instance_charge_type` - Worker payment type
+  * `worker_auto_renew` - Whether to enable worker payment auto-renew.
+  * `worker_auto_renew_period` - Worker payment auto-renew period
+  * `service_cidr` - The CIDR block for the service network.
+  * `master_period` - Master payment period.
+  * `master_period_unit` - Master payment period unit.
+  * `pod_cidr` - The CIDR block for the pod network. 
+  * `cluster_network_type` - The cluster network type.
