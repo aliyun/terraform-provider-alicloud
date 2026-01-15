@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudRAMSecurityPreference_basic0(t *testing.T) {
+func TestAccAliCloudRamSecurityPreference_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_security_preference.default"
 	ra := resourceAttrInit(resourceId, AlicloudRAMSecurityPreferenceMap0)
@@ -47,7 +47,6 @@ func TestAccAliCloudRAMSecurityPreference_basic0(t *testing.T) {
 					"allow_user_to_manage_mfa_devices": "true",
 					"login_session_duration":           "7",
 					"login_network_masks":              "42.120.66.0/24",
-					"enforce_mfa_for_login":            "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -56,20 +55,23 @@ func TestAccAliCloudRAMSecurityPreference_basic0(t *testing.T) {
 						"allow_user_to_manage_access_keys": "true",
 						"allow_user_to_manage_mfa_devices": "true",
 						"login_session_duration":           "7",
-						"enforce_mfa_for_login":            "true",
 						"login_network_masks":              "42.120.66.0/24",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"enforce_mfa_for_login":   "false",
 					"mfa_operation_for_login": "independent",
+					"login_network_masks":     REMOVEKEY,
+					"login_session_duration":  REMOVEKEY,
+					"enable_save_mfa_ticket":  REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"enforce_mfa_for_login":   "false",
 						"mfa_operation_for_login": "independent",
+						"login_network_masks":     REMOVEKEY,
+						"login_session_duration":  REMOVEKEY,
+						"enable_save_mfa_ticket":  REMOVEKEY,
 					}),
 				),
 			},
@@ -125,11 +127,13 @@ func TestAccAliCloudRAMSecurityPreference_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"login_network_masks": "10.0.0.0/8",
+					"login_network_masks":    "10.0.0.0/8",
+					"login_session_duration": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"login_network_masks": "10.0.0.0/8",
+						"login_network_masks":    "10.0.0.0/8",
+						"login_session_duration": REMOVEKEY,
 					}),
 				),
 			},
@@ -145,11 +149,15 @@ func TestAccAliCloudRAMSecurityPreference_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"login_network_masks": "",
+					"login_network_masks":           "",
+					"max_idle_days_for_access_keys": "90",
+					"max_idle_days_for_users":       "90",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"login_network_masks": "",
+						"login_network_masks":           "",
+						"max_idle_days_for_access_keys": "90",
+						"max_idle_days_for_users":       "90",
 					}),
 				),
 			},
@@ -160,6 +168,8 @@ func TestAccAliCloudRAMSecurityPreference_basic0(t *testing.T) {
 					"allow_user_to_manage_access_keys": "true",
 					"allow_user_to_manage_mfa_devices": "true",
 					"login_session_duration":           "7",
+					"max_idle_days_for_access_keys":    "180",
+					"max_idle_days_for_users":          "180",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -168,6 +178,8 @@ func TestAccAliCloudRAMSecurityPreference_basic0(t *testing.T) {
 						"allow_user_to_manage_access_keys": "true",
 						"allow_user_to_manage_mfa_devices": "true",
 						"login_session_duration":           "7",
+						"max_idle_days_for_access_keys":    "180",
+						"max_idle_days_for_users":          "180",
 					}),
 				),
 			},
@@ -204,7 +216,6 @@ func TestUnitAlicloudRAMSecurityPreference(t *testing.T) {
 		"allow_user_to_manage_mfa_devices": false,
 		"login_session_duration":           7,
 		"login_network_masks":              "42.120.66.0/24",
-		"enforce_mfa_for_login":            false,
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -335,7 +346,7 @@ func TestUnitAlicloudRAMSecurityPreference(t *testing.T) {
 	})
 	t.Run("UpdateSetSecurityPreferenceAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"enable_save_mfa_ticket", "allow_user_to_change_password", "allow_user_to_manage_access_keys", "allow_user_to_manage_mfa_devices", "login_session_duration", "login_network_masks", "enforce_mfa_for_login"} {
+		for _, key := range []string{"enable_save_mfa_ticket", "allow_user_to_change_password", "allow_user_to_manage_access_keys", "allow_user_to_manage_mfa_devices", "login_session_duration", "login_network_masks"} {
 			switch p["alicloud_ram_security_preference"].Schema[key].Type {
 			case schema.TypeString:
 				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
@@ -367,7 +378,7 @@ func TestUnitAlicloudRAMSecurityPreference(t *testing.T) {
 	})
 	t.Run("UpdateSetSecurityPreferenceNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"enable_save_mfa_ticket", "allow_user_to_change_password", "allow_user_to_manage_access_keys", "allow_user_to_manage_mfa_devices", "login_session_duration", "login_network_masks", "enforce_mfa_for_login"} {
+		for _, key := range []string{"enable_save_mfa_ticket", "allow_user_to_change_password", "allow_user_to_manage_access_keys", "allow_user_to_manage_mfa_devices", "login_session_duration", "login_network_masks"} {
 			switch p["alicloud_ram_security_preference"].Schema[key].Type {
 			case schema.TypeString:
 				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
@@ -462,566 +473,143 @@ func TestAccAliCloudRamSecurityPreference_basic9192(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"login_session_duration": "10",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_session_duration": "10",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_network_masks": "192.168.0.0/16",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_network_masks": "192.168.0.0/16",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_change_password": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_change_password": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_access_keys": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_access_keys": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"operation_for_risk_login": "enforceVerify",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"operation_for_risk_login": "enforceVerify",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_save_mfa_ticket": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_save_mfa_ticket": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mfa_operation_for_login": "mandatory",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mfa_operation_for_login": "mandatory",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
+					"login_session_duration":                  "10",
+					"login_network_masks":                     "192.168.0.0/16",
+					"allow_user_to_change_password":           "true",
+					"allow_user_to_manage_access_keys":        "true",
+					"operation_for_risk_login":                "enforceVerify",
+					"enable_save_mfa_ticket":                  "true",
+					"mfa_operation_for_login":                 "mandatory",
 					"allow_user_to_manage_personal_ding_talk": "true",
+					"allow_user_to_manage_mfa_devices":        "true",
+					"verification_types":                      []string{"sms"},
+					"allow_user_to_login_with_passkey":        "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"login_session_duration":                  "10",
+						"login_network_masks":                     "192.168.0.0/16",
+						"allow_user_to_change_password":           "true",
+						"allow_user_to_manage_access_keys":        "true",
+						"operation_for_risk_login":                "enforceVerify",
+						"enable_save_mfa_ticket":                  "true",
+						"mfa_operation_for_login":                 "mandatory",
 						"allow_user_to_manage_personal_ding_talk": "true",
+						"allow_user_to_manage_mfa_devices":        "true",
+						"verification_types.#":                    "1",
+						"allow_user_to_login_with_passkey":        "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_mfa_devices": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_mfa_devices": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"verification_types": []string{
-						"sms"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"verification_types.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_login_with_passkey": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_login_with_passkey": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_session_duration": "8",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_session_duration": "8",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_network_masks": "192.168.0.0/15",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_network_masks": "192.168.0.0/15",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_change_password": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_change_password": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_access_keys": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_access_keys": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"operation_for_risk_login": "autonomous",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"operation_for_risk_login": "autonomous",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_save_mfa_ticket": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_save_mfa_ticket": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mfa_operation_for_login": "independent",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mfa_operation_for_login": "independent",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
+					"login_session_duration":                  "8",
+					"login_network_masks":                     "192.168.0.0/15",
+					"allow_user_to_change_password":           "false",
+					"allow_user_to_manage_access_keys":        "false",
+					"operation_for_risk_login":                "autonomous",
+					"enable_save_mfa_ticket":                  "false",
+					"mfa_operation_for_login":                 "independent",
 					"allow_user_to_manage_personal_ding_talk": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_personal_ding_talk": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_mfa_devices": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_mfa_devices": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
+					"allow_user_to_manage_mfa_devices":        "false",
 					"verification_types": []string{
 						"sms", "email", "mfa"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"verification_types.#": "3",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"allow_user_to_login_with_passkey": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allow_user_to_login_with_passkey": "false",
+						"login_session_duration":                  "8",
+						"login_network_masks":                     "192.168.0.0/15",
+						"allow_user_to_change_password":           "false",
+						"allow_user_to_manage_access_keys":        "false",
+						"operation_for_risk_login":                "autonomous",
+						"enable_save_mfa_ticket":                  "false",
+						"mfa_operation_for_login":                 "independent",
+						"allow_user_to_manage_personal_ding_talk": "false",
+						"allow_user_to_manage_mfa_devices":        "false",
+						"verification_types.#":                    "3",
+						"allow_user_to_login_with_passkey":        "false",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"login_session_duration": "6",
+					"verification_types":     []string{},
+					"login_network_masks":    REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"login_session_duration": "6",
+						"verification_types.#":   "0",
+						"login_network_masks":    REMOVEKEY,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"verification_types": []string{},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"verification_types.#": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_session_duration": "10",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_session_duration": "10",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_network_masks": "192.168.0.0/16",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_network_masks": "192.168.0.0/16",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_change_password": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_change_password": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_access_keys": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_access_keys": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"operation_for_risk_login": "enforceVerify",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"operation_for_risk_login": "enforceVerify",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_save_mfa_ticket": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_save_mfa_ticket": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mfa_operation_for_login": "mandatory",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mfa_operation_for_login": "mandatory",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
+					"login_session_duration":                  "10",
+					"login_network_masks":                     "192.168.0.0/16",
+					"allow_user_to_change_password":           "true",
+					"allow_user_to_manage_access_keys":        "true",
+					"operation_for_risk_login":                "enforceVerify",
+					"enable_save_mfa_ticket":                  "true",
+					"mfa_operation_for_login":                 "mandatory",
 					"allow_user_to_manage_personal_ding_talk": "true",
+					"allow_user_to_manage_mfa_devices":        "true",
+					"verification_types":                      []string{"sms"},
+					"allow_user_to_login_with_passkey":        "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"login_session_duration":                  "10",
+						"login_network_masks":                     "192.168.0.0/16",
+						"allow_user_to_change_password":           "true",
+						"allow_user_to_manage_access_keys":        "true",
+						"operation_for_risk_login":                "enforceVerify",
+						"enable_save_mfa_ticket":                  "true",
+						"mfa_operation_for_login":                 "mandatory",
 						"allow_user_to_manage_personal_ding_talk": "true",
+						"allow_user_to_manage_mfa_devices":        "true",
+						"verification_types.#":                    "1",
+						"allow_user_to_login_with_passkey":        "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_mfa_devices": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_mfa_devices": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"verification_types": []string{
-						"sms"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"verification_types.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_login_with_passkey": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_login_with_passkey": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_session_duration": "8",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_session_duration": "8",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_network_masks": "192.168.0.0/15",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_network_masks": "192.168.0.0/15",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_change_password": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_change_password": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_access_keys": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_access_keys": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"operation_for_risk_login": "autonomous",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"operation_for_risk_login": "autonomous",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_save_mfa_ticket": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_save_mfa_ticket": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mfa_operation_for_login": "independent",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mfa_operation_for_login": "independent",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
+					"login_session_duration":                  "8",
+					"login_network_masks":                     "192.168.0.0/15",
+					"allow_user_to_change_password":           "false",
+					"allow_user_to_manage_access_keys":        "false",
+					"operation_for_risk_login":                "autonomous",
+					"enable_save_mfa_ticket":                  "false",
+					"mfa_operation_for_login":                 "independent",
 					"allow_user_to_manage_personal_ding_talk": "false",
+					"allow_user_to_manage_mfa_devices":        "false",
+					"allow_user_to_login_with_passkey":        "false",
+					"verification_types":                      []interface{}{},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"login_session_duration":                  "8",
+						"login_network_masks":                     "192.168.0.0/15",
+						"allow_user_to_change_password":           "false",
+						"allow_user_to_manage_access_keys":        "false",
+						"operation_for_risk_login":                "autonomous",
+						"enable_save_mfa_ticket":                  "false",
+						"mfa_operation_for_login":                 "independent",
 						"allow_user_to_manage_personal_ding_talk": "false",
+						"allow_user_to_manage_mfa_devices":        "false",
+						"allow_user_to_login_with_passkey":        "false",
+						"verification_types.#":                    "0",
 					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_mfa_devices": "false",
-				}),
+				Config: testAccConfig(map[string]interface{}{}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_mfa_devices": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_login_with_passkey": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_login_with_passkey": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_session_duration": "10",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_session_duration": "10",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_network_masks": "192.168.0.0/16",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_network_masks": "192.168.0.0/16",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_change_password": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_change_password": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_access_keys": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_access_keys": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"operation_for_risk_login": "enforceVerify",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"operation_for_risk_login": "enforceVerify",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_save_mfa_ticket": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_save_mfa_ticket": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mfa_operation_for_login": "mandatory",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mfa_operation_for_login": "mandatory",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_personal_ding_talk": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_personal_ding_talk": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_manage_mfa_devices": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_manage_mfa_devices": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"verification_types": []string{
-						"sms"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"verification_types.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_user_to_login_with_passkey": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_user_to_login_with_passkey": "true",
-					}),
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
@@ -1077,11 +665,11 @@ variable "name" {
 `, name)
 }
 
-// Case SecurityPreference测试 9192  twin
-func TestAccAliCloudRamSecurityPreference_basic9192_twin(t *testing.T) {
+// Case SecurityPreference测试_副本1745566136705 10751
+func TestAccAliCloudRamSecurityPreference_basic10751(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_security_preference.default"
-	ra := resourceAttrInit(resourceId, AlicloudRamSecurityPreferenceMap9192)
+	ra := resourceAttrInit(resourceId, AlicloudRamSecurityPreferenceMap10751)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRamSecurityPreference")
@@ -1089,69 +677,7 @@ func TestAccAliCloudRamSecurityPreference_basic9192_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccram%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRamSecurityPreferenceBasicDependence9192)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"login_session_duration":                  "10",
-					"login_network_masks":                     "192.168.0.0/16",
-					"allow_user_to_change_password":           "true",
-					"allow_user_to_manage_access_keys":        "true",
-					"operation_for_risk_login":                "enforceVerify",
-					"enable_save_mfa_ticket":                  "true",
-					"mfa_operation_for_login":                 "mandatory",
-					"allow_user_to_manage_personal_ding_talk": "true",
-					"allow_user_to_manage_mfa_devices":        "true",
-					"verification_types": []string{
-						"sms"},
-					"allow_user_to_login_with_passkey": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"login_session_duration":                  "10",
-						"login_network_masks":                     "192.168.0.0/16",
-						"allow_user_to_change_password":           "true",
-						"allow_user_to_manage_access_keys":        "true",
-						"operation_for_risk_login":                "enforceVerify",
-						"enable_save_mfa_ticket":                  "true",
-						"mfa_operation_for_login":                 "mandatory",
-						"allow_user_to_manage_personal_ding_talk": "true",
-						"allow_user_to_manage_mfa_devices":        "true",
-						"verification_types.#":                    "1",
-						"allow_user_to_login_with_passkey":        "true",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
-}
-
-// Case SecurityPreference测试 9192  raw
-func TestAccAliCloudRamSecurityPreference_basic9192_raw(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ram_security_preference.default"
-	ra := resourceAttrInit(resourceId, AlicloudRamSecurityPreferenceMap9192)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRamSecurityPreference")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tfaccram%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRamSecurityPreferenceBasicDependence9192)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRamSecurityPreferenceBasicDependence10751)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -1226,11 +752,13 @@ func TestAccAliCloudRamSecurityPreference_basic9192_raw(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"login_session_duration": "6",
 					"verification_types":     []string{},
+					"login_network_masks":    REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"login_session_duration": "6",
 						"verification_types.#":   "0",
+						"login_network_masks":    REMOVEKEY,
 					}),
 				),
 			},
@@ -1277,6 +805,7 @@ func TestAccAliCloudRamSecurityPreference_basic9192_raw(t *testing.T) {
 					"allow_user_to_manage_personal_ding_talk": "false",
 					"allow_user_to_manage_mfa_devices":        "false",
 					"allow_user_to_login_with_passkey":        "false",
+					"verification_types":                      []interface{}{},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1290,6 +819,7 @@ func TestAccAliCloudRamSecurityPreference_basic9192_raw(t *testing.T) {
 						"allow_user_to_manage_personal_ding_talk": "false",
 						"allow_user_to_manage_mfa_devices":        "false",
 						"allow_user_to_login_with_passkey":        "false",
+						"verification_types.#":                    "0",
 					}),
 				),
 			},
@@ -1338,6 +868,18 @@ func TestAccAliCloudRamSecurityPreference_basic9192_raw(t *testing.T) {
 			},
 		},
 	})
+}
+
+var AlicloudRamSecurityPreferenceMap10751 = map[string]string{}
+
+func AlicloudRamSecurityPreferenceBasicDependence10751(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
 }
 
 // Test Ram SecurityPreference. <<< Resource test cases, automatically generated.

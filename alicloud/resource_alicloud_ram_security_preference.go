@@ -65,6 +65,16 @@ func resourceAliCloudRamSecurityPreference() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"max_idle_days_for_access_keys": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"max_idle_days_for_users": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"mfa_operation_for_login": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -81,9 +91,10 @@ func resourceAliCloudRamSecurityPreference() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"enforce_mfa_for_login": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "This property has been deprecated as it is no longer supported by Aliyun.",
 			},
 		},
 	}
@@ -100,20 +111,24 @@ func resourceAliCloudRamSecurityPreferenceCreate(d *schema.ResourceData, meta in
 	var err error
 	request = make(map[string]interface{})
 
-	if v, ok := d.GetOkExists("allow_user_to_change_password"); ok {
-		request["AllowUserToChangePassword"] = v
-	}
-	if v, ok := d.GetOkExists("allow_user_to_manage_access_keys"); ok {
-		request["AllowUserToManageAccessKeys"] = v
+	if v, ok := d.GetOkExists("allow_user_to_manage_mfa_devices"); ok {
+		request["AllowUserToManageMFADevices"] = v
 	}
 	if v, ok := d.GetOkExists("login_session_duration"); ok {
 		request["LoginSessionDuration"] = v
 	}
-	if v, ok := d.GetOk("login_network_masks"); ok {
-		request["LoginNetworkMasks"] = v
+	if v, ok := d.GetOkExists("max_idle_days_for_access_keys"); ok {
+		request["MaxIdleDaysForAccessKeys"] = v
+	}
+	if v, ok := d.GetOkExists("allow_user_to_manage_personal_ding_talk"); ok {
+		request["AllowUserToManagePersonalDingTalk"] = v
+	}
+	if v, ok := d.GetOk("operation_for_risk_login"); ok {
+		request["OperationForRiskLogin"] = v
 	}
 	if v, ok := d.GetOk("verification_types"); ok {
-		verificationTypesMapsArray := v.(*schema.Set).List()
+		verificationTypesMapsArray := convertToInterfaceArray(v)
+
 		verificationTypesMapsJson, err := json.Marshal(verificationTypesMapsArray)
 		if err != nil {
 			return WrapError(err)
@@ -121,26 +136,27 @@ func resourceAliCloudRamSecurityPreferenceCreate(d *schema.ResourceData, meta in
 		request["VerificationTypes"] = string(verificationTypesMapsJson)
 	}
 
-	if v, ok := d.GetOkExists("allow_user_to_manage_personal_ding_talk"); ok {
-		request["AllowUserToManagePersonalDingTalk"] = v
-	}
-	if v, ok := d.GetOk("operation_for_risk_login"); ok {
-		request["OperationForRiskLogin"] = v
+	if v, ok := d.GetOkExists("allow_user_to_change_password"); ok {
+		request["AllowUserToChangePassword"] = v
 	}
 	if v, ok := d.GetOkExists("enable_save_mfa_ticket"); ok {
 		request["EnableSaveMFATicket"] = v
 	}
-	if v, ok := d.GetOkExists("allow_user_to_manage_mfa_devices"); ok {
-		request["AllowUserToManageMFADevices"] = v
-	}
-	if v, ok := d.GetOk("mfa_operation_for_login"); ok {
-		request["MFAOperationForLogin"] = v
+	if v, ok := d.GetOk("login_network_masks"); ok {
+		request["LoginNetworkMasks"] = v
 	}
 	if v, ok := d.GetOkExists("allow_user_to_login_with_passkey"); ok {
 		request["AllowUserToLoginWithPasskey"] = v
 	}
-	if v, ok := d.GetOkExists("enforce_mfa_for_login"); ok {
-		request["EnforceMFAForLogin"] = v
+
+	if v, ok := d.GetOk("mfa_operation_for_login"); ok {
+		request["MFAOperationForLogin"] = v
+	}
+	if v, ok := d.GetOkExists("allow_user_to_manage_access_keys"); ok {
+		request["AllowUserToManageAccessKeys"] = v
+	}
+	if v, ok := d.GetOkExists("max_idle_days_for_users"); ok {
+		request["MaxIdleDaysForUsers"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -199,7 +215,6 @@ func resourceAliCloudRamSecurityPreferenceRead(d *schema.ResourceData, meta inte
 	d.Set("login_session_duration", loginProfilePreferenceRaw["LoginSessionDuration"])
 	d.Set("mfa_operation_for_login", loginProfilePreferenceRaw["MFAOperationForLogin"])
 	d.Set("operation_for_risk_login", loginProfilePreferenceRaw["OperationForRiskLogin"])
-	d.Set("enforce_mfa_for_login", loginProfilePreferenceRaw["EnforceMFAForLogin"])
 
 	mFAPreferenceRawObj, _ := jsonpath.Get("$.MFAPreference", objectRaw)
 	mFAPreferenceRaw := make(map[string]interface{})
@@ -207,6 +222,14 @@ func resourceAliCloudRamSecurityPreferenceRead(d *schema.ResourceData, meta inte
 		mFAPreferenceRaw = mFAPreferenceRawObj.(map[string]interface{})
 	}
 	d.Set("allow_user_to_manage_mfa_devices", mFAPreferenceRaw["AllowUserToManageMFADevices"])
+
+	maxIdleDaysRawObj, _ := jsonpath.Get("$.MaxIdleDays", objectRaw)
+	maxIdleDaysRaw := make(map[string]interface{})
+	if maxIdleDaysRawObj != nil {
+		maxIdleDaysRaw = maxIdleDaysRawObj.(map[string]interface{})
+	}
+	d.Set("max_idle_days_for_access_keys", maxIdleDaysRaw["MaxIdleDaysForAccessKeys"])
+	d.Set("max_idle_days_for_users", maxIdleDaysRaw["MaxIdleDaysForUsers"])
 
 	personalInfoPreferenceRawObj, _ := jsonpath.Get("$.PersonalInfoPreference", objectRaw)
 	personalInfoPreferenceRaw := make(map[string]interface{})
@@ -233,94 +256,77 @@ func resourceAliCloudRamSecurityPreferenceUpdate(d *schema.ResourceData, meta in
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
-	if d.HasChange("allow_user_to_change_password") {
+	if d.HasChange("allow_user_to_manage_mfa_devices") {
 		update = true
-	}
-	if v, ok := d.GetOkExists("allow_user_to_change_password"); ok {
-		request["AllowUserToChangePassword"] = v
-	}
-
-	if d.HasChange("allow_user_to_manage_access_keys") {
-		update = true
-	}
-	if v, ok := d.GetOkExists("allow_user_to_manage_access_keys"); ok {
-		request["AllowUserToManageAccessKeys"] = v
+		request["AllowUserToManageMFADevices"] = d.Get("allow_user_to_manage_mfa_devices")
 	}
 
 	if d.HasChange("login_session_duration") {
 		update = true
+		request["LoginSessionDuration"] = d.Get("login_session_duration")
 	}
-	if v, ok := d.GetOk("login_session_duration"); ok {
-		request["LoginSessionDuration"] = v
+
+	if d.HasChange("max_idle_days_for_access_keys") {
+		update = true
+		request["MaxIdleDaysForAccessKeys"] = d.Get("max_idle_days_for_access_keys")
+	}
+
+	if d.HasChange("allow_user_to_manage_personal_ding_talk") {
+		update = true
+		request["AllowUserToManagePersonalDingTalk"] = d.Get("allow_user_to_manage_personal_ding_talk")
+	}
+
+	if d.HasChange("operation_for_risk_login") {
+		update = true
+		request["OperationForRiskLogin"] = d.Get("operation_for_risk_login")
+	}
+
+	if d.HasChange("verification_types") {
+		update = true
+		if v, ok := d.GetOk("verification_types"); ok || d.HasChange("verification_types") {
+			verificationTypesMapsArray := convertToInterfaceArray(v)
+
+			verificationTypesMapsJson, err := json.Marshal(verificationTypesMapsArray)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["VerificationTypes"] = string(verificationTypesMapsJson)
+		}
+	}
+
+	if d.HasChange("allow_user_to_change_password") {
+		update = true
+		request["AllowUserToChangePassword"] = d.Get("allow_user_to_change_password")
+	}
+
+	if d.HasChange("enable_save_mfa_ticket") {
+		update = true
+		request["EnableSaveMFATicket"] = d.Get("enable_save_mfa_ticket")
 	}
 
 	if d.HasChange("login_network_masks") {
 		update = true
 		request["LoginNetworkMasks"] = d.Get("login_network_masks")
 	}
-	if v, ok := d.GetOk("login_network_masks"); ok {
-		request["LoginNetworkMasks"] = v
-	}
 
-	if d.HasChange("verification_types") {
+	if d.HasChange("allow_user_to_login_with_passkey") {
 		update = true
-	}
-	if v, ok := d.GetOk("verification_types"); ok || d.HasChange("verification_types") {
-		verificationTypesMapsArray := v.(*schema.Set).List()
-		verificationTypesMapsJson, err := json.Marshal(verificationTypesMapsArray)
-		if err != nil {
-			return WrapError(err)
-		}
-		request["VerificationTypes"] = string(verificationTypesMapsJson)
-	}
-
-	if d.HasChange("allow_user_to_manage_personal_ding_talk") {
-		update = true
-	}
-	if v, ok := d.GetOkExists("allow_user_to_manage_personal_ding_talk"); ok {
-		request["AllowUserToManagePersonalDingTalk"] = v
-	}
-
-	if d.HasChange("operation_for_risk_login") {
-		update = true
-	}
-	if v, ok := d.GetOk("operation_for_risk_login"); ok {
-		request["OperationForRiskLogin"] = v
-	}
-
-	if d.HasChange("enable_save_mfa_ticket") {
-		update = true
-	}
-	if v, ok := d.GetOkExists("enable_save_mfa_ticket"); ok {
-		request["EnableSaveMFATicket"] = v
-	}
-
-	if d.HasChange("allow_user_to_manage_mfa_devices") {
-		update = true
-	}
-	if v, ok := d.GetOkExists("allow_user_to_manage_mfa_devices"); ok {
-		request["AllowUserToManageMFADevices"] = v
+		request["AllowUserToLoginWithPasskey"] = d.Get("allow_user_to_login_with_passkey")
 	}
 
 	if d.HasChange("mfa_operation_for_login") {
 		update = true
-	}
-	if v, ok := d.GetOk("mfa_operation_for_login"); ok {
-		request["MFAOperationForLogin"] = v
+		request["MFAOperationForLogin"] = d.Get("mfa_operation_for_login")
 	}
 
-	if d.HasChange("allow_user_to_login_with_passkey") {
+	if d.HasChange("allow_user_to_manage_access_keys") {
 		update = true
-	}
-	if v, ok := d.GetOkExists("allow_user_to_login_with_passkey"); ok {
-		request["AllowUserToLoginWithPasskey"] = v
+		request["AllowUserToManageAccessKeys"] = d.Get("allow_user_to_manage_access_keys")
 	}
 
-	if d.HasChange("enforce_mfa_for_login") {
+	if d.HasChange("max_idle_days_for_users") {
 		update = true
-	}
-	if v, ok := d.GetOkExists("enforce_mfa_for_login"); ok {
-		request["EnforceMFAForLogin"] = v
+		request["MaxIdleDaysForUsers"] = d.Get("max_idle_days_for_users")
 	}
 
 	if update {
