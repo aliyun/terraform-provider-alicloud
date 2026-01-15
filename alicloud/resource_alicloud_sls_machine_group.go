@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -62,7 +61,7 @@ func resourceAliCloudSlsMachineGroup() *schema.Resource {
 				ForceNew: true,
 			},
 			"machine_list": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -113,7 +112,7 @@ func resourceAliCloudSlsMachineGroupCreate(d *schema.ResourceData, meta interfac
 	}
 
 	if v, ok := d.GetOk("machine_list"); ok {
-		machineListMapsArray := v.([]interface{})
+		machineListMapsArray := v.(*schema.Set).List()
 		request["machineList"] = machineListMapsArray
 	}
 

@@ -275,8 +275,43 @@ generate_commit_message() {
         commit_message="${selected}Added the field $added_fields."
         echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (added fields: $added_fields)${NC}" >&2
       else
-        commit_message="${selected}Refactored the resource and improve the docs."
-        echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (no new fields detected)${NC}" >&2
+        # Try to generate commit message from branch name
+        local branch_name=$(git branch --show-current)
+        local branch_msg=""
+
+        if [[ -n "$branch_name" ]]; then
+          # Parse branch name to extract meaningful description
+          # Common patterns: feature/xxx, fix/xxx, update/xxx, add-xxx-field, etc.
+
+          # Remove common prefixes
+          branch_msg="${branch_name#feature/}"
+          branch_msg="${branch_msg#fix/}"
+          branch_msg="${branch_msg#update/}"
+          branch_msg="${branch_msg#bugfix/}"
+          branch_msg="${branch_msg#hotfix/}"
+
+          # Convert hyphens and underscores to spaces
+          branch_msg="${branch_msg//-/ }"
+          branch_msg="${branch_msg//_/ }"
+
+          # Capitalize first letter
+          branch_msg="$(echo ${branch_msg:0:1} | tr '[:lower:]' '[:upper:]')${branch_msg:1}"
+
+          # Remove common words that don't add value
+          branch_msg=$(echo "$branch_msg" | sed 's/\bresource\b//gi' | sed 's/\balicloud\b//gi' | sed 's/^ *//;s/ *$//')
+
+          # Check if we got meaningful content
+          if [[ -n "$branch_msg" ]] && [[ "$branch_msg" != "Master" ]] && [[ "$branch_msg" != "Main" ]]; then
+            commit_message="${selected}${branch_msg}."
+            echo -e "${GREEN}✓ Commit message generated from branch name: $branch_name${NC}" >&2
+          else
+            commit_message="${selected}Refactored the resource and improve the docs."
+            echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (using default message)${NC}" >&2
+          fi
+        else
+          commit_message="${selected}Refactored the resource and improve the docs."
+          echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (no new fields detected)${NC}" >&2
+        fi
       fi
     elif [[ "$selected" == "docs" ]]; then
       # For documentation changes, extract specific doc names
