@@ -31,7 +31,7 @@ func resourceAliCloudWafv3DefenseTemplate() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ip_blacklist", "custom_acl", "whitelist", "region_block", "cc", "tamperproof", "dlp", "spike_throttle"}, false),
+				ValidateFunc: StringInSlice([]string{"ip_blacklist", "custom_acl", "whitelist", "region_block", "cc", "tamperproof", "dlp", "spike_throttle", "waf_base"}, false),
 			},
 			"defense_template_id": {
 				Type:     schema.TypeInt,
