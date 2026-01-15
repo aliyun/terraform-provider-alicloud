@@ -151,7 +151,7 @@ func TestAccAlicloudVPCForwardEntry_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCForwardEntry_basic1(t *testing.T) {
+func TestAccAliCloudVPCForwardEntry_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudForwardEntryMap0)
@@ -206,7 +206,7 @@ func TestAccAlicloudVPCForwardEntry_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCForwardEntry_basic2(t *testing.T) {
+func TestAccAliCloudVPCForwardEntry_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudForwardEntryMap0)

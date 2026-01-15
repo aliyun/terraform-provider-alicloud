@@ -220,8 +220,8 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 	}
 	status, statusOk := d.GetOk("status")
 	var response map[string]interface{}
-var err error
-for {
+	var err error
+	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)

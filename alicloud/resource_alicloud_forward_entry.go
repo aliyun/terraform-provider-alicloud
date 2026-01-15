@@ -88,7 +88,7 @@ func resourceAlicloudForwardEntryCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "CreateForwardEntry"
 	request := make(map[string]interface{})
-var err error
+	var err error
 	request["ExternalIp"] = d.Get("external_ip")
 	request["ExternalPort"] = d.Get("external_port")
 	if v, ok := d.GetOk("forward_entry_name"); ok {
@@ -166,7 +166,7 @@ func resourceAlicloudForwardEntryUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	var response map[string]interface{}
-var err error
+	var err error
 	if !strings.Contains(d.Id(), COLON_SEPARATED) {
 		d.SetId(d.Get("forward_table_id").(string) + COLON_SEPARATED + d.Id())
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaCustomRoutingEndpointGroup_basic0(t *testing.T) {
+func TestAccAliCloudGaCustomRoutingEndpointGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_custom_routing_endpoint_group.default"
@@ -73,7 +73,7 @@ func TestAccAlicloudGaCustomRoutingEndpointGroup_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGaCustomRoutingEndpointGroup_basic0_twin(t *testing.T) {
+func TestAccAliCloudGaCustomRoutingEndpointGroup_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_custom_routing_endpoint_group.default"

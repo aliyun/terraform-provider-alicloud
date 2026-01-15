@@ -11,9 +11,9 @@ description: |-
 
 This data source provides a list Container Service Serverless Kubernetes Clusters on Alibaba Cloud.
 
--> **NOTE:** Available since 1.58.0
+-> **NOTE:** Available since v1.58.0
 
--> **NOTE:** From version 1.177.0+, We supported batch export of clusters' kube config information by `kube_config_file_prefix`.
+-> **NOTE:** From version v1.177.0+, We supported batch export of clusters' kube config information by `kube_config_file_prefix`.
 
 ## Example Usage
 
@@ -54,10 +54,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
   * `deletion_protection` - Whether the cluster support delete protection.  
   * `connections` - Map of serverless cluster connection information. It contains several attributes to `Block Connections`.
-  * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-  
-### Block Connections
-
-* `api_server_internet` - API Server Internet endpoint.
-* `api_server_intranet` - API Server Intranet endpoint.
-* `master_public_ip` - Master node SSH IP address.
+    * `api_server_internet` - API Server Internet endpoint.
+    * `api_server_intranet` - API Server Intranet endpoint.
+    * `master_public_ip` - Master node SSH IP address.
+  * `tags` - A map of tags assigned to the kubernetes cluster.
+  * `endpoint_public_access_enabled` - Whether to create internet eip for API Server.
