@@ -1148,15 +1148,18 @@ func (s *RamServiceV2) DescribeRamSecurityPreference(id string) (object map[stri
 }
 
 func (s *RamServiceV2) RamSecurityPreferenceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.RamSecurityPreferenceStateRefreshFuncWithApi(id, field, failStates, s.DescribeRamSecurityPreference)
+}
+
+func (s *RamServiceV2) RamSecurityPreferenceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeRamSecurityPreference(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
