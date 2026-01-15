@@ -20,12 +20,6 @@ For information about Log Service (SLS) Machine Group and how to use it, see [Wh
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_sls_machine_group&exampleId=4001bfe1-87f0-c81c-c441-4033d5228a8c5e170615&activeTab=example&spm=docs.r.sls_machine_group.0.4001bfe187&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -57,32 +51,36 @@ resource "alicloud_sls_machine_group" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_machine_group&spm=docs.r.sls_machine_group.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
-* `group_attribute` - (Optional, ForceNew, List) Properties of machine groups. For details, please refer to the groupAttribute parameter description in the following table. See [`group_attribute`](#group_attribute) below.
-* `group_name` - (Required, ForceNew) Machine Group name
-* `group_type` - (Optional, ForceNew) Machine group type, optional value is empty.
-* `machine_identify_type` - (Required, ForceNew) Machine identification type.
-  - ip: ip address Machine Group.
-  - userdefined: user-defined identity Machine Group.
+* `group_attribute` - (Optional, ForceNew, Set) Properties of machine groups. For details, please refer to the groupAttribute parameter description in the following table. See [`group_attribute`](#group_attribute) below.
+* `group_name` - (Required, ForceNew) The name of the machine group. The name must meet the following requirements:
+
+  - The name of each machine group in a project must be unique.
+  - It can contain only lowercase letters, digits, hyphens (-), and underscores (\_).
+  - It must start and end with a lowercase letter or a digit.
+  - It must be 3 to 128 characters in length.
+* `group_type` - (Optional, ForceNew) The type of the machine group. Set the value to an empty string.
+* `machine_identify_type` - (Required, ForceNew) The identifier type of the machine group. Valid values:
+
+  - ip: The machine group uses IP addresses as identifiers.
+  - userdefined: The machine group uses custom identifiers.
 * `machine_list` - (Required, ForceNew, List) The identification information of the machine group.
   - If machineidentifiytype is configured to ip, enter the ip address of the server.
   - If machineidentifiytype is configured to userdefined, enter a custom identifier here.
-* `project_name` - (Required, ForceNew) Project name
+* `project_name` - (Required, ForceNew) The name of the project.
 
 ### `group_attribute`
 
 The group_attribute supports the following:
-* `external_name` - (Optional, ForceNew) The external management system identification on which the machine group depends.
+* `external_name` - (Optional, ForceNew) The identifier of the external management system on which the machine group depends. This parameter is empty by default.
 * `group_topic` - (Optional, ForceNew) The log topic of the machine group.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<project_name>:<group_name>`.
+* `id` - The ID of the resource supplied above. The value is formulated as `<project_name>:<group_name>`.
 
 ## Timeouts
 
