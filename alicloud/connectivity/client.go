@@ -12,23 +12,26 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
+
 	ossclient "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	gatewayclient "github.com/alibabacloud-go/alibabacloud-gateway-sls/client"
 	roaCS "github.com/alibabacloud-go/cs-20151215/v5/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	cdn_new "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
@@ -36,12 +39,10 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
 	officalCS "github.com/aliyun/alibaba-cloud-sdk-go/services/cs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
@@ -70,7 +71,10 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 )
 
 type AliyunClient struct {
