@@ -49,6 +49,7 @@ func resourceAliCloudEcsSecurityGroup() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"security_group_name": {
 				Type:     schema.TypeString,
