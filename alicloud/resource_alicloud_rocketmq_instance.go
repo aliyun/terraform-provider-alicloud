@@ -219,6 +219,7 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 						"send_receive_ratio": {
 							Type:     schema.TypeFloat,
 							Optional: true,
+							Computed: true,
 						},
 						"message_retention_time": {
 							Type:     schema.TypeInt,
@@ -401,7 +402,7 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 			objectDataLocalMap1["msgProcessSpec"] = msgProcessSpec1
 		}
 		sendReceiveRatio1, _ := jsonpath.Get("$[0].send_receive_ratio", v)
-		if sendReceiveRatio1 != nil && sendReceiveRatio1 != "" {
+		if sendReceiveRatio1 != nil && sendReceiveRatio1 != "" && !IsEmpty(sendReceiveRatio1) {
 			objectDataLocalMap1["sendReceiveRatio"] = sendReceiveRatio1
 		}
 		autoScaling1, _ := jsonpath.Get("$[0].auto_scaling", v)
@@ -709,7 +710,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 
 	if v := d.Get("product_info"); v != nil {
 		sendReceiveRatio1, _ := jsonpath.Get("$[0].send_receive_ratio", v)
-		if sendReceiveRatio1 != nil && (d.HasChange("product_info.0.send_receive_ratio") || sendReceiveRatio1 != "") {
+		if sendReceiveRatio1 != nil && (d.HasChange("product_info.0.send_receive_ratio") || sendReceiveRatio1 != "") && !IsEmpty(sendReceiveRatio1) {
 			objectDataLocalMap["sendReceiveRatio"] = sendReceiveRatio1
 		}
 		autoScaling1, _ := jsonpath.Get("$[0].auto_scaling", v)
