@@ -70,7 +70,7 @@ The following arguments are supported:
 * `inner_access_policy` - (Optional, Available since v1.55.3) The internal access control policy of the security group. Valid values:
   - `Accept`: The internal interconnectivity policy.
   - `Drop`: The internal isolation policy.
-* `resource_group_id` - (Optional, Available since v1.58.0) The ID of the resource group to which the security group belongs. **NOTE:** From version 1.115.0, `resource_group_id` can be modified.
+* `resource_group_id` - (Optional, Computed, Available since v1.58.0) The ID of the resource group to which the security group belongs. **NOTE:** From version 1.115.0, `resource_group_id` can be modified.
 * `security_group_name` - (Optional, Available since v1.239.0) The name of the security group. The name must be `2` to `128` characters in length. The name must start with a letter and cannot start with `http://` or `https://`. The name can contain Unicode characters under the Decimal Number category and the categories whose names contain Letter. The name can also contain colons (:), underscores (\_), periods (.), and hyphens (-).
 * `security_group_type` - (Optional, ForceNew, Available since v1.58.0) The type of the security group. Default value: `normal`. Valid values:
   - `normal`: Basic security group.
