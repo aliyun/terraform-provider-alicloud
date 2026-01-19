@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -46,6 +45,20 @@ func resourceAliCloudSslCertificatesServicePcaCertificate() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"crl_day": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"enable_crl": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"extended_key_usages": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"locality": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -60,6 +73,15 @@ func resourceAliCloudSslCertificatesServicePcaCertificate() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"parent_identifier": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"path_len_constraint": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -81,6 +103,12 @@ func resourceAliCloudSslCertificatesServicePcaCertificate() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"certificate_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -88,55 +116,122 @@ func resourceAliCloudSslCertificatesServicePcaCertificate() *schema.Resource {
 func resourceAliCloudSslCertificatesServicePcaCertificateCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
+	if v, ok := d.GetOk("certificate_type"); ok && InArray(fmt.Sprint(v), []string{"SUB_ROOT"}) {
+		action := "CreateSubCACertificate"
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+		var err error
+		request = make(map[string]interface{})
 
-	action := "CreateRootCACertificate"
-	var request map[string]interface{}
-	var response map[string]interface{}
-	query := make(map[string]interface{})
-	var err error
-	request = make(map[string]interface{})
+		request["ClientToken"] = buildClientToken(action)
 
-	request["ClientToken"] = buildClientToken(action)
-
-	request["State"] = d.Get("state")
-	if v, ok := d.GetOk("country_code"); ok {
-		request["CountryCode"] = v
-	}
-	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMapWithTags(request, tagsMap)
-	}
-
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["ResourceGroupId"] = v
-	}
-	request["OrganizationUnit"] = d.Get("organization_unit")
-	request["Locality"] = d.Get("locality")
-	request["Organization"] = d.Get("organization")
-	request["Years"] = d.Get("years")
-	if v, ok := d.GetOk("algorithm"); ok {
-		request["Algorithm"] = v
-	}
-	request["CommonName"] = d.Get("common_name")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
+		request["State"] = d.Get("state")
+		if v, ok := d.GetOk("country_code"); ok {
+			request["CountryCode"] = v
 		}
-		return nil
-	})
-	addDebug(action, response, request)
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			request["ResourceGroupId"] = v
+		}
+		if v, ok := d.GetOk("tags"); ok {
+			tagsMap := ConvertTags(v.(map[string]interface{}))
+			request = expandTagsToMapWithTags(request, tagsMap)
+		}
 
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ssl_certificates_service_pca_certificate", action, AlibabaCloudSdkGoERROR)
+		if v, ok := d.GetOkExists("path_len_constraint"); ok {
+			request["PathLenConstraint"] = v
+		}
+		request["OrganizationUnit"] = d.Get("organization_unit")
+		request["Locality"] = d.Get("locality")
+		if v, ok := d.GetOk("parent_identifier"); ok {
+			request["ParentIdentifier"] = v
+		}
+		request["Organization"] = d.Get("organization")
+		if v, ok := d.GetOkExists("enable_crl"); ok {
+			request["EnableCrl"] = v
+		}
+		request["Years"] = d.Get("years")
+		if v, ok := d.GetOk("extended_key_usages"); ok {
+			extendedKeyUsagesMapsArray := convertToInterfaceArray(v)
+
+			request["ExtendedKeyUsages"] = extendedKeyUsagesMapsArray
+		}
+
+		request["Algorithm"] = d.Get("algorithm")
+		request["CommonName"] = d.Get("common_name")
+		if v, ok := d.GetOkExists("crl_day"); ok {
+			request["CrlDay"] = v
+		}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_ssl_certificates_service_pca_certificate", action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetId(fmt.Sprint(response["Identifier"]))
+
+	} else {
+		action := "CreateRootCACertificate"
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+		var err error
+		request = make(map[string]interface{})
+
+		request["ClientToken"] = buildClientToken(action)
+
+		request["State"] = d.Get("state")
+		if v, ok := d.GetOk("country_code"); ok {
+			request["CountryCode"] = v
+		}
+		if v, ok := d.GetOk("tags"); ok {
+			tagsMap := ConvertTags(v.(map[string]interface{}))
+			request = expandTagsToMapWithTags(request, tagsMap)
+		}
+
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			request["ResourceGroupId"] = v
+		}
+		request["OrganizationUnit"] = d.Get("organization_unit")
+		request["Locality"] = d.Get("locality")
+		request["Organization"] = d.Get("organization")
+		request["Years"] = d.Get("years")
+		if v, ok := d.GetOk("algorithm"); ok {
+			request["Algorithm"] = v
+		}
+		request["CommonName"] = d.Get("common_name")
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_ssl_certificates_service_pca_certificate", action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetId(fmt.Sprint(response["Identifier"]))
 	}
-
-	d.SetId(fmt.Sprint(response["Identifier"]))
 
 	return resourceAliCloudSslCertificatesServicePcaCertificateUpdate(d, meta)
 }
@@ -158,13 +253,16 @@ func resourceAliCloudSslCertificatesServicePcaCertificateRead(d *schema.Resource
 	d.Set("algorithm", objectRaw["FullAlgorithm"])
 	d.Set("common_name", objectRaw["CommonName"])
 	d.Set("country_code", objectRaw["CountryCode"])
+	d.Set("crl_day", objectRaw["CrlDay"])
 	d.Set("locality", objectRaw["Locality"])
 	d.Set("organization", objectRaw["Organization"])
 	d.Set("organization_unit", objectRaw["OrganizationUnit"])
+	d.Set("parent_identifier", objectRaw["ParentIdentifier"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("state", objectRaw["State"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("years", objectRaw["Years"])
+	d.Set("certificate_type", objectRaw["CertificateType"])
 
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
@@ -265,7 +363,6 @@ func resourceAliCloudSslCertificatesServicePcaCertificateDelete(d *schema.Resour
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("cas", "2020-06-30", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
