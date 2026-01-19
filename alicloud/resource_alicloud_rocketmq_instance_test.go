@@ -3,7 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"strings"
+	"regexp"
+	strings "strings"
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -12,6 +13,69 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+// Test case to verify the fix for send_receive_ratio validation issue
+func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_rocketmq_instance.validation_test"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRocketmqInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srocketmqinstancevalidation%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4101)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": name,
+					"product_info": []map[string]interface{}{
+						{
+							"msg_process_spec":       "rmq.p2.4xlarge",
+							"send_receive_ratio":     "0.03", // This should be out of range [0.05, 0.5] to test validation
+							"message_retention_time": "70",
+						},
+					},
+					"service_code": "rmq",
+					"series_code":  "professional",
+					"network_info": []map[string]interface{}{
+						{
+							"vpc_info": []map[string]interface{}{
+								{
+									"vpc_id":     "${alicloud_vpc.createVPC.id}",
+									"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+								},
+							},
+							"internet_info": []map[string]interface{}{
+								{
+									"internet_spec": "disable",
+									"flow_out_type": "uninvolved",
+								},
+							},
+						},
+					},
+					"payment_type":      "PayAsYouGo",
+					"sub_series_code":   "cluster_ha",
+					"remark":            "validation test",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				ExpectError: regexp.MustCompile(`expected send_receive_ratio to be in the range \(0.05 - 0.5\)`),
+			},
+		},
+	})
+}
 
 func testSweepRocketMq(region string) error {
 	rawClient, err := sharedClientForRegion(region)
