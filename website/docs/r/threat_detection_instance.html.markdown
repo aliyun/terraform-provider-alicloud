@@ -93,17 +93,29 @@ The following arguments are supported:
 
 * `post_paid_flag` - (Optional, Int, Available since v1.247.0) Post-paid signage. Value:
   - `1`: Postpaid instance
-* `post_pay_module_switch` - (Optional, JsonString, Available since v1.247.0) Pay-as-you-go module switch mapping, in JsonString format. Valid values:
+* `post_paid_host_auto_bind` - (Optional, Int, Available since v1.269.0) Automatic binding switch for new assets in host and container protection. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `post_paid_host_auto_bind_version` - (Optional, Int, Available since v1.269.0) The version that is automatically bound to the host and container protection of a pay-as-you-go instance. Valid values:
+  - `1`: Free Edition
+  - `3`: Enterprise Edition
+  - `5`: Advanced Edition
+  - `6`: Antivirus Edition
+  - `7`: Flagship Edition
+* `post_pay_module_switch` - (Optional, JsonString, Available since v1.247.0, Deprecated since v1.269.0) The switch status of the pay-as-you-go module. The value is a JSON string. Valid values:
   - Key:
-  - `VUL`: vulnerability repair module
-  - `CSPM`: Cloud platform configuration check module
-  - `AGENTLESS`: AGENTLESS detection module
-  - `SERVERLESS`:Serverless asset module
-  - `CTDR`: threat analysis and response module
-  - `POST_HOST`: Host and container security module
-  - Value:0 means off, 1 means on
-
--> **NOTE:**  The module value of the unpassed value will not change.
+    - `VUL`: Vulnerability Repair Module.
+    - `CSPM`: Cloud Security Posture Management Module.
+    - `AGENTLESS`: Agentless Detection Module.
+    - `SERVERLESS`: Serverless Security Module.
+    - `CTDR`: Threat Analysis and Response Module.
+    - `POST_HOST`: Host and Container Security Module.
+    - `SDK`: Malicious File Detection SDK Module.
+    - `RASP`: Application Protection Module.
+    - `CTDR_STORAGE`: Log Management Module.
+    - `ANTI_RANSOMWARE`: Anti-Ransomware Management.
+  - Value: `0` means off, `1` means on
+-> **NOTE:** Field `post_pay_module_switch` has been deprecated from provider version 1.269.0. New field `post_pay_module_switch_obj` instead.
 
 * `rasp_count` - (Optional, Available since v1.212.0) Number of application protection licenses. Interval type, value interval:[1,100000000].
 * `renew_period` - (Optional, Computed, Int) Automatic renewal cycle, in months.
@@ -188,6 +200,47 @@ Default ManualRenewal.
 
 -> **NOTE:**  When the value of version_code is level7 or level10, the purchase is allowed. Other versions do not need to be purchased separately.
 
+* `post_pay_module_switch_obj` - (Optional, Set, Available since v1.269.0) Pay-as-you-go module switch. See [`post_pay_module_switch_obj`](#post_pay_module_switch_obj) below.
+
+### `post_pay_module_switch_obj`
+
+The post_pay_module_switch_obj supports the following:
+* `agentless` - (Optional, Int, Available since v1.269.0) Agentless Detection Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `anti_ransomware` - (Optional, Int, Available since v1.269.0) Anti-Ransomware Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `basic_service` - (Optional, Int, Available since v1.269.0) Basic service module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `cspm` - (Optional, Int, Available since v1.269.0) Cloud Security Configuration Check Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `ctdr` - (Optional, Int, Available since v1.269.0) Threat Analysis and Response Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `ctdr_storage` - (Optional, Int, Available since v1.269.0) Log Management Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `post_host` - (Optional, Int, Available since v1.269.0) Host and Container Security Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `rasp` - (Optional, Int, Available since v1.269.0) Application Protection Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `sdk` - (Optional, Int, Available since v1.269.0) Malicious File Detection SDK Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `serverless` - (Optional, Int, Available since v1.269.0) Serverless Security Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `vul` - (Optional, Int, Available since v1.269.0) Vulnerability Repair Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
+* `web_lock` - (Optional, Int, Available since v1.269.0) File Tamper Protection Module. Valid values:
+  - `1`: On.
+  - `0`: Off.
 
 ## Attributes Reference
 

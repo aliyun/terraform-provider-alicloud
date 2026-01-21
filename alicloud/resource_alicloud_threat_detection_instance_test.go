@@ -13,7 +13,7 @@ import (
 func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap1826)
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap1826)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeThreatDetectionInstance")
@@ -21,7 +21,7 @@ func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sThreatDetectionInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudThreatDetectionInstanceBasicDependence1826)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence1826)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -133,9 +133,9 @@ func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 	})
 }
 
-var AlicloudThreatDetectionInstanceMap1826 = map[string]string{}
+var AliCloudThreatDetectionInstanceMap1826 = map[string]string{}
 
-func AlicloudThreatDetectionInstanceBasicDependence1826(name string) string {
+func AliCloudThreatDetectionInstanceBasicDependence1826(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -147,7 +147,7 @@ variable "name" {
 func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap4253)
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap4253)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeThreatDetectionInstance")
@@ -155,7 +155,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sthreatdetectioninstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudThreatDetectionInstanceBasicDependence4253)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence4253)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -599,12 +599,12 @@ func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 	})
 }
 
-var AlicloudThreatDetectionInstanceMap4253 = map[string]string{
+var AliCloudThreatDetectionInstanceMap4253 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
 }
 
-func AlicloudThreatDetectionInstanceBasicDependence4253(name string) string {
+func AliCloudThreatDetectionInstanceBasicDependence4253(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -618,7 +618,7 @@ variable "name" {
 func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap4253)
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap4253)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeThreatDetectionInstance")
@@ -626,7 +626,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sthreatdetectioninstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudThreatDetectionInstanceBasicDependence4253)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence4253)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -708,7 +708,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 func TestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap4253)
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap4253)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeThreatDetectionInstance")
@@ -716,7 +716,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sthreatdetectioninstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudThreatDetectionInstanceBasicDependence4253)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence4253)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -807,7 +807,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
 func TestAccAliCloudThreatDetectionInstance_basic4253_twin_fix(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap4253)
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap4253)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeThreatDetectionInstance")
@@ -815,7 +815,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin_fix(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sthreatdetectioninstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudThreatDetectionInstanceBasicDependence4253)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence4253)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -874,11 +874,11 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin_fix(t *testing.T) {
 }
 
 // Test ThreatDetection Instance. >>> Resource test cases, automatically generated.
-// Case 中国站资源测试用例_20250217_后付费 10249
+// Case 中国站资源测试用例_20250217_后付费 10249 适配废弃字段post_pay_module_switch
 func TestAccAliCloudThreatDetectionInstance_basic10249(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap10249)
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap10249)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeThreatDetectionInstance")
@@ -886,7 +886,7 @@ func TestAccAliCloudThreatDetectionInstance_basic10249(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccthreatdetection%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudThreatDetectionInstanceBasicDependence10249)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence10249)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -922,6 +922,18 @@ func TestAccAliCloudThreatDetectionInstance_basic10249(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"post_paid_host_auto_bind":         "1",
+					"post_paid_host_auto_bind_version": "7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"post_paid_host_auto_bind":         "1",
+						"post_paid_host_auto_bind_version": "7",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -931,12 +943,304 @@ func TestAccAliCloudThreatDetectionInstance_basic10249(t *testing.T) {
 	})
 }
 
-var AlicloudThreatDetectionInstanceMap10249 = map[string]string{
+func TestAccAliCloudThreatDetectionInstance_basic10249_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_threat_detection_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap10249)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeThreatDetectionInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccthreatdetection%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence10249)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":                     "PayAsYouGo",
+					"post_paid_flag":                   "1",
+					"post_paid_host_auto_bind":         "1",
+					"post_paid_host_auto_bind_version": "7",
+					"post_pay_module_switch":           "{\\\"VUL\\\":1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":                     "PayAsYouGo",
+						"post_paid_flag":                   "1",
+						"post_paid_host_auto_bind":         "1",
+						"post_paid_host_auto_bind_version": "7",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "period", "post_paid_flag", "post_pay_module_switch", "product_type", "subscription_type"},
+			},
+		},
+	})
+}
+
+var AliCloudThreatDetectionInstanceMap10249 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
 }
 
-func AlicloudThreatDetectionInstanceBasicDependence10249(name string) string {
+func AliCloudThreatDetectionInstanceBasicDependence10249(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 中国站资源测试用例_20250217_后付费New 12300
+func TestAccAliCloudThreatDetectionInstance_basic12300(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_threat_detection_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap12300)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeThreatDetectionInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccthreatdetection%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence12300)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":   "PayAsYouGo",
+					"post_paid_flag": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":   "PayAsYouGo",
+						"post_paid_flag": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"post_pay_module_switch_obj": []map[string]interface{}{
+						{
+							"vul":             "0",
+							"cspm":            "0",
+							"agentless":       "0",
+							"serverless":      "0",
+							"ctdr":            "0",
+							"rasp":            "0",
+							"sdk":             "1",
+							"post_host":       "0",
+							"ctdr_storage":    "0",
+							"anti_ransomware": "0",
+							"basic_service":   "1",
+							"web_lock":        "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"post_pay_module_switch_obj.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"post_pay_module_switch_obj": []map[string]interface{}{
+						{
+							"vul":             "1",
+							"cspm":            "1",
+							"agentless":       "1",
+							"serverless":      "1",
+							"ctdr":            "1",
+							"rasp":            "1",
+							"sdk":             "0",
+							"post_host":       "1",
+							"ctdr_storage":    "1",
+							"anti_ransomware": "1",
+							"basic_service":   "1",
+							"web_lock":        "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"post_pay_module_switch_obj.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"post_paid_host_auto_bind":         "1",
+					"post_paid_host_auto_bind_version": "7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"post_paid_host_auto_bind":         "1",
+						"post_paid_host_auto_bind_version": "7",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "period", "post_paid_flag", "post_pay_module_switch", "subscription_type"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudThreatDetectionInstance_basic12300_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_threat_detection_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap12300)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeThreatDetectionInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccthreatdetection%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence12300)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":                     "PayAsYouGo",
+					"post_paid_flag":                   "1",
+					"post_paid_host_auto_bind":         "1",
+					"post_paid_host_auto_bind_version": "7",
+					"post_pay_module_switch_obj": []map[string]interface{}{
+						{
+							"vul":             "0",
+							"cspm":            "0",
+							"agentless":       "0",
+							"serverless":      "0",
+							"ctdr":            "0",
+							"rasp":            "0",
+							"sdk":             "1",
+							"post_host":       "1",
+							"ctdr_storage":    "0",
+							"anti_ransomware": "0",
+							"basic_service":   "1",
+							"web_lock":        "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":                     "PayAsYouGo",
+						"post_paid_flag":                   "1",
+						"post_paid_host_auto_bind":         "1",
+						"post_paid_host_auto_bind_version": "7",
+						"post_pay_module_switch_obj.#":     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "period", "post_paid_flag", "post_pay_module_switch", "subscription_type"},
+			},
+		},
+	})
+}
+
+// Case 国际站资源测试用例_20250217_后付费Intl 12300
+func TestAccAliCloudThreatDetectionInstance_basic12300_intl(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_threat_detection_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudThreatDetectionInstanceMap12300)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ThreatDetectionServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeThreatDetectionInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccthreatdetection%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudThreatDetectionInstanceBasicDependence12300)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":                     "PayAsYouGo",
+					"post_paid_flag":                   "1",
+					"post_paid_host_auto_bind":         "1",
+					"post_paid_host_auto_bind_version": "7",
+					"post_pay_module_switch_obj": []map[string]interface{}{
+						{
+							"vul":             "0",
+							"cspm":            "0",
+							"agentless":       "0",
+							"serverless":      "0",
+							"ctdr":            "0",
+							"rasp":            "0",
+							"sdk":             "1",
+							"post_host":       "1",
+							"ctdr_storage":    "0",
+							"anti_ransomware": "0",
+							"basic_service":   "1",
+							"web_lock":        "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":                     "PayAsYouGo",
+						"post_paid_flag":                   "1",
+						"post_paid_host_auto_bind":         "1",
+						"post_paid_host_auto_bind_version": "7",
+						"post_pay_module_switch_obj.#":     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "period", "post_paid_flag", "post_pay_module_switch", "subscription_type"},
+			},
+		},
+	})
+}
+
+var AliCloudThreatDetectionInstanceMap12300 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AliCloudThreatDetectionInstanceBasicDependence12300(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"

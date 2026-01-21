@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -77,13 +78,82 @@ func resourceAliCloudThreatDetectionInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"post_paid_host_auto_bind": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"post_paid_host_auto_bind_version": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"post_pay_module_switch": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Deprecated:   "Field `post_pay_module_switch` has been deprecated from provider version 1.269.0. New field `post_pay_module_switch_obj` instead.",
 				ValidateFunc: validation.ValidateJsonString,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
+				},
+			},
+			"post_pay_module_switch_obj": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"ctdr_storage": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"basic_service": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"agentless": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"rasp": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"serverless": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"sdk": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"vul": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"post_host": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"cspm": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"anti_ransomware": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"ctdr": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"web_lock": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
 				},
 			},
 			"rasp_count": {
@@ -473,6 +543,8 @@ func resourceAliCloudThreatDetectionInstanceRead(d *schema.ResourceData, meta in
 	d.Set("container_image_scan_new", instanceComponentValueRaw["ContainerImageScanNew"])
 	d.Set("honeypot", instanceComponentValueRaw["Honeypot"])
 	d.Set("honeypot_switch", instanceComponentValueRaw["HoneypotSwitch"])
+	d.Set("post_paid_host_auto_bind", instanceComponentValueRaw["PostPaidHostAutoBind"])
+	d.Set("post_paid_host_auto_bind_version", instanceComponentValueRaw["PostPaidHostAutoBindVersion"])
 	d.Set("rasp_count", instanceComponentValueRaw["RaspCount"])
 	d.Set("sas_anti_ransomware", instanceComponentValueRaw["SasAntiRansomware"])
 	d.Set("sas_cspm", instanceComponentValueRaw["SasCspm"])
@@ -494,6 +566,33 @@ func resourceAliCloudThreatDetectionInstanceRead(d *schema.ResourceData, meta in
 	d.Set("version_code", instanceComponentValueRaw["VersionCode"])
 	d.Set("vul_count", instanceComponentValueRaw["VulCount"])
 	d.Set("vul_switch", instanceComponentValueRaw["VulSwitch"])
+
+	postPayModuleSwitchObjMaps := make([]map[string]interface{}, 0)
+	postPayModuleSwitchObjMap := make(map[string]interface{})
+	postPayModuleSwitchObjRawObj, _ := jsonpath.Get("$.InstanceComponentValue.PostPayModuleSwitchObj", objectRaw)
+	postPayModuleSwitchObjRaw := make(map[string]interface{})
+	if postPayModuleSwitchObjRawObj != nil {
+		postPayModuleSwitchObjRaw = postPayModuleSwitchObjRawObj.(map[string]interface{})
+	}
+	if len(postPayModuleSwitchObjRaw) > 0 {
+		postPayModuleSwitchObjMap["agentless"] = postPayModuleSwitchObjRaw["Agentless"]
+		postPayModuleSwitchObjMap["anti_ransomware"] = postPayModuleSwitchObjRaw["AntiRansomware"]
+		postPayModuleSwitchObjMap["basic_service"] = postPayModuleSwitchObjRaw["BasicService"]
+		postPayModuleSwitchObjMap["cspm"] = postPayModuleSwitchObjRaw["Cspm"]
+		postPayModuleSwitchObjMap["ctdr"] = postPayModuleSwitchObjRaw["Ctdr"]
+		postPayModuleSwitchObjMap["ctdr_storage"] = postPayModuleSwitchObjRaw["CtdrStorage"]
+		postPayModuleSwitchObjMap["post_host"] = postPayModuleSwitchObjRaw["PostHost"]
+		postPayModuleSwitchObjMap["rasp"] = postPayModuleSwitchObjRaw["Rasp"]
+		postPayModuleSwitchObjMap["sdk"] = postPayModuleSwitchObjRaw["Sdk"]
+		postPayModuleSwitchObjMap["serverless"] = postPayModuleSwitchObjRaw["Serverless"]
+		postPayModuleSwitchObjMap["vul"] = postPayModuleSwitchObjRaw["Vul"]
+		postPayModuleSwitchObjMap["web_lock"] = postPayModuleSwitchObjRaw["WebLock"]
+
+		postPayModuleSwitchObjMaps = append(postPayModuleSwitchObjMaps, postPayModuleSwitchObjMap)
+	}
+	if err := d.Set("post_pay_module_switch_obj", postPayModuleSwitchObjMaps); err != nil {
+		return err
+	}
 
 	objectRaw, err = threatDetectionServiceV2.DescribeInstanceQueryAvailableInstances(d)
 	if err != nil && !NotFoundError(err) {
@@ -791,18 +890,97 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 		}
 	}
 	update = false
+	enableModifyPostPayModuleSwitch1 := false
+	if d.Get("payment_type").(string) == "PayAsYouGo" {
+		enableModifyPostPayModuleSwitch1 = true
+	}
 	action = "ModifyPostPayModuleSwitch"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["PostPayInstanceId"] = d.Id()
 
-	if !d.IsNewResource() && d.HasChange("post_pay_module_switch") {
+	if d.HasChange("post_pay_module_switch_obj") {
 		update = true
+		postPayModuleSwitchObj := make(map[string]interface{})
+
+		if v := d.Get("post_pay_module_switch_obj"); v != nil {
+			vul1, _ := jsonpath.Get("$[0].vul", v)
+			if vul1 != nil && vul1 != "" {
+				postPayModuleSwitchObj["Vul"] = vul1
+			}
+			agentless1, _ := jsonpath.Get("$[0].agentless", v)
+			if agentless1 != nil && agentless1 != "" {
+				postPayModuleSwitchObj["Agentless"] = agentless1
+			}
+			webLock1, _ := jsonpath.Get("$[0].web_lock", v)
+			if webLock1 != nil && webLock1 != "" {
+				postPayModuleSwitchObj["WebLock"] = webLock1
+			}
+			serverless1, _ := jsonpath.Get("$[0].serverless", v)
+			if serverless1 != nil && serverless1 != "" {
+				postPayModuleSwitchObj["Serverless"] = serverless1
+			}
+			basicService1, _ := jsonpath.Get("$[0].basic_service", v)
+			if basicService1 != nil && basicService1 != "" {
+				postPayModuleSwitchObj["BasicService"] = basicService1
+			}
+			cspm1, _ := jsonpath.Get("$[0].cspm", v)
+			if cspm1 != nil && cspm1 != "" {
+				postPayModuleSwitchObj["Cspm"] = cspm1
+			}
+			antiRansomware1, _ := jsonpath.Get("$[0].anti_ransomware", v)
+			if antiRansomware1 != nil && antiRansomware1 != "" {
+				postPayModuleSwitchObj["AntiRansomware"] = antiRansomware1
+			}
+			ctdrStorage1, _ := jsonpath.Get("$[0].ctdr_storage", v)
+			if ctdrStorage1 != nil && ctdrStorage1 != "" {
+				postPayModuleSwitchObj["CtdrStorage"] = ctdrStorage1
+			}
+			rasp1, _ := jsonpath.Get("$[0].rasp", v)
+			if rasp1 != nil && rasp1 != "" {
+				postPayModuleSwitchObj["Rasp"] = rasp1
+			}
+			ctdr1, _ := jsonpath.Get("$[0].ctdr", v)
+			if ctdr1 != nil && ctdr1 != "" {
+				postPayModuleSwitchObj["Ctdr"] = ctdr1
+			}
+			postHost1, _ := jsonpath.Get("$[0].post_host", v)
+			if postHost1 != nil && postHost1 != "" {
+				postPayModuleSwitchObj["PostHost"] = postHost1
+			}
+			sdk1, _ := jsonpath.Get("$[0].sdk", v)
+			if sdk1 != nil && sdk1 != "" {
+				postPayModuleSwitchObj["Sdk"] = sdk1
+			}
+
+			postPayModuleSwitchObjJson, err := json.Marshal(postPayModuleSwitchObj)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["PostPayModuleSwitchObj"] = string(postPayModuleSwitchObjJson)
+		}
 	}
-	if v, ok := d.GetOk("post_pay_module_switch"); ok {
-		request["PostPayModuleSwitch"] = v
+
+	if d.HasChange("post_pay_module_switch") {
+		update = true
+
+		if v, ok := d.GetOk("post_pay_module_switch"); ok {
+			request["PostPayModuleSwitch"] = v
+		}
 	}
-	if update {
+	if d.HasChanges("post_paid_host_auto_bind", "post_paid_host_auto_bind_version") {
+		update = true
+
+		if v, ok := d.GetOkExists("post_paid_host_auto_bind"); ok {
+			request["PostPaidHostAutoBind"] = v
+		}
+
+		if v, ok := d.GetOkExists("post_paid_host_auto_bind_version"); ok {
+			request["PostPaidHostAutoBindVersion"] = v
+		}
+	}
+
+	if update && enableModifyPostPayModuleSwitch1 {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
