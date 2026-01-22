@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -10,12 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
+	"github.com/denverdino/aliyungo/cs"
+
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -681,6 +681,19 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"pause_policy": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"batch_interval": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"node_names": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 						"max_parallelism": {
 							Type:     schema.TypeInt,
 							Optional: true,
@@ -907,6 +920,35 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 			"update_nodes": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"upgrade_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"kubernetes_version": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"use_replace": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"runtime": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"image_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"runtime_version": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 			"user_data": {
 				Type:     schema.TypeString,
@@ -3194,6 +3236,102 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RoaPut("CS", "2015-12-15", action, query, header, body, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		ackServiceV2 := AckServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
+		if jobDetail, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		}
+	}
+	update = false
+	parts = strings.Split(d.Id(), ":")
+	ClusterId = parts[0]
+	NodepoolId = parts[1]
+	action = fmt.Sprintf("/clusters/%s/nodepools/%s/upgrade", ClusterId, NodepoolId)
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+
+	if v, ok := d.GetOk("upgrade_policy"); ok {
+		upgradePolicyKubernetesVersionJsonPath, err := jsonpath.Get("$[0].kubernetes_version", v)
+		if err == nil && upgradePolicyKubernetesVersionJsonPath != "" {
+			request["kubernetes_version"] = upgradePolicyKubernetesVersionJsonPath
+		}
+	}
+	if v, ok := d.GetOkExists("upgrade_policy"); ok {
+		upgradePolicyUseReplaceJsonPath, err := jsonpath.Get("$[0].use_replace", v)
+		if err == nil && upgradePolicyUseReplaceJsonPath != "" {
+			request["use_replace"] = upgradePolicyUseReplaceJsonPath
+		}
+	}
+	rolling_policy = make(map[string]interface{})
+
+	if v := d.Get("rolling_policy"); v != nil {
+		batchIntervalRaw, _ := jsonpath.Get("$[0].batch_interval", v)
+		if batchIntervalRaw != nil && batchIntervalRaw != "" {
+			batchInterval, _ := strconv.ParseInt(batchIntervalRaw.(string), 10, 64)
+			rolling_policy["batch_interval"] = batchInterval
+		}
+		maxParallelism, _ := jsonpath.Get("$[0].max_parallelism", v)
+		if maxParallelism != nil && maxParallelism != "" {
+			rolling_policy["max_parallelism"] = maxParallelism
+		}
+		pausePolicy, _ := jsonpath.Get("$[0].pause_policy", v)
+		if pausePolicy != nil && pausePolicy != "" {
+			rolling_policy["pause_policy"] = pausePolicy
+		}
+
+		request["rolling_policy"] = rolling_policy
+	}
+
+	if v, ok := d.GetOk("upgrade_policy"); ok {
+		upgradePolicyImageIdJsonPath, err := jsonpath.Get("$[0].image_id", v)
+		if err == nil && upgradePolicyImageIdJsonPath != "" {
+			request["image_id"] = upgradePolicyImageIdJsonPath
+		}
+	}
+	if v, ok := d.GetOk("upgrade_policy"); ok {
+		upgradePolicyRuntimeJsonPath, err := jsonpath.Get("$[0].runtime", v)
+		if err == nil && upgradePolicyRuntimeJsonPath != "" {
+			request["runtime_type"] = upgradePolicyRuntimeJsonPath
+		}
+	}
+	if v, ok := d.GetOk("upgrade_policy"); ok {
+		upgradePolicyRuntimeVersionJsonPath, err := jsonpath.Get("$[0].runtime_version", v)
+		if err == nil && upgradePolicyRuntimeVersionJsonPath != "" {
+			request["runtime_version"] = upgradePolicyRuntimeVersionJsonPath
+		}
+	}
+	if d.HasChange("rolling_policy") {
+		update = true
+		if v, ok := d.GetOk("rolling_policy"); ok || d.HasChange("rolling_policy") {
+			localData, err := jsonpath.Get("$[0].node_names", v)
+			if err != nil {
+				return WrapError(err)
+			}
+			node_namesMapsArray := convertToInterfaceArray(localData)
+
+			request["node_names"] = node_namesMapsArray
+		}
+	}
+
+	body = request
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RoaPost("CS", "2015-12-15", action, query, header, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
