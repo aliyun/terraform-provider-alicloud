@@ -402,6 +402,8 @@ The following arguments are supported:
 * `delete_options` - (Optional, Available since v1.223.2) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
 * `skip_set_certificate_authority` - (Optional) Configure whether to save certificate authority data for your cluster to attribute `certificate_authority`. For cluster security, recommended configuration as `true`. Will be removed with attribute certificate_authority removed.
+* `upgrade_policy` - (Optional, Set, Available since v1.269.0) Configuration block for cluster upgrade operations. See [`upgrade_policy`](#upgrade_policy) below.
+-> **NOTE:** This parameter only applies during resource update.
 
 *Network params*
 
@@ -513,6 +515,23 @@ Audit log config. If `enabled` is set to `true`, a Logstore is created in the sp
 Auto mode cluster config.  
 
 * `enabled` - (Optional, ForceNew) Whether to enable auto mode. Valid values: `true`, `false`. Only ACK managed Pro clusters support Auto Mode.
+
+### `upgrade_policy`
+Configuration block for cluster upgrade operations. This is a transient parameter that controls upgrade behavior when updating the `version` field.
+
+* `control_plane_only` - (Optional) Whether to upgrade only the control plane without upgrading worker nodes. Valid values: `true`, `false`. When set to `true`, only the cluster control plane components will be upgraded, and worker nodes will remain at their current version. Default is `false`.
+
+for example:
+```
+  # Upgrade cluster version with control plane only
+  version = "1.32.1-aliyun.1"
+  
+  upgrade_policy {
+    control_plane_only = true
+  }
+```
+
+-> **NOTE:** After the upgrade completes, you may remove the `upgrade_policy` block from your configuration to prevent unintended re-upgrades on subsequent applies.
 
 ### `addons`
 

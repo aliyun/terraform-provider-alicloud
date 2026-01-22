@@ -50,12 +50,6 @@ For information about Container Service for Kubernetes (ACK) Nodepool and how to
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_node_pool&exampleId=b9abdd6c-849b-5331-23d3-42c7d815404ab1bc1d14&activeTab=example&spm=docs.r.cs_kubernetes_node_pool.0.b9abdd6c84&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 resource "random_integer" "default" {
   max = 99999
@@ -598,6 +592,59 @@ resource "alicloud_cs_kubernetes_node_pool" "auto_mode_example" {
     ]
   }
 }
+
+#Upgrade a node pool with upgrade_policy and rolling_policy
+resource "alicloud_cs_kubernetes_node_pool" "upgrade_nodepool" {
+  node_pool_name       = "upgrade_nodepool"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
+  vswitch_ids          = split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  instance_types       = ["ecs.c6.xlarge"]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  desired_size         = 2
+
+  # Set initial runtime and image_id for the node pool
+  runtime_name    = "containerd"
+  runtime_version = "1.6.39"
+  image_id        = "aliyun_3_x64_20G_container_optimized_alibase_20250629.vhd"
+
+  # upgrade_policy configuration - This is a process parameter used during update
+  # Note: Parameters in upgrade_policy (runtime, image_id, runtime_version) must match 
+  # the corresponding node pool configuration settings (runtime_name, image_id, runtime_version)
+  # to ensure consistency during the upgrade process
+  upgrade_policy {
+    # IMPORTANT: image_id must match the node pool's image_id value
+    image_id = "aliyun_3_x64_20G_container_optimized_alibase_20250629.vhd"
+
+    # IMPORTANT: runtime must match the node pool's runtime_name value
+    runtime = "containerd"
+
+    # IMPORTANT: runtime_version must match the node pool's runtime_version value
+    runtime_version = "1.6.39"
+
+    # Kubernetes version to upgrade to, cannot be greater than the control plane version
+    kubernetes_version = alicloud_cs_managed_kubernetes.default.version
+
+    # Whether to use replacement disk upgrade
+    use_replace = true
+  }
+
+  # rolling_policy configuration - Controls the rolling upgrade strategy
+  # This parameter only applies during resource update
+  rolling_policy {
+    # Maximum number of nodes that can be unavailable during the rolling upgrade
+    max_parallelism = 1
+
+    # Batch interval in minutes between upgrading batches of nodes
+    batch_interval = 1
+
+    # Pause policy for the rolling upgrade process
+    pause_policy = "NotPause"
+
+    # Specific node names to be upgraded 
+    # node_names = []
+  }
+}
 ```
 
 
@@ -606,7 +653,7 @@ resource "alicloud_cs_kubernetes_node_pool" "auto_mode_example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `auto_mode` - (Optional, ForceNew, Computed, List, Available since v1.266.0) Whether to enable auto mode. When enabled, the system will automatically manage the node pool with optimized default configurations. **Note:** When `auto_mode` is enabled, many parameters will be automatically set to default values and cannot be modified. See `auto_mode.enable` below for details. See [`auto_mode`](#auto_mode) below.
+* `auto_mode` - (Optional, ForceNew, Computed, Set, Available since v1.266.0) Whether to enable auto mode. When enabled, the system will automatically manage the node pool with optimized default configurations. **Note:** When `auto_mode` is enabled, many parameters will be automatically set to default values and cannot be modified. See `auto_mode.enable` below for details. See [`auto_mode`](#auto_mode) below.
 * `auto_renew` - (Optional) Whether to enable automatic renewal for nodes in the node pool takes effect only when `instance_charge_type` is set to `PrePaid`. Default value: `false`. Valid values:
   - `true`: Automatic renewal. 
   - `false`: Do not renew automatically.
@@ -620,7 +667,7 @@ The following arguments are supported:
 * `data_disks` - (Optional, List) Configure the data disk of the node in the node pool. See [`data_disks`](#data_disks) below.
 * `deployment_set_id` - (Optional, ForceNew) The deployment set of node pool. Specify the deploymentSet to ensure that the nodes in the node pool can be distributed on different physical machines.
 * `desired_size` - (Optional) Number of expected nodes in the node pool.
-* `eflo_node_group` - (Optional, List, Available since v1.252.0) Lingjun node pool configuration. See [`eflo_node_group`](#eflo_node_group) below.
+* `eflo_node_group` - (Optional, Set, Available since v1.252.0) Lingjun node pool configuration. See [`eflo_node_group`](#eflo_node_group) below.
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -646,16 +693,16 @@ The following arguments are supported:
   - `true` : install cloud monitoring on the ECS node.
   - `false` : does not install cloud monitoring on the ECS node.
 * `instance_charge_type` - (Optional, Computed) Node payment type. Valid values: `PostPaid`, `PrePaid`, default is `PostPaid`. If value is `PrePaid`, the arguments `period`, `period_unit`, `auto_renew` and `auto_renew_period` are required.
-* `instance_metadata_options` - (Optional, ForceNew, Computed, List, Available since v1.266.0) ECS instance metadata access configuration. See [`instance_metadata_options`](#instance_metadata_options) below.
+* `instance_metadata_options` - (Optional, ForceNew, Computed, Set, Available since v1.266.0) ECS instance metadata access configuration. See [`instance_metadata_options`](#instance_metadata_options) below.
 * `instance_patterns` - (Optional, List, Available since v1.266.0) Instance property configuration. See [`instance_patterns`](#instance_patterns) below.
 * `instance_types` - (Optional, List) In the node instance specification list, you can select multiple instance specifications as alternatives. When each node is created, it will try to purchase from the first specification until it is created successfully. The final purchased instance specifications may vary with inventory changes.
 * `internet_charge_type` - (Optional) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
 * `internet_max_bandwidth_out` - (Optional, Int) The maximum bandwidth of the public IP address of the node. The unit is Mbps(Mega bit per second). The value range is:\[1,100\]
 * `key_name` - (Optional) The name of the key pair. When the node pool is a managed node pool, only `key_name` is supported.
-* `kubelet_configuration` - (Optional, List) Kubelet configuration parameters for worker nodes. See [`kubelet_configuration`](#kubelet_configuration) below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/). See [`kubelet_configuration`](#kubelet_configuration) below.
+* `kubelet_configuration` - (Optional, Set) Kubelet configuration parameters for worker nodes. See [`kubelet_configuration`](#kubelet_configuration) below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/). See [`kubelet_configuration`](#kubelet_configuration) below.
 * `labels` - (Optional, List) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument. Detailed below. More information in [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/). See [`labels`](#labels) below.
 * `login_as_non_root` - (Optional, ForceNew) Whether the ECS instance is logged on as a ecs-user user. Valid value: `true` and `false`.
-* `management` - (Optional, Computed, List) Managed node pool configuration. See [`management`](#management) below.
+* `management` - (Optional, Computed, Set) Managed node pool configuration. See [`management`](#management) below.
 * `multi_az_policy` - (Optional, Computed) The scaling policy for ECS instances in a multi-zone scaling group. Valid value: `PRIORITY`, `COST_OPTIMIZED` and `BALANCE`. `PRIORITY`: scales the capacity according to the virtual switches you define (VSwitchIds.N). When an ECS instance cannot be created in the zone where the higher-priority vSwitch is located, the next-priority vSwitch is automatically used to create an ECS instance. `COST_OPTIMIZED`: try to create by vCPU unit price from low to high. When the scaling configuration is configured with multiple instances of preemptible billing, preemptible instances are created first. You can continue to use the `CompensateWithOnDemand` parameter to specify whether to automatically try to create a preemptible instance by paying for it. It takes effect only when the scaling configuration has multi-instance specifications or preemptible instances. `BALANCE`: distributes ECS instances evenly among the multi-zone specified by the scaling group. If the zones become unbalanced due to insufficient inventory, you can use the API [RebalanceInstances](~~ 71516 ~~) to balance resources.
 * `node_name_mode` - (Optional, ForceNew, Computed) Each node name consists of a prefix, its private network IP, and a suffix, separated by commas. The input format is `customized,,ip,`.
   - The prefix and suffix can be composed of one or more parts separated by '.', each part can use lowercase letters, numbers and '-', and the beginning and end of the node name must be lowercase letters and numbers.
@@ -669,7 +716,7 @@ The following arguments are supported:
 * `period_unit` - (Optional) Node payment period unit, valid value: `Month`. Default is `Month`.
 * `platform` - (Optional, Computed, Deprecated since v1.145.0) Operating system release, using `image_type` instead.
 * `pre_user_data` - (Optional, Available since v1.232.0) Node pre custom data, base64-encoded, the script executed before the node is initialized. 
-* `private_pool_options` - (Optional, List) Private node pool configuration. See [`private_pool_options`](#private_pool_options) below.
+* `private_pool_options` - (Optional, Set) Private node pool configuration. See [`private_pool_options`](#private_pool_options) below.
 * `ram_role_name` - (Optional, ForceNew, Computed, Available since v1.242.0) The name of the Worker RAM role.
 * If it is empty, the default Worker RAM role created in the cluster will be used.
 * If the specified RAM role is not empty, the specified RAM role must be a **Common Service role**, and its **trusted service** configuration must be **cloud server**. For more information, see [Create a common service role](https://help.aliyun.com/document_detail/116800.html). If the specified RAM role is not the default Worker RAM role created in the cluster, the role name cannot start with 'KubernetesMasterRole-'or 'KubernetesWorkerRole.
@@ -678,18 +725,18 @@ The following arguments are supported:
 
 * `rds_instances` - (Optional, List) The list of RDS instances.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
-* `rolling_policy` - (Optional, List) Rotary configuration. See [`rolling_policy`](#rolling_policy) below.
+* `rolling_policy` - (Optional, Set) Rotary configuration. See [`rolling_policy`](#rolling_policy) below.
 
 -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `runtime_name` - (Optional, Computed) The runtime name of containers. If not set, the cluster runtime will be used as the node pool runtime. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm).
 * `runtime_version` - (Optional, Computed) The runtime version of containers. If not set, the cluster runtime will be used as the node pool runtime.
-* `scaling_config` - (Optional, Computed, List) Automatic scaling configuration. See [`scaling_config`](#scaling_config) below.
+* `scaling_config` - (Optional, Computed, Set) Automatic scaling configuration. See [`scaling_config`](#scaling_config) below.
 * `scaling_policy` - (Optional, Computed) Scaling group mode, default value: `release`. Valid values:
   - `release`: in the standard mode, scaling is performed by creating and releasing ECS instances based on the usage of the application resource value.
   - `recycle`: in the speed mode, scaling is performed through creation, shutdown, and startup to increase the speed of scaling again (computing resources are not charged during shutdown, only storage fees are charged, except for local disk models).
 * `security_group_id` - (Optional, ForceNew, Computed, Deprecated since v1.145.0) The security group ID of the node pool. This field has been replaced by `security_group_ids`, please use the `security_group_ids` field instead.
-* `security_group_ids` - (Optional, ForceNew, Computed, Set) Multiple security groups can be configured for a node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect. This field cannot be modified.
+* `security_group_ids` - (Optional, ForceNew, Computed, List) Multiple security groups can be configured for a node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect. This field cannot be modified.
 * `security_hardening_os` - (Optional, ForceNew) Alibaba Cloud OS security reinforcement. Default value: `false`. Value:
   -`true`: enable Alibaba Cloud OS security reinforcement.
   -`false`: does not enable Alibaba Cloud OS security reinforcement.
@@ -730,7 +777,7 @@ The following arguments are supported:
 * `system_disk_snapshot_policy_id` - (Optional) The ID of the automatic snapshot policy used by the system disk.
 * `tags` - (Optional, Map) Add tags only for ECS instances. The maximum length of the tag key is 128 characters. The tag key and value cannot start with aliyun or acs:, or contain https:// or http://.
 * `taints` - (Optional, List) A List of Kubernetes taints to assign to the nodes. Detailed below. More information in [Taints and Toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). See [`taints`](#taints) below.
-* `tee_config` - (Optional, ForceNew, Computed, List) The configuration about confidential computing for the cluster. See [`tee_config`](#tee_config) below.
+* `tee_config` - (Optional, ForceNew, Computed, Set) The configuration about confidential computing for the cluster. See [`tee_config`](#tee_config) below.
 * `type` - (Optional, ForceNew, Computed, Available since v1.252.0) Node pool type, value range:
   -'ess': common node pool (including hosting function and auto scaling function).
   -'lingjun': Lingjun node pool.
@@ -738,6 +785,10 @@ The following arguments are supported:
 * `update_nodes` - (Optional) Synchronously update node labels and taints.
 
 -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+
+* `upgrade_policy` - (Optional, Set, Available since v1.269.0) Configuration block for node pool upgrade operations. This is a transient parameter that triggers node pool upgrades when specified. Once the upgrade completes, this block should be removed from your configuration to prevent unintended re-upgrades on subsequent applies. See [`upgrade_policy`](#upgrade_policy) below.
+
+-> **NOTE:** This parameter only applies during resource update. 
 
 * `user_data` - (Optional) Node custom data, base64-encoded.
 * `vswitch_ids` - (Optional, List) The vswitches used by node pool workers.
@@ -756,7 +807,7 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ### `auto_mode`
 
 The auto_mode supports the following:
-* `enabled` - (Optional, ForceNew, Available since v1.266.0) Whether to enable auto mode. Valid values: 
+* `enabled` - (Optional, ForceNew) Whether to enable auto mode. Valid values: 
   - `true`: enables Smart Managed Configuration. 
   - `false`: disables Smart Managed Configuration.
 
@@ -771,13 +822,12 @@ The auto_mode supports the following:
   - `resource_group_id`: can be specified during creation and modified afterward
   - `vswitch_ids`: can be modified during creation and modified afterward
   - `tags`: can be modified during creation and modified afterward
-  - `labels`: can be specified during creation and modified afterward
-  - `taints`: can be specified during creation and modified afterward
-  - `kubelet_configuration`:  can be specified during creation and modified afterward
+  - `labels`: can be specified during creation and modified afterward (in Node Kubernetes Config)
+  - `taints`: can be specified during creation and modified afterward (in Node Kubernetes Config)
 
 **All Other Parameters:**
 
-All other parameters (including but not limited to `management`, `scaling_config.enable`, `scaling_config.type`, `install_cloud_monitor`, `cpu_policy`, `node_name_mode`, `runtime_name`, `runtime_version`, `unschedulable`, `user_data`, `pre_user_data`, `auto_renew`, `auto_renew_period`, `cis_enabled`, `compensate_with_on_demand`, `deployment_set_id`, `image_id`, `image_type`, `instance_charge_type`, `instance_metadata_options`, `internet_charge_type`, `internet_max_bandwidth_out`, `key_name`, `login_as_non_root`, `password`, `multi_az_policy`, `on_demand_base_capacity`, `on_demand_percentage_above_base_capacity`, `period`, `period_unit`, `platform`, `private_pool_options`, `ram_role_name`, `rds_instances`, `scaling_policy`, `security_group_id`, `security_group_ids`, `security_hardening_os`, `soc_enabled`, `spot_instance_pools`, `spot_instance_remedy`, `spot_price_limit`, `spot_strategy`, all `system_disk_*` parameters, `tee_config`, etc.) will be automatically set to default values during node pool creation (user-specified values will be ignored), and cannot be modified after creation.
+All other parameters (including but not limited to `management`, `scaling_config.enable`, `scaling_config.type`, `install_cloud_monitor`, `cpu_policy`, `node_name_mode`, `runtime_name`, `runtime_version`, `unschedulable`, `user_data`, `pre_user_data`, `auto_renew`, `auto_renew_period`, `cis_enabled`, `compensate_with_on_demand`, `deployment_set_id`, `image_id`, `image_type`, `instance_charge_type`, `instance_metadata_options`, `internet_charge_type`, `internet_max_bandwidth_out`, `key_name`, `login_as_non_root`, `password`, `multi_az_policy`, `on_demand_base_capacity`, `on_demand_percentage_above_base_capacity`, `period`, `period_unit`, `platform`, `private_pool_options`, `ram_role_name`, `rds_instances`, `scaling_policy`, `security_group_id`, `security_group_ids`, `security_hardening_os`, `soc_enabled`, `spot_instance_pools`, `spot_instance_remedy`, `spot_price_limit`, `spot_strategy`, all `system_disk_*` parameters, `tee_config`, `kubelet_configuration`, etc.) will be automatically set to default values during node pool creation (user-specified values will be ignored), and cannot be modified after creation.
 
 ### `data_disks`
 
@@ -888,7 +938,7 @@ The kubelet_configuration supports the following:
 * `server_tls_bootstrap` - (Optional, Available since v1.266.0) Used to enable the kubelet server certificate signing and rotation via CSR.
 * `system_reserved` - (Optional, Map) Same as systemReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for non-kubernetes components. Currently, only cpu and memory are supported. See [compute resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for more details.
 * `topology_manager_policy` - (Optional, Available since v1.242.0) Name of the Topology Manager policy used.
-* `tracing` - (Optional, List) OpenTelemetry tracks the configuration information for client settings versioning. See [`tracing`](#kubelet_configuration-tracing) below.
+* `tracing` - (Optional, Set) OpenTelemetry tracks the configuration information for client settings versioning. See [`tracing`](#kubelet_configuration-tracing) below.
 
 ### `kubelet_configuration-reserved_memory`
 
@@ -912,11 +962,11 @@ The labels supports the following:
 
 The management supports the following:
 * `auto_repair` - (Optional, Computed) Whether to enable automatic repair. Valid values: `true`: Automatic repair. `false`: not automatically repaired.
-* `auto_repair_policy` - (Optional, Computed, List) Automatic repair node policy. See [`auto_repair_policy`](#management-auto_repair_policy) below.
+* `auto_repair_policy` - (Optional, Computed, Set) Automatic repair node policy. See [`auto_repair_policy`](#management-auto_repair_policy) below.
 * `auto_upgrade` - (Optional, Computed) Specifies whether to enable auto update. Valid values: `true`: enables auto update. `false`: disables auto update.
-* `auto_upgrade_policy` - (Optional, Computed, List) The auto update policy. See [`auto_upgrade_policy`](#management-auto_upgrade_policy) below.
+* `auto_upgrade_policy` - (Optional, Computed, Set) The auto update policy. See [`auto_upgrade_policy`](#management-auto_upgrade_policy) below.
 * `auto_vul_fix` - (Optional, Computed) Specifies whether to automatically patch CVE vulnerabilities. Valid values: `true`, `false`.
-* `auto_vul_fix_policy` - (Optional, Computed, List) The auto CVE patching policy. See [`auto_vul_fix_policy`](#management-auto_vul_fix_policy) below.
+* `auto_vul_fix_policy` - (Optional, Computed, Set) The auto CVE patching policy. See [`auto_vul_fix_policy`](#management-auto_vul_fix_policy) below.
 * `enable` - (Optional, Computed) Specifies whether to enable the managed node pool feature. Valid values: `true`: enables the managed node pool feature. `false`: disables the managed node pool feature. Other parameters in this section take effect only when you specify enable=true.
 * `max_unavailable` - (Optional, Int) Maximum number of unavailable nodes. Default value: 1. Value range:\[1,1000\].
 * `surge` - (Optional, Int, Deprecated since v1.219.0) Number of additional nodes. You have to specify one of surge, surge_percentage.
@@ -947,7 +997,13 @@ The private_pool_options supports the following:
 ### `rolling_policy`
 
 The rolling_policy supports the following:
-* `max_parallelism` - (Optional, Int) The maximum number of unusable nodes.
+* `batch_interval` - (Optional, Int, Available since v1.269.0) The upgrade interval time between batches, in minutes. This parameter only takes effect when `pause_policy` is set to `NotPause`.
+* `max_parallelism` - (Optional, Int) The maximum number of nodes that can be upgraded in parallel per batch when updating nodes in the node pool.
+* `node_names` - (Optional, List, Available since v1.269.0) Specify the list of nodes to be upgraded.
+* `pause_policy` - (Optional, Available since v1.269.0) The auto-pause policy during node upgrade. Valid values:
+  - `FirstBatch`: Pause after the first batch is completed.
+  - `EveryBatch`: Pause after each batch is completed.
+  - `NotPause`: Do not pause during the upgrade process.
 
 ### `scaling_config`
 
@@ -980,6 +1036,15 @@ The taints supports the following:
 The tee_config supports the following:
 * `tee_enable` - (Optional, ForceNew) Specifies whether to enable confidential computing for the cluster.
 
+### `upgrade_policy`
+
+The upgrade_policy supports the following:
+* `image_id` - (Optional, Available since v1.269.0) Node system Image ID
+* `kubernetes_version` - (Optional, Available since v1.269.0) Node Kubernetes version
+* `runtime` - (Optional, Available since v1.269.0) Node runtime type
+* `runtime_version` - (Optional, Available since v1.269.0) Node Runtime Version
+* `use_replace` - (Optional, Available since v1.269.0) Whether to use replacement disk upgrade
+
 ### `rollout_policy`
 
 The rollout_policy mapping supports the following:
@@ -988,7 +1053,7 @@ The rollout_policy mapping supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<cluster_id>:<node_pool_id>`.
+* `id` - The ID of the resource supplied above. The value is formulated as `<cluster_id>:<node_pool_id>`.
 * `node_pool_id` - The first ID of the resource.
 * `scaling_group_id` - The ID of the scaling group.
 

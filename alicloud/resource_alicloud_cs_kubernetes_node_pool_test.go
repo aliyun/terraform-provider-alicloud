@@ -5756,7 +5756,6 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 	})
 }
 
-// Test Ack Nodepool. >>> Resource test cases, automatically generated.
 // Case np-instancepattern 11802
 func TestAccAliCloudAckNodepool_basic11802(t *testing.T) {
 	var v map[string]interface{}
@@ -6804,7 +6803,6 @@ func TestAccAliCloudAckNodepool_basic11829(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccack%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckNodepoolBasicDependence11829)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -6932,81 +6930,121 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_patterns": []map[string]interface{}{
-						{
-							"instance_family_level": "EnterpriseLevel",
-							"min_cpu_cores":         "4",
-							"max_cpu_cores":         "8",
-							"min_memory_size":       "4",
-							"max_memory_size":       "16",
-							"instance_categories": []string{
-								"General-purpose"},
-							"cpu_architectures": []string{
-								"X86"},
-						},
-					},
-					"data_disks": []map[string]interface{}{
-						{
-							"size":     "130",
-							"category": "cloud_essd",
-						},
-					},
-				}),
+				Config: AlicloudAckNodepoolBasicDependence11829(name) + fmt.Sprintf(`
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  node_pool_name = "%s"
+  cluster_id     = alicloud_cs_managed_kubernetes.defaultC02XDz.id
+  vswitch_ids    = ["${alicloud_vswitch.defaultziRRat.id}", "${alicloud_vswitch.defaultT8D8ss.id}", "${alicloud_vswitch.defaultFsk7cj.id}"]
+
+  auto_mode {
+    enabled = true
+  }
+
+  scaling_config {
+    max_size = 50
+    min_size = 0
+  }
+
+  instance_patterns {
+    min_cpu_cores           = 4
+    max_cpu_cores           = 8
+    min_memory_size         = 4
+    max_memory_size         = 16
+    instance_family_level   = "EnterpriseLevel"
+    excluded_instance_types = ["ecs.c6.*"]
+    instance_categories     = ["General-purpose"]
+    cpu_architectures       = ["X86"]
+  }
+
+  data_disks {
+    size     = 130
+    encrypted = "false"
+    category = "cloud_essd"
+  }
+
+  labels {
+    key   = "test"
+    value = "test"
+  }
+
+  taints {
+    key    = "test_taint_key"
+    effect = "NoSchedule"
+    value  = "test_taint_val"
+  }
+
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+
+  lifecycle {
+    ignore_changes = [
+      management,
+      install_cloud_monitor,
+      cpu_policy,
+      node_name_mode,
+      runtime_name,
+      runtime_version,
+      unschedulable,
+      user_data,
+      pre_user_data,
+      auto_renew,
+      auto_renew_period,
+      cis_enabled,
+      compensate_with_on_demand,
+      deployment_set_id,
+      image_id,
+      image_type,
+      instance_charge_type,
+      instance_metadata_options,
+      internet_charge_type,
+      internet_max_bandwidth_out,
+      key_name,
+      login_as_non_root,
+      password,
+      multi_az_policy,
+      on_demand_base_capacity,
+      on_demand_percentage_above_base_capacity,
+      period,
+      period_unit,
+      platform,
+      private_pool_options,
+      ram_role_name,
+      rds_instances,
+      scaling_policy,
+      security_group_id,
+      security_group_ids,
+      security_hardening_os,
+      soc_enabled,
+      spot_instance_pools,
+      spot_instance_remedy,
+      spot_price_limit,
+      spot_strategy,
+      system_disk_category,
+      system_disk_categories,
+      system_disk_size,
+      system_disk_bursting_enabled,
+      system_disk_performance_level,
+      system_disk_encrypted,
+      system_disk_kms_key,
+      system_disk_snapshot_policy_id,
+      system_disk_encrypt_algorithm,
+      system_disk_provisioned_iops,
+      tee_config,
+    ]
+  }
+}
+`, name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"node_pool_name":      name,
+						"labels.#":            "1",
+						"taints.#":            "1",
+						"vswitch_ids.#":       "3",
+						"resource_group_id":   CHECKSET,
 						"instance_patterns.#": "1",
 						"data_disks.#":        "1",
+						"cluster_id":          CHECKSET,
 					}),
 				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF-update",
-						"tags.For":     "Test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -7692,6 +7730,283 @@ resource "alicloud_cs_managed_kubernetes" "defaultC02XDz" {
   pod_cidr        = var.container_cidr
   deletion_protection = false
   is_enterprise_security_group = true
+}
+
+
+`, name)
+}
+
+// Test Ack Nodepool. >>> Resource test cases, automatically generated.
+// Case np-upgrade 12069
+func TestAccAliCloudAckNodepool_basic12069(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cs_kubernetes_node_pool.default"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AckServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAckNodepool")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccack%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckNodepoolBasicDependence12069)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"image_type":                    "AliyunLinux",
+					"image_id":                      "aliyun_2_1903_x64_20G_alibase_20231221.vhd",
+					"runtime_name":                  "containerd",
+					"system_disk_performance_level": "PL0",
+					"system_disk_size":              "40",
+					"system_disk_category":          "cloud_essd",
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.defaultziRRat.id}", "${alicloud_vswitch.defaultT8D8ss.id}", "${alicloud_vswitch.defaultFsk7cj.id}"},
+					"instance_types": []string{
+						"ecs.c6.xlarge", "ecs.c7.xlarge"},
+					"cluster_id":           "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"instance_charge_type": "PostPaid",
+					"runtime_version":      "1.6.28",
+					"node_pool_name":       name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id":             CHECKSET,
+						"image_type":                    "AliyunLinux",
+						"image_id":                      "aliyun_2_1903_x64_20G_alibase_20231221.vhd",
+						"runtime_name":                  "containerd",
+						"system_disk_performance_level": "PL0",
+						"system_disk_size":              "40",
+						"system_disk_category":          "cloud_essd",
+						"vswitch_ids.#":                 "3",
+						"instance_types.#":              "2",
+						"cluster_id":                    CHECKSET,
+						"instance_charge_type":          "PostPaid",
+						"runtime_version":               "1.6.28",
+						"node_pool_name":                name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_type": "AliyunLinux3ContainerOptimized",
+					"image_id":   "aliyun_3_x64_20G_container_optimized_alibase_20250629.vhd",
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.defaultT8D8ss.id}", "${alicloud_vswitch.defaultVTblQn.id}", "${alicloud_vswitch.defaultFsk7cj.id}"},
+					"runtime_version": "1.6.39",
+					"node_pool_name":  name + "_update",
+					"rolling_policy": []map[string]interface{}{
+						{
+							"max_parallelism": "1",
+							"pause_policy":    "NoPause",
+							"batch_interval":  "0",
+						},
+					},
+					"scaling_config": []map[string]interface{}{
+						{
+							"enable":      "false",
+							"is_bond_eip": "false",
+						},
+					},
+					"upgrade_policy": []map[string]interface{}{
+						{
+							"runtime":            "containerd",
+							"runtime_version":    "1.6.39",
+							"image_id":           "aliyun_3_x64_20G_container_optimized_alibase_20250629.vhd",
+							"kubernetes_version": "${alicloud_cs_managed_kubernetes.defaultNppPcz.version}",
+							"use_replace":        "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_type":      "AliyunLinux3ContainerOptimized",
+						"image_id":        "aliyun_3_x64_20G_container_optimized_alibase_20250629.vhd",
+						"vswitch_ids.#":   "3",
+						"runtime_version": "1.6.39",
+						"node_pool_name":  name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+		},
+	})
+}
+
+var AlicloudAckNodepoolMap12069 = map[string]string{
+	"scaling_group_id": CHECKSET,
+	"node_pool_id":     CHECKSET,
+}
+
+func AlicloudAckNodepoolBasicDependence12069(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zone_1" {
+  default = "cn-hangzhou-k"
+}
+
+variable "zone_2" {
+  default = "cn-hangzhou-g"
+}
+
+variable "vsw1_cidr" {
+  default = "10.1.0.0/24"
+}
+
+variable "vsw4_cidr" {
+  default = "10.1.3.0/24"
+}
+
+variable "rg_name_1" {
+  default = "tf-test-resource-group-1"
+}
+
+variable "vsw2_cidr" {
+  default = "10.1.1.0/24"
+}
+
+variable "rg_name_2" {
+  default = "tf-test-resource-group-2"
+}
+
+variable "container_cidr" {
+  default = "172.17.3.0/24"
+}
+
+variable "user_data" {
+  default = "I18vYmluL3No"
+}
+
+variable "service_cidr" {
+  default = "172.17.2.0/24"
+}
+
+variable "vsw3_cidr" {
+  default = "10.1.2.0/24"
+}
+
+variable "kubernetes_version" {
+  default = "1.32.1-aliyun.1"
+}
+
+variable "user_data_1" {
+  default = "IyEvYmluL3NoIGVjaG8gIkhlbGxvIFdvcmxkLiBUaGUgdGltZSBpcyBudWcgJChkYXRlIC1SKSkhfCB0ZWUgL3Jvb3QvdXNlcmRhdGFfdGVzdC50eHQ="
+}
+
+variable "zone_3" {
+  default = "cn-hangzhou-i"
+}
+
+variable "zone_4" {
+  default = "cn-hangzhou-j"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "defaultqe0KHK" {
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_security_group" "defaultKHUbRj" {
+  vpc_id              = alicloud_vpc.defaultqe0KHK.id
+  security_group_name = "tf-test-security-group"
+  security_group_type = "normal"
+}
+
+resource "alicloud_security_group" "defaultKYDOFD" {
+  security_group_name = "tf-test-security-group-2"
+  vpc_id              = alicloud_vpc.defaultqe0KHK.id
+  security_group_type = "normal"
+}
+
+resource "alicloud_vswitch" "defaultVTblQn" {
+  vpc_id     = alicloud_vpc.defaultqe0KHK.id
+  cidr_block = var.vsw1_cidr
+  zone_id    = var.zone_1
+}
+
+resource "alicloud_vswitch" "defaultziRRat" {
+  vpc_id     = alicloud_vpc.defaultqe0KHK.id
+  zone_id    = var.zone_2
+  cidr_block = var.vsw2_cidr
+}
+
+resource "alicloud_vswitch" "defaultT8D8ss" {
+  vpc_id     = alicloud_vpc.defaultqe0KHK.id
+  zone_id    = var.zone_3
+  cidr_block = var.vsw3_cidr
+}
+
+resource "alicloud_vswitch" "defaultFsk7cj" {
+  vpc_id     = alicloud_vpc.defaultqe0KHK.id
+  zone_id    = var.zone_4
+  cidr_block = var.vsw4_cidr
+}
+
+resource "alicloud_cs_managed_kubernetes" "defaultNppPcz" {
+  pod_cidr          = var.container_cidr
+  vswitch_ids       = ["${alicloud_vswitch.defaultT8D8ss.id}", "${alicloud_vswitch.defaultziRRat.id}"]
+  service_cidr      = var.service_cidr
+  security_group_id = alicloud_security_group.defaultKHUbRj.id
+  cluster_spec      = "ack.pro.small"
 }
 
 
