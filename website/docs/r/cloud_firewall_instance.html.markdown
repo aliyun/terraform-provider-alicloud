@@ -15,6 +15,9 @@ For information about Cloud Firewall Instance and how to use it, see [What is In
 
 -> **NOTE:** Available since v1.139.0.
 
+-> **NOTE:** Deprecated since v1.269.0.
+
+-> **DEPRECATED:** This resource has been deprecated from version `1.269.0`. Please use new resource [alicloud_cloud_firewall_instance_v2](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cloud_firewall_instance_v2).
 
 ## Example Usage
 
