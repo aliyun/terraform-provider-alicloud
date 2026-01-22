@@ -892,3 +892,173 @@ var csManagedKubernetesBasicMap = map[string]string{
 	"cluster_spec":                       CHECKSET,
 	"slb_id":                             CHECKSET,
 }
+
+// Test Ack Cluster. >>> Resource test cases, automatically generated.
+// Case 集群测试-升级 12341
+func TestAccAliCloudAckCluster_basic12341(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccack%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckClusterBasicDependence12341)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":         name,
+					"service_cidr": "${var.service_cidr}",
+					"addons": []map[string]interface{}{
+						{
+							"name": "terway-eniip",
+						},
+					},
+					"is_enterprise_security_group": "true",
+					"zone_ids": []string{
+						"${var.zone_id}"},
+					"cluster_spec":        "ack.pro.small",
+					"deletion_protection": "false",
+					"version":             "1.32.7-aliyun.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                         name,
+						"service_cidr":                 CHECKSET,
+						"addons.#":                     "1",
+						"is_enterprise_security_group": "true",
+						"zone_ids.#":                   "1",
+						"cluster_spec":                 "ack.pro.small",
+						"deletion_protection":          "false",
+						"version":                      "1.32.7-aliyun.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"timezone": "Asia/Singapore",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"timezone": "Asia/Singapore",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version": "1.33.3-aliyun.1",
+					"upgrade_policy": []map[string]interface{}{
+						{
+							"control_plane_only": true,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version": "1.33.3-aliyun.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "addons", "new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled", "zone_ids", "is_enterprise_security_group", "upgrade_policy"},
+			},
+		},
+	})
+}
+
+func AlicloudAckClusterBasicDependence12341(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "service_cidr" {
+  default = "192.168.0.0/16"
+}
+
+variable "cluster_name" {
+  default = "test-create-cluster"
+}
+
+variable "zone_id" {
+  default = "cn-hangzhou-g"
+}
+
+variable "cluster_name_update" {
+  default = "test-create-cluster-update"
+}
+
+variable "region_id" {
+  default = "cn-hangzhou"
+}
+
+variable "container_cidr" {
+  default = "10.53.0.0/16"
+}
+
+variable "cluster_type" {
+  default = "ManagedKubernetes"
+}
+
+
+`, name)
+}
+
+// Test Ack Cluster. <<< Resource test cases, automatically generated.

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
@@ -840,6 +841,19 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					},
 				},
 			},
+			"upgrade_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"control_plane_only": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1376,6 +1390,17 @@ func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 
+	var controlPlaneOnly *bool
+	if v, ok := d.GetOk("upgrade_policy"); ok {
+		val, err := jsonpath.Get("$[0].control_plane_only", v)
+		if err != nil {
+			return WrapError(err)
+		}
+		if val != nil && val != "" {
+			controlPlaneOnly = tea.Bool(val.(bool))
+		}
+	}
+
 	clusterId := d.Id()
 	version := d.Get("version").(string)
 	action := "UpgradeCluster"
@@ -1386,6 +1411,9 @@ func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) 
 	}
 	args := &roacs.UpgradeClusterRequest{
 		NextVersion: tea.String(version),
+	}
+	if controlPlaneOnly != nil {
+		args.MasterOnly = controlPlaneOnly
 	}
 	// upgrade cluster
 	var resp *roacs.UpgradeClusterResponse
