@@ -9,6 +9,7 @@ PARALLEL ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4
 tools:
 	@echo "==> installing required tooling..."
 	go install golang.org/x/tools/cmd/goimports@latest
+	go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@latest
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH || $$GOPATH)/bin v2.7.2
 
 default: build
@@ -20,6 +21,10 @@ test: fmtcheck
 
 testacc: fmtcheck
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+
+tflint:
+	@echo "Run tfproviderlint ..."
+	./scripts/run-tflint.sh
 
 goimports: tools
 	@echo "Fixing imports in all Go files..."
