@@ -15,6 +15,10 @@ For information about Event Bridge Event Source and how to use it, see [What is 
 
 -> **NOTE:** Available since v1.130.0.
 
+-> **NOTE:** Deprecated since v1.269.0.
+
+-> **DEPRECATED:** This resource has been deprecated from version `1.269.0`. Please use new resource [alicloud_event_bridge_event_source_v2](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/event_bridge_event_source_v2).
+
 ## Example Usage
 
 Basic Usage
