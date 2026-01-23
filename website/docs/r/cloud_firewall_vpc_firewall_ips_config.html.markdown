@@ -14,7 +14,7 @@ IP configuration of VPC firewall.
 
 For information about Cloud Firewall Vpc Firewall Ips Config and how to use it, see [What is Vpc Firewall Ips Config](https://next.api.alibabacloud.com/document/Cloudfw/2017-12-07/ModifyVpcFirewallDefaultIPSConfig).
 
--> **NOTE:** Available since v1.268.0.
+-> **NOTE:** Available since v1.269.0.
 
 ## Example Usage
 
