@@ -177,13 +177,35 @@ commit:
 #   make ci-check SKIP_EXAMPLE=1     # Run all checks except example tests
 #   make ci-check SKIP_BUILD=1       # Skip build check
 #   make ci-check-quick              # Quick check (skip build, tests, errcheck, and example tests)
-ci-check:
+ci-check: fmtcheck
+	@echo "Building for current OS only..."
+	@OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
+	if [ "$(SKIP_BUILD)" != "1" ]; then \
+	    if [ "$$OS" = "darwin" ]; then \
+	        $(MAKE) mac; \
+	        cd bin && tar -xzf terraform-provider-alicloud_darwin-amd64.tgz 2>/dev/null || true; \
+	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
+	    elif [ "$$OS" = "linux" ]; then \
+	        $(MAKE) linux; \
+	        cd bin && tar -xzf terraform-provider-alicloud_linux-amd64.tgz 2>/dev/null || true; \
+	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
+	    elif echo "$$OS" | grep -q "mingw\|msys\|cygwin"; then \
+	        $(MAKE) windows; \
+	        cd bin && tar -xzf terraform-provider-alicloud_windows-amd64.tgz 2>/dev/null || true; \
+	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud.exe . && rmdir bin; fi; \
+	    else \
+	        echo "Unknown OS: $$OS, building for linux as fallback"; \
+	        $(MAKE) linux; \
+	        cd bin && tar -xzf terraform-provider-alicloud_linux-amd64.tgz 2>/dev/null || true; \
+	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
+	    fi; \
+	fi
 	@if [ "$(SKIP_EXAMPLE)" = "1" ]; then \
-		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-example-test; \
+		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-example-test --skip-build; \
 	elif [ "$(SKIP_BUILD)" = "1" ]; then \
 		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-build; \
 	else \
-		bash "$(CURDIR)/scripts/local-ci-check.sh"; \
+		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-build; \
 	fi
 
 # Quick CI check (skip build and tests)
