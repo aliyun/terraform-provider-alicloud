@@ -84,7 +84,7 @@ Specifies whether MFA is required for all RAM users when they log on to the Alib
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as ``.
+* `id` - The ID of the resource supplied above. The value is formulated as Alibaba Account ID.
 
 ## Timeouts
 

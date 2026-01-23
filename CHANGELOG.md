@@ -1,4 +1,29 @@
-## 1.268.1 (Unreleased)
+## 1.269.0 (Unreleased)
+
+- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_ips_config` [GH-9405]
+- **New Resource:** `alicloud_cloud_firewall_instance_v2` [GH-9409]
+- **New Resource:** `alicloud_event_bridge_event_source_v2` [GH-9414]
+- **New Resource:** `alicloud_alikafka_scheduled_scaling_rule` [GH-9416]
+
+ENHANCEMENTS:
+
+- resource/alicloud_wafv3_domain: Added the field redirect.max_body_size, redirect.http2_origin, redirect.http2_origin_max_concurrency. [GH-9396]
+- resource/alicloud_sls_machine_group: mark machine_list unordered. [GH-9398]
+- resource/alicloud_wafv3_defense_template: defense_scene support waf_base. [GH-9401]
+- resource/alicloud_ram_security_preference: Add support for max_idle_days_for_access_keys and max_idle_days_for_users. [GH-9402]
+- resource/alicloud_wafv3_defense_rule: Added the field auto_update, waf_base_config, codec_list. [GH-9403]
+- resource/alicloud_security_group: Add computed to resource_group_id. [GH-9406]
+- resource/alicloud_ssl_certificates_service_pca_certificate: Added the field crl_day, enable_crl, path_len_constraint, certificate_type, parent_identifier, extended_key_usages; Supported for new action CreateSubCACertificate. [GH-9408]
+- resource/alicloud_threat_detection_instance: Added the field post_paid_host_auto_bind, post_paid_host_auto_bind_version, post_pay_module_switch_obj; Deprecated the field post_pay_module_switch; Fixed post_pay_module_switch invalid error. [GH-9410]
+- resource/alicloud_cloud_firewall_vpc_firewall_ips_config: Update document. [GH-9418]
+- testcase: Improved alicloud_cloud_firewall_instance_v2 International testcase. [GH-9411]
+- docs: docs: Deprecated resource cloud_firewall_instance, event_bridge_event_source. [GH-9417]
+
+BUG FIXES:
+
+- resource/alicloud_route_table: Fixed bug while creating with route_propagation_enable valued false. [GH-9394]
+- resource/alicloud_rocketmq_instance: Fixed the creation error caused by field product_info.send_receive_ratio. [GH-9399]
+
 ## 1.268.0 (January 13, 2025)
 
 - **New Resource:** `alicloud_rds_ai_instance` ([#9392](https://github.com/aliyun/terraform-provider-alicloud/issues/9392))
