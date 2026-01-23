@@ -136,7 +136,7 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 	splitRes := strings.Split(resourceName, "alicloud_")
 	if len(splitRes) < 2 {
 		log.Errorf("parsing resource name %s failed.", resourceName)
-		return fmt.Errorf(fmt.Sprintf("parsing resource name %s failed.", resourceName))
+		return fmt.Errorf("parsing resource name %s failed", resourceName)
 	}
 
 	filePath := strings.Join([]string{docsPath, splitRes[1], ".html.markdown"}, "")
@@ -211,8 +211,8 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 					} else if rootPrefixLen > thisLen {
 						parts := strings.Split(subAttributeName, ".")
 						backIndex := rootPrefixLen - thisLen
-						if backIndex%2 == 0 {
-							backIndex /= 2
+						if backIndex%4 == 0 {
+							backIndex /= 4
 						} else {
 							return fmt.Errorf("resource %s docs %s have not been formatted.", resourceName, docsPath)
 						}

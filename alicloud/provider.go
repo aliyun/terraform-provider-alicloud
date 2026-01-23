@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_cs_clusters":                                dataSourceAliCloudAckClusters(),
 			"alicloud_threat_detection_check_item_configs":        dataSourceAliCloudThreatDetectionCheckItemConfigs(),
 			"alicloud_threat_detection_check_structures":          dataSourceAliCloudThreatDetectionCheckStructures(),
 			"alicloud_fcv3_functions":                             dataSourceAliCloudFcv3Functions(),
