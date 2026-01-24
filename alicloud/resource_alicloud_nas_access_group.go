@@ -37,10 +37,9 @@ func resourceAliCloudNasAccessGroup() *schema.Resource {
 			"access_group_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
 				ExactlyOneOf: []string{"access_group_type", "type"},
+				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Classic", "Vpc"}, true),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -55,7 +54,7 @@ func resourceAliCloudNasAccessGroup() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "standard",
-				ValidateFunc: StringInSlice([]string{"standard", "extreme"}, true),
+				ValidateFunc: StringInSlice([]string{"standard", "extreme"}, false),
 			},
 			"region_id": {
 				Type:     schema.TypeString,
@@ -89,22 +88,25 @@ func resourceAliCloudNasAccessGroupCreate(d *schema.ResourceData, meta interface
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["AccessGroupName"] = d.Get("access_group_name")
-	query["FileSystemType"] = d.Get("file_system_type")
-
-	if v, ok := d.GetOk("type"); ok {
-		request["AccessGroupType"] = v
+	if v, ok := d.GetOk("name"); ok {
+		request["AccessGroupName"] = v
+	}
+	if v, ok := d.GetOk("access_group_name"); ok {
+		request["AccessGroupName"] = v
+	}
+	if v, ok := d.GetOk("file_system_type"); ok {
+		request["FileSystemType"] = v
 	}
 
-	if v, ok := d.GetOk("name"); ok {
-		query["AccessGroupName"] = v
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+	if v, ok := d.GetOk("type"); ok || d.HasChange("type") {
+		request["AccessGroupType"] = v
 	}
 
 	if v, ok := d.GetOk("access_group_type"); ok {
 		request["AccessGroupType"] = v
-	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -124,7 +126,7 @@ func resourceAliCloudNasAccessGroupCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_group", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", response["AccessGroupName"], query["FileSystemType"]))
+	d.SetId(fmt.Sprintf("%v:%v", response["AccessGroupName"], request["FileSystemType"]))
 
 	return resourceAliCloudNasAccessGroupRead(d, meta)
 }
@@ -161,13 +163,15 @@ func resourceAliCloudNasAccessGroupUpdate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+
+	var err error
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyAccessGroup"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AccessGroupName"] = parts[0]
-	query["FileSystemType"] = parts[1]
+	request["AccessGroupName"] = parts[0]
+	request["FileSystemType"] = parts[1]
+
 	if d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
@@ -205,13 +209,12 @@ func resourceAliCloudNasAccessGroupDelete(d *schema.ResourceData, meta interface
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["AccessGroupName"] = parts[0]
-	query["FileSystemType"] = parts[1]
+	request["AccessGroupName"] = parts[0]
+	request["FileSystemType"] = parts[1]
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.InvalidState"}) || NeedRetry(err) {
 				wait()

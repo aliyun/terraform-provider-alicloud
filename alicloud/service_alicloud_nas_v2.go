@@ -102,12 +102,14 @@ func (s *NasServiceV2) DescribeNasAccessGroup(id string) (object map[string]inte
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
-	action := "DescribeAccessGroups"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AccessGroupName"] = parts[0]
-	query["FileSystemType"] = parts[1]
+	request["AccessGroupName"] = parts[0]
+	request["FileSystemType"] = parts[1]
+
+	action := "DescribeAccessGroups"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -143,17 +145,27 @@ func (s *NasServiceV2) DescribeNasAccessGroup(id string) (object map[string]inte
 }
 
 func (s *NasServiceV2) NasAccessGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.NasAccessGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeNasAccessGroup)
+}
+
+func (s *NasServiceV2) NasAccessGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeNasAccessGroup(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

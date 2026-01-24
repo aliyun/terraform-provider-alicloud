@@ -9,17 +9,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
-	"github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
+	"github.com/alibabacloud-go/tea-rpc/client"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func init() {
@@ -95,7 +97,7 @@ func testSweepNasAccessGroup(region string) error {
 	return nil
 }
 
-func TestAccAliCloudNASAccessGroup_basic(t *testing.T) {
+func TestAccAliCloudNasAccessGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroup0)
@@ -157,7 +159,7 @@ func TestAccAliCloudNASAccessGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudNASAccessGroup_basic1(t *testing.T) {
+func TestAccAliCloudNasAccessGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
 	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroup0)
@@ -636,19 +638,19 @@ func TestUnitAliCloudNASAccessGroup(t *testing.T) {
 }
 
 // Test Nas AccessGroup. >>> Resource test cases, automatically generated.
-// Case 极速型 VPC 权限组 5750
-func TestAccAliCloudNasAccessGroup_basic5750(t *testing.T) {
+// Case resource_AccessGroup_test 12381
+func TestAccAliCloudNasAccessGroup_basic12381(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroupMap5750)
+	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroupMap12381)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeNasAccessGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snasaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence5750)
+	name := fmt.Sprintf("tfaccnas%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence12381)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -670,12 +672,203 @@ func TestAccAliCloudNasAccessGroup_basic5750(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudNasAccessGroupMap12381 = map[string]string{
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudNasAccessGroupBasicDependence12381(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case resource_AccessGroup_test_2 12382
+func TestAccAliCloudNasAccessGroup_basic12382(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_access_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroupMap12382)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasAccessGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence12382)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "test",
+					"access_group_type": "Vpc",
+					"file_system_type":  "extreme",
+					"access_group_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "test",
+						"access_group_type": "Vpc",
+						"file_system_type":  "extreme",
+						"access_group_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudNasAccessGroupMap12382 = map[string]string{
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudNasAccessGroupBasicDependence12382(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case resource_AccessGroup_test_1 12392
+func TestAccAliCloudNasAccessGroup_basic12392(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_access_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroupMap12392)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasAccessGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence12392)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_type": "Vpc",
+					"file_system_type":  "standard",
+					"access_group_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_type": "Vpc",
+						"file_system_type":  "standard",
+						"access_group_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudNasAccessGroupMap12392 = map[string]string{
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudNasAccessGroupBasicDependence12392(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 极速型 VPC 权限组_副本1728473479625 8082
+func TestAccAliCloudNasAccessGroup_basic8082(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_access_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroupMap8082)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasAccessGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccnas%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessGroupBasicDependence8082)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_type": "Vpc",
+					"description":       "test",
+					"access_group_name": name,
+					"file_system_type":  "extreme",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_type": "Vpc",
+						"description":       "test",
+						"access_group_name": name,
+						"file_system_type":  "extreme",
 					}),
 				),
 			},
@@ -690,22 +883,6 @@ func TestAccAliCloudNasAccessGroup_basic5750(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"access_group_type": "Vpc",
-					"description":       "test",
-					"access_group_name": name + "_update",
-					"file_system_type":  "extreme",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"access_group_type": "Vpc",
-						"description":       "test",
-						"access_group_name": name + "_update",
-						"file_system_type":  "extreme",
-					}),
-				),
-			},
-			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -715,13 +892,12 @@ func TestAccAliCloudNasAccessGroup_basic5750(t *testing.T) {
 	})
 }
 
-var AliCloudNasAccessGroupMap5750 = map[string]string{
-	"create_time":      CHECKSET,
-	"file_system_type": CHECKSET,
-	"region_id":        CHECKSET,
+var AlicloudNasAccessGroupMap8082 = map[string]string{
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
 }
 
-func AliCloudNasAccessGroupBasicDependence5750(name string) string {
+func AlicloudNasAccessGroupBasicDependence8082(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -729,195 +905,6 @@ variable "name" {
 
 
 `, name)
-}
-
-// Case 通用型 VPC 权限组 5733
-func TestAccAliCloudNasAccessGroup_basic5733(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroupMap5733)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNasAccessGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snasaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence5733)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"access_group_type": "Vpc",
-					"access_group_name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"access_group_type": "Vpc",
-						"access_group_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "test",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "test123",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "test123",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"access_group_type": "Vpc",
-					"description":       "test",
-					"access_group_name": name + "_update",
-					"file_system_type":  "standard",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"access_group_type": "Vpc",
-						"description":       "test",
-						"access_group_name": name + "_update",
-						"file_system_type":  "standard",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
-}
-
-var AliCloudNasAccessGroupMap5733 = map[string]string{
-	"create_time":      CHECKSET,
-	"file_system_type": CHECKSET,
-	"region_id":        CHECKSET,
-}
-
-func AliCloudNasAccessGroupBasicDependence5733(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-
-`, name)
-}
-
-// Case 极速型 VPC 权限组 5750  twin
-func TestAccAliCloudNasAccessGroup_basic5750_twin(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroupMap5750)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNasAccessGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snasaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence5750)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"access_group_type": "Vpc",
-					"description":       "test123",
-					"access_group_name": name,
-					"file_system_type":  "extreme",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"access_group_type": "Vpc",
-						"description":       "test123",
-						"access_group_name": name,
-						"file_system_type":  "extreme",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
-}
-
-// Case 通用型 VPC 权限组 5733  twin
-func TestAccAliCloudNasAccessGroup_basic5733_twin(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_nas_access_group.default"
-	ra := resourceAttrInit(resourceId, AliCloudNasAccessGroupMap5733)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNasAccessGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snasaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasAccessGroupBasicDependence5733)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"access_group_type": "Vpc",
-					"description":       "test123",
-					"access_group_name": name,
-					"file_system_type":  "standard",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"access_group_type": "Vpc",
-						"description":       "test123",
-						"access_group_name": name,
-						"file_system_type":  "standard",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
 }
 
 // Test Nas AccessGroup. <<< Resource test cases, automatically generated.
