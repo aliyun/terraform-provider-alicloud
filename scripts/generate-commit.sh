@@ -275,42 +275,68 @@ generate_commit_message() {
         commit_message="${selected}Added the field $added_fields."
         echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (added fields: $added_fields)${NC}" >&2
       else
-        # Try to generate commit message from branch name
-        local branch_name=$(git branch --show-current)
-        local branch_msg=""
-
-        if [[ -n "$branch_name" ]]; then
-          # Parse branch name to extract meaningful description
-          # Common patterns: feature/xxx, fix/xxx, update/xxx, add-xxx-field, etc.
-
-          # Remove common prefixes
-          branch_msg="${branch_name#feature/}"
-          branch_msg="${branch_msg#fix/}"
-          branch_msg="${branch_msg#update/}"
-          branch_msg="${branch_msg#bugfix/}"
-          branch_msg="${branch_msg#hotfix/}"
-
-          # Convert hyphens and underscores to spaces
-          branch_msg="${branch_msg//-/ }"
-          branch_msg="${branch_msg//_/ }"
-
-          # Capitalize first letter
-          branch_msg="$(echo ${branch_msg:0:1} | tr '[:lower:]' '[:upper:]')${branch_msg:1}"
-
-          # Remove common words that don't add value
-          branch_msg=$(echo "$branch_msg" | sed 's/\bresource\b//gi' | sed 's/\balicloud\b//gi' | sed 's/^ *//;s/ *$//')
-
-          # Check if we got meaningful content
-          if [[ -n "$branch_msg" ]] && [[ "$branch_msg" != "Master" ]] && [[ "$branch_msg" != "Main" ]]; then
-            commit_message="${selected}${branch_msg}."
-            echo -e "${GREEN}✓ Commit message generated from branch name: $branch_name${NC}" >&2
-          else
-            commit_message="${selected}Refactored the resource and improve the docs."
-            echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (using default message)${NC}" >&2
+        # Analyze what types of files were modified for the resource
+        local has_resource_file=false
+        local has_test_file=false
+        local has_doc_file=false
+        
+        # Check for resource file modifications
+        if echo "$STAGED_FILES" | grep -q "alicloud/resource_alicloud_${resource_name}.go"; then
+          has_resource_file=true
+        elif echo "$STAGED_FILES" | grep -q "alicloud/data_source_alicloud_${resource_name}.go"; then
+          has_resource_file=true
+        fi
+        
+        # Check for test file modifications
+        if echo "$STAGED_FILES" | grep -q "alicloud/resource_alicloud_${resource_name}_test.go"; then
+          has_test_file=true
+        elif echo "$STAGED_FILES" | grep -q "alicloud/data_source_alicloud_${resource_name}_test.go"; then
+          has_test_file=true
+        fi
+        
+        # Check for documentation modifications
+        if echo "$STAGED_FILES" | grep -q "website/docs/[rd]/${resource_name}"; then
+          has_doc_file=true
+        fi
+        
+        # Generate commit message based on what was modified
+        if [[ "$has_resource_file" == true ]] || [[ "$has_test_file" == true ]] || [[ "$has_doc_file" == true ]]; then
+          local changes_desc=""
+          local changes=()
+          
+          if [[ "$has_resource_file" == true ]]; then
+            changes+=("Refactored the resource alicloud_${resource_name}")
           fi
+          
+          if [[ "$has_test_file" == true ]]; then
+            changes+=("improved testcase")
+          fi
+          
+          if [[ "$has_doc_file" == true ]]; then
+            changes+=("document")
+          fi
+          
+          # Combine changes description
+          if [[ ${#changes[@]} -eq 1 ]]; then
+            changes_desc="${changes[0]}"
+          elif [[ ${#changes[@]} -eq 2 ]]; then
+            if [[ "$has_resource_file" == true ]]; then
+              # If resource file is modified, use "and" for the second part
+              changes_desc="${changes[0]}, ${changes[1]}"
+            else
+              changes_desc="${changes[0]} and ${changes[1]}"
+            fi
+          else
+            # All three types modified
+            changes_desc="${changes[0]}, ${changes[1]} and ${changes[2]}"
+          fi
+          
+          commit_message="${selected}${changes_desc}."
+          echo -e "${GREEN}✓ Resource modification detected: ${changes_desc}${NC}" >&2
         else
-          commit_message="${selected}Refactored the resource and improve the docs."
-          echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (no new fields detected)${NC}" >&2
+          # No resource, test, or doc files modified - generic code changes
+          commit_message="${selected}Refactored the code and improved implementation."
+          echo -e "${GREEN}✓ Resource modification detected: alicloud_$resource_name (code refactoring)${NC}" >&2
         fi
       fi
     elif [[ "$selected" == "docs" ]]; then
