@@ -27,7 +27,7 @@ func dataSourceAliCloudRamRoles() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"policy_name": {
 				Type:         schema.TypeString,

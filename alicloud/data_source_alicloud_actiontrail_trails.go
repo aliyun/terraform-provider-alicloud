@@ -17,7 +17,7 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 				ForceNew:     true,
 			},
 			"include_organization_trail": {

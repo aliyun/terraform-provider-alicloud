@@ -67,7 +67,7 @@ func resourceAlicloudLogtailConfig() *schema.Resource {
 					yaml, _ := normalizeJsonString(v)
 					return yaml
 				},
-				ValidateFunc: validation.ValidateJsonString,
+				ValidateFunc: validation.StringIsJSON,
 			},
 		},
 	}

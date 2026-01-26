@@ -19,7 +19,7 @@ func dataSourceAlicloudGpdbInstances() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"availability_zone": {
 				Type:     schema.TypeString,

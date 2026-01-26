@@ -25,7 +25,7 @@ func dataSourceAlicloudOtsInstances() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"tags": tagsSchema(),
 			"output_file": {

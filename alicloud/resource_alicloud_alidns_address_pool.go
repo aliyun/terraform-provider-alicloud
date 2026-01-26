@@ -35,7 +35,7 @@ func resourceAlicloudAlidnsAddressPool() *schema.Resource {
 						"attribute_info": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.ValidateJsonString,
+							ValidateFunc: validation.StringIsJSON,
 						},
 						"lba_weight": {
 							Type:     schema.TypeInt,

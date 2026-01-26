@@ -20,7 +20,7 @@ func dataSourceAlicloudThreatDetectionHoneyPots() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"honeypot_id": {
 				Optional: true,

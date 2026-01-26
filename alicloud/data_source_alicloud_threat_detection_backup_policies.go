@@ -27,7 +27,7 @@ func dataSourceAlicloudThreatDetectionBackupPolicies() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"name": {
 				Type:     schema.TypeString,

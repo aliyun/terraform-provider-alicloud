@@ -27,7 +27,7 @@ func dataSourceAliCloudOosParameters() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"parameter_name": {
 				Type:     schema.TypeString,

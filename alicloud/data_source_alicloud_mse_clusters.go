@@ -17,7 +17,7 @@ func dataSourceAlicloudMseClusters() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"cluster_alias_name": {
 				Type:     schema.TypeString,

@@ -16,13 +16,13 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 				Deprecated:   "Field 'name_regex' is deprecated and will be removed in a future release. Please use 'description_regex' instead.",
 			},
 			"description_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

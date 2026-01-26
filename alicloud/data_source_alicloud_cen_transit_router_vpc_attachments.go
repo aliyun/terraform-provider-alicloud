@@ -27,7 +27,7 @@ func dataSourceAliCloudCenTransitRouterVpcAttachments() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"cen_id": {
 				Type:     schema.TypeString,

@@ -27,7 +27,7 @@ func dataSourceAlicloudCenTransitRouteTableAggregations() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"transit_route_table_id": {
 				Type:     schema.TypeString,

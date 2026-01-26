@@ -27,7 +27,7 @@ func dataSourceAlicloudGaBasicEndpoints() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"endpoint_group_id": {
 				Type:     schema.TypeString,
