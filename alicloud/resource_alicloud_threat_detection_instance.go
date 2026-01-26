@@ -92,7 +92,7 @@ func resourceAliCloudThreatDetectionInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Deprecated:   "Field `post_pay_module_switch` has been deprecated from provider version 1.269.0. New field `post_pay_module_switch_obj` instead.",
-				ValidateFunc: validation.ValidateJsonString,
+				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal

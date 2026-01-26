@@ -20,7 +20,7 @@ func dataSourceAlicloudApiGatewayApps() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"ids": {
 				Type:     schema.TypeList,

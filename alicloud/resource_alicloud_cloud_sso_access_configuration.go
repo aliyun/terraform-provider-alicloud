@@ -97,7 +97,7 @@ func resourceAliCloudCloudSsoAccessConfiguration() *schema.Resource {
 						"permission_policy_document": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.ValidateJsonString,
+							ValidateFunc: validation.StringIsJSON,
 						},
 					},
 				},

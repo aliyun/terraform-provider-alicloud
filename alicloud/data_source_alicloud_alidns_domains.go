@@ -22,13 +22,13 @@ func dataSourceAlicloudAlidnsDomains() *schema.Resource {
 			"domain_name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 				ForceNew:     true,
 			},
 			"group_name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 				ForceNew:     true,
 			},
 			"instance_id": {

@@ -40,7 +40,7 @@ func resourceAliCloudConfigRemediation() *schema.Resource {
 			"params": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.ValidateJsonString,
+				ValidateFunc: validation.StringIsJSON,
 			},
 			"remediation_id": {
 				Type:     schema.TypeString,

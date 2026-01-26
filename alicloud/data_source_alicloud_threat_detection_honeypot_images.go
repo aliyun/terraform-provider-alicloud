@@ -33,7 +33,7 @@ func dataSourceAlicloudThreatDetectionHoneypotImages() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"names": {
 				Computed: true,

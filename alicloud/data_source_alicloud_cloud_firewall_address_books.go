@@ -27,7 +27,7 @@ func dataSourceAliCloudCloudFirewallAddressBooks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"group_type": {
 				Type:         schema.TypeString,

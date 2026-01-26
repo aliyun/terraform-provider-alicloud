@@ -27,7 +27,7 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServices() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"vpc_endpoint_service_name": {
 				Type:     schema.TypeString,

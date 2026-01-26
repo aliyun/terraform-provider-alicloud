@@ -221,7 +221,7 @@ func ValidateFcTriggerConfig(v interface{}, k string) (ws []string, errors []err
 	if v == nil {
 		return
 	}
-	_, errors = validation.ValidateJsonString(v, k)
+	_, errors = validation.StringIsJSON(v, k)
 	if errors != nil && len(errors) > 0 {
 		return
 	}

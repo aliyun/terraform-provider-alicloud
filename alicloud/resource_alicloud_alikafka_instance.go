@@ -123,7 +123,7 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Computed:         true,
-				ValidateFunc:     validation.ValidateJsonString,
+				ValidateFunc:     validation.StringIsJSON,
 				DiffSuppressFunc: alikafkaInstanceConfigDiffSuppressFunc,
 			},
 			"kms_key_id": {

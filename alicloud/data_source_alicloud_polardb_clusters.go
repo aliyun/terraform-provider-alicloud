@@ -18,7 +18,7 @@ func dataSourceAlicloudPolarDBClusters() *schema.Resource {
 			"description_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"ids": {
 				Type:     schema.TypeList,

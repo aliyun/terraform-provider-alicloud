@@ -17,14 +17,14 @@ func dataSourceAlicloudDmsEnterpriseInstances() *schema.Resource {
 			"name_regex": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ValidateFunc:  validation.ValidateRegexp,
+				ValidateFunc:  validation.StringIsValidRegExp,
 				ForceNew:      true,
 				ConflictsWith: []string{"instance_alias_regex"},
 			},
 			"instance_alias_regex": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ValidateFunc:  validation.ValidateRegexp,
+				ValidateFunc:  validation.StringIsValidRegExp,
 				ForceNew:      true,
 				ConflictsWith: []string{"name_regex"},
 			},

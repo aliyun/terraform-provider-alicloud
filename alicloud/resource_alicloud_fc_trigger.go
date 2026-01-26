@@ -105,7 +105,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 					// The read config is json rawMessage and it does not contains space and enter.
 					return old == removeSpaceAndEnter(new)
 				},
-				ValidateFunc:  validation.ValidateJsonString,
+				ValidateFunc:  validation.StringIsJSON,
 				ConflictsWith: []string{"config"},
 			},
 			"type": {

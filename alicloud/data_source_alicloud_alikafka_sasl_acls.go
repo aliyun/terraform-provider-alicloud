@@ -22,7 +22,7 @@ func dataSourceAlicloudAlikafkaSaslAcls() *schema.Resource {
 			"username": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 				ForceNew:     true,
 			},
 			"acl_resource_type": {
@@ -35,7 +35,7 @@ func dataSourceAlicloudAlikafkaSaslAcls() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
