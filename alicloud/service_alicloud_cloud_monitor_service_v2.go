@@ -560,3 +560,71 @@ func (s *CloudMonitorServiceServiceV2) CloudMonitorServiceSiteMonitorStateRefres
 }
 
 // DescribeCloudMonitorServiceSiteMonitor >>> Encapsulated.
+
+// DescribeCloudMonitorServiceAgentConfig <<< Encapsulated get interface for CloudMonitorService AgentConfig.
+
+func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceAgentConfig(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	action := "DescribeMonitoringConfig"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Cms", "2019-01-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	code, _ := jsonpath.Get("$.Code", response)
+	if InArray(fmt.Sprint(code), []string{}) {
+		return object, WrapErrorf(NotFoundErr("AgentConfig", id), NotFoundMsg, response)
+	}
+
+	return response, nil
+}
+
+func (s *CloudMonitorServiceServiceV2) CloudMonitorServiceAgentConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CloudMonitorServiceAgentConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudMonitorServiceAgentConfig)
+}
+
+func (s *CloudMonitorServiceServiceV2) CloudMonitorServiceAgentConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCloudMonitorServiceAgentConfig >>> Encapsulated.

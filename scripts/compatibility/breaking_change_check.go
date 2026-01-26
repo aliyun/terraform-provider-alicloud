@@ -97,6 +97,17 @@ func checkResourceBreakingChange(filePath, oldRevision, newRevision string) bool
 	// Get file content from git for both versions
 	oldContent, err := getFileContentFromGit(filePath, oldRevision)
 	if err != nil {
+		// Check if this is a new file (doesn't exist in old revision)
+		if isFileNew(filePath, oldRevision) {
+			log.Infof("This is a new resource file, checking for new resource requirements...")
+			// For new resources, we need to check if any fields are required
+			newContent, err := getFileContentFromGit(filePath, newRevision)
+			if err != nil {
+				log.Warningf("Cannot get new version of %s: %v", filePath, err)
+				return false
+			}
+			return checkNewResourceRequiredFields(newContent)
+		}
 		log.Warningf("Cannot get old version of %s: %v", filePath, err)
 		return false
 	}
@@ -217,6 +228,33 @@ func getFileContentFromGit(filePath, revision string) (string, error) {
 		return "", err
 	}
 	return string(output), nil
+}
+
+// isFileNew checks if a file is new (doesn't exist in the specified revision)
+func isFileNew(filePath, revision string) bool {
+	cmd := exec.Command("git", "cat-file", "-e", fmt.Sprintf("%s:%s", revision, filePath))
+	err := cmd.Run()
+	return err != nil // If error, file doesn't exist in that revision
+}
+
+// checkNewResourceRequiredFields checks if a new resource has required fields
+// For new resources, having required fields is acceptable, we just log them
+func checkNewResourceRequiredFields(content string) bool {
+	attrs := ParseSchemaFromAST(content)
+	hasRequiredFields := false
+
+	for fieldName, attr := range attrs {
+		if required, ok := attr["Required"]; ok && required.(bool) {
+			hasRequiredFields = true
+			log.Infof("  New resource has required field: '%s'", fieldName)
+		}
+	}
+
+	if hasRequiredFields {
+		log.Infof("Note: New resources can have required fields. This is acceptable for new resources.")
+	}
+	log.Infof("--- PASS (new resource)")
+	return true
 }
 
 // ParseSchemaFromAST uses Go AST to parse schema definition from source code

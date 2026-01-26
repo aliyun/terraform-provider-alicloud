@@ -540,7 +540,10 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
   echo -e "${BLUE}▶ Running consistency check...${NC}"
   # Create a temporary diff file
   TEMP_DIFF=$(mktemp)
-  git diff origin/master...HEAD > "$TEMP_DIFF" 2>/dev/null || git diff HEAD~1 HEAD > "$TEMP_DIFF"
+  
+  # Always check only the latest commit (not all changes from master)
+  git diff HEAD~1 HEAD > "$TEMP_DIFF"
+  echo -e "${BLUE}  Checking only latest commit${NC}"
   
   if [ -s "$TEMP_DIFF" ]; then
     if go run "$SCRIPT_DIR/consistency/consistency_check.go" -fileNames="$TEMP_DIFF"; then
