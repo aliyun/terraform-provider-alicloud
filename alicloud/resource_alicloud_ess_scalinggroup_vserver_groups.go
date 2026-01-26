@@ -9,7 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -66,7 +66,7 @@ func resourceAlicloudEssScalingGroupVserverGroups() *schema.Resource {
 								if v, ok := m["port"]; ok {
 									buf.WriteString(fmt.Sprintf("%d-", v.(int)))
 								}
-								return hashcode.String(buf.String())
+								return helper.Hashcode(buf.String())
 							},
 						},
 					},

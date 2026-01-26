@@ -7,7 +7,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -104,7 +104,7 @@ func dataSourceAliCloudCenTransitRouterAvailableResourcesRead(d *schema.Resource
 
 	s = append(s, mapping)
 
-	d.SetId(tea.ToString(hashcode.String(fmt.Sprint(s))))
+	d.SetId(tea.ToString(helper.Hashcode(fmt.Sprint(s))))
 
 	if err := d.Set("resources", s); err != nil {
 		return WrapError(err)

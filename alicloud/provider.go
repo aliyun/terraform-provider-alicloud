@@ -17,9 +17,8 @@ import (
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/credentials-go/credentials/providers"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/mutexkv"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -2427,9 +2426,6 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	return client, nil
 }
 
-// This is a global MutexKV for use within this plugin.
-var alicloudMutexKV = mutexkv.NewMutexKV()
-
 var descriptions map[string]string
 
 func init() {
@@ -4017,7 +4013,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["oceanbase"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["beebot"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["computenest"].(string)))
-	return hashcode.String(buf.String())
+	return helper.Hashcode(buf.String())
 }
 
 // deprecatedEndpointMap is used to map old service name to new service name,

@@ -11,7 +11,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/tidwall/sjson"
@@ -184,7 +184,7 @@ func resourceAliCloudEfloNodeGroup() *schema.Resource {
 					if v, ok := m["node_id"]; ok {
 						buf.WriteString(fmt.Sprint(v))
 					}
-					return hashcode.String(buf.String())
+					return helper.Hashcode(buf.String())
 				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{

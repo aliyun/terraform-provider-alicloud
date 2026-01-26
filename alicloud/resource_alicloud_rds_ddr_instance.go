@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/go-uuid"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -481,7 +481,7 @@ func resourceAlicloudRdsDdrInstance() *schema.Resource {
 
 func parameterToHashDdr(v interface{}) int {
 	m := v.(map[string]interface{})
-	return hashcode.String(m["name"].(string) + "|" + m["value"].(string))
+	return helper.Hashcode(m["name"].(string) + "|" + m["value"].(string))
 }
 
 func resourceAlicloudRdsDdrInstanceCreate(d *schema.ResourceData, meta interface{}) error {
