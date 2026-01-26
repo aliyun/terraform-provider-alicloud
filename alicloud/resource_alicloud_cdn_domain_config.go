@@ -10,7 +10,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -356,5 +356,5 @@ func expirationCdnDomainConfigHash(v interface{}) int {
 	if v, ok := m["arg_value"]; ok {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
-	return hashcode.String(buf.String())
+	return helper.Hashcode(buf.String())
 }

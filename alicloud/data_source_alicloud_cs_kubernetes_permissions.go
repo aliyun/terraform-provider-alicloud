@@ -6,7 +6,7 @@ import (
 	cs "github.com/alibabacloud-go/cs-20151215/v5/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -85,7 +85,7 @@ func dataAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta interf
 	_ = d.Set("permissions", flattenPermissionsConfig(perms))
 	_ = d.Set("uid", uid)
 
-	d.SetId(tea.ToString(hashcode.String(uid)))
+	d.SetId(tea.ToString(helper.Hashcode(uid)))
 	return nil
 }
 

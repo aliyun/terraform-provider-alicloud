@@ -9,7 +9,7 @@ import (
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -1812,7 +1812,7 @@ func expirationHash(v interface{}) int {
 	if v, ok := m["expired_object_delete_marker"]; ok {
 		buf.WriteString(fmt.Sprintf("%v-", v.(bool)))
 	}
-	return hashcode.String(buf.String())
+	return helper.Hashcode(buf.String())
 }
 
 func transitionsHash(v interface{}) int {
@@ -1833,7 +1833,7 @@ func transitionsHash(v interface{}) int {
 	if v, ok := m["return_to_std_when_visit"]; ok {
 		buf.WriteString(fmt.Sprintf("%v-", v.(bool)))
 	}
-	return hashcode.String(buf.String())
+	return helper.Hashcode(buf.String())
 }
 
 func abortMultipartUploadHash(v interface{}) int {
@@ -1845,5 +1845,5 @@ func abortMultipartUploadHash(v interface{}) int {
 	if v, ok := m["days"]; ok {
 		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
 	}
-	return hashcode.String(buf.String())
+	return helper.Hashcode(buf.String())
 }

@@ -10,8 +10,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/go-uuid"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -669,7 +669,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 
 func parameterToHash(v interface{}) int {
 	m := v.(map[string]interface{})
-	return hashcode.String(m["name"].(string) + "|" + m["value"].(string))
+	return helper.Hashcode(m["name"].(string) + "|" + m["value"].(string))
 }
 
 func resourceAliCloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {

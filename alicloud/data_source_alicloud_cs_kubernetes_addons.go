@@ -7,7 +7,7 @@ import (
 
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -117,7 +117,7 @@ func dataAlicloudCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}
 	d.Set("names", names)
 	d.Set("addons", result)
 
-	d.SetId(tea.ToString(hashcode.String(clusterId)))
+	d.SetId(tea.ToString(helper.Hashcode(clusterId)))
 	return nil
 }
 

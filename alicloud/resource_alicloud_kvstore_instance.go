@@ -11,7 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -377,7 +377,7 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 					},
 				},
 				Set: func(v interface{}) int {
-					return hashcode.String(
+					return helper.Hashcode(
 						v.(map[string]interface{})["name"].(string) + "|" + v.(map[string]interface{})["value"].(string))
 				},
 				Optional:      true,
