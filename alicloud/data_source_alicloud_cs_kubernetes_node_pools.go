@@ -171,7 +171,6 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 						"kubelet_configuration": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"cpu_manager_policy": {
@@ -303,7 +302,6 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 									"tracing": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"sampling_rate_per_million": {
@@ -351,13 +349,11 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 						"management": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"auto_upgrade_policy": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"auto_upgrade_kubelet": {
@@ -386,7 +382,6 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 									"auto_vul_fix_policy": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"restart_node": {
@@ -407,7 +402,6 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 									"auto_repair_policy": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"restart_node": {
@@ -473,7 +467,6 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 						"private_pool_options": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"private_pool_options_match_criteria": {
@@ -511,7 +504,6 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 						"scaling_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"min_size": {
@@ -666,7 +658,6 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 						"tee_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"tee_enable": {

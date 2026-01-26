@@ -819,7 +819,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"rrsa_metadata": {
 				Type:     schema.TypeList,
 				Computed: true,
-				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"enabled": {

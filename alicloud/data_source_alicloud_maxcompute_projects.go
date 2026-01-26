@@ -59,7 +59,6 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 						"ip_white_list": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"vpc_ip_list": {
@@ -84,7 +83,6 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 						"properties": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"timezone": {
@@ -102,7 +100,6 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 									"table_lifecycle": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"type": {
@@ -123,7 +120,6 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 									"encryption": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"enable": {
@@ -155,7 +151,6 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 						"security_properties": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"using_policy": {
@@ -185,7 +180,6 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 									"project_protection": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"protected": {

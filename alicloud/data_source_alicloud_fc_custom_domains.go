@@ -102,7 +102,6 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 						"cert_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"cert_name": {

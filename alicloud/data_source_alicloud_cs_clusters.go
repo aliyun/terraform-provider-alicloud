@@ -67,7 +67,6 @@ func dataSourceAliCloudAckClusters() *schema.Resource {
 						"auto_mode": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"enabled": {
@@ -112,7 +111,6 @@ func dataSourceAliCloudAckClusters() *schema.Resource {
 						"maintenance_window": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"recurrence": {
@@ -145,13 +143,11 @@ func dataSourceAliCloudAckClusters() *schema.Resource {
 						"operation_policy": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"cluster_auto_upgrade": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"channel": {

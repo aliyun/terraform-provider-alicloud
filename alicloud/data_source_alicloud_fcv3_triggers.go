@@ -57,7 +57,6 @@ func dataSourceAliCloudFcv3Triggers() *schema.Resource {
 						"http_trigger": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"url_intranet": {

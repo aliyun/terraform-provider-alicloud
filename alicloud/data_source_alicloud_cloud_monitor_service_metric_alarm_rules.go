@@ -55,7 +55,6 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRules() *schema.Resource {
 						"composite_expression": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"times": {
@@ -124,13 +123,11 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRules() *schema.Resource {
 						"escalations": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"critical": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"comparison_operator": {
@@ -159,7 +156,6 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRules() *schema.Resource {
 									"info": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"comparison_operator": {
@@ -188,7 +184,6 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRules() *schema.Resource {
 									"warn": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"comparison_operator": {
@@ -256,7 +251,6 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRules() *schema.Resource {
 						"prometheus": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"annotations": {

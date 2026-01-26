@@ -79,7 +79,6 @@ func resourceAliCloudVpcRouteEntry() *schema.Resource {
 						"next_hop_related_info": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"instance_id": {

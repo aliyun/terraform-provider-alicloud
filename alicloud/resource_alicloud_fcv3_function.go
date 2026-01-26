@@ -91,7 +91,6 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 							Type:       schema.TypeList,
 							Computed:   true,
 							Deprecated: "Field 'acceleration_info' has been deprecated from provider version 1.228.0. Image Acceleration Information (Obsolete)",
-							MaxItems:   1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"status": {
@@ -600,7 +599,6 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 			"tracing_config": {
 				Type:     schema.TypeList,
 				Computed: true,
-				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"type": {

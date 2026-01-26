@@ -78,7 +78,6 @@ func dataSourceAlicloudOtsTables() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 4,
 						},
 						"defined_column": {
 							Type:     schema.TypeList,
@@ -95,7 +94,6 @@ func dataSourceAlicloudOtsTables() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 32,
 						},
 						"time_to_live": {
 							Type:     schema.TypeInt,

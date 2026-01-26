@@ -85,7 +85,6 @@ func dataSourceAlicloudFcServices() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 1,
 						},
 						"vpc_config": {
 							Type:     schema.TypeList,
@@ -109,7 +108,6 @@ func dataSourceAlicloudFcServices() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 1,
 						},
 						"nas_config": {
 							Type:     schema.TypeList,
@@ -142,7 +140,6 @@ func dataSourceAlicloudFcServices() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 1,
 						},
 					},
 				},
