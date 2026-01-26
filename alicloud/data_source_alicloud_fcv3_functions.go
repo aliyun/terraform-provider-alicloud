@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -27,10 +28,15 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringIsValidRegExp,
 				ForceNew:     true,
 			},
 			"prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -39,11 +45,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-			},
-			"resource_group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
 			},
 			"functions": {
 				Type:     schema.TypeList,
@@ -387,7 +388,18 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"layers": {
 							Type:     schema.TypeList,
 							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"arn": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"size": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 						"log_config": {
 							Type:     schema.TypeList,
@@ -915,7 +927,7 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 		}
 		mapping["invocation_restriction"] = invocationRestrictionMaps
 
-		mapping["layers"] = objectRaw["layers"]
+		mapping["layers"] = flattenFunctionsLayers(objectRaw["layers"])
 		logConfigMaps := make([]map[string]interface{}, 0)
 		logConfigMap := make(map[string]interface{})
 		logConfigRaw := make(map[string]interface{})
@@ -1036,4 +1048,23 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 		writeToFile(output.(string), s)
 	}
 	return nil
+}
+
+func flattenFunctionsLayers(input interface{}) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0)
+	if input == nil {
+		return result
+	}
+	inputArr := input.([]interface{})
+	if len(inputArr) == 0 {
+		return result
+	}
+	for _, v := range inputArr {
+		m := v.(map[string]interface{})
+		result = append(result, map[string]interface{}{
+			"arn":  m["arn"].(string),
+			"size": string(m["size"].(json.Number)),
+		})
+	}
+	return result
 }
