@@ -20,6 +20,12 @@ For information about File Storage (NAS) Access Group and how to use it, see [Wh
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_access_group&exampleId=9a1da6e1-e347-3eb1-1191-1d83d83d21fa508c4bbf&activeTab=example&spm=docs.r.nas_access_group.0.9a1da6e1e3&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "random_integer" "default" {
   min = 10000
@@ -33,6 +39,9 @@ resource "alicloud_nas_access_group" "foo" {
   file_system_type  = "extreme"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_access_group&spm=docs.r.nas_access_group.example&intl_lang=EN_US)
 
 ## Argument Reference
 

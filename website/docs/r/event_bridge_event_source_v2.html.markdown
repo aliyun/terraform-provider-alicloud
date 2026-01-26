@@ -20,6 +20,12 @@ For information about Event Bridge Event Source V2 and how to use it, see [What 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_event_bridge_event_source_v2&exampleId=badea89e-7883-08e6-ab93-398a10c1590c71c7c43c&activeTab=example&spm=docs.r.event_bridge_event_source_v2.0.badea89e78&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -47,6 +53,9 @@ resource "alicloud_event_bridge_event_source_v2" "default" {
   }
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_event_bridge_event_source_v2&spm=docs.r.event_bridge_event_source_v2.example&intl_lang=EN_US)
 
 ## Argument Reference
 

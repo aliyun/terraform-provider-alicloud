@@ -197,11 +197,14 @@ func resourceAliCloudVpcRouteTableUpdate(d *schema.ResourceData, meta interface{
 
 	vpcServiceV2 := VpcServiceV2{client}
 	objectRaw, err := vpcServiceV2.DescribeVpcRouteTable(d.Id())
-	if d.IsNewResource() || d.HasChange("route_propagation_enable") {
-		if objectRaw["RoutePropagationEnable"] != d.Get("route_propagation_enable") {
+	if d.IsNewResource() {
+		if v, ok := d.GetOkExists("route_propagation_enable"); ok && (objectRaw["RoutePropagationEnable"] != d.Get("route_propagation_enable")) {
 			update = true
-			request["RoutePropagationEnable"] = d.Get("route_propagation_enable")
+			request["RoutePropagationEnable"] = v
 		}
+	} else if d.HasChange("route_propagation_enable") && (objectRaw["RoutePropagationEnable"] != d.Get("route_propagation_enable")) {
+		update = true
+		request["RoutePropagationEnable"] = d.Get("route_propagation_enable")
 	}
 
 	if update {

@@ -1,28 +1,33 @@
-## 1.269.0 (Unreleased)
+## 1.270.0 (Unreleased)
+## 1.269.0 (January 26, 2025)
 
-- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_ips_config` [GH-9405]
-- **New Resource:** `alicloud_cloud_firewall_instance_v2` [GH-9409]
-- **New Resource:** `alicloud_event_bridge_event_source_v2` [GH-9414]
-- **New Resource:** `alicloud_alikafka_scheduled_scaling_rule` [GH-9416]
+- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_ips_config` ([#9405](https://github.com/aliyun/terraform-provider-alicloud/issues/9405))
+- **New Resource:** `alicloud_cloud_firewall_instance_v2` ([#9409](https://github.com/aliyun/terraform-provider-alicloud/issues/9409))
+- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_acl_engine_mode` ([#9427](https://github.com/aliyun/terraform-provider-alicloud/issues/9427))
+- **New Resource:** `alicloud_event_bridge_event_source_v2` ([#9414](https://github.com/aliyun/terraform-provider-alicloud/issues/9414))
+- **New Resource:** `alicloud_alikafka_scheduled_scaling_rule` ([#9416](https://github.com/aliyun/terraform-provider-alicloud/issues/9416))
+- **New Data Source:** `alicloud_cs_clusters` ([#9412](https://github.com/aliyun/terraform-provider-alicloud/issues/9412))
 
 ENHANCEMENTS:
 
-- resource/alicloud_wafv3_domain: Added the field redirect.max_body_size, redirect.http2_origin, redirect.http2_origin_max_concurrency. [GH-9396]
-- resource/alicloud_sls_machine_group: mark machine_list unordered. [GH-9398]
-- resource/alicloud_wafv3_defense_template: defense_scene support waf_base. [GH-9401]
-- resource/alicloud_ram_security_preference: Add support for max_idle_days_for_access_keys and max_idle_days_for_users. [GH-9402]
-- resource/alicloud_wafv3_defense_rule: Added the field auto_update, waf_base_config, codec_list. [GH-9403]
-- resource/alicloud_security_group: Add computed to resource_group_id. [GH-9406]
-- resource/alicloud_ssl_certificates_service_pca_certificate: Added the field crl_day, enable_crl, path_len_constraint, certificate_type, parent_identifier, extended_key_usages; Supported for new action CreateSubCACertificate. [GH-9408]
-- resource/alicloud_threat_detection_instance: Added the field post_paid_host_auto_bind, post_paid_host_auto_bind_version, post_pay_module_switch_obj; Deprecated the field post_pay_module_switch; Fixed post_pay_module_switch invalid error. [GH-9410]
-- resource/alicloud_cloud_firewall_vpc_firewall_ips_config: Update document. [GH-9418]
-- testcase: Improved alicloud_cloud_firewall_instance_v2 International testcase. [GH-9411]
-- docs: docs: Deprecated resource cloud_firewall_instance, event_bridge_event_source. [GH-9417]
+- resource/alicloud_wafv3_domain: Added the field redirect.max_body_size, redirect.http2_origin, redirect.http2_origin_max_concurrency. ([#9396](https://github.com/aliyun/terraform-provider-alicloud/issues/9396))
+- resource/alicloud_sls_machine_group: mark machine_list unordered. ([#9398](https://github.com/aliyun/terraform-provider-alicloud/issues/9398))
+- resource/alicloud_wafv3_defense_template: defense_scene support waf_base. ([#9401](https://github.com/aliyun/terraform-provider-alicloud/issues/9401))
+- resource/alicloud_ram_security_preference: Add support for max_idle_days_for_access_keys and max_idle_days_for_users. ([#9402](https://github.com/aliyun/terraform-provider-alicloud/issues/9402))
+- resource/alicloud_wafv3_defense_rule: Added the field auto_update, waf_base_config, codec_list. ([#9403](https://github.com/aliyun/terraform-provider-alicloud/issues/9403))
+- resource/alicloud_security_group: Add computed to resource_group_id. ([#9406](https://github.com/aliyun/terraform-provider-alicloud/issues/9406))
+- resource/alicloud_ssl_certificates_service_pca_certificate: Added the field crl_day, enable_crl, path_len_constraint, certificate_type, parent_identifier, extended_key_usages; Supported for new action CreateSubCACertificate. ([#9408](https://github.com/aliyun/terraform-provider-alicloud/issues/9408))
+- resource/alicloud_threat_detection_instance: Added the field post_paid_host_auto_bind, post_paid_host_auto_bind_version, post_pay_module_switch_obj; Deprecated the field post_pay_module_switch; Fixed post_pay_module_switch invalid error. ([#9410](https://github.com/aliyun/terraform-provider-alicloud/issues/9410))
+- resource/alicloud_cloud_firewall_vpc_firewall_ips_config: Update document. ([#9418](https://github.com/aliyun/terraform-provider-alicloud/issues/9418))
+- resource/alicloud_nas_access_group: Refactored the resource nas_access_group. ([#9425](https://github.com/aliyun/terraform-provider-alicloud/issues/9425))
+- resource/alicloud_cs_managed_kubernetes: Added the field upgrade_policy, control_plane_only; resource/alicloud_cs_kubernetes_node_pool: Added the field pause_policy, batch_interval, node_names, upgrade_policy, kubernetes_version, use_replace, runtime, image_id, runtime_version. ([#9420](https://github.com/aliyun/terraform-provider-alicloud/issues/9420))
+- testcase: Improved alicloud_cloud_firewall_instance_v2 International testcase. ([#9411](https://github.com/aliyun/terraform-provider-alicloud/issues/9411))
+- docs: docs: Deprecated resource cloud_firewall_instance, event_bridge_event_source. ([#9417](https://github.com/aliyun/terraform-provider-alicloud/issues/9417))
 
 BUG FIXES:
 
-- resource/alicloud_route_table: Fixed bug while creating with route_propagation_enable valued false. [GH-9394]
-- resource/alicloud_rocketmq_instance: Fixed the creation error caused by field product_info.send_receive_ratio. [GH-9399]
+- resource/alicloud_route_table: Fixed bug while creating with route_propagation_enable valued false. ([#9394](https://github.com/aliyun/terraform-provider-alicloud/issues/9394))
+- resource/alicloud_rocketmq_instance: Fixed the creation error caused by field product_info.send_receive_ratio. ([#9399](https://github.com/aliyun/terraform-provider-alicloud/issues/9399))
 
 ## 1.268.0 (January 13, 2025)
 

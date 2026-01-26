@@ -241,15 +241,17 @@ func TestAccAliCloudVPCRouteTable_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":      "${alicloud_vpc.default.id}",
-					"description": name,
-					"name":        name,
+					"vpc_id":                   "${alicloud_vpc.default.id}",
+					"description":              name,
+					"name":                     name,
+					"route_propagation_enable": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":      CHECKSET,
-						"description": name,
-						"name":        name,
+						"vpc_id":                   CHECKSET,
+						"description":              name,
+						"name":                     name,
+						"route_propagation_enable": "true",
 					}),
 				),
 			},
@@ -275,7 +277,8 @@ func TestAccAliCloudVPCRouteTable_basic1(t *testing.T) {
 func TestAccAliCloudVPCRouteTable_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_route_table.default"
-	ra := resourceAttrInit(resourceId, AlicloudRouteTableMap0)
+	// while associate_type set to Gateway, the default value of route_propagation_enable is false
+	ra := resourceAttrInit(resourceId, AlicloudRouteTableMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRouteTable")
@@ -329,7 +332,13 @@ func TestAccAliCloudVPCRouteTable_basic2(t *testing.T) {
 	})
 }
 
-var AlicloudRouteTableMap0 = map[string]string{}
+var AlicloudRouteTableMap0 = map[string]string{
+	"route_propagation_enable": "true",
+}
+
+var AlicloudRouteTableMap1 = map[string]string{
+	"route_propagation_enable": "false",
+}
 
 func AlicloudRouteTableBasicDependence0(name string) string {
 	return fmt.Sprintf(`
