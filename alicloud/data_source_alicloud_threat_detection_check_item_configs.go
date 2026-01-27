@@ -92,7 +92,6 @@ func dataSourceAliCloudThreatDetectionCheckItemConfigs() *schema.Resource {
 						"description": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"type": {

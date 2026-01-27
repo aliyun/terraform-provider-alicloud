@@ -53,7 +53,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 						"configuration": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"severity_configurations": {
@@ -68,7 +67,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 												"eval_condition": {
 													Type:     schema.TypeList,
 													Computed: true,
-													MaxItems: 1,
 													Elem: &schema.Resource{
 														Schema: map[string]*schema.Schema{
 															"condition": {
@@ -96,7 +94,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 									"sink_cms": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"enabled": {
@@ -117,7 +114,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 									"template_configuration": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"type": {
@@ -166,7 +162,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 									"group_configuration": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"type": {
@@ -208,7 +203,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 									"condition_configuration": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"condition": {
@@ -245,7 +239,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 									"policy_configuration": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"alert_policy_id": {
@@ -266,7 +259,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 									"sink_event_store": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"project": {
@@ -355,7 +347,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 									"sink_alerthub": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"enabled": {
@@ -392,7 +383,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 						"schedule": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"type": {

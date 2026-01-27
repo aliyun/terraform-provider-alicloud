@@ -76,7 +76,6 @@ func dataSourceAlicloudSlbAcls() *schema.Resource {
 									},
 								},
 							},
-							MinItems: 0,
 						},
 						"related_listeners": {
 							Type:     schema.TypeList,
@@ -101,7 +100,6 @@ func dataSourceAlicloudSlbAcls() *schema.Resource {
 									},
 								},
 							},
-							MinItems: 0,
 						},
 						"tags": tagsSchema(),
 						"resource_group_id": {

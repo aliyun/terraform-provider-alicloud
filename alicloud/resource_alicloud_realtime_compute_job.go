@@ -120,7 +120,6 @@ func resourceAliCloudRealtimeComputeJob() *schema.Resource {
 						"running": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"observed_flink_job_restarts": {
@@ -141,7 +140,6 @@ func resourceAliCloudRealtimeComputeJob() *schema.Resource {
 						"failure": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"message": {

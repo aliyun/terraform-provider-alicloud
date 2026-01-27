@@ -125,7 +125,6 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 1,
 						},
 
 						"logging": {
@@ -143,7 +142,6 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 1,
 						},
 
 						"referer_config": {
@@ -162,7 +160,6 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 1,
 						},
 
 						"lifecycle_rule": {
@@ -197,7 +194,6 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 												},
 											},
 										},
-										MaxItems: 1,
 									},
 								},
 							},
@@ -223,7 +219,6 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 1,
 						},
 						"tags": {
 							Type:     schema.TypeMap,
@@ -240,7 +235,6 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 1,
 						},
 					},
 				},

@@ -52,7 +52,6 @@ func dataSourceAliCloudSlsEtls() *schema.Resource {
 						"configuration": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"script": {

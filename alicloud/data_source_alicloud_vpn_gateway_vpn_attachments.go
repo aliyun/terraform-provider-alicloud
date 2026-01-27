@@ -65,7 +65,6 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 						"bgp_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"status": {
@@ -118,7 +117,6 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 						"health_check_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"policy": {
@@ -155,7 +153,6 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 						"ike_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"ike_auth_alg": {
@@ -204,7 +201,6 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 						"ipsec_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"ipsec_pfs": {
@@ -281,7 +277,6 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 									"tunnel_ike_config": {
 										Type:     schema.TypeSet,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"ike_auth_alg": {
@@ -330,7 +325,6 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 									"tunnel_bgp_config": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"local_asn": {
@@ -375,7 +369,6 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 									"tunnel_ipsec_config": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"ipsec_pfs": {

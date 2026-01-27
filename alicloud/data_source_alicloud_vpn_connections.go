@@ -266,7 +266,6 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 									"tunnel_ike_config": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"ike_auth_alg": {
@@ -320,7 +319,6 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 									"tunnel_bgp_config": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"local_asn": {
@@ -365,7 +363,6 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 									"tunnel_ipsec_config": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"ipsec_pfs": {

@@ -101,7 +101,6 @@ func dataSourceAliCloudCloudFirewallVpcCenTrFirewalls() *schema.Resource {
 						"ips_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"enable_all_patch": {

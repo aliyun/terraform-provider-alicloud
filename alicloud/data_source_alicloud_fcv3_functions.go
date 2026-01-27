@@ -66,7 +66,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"custom_container_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"resolved_image_uri": {
@@ -85,7 +84,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 									"acceleration_info": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"status": {
@@ -111,7 +109,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 									"health_check_config": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"initial_delay_seconds": {
@@ -151,7 +148,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"custom_dns": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"searches": {
@@ -186,7 +182,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"custom_runtime_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"args": {
@@ -206,7 +201,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 									"health_check_config": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"initial_delay_seconds": {
@@ -266,7 +260,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"gpu_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"gpu_memory_size": {
@@ -299,13 +292,11 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"instance_lifecycle_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"pre_stop": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"timeout": {
@@ -322,7 +313,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 									"initializer": {
 										Type:     schema.TypeList,
 										Computed: true,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"command": {
@@ -351,7 +341,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"invocation_restriction": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"last_modified_time": {
@@ -404,7 +393,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"log_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"project": {
@@ -437,7 +425,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"nas_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"mount_points": {
@@ -474,7 +461,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"oss_mount_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"mount_points": {
@@ -551,7 +537,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"tracing_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"type": {
@@ -568,7 +553,6 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"vpc_config": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"vpc_id": {
