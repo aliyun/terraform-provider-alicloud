@@ -256,12 +256,6 @@ func resourceAliCloudVpcVpcCreate(d *schema.ResourceData, meta interface{}) erro
 
 		d.SetId(fmt.Sprint(response["VpcId"]))
 
-		vpcServiceV2 := VpcServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-
 	}
 
 	if v, ok := d.GetOk("is_default"); ok && InArray(fmt.Sprint(v), []string{"true"}) {
@@ -303,6 +297,12 @@ func resourceAliCloudVpcVpcCreate(d *schema.ResourceData, meta interface{}) erro
 
 		d.SetId(fmt.Sprint(response["VpcId"]))
 
+	}
+
+	vpcServiceV2 := VpcServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAliCloudVpcVpcUpdate(d, meta)
