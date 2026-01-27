@@ -1015,7 +1015,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_click_house_enterprise_db_cluster_backup_policy":      resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicy(),
 			"alicloud_click_house_enterprise_db_cluster_public_endpoint":    resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpoint(),
 			"alicloud_click_house_enterprise_db_cluster_account":            resourceAliCloudClickHouseEnterpriseDBClusterAccount(),
-			"alicloud_click_house_enterprise_db_cluster":                    resourceAliCloudClickHouseEnterpriseDBCluster(),
+			"alicloud_click_house_enterprise_db_cluster":                    resourceAliCloudClickHouseEnterpriseDbCluster(),
 			"alicloud_esa_site_delivery_task":                               resourceAliCloudEsaSiteDeliveryTask(),
 			"alicloud_esa_cache_reserve_instance":                           resourceAliCloudEsaCacheReserveInstance(),
 			"alicloud_eais_client_instance_attachment":                      resourceAliCloudEaisClientInstanceAttachment(),

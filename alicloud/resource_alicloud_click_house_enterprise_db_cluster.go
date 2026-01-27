@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudClickHouseEnterpriseDBCluster() *schema.Resource {
+func resourceAliCloudClickHouseEnterpriseDbCluster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudClickHouseEnterpriseDBClusterCreate,
-		Read:   resourceAliCloudClickHouseEnterpriseDBClusterRead,
-		Update: resourceAliCloudClickHouseEnterpriseDBClusterUpdate,
-		Delete: resourceAliCloudClickHouseEnterpriseDBClusterDelete,
+		Create: resourceAliCloudClickHouseEnterpriseDbClusterCreate,
+		Read:   resourceAliCloudClickHouseEnterpriseDbClusterRead,
+		Update: resourceAliCloudClickHouseEnterpriseDbClusterUpdate,
+		Delete: resourceAliCloudClickHouseEnterpriseDbClusterDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -30,6 +30,11 @@ func resourceAliCloudClickHouseEnterpriseDBCluster() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"create_time": {
 				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"multi_zones": {
@@ -53,8 +58,28 @@ func resourceAliCloudClickHouseEnterpriseDBCluster() *schema.Resource {
 					},
 				},
 			},
+			"node_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"node_scale_max": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"node_scale_min": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"region_id": {
 				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"scale_max": {
@@ -69,6 +94,7 @@ func resourceAliCloudClickHouseEnterpriseDBCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -88,7 +114,7 @@ func resourceAliCloudClickHouseEnterpriseDBCluster() *schema.Resource {
 	}
 }
 
-func resourceAliCloudClickHouseEnterpriseDBClusterCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -101,8 +127,41 @@ func resourceAliCloudClickHouseEnterpriseDBClusterCreate(d *schema.ResourceData,
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
+	if v, ok := d.GetOkExists("node_scale_max"); ok {
+		request["NodeScaleMax"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
 	if v, ok := d.GetOk("scale_min"); ok {
 		request["ScaleMin"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOkExists("node_count"); ok {
+		request["NodeCount"] = v
+	}
+	if v, ok := d.GetOk("multi_zones"); ok {
+		multiZoneMapsArray := make([]interface{}, 0)
+		for _, dataLoop1 := range convertToInterfaceArray(v) {
+			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Map := make(map[string]interface{})
+			dataLoop1Map["VSwitchIds"] = convertToInterfaceArray(dataLoop1Tmp["vswitch_ids"])
+			dataLoop1Map["ZoneId"] = dataLoop1Tmp["zone_id"]
+			multiZoneMapsArray = append(multiZoneMapsArray, dataLoop1Map)
+		}
+		multiZoneMapsJson, err := json.Marshal(multiZoneMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["MultiZone"] = string(multiZoneMapsJson)
+	}
+
+	if v, ok := d.GetOkExists("node_scale_min"); ok {
+		request["NodeScaleMin"] = v
 	}
 	if v, ok := d.GetOk("scale_max"); ok {
 		request["ScaleMax"] = v
@@ -113,22 +172,6 @@ func resourceAliCloudClickHouseEnterpriseDBClusterCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VswitchId"] = v
 	}
-	if v, ok := d.GetOk("multi_zones"); ok {
-		multiZoneMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range v.(*schema.Set).List() {
-			dataLoopTmp := dataLoop.(map[string]interface{})
-			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["VSwitchIds"] = dataLoopTmp["vswitch_ids"].(*schema.Set).List()
-			dataLoopMap["ZoneId"] = dataLoopTmp["zone_id"]
-			multiZoneMapsArray = append(multiZoneMapsArray, dataLoopMap)
-		}
-		multiZoneMapsJson, err := json.Marshal(multiZoneMapsArray)
-		if err != nil {
-			return WrapError(err)
-		}
-		request["MultiZone"] = string(multiZoneMapsJson)
-	}
-
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
@@ -154,22 +197,22 @@ func resourceAliCloudClickHouseEnterpriseDBClusterCreate(d *schema.ResourceData,
 	d.SetId(fmt.Sprint(id))
 
 	clickHouseServiceV2 := ClickHouseServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDBClusterStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudClickHouseEnterpriseDBClusterRead(d, meta)
+	return resourceAliCloudClickHouseEnterpriseDbClusterUpdate(d, meta)
 }
 
-func resourceAliCloudClickHouseEnterpriseDBClusterRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	clickHouseServiceV2 := ClickHouseServiceV2{client}
 
-	objectRaw, err := clickHouseServiceV2.DescribeClickHouseEnterpriseDBCluster(d.Id())
+	objectRaw, err := clickHouseServiceV2.DescribeClickHouseEnterpriseDbCluster(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_click_house_enterprise_db_cluster DescribeClickHouseEnterpriseDBCluster Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_click_house_enterprise_db_cluster DescribeClickHouseEnterpriseDbCluster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -177,7 +220,12 @@ func resourceAliCloudClickHouseEnterpriseDBClusterRead(d *schema.ResourceData, m
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("node_count", formatInt(objectRaw["NodeCount"]))
+	d.Set("node_scale_max", formatInt(objectRaw["NodeScaleMax"]))
+	d.Set("node_scale_min", formatInt(objectRaw["NodeScaleMin"]))
 	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("scale_max", objectRaw["ScaleMax"])
 	d.Set("scale_min", objectRaw["ScaleMin"])
 	d.Set("status", objectRaw["Status"])
@@ -188,14 +236,14 @@ func resourceAliCloudClickHouseEnterpriseDBClusterRead(d *schema.ResourceData, m
 	multiZonesRaw := objectRaw["MultiZones"]
 	multiZonesMaps := make([]map[string]interface{}, 0)
 	if multiZonesRaw != nil {
-		for _, multiZonesChildRaw := range multiZonesRaw.([]interface{}) {
+		for _, multiZonesChildRaw := range convertToInterfaceArray(multiZonesRaw) {
 			multiZonesMap := make(map[string]interface{})
 			multiZonesChildRaw := multiZonesChildRaw.(map[string]interface{})
 			multiZonesMap["zone_id"] = multiZonesChildRaw["ZoneId"]
 
 			vSwitchIdsRaw := make([]interface{}, 0)
 			if multiZonesChildRaw["VSwitchIds"] != nil {
-				vSwitchIdsRaw = multiZonesChildRaw["VSwitchIds"].([]interface{})
+				vSwitchIdsRaw = convertToInterfaceArray(multiZonesChildRaw["VSwitchIds"])
 			}
 
 			multiZonesMap["vswitch_ids"] = vSwitchIdsRaw
@@ -205,16 +253,19 @@ func resourceAliCloudClickHouseEnterpriseDBClusterRead(d *schema.ResourceData, m
 	if err := d.Set("multi_zones", multiZonesMaps); err != nil {
 		return err
 	}
+	tagsMaps := objectRaw["Tags"]
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceAliCloudClickHouseEnterpriseDBClusterUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudClickHouseEnterpriseDbClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+	d.Partial(true)
 
 	var err error
 	action := "ModifyDBInstanceClass"
@@ -222,14 +273,29 @@ func resourceAliCloudClickHouseEnterpriseDBClusterUpdate(d *schema.ResourceData,
 	query = make(map[string]interface{})
 	request["DBInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if d.HasChange("scale_min") {
+	if !d.IsNewResource() && d.HasChange("node_scale_max") {
+		update = true
+		request["NodeScaleMax"] = d.Get("node_scale_max")
+	}
+
+	if !d.IsNewResource() && d.HasChange("node_scale_min") {
+		update = true
+		request["NodeScaleMin"] = d.Get("node_scale_min")
+	}
+
+	if !d.IsNewResource() && d.HasChange("scale_min") {
 		update = true
 		request["ScaleMin"] = d.Get("scale_min")
 	}
 
-	if d.HasChange("scale_max") {
+	if !d.IsNewResource() && d.HasChange("scale_max") {
 		update = true
 		request["ScaleMax"] = d.Get("scale_max")
+	}
+
+	if !d.IsNewResource() && d.HasChange("node_count") {
+		update = true
+		request["NodeCount"] = d.Get("node_count")
 	}
 
 	if update {
@@ -250,16 +316,91 @@ func resourceAliCloudClickHouseEnterpriseDBClusterUpdate(d *schema.ResourceData,
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		clickHouseServiceV2 := ClickHouseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDBClusterStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "ChangeResourceGroup"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["ResourceRegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+	}
+	request["ResourceGroupId"] = d.Get("resource_group_id")
+	request["ResourceType"] = "EnterpriseDBCluster"
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		clickHouseServiceV2 := ClickHouseServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "ModifyDBInstanceAttribute"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DBInstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("description") {
+		update = true
+	}
+	request["AttributeValue"] = d.Get("description")
+	request["AttributeType"] = "DBInstanceDescription"
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		clickHouseServiceV2 := ClickHouseServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("description"))}, d.Timeout(schema.TimeoutUpdate), 0, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "Description", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
-	return resourceAliCloudClickHouseEnterpriseDBClusterRead(d, meta)
+	if d.HasChange("tags") {
+		clickHouseServiceV2 := ClickHouseServiceV2{client}
+		if err := clickHouseServiceV2.SetResourceTags(d, "EnterpriseDBCluster"); err != nil {
+			return WrapError(err)
+		}
+	}
+	d.Partial(false)
+	return resourceAliCloudClickHouseEnterpriseDbClusterRead(d, meta)
 }
 
-func resourceAliCloudClickHouseEnterpriseDBClusterDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudClickHouseEnterpriseDbClusterDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDBInstance"
@@ -274,7 +415,6 @@ func resourceAliCloudClickHouseEnterpriseDBClusterDelete(d *schema.ResourceData,
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
