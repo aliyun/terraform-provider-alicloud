@@ -105,9 +105,8 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 				Computed: true,
 			},
 			"route_table_id": {
-				Type:          schema.TypeString,
-				ConflictsWith: []string{"router_table_id"},
-				Computed:      true,
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"router_id": {
 				Type:     schema.TypeString,

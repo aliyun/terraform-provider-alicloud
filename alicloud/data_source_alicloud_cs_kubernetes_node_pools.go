@@ -431,9 +431,8 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 							Computed: true,
 						},
 						"node_pool_name": {
-							Type:         schema.TypeString,
-							ExactlyOneOf: []string{},
-							Computed:     true,
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"on_demand_base_capacity": {
 							Type:     schema.TypeString,
