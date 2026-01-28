@@ -95,15 +95,17 @@ func (s *Fcv3ServiceV2) DescribeFcv3CustomDomain(id string) (object map[string]i
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
+	var header map[string]*string
 	domainName := id
-	action := fmt.Sprintf("/2023-03-30/custom-domains/%s", domainName)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["domainName"] = id
+	header = make(map[string]*string)
+
+	action := fmt.Sprintf("/2023-03-30/custom-domains/%s", domainName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
+		response, err = client.RoaGet("FC", "2023-03-30", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -126,17 +128,27 @@ func (s *Fcv3ServiceV2) DescribeFcv3CustomDomain(id string) (object map[string]i
 }
 
 func (s *Fcv3ServiceV2) Fcv3CustomDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.Fcv3CustomDomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeFcv3CustomDomain)
+}
+
+func (s *Fcv3ServiceV2) Fcv3CustomDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeFcv3CustomDomain(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

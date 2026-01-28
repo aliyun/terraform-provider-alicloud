@@ -3,31 +3,23 @@ subcategory: "Function Compute Service V3 (FCV3)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fcv3_custom_domain"
 description: |-
-  Provides a Alicloud FCV3 Custom Domain resource.
+  Provides a Alicloud Function Compute Service V3 (FCV3) Custom Domain resource.
 ---
 
 # alicloud_fcv3_custom_domain
 
-Provides a FCV3 Custom Domain resource.
+Provides a Function Compute Service V3 (FCV3) Custom Domain resource.
 
 Custom Domain names allow users to access FC functions through custom domain names, providing convenience for building Web services using function compute.
 You can bind a custom domain name to Function Compute and set different paths to different functions of different services.
 
-For information about FCV3 Custom Domain and how to use it, see [What is Custom Domain](https://www.alibabacloud.com/help/en/functioncompute/developer-reference/api-fc-2023-03-30-getcustomdomain).
-
-~> **NOTE:** This content is a technical preview, and should not be relied on in a production environment.
+For information about Function Compute Service V3 (FCV3) Custom Domain and how to use it, see [What is Custom Domain](https://www.alibabacloud.com/help/en/functioncompute/developer-reference/api-fc-2023-03-30-getcustomdomain).
 
 -> **NOTE:** Available since v1.228.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_fcv3_custom_domain&exampleId=d8ff329b-9334-7860-59b2-fd3b11bdfd0abc9c8568&activeTab=example&spm=docs.r.fcv3_custom_domain.0.d8ff329b93&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 provider "alicloud" {
@@ -218,18 +210,17 @@ resource "alicloud_fcv3_custom_domain" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fcv3_custom_domain&spm=docs.r.fcv3_custom_domain.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
-* `auth_config` - (Optional, List) Permission authentication configuration See [`auth_config`](#auth_config) below.
-* `cert_config` - (Optional, Computed, List) HTTPS certificate information See [`cert_config`](#cert_config) below.
+* `auth_config` - (Optional, Set) Permission authentication configuration See [`auth_config`](#auth_config) below.
+* `cert_config` - (Optional, Computed, Set) HTTPS certificate information See [`cert_config`](#cert_config) below.
+* `cors_config` - (Optional, Set, Available since v1.270.0) Cross-Origin Resource Sharing (CORS) configuration, used to control which origins can access resources under the custom domain. See [`cors_config`](#cors_config) below.
 * `custom_domain_name` - (Optional, ForceNew, Computed) The name of the resource
 * `protocol` - (Optional) The protocol type supported by the domain name. HTTP: only HTTP protocol is supported. HTTPS: only HTTPS is supported. HTTP,HTTPS: Supports HTTP and HTTPS protocols.
-* `route_config` - (Optional, List) Route matching rule configuration See [`route_config`](#route_config) below.
-* `tls_config` - (Optional, Computed, List) TLS configuration information See [`tls_config`](#tls_config) below.
-* `waf_config` - (Optional, List) Web application firewall configuration information See [`waf_config`](#waf_config) below.
+* `route_config` - (Optional, Set) Route matching rule configuration See [`route_config`](#route_config) below.
+* `tls_config` - (Optional, Computed, Set) TLS configuration information See [`tls_config`](#tls_config) below.
+* `waf_config` - (Optional, Set) Web application firewall configuration information See [`waf_config`](#waf_config) below.
 
 ### `auth_config`
 
@@ -244,6 +235,16 @@ The cert_config supports the following:
 * `certificate` - (Optional) PEM format certificate
 * `private_key` - (Optional) Private Key in PEM format
 
+### `cors_config`
+
+The cors_config supports the following:
+* `allow_credentials` - (Optional, Available since v1.270.0) Whether to allow credentials (such as Cookies, Authorization headers, etc.). When AllowCredentials is true, AllowOrigins cannot use the wildcard '*'.
+* `allow_headers` - (Optional, List, Available since v1.270.0) List of allowed request headers, such as Content-Type, Authorization, etc.
+* `allow_methods` - (Optional, List, Available since v1.270.0) List of allowed HTTP methods, such as GET, POST, PUT, DELETE, etc.
+* `allow_origins` - (Optional, List, Available since v1.270.0) List of allowed origins. Supports wildcard '*' to allow all origins (when AllowCredentials is false), specific domains like 'https://example.com', or an array of multiple domains.
+* `expose_headers` - (Optional, List, Available since v1.270.0) List of response headers that can be exposed to the browser.
+* `max_age` - (Optional, Int, Available since v1.270.0) Cache time (seconds) for preflight request results. Browsers will not resend preflight requests within this time.
+
 ### `route_config`
 
 The route_config supports the following:
@@ -256,7 +257,7 @@ The route_config-routes supports the following:
 * `methods` - (Optional, List) List of supported HTTP methods
 * `path` - (Optional) Route matching rule
 * `qualifier` - (Optional) Version or Alias
-* `rewrite_config` - (Optional, List) Override Configuration See [`rewrite_config`](#route_config-routes-rewrite_config) below.
+* `rewrite_config` - (Optional, Computed, Set) Override Configuration See [`rewrite_config`](#route_config-routes-rewrite_config) below.
 
 ### `route_config-routes-rewrite_config`
 
@@ -298,12 +299,12 @@ The waf_config supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `account_id` - (Available since v1.234.0) The ID of your Alibaba Cloud account (primary account).
-* `api_version` - (Available since v1.234.0) API version of Function Compute
-* `create_time` - The creation time of the resource
-* `last_modified_time` - (Available since v1.234.0) The last time the custom domain name was Updated
-* `subdomain_count` - (Available since v1.234.0) Number of subdomains
+* `id` - The ID of the resource supplied above. 
+* `account_id` - The ID of your Alibaba Cloud account (primary account).
+* `api_version` - API version of Function Compute.
+* `create_time` - The creation time of the resource.
+* `last_modified_time` - The last time the custom domain name was Updated.
+* `subdomain_count` - Number of subdomains.
 
 ## Timeouts
 
@@ -314,8 +315,8 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-FCV3 Custom Domain can be imported using the id, e.g.
+Function Compute Service V3 (FCV3) Custom Domain can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_fcv3_custom_domain.example <id>
+$ terraform import alicloud_fcv3_custom_domain.example <custom_domain_name>
 ```

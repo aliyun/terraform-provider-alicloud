@@ -79,6 +79,43 @@ func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 					},
 				},
 			},
+			"cors_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"allow_credentials": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"allow_origins": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"expose_headers": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"allow_headers": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"max_age": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"allow_methods": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -251,63 +288,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 		request["domainName"] = v
 	}
 
-	objectDataLocalMap := make(map[string]interface{})
-
-	if v := d.Get("auth_config"); !IsNil(v) {
-		authInfo1, _ := jsonpath.Get("$[0].auth_info", d.Get("auth_config"))
-		if authInfo1 != nil && authInfo1 != "" {
-			objectDataLocalMap["authInfo"] = authInfo1
-		}
-		authType1, _ := jsonpath.Get("$[0].auth_type", d.Get("auth_config"))
-		if authType1 != nil && authType1 != "" {
-			objectDataLocalMap["authType"] = authType1
-		}
-
-		request["authConfig"] = objectDataLocalMap
-	}
-
-	objectDataLocalMap1 := make(map[string]interface{})
-
-	if v := d.Get("cert_config"); !IsNil(v) {
-		certName1, _ := jsonpath.Get("$[0].cert_name", d.Get("cert_config"))
-		if certName1 != nil && certName1 != "" {
-			objectDataLocalMap1["certName"] = certName1
-		}
-		certificate1, _ := jsonpath.Get("$[0].certificate", d.Get("cert_config"))
-		if certificate1 != nil && certificate1 != "" {
-			objectDataLocalMap1["certificate"] = certificate1
-		}
-		privateKey1, _ := jsonpath.Get("$[0].private_key", d.Get("cert_config"))
-		if privateKey1 != nil && privateKey1 != "" {
-			objectDataLocalMap1["privateKey"] = privateKey1
-		}
-
-		request["certConfig"] = objectDataLocalMap1
-	}
-
-	if v, ok := d.GetOk("protocol"); ok {
-		request["protocol"] = v
-	}
-	objectDataLocalMap2 := make(map[string]interface{})
-
-	if v := d.Get("tls_config"); !IsNil(v) {
-		cipherSuites1, _ := jsonpath.Get("$[0].cipher_suites", v)
-		if cipherSuites1 != nil && cipherSuites1 != "" {
-			objectDataLocalMap2["cipherSuites"] = cipherSuites1
-		}
-		maxVersion1, _ := jsonpath.Get("$[0].max_version", d.Get("tls_config"))
-		if maxVersion1 != nil && maxVersion1 != "" {
-			objectDataLocalMap2["maxVersion"] = maxVersion1
-		}
-		minVersion1, _ := jsonpath.Get("$[0].min_version", d.Get("tls_config"))
-		if minVersion1 != nil && minVersion1 != "" {
-			objectDataLocalMap2["minVersion"] = minVersion1
-		}
-
-		request["tlsConfig"] = objectDataLocalMap2
-	}
-
-	objectDataLocalMap3 := make(map[string]interface{})
+	routeConfig := make(map[string]interface{})
 
 	if v := d.Get("route_config"); !IsNil(v) {
 		if v, ok := d.GetOk("route_config"); ok {
@@ -316,34 +297,32 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range localData.([]interface{}) {
+			for _, dataLoop := range convertToInterfaceArray(localData) {
 				dataLoopTmp := make(map[string]interface{})
 				if dataLoop != nil {
 					dataLoopTmp = dataLoop.(map[string]interface{})
 				}
 				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["methods"] = dataLoopTmp["methods"]
-				dataLoopMap["functionName"] = dataLoopTmp["function_name"]
 				dataLoopMap["path"] = dataLoopTmp["path"]
-				dataLoopMap["qualifier"] = dataLoopTmp["qualifier"]
 				localData1 := make(map[string]interface{})
 				if v, ok := dataLoopTmp["rewrite_config"]; ok {
-					localData2, err := jsonpath.Get("$[0].equal_rules", v)
+					localData2, err := jsonpath.Get("$[0].wildcard_rules", v)
 					if err != nil {
 						localData2 = make([]interface{}, 0)
 					}
 					localMaps2 := make([]interface{}, 0)
-					for _, dataLoop2 := range localData2.([]interface{}) {
+					for _, dataLoop2 := range convertToInterfaceArray(localData2) {
 						dataLoop2Tmp := make(map[string]interface{})
 						if dataLoop2 != nil {
 							dataLoop2Tmp = dataLoop2.(map[string]interface{})
 						}
 						dataLoop2Map := make(map[string]interface{})
-						dataLoop2Map["match"] = dataLoop2Tmp["match"]
 						dataLoop2Map["replacement"] = dataLoop2Tmp["replacement"]
+						dataLoop2Map["match"] = dataLoop2Tmp["match"]
 						localMaps2 = append(localMaps2, dataLoop2Map)
 					}
-					localData1["equalRules"] = localMaps2
+					localData1["wildcardRules"] = localMaps2
+
 				}
 
 				if v, ok := dataLoopTmp["rewrite_config"]; ok {
@@ -352,26 +331,27 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 						localData3 = make([]interface{}, 0)
 					}
 					localMaps3 := make([]interface{}, 0)
-					for _, dataLoop3 := range localData3.([]interface{}) {
+					for _, dataLoop3 := range convertToInterfaceArray(localData3) {
 						dataLoop3Tmp := make(map[string]interface{})
 						if dataLoop3 != nil {
 							dataLoop3Tmp = dataLoop3.(map[string]interface{})
 						}
 						dataLoop3Map := make(map[string]interface{})
-						dataLoop3Map["match"] = dataLoop3Tmp["match"]
 						dataLoop3Map["replacement"] = dataLoop3Tmp["replacement"]
+						dataLoop3Map["match"] = dataLoop3Tmp["match"]
 						localMaps3 = append(localMaps3, dataLoop3Map)
 					}
 					localData1["regexRules"] = localMaps3
+
 				}
 
 				if v, ok := dataLoopTmp["rewrite_config"]; ok {
-					localData4, err := jsonpath.Get("$[0].wildcard_rules", v)
+					localData4, err := jsonpath.Get("$[0].equal_rules", v)
 					if err != nil {
 						localData4 = make([]interface{}, 0)
 					}
 					localMaps4 := make([]interface{}, 0)
-					for _, dataLoop4 := range localData4.([]interface{}) {
+					for _, dataLoop4 := range convertToInterfaceArray(localData4) {
 						dataLoop4Tmp := make(map[string]interface{})
 						if dataLoop4 != nil {
 							dataLoop4Tmp = dataLoop4.(map[string]interface{})
@@ -381,27 +361,116 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 						dataLoop4Map["replacement"] = dataLoop4Tmp["replacement"]
 						localMaps4 = append(localMaps4, dataLoop4Map)
 					}
-					localData1["wildcardRules"] = localMaps4
+					localData1["equalRules"] = localMaps4
+
 				}
 
-				dataLoopMap["rewriteConfig"] = localData1
+				if len(localData1) > 0 {
+					dataLoopMap["rewriteConfig"] = localData1
+				}
+				dataLoopMap["qualifier"] = dataLoopTmp["qualifier"]
+				dataLoopMap["functionName"] = dataLoopTmp["function_name"]
+				dataLoopMap["methods"] = dataLoopTmp["methods"]
 				localMaps = append(localMaps, dataLoopMap)
 			}
-			objectDataLocalMap3["routes"] = localMaps
+			routeConfig["routes"] = localMaps
 		}
 
-		request["routeConfig"] = objectDataLocalMap3
+		request["routeConfig"] = routeConfig
 	}
 
-	objectDataLocalMap4 := make(map[string]interface{})
+	if v, ok := d.GetOk("protocol"); ok {
+		request["protocol"] = v
+	}
+	certConfig := make(map[string]interface{})
 
-	if v := d.Get("waf_config"); !IsNil(v) {
-		enableWaf, _ := jsonpath.Get("$[0].enable_waf", d.Get("waf_config"))
-		if enableWaf != nil && enableWaf != "" {
-			objectDataLocalMap4["enableWAF"] = enableWaf
+	if v := d.Get("cert_config"); !IsNil(v) {
+		certName1, _ := jsonpath.Get("$[0].cert_name", v)
+		if certName1 != nil && certName1 != "" {
+			certConfig["certName"] = certName1
+		}
+		certificate1, _ := jsonpath.Get("$[0].certificate", v)
+		if certificate1 != nil && certificate1 != "" {
+			certConfig["certificate"] = certificate1
+		}
+		privateKey1, _ := jsonpath.Get("$[0].private_key", v)
+		if privateKey1 != nil && privateKey1 != "" {
+			certConfig["privateKey"] = privateKey1
 		}
 
-		request["wafConfig"] = objectDataLocalMap4
+		request["certConfig"] = certConfig
+	}
+
+	authConfig := make(map[string]interface{})
+
+	if v := d.Get("auth_config"); !IsNil(v) {
+		authInfo1, _ := jsonpath.Get("$[0].auth_info", v)
+		if authInfo1 != nil && authInfo1 != "" {
+			authConfig["authInfo"] = authInfo1
+		}
+		authType1, _ := jsonpath.Get("$[0].auth_type", v)
+		if authType1 != nil && authType1 != "" {
+			authConfig["authType"] = authType1
+		}
+
+		request["authConfig"] = authConfig
+	}
+
+	corsConfig := make(map[string]interface{})
+
+	if v := d.Get("cors_config"); !IsNil(v) {
+		allowHeaders1, _ := jsonpath.Get("$[0].allow_headers", v)
+		if allowHeaders1 != nil && allowHeaders1 != "" {
+			corsConfig["allowHeaders"] = allowHeaders1
+		}
+		allowMethods1, _ := jsonpath.Get("$[0].allow_methods", v)
+		if allowMethods1 != nil && allowMethods1 != "" {
+			corsConfig["allowMethods"] = allowMethods1
+		}
+		exposeHeaders1, _ := jsonpath.Get("$[0].expose_headers", v)
+		if exposeHeaders1 != nil && exposeHeaders1 != "" {
+			corsConfig["exposeHeaders"] = exposeHeaders1
+		}
+		allowOrigins1, _ := jsonpath.Get("$[0].allow_origins", v)
+		if allowOrigins1 != nil && allowOrigins1 != "" {
+			corsConfig["allowOrigins"] = allowOrigins1
+		}
+		maxAge1, _ := jsonpath.Get("$[0].max_age", v)
+		if maxAge1 != nil && maxAge1 != "" {
+			corsConfig["maxAge"] = maxAge1
+		}
+
+		request["corsConfig"] = corsConfig
+	}
+
+	tlsConfig := make(map[string]interface{})
+
+	if v := d.Get("tls_config"); !IsNil(v) {
+		minVersion1, _ := jsonpath.Get("$[0].min_version", v)
+		if minVersion1 != nil && minVersion1 != "" {
+			tlsConfig["minVersion"] = minVersion1
+		}
+		maxVersion1, _ := jsonpath.Get("$[0].max_version", v)
+		if maxVersion1 != nil && maxVersion1 != "" {
+			tlsConfig["maxVersion"] = maxVersion1
+		}
+		cipherSuites1, _ := jsonpath.Get("$[0].cipher_suites", v)
+		if cipherSuites1 != nil && cipherSuites1 != "" {
+			tlsConfig["cipherSuites"] = cipherSuites1
+		}
+
+		request["tlsConfig"] = tlsConfig
+	}
+
+	wafConfig := make(map[string]interface{})
+
+	if v := d.Get("waf_config"); !IsNil(v) {
+		enableWaf, _ := jsonpath.Get("$[0].enable_waf", v)
+		if enableWaf != nil && enableWaf != "" {
+			wafConfig["enableWAF"] = enableWaf
+		}
+
+		request["wafConfig"] = wafConfig
 	}
 
 	body = request
@@ -442,54 +511,38 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	if objectRaw["accountId"] != nil {
-		d.Set("account_id", objectRaw["accountId"])
-	}
-	if objectRaw["apiVersion"] != nil {
-		d.Set("api_version", objectRaw["apiVersion"])
-	}
-	if objectRaw["createdTime"] != nil {
-		d.Set("create_time", objectRaw["createdTime"])
-	}
-	if objectRaw["lastModifiedTime"] != nil {
-		d.Set("last_modified_time", objectRaw["lastModifiedTime"])
-	}
-	if objectRaw["protocol"] != nil {
-		d.Set("protocol", objectRaw["protocol"])
-	}
-	if objectRaw["subdomainCount"] != nil {
-		d.Set("subdomain_count", objectRaw["subdomainCount"])
-	}
-	if objectRaw["domainName"] != nil {
-		d.Set("custom_domain_name", objectRaw["domainName"])
-	}
+	d.Set("account_id", objectRaw["accountId"])
+	d.Set("api_version", objectRaw["apiVersion"])
+	d.Set("create_time", objectRaw["createdTime"])
+	d.Set("last_modified_time", objectRaw["lastModifiedTime"])
+	d.Set("protocol", objectRaw["protocol"])
+	d.Set("subdomain_count", objectRaw["subdomainCount"])
+	d.Set("custom_domain_name", objectRaw["domainName"])
 
 	authConfigMaps := make([]map[string]interface{}, 0)
 	authConfigMap := make(map[string]interface{})
-	authConfig1Raw := make(map[string]interface{})
+	authConfigRaw := make(map[string]interface{})
 	if objectRaw["authConfig"] != nil {
-		authConfig1Raw = objectRaw["authConfig"].(map[string]interface{})
+		authConfigRaw = objectRaw["authConfig"].(map[string]interface{})
 	}
-	if len(authConfig1Raw) > 0 {
-		authConfigMap["auth_info"] = authConfig1Raw["authInfo"]
-		authConfigMap["auth_type"] = authConfig1Raw["authType"]
+	if len(authConfigRaw) > 0 {
+		authConfigMap["auth_info"] = authConfigRaw["authInfo"]
+		authConfigMap["auth_type"] = authConfigRaw["authType"]
 
 		authConfigMaps = append(authConfigMaps, authConfigMap)
 	}
-	if objectRaw["authConfig"] != nil {
-		if err := d.Set("auth_config", authConfigMaps); err != nil {
-			return err
-		}
+	if err := d.Set("auth_config", authConfigMaps); err != nil {
+		return err
 	}
 	certConfigMaps := make([]map[string]interface{}, 0)
 	certConfigMap := make(map[string]interface{})
-	certConfig1Raw := make(map[string]interface{})
+	certConfigRaw := make(map[string]interface{})
 	if objectRaw["certConfig"] != nil {
-		certConfig1Raw = objectRaw["certConfig"].(map[string]interface{})
+		certConfigRaw = objectRaw["certConfig"].(map[string]interface{})
 	}
-	if len(certConfig1Raw) > 0 {
-		certConfigMap["cert_name"] = certConfig1Raw["certName"]
-		certConfigMap["certificate"] = certConfig1Raw["certificate"]
+	if len(certConfigRaw) > 0 {
+		certConfigMap["cert_name"] = certConfigRaw["certName"]
+		certConfigMap["certificate"] = certConfigRaw["certificate"]
 		oldConfig := d.Get("cert_config").([]interface{})
 		// The FC service will not return private key crendential for security reason.
 		// Read it from the terraform file.
@@ -499,126 +552,159 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 
 		certConfigMaps = append(certConfigMaps, certConfigMap)
 	}
-	if objectRaw["certConfig"] != nil {
-		if err := d.Set("cert_config", certConfigMaps); err != nil {
-			return err
+	if err := d.Set("cert_config", certConfigMaps); err != nil {
+		return err
+	}
+	corsConfigMaps := make([]map[string]interface{}, 0)
+	corsConfigMap := make(map[string]interface{})
+	corsConfigRaw := make(map[string]interface{})
+	if objectRaw["corsConfig"] != nil {
+		corsConfigRaw = objectRaw["corsConfig"].(map[string]interface{})
+	}
+	if len(corsConfigRaw) > 0 {
+		corsConfigMap["allow_credentials"] = corsConfigRaw["allowCredentials"]
+		corsConfigMap["max_age"] = corsConfigRaw["maxAge"]
+
+		allowHeadersRaw := make([]interface{}, 0)
+		if corsConfigRaw["allowHeaders"] != nil {
+			allowHeadersRaw = convertToInterfaceArray(corsConfigRaw["allowHeaders"])
 		}
+
+		corsConfigMap["allow_headers"] = allowHeadersRaw
+		allowMethodsRaw := make([]interface{}, 0)
+		if corsConfigRaw["allowMethods"] != nil {
+			allowMethodsRaw = convertToInterfaceArray(corsConfigRaw["allowMethods"])
+		}
+
+		corsConfigMap["allow_methods"] = allowMethodsRaw
+		allowOriginsRaw := make([]interface{}, 0)
+		if corsConfigRaw["allowOrigins"] != nil {
+			allowOriginsRaw = convertToInterfaceArray(corsConfigRaw["allowOrigins"])
+		}
+
+		corsConfigMap["allow_origins"] = allowOriginsRaw
+		exposeHeadersRaw := make([]interface{}, 0)
+		if corsConfigRaw["exposeHeaders"] != nil {
+			exposeHeadersRaw = convertToInterfaceArray(corsConfigRaw["exposeHeaders"])
+		}
+
+		corsConfigMap["expose_headers"] = exposeHeadersRaw
+		corsConfigMaps = append(corsConfigMaps, corsConfigMap)
+	}
+	if err := d.Set("cors_config", corsConfigMaps); err != nil {
+		return err
 	}
 	routeConfigMaps := make([]map[string]interface{}, 0)
 	routeConfigMap := make(map[string]interface{})
-	routes1Raw, _ := jsonpath.Get("$.routeConfig.routes", objectRaw)
+	routesRaw, _ := jsonpath.Get("$.routeConfig.routes", objectRaw)
 
 	routesMaps := make([]map[string]interface{}, 0)
-	if routes1Raw != nil {
-		for _, routesChild1Raw := range routes1Raw.([]interface{}) {
+	if routesRaw != nil {
+		for _, routesChildRaw := range convertToInterfaceArray(routesRaw) {
 			routesMap := make(map[string]interface{})
-			routesChild1Raw := routesChild1Raw.(map[string]interface{})
-			routesMap["function_name"] = routesChild1Raw["functionName"]
-			routesMap["path"] = routesChild1Raw["path"]
-			routesMap["qualifier"] = routesChild1Raw["qualifier"]
+			routesChildRaw := routesChildRaw.(map[string]interface{})
+			routesMap["function_name"] = routesChildRaw["functionName"]
+			routesMap["path"] = routesChildRaw["path"]
+			routesMap["qualifier"] = routesChildRaw["qualifier"]
 
-			methods1Raw := make([]interface{}, 0)
-			if routesChild1Raw["methods"] != nil {
-				methods1Raw = routesChild1Raw["methods"].([]interface{})
+			methodsRaw := make([]interface{}, 0)
+			if routesChildRaw["methods"] != nil {
+				methodsRaw = convertToInterfaceArray(routesChildRaw["methods"])
 			}
 
-			routesMap["methods"] = methods1Raw
+			routesMap["methods"] = methodsRaw
 			rewriteConfigMaps := make([]map[string]interface{}, 0)
 			rewriteConfigMap := make(map[string]interface{})
-			rewriteConfig1Raw := make(map[string]interface{})
-			if routesChild1Raw["rewriteConfig"] != nil {
-				rewriteConfig1Raw = routesChild1Raw["rewriteConfig"].(map[string]interface{})
+			rewriteConfigRaw := make(map[string]interface{})
+			if routesChildRaw["rewriteConfig"] != nil {
+				rewriteConfigRaw = routesChildRaw["rewriteConfig"].(map[string]interface{})
 			}
+			if len(rewriteConfigRaw) > 0 {
 
-			equalRules1Raw := rewriteConfig1Raw["equalRules"]
-			equalRulesMaps := make([]map[string]interface{}, 0)
-			if equalRules1Raw != nil {
-				for _, equalRulesChild1Raw := range equalRules1Raw.([]interface{}) {
-					equalRulesMap := make(map[string]interface{})
-					equalRulesChild1Raw := equalRulesChild1Raw.(map[string]interface{})
-					equalRulesMap["match"] = equalRulesChild1Raw["match"]
-					equalRulesMap["replacement"] = equalRulesChild1Raw["replacement"]
+				equalRulesRaw := rewriteConfigRaw["equalRules"]
+				equalRulesMaps := make([]map[string]interface{}, 0)
+				if equalRulesRaw != nil {
+					for _, equalRulesChildRaw := range convertToInterfaceArray(equalRulesRaw) {
+						equalRulesMap := make(map[string]interface{})
+						equalRulesChildRaw := equalRulesChildRaw.(map[string]interface{})
+						equalRulesMap["match"] = equalRulesChildRaw["match"]
+						equalRulesMap["replacement"] = equalRulesChildRaw["replacement"]
 
-					equalRulesMaps = append(equalRulesMaps, equalRulesMap)
+						equalRulesMaps = append(equalRulesMaps, equalRulesMap)
+					}
 				}
-			}
-			rewriteConfigMap["equal_rules"] = equalRulesMaps
-			regexRules1Raw := rewriteConfig1Raw["regexRules"]
-			regexRulesMaps := make([]map[string]interface{}, 0)
-			if regexRules1Raw != nil {
-				for _, regexRulesChild1Raw := range regexRules1Raw.([]interface{}) {
-					regexRulesMap := make(map[string]interface{})
-					regexRulesChild1Raw := regexRulesChild1Raw.(map[string]interface{})
-					regexRulesMap["match"] = regexRulesChild1Raw["match"]
-					regexRulesMap["replacement"] = regexRulesChild1Raw["replacement"]
+				rewriteConfigMap["equal_rules"] = equalRulesMaps
+				regexRulesRaw := rewriteConfigRaw["regexRules"]
+				regexRulesMaps := make([]map[string]interface{}, 0)
+				if regexRulesRaw != nil {
+					for _, regexRulesChildRaw := range convertToInterfaceArray(regexRulesRaw) {
+						regexRulesMap := make(map[string]interface{})
+						regexRulesChildRaw := regexRulesChildRaw.(map[string]interface{})
+						regexRulesMap["match"] = regexRulesChildRaw["match"]
+						regexRulesMap["replacement"] = regexRulesChildRaw["replacement"]
 
-					regexRulesMaps = append(regexRulesMaps, regexRulesMap)
+						regexRulesMaps = append(regexRulesMaps, regexRulesMap)
+					}
 				}
-			}
-			rewriteConfigMap["regex_rules"] = regexRulesMaps
-			wildcardRules1Raw := rewriteConfig1Raw["wildcardRules"]
-			wildcardRulesMaps := make([]map[string]interface{}, 0)
-			if wildcardRules1Raw != nil {
-				for _, wildcardRulesChild1Raw := range wildcardRules1Raw.([]interface{}) {
-					wildcardRulesMap := make(map[string]interface{})
-					wildcardRulesChild1Raw := wildcardRulesChild1Raw.(map[string]interface{})
-					wildcardRulesMap["match"] = wildcardRulesChild1Raw["match"]
-					wildcardRulesMap["replacement"] = wildcardRulesChild1Raw["replacement"]
+				rewriteConfigMap["regex_rules"] = regexRulesMaps
+				wildcardRulesRaw := rewriteConfigRaw["wildcardRules"]
+				wildcardRulesMaps := make([]map[string]interface{}, 0)
+				if wildcardRulesRaw != nil {
+					for _, wildcardRulesChildRaw := range convertToInterfaceArray(wildcardRulesRaw) {
+						wildcardRulesMap := make(map[string]interface{})
+						wildcardRulesChildRaw := wildcardRulesChildRaw.(map[string]interface{})
+						wildcardRulesMap["match"] = wildcardRulesChildRaw["match"]
+						wildcardRulesMap["replacement"] = wildcardRulesChildRaw["replacement"]
 
-					wildcardRulesMaps = append(wildcardRulesMaps, wildcardRulesMap)
+						wildcardRulesMaps = append(wildcardRulesMaps, wildcardRulesMap)
+					}
 				}
+				rewriteConfigMap["wildcard_rules"] = wildcardRulesMaps
+				rewriteConfigMaps = append(rewriteConfigMaps, rewriteConfigMap)
 			}
-			rewriteConfigMap["wildcard_rules"] = wildcardRulesMaps
-			rewriteConfigMaps = append(rewriteConfigMaps, rewriteConfigMap)
 			routesMap["rewrite_config"] = rewriteConfigMaps
 			routesMaps = append(routesMaps, routesMap)
 		}
 	}
 	routeConfigMap["routes"] = routesMaps
 	routeConfigMaps = append(routeConfigMaps, routeConfigMap)
-	if routes1Raw != nil {
-		if err := d.Set("route_config", routeConfigMaps); err != nil {
-			return err
-		}
+	if err := d.Set("route_config", routeConfigMaps); err != nil {
+		return err
 	}
 	tlsConfigMaps := make([]map[string]interface{}, 0)
 	tlsConfigMap := make(map[string]interface{})
-	tlsConfig1Raw := make(map[string]interface{})
+	tlsConfigRaw := make(map[string]interface{})
 	if objectRaw["tlsConfig"] != nil {
-		tlsConfig1Raw = objectRaw["tlsConfig"].(map[string]interface{})
+		tlsConfigRaw = objectRaw["tlsConfig"].(map[string]interface{})
 	}
-	if len(tlsConfig1Raw) > 0 {
-		tlsConfigMap["max_version"] = tlsConfig1Raw["maxVersion"]
-		tlsConfigMap["min_version"] = tlsConfig1Raw["minVersion"]
+	if len(tlsConfigRaw) > 0 {
+		tlsConfigMap["max_version"] = tlsConfigRaw["maxVersion"]
+		tlsConfigMap["min_version"] = tlsConfigRaw["minVersion"]
 
-		cipherSuites1Raw := make([]interface{}, 0)
-		if tlsConfig1Raw["cipherSuites"] != nil {
-			cipherSuites1Raw = tlsConfig1Raw["cipherSuites"].([]interface{})
+		cipherSuitesRaw := make([]interface{}, 0)
+		if tlsConfigRaw["cipherSuites"] != nil {
+			cipherSuitesRaw = convertToInterfaceArray(tlsConfigRaw["cipherSuites"])
 		}
 
-		tlsConfigMap["cipher_suites"] = cipherSuites1Raw
+		tlsConfigMap["cipher_suites"] = cipherSuitesRaw
 		tlsConfigMaps = append(tlsConfigMaps, tlsConfigMap)
 	}
-	if objectRaw["tlsConfig"] != nil {
-		if err := d.Set("tls_config", tlsConfigMaps); err != nil {
-			return err
-		}
+	if err := d.Set("tls_config", tlsConfigMaps); err != nil {
+		return err
 	}
 	wafConfigMaps := make([]map[string]interface{}, 0)
 	wafConfigMap := make(map[string]interface{})
-	wafConfig1Raw := make(map[string]interface{})
+	wafConfigRaw := make(map[string]interface{})
 	if objectRaw["wafConfig"] != nil {
-		wafConfig1Raw = objectRaw["wafConfig"].(map[string]interface{})
+		wafConfigRaw = objectRaw["wafConfig"].(map[string]interface{})
 	}
-	if len(wafConfig1Raw) > 0 {
-		wafConfigMap["enable_waf"] = wafConfig1Raw["enableWAF"]
+	if len(wafConfigRaw) > 0 {
+		wafConfigMap["enable_waf"] = wafConfigRaw["enableWAF"]
 
 		wafConfigMaps = append(wafConfigMaps, wafConfigMap)
 	}
-	if objectRaw["wafConfig"] != nil {
-		if err := d.Set("waf_config", wafConfigMaps); err != nil {
-			return err
-		}
+	if err := d.Set("waf_config", wafConfigMaps); err != nil {
+		return err
 	}
 
 	d.Set("custom_domain_name", d.Id())
@@ -630,124 +716,90 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var header map[string]*string
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
+
+	var err error
 	domainName := d.Id()
 	action := fmt.Sprintf("/2023-03-30/custom-domains/%s", domainName)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	request["domainName"] = d.Id()
 
-	if d.HasChange("auth_config") {
+	if d.HasChange("cors_config") {
 		update = true
-		objectDataLocalMap := make(map[string]interface{})
+		corsConfig := make(map[string]interface{})
 
-		if v := d.Get("auth_config"); !IsNil(v) {
-			authInfo1, _ := jsonpath.Get("$[0].auth_info", v)
-			if authInfo1 != nil && (d.HasChange("auth_config.0.auth_info") || authInfo1 != "") {
-				objectDataLocalMap["authInfo"] = authInfo1
+		if v := d.Get("cors_config"); v != nil {
+			allowCredentials1, _ := jsonpath.Get("$[0].allow_credentials", v)
+			if allowCredentials1 != nil && allowCredentials1 != "" {
+				corsConfig["allowCredentials"] = allowCredentials1
 			}
-			authType1, _ := jsonpath.Get("$[0].auth_type", v)
-			if authType1 != nil && (d.HasChange("auth_config.0.auth_type") || authType1 != "") {
-				objectDataLocalMap["authType"] = authType1
+			allowHeaders1, _ := jsonpath.Get("$[0].allow_headers", v)
+			if allowHeaders1 != nil && allowHeaders1 != "" {
+				corsConfig["allowHeaders"] = allowHeaders1
 			}
-
-			request["authConfig"] = objectDataLocalMap
-		}
-	}
-
-	if d.HasChange("cert_config") {
-		update = true
-		objectDataLocalMap1 := make(map[string]interface{})
-
-		if v := d.Get("cert_config"); !IsNil(v) {
-			certName1, _ := jsonpath.Get("$[0].cert_name", v)
-			if certName1 != nil && (d.HasChange("cert_config.0.cert_name") || certName1 != "") {
-				objectDataLocalMap1["certName"] = certName1
+			allowMethods1, _ := jsonpath.Get("$[0].allow_methods", v)
+			if allowMethods1 != nil && allowMethods1 != "" {
+				corsConfig["allowMethods"] = allowMethods1
 			}
-			certificate1, _ := jsonpath.Get("$[0].certificate", v)
-			if certificate1 != nil && (d.HasChange("cert_config.0.certificate") || certificate1 != "") {
-				objectDataLocalMap1["certificate"] = certificate1
+			exposeHeaders1, _ := jsonpath.Get("$[0].expose_headers", v)
+			if exposeHeaders1 != nil && exposeHeaders1 != "" {
+				corsConfig["exposeHeaders"] = exposeHeaders1
 			}
-			privateKey1, _ := jsonpath.Get("$[0].private_key", v)
-			if privateKey1 != nil && (d.HasChange("cert_config.0.private_key") || privateKey1 != "") {
-				objectDataLocalMap1["privateKey"] = privateKey1
+			allowOrigins1, _ := jsonpath.Get("$[0].allow_origins", v)
+			if allowOrigins1 != nil && allowOrigins1 != "" {
+				corsConfig["allowOrigins"] = allowOrigins1
+			}
+			maxAge1, _ := jsonpath.Get("$[0].max_age", v)
+			if maxAge1 != nil && maxAge1 != "" {
+				corsConfig["maxAge"] = maxAge1
 			}
 
-			request["certConfig"] = objectDataLocalMap1
-		}
-	}
-
-	if d.HasChange("protocol") {
-		update = true
-		request["protocol"] = d.Get("protocol")
-	}
-
-	if d.HasChange("tls_config") {
-		update = true
-		objectDataLocalMap2 := make(map[string]interface{})
-
-		if v := d.Get("tls_config"); !IsNil(v) {
-			cipherSuites1, _ := jsonpath.Get("$[0].cipher_suites", d.Get("tls_config"))
-			if cipherSuites1 != nil && (d.HasChange("tls_config.0.cipher_suites") || cipherSuites1 != "") {
-				objectDataLocalMap2["cipherSuites"] = cipherSuites1
-			}
-			maxVersion1, _ := jsonpath.Get("$[0].max_version", v)
-			if maxVersion1 != nil && (d.HasChange("tls_config.0.max_version") || maxVersion1 != "") {
-				objectDataLocalMap2["maxVersion"] = maxVersion1
-			}
-			minVersion1, _ := jsonpath.Get("$[0].min_version", v)
-			if minVersion1 != nil && (d.HasChange("tls_config.0.min_version") || minVersion1 != "") {
-				objectDataLocalMap2["minVersion"] = minVersion1
-			}
-
-			request["tlsConfig"] = objectDataLocalMap2
+			request["corsConfig"] = corsConfig
 		}
 	}
 
 	if d.HasChange("route_config") {
 		update = true
-		objectDataLocalMap3 := make(map[string]interface{})
+		routeConfig := make(map[string]interface{})
 
-		if v := d.Get("route_config"); !IsNil(v) {
+		if v := d.Get("route_config"); v != nil {
 			if v, ok := d.GetOk("route_config"); ok {
 				localData, err := jsonpath.Get("$[0].routes", v)
 				if err != nil {
 					localData = make([]interface{}, 0)
 				}
 				localMaps := make([]interface{}, 0)
-				for _, dataLoop := range localData.([]interface{}) {
+				for _, dataLoop := range convertToInterfaceArray(localData) {
 					dataLoopTmp := make(map[string]interface{})
 					if dataLoop != nil {
 						dataLoopTmp = dataLoop.(map[string]interface{})
 					}
 					dataLoopMap := make(map[string]interface{})
-					dataLoopMap["methods"] = dataLoopTmp["methods"]
-					dataLoopMap["functionName"] = dataLoopTmp["function_name"]
 					dataLoopMap["path"] = dataLoopTmp["path"]
-					dataLoopMap["qualifier"] = dataLoopTmp["qualifier"]
 					if !IsNil(dataLoopTmp["rewrite_config"]) {
 						localData1 := make(map[string]interface{})
 						if v, ok := dataLoopTmp["rewrite_config"]; ok {
-							localData2, err := jsonpath.Get("$[0].equal_rules", v)
+							localData2, err := jsonpath.Get("$[0].wildcard_rules", v)
 							if err != nil {
 								localData2 = make([]interface{}, 0)
 							}
 							localMaps2 := make([]interface{}, 0)
-							for _, dataLoop2 := range localData2.([]interface{}) {
+							for _, dataLoop2 := range convertToInterfaceArray(localData2) {
 								dataLoop2Tmp := make(map[string]interface{})
 								if dataLoop2 != nil {
 									dataLoop2Tmp = dataLoop2.(map[string]interface{})
 								}
 								dataLoop2Map := make(map[string]interface{})
-								dataLoop2Map["match"] = dataLoop2Tmp["match"]
 								dataLoop2Map["replacement"] = dataLoop2Tmp["replacement"]
+								dataLoop2Map["match"] = dataLoop2Tmp["match"]
 								localMaps2 = append(localMaps2, dataLoop2Map)
 							}
-							localData1["equalRules"] = localMaps2
+							localData1["wildcardRules"] = localMaps2
+
 						}
 
 						if v, ok := dataLoopTmp["rewrite_config"]; ok {
@@ -756,26 +808,27 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 								localData3 = make([]interface{}, 0)
 							}
 							localMaps3 := make([]interface{}, 0)
-							for _, dataLoop3 := range localData3.([]interface{}) {
+							for _, dataLoop3 := range convertToInterfaceArray(localData3) {
 								dataLoop3Tmp := make(map[string]interface{})
 								if dataLoop3 != nil {
 									dataLoop3Tmp = dataLoop3.(map[string]interface{})
 								}
 								dataLoop3Map := make(map[string]interface{})
-								dataLoop3Map["match"] = dataLoop3Tmp["match"]
 								dataLoop3Map["replacement"] = dataLoop3Tmp["replacement"]
+								dataLoop3Map["match"] = dataLoop3Tmp["match"]
 								localMaps3 = append(localMaps3, dataLoop3Map)
 							}
 							localData1["regexRules"] = localMaps3
+
 						}
 
 						if v, ok := dataLoopTmp["rewrite_config"]; ok {
-							localData4, err := jsonpath.Get("$[0].wildcard_rules", v)
+							localData4, err := jsonpath.Get("$[0].equal_rules", v)
 							if err != nil {
 								localData4 = make([]interface{}, 0)
 							}
 							localMaps4 := make([]interface{}, 0)
-							for _, dataLoop4 := range localData4.([]interface{}) {
+							for _, dataLoop4 := range convertToInterfaceArray(localData4) {
 								dataLoop4Tmp := make(map[string]interface{})
 								if dataLoop4 != nil {
 									dataLoop4Tmp = dataLoop4.(map[string]interface{})
@@ -785,31 +838,104 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 								dataLoop4Map["replacement"] = dataLoop4Tmp["replacement"]
 								localMaps4 = append(localMaps4, dataLoop4Map)
 							}
-							localData1["wildcardRules"] = localMaps4
+							localData1["equalRules"] = localMaps4
+
 						}
 
-						dataLoopMap["rewriteConfig"] = localData1
+						if len(localData1) > 0 {
+							dataLoopMap["rewriteConfig"] = localData1
+						}
 					}
+					dataLoopMap["qualifier"] = dataLoopTmp["qualifier"]
+					dataLoopMap["functionName"] = dataLoopTmp["function_name"]
+					dataLoopMap["methods"] = dataLoopTmp["methods"]
 					localMaps = append(localMaps, dataLoopMap)
 				}
-				objectDataLocalMap3["routes"] = localMaps
+				routeConfig["routes"] = localMaps
 			}
 
-			request["routeConfig"] = objectDataLocalMap3
+			request["routeConfig"] = routeConfig
+		}
+	}
+
+	if d.HasChange("protocol") {
+		update = true
+		request["protocol"] = d.Get("protocol")
+	}
+
+	if d.HasChange("cert_config") {
+		update = true
+		certConfig := make(map[string]interface{})
+
+		if v := d.Get("cert_config"); v != nil {
+			certName1, _ := jsonpath.Get("$[0].cert_name", v)
+			if certName1 != nil && certName1 != "" {
+				certConfig["certName"] = certName1
+			}
+			certificate1, _ := jsonpath.Get("$[0].certificate", v)
+			if certificate1 != nil && certificate1 != "" {
+				certConfig["certificate"] = certificate1
+			}
+			privateKey1, _ := jsonpath.Get("$[0].private_key", v)
+			if privateKey1 != nil && privateKey1 != "" {
+				certConfig["privateKey"] = privateKey1
+			}
+
+			request["certConfig"] = certConfig
+		}
+	}
+
+	if d.HasChange("auth_config") {
+		update = true
+		authConfig := make(map[string]interface{})
+
+		if v := d.Get("auth_config"); v != nil {
+			authInfo1, _ := jsonpath.Get("$[0].auth_info", v)
+			if authInfo1 != nil && authInfo1 != "" {
+				authConfig["authInfo"] = authInfo1
+			}
+			authType1, _ := jsonpath.Get("$[0].auth_type", v)
+			if authType1 != nil && authType1 != "" {
+				authConfig["authType"] = authType1
+			}
+
+			request["authConfig"] = authConfig
+		}
+	}
+
+	if d.HasChange("tls_config") {
+		update = true
+		tlsConfig := make(map[string]interface{})
+
+		if v := d.Get("tls_config"); v != nil {
+			minVersion1, _ := jsonpath.Get("$[0].min_version", v)
+			if minVersion1 != nil && minVersion1 != "" {
+				tlsConfig["minVersion"] = minVersion1
+			}
+			maxVersion1, _ := jsonpath.Get("$[0].max_version", v)
+			if maxVersion1 != nil && maxVersion1 != "" {
+				tlsConfig["maxVersion"] = maxVersion1
+			}
+			cipherSuites1, _ := jsonpath.Get("$[0].cipher_suites", v)
+			if cipherSuites1 != nil && cipherSuites1 != "" {
+				tlsConfig["cipherSuites"] = cipherSuites1
+			}
+
+			request["tlsConfig"] = tlsConfig
 		}
 	}
 
 	if d.HasChange("waf_config") {
 		update = true
-		objectDataLocalMap4 := make(map[string]interface{})
+		wafConfig := make(map[string]interface{})
 
-		if v := d.Get("waf_config"); !IsNil(v) {
+		if v := d.Get("waf_config"); v != nil {
 			enableWaf, _ := jsonpath.Get("$[0].enable_waf", v)
-			if enableWaf != nil && (d.HasChange("waf_config.0.enable_waf") || enableWaf != "") {
-				objectDataLocalMap4["enableWAF"] = enableWaf
+			if enableWaf != nil && enableWaf != "" {
+				wafConfig["enableWAF"] = enableWaf
 			}
 
-			request["wafConfig"] = objectDataLocalMap4
+			request["wafConfig"] = wafConfig
 		}
 	}
 
@@ -817,7 +943,7 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
+			response, err = client.RoaPut("FC", "2023-03-30", action, query, header, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -846,12 +972,10 @@ func resourceAliCloudFcv3CustomDomainDelete(d *schema.ResourceData, meta interfa
 	query := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
-	request["domainName"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"429"}) || NeedRetry(err) {
 				wait()
