@@ -18,12 +18,10 @@ func dataSourceAlicloudThreatDetectionBaselineStrategies() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"custom_type": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"strategy_ids": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -36,7 +34,6 @@ func dataSourceAlicloudThreatDetectionBaselineStrategies() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

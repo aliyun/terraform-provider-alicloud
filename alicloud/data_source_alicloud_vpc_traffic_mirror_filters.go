@@ -19,13 +19,11 @@ func dataSourceAlicloudVpcTrafficMirrorFilters() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Created", "Creating", "Deleting", "Modifying"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -33,7 +31,6 @@ func dataSourceAlicloudVpcTrafficMirrorFilters() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -43,7 +40,6 @@ func dataSourceAlicloudVpcTrafficMirrorFilters() *schema.Resource {
 			"traffic_mirror_filter_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 			"output_file": {

@@ -23,7 +23,6 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 				MinItems: 1,
 			},
 			"tags": tagsSchema(),
@@ -31,7 +30,6 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -41,7 +39,6 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			// Computed values
 			"certificates": {
@@ -103,7 +100,6 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 						"resource_group_id": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 						"tags": tagsSchema(),
 					},

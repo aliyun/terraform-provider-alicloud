@@ -16,7 +16,6 @@ func dataSourceAlicloudSlbDomainExtensions() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 				MinItems: 1,
 			},
 			"load_balancer_id": {

@@ -23,7 +23,6 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 				MinItems: 1,
 			},
 
@@ -36,20 +35,17 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 			"vpn_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"customer_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 
 			"output_file": {
@@ -310,7 +306,6 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 									"customer_gateway_id": {
 										Type:     schema.TypeString,
 										Computed: true,
-										ForceNew: true,
 									},
 									"internet_ip": {
 										Type:     schema.TypeString,

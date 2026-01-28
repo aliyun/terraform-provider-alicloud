@@ -18,17 +18,14 @@ func dataSourceAlicloudServiceCatalogProvisionedProducts() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"access_level_filter": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"sort_by": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"sort_order": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -41,7 +38,6 @@ func dataSourceAlicloudServiceCatalogProvisionedProducts() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

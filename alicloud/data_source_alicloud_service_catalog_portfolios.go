@@ -18,24 +18,20 @@ func dataSourceAlicloudServiceCatalogPortfolios() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"product_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"scope": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Local", "Import", "All"}, false),
 			},
 			"sort_by": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"CreateTime"}, false),
 			},
 			"sort_order": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Asc", "Desc"}, false),
 			},
@@ -49,7 +45,6 @@ func dataSourceAlicloudServiceCatalogPortfolios() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

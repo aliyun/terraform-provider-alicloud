@@ -19,17 +19,14 @@ func dataSourceAlicloudSimpleApplicationServerSnapshots() *schema.Resource {
 			"disk_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -37,7 +34,6 @@ func dataSourceAlicloudSimpleApplicationServerSnapshots() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -47,7 +43,6 @@ func dataSourceAlicloudSimpleApplicationServerSnapshots() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Accomplished", "Failed", "Progressing"}, false),
 			},
 			"output_file": {

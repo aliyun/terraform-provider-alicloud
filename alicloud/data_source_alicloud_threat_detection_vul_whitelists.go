@@ -17,7 +17,6 @@ func dataSourceAlicloudThreatDetectionVulWhitelists() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},

@@ -17,30 +17,25 @@ func dataSourceAlicloudThreatDetectionAssets() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"criteria": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"importance": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeInt,
 				ValidateFunc: validation.IntInSlice([]int{0, 1, 2}),
 			},
 			"logical_exp": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"OR", "AND"}, false),
 			},
 			"machine_types": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"ecs", "cloud_product"}, false),
 			},
 			"no_group_trace": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeBool,
 			},
 			"ids": {

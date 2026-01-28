@@ -17,22 +17,18 @@ func dataSourceAlicloudThreatDetectionWebLockConfigs() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"lang": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"remark": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"source_ip": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 			},
@@ -50,7 +46,6 @@ func dataSourceAlicloudThreatDetectionWebLockConfigs() *schema.Resource {
 			},
 			"page_number": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeInt,
 			},
 			"page_size": {
