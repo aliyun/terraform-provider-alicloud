@@ -20,12 +20,6 @@ For information about Elasticsearch Instance and how to use it, see [What is Ins
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_elasticsearch_instance&exampleId=73805ca0-8968-cf9a-4e8e-205d4afdd97b26ab1e4d&activeTab=example&spm=docs.r.elasticsearch_instance.0.73805ca089&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -62,9 +56,6 @@ resource "alicloud_elasticsearch_instance" "default" {
 }
 ```
 
-
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_elasticsearch_instance&spm=docs.r.elasticsearch_instance.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
@@ -73,8 +64,8 @@ The following arguments are supported:
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `period` - (Optional) The duration that you will buy Elasticsearch instance (in month). It is valid when PaymentType is `Subscription`. Valid values: [1~9], 12, 24, 36. Default to 1. From version 1.69.2, when to modify this value, the resource can renewal a `PrePaid` instance.
 * `auto_renew_duration` - (Optional, Int) Renewal Period
-* `client_node_configuration` - (Optional, Computed, List, Available since v1.267.0) Elasticsearch cluster coordination node configuration See [`client_node_configuration`](#client_node_configuration) below.
-* `data_node_configuration` - (Optional, Computed, List, Available since v1.267.0) Elasticsearch data node information See [`data_node_configuration`](#data_node_configuration) below.
+* `client_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch cluster coordination node configuration See [`client_node_configuration`](#client_node_configuration) below.
+* `data_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch data node information See [`data_node_configuration`](#data_node_configuration) below.
 * `description` - (Optional, Computed) Instance name
 * `enable_kibana_private_network` - (Optional, Computed, Available since v1.87.0) Whether to enable Kibana private network access.
 
@@ -92,11 +83,11 @@ The meaning of the value is as follows:
 -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `instance_category` - (Optional, ForceNew, Computed, Available since v1.267.0) Version type.
-* `kibana_configuration` - (Optional, Computed, List, Available since v1.267.0) Elasticsearch Kibana node settings See [`kibana_configuration`](#kibana_configuration) below.
+* `kibana_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch Kibana node settings See [`kibana_configuration`](#kibana_configuration) below.
 * `kibana_private_security_group_id` - (Optional) Kibana private network security group ID
 * `kibana_private_whitelist` - (Optional, Computed, List, Available since v1.87.0) Cluster Kibana node private network access whitelist
 * `kibana_whitelist` - (Optional, Computed, List) Kibana private network access whitelist
-* `master_configuration` - (Optional, Computed, List, Available since v1.267.0) Elasticsearch proprietary master node configuration information See [`master_configuration`](#master_configuration) below.
+* `master_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch proprietary master node configuration information See [`master_configuration`](#master_configuration) below.
 * `order_action_type` - (Optional, Available since v1.267.0) The instance changes the operation type. UPGRADE, UPGRADE. DOWNGRADE, DOWNGRADE.
 
 -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
@@ -121,7 +112,7 @@ The values are as follows:
 -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `version` - (Required, ForceNew) Instance version
-* `warm_node_configuration` - (Optional, Computed, List, Available since v1.267.0) Elasticsearch cluster cold data node configuration See [`warm_node_configuration`](#warm_node_configuration) below.
+* `warm_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch cluster cold data node configuration See [`warm_node_configuration`](#warm_node_configuration) below.
 * `zone_count` - (Optional, ForceNew, Computed, Int) The number of zones in the Elasticsearch instance.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
@@ -191,11 +182,11 @@ The warm_node_configuration supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `arch_type` - Schema Type:
-* `create_time` - Instance creation time
-* `domain` - Elasticsearch cluster private domain name
-* `kibana_domain` - Kibana address
+* `id` - The ID of the resource supplied above. 
+* `arch_type` - Schema Type:.
+* `create_time` - Instance creation time.
+* `domain` - Elasticsearch cluster private domain name.
+* `kibana_domain` - Kibana address.
 * `kibana_port` - The port assigned by the Kibana node.
 * `public_domain` - The public network address of the current instance.
 * `public_port` - Elasticsearch cluster public network access port
@@ -214,5 +205,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 Elasticsearch Instance can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_elasticsearch_instance.example <id>
+$ terraform import alicloud_elasticsearch_instance.example <instance_id>
 ```

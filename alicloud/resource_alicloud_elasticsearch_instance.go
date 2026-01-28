@@ -785,7 +785,7 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 	d.SetId(fmt.Sprint(id))
 
 	elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "$.inited", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
