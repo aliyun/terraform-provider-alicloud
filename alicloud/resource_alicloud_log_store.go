@@ -325,7 +325,10 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 		request["enable_tracking"] = v
 	}
 	if v, ok := d.GetOk("infrequent_access_ttl"); ok {
-		request["infrequentAccessTTL"] = v
+		infrequentTTL := v.(int)
+		if infrequentTTL != 0 {
+			request["infrequentAccessTTL"] = v
+		}
 	}
 
 	body = request
@@ -590,7 +593,12 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 	if v, ok := d.GetOk("infrequent_access_ttl"); ok || d.HasChange("infrequent_access_ttl") {
-		request["infrequentAccessTTL"] = v
+		infrequentTTL := v.(int)
+		if infrequentTTL != 0 {
+			request["infrequentAccessTTL"] = v
+		} else {
+			delete(request, "infrequentAccessTTL")
+		}
 	}
 
 	if v, ok := d.GetOk("telemetry_type"); ok && v == "Metrics" {
