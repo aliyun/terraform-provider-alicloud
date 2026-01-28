@@ -16,7 +16,6 @@ func dataSourceAlicloudMongodbAuditPolicies() *schema.Resource {
 			"db_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

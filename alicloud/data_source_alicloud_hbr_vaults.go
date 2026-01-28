@@ -19,13 +19,11 @@ func dataSourceAlicloudHbrVaults() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"CREATED", "ERROR", "UNKNOWN"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -33,7 +31,6 @@ func dataSourceAlicloudHbrVaults() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -43,7 +40,6 @@ func dataSourceAlicloudHbrVaults() *schema.Resource {
 			"vault_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"STANDARD", "OTS_BACKUP"}, false),
 			},
 			"output_file": {

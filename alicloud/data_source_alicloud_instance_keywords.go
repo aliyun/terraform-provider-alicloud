@@ -19,7 +19,6 @@ func dataSourceAlicloudInstanceKeywords() *schema.Resource {
 			"key": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"account", "database"}, false),
 			},
 			"ids": {

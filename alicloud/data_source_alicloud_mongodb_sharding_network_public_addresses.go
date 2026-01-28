@@ -18,17 +18,14 @@ func dataSourceAlicloudMongodbShardingNetworkPublicAddresses() *schema.Resource 
 			"db_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"node_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"role": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Primary", "Secondary"}, false),
 			},
 			"output_file": {

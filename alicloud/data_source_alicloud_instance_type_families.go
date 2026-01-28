@@ -18,18 +18,15 @@ func dataSourceAlicloudInstanceTypeFamilies() *schema.Resource {
 			"generation": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ecs-1", "ecs-2", "ecs-3", "ecs-4", "ecs-5", "ecs-6"}, false),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"instance_charge_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Default:  PostPaid,
 				// %q must contain a valid InstanceChargeType, expected common.PrePaid, common.PostPaid
 				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
@@ -37,7 +34,6 @@ func dataSourceAlicloudInstanceTypeFamilies() *schema.Resource {
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      NoSpot,
 				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},

@@ -22,7 +22,6 @@ func dataSourceAlicloudMseClusters() *schema.Resource {
 			"cluster_alias_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -32,7 +31,6 @@ func dataSourceAlicloudMseClusters() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},

@@ -17,17 +17,14 @@ func dataSourceAlicloudGaDomains() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"domain": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"illegal", "inactive", "active", "unknown"}, false),
 			},

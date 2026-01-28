@@ -26,21 +26,18 @@ func dataSourceAlicloudKVStoreZones() *schema.Resource {
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      PostPaid,
 				ValidateFunc: validation.StringInSlice([]string{"PrePaid", "PostPaid"}, false),
 			},
 			"engine": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "redis",
 				ValidateFunc: validation.StringInSlice([]string{"redis", "memcache"}, true),
 			},
 			"product_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Local", "Tair_rdb", "Tair_scm", "Tair_essd", "OnECS"}, false),
 			},
 			"output_file": {

@@ -18,20 +18,17 @@ func dataSourceAlicloudHbrEcsBackupClients() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"instance_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ACTIVATED", "DEACTIVATED", "INSTALLING", "INSTALL_FAILED", "NOT_INSTALLED", "REGISTERED", "STOPPED", "UNINSTALLING", "UNINSTALL_FAILED", "UNKNOWN", "UPGRADE_FAILED", "UPGRADING"}, false),
 			},
 			"output_file": {

@@ -23,26 +23,22 @@ func dataSourceAlicloudImages() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"most_recent": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
-				ForceNew: true,
 			},
 			"owners": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				// must contain a valid Image owner, expected ImageOwnerSystem, ImageOwnerSelf, ImageOwnerOthers, ImageOwnerMarketplace, ImageOwnerDefault
 				ValidateFunc: validation.StringInSlice([]string{"system", "self", "others", "marketplace", ""}, false),
 			},
 			"image_owner_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

@@ -19,7 +19,6 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 			},
 			"access_group_name": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 			"user_access": {

@@ -24,7 +24,6 @@ func dataSourceAlicloudMhubApps() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -32,7 +31,6 @@ func dataSourceAlicloudMhubApps() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -42,7 +40,6 @@ func dataSourceAlicloudMhubApps() *schema.Resource {
 			"os_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Android", "iOS"}, false),
 			},
 			"output_file": {

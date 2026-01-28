@@ -21,7 +21,6 @@ func dataSourceAliCloudGwlbZones() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				Optional: true,
-				ForceNew: true,
 			},
 			"accept_language": {
 				Type:     schema.TypeString,

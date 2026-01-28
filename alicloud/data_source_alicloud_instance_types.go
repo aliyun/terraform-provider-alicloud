@@ -29,38 +29,31 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 			"availability_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"instance_type_family": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 			},
 			"cpu_core_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"memory_size": {
 				Type:     schema.TypeFloat,
 				Optional: true,
-				ForceNew: true,
 			},
 			"gpu_amount": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"gpu_spec": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"instance_charge_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Default:  PostPaid,
 				// %q must contain a valid InstanceChargeType, expected common.PrePaid, common.PostPaid
 				ValidateFunc: StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
@@ -68,30 +61,25 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 			"network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Vpc", "Classic"}, false),
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      NoSpot,
 				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
 			"eni_amount": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"kubernetes_node_role": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				ValidateFunc: StringInSlice([]string{
 					string(KubernetesNodeMaster),
 					string(KubernetesNodeWorker),
@@ -104,7 +92,6 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 			"sorted_by": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				ValidateFunc: StringInSlice([]string{
 					"CPU",
 					"Memory",
@@ -114,7 +101,6 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 			"system_disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "cloud_essd_entry", "cloud_auto"}, false),
 			},
 			"output_file": {
@@ -129,17 +115,14 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"minimum_eni_ipv6_address_quantity": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"minimum_eni_private_ip_address_quantity": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			// Computed values.
 			"instance_types": {
