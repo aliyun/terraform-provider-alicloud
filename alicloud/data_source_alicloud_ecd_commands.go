@@ -18,7 +18,6 @@ func dataSourceAlicloudEcdCommands() *schema.Resource {
 			"command_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"RunBatScript", "RunPowerShellScript"}, false),
 			},
 			"content_encoding": {
@@ -30,19 +29,16 @@ func dataSourceAlicloudEcdCommands() *schema.Resource {
 			"desktop_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Pending", "Failed", "PartialFailed", "Running", "Stopped", "Stopping", "Finished", "Success"}, false),
 			},
 			"output_file": {

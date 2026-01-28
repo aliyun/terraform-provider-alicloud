@@ -18,7 +18,6 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -28,7 +27,6 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			// Computed values

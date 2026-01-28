@@ -17,7 +17,6 @@ func dataSourceAlicloudEcsLaunchTemplates() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -25,7 +24,6 @@ func dataSourceAlicloudEcsLaunchTemplates() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -35,13 +33,11 @@ func dataSourceAlicloudEcsLaunchTemplates() *schema.Resource {
 			"launch_template_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"template_tags": tagsSchema(),
 			"template_resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

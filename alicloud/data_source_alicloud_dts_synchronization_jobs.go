@@ -19,7 +19,6 @@ func dataSourceAlicloudDtsSynchronizationJobs() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -27,12 +26,10 @@ func dataSourceAlicloudDtsSynchronizationJobs() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Downgrade", "Failed", "Finished", "InitializeFailed", "Initializing", "Locked", "Modifying", "NotConfigured", "NotStarted", "PreCheckPass", "PrecheckFailed", "Prechecking", "Retrying", "Suspending", "Synchronizing", "Upgrade"}, false),
 			},
 			"output_file": {

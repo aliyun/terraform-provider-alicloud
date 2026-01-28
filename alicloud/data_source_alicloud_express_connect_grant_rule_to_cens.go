@@ -17,14 +17,12 @@ func dataSourceAlicloudExpressConnectGrantRuleToCens() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"page_number": {
 				Type:     schema.TypeInt,

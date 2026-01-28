@@ -18,23 +18,19 @@ func dataSourceAlicloudExpressConnectVirtualPhysicalConnections() *schema.Resour
 		Schema: map[string]*schema.Schema{
 			"business_status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Normal", "FinancialLocked", "SecurityLocked"}, false),
 			},
 			"is_confirmed": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeBool,
 			},
 			"parent_physical_connection_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"virtual_physical_connection_ids": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -42,13 +38,11 @@ func dataSourceAlicloudExpressConnectVirtualPhysicalConnections() *schema.Resour
 			},
 			"virtual_physical_connection_status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Confirmed", "UnConfirmed", "Deleted"}, false),
 			},
 			"vlan_ids": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeInt,
@@ -56,7 +50,6 @@ func dataSourceAlicloudExpressConnectVirtualPhysicalConnections() *schema.Resour
 			},
 			"vpconn_ali_uid": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -69,7 +62,6 @@ func dataSourceAlicloudExpressConnectVirtualPhysicalConnections() *schema.Resour
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

@@ -19,7 +19,6 @@ func dataSourceAlicloudEaisInstances() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -27,7 +26,6 @@ func dataSourceAlicloudEaisInstances() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -37,13 +35,11 @@ func dataSourceAlicloudEaisInstances() *schema.Resource {
 			"instance_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"eais.ei-a6.4xlarge", "eais.ei-a6.2xlarge", "eais.ei-a6.xlarge", "eais.ei-a6.large", "eais.ei-a6.medium"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Attaching", "Available", "Detaching", "InUse", "Starting", "Unavailable"}, false),
 			},
 			"output_file": {

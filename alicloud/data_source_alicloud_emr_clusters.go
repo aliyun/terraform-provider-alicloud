@@ -19,7 +19,6 @@ func dataSourceAlicloudEmrClusters() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -27,7 +26,6 @@ func dataSourceAlicloudEmrClusters() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -37,52 +35,43 @@ func dataSourceAlicloudEmrClusters() *schema.Resource {
 			"cluster_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"cluster_type_list": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"create_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MANUAL", "ON-DEMAND"}, false),
 			},
 			"default_status": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"deposit_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"HALF_MANAGED", "MANAGED"}, false),
 			},
 			"is_desc": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"machine_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "ECS",
 				ValidateFunc: validation.StringInSlice([]string{"DOCKER", "ECS", "ECS_FROM_ECM_HOSTPOOL", "PYHSICAL_MACHINE"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status_list": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringInSlice([]string{"ABNORMAL", "CREATE_FAILED", "CREATING", "IDLE", "RELEASED", "RELEASE_FAILED", "RELEASING", "RUNNING", "WAIT_FOR_PAY"}, false),
@@ -91,7 +80,6 @@ func dataSourceAlicloudEmrClusters() *schema.Resource {
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

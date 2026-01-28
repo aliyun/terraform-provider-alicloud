@@ -17,7 +17,6 @@ func dataSourceAlicloudEcsElasticityAssurances() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"private_pool_options_ids": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -25,12 +24,10 @@ func dataSourceAlicloudEcsElasticityAssurances() *schema.Resource {
 			},
 			"resource_group_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"All", "Preparing", "Prepared", "Active", "Released"}, false),
 			},

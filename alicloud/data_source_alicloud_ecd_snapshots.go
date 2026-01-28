@@ -18,12 +18,10 @@ func dataSourceAlicloudEcdSnapshots() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"desktop_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"snapshot_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -36,7 +34,6 @@ func dataSourceAlicloudEcdSnapshots() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

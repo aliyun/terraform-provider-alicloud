@@ -19,12 +19,10 @@ func dataSourceAlicloudDirectMailReceiverses() *schema.Resource {
 			"key_word": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -32,7 +30,6 @@ func dataSourceAlicloudDirectMailReceiverses() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -42,7 +39,6 @@ func dataSourceAlicloudDirectMailReceiverses() *schema.Resource {
 			"status": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.IntInSlice([]int{0, 1}),
 			},
 			"output_file": {

@@ -18,23 +18,19 @@ func dataSourceAlicloudEfloVpds() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"resource_group_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Available", "Not Available", "Executing", "Deleting"}, false),
 			},
 			"vpd_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"vpd_name": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -47,7 +43,6 @@ func dataSourceAlicloudEfloVpds() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

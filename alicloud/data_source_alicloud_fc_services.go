@@ -18,7 +18,6 @@ func dataSourceAlicloudFcServices() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

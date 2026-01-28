@@ -18,35 +18,29 @@ func dataSourceAlicloudEcdDesktopTypes() *schema.Resource {
 			"cpu_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"gpu_count": {
 				Type:     schema.TypeFloat,
 				Optional: true,
-				ForceNew: true,
 			},
 			"instance_type_family": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"eds.graphics", "eds.hf", "eds.general", "ecd.graphics", "ecd.performance", "ecd.advanced", "ecd.basic"}, false),
 			},
 			"memory_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"SUFFICIENT"}, false),
 			},
 			"output_file": {
