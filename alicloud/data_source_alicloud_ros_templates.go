@@ -18,14 +18,12 @@ func dataSourceAlicloudRosTemplates() *schema.Resource {
 			"share_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Private", "Shared"}, false),
 			},
 			"tags": tagsSchema(),
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -33,7 +31,6 @@ func dataSourceAlicloudRosTemplates() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -43,7 +40,6 @@ func dataSourceAlicloudRosTemplates() *schema.Resource {
 			"template_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

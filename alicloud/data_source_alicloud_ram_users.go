@@ -19,23 +19,19 @@ func dataSourceAlicloudRamUsers() *schema.Resource {
 			"name_regex": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"policy_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringLenBetween(0, 128),
 			},
 			"policy_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"System", "Custom"}, false),
 			},
 			"output_file": {

@@ -18,19 +18,16 @@ func dataSourceAlicloudNasFilesets() *schema.Resource {
 			"file_system_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"CREATED", "CREATING", "RELEASED", "RELEASING"}, false),
 			},
 			"output_file": {

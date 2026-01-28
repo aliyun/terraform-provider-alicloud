@@ -19,37 +19,31 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServices() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"vpc_endpoint_service_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"auto_accept_connection": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"service_business_status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "Normal",
 				ValidateFunc: StringInSlice([]string{"Normal", "FinancialLocked", "SecurityLocked"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Pending"}, false),
 			},
 			"tags": tagsSchemaForceNew(),

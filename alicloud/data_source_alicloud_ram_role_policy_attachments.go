@@ -18,14 +18,12 @@ func dataSourceAliCloudRamRolePolicyAttachments() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"role_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"attachments": {
 				Type:     schema.TypeList,
@@ -58,7 +56,6 @@ func dataSourceAliCloudRamRolePolicyAttachments() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

@@ -17,13 +17,11 @@ func dataSourceAlicloudNlbListeners() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"listener_protocol": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"TCP", "UDP", "TCPSSL"}, false),
 			},
 			"load_balancer_ids": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,

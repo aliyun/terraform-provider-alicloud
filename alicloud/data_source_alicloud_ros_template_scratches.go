@@ -18,20 +18,17 @@ func dataSourceAlicloudRosTemplateScratches() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"GENERATE_COMPLETE", "GENERATE_FAILED", "GENERATE_IN_PROGRESS"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"template_scratch_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ResourceImport", "ArchitectureReplication"}, false),
 			},
 			"output_file": {

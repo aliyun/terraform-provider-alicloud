@@ -18,50 +18,41 @@ func dataSourceAlicloudOosTemplates() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"category": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"created_by": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"created_date": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"created_date_after": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"has_trigger": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"share_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Private", "Public"}, false),
 			},
 			"sort_field": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "TotalExecutionCount",
 				ValidateFunc: validation.StringInSlice([]string{"CreatedDate", "Popularity", "TemplateName", "TotalExecutionCount"}, false),
 			},
 			"sort_order": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "Descending",
 				ValidateFunc: validation.StringInSlice([]string{"Ascending", "Descending"}, false),
 			},
@@ -69,7 +60,6 @@ func dataSourceAlicloudOosTemplates() *schema.Resource {
 			"template_format": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"JSON", "YAML"}, false),
 			},
 			"names": {
@@ -80,14 +70,12 @@ func dataSourceAlicloudOosTemplates() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"template_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

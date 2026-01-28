@@ -19,14 +19,12 @@ func dataSourceAlicloudOosPatchBaselines() *schema.Resource {
 			"operation_system": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "Anolis", "Centos", "CentOS", "Debian", "RedhatEnterpriseLinux", "Ubuntu", "Windows"}, false),
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -36,14 +34,12 @@ func dataSourceAlicloudOosPatchBaselines() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"share_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Private", "Public"}, false),
 			},
 			"output_file": {

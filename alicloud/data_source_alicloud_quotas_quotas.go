@@ -18,23 +18,19 @@ func dataSourceAlicloudQuotasQuotas() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"dimensions": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"key": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 						"value": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 					},
 				},
@@ -42,27 +38,22 @@ func dataSourceAlicloudQuotasQuotas() *schema.Resource {
 			"group_code": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"key_word": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"product_code": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"quota_action_code": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"quota_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, false),
 			},
 			"names": {
@@ -73,13 +64,11 @@ func dataSourceAlicloudQuotasQuotas() *schema.Resource {
 			"sort_field": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"TIME", "TOTAL", "RESERVED"}, false),
 			},
 			"sort_order": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Ascending", "Descending"}, false),
 			},
 			"ids": {

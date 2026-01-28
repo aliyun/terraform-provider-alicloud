@@ -16,12 +16,10 @@ func dataSourceAlicloudNlbServerGroupServerAttachments() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"server_group_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"server_ids": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -29,7 +27,6 @@ func dataSourceAlicloudNlbServerGroupServerAttachments() *schema.Resource {
 			},
 			"server_ips": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,

@@ -16,7 +16,6 @@ func dataSourceAlicloudResourceManagerAccountDeletionCheckTask() *schema.Resourc
 			"account_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"allow_delete": {
 				Type:     schema.TypeBool,

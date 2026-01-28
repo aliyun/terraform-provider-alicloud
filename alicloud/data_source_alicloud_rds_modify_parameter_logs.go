@@ -19,17 +19,14 @@ func dataSourceAlicloudRdsModifyParameterLogs() *schema.Resource {
 			"db_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"start_time": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"end_time": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
