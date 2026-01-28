@@ -20,7 +20,6 @@ func dataSourceAlicloudConfigAggregateConfigRules() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -30,30 +29,25 @@ func dataSourceAlicloudConfigAggregateConfigRules() *schema.Resource {
 			"aggregate_config_rule_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"aggregator_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"risk_level": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.IntInSlice([]int{1, 2, 3}),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ACTIVE", "DELETING", "EVALUATING", "INACTIVE"}, false),
 			},
 			"output_file": {

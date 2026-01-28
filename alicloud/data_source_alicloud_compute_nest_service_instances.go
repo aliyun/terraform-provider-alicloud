@@ -19,37 +19,31 @@ func dataSourceAlicloudComputeNestServiceInstances() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Created", "Deploying", "DeployedFailed", "Deployed", "Upgrading", "Deleting", "Deleted", "DeletedFailed"}, false),
 			},
 			"filter": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 						"value": {
 							Type:     schema.TypeList,
 							Optional: true,
-							ForceNew: true,
 							MaxItems: 10,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},

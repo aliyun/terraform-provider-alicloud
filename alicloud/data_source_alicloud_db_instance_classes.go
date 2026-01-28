@@ -20,29 +20,24 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"engine": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB"}, false),
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"sorted_by": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Price"}, false),
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      PostPaid,
 				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid), string(Serverless)}, false),
 			},

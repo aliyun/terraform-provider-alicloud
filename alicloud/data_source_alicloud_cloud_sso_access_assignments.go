@@ -18,35 +18,29 @@ func dataSourceAlicloudCloudSsoAccessAssignments() *schema.Resource {
 			"access_configuration_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"directory_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"principal_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Group", "User"}, false),
 			},
 			"target_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"target_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"RD-Account"}, false),
 			},
 			"output_file": {

@@ -19,12 +19,10 @@ func dataSourceAlicloudCloudSsoGroups() *schema.Resource {
 			"directory_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -32,7 +30,6 @@ func dataSourceAlicloudCloudSsoGroups() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -42,7 +39,6 @@ func dataSourceAlicloudCloudSsoGroups() *schema.Resource {
 			"provision_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Manual", "Synchronized"}, false),
 			},
 			"output_file": {

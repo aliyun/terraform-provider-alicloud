@@ -19,7 +19,6 @@ func dataSourceAlicloudDatabaseGatewayGateways() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -27,7 +26,6 @@ func dataSourceAlicloudDatabaseGatewayGateways() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -37,12 +35,10 @@ func dataSourceAlicloudDatabaseGatewayGateways() *schema.Resource {
 			"search_key": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"EXCEPTION", "NEW", "RUNNING", "STOPPED"}, false),
 			},
 			"output_file": {

@@ -17,30 +17,25 @@ func dataSourceAlicloudCmsMonitorGroups() *schema.Resource {
 			"dynamic_tag_rule_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"include_template_history": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"keyword": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -50,18 +45,15 @@ func dataSourceAlicloudCmsMonitorGroups() *schema.Resource {
 			"monitor_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"select_contact_groups": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"tags": tagsSchema(),
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"custom", "ehpc_cluster", "kubernetes"}, false),
 			},
 			"output_file": {

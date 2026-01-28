@@ -18,37 +18,30 @@ func dataSourceAlicloudCloudFirewallVpcFirewalls() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"lang": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"member_uid": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"region_no": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"status": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"vpc_firewall_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"vpc_firewall_name": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"vpc_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -61,7 +54,6 @@ func dataSourceAlicloudCloudFirewallVpcFirewalls() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

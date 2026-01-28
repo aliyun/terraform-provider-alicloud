@@ -15,7 +15,6 @@ func dataSourceAlicloudCmsMonitorGroupInstances() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Required: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				MaxItems: 1,
 				MinItems: 1,
@@ -23,7 +22,6 @@ func dataSourceAlicloudCmsMonitorGroupInstances() *schema.Resource {
 			"keyword": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

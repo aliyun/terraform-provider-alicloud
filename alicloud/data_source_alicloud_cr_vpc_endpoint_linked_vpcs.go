@@ -18,25 +18,21 @@ func dataSourceAlicloudCrVpcEndpointLinkedVpcs() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"module_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Registry", "Chart"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"CREATING", "RUNNING"}, false),
 			},
 			"output_file": {

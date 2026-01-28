@@ -24,7 +24,6 @@ func dataSourceAlicloudDcdnWafPolicies() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -36,12 +35,10 @@ func dataSourceAlicloudDcdnWafPolicies() *schema.Resource {
 			"query_args": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
 			},
 			"output_file": {

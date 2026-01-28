@@ -19,7 +19,6 @@ func dataSourceAlicloudCloudStorageGatewayGateways() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -27,7 +26,6 @@ func dataSourceAlicloudCloudStorageGatewayGateways() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -37,13 +35,11 @@ func dataSourceAlicloudCloudStorageGatewayGateways() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Deactivated", "Rebooting", "Failed", "Starting", "Stopped", "Unknown", "Stopping", "Activated", "Deleting", "Deploying", "Initialized", "Modifying", "Running", "Upgrading"}, false),
 			},
 			"storage_bundle_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

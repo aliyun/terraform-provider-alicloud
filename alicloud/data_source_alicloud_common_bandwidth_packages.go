@@ -17,7 +17,6 @@ func dataSourceAlicloudCommonBandwidthPackages() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -25,7 +24,6 @@ func dataSourceAlicloudCommonBandwidthPackages() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -35,27 +33,22 @@ func dataSourceAlicloudCommonBandwidthPackages() *schema.Resource {
 			"bandwidth_package_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"include_reservation_data": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Available", "Pending"}, false),
 			},
 			"output_file": {

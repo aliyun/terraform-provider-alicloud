@@ -20,12 +20,10 @@ func dataSourceAlicloudCloudConnectNetworks() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"output_file": {

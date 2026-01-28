@@ -17,27 +17,22 @@ func dataSourceAlicloudCmsHybridMonitorDatas() *schema.Resource {
 			"namespace": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"prom_sql": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"start": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"end": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"period": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"output_file": {

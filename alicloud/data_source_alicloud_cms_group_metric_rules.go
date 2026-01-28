@@ -17,23 +17,19 @@ func dataSourceAlicloudCmsGroupMetricRules() *schema.Resource {
 			"dimensions": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"enable_state": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -43,29 +39,24 @@ func dataSourceAlicloudCmsGroupMetricRules() *schema.Resource {
 			"group_metric_rule_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"metric_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"namespace": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ALARM", "INSUFFICIENT_DATA", "OK"}, false),
 			},
 			"output_file": {

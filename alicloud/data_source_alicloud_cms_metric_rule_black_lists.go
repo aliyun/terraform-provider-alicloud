@@ -19,22 +19,18 @@ func dataSourceAlicloudCmsMetricRuleBlackLists() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"category": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"metric_rule_black_list_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"namespace": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"order": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeInt,
 			},
 			"ids": {
@@ -47,7 +43,6 @@ func dataSourceAlicloudCmsMetricRuleBlackLists() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

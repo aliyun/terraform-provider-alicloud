@@ -18,20 +18,17 @@ func dataSourceAlicloudCrEndpointAclPolicies() *schema.Resource {
 			"endpoint_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"internet"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

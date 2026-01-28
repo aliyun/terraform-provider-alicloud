@@ -18,14 +18,12 @@ func dataSourceAliCloudCloudControlResourceTypes() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"product": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"types": {
 				Type:     schema.TypeList,
@@ -220,7 +218,6 @@ func dataSourceAliCloudCloudControlResourceTypes() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

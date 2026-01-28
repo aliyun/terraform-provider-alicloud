@@ -18,7 +18,6 @@ func dataSourceAlicloudCrEESyncRules() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 			"namespace_name": {

@@ -19,29 +19,24 @@ func dataSourceAlicloudCenTransitRouterPrefixListAssociations() *schema.Resource
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"transit_router_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"transit_router_table_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"prefix_list_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"owner_uid": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"page_number": {
 				Type:     schema.TypeInt,
@@ -55,7 +50,6 @@ func dataSourceAlicloudCenTransitRouterPrefixListAssociations() *schema.Resource
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Active", "Updating"}, false),
 			},
 			"output_file": {

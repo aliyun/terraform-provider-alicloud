@@ -17,55 +17,45 @@ func dataSourceAlicloudCloudFirewallVpcFirewallControlPolicies() *schema.Resourc
 		Schema: map[string]*schema.Schema{
 			"acl_action": {
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"accept", "drop", "log"}, false),
 				Type:         schema.TypeString,
 			},
 			"acl_uuid": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"description": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"destination": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"lang": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"zh", "en"}, false),
 			},
 			"member_uid": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"proto": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"ANY", "TCP", "UDP", "ICMP"}, false),
 			},
 			"release": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeBool,
 			},
 			"source": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"vpc_firewall_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

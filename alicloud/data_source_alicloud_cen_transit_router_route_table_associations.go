@@ -18,35 +18,29 @@ func dataSourceAlicloudCenTransitRouterRouteTableAssociations() *schema.Resource
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleting"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"transit_router_route_table_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"transit_router_attachment_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"transit_router_attachment_resource_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"transit_router_attachment_resource_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"VPC", "VBR", "TR", "VPN"}, false),
 			},
 			"output_file": {

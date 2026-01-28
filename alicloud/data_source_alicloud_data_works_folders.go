@@ -17,19 +17,16 @@ func dataSourceAlicloudDataWorksFolders() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"parent_folder_path": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"project_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

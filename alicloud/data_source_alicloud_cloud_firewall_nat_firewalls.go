@@ -19,59 +19,48 @@ func dataSourceAliCloudCloudFirewallNatFirewalls() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"lang": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"member_uid": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"nat_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"page_number": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"page_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"proxy_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"proxy_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"region_no": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"firewalls": {
 				Type:     schema.TypeList,
@@ -144,7 +133,6 @@ func dataSourceAliCloudCloudFirewallNatFirewalls() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

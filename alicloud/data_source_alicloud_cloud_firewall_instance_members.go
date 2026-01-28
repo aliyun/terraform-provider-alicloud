@@ -16,7 +16,6 @@ func dataSourceAlicloudCloudFirewallInstanceMembers() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"current_page": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

@@ -21,7 +21,6 @@ func dataSourceAliCloudCenTransitRouterVpnAttachments() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -29,7 +28,6 @@ func dataSourceAliCloudCenTransitRouterVpnAttachments() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -39,24 +37,20 @@ func dataSourceAliCloudCenTransitRouterVpnAttachments() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Attached", "Attaching", "Detaching"}, false),
 			},
 			"cen_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"tags": tagsSchemaForceNew(),
 			"transit_router_attachment_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"transit_router_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"attachments": {
 				Type:     schema.TypeList,
@@ -137,7 +131,6 @@ func dataSourceAliCloudCenTransitRouterVpnAttachments() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

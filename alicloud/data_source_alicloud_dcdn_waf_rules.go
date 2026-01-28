@@ -16,7 +16,6 @@ func dataSourceAlicloudDcdnWafRules() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"query_args": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

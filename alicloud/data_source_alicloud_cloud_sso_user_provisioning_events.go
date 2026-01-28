@@ -19,19 +19,16 @@ func dataSourceAliCloudCloudSsoUserProvisioningEvents() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"directory_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"user_provisioning_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"events": {
 				Type:     schema.TypeList,
@@ -124,7 +121,6 @@ func dataSourceAliCloudCloudSsoUserProvisioningEvents() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

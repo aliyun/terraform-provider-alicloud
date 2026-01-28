@@ -19,7 +19,6 @@ func dataSourceAlicloudCloudStorageGatewayStocks() *schema.Resource {
 			"gateway_class": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Basic", "Standard", "Enhanced", "Advanced"}, false),
 			},
 			"output_file": {

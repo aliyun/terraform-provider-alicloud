@@ -20,20 +20,17 @@ func dataSourceAlicloudCmsEventRules() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"name_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"page_number": {
 				Type:     schema.TypeInt,
@@ -47,7 +44,6 @@ func dataSourceAlicloudCmsEventRules() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"DISABLED", "ENABLED"}, false),
 			},
 			"output_file": {
