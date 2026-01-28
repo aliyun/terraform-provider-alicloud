@@ -16,7 +16,6 @@ func dataSourceAlicloudCdnIpInfo() *schema.Resource {
 			"ip": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"cdn_ip": {
 				Type:     schema.TypeString,

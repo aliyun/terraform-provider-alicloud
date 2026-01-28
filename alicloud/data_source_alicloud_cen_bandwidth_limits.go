@@ -18,7 +18,6 @@ func dataSourceAlicloudCenBandwidthLimits() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

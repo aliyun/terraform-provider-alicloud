@@ -16,12 +16,10 @@ func dataSourceAlicloudAdbResourceGroups() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"db_cluster_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"group_name": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

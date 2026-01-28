@@ -19,7 +19,6 @@ func dataSourceAliCloudCenTransitRouterAvailableResources() *schema.Resource {
 			"support_multicast": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

@@ -18,12 +18,10 @@ func dataSourceAlicloudAlbAscripts() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"ascript_name": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"listener_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -36,7 +34,6 @@ func dataSourceAlicloudAlbAscripts() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

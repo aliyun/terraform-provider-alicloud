@@ -18,7 +18,6 @@ func dataSourceAlicloudApiGatewayGroups() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"ids": {

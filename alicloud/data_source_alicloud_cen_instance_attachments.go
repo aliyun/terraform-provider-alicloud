@@ -17,23 +17,19 @@ func dataSourceAlicloudCenInstanceAttachments() *schema.Resource {
 			"child_instance_region_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"child_instance_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"VPC", "VBR", "CCN"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Aetaching", "Attached", "Attaching"}, false),
 			},
 			"ids": {

@@ -18,17 +18,14 @@ func dataSourceAlicloudBssOpenApiPricingModules() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"product_code": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"product_type": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"subscription_type": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -41,7 +38,6 @@ func dataSourceAlicloudBssOpenApiPricingModules() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

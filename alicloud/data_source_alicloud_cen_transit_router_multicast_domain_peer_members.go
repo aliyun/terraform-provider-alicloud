@@ -16,7 +16,6 @@ func dataSourceAlicloudCenTransitRouterMulticastDomainPeerMembers() *schema.Reso
 		Schema: map[string]*schema.Schema{
 			"peer_transit_router_multicast_domains": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -24,22 +23,18 @@ func dataSourceAlicloudCenTransitRouterMulticastDomainPeerMembers() *schema.Reso
 			},
 			"resource_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"resource_type": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"transit_router_attachment_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"transit_router_multicast_domain_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
