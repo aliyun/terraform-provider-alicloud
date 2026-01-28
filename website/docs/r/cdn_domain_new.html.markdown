@@ -61,8 +61,8 @@ The following arguments are supported:
   - `domestic`: Mainland China only.
   - `overseas`: Global (excluding Mainland China).
   - `global`: global.
-
   The default value is `domestic`.
+-> **NOTE:** From version 1.236.0, `scope` can be modified.
 * `sources` - (Required, Set) The source address list of the accelerated domain. Defaults to null. See [`sources`](#sources) below.
 * `status` - (Optional, Computed) The status of the resource, valid values: `online`, `offline`.
 * `tags` - (Optional, Map, Available since v1.55.2) The tag of the resource

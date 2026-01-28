@@ -556,7 +556,7 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	if !d.IsNewResource() && d.HasChange("scope") {
 		update = true
 	}
-	request["Property"] = d.Get("scope")
+	request["Property"] = fmt.Sprintf(`{"coverage":"%s"}`, d.Get("scope"))
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -576,7 +576,7 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	if d.HasChange("tags") {
+	if !d.IsNewResource() && d.HasChange("tags") {
 		cdnServiceV2 := CdnServiceV2{client}
 		if err := cdnServiceV2.SetResourceTags(d, "DOMAIN"); err != nil {
 			return WrapError(err)
