@@ -2,29 +2,51 @@
 subcategory: "Container Registry (CR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cr_ee_repos"
-sidebar_current: "docs-alicloud-datasource-cr-ee-repos"
 description: |-
-  Provides a list of Container Registry Enterprise Edition repositories.
+  Provides a list of Container Registry Enterprise Edition Repositories to the user.
 ---
 
-# alicloud\_cr\_ee\_repos
+# alicloud_cr_ee_repos
 
-This data source provides a list Container Registry Enterprise Edition repositories on Alibaba Cloud.
+This data source provides the Container Registry Enterprise Edition Repositories of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.87.0+
+-> **NOTE:** Available since v1.87.0.
 
 ## Example Usage
 
-```
-# Declare the data source
-data "alicloud_cr_ee_repos" "my_repos" {
-  instance_id = "cri-xx"
-  name_regex  = "my-repos"
-  output_file = "my-repo-json"
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
 }
 
-output "output" {
-  value = "${data.alicloud_cr_ee_repos.my_repos.repos}"
+data "alicloud_cr_ee_instances" "default" {
+  name_regex = "default-nodeleting"
+}
+
+resource "alicloud_cr_ee_namespace" "default" {
+  instance_id        = data.alicloud_cr_ee_instances.default.ids.0
+  name               = var.name
+  auto_create        = true
+  default_visibility = "PRIVATE"
+}
+
+resource "alicloud_cr_ee_repo" "default" {
+  instance_id = alicloud_cr_ee_namespace.default.instance_id
+  namespace   = alicloud_cr_ee_namespace.default.name
+  name        = var.name
+  repo_type   = "PRIVATE"
+  summary     = var.name
+}
+
+data "alicloud_cr_ee_repos" "ids" {
+  ids         = [alicloud_cr_ee_repo.default.repo_id]
+  instance_id = alicloud_cr_ee_repo.default.instance_id
+}
+
+output "cr_ee_repos_id_0" {
+  value = data.alicloud_cr_ee_repos.ids.repos.0.id
 }
 ```
 
@@ -32,35 +54,30 @@ output "output" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required) ID of Container Registry Enterprise Edition instance.
-* `namespace` - (Optional) Name of Container Registry Enterprise Edition namespace where the repositories are located in.
-* `ids` - (Optional) A list of ids to filter results by repository id.
-* `name_regex` - (Optional) A regex string to filter results by repository name.
+* `ids` - (Optional, ForceNew, List) A list of Repository IDs.
+* `name_regex` - (Optional, ForceNew) A regex string to filter results by Repository name.
+* `instance_id` - (Required, ForceNew) The ID of the Container Registry instance.
+* `namespace` - (Optional, ForceNew) The name of the namespace to which the Repository belongs.
+* `enable_details` - (Optional, Bool) Whether to query the detailed list of resource attributes. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `enable_details` - (Optional) Boolean, false by default, only repository attributes are exported. Set to true if tags belong to this repository are needed. See `tags` in attributes.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of matched Container Registry Enterprise Edition repositories. Its element is a repository id.
-* `names` - A list of repository names.
-* `repos` - A list of matched Container Registry Enterprise Edition namespaces. Each element contains the following attributes:
-  * `instance_id` - ID of Container Registry Enterprise Edition instance.
-  * `namespace` - Name of Container Registry Enterprise Edition namespace where repo is located.
-  * `id` - ID of Container Registry Enterprise Edition repository.
-  * `name` - Name of Container Registry Enterprise Edition repository.
-  * `summary` - The repository general information.
-  * `repo_type` - `PUBLIC` or `PRIVATE`, repository's visibility.
-  * `tags` - A list of image tags belong to this repository. Each contains several attributes, see `Block Tag`.
-
-### Block Tag
-
-* `tag` - Tag of this image.
-* `image_id` - Id of this image.
-* `digest` - Digest of this image.
-* `status` - Status of this image.
-* `image_size` - Status of this image, in bytes.
-* `image_update` - Last update time of this image, unix time in nanoseconds.
-* `image_create` - Create time of this image, unix time in nanoseconds.
-
+* `names` - A list of Repository names.
+* `repos` -  A list of Repositories. Each element contains the following attributes:
+  * `id` - The ID of the Repository.
+  * `instance_id` - The ID of the Container Registry instance to which the Repository belongs.
+  * `namespace` - The name of the namespace to which the Repository belongs.
+  * `name` - The name of the Repository.
+  * `summary` - The summary of the Repository.
+  * `repo_type` - The type of the Repository.
+  * `tags` - A list of image tags belong to this Repository. **Note:** `tags` takes effect only if `enable_details` is set to `true`.
+    * `tag` - The tag of the image.
+    * `image_id` - The ID of the image.
+    * `image_size` - The size of the image.
+    * `digest` - The digest of the image.
+    * `status` - The status of the image.
+    * `image_create` - The time when the image was created.  
+    * `image_update` - The time when the image was last updated.
