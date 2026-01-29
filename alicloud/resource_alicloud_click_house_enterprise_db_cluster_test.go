@@ -428,9 +428,18 @@ func TestAccAliCloudClickHouseEnterpriseDbCluster_basic12419(t *testing.T) {
 }
 
 var AlicloudClickHouseEnterpriseDbClusterMap12419 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"engine_minor_version":  CHECKSET,
+	"category":              CHECKSET,
+	"instance_network_type": CHECKSET,
+	"endpoints.#":           CHECKSET,
+	"storage_quota":         CHECKSET,
+	"computing_group_ids.#": CHECKSET,
+	"status":                CHECKSET,
+	"storage_type":          CHECKSET,
+	"create_time":           CHECKSET,
+	"storage_size":          CHECKSET,
+	"charge_type":           CHECKSET,
+	"region_id":             CHECKSET,
 }
 
 func AlicloudClickHouseEnterpriseDbClusterBasicDependence12419(name string) string {
@@ -630,9 +639,18 @@ func TestAccAliCloudClickHouseEnterpriseDbCluster_basic10560(t *testing.T) {
 }
 
 var AlicloudClickHouseEnterpriseDbClusterMap10560 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"engine_minor_version":  CHECKSET,
+	"category":              CHECKSET,
+	"instance_network_type": CHECKSET,
+	"endpoints.#":           CHECKSET,
+	"storage_quota":         CHECKSET,
+	"computing_group_ids.#": CHECKSET,
+	"status":                CHECKSET,
+	"storage_type":          CHECKSET,
+	"create_time":           CHECKSET,
+	"storage_size":          CHECKSET,
+	"charge_type":           CHECKSET,
+	"region_id":             CHECKSET,
 }
 
 func AlicloudClickHouseEnterpriseDbClusterBasicDependence10560(name string) string {
@@ -804,9 +822,18 @@ func TestAccAliCloudClickHouseEnterpriseDbCluster_basic10226(t *testing.T) {
 }
 
 var AlicloudClickHouseEnterpriseDbClusterMap10226 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"engine_minor_version":  CHECKSET,
+	"category":              CHECKSET,
+	"instance_network_type": CHECKSET,
+	"endpoints.#":           CHECKSET,
+	"storage_quota":         CHECKSET,
+	"computing_group_ids.#": CHECKSET,
+	"status":                CHECKSET,
+	"storage_type":          CHECKSET,
+	"create_time":           CHECKSET,
+	"storage_size":          CHECKSET,
+	"charge_type":           CHECKSET,
+	"region_id":             CHECKSET,
 }
 
 func AlicloudClickHouseEnterpriseDbClusterBasicDependence10226(name string) string {
