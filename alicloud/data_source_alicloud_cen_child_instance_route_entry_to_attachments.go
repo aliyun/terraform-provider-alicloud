@@ -16,22 +16,18 @@ func dataSourceAlicloudCenChildInstanceRouteEntryToAttachments() *schema.Resourc
 		Schema: map[string]*schema.Schema{
 			"child_instance_route_table_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"service_type": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"cen_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"transit_router_attachment_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

@@ -18,24 +18,20 @@ func dataSourceAlicloudCddcHostEcsLevelInfos() *schema.Resource {
 			"db_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"mysql", "mssql", "pgsql", "redis"}, false),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"storage_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3"}, false),
 			},
 			"image_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"WindowsWithMssqlEntAlwaysonLicense", "WindowsWithMssqlStdLicense", "WindowsWithMssqlEntLicense", "WindowsWithMssqlWebLicense", "AliLinux"}, false),
 			},
 			"output_file": {

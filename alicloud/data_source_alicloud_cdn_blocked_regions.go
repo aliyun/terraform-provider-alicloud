@@ -19,7 +19,6 @@ func dataSourceAlicloudCdnBlockedRegions() *schema.Resource {
 			"language": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"zh", "en", "jp"}, false),
 			},
 			"regions": {

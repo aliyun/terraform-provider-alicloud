@@ -16,12 +16,10 @@ func dataSourceAlicloudCenTransitRouterMulticastDomainMembers() *schema.Resource
 		Schema: map[string]*schema.Schema{
 			"transit_router_multicast_domain_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"network_interface_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

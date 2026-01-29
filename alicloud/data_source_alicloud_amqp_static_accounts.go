@@ -16,7 +16,6 @@ func dataSourceAlicloudAmqpStaticAccounts() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

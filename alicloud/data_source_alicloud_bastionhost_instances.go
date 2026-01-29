@@ -33,7 +33,6 @@ func dataSourceAlicloudBastionhostInstances() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 			},
 			"descriptions": {
 				Type:     schema.TypeList,

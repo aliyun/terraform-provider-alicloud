@@ -22,7 +22,6 @@ func dataSourceAlicloudCdnRealTimeLogDeliveries() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"offline", "online"}, false),
 			},
 			"output_file": {

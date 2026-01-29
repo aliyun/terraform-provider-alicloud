@@ -17,12 +17,10 @@ func dataSourceAlicloudAdbDbClusterLakeVersions() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"resource_group_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Preparing", "Creating", "Restoring", "Running", "Deleting", "ClassChanging", "NetAddressCreating", "NetAddressDeleting"}, false),
 			},

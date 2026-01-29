@@ -17,12 +17,10 @@ func dataSourceAlicloudBrainIndustrialPidProjects() *schema.Resource {
 			"pid_organization_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -30,7 +28,6 @@ func dataSourceAlicloudBrainIndustrialPidProjects() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -40,7 +37,6 @@ func dataSourceAlicloudBrainIndustrialPidProjects() *schema.Resource {
 			"pid_project_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
