@@ -17,7 +17,6 @@ func dataSourceAlicloudNasZones() *schema.Resource {
 			"file_system_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"standard", "extreme", "cpfs"}, false),
 			},
 			"output_file": {

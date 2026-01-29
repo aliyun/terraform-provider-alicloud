@@ -18,27 +18,22 @@ func dataSourceAlicloudOceanBaseInstances() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"instance_name": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"resource_group_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"search_key": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"PENDING_CREATE", "ONLINE", "TENANT_CREATING", "TENANT_SPEC_MODIFYING", "EXPANDING", "REDUCING", "SPEC_UPGRADING", "DISK_UPGRADING", "WHITE_LIST_MODIFYING", "PARAMETER_MODIFYING", "SSL_MODIFYING", "PREPAID_EXPIRE_CLOSED", "ARREARS_CLOSED", "PENDING_DELETE"}, false),
 			},
@@ -52,7 +47,6 @@ func dataSourceAlicloudOceanBaseInstances() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

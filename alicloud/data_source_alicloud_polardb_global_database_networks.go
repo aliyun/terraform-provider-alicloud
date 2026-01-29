@@ -18,24 +18,20 @@ func dataSourceAlicloudPolarDBGlobalDatabaseNetworks() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"gdn_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"db_cluster_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"page_number": {
 				Type:     schema.TypeInt,
@@ -49,7 +45,6 @@ func dataSourceAlicloudPolarDBGlobalDatabaseNetworks() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"creating", "active", "deleting", "locked", "removing_member"}, false),
 			},
 			"output_file": {

@@ -17,19 +17,16 @@ func dataSourceAliCloudResourceManagerSharedResources() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"resource_share_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Associated", "Associating", "Disassociated", "Disassociating", "Failed"}, false),
 			},
 			"output_file": {

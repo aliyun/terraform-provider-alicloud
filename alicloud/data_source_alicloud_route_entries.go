@@ -14,7 +14,6 @@ func dataSourceAlicloudRouteEntries() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"route_table_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 			"output_file": {

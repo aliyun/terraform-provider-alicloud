@@ -18,19 +18,16 @@ func dataSourceAlicloudNasDataFlows() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"file_system_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Starting", "Running", "Stopped", "Updating", "Deleting", "Stopping", "Misconfigured"}, false),
 			},
 			"output_file": {

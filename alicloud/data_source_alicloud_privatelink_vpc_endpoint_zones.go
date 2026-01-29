@@ -16,12 +16,10 @@ func dataSourceAlicloudPrivatelinkVpcEndpointZones() *schema.Resource {
 			"endpoint_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Connected", "Connecting", "Creating", "Deleted", "Deleting", "Disconnected", "Disconnecting", "Wait"}, false),
 			},
 			"ids": {

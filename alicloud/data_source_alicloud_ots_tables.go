@@ -18,7 +18,6 @@ func dataSourceAlicloudOtsTables() *schema.Resource {
 			"instance_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validateOTSInstanceName,
 			},
 			"ids": {
@@ -26,13 +25,11 @@ func dataSourceAlicloudOtsTables() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 				MinItems: 1,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"output_file": {

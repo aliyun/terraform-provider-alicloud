@@ -18,13 +18,11 @@ func dataSourceAlicloudOtsSearchIndexes() *schema.Resource {
 			"instance_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validateOTSInstanceName,
 			},
 			"table_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validateOTSTableName,
 			},
 			"ids": {
@@ -32,12 +30,10 @@ func dataSourceAlicloudOtsSearchIndexes() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"output_file": {

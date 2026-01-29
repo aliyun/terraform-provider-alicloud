@@ -15,7 +15,6 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServiceResources() *schema.Resource
 			"service_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,

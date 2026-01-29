@@ -19,12 +19,10 @@ func dataSourceAlicloudNasSnapshots() *schema.Resource {
 			"file_system_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -32,7 +30,6 @@ func dataSourceAlicloudNasSnapshots() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -42,12 +39,10 @@ func dataSourceAlicloudNasSnapshots() *schema.Resource {
 			"snapshot_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"accomplished", "failed", "progressing"}, false),
 			},
 			"output_file": {

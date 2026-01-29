@@ -18,24 +18,20 @@ func dataSourceAlicloudRamGroups() *schema.Resource {
 			"name_regex": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"user_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringLenBetween(0, 64),
 			},
 			"policy_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringLenBetween(0, 128),
 			},
 			"policy_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				// must be ram.System, ram.Custom
 				ValidateFunc: StringInSlice([]string{"System", "Custom"}, false),
 			},

@@ -17,12 +17,10 @@ func dataSourceAlicloudRdsSlots() *schema.Resource {
 			"db_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

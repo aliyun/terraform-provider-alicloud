@@ -17,7 +17,6 @@ func dataSourceAlicloudResourceManagerResourceGroups() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -25,7 +24,6 @@ func dataSourceAlicloudResourceManagerResourceGroups() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -35,7 +33,6 @@ func dataSourceAlicloudResourceManagerResourceGroups() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Creating", "Deleted", "Deleting", "OK", "PendingDelete"}, false),
 			},
 			"output_file": {

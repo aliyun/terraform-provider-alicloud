@@ -17,32 +17,27 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 			"connection_status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Pending", "Connecting", "Connected", "Disconnecting", "Disconnected", "Deleting", "ServiceDeleted"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"service_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Inactive", "Pending"}, false),
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -52,12 +47,10 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 			"vpc_endpoint_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

@@ -13,7 +13,6 @@ func dataSourceAlicloudPolarDBEndpoints() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"db_cluster_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 			"db_endpoint_id": {

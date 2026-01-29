@@ -16,51 +16,42 @@ func dataSourceAlicloudNasMountTargets() *schema.Resource {
 			"access_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"mount_target_domain": {
 				Type:       schema.TypeString,
 				Optional:   true,
-				ForceNew:   true,
 				Deprecated: "Field 'mount_target_domain' has been deprecated from provider version 1.53.0. New field 'ids' replaces it.",
 			},
 			"type": {
 				Type:       schema.TypeString,
 				Optional:   true,
-				ForceNew:   true,
 				Deprecated: "Field 'type' has been deprecated from provider version 1.95.0. New field 'network_type' replaces it.",
 			},
 			"network_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"file_system_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive", "Pending"}, false),
 			},
 			"output_file": {

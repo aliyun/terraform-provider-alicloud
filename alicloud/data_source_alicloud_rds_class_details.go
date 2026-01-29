@@ -14,23 +14,19 @@ func dataSourceAlicloudRdsClassDetails() *schema.Resource {
 			"commodity_code": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"bards", "rds", "rords", "rds_rordspre_public_cn", "bards_intl", "rds_intl", "rords_intl", "rds_rordspre_public_intl"}, false),
 			},
 			"class_code": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"engine": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 				ValidateFunc: StringInSlice([]string{
 					string(MySQL),
 					string(SQLServer),

@@ -18,46 +18,38 @@ func dataSourceAlicloudNlbLoadBalancers() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"address_ip_version": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Ipv4", "DualStack"}, false),
 			},
 			"address_type": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Internet", "Intranet"}, false),
 			},
 			"dns_name": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ipv6_address_type": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Internet", "Intranet"}, false),
 			},
 			"load_balancer_business_status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Abnormal", "Normal"}, false),
 			},
 			"resource_group_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"zone_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"vpc_ids": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -65,7 +57,6 @@ func dataSourceAlicloudNlbLoadBalancers() *schema.Resource {
 			},
 			"load_balancer_names": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -73,7 +64,6 @@ func dataSourceAlicloudNlbLoadBalancers() *schema.Resource {
 			},
 			"status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Inactive", "Active", "Provisioning", "Configuring", "Deleting", "Deleted"}, false),
 			},
@@ -88,7 +78,6 @@ func dataSourceAlicloudNlbLoadBalancers() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

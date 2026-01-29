@@ -16,25 +16,21 @@ func dataSourceAlicloudQuotasQuotaApplications() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"dimensions": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"key": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 						"value": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 					},
 				},
@@ -42,28 +38,23 @@ func dataSourceAlicloudQuotasQuotaApplications() *schema.Resource {
 			"key_word": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"product_code": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"quota_action_code": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"quota_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Agree", "Disagree", "Process"}, false),
 			},
 			"output_file": {

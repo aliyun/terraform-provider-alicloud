@@ -21,7 +21,6 @@ func dataSourceAlicloudSaeConfigMaps() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -29,7 +28,6 @@ func dataSourceAlicloudSaeConfigMaps() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -39,7 +37,6 @@ func dataSourceAlicloudSaeConfigMaps() *schema.Resource {
 			"namespace_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
