@@ -28,6 +28,19 @@ func resourceAliCloudClickHouseEnterpriseDbCluster() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"category": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"charge_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"computing_group_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -35,6 +48,74 @@ func resourceAliCloudClickHouseEnterpriseDbCluster() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+			},
+			"endpoints": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"endpoint_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ports": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"port": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"protocol": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"vpc_instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"connection_string": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ip_address": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"net_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"computing_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"engine_minor_version": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"instance_network_type": {
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"multi_zones": {
@@ -91,6 +172,18 @@ func resourceAliCloudClickHouseEnterpriseDbCluster() *schema.Resource {
 				Optional: true,
 			},
 			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"storage_quota": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"storage_size": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"storage_type": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -219,8 +312,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 
+	d.Set("category", objectRaw["Category"])
+	d.Set("charge_type", objectRaw["ChargeType"])
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
+	d.Set("engine_minor_version", objectRaw["EngineMinorVersion"])
 	d.Set("node_count", formatInt(objectRaw["NodeCount"]))
 	d.Set("node_scale_max", formatInt(objectRaw["NodeScaleMax"]))
 	d.Set("node_scale_min", formatInt(objectRaw["NodeScaleMin"]))
@@ -229,6 +325,9 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 	d.Set("scale_max", objectRaw["ScaleMax"])
 	d.Set("scale_min", objectRaw["ScaleMin"])
 	d.Set("status", objectRaw["Status"])
+	d.Set("storage_quota", objectRaw["StorageQuota"])
+	d.Set("storage_size", objectRaw["StorageSize"])
+	d.Set("storage_type", objectRaw["StorageType"])
 	d.Set("vpc_id", objectRaw["VpcId"])
 	d.Set("vswitch_id", objectRaw["VSwitchId"])
 	d.Set("zone_id", objectRaw["ZoneId"])
@@ -255,6 +354,58 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 	}
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
+
+	objectRaw, err = clickHouseServiceV2.DescribeEnterpriseDbClusterDescribeEndpoints(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	d.Set("instance_network_type", objectRaw["InstanceNetworkType"])
+
+	endpointsRaw := objectRaw["Endpoints"]
+	endpointsMaps := make([]map[string]interface{}, 0)
+	if endpointsRaw != nil {
+		for _, endpointsChildRaw := range convertToInterfaceArray(endpointsRaw) {
+			endpointsMap := make(map[string]interface{})
+			endpointsChildRaw := endpointsChildRaw.(map[string]interface{})
+			endpointsMap["computing_group_id"] = endpointsChildRaw["ComputingGroupId"]
+			endpointsMap["connection_string"] = endpointsChildRaw["ConnectionString"]
+			endpointsMap["endpoint_name"] = endpointsChildRaw["EndpointName"]
+			endpointsMap["ip_address"] = endpointsChildRaw["IPAddress"]
+			endpointsMap["net_type"] = endpointsChildRaw["NetType"]
+			endpointsMap["status"] = endpointsChildRaw["Status"]
+			endpointsMap["vswitch_id"] = endpointsChildRaw["VSwitchId"]
+			endpointsMap["vpc_id"] = endpointsChildRaw["VpcId"]
+			endpointsMap["vpc_instance_id"] = endpointsChildRaw["VpcInstanceId"]
+
+			portsRaw := endpointsChildRaw["Ports"]
+			portsMaps := make([]map[string]interface{}, 0)
+			if portsRaw != nil {
+				for _, portsChildRaw := range convertToInterfaceArray(portsRaw) {
+					portsMap := make(map[string]interface{})
+					portsChildRaw := portsChildRaw.(map[string]interface{})
+					portsMap["port"] = portsChildRaw["Port"]
+					portsMap["protocol"] = portsChildRaw["Protocol"]
+
+					portsMaps = append(portsMaps, portsMap)
+				}
+			}
+			endpointsMap["ports"] = portsMaps
+			endpointsMaps = append(endpointsMaps, endpointsMap)
+		}
+	}
+	if err := d.Set("endpoints", endpointsMaps); err != nil {
+		return err
+	}
+
+	objectRaw, err = clickHouseServiceV2.DescribeEnterpriseDbClusterDescribeComputingGroups(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	computingGroupIdsRaw, _ := jsonpath.Get("$.ComputingGroupIds", objectRaw)
+
+	d.Set("computing_group_ids", computingGroupIdsRaw)
 
 	return nil
 }

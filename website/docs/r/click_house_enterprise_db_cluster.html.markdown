@@ -131,9 +131,30 @@ The multi_zones supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above. 
+* `category` - Instance type.
+* `charge_type` - The billing method.
+* `computing_group_ids` - List of computing group IDs.
 * `create_time` - The cluster creation time, in the format yyyy-MM-ddTHH:mm:ssZ.
+* `endpoints` - List of endpoint details.
+  * `computing_group_id` - The computing group ID.
+  * `connection_string` - The instance connection string.
+  * `endpoint_name` - The endpoint name.
+  * `ip_address` - The IP address.
+  * `net_type` - The network type of the connection string.
+  * `ports` - A list of port details.
+    * `port` - The access port.
+    * `protocol` - The protocol type.
+  * `status` - Status.
+  * `vswitch_id` - The vSwitch ID.
+  * `vpc_id` - The VPC ID.
+  * `vpc_instance_id` - The VPC instance ID.
+* `engine_minor_version` - The minor version number of the cluster engine.
+* `instance_network_type` - Network type of the instance.
 * `region_id` - The region ID.
 * `status` - The instance status.
+* `storage_quota` - Pre-purchased storage capacity (GB).
+* `storage_size` - The storage capacity.
+* `storage_type` - The storage type.
 
 ## Timeouts
 
