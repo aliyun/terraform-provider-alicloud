@@ -1613,7 +1613,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_brain_industrial_pid_loop":                             resourceAlicloudBrainIndustrialPidLoop(),
 			"alicloud_quotas_quota_application":                              resourceAliCloudQuotasQuotaApplication(),
 			"alicloud_ecs_auto_snapshot_policy":                              resourceAliCloudEcsAutoSnapshotPolicy(),
-			"alicloud_rds_parameter_group":                                   resourceAlicloudRdsParameterGroup(),
+			"alicloud_rds_parameter_group":                                   resourceAliCloudRdsParameterGroup(),
 			"alicloud_ecs_launch_template":                                   resourceAliCloudEcsLaunchTemplate(),
 			"alicloud_resource_manager_control_policy":                       resourceAliCloudResourceManagerControlPolicy(),
 			"alicloud_resource_manager_control_policy_attachment":            resourceAliCloudResourceManagerControlPolicyAttachment(),
