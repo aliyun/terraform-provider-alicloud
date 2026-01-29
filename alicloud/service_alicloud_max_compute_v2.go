@@ -689,3 +689,94 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaStateRefreshFunc(id string, field s
 }
 
 // DescribeMaxComputeQuota >>> Encapsulated.
+// DescribeMaxComputeTenantRoleUserAttachment <<< Encapsulated get interface for MaxCompute TenantRoleUserAttachment.
+
+func (s *MaxComputeServiceV2) DescribeMaxComputeTenantRoleUserAttachment(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	var header map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	header = make(map[string]*string)
+	query["accountId"] = StringPointer(parts[0])
+
+	action := fmt.Sprintf("/api/v1/tenants/user")
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, header, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.data.roles", response)
+	if err != nil || v == nil {
+		return object, WrapErrorf(NotFoundErr("TenantRoleUserAttachment", id), NotFoundMsg, response)
+	}
+
+	currentStatus := v.([]interface{})
+	if currentStatus == nil || len(currentStatus) == 0 {
+		return object, WrapErrorf(NotFoundErr("TenantRoleUserAttachment", id), NotFoundMsg, response)
+	}
+
+	targetRole := parts[1]
+	for _, item := range currentStatus {
+		if roleName, ok := item.(string); ok && roleName == targetRole {
+			return object, nil
+		}
+	}
+
+	return object, WrapErrorf(NotFoundErr("TenantRoleUserAttachment", id), NotFoundMsg, response)
+}
+
+func (s *MaxComputeServiceV2) MaxComputeTenantRoleUserAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.MaxComputeTenantRoleUserAttachmentStateRefreshFuncWithApi(id, field, failStates, s.DescribeMaxComputeTenantRoleUserAttachment)
+}
+
+func (s *MaxComputeServiceV2) MaxComputeTenantRoleUserAttachmentStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeMaxComputeTenantRoleUserAttachment >>> Encapsulated.
