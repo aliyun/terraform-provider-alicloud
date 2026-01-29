@@ -48,6 +48,7 @@ func resourceAliCloudSslCertificatesServicePcaCertificate() *schema.Resource {
 			"crl_day": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"enable_crl": {
