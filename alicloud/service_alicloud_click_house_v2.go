@@ -580,6 +580,45 @@ func (s *ClickHouseServiceV2) DescribeClickHouseEnterpriseDbCluster(id string) (
 
 	return v.(map[string]interface{}), nil
 }
+func (s *ClickHouseServiceV2) DescribeEnterpriseDbClusterDescribeEndpoints(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DBInstanceId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeEndpoints"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("EnterpriseDbCluster", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
 
 func (s *ClickHouseServiceV2) ClickHouseEnterpriseDbClusterStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.ClickHouseEnterpriseDbClusterStateRefreshFuncWithApi(id, field, failStates, s.DescribeClickHouseEnterpriseDbCluster)
