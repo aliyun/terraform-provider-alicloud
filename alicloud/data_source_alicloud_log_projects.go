@@ -21,7 +21,6 @@ func dataSourceAlicloudLogProjects() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -31,7 +30,6 @@ func dataSourceAlicloudLogProjects() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -39,7 +37,6 @@ func dataSourceAlicloudLogProjects() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Normal", "Disable"}, true),
-				ForceNew:     true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

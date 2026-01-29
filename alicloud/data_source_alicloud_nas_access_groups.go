@@ -18,23 +18,19 @@ func dataSourceAlicloudNasAccessGroups() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"type": {
 				Type:       schema.TypeString,
 				Optional:   true,
-				ForceNew:   true,
 				Deprecated: "Field 'type' has been deprecated from provider version 1.95.0. New field 'access_group_type' replaces it.",
 			},
 			"access_group_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -44,19 +40,16 @@ func dataSourceAlicloudNasAccessGroups() *schema.Resource {
 			"access_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"file_system_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "standard",
 				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard"}, false),
 			},
 			"useutc_date_time": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,

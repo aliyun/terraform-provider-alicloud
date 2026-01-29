@@ -16,13 +16,11 @@ func dataSourceAlicloudMscSubContactVerificationMessage() *schema.Resource {
 			"contact_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"type": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: validation.IntInSlice([]int{1, 2}),
-				ForceNew:     true,
 			},
 			"status": {
 				Type:     schema.TypeString,

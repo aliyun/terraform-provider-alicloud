@@ -26,42 +26,35 @@ func dataSourceAlicloudProducts() *schema.Resource {
 			"sort": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"user_count-desc", "created_on-desc", "price-desc", "score-desc"}, false),
 			},
 
 			"category_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"product_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"APP", "SERVICE", "MIRROR", "DOWNLOAD", "API_SERVICE"}, false),
 			},
 
 			"search_term": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"supplier_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"supplier_name_keyword": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"suggested_price": {
 				Type:     schema.TypeFloat,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

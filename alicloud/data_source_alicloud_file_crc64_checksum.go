@@ -15,7 +15,6 @@ func dataSourceAlicloudFileCRC64Checksum() *schema.Resource {
 			"filename": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"checksum": {
 				Type:     schema.TypeString,

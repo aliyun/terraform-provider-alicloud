@@ -18,19 +18,16 @@ func dataSourceAlicloudGraphDatabaseDbInstances() *schema.Resource {
 			"db_instance_description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Creating", "Running", "Deleting", "DBInstanceClassChanging", "NetAddressCreating", "NetAddressDeleting"}, false),
 			},
 			"output_file": {

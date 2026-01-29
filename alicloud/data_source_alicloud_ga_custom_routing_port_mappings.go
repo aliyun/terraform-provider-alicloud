@@ -19,22 +19,18 @@ func dataSourceAlicloudGaCustomRoutingPortMappings() *schema.Resource {
 			"accelerator_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"listener_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"endpoint_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"allow", "deny"}, false),
 			},
 			"page_number": {

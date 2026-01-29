@@ -17,7 +17,6 @@ func dataSourceAlicloudGaAccelerators() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -25,7 +24,6 @@ func dataSourceAlicloudGaAccelerators() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -35,13 +33,11 @@ func dataSourceAlicloudGaAccelerators() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"active", "binding", "configuring", "deleting", "finacialLocked", "init", "unbinding"}, false),
 			},
 			"bandwidth_billing_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"BandwidthPackage", "CDT"}, false),
 			},
 			"output_file": {

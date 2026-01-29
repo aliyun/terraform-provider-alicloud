@@ -32,24 +32,20 @@ func dataSourceAlicloudGpdbInstances() *schema.Resource {
 			"db_instance_categories": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"db_instance_modes": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Creating", "DBInstanceClassChanging", "DBInstanceNetTypeChanging", "Deleting", "EngineVersionUpgrading", "GuardDBInstanceCreating", "GuardSwitching", "Importing", "ImportingFromOtherInstance", "Rebooting", "Restoring", "Running", "Transfering", "TransferingToOtherInstance"}, false),
 			},
 			"description": {
@@ -59,12 +55,10 @@ func dataSourceAlicloudGpdbInstances() *schema.Resource {
 			"instance_network_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"tags": tagsSchema(),
 			"output_file": {

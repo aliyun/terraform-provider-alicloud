@@ -18,52 +18,43 @@ func dataSourceAlicloudMongodbServerlessInstances() *schema.Resource {
 			"db_instance_class": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"db_instance_description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Classic", "VPC"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Creating", "DBInstanceClassChanging", "DBInstanceNetTypeChanging", "Deleting", "EngineVersionUpgrading", "GuardSwitching", "HASwitching", "Importing", "ImportingFromOthers", "LinkSwitching", "MinorVersionUpgrading", "NodeCreating", "NodeDeleting", "Rebooting", "Restoring", "Running", "SSLModifying", "TDEModifying", "TempDBInstanceCreating", "Transing", "TransingToOthers", "released"}, false),
 			},
 			"tags": tagsSchema(),
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

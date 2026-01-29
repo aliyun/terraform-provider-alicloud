@@ -19,7 +19,6 @@ func dataSourceAlicloudLindormInstances() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -27,7 +26,6 @@ func dataSourceAlicloudLindormInstances() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -37,18 +35,15 @@ func dataSourceAlicloudLindormInstances() *schema.Resource {
 			"query_str": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ACTIVATION", "CLASS_CHANGING", "CREATING", "DELETED", "INSTANCE_LEVEL_MODIFY", "LOCKED", "MINOR_VERSION_TRANSING", "NET_MODIFYING", "RESIZING", "RESTARTING"}, false),
 			},
 			"support_engine": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.IntBetween(1, 7),
 			},
 			"output_file": {

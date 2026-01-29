@@ -22,17 +22,14 @@ func dataSourceAlicloudMseNacosConfigs() *schema.Resource {
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"data_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"group": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"app_name": {
 				Type:     schema.TypeString,
@@ -45,7 +42,6 @@ func dataSourceAlicloudMseNacosConfigs() *schema.Resource {
 			"namespace_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"request_pars": {
 				Type:     schema.TypeString,
@@ -54,7 +50,6 @@ func dataSourceAlicloudMseNacosConfigs() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},

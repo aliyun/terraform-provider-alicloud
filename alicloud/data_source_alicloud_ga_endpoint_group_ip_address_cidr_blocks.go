@@ -19,12 +19,10 @@ func dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks() *schema.Resource {
 			"endpoint_group_region": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"accelerator_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

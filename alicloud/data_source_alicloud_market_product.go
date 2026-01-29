@@ -14,12 +14,10 @@ func dataSourceAlicloudProduct() *schema.Resource {
 			"product_code": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"available_region": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			// Computed values.
 			"product": {

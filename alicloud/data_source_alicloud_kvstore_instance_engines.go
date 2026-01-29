@@ -18,12 +18,10 @@ func dataSourceAlicloudKVStoreInstanceEngines() *schema.Resource {
 			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"engine": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					string(KVStoreMemcache),
 					string(KVStoreRedis),
@@ -33,12 +31,10 @@ func dataSourceAlicloudKVStoreInstanceEngines() *schema.Resource {
 			"engine_version": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      PrePaid,
 				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
 			},

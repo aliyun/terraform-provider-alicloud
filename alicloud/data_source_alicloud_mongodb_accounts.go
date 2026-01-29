@@ -19,12 +19,10 @@ func dataSourceAlicloudMongodbAccounts() *schema.Resource {
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"account_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"root"}, false),
 			},
 			"output_file": {

@@ -18,29 +18,24 @@ func dataSourceAlicloudHbrHanaBackupClients() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"vault_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"client_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"cluster_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"REGISTERED", "ACTIVATED", "DEACTIVATED", "INSTALLING", "INSTALL_FAILED", "NOT_INSTALLED", "UPGRADING", "UPGRADE_FAILED", "UNINSTALLING", "UNINSTALL_FAILED", "STOPPED", "UNKNOWN"}, false),
 			},
 			"page_number": {
