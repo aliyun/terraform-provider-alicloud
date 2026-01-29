@@ -19,7 +19,6 @@ func dataSourceAlicloudDcdnKvAccount() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Computed:     true,
-				ForceNew:     true,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"online", "offline"}, false),
 			},

@@ -19,24 +19,20 @@ func dataSourceAliCloudCloudFirewallTlsInspectCaCertificates() *schema.Resource 
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"ca_cert_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"page_number": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"page_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"certificates": {
 				Type:     schema.TypeList,
@@ -57,7 +53,6 @@ func dataSourceAliCloudCloudFirewallTlsInspectCaCertificates() *schema.Resource 
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

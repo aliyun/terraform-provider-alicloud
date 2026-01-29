@@ -19,7 +19,6 @@ func dataSourceAlicloudCrChartRepositories() *schema.Resource {
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -34,7 +33,6 @@ func dataSourceAlicloudCrChartRepositories() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},

@@ -18,19 +18,16 @@ func dataSourceAlicloudClickHouseDbClusters() *schema.Resource {
 			"db_cluster_description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Creating", "Deleting", "Restarting", "Preparing", "Running"}, false),
 			},
 			"output_file": {

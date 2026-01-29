@@ -18,19 +18,16 @@ func dataSourceAlicloudCloudStorageGatewayGatewayCacheDisks() *schema.Resource {
 			"gateway_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"status": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.IntInSlice([]int{0, 1, 2}),
 			},
 			"output_file": {

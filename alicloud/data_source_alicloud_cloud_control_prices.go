@@ -18,17 +18,14 @@ func dataSourceAliCloudCloudControlPrices() *schema.Resource {
 			"desire_attributes": {
 				Type:     schema.TypeMap,
 				Optional: true,
-				ForceNew: true,
 			},
 			"product": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"resource_code": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"prices": {
 				Type:     schema.TypeList,
@@ -109,7 +106,6 @@ func dataSourceAliCloudCloudControlPrices() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

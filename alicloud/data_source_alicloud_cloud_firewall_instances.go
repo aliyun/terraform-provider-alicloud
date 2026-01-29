@@ -17,7 +17,6 @@ func dataSourceAlicloudCloudFirewallInstances() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
 			},
 			"output_file": {

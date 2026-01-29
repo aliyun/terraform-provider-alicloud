@@ -17,7 +17,6 @@ func dataSourceAlicloudCrEENamespaces() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 			"name_regex": {

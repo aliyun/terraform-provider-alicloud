@@ -15,7 +15,6 @@ func dataSourceAlicloudCrEERepos() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 			"namespace": {

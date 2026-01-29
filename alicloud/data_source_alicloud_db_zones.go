@@ -33,20 +33,17 @@ func dataSourceAlicloudDBZones() *schema.Resource {
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      PostPaid,
 				ValidateFunc: validation.StringInSlice([]string{"PrePaid", "PostPaid", "Serverless"}, false),
 			},
 			"engine": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB"}, false),
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"category": {
 				Type:         schema.TypeString,

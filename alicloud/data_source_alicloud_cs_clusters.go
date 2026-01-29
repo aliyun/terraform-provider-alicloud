@@ -20,14 +20,12 @@ func dataSourceAliCloudAckClusters() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"name_regex": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -37,27 +35,22 @@ func dataSourceAliCloudAckClusters() *schema.Resource {
 			"cluster_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"cluster_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"cluster_spec": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"cluster_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"profile": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"clusters": {
 				Type:     schema.TypeList,
@@ -223,7 +216,6 @@ func dataSourceAliCloudAckClusters() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"enable_details": {
 				Type:     schema.TypeBool,

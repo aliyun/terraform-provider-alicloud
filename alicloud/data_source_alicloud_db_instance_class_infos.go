@@ -19,7 +19,6 @@ func dataSourceAlicloudDBInstanceClassInfos() *schema.Resource {
 			"commodity_code": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"bards", "rds", "rords", "rds_rordspre_public_cn", "bards_intl", "rds_intl", "rords_intl", "rds_rordspre_public_intl"}, false),
 			},
 			"db_instance_id": {
@@ -29,7 +28,6 @@ func dataSourceAlicloudDBInstanceClassInfos() *schema.Resource {
 			"order_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"BUY", "UPGRADE", "RENEW", "CONVERT"}, false),
 			},
 			"ids": {

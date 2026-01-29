@@ -18,14 +18,12 @@ func dataSourceAlicloudDcdnIpaDomains() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"domain_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -35,7 +33,6 @@ func dataSourceAlicloudDcdnIpaDomains() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"online", "offline", "configuring", "configure_failed", "checking", "check_failed"}, false),
 			},
 			"output_file": {

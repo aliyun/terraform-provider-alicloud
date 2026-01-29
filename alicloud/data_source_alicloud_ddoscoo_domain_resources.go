@@ -18,14 +18,12 @@ func dataSourceAlicloudDdoscooDomainResources() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"instance_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -33,7 +31,6 @@ func dataSourceAlicloudDdoscooDomainResources() *schema.Resource {
 			"query_domain_pattern": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"fuzzy", "exact"}, false),
 			},
 			"output_file": {
