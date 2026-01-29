@@ -18,14 +18,12 @@ func dataSourceAliCloudVPNGatewayZones() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"spec": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"zones": {
 				Type:     schema.TypeList,

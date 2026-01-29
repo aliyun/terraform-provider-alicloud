@@ -23,18 +23,15 @@ func dataSourceAlicloudSlbListeners() *schema.Resource {
 			"frontend_port": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"protocol": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"description_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

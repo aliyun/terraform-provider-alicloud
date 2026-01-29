@@ -18,7 +18,6 @@ func dataSourceAlicloudThreatDetectionHoneypotImages() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"node_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -31,7 +30,6 @@ func dataSourceAlicloudThreatDetectionHoneypotImages() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

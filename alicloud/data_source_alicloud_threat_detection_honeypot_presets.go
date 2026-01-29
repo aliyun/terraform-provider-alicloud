@@ -16,32 +16,26 @@ func dataSourceAlicloudThreatDetectionHoneypotPresets() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"current_page": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeInt,
 			},
 			"honeypot_image_name": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"lang": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"node_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"node_name": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"preset_name": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

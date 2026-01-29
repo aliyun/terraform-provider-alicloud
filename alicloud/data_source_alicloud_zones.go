@@ -31,13 +31,11 @@ func dataSourceAlicloudZones() *schema.Resource {
 			"available_instance_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 			},
 			"available_resource_creation": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					string(ResourceTypeInstance),
 					string(ResourceTypeRds),
@@ -58,7 +56,6 @@ func dataSourceAlicloudZones() *schema.Resource {
 			"available_slb_address_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					string(Vpc),
 					string(ClassicIntranet),
@@ -68,7 +65,6 @@ func dataSourceAlicloudZones() *schema.Resource {
 			"available_slb_address_ip_version": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					string(IPV4),
 					string(IPV6),
@@ -77,7 +73,6 @@ func dataSourceAlicloudZones() *schema.Resource {
 			"available_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					"all",
 					"cloud",
@@ -97,7 +92,6 @@ func dataSourceAlicloudZones() *schema.Resource {
 			"instance_charge_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Default:  PostPaid,
 				// %q must contain a valid InstanceChargeType, expected common.PrePaid, common.PostPaid
 				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
@@ -105,13 +99,11 @@ func dataSourceAlicloudZones() *schema.Resource {
 			"network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Vpc", "Classic"}, false),
 			},
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      NoSpot,
 				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},

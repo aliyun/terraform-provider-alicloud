@@ -21,7 +21,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -29,7 +28,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -39,7 +37,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 			"project_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"alerts": {
 				Type:     schema.TypeList,
@@ -422,7 +419,6 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

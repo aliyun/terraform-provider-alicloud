@@ -20,29 +20,24 @@ func dataSourceAliCloudSlsEtls() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 			"offset": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"project": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"logstore": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"size": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"etls": {
 				Type:     schema.TypeList,
@@ -156,7 +151,6 @@ func dataSourceAliCloudSlsEtls() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

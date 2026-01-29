@@ -18,12 +18,10 @@ func dataSourceAliCloudVpcIpamIpamPoolCidrs() *schema.Resource {
 			"cidr": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ipam_pool_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"cidrs": {
 				Type:     schema.TypeList,
@@ -52,7 +50,6 @@ func dataSourceAliCloudVpcIpamIpamPoolCidrs() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

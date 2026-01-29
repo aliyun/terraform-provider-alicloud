@@ -21,7 +21,6 @@ func dataSourceAlicloudVpnCustomerGateways() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 				MinItems: 1,
 			},
 
@@ -35,7 +34,6 @@ func dataSourceAlicloudVpnCustomerGateways() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 
 			"output_file": {

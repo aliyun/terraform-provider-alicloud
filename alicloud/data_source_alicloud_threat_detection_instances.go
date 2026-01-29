@@ -17,12 +17,10 @@ func dataSourceAlicloudThreatDetectionInstances() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"renew_status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal", "NotRenewal"}, false),
 			},

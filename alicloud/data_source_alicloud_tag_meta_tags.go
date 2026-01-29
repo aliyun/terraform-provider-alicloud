@@ -18,7 +18,6 @@ func dataSourceAlicloudTagMetaTags() *schema.Resource {
 			"key_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

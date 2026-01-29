@@ -22,13 +22,11 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"init", "active", "attaching", "attached", "detaching", "financialLocked", "provisioning", "updating", "upgrading", "deleted"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -36,7 +34,6 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -46,12 +43,10 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 			"page_number": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"page_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"attachments": {
 				Type:     schema.TypeList,
@@ -415,7 +410,6 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}

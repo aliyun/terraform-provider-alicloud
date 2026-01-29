@@ -19,7 +19,6 @@ func dataSourceAlicloudSimpleApplicationServerPlans() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -46,7 +45,6 @@ func dataSourceAlicloudSimpleApplicationServerPlans() *schema.Resource {
 			"platform": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Linux", "Windows"}, false),
 			},
 			"output_file": {

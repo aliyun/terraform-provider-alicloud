@@ -18,7 +18,6 @@ func dataSourceAlicloudServiceCatalogLaunchOptions() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"product_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -37,7 +36,6 @@ func dataSourceAlicloudServiceCatalogLaunchOptions() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"options": {
 				Deprecated: "Field 'options' has been deprecated from provider version 1.197.0.",

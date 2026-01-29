@@ -19,7 +19,6 @@ func dataSourceAlicloudSimpleApplicationServerInstances() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -27,7 +26,6 @@ func dataSourceAlicloudSimpleApplicationServerInstances() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -37,14 +35,12 @@ func dataSourceAlicloudSimpleApplicationServerInstances() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "Subscription",
 				ValidateFunc: validation.StringInSlice([]string{"Subscription"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Disabled", "Pending", "Resetting", "Running", "Starting", "Stopped", "Stopping", "Upgrading"}, false),
 			},
 			"output_file": {

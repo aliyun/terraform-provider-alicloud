@@ -20,7 +20,6 @@ func dataSourceAlicloudSlbBackendServers() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 				MinItems: 1,
 			},
 			"output_file": {

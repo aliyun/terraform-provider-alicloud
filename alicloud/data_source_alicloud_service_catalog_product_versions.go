@@ -18,7 +18,6 @@ func dataSourceAlicloudServiceCatalogProductVersions() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"product_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -31,7 +30,6 @@ func dataSourceAlicloudServiceCatalogProductVersions() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

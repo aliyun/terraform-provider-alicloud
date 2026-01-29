@@ -18,12 +18,10 @@ func dataSourceAlicloudServiceCatalogEndUserProducts() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"sort_by": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"sort_order": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Asc", "Desc"}, false),
 			},
@@ -43,7 +41,6 @@ func dataSourceAlicloudServiceCatalogEndUserProducts() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"page_number": {
 				Optional: true,
