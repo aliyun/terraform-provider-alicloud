@@ -1815,3 +1815,88 @@ func TestAccAliCloudSlsLogStore_basic5614_old_twin(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAliCloudLogStore_infrequest_access_ttl(t *testing.T) {
+	var v *sls.LogStore
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, logStoreMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-log-store-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogStoreConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                  name,
+					"project":               "${alicloud_log_project.foo.name}",
+					"shard_count":           "2",
+					"retention_period":      "180",
+					"hot_ttl":               "180",
+					"auto_split":            "true",
+					"max_split_shard_count": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"project":          name,
+						"name":             name,
+						"retention_period": "180",
+						"hot_ttl":          "180",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                  name,
+					"project":               "${alicloud_log_project.foo.name}",
+					"shard_count":           "2",
+					"retention_period":      "180",
+					"hot_ttl":               "30",
+					"auto_split":            "true",
+					"max_split_shard_count": "6",
+					"infrequent_access_ttl": "65",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"project":               name,
+						"name":                  name,
+						"retention_period":      "180",
+						"hot_ttl":               "30",
+						"infrequent_access_ttl": "65",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                  name,
+					"project":               "${alicloud_log_project.foo.name}",
+					"shard_count":           "2",
+					"retention_period":      "180",
+					"hot_ttl":               "180",
+					"auto_split":            "true",
+					"max_split_shard_count": "6",
+					"infrequent_access_ttl": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period":      "180",
+						"hot_ttl":               "180",
+						"infrequent_access_ttl": "0",
+					}),
+				),
+			},
+		},
+	})
+}
