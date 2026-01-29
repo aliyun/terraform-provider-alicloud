@@ -33,7 +33,6 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 			},
 			// Computed values
 			"descriptions": {

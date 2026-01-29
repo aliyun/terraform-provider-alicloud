@@ -17,7 +17,6 @@ func dataSourceAlicloudEbsDiskReplicaGroups() *schema.Resource {
 			"ids": {
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,

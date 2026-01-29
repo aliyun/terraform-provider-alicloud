@@ -16,12 +16,10 @@ func dataSourceAlicloudEbsDiskReplicaPairs() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"replica_group_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"site": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

@@ -18,7 +18,6 @@ func dataSourceAlicloudEcsCapacityReservations() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"capacity_reservation_ids": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -26,29 +25,24 @@ func dataSourceAlicloudEcsCapacityReservations() *schema.Resource {
 			},
 			"instance_type": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"payment_type": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 			},
 			"platform": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"windows", "linux", "all"}, false),
 			},
 			"resource_group_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"status": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"All", "Pending", "Preparing", "Prepared", "Active", "Released"}, false),
 			},
@@ -63,7 +57,6 @@ func dataSourceAlicloudEcsCapacityReservations() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

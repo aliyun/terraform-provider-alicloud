@@ -16,7 +16,6 @@ func dataSourceAlicloudDmsUserTenants() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ACTIVE", "IN_ACTIVE"}, false),
 			},
 			"ids": {

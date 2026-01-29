@@ -18,14 +18,12 @@ func dataSourceAlicloudDmsEnterpriseDatabases() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
-				ForceNew:     true,
 			},
 			"ids": {
 				Optional: true,

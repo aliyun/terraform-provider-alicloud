@@ -18,20 +18,17 @@ func dataSourceAlicloudDmsEnterpriseInstances() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ValidateFunc:  validation.StringIsValidRegExp,
-				ForceNew:      true,
 				ConflictsWith: []string{"instance_alias_regex"},
 			},
 			"instance_alias_regex": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ValidateFunc:  validation.StringIsValidRegExp,
-				ForceNew:      true,
 				ConflictsWith: []string{"name_regex"},
 			},
 			"env_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -41,33 +38,27 @@ func dataSourceAlicloudDmsEnterpriseInstances() *schema.Resource {
 			"instance_source": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"net_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"search_key": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"DELETED", "DISABLE", "NORMAL", "UNAVAILABLE"}, false),
 			},
 			"tid": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,

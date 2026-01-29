@@ -16,7 +16,6 @@ func dataSourceAlicloudDmsEnterpriseProxyAccesses() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"proxy_id": {
 				Required: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {

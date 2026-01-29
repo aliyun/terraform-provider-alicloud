@@ -17,7 +17,6 @@ func dataSourceAlicloudExpressConnectVbrPconnAssociations() *schema.Resource {
 			"vbr_id": {
 				Optional: true,
 				Type:     schema.TypeString,
-				ForceNew: true,
 			},
 			"ids": {
 				Optional: true,

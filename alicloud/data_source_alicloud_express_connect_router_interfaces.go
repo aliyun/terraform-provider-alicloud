@@ -18,18 +18,15 @@ func dataSourceAlicloudExpressConnectRouterInterfaces() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"filter": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"key": {
 							Optional: true,
-							ForceNew: true,
 							Type:     schema.TypeString,
 						},
 						"value": {
 							Optional: true,
-							ForceNew: true,
 							Type:     schema.TypeList,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
@@ -40,7 +37,6 @@ func dataSourceAlicloudExpressConnectRouterInterfaces() *schema.Resource {
 			},
 			"include_reservation_data": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -53,7 +49,6 @@ func dataSourceAlicloudExpressConnectRouterInterfaces() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},

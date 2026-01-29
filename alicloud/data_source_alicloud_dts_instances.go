@@ -18,7 +18,6 @@ func dataSourceAlicloudDtsInstances() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"resource_group_id": {
 				Optional: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"ids": {
@@ -31,7 +30,6 @@ func dataSourceAlicloudDtsInstances() *schema.Resource {
 			},
 			"name_regex": {
 				Optional:     true,
-				ForceNew:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
