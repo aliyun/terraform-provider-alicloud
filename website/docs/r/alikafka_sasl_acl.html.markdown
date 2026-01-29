@@ -2,19 +2,19 @@
 subcategory: "AliKafka"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alikafka_sasl_acl"
-sidebar_current: "docs-alicloud-resource-alikafka-sasl_acl"
 description: |-
   Provides a Alicloud Alikafka Sasl Acl resource.
 ---
 
 # alicloud_alikafka_sasl_acl
 
-Provides an ALIKAFKA sasl acl resource, see [What is alikafka sasl acl](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-createacl).
+Provides a Alikafka Sasl Acl resource.
+
+Kafka access control.
+
+For information about Alikafka Sasl Acl and how to use it, see [What is Sasl Acl](https://next.api.alibabacloud.com/document/alikafka/2019-09-16/CreateAcl).
 
 -> **NOTE:** Available since v1.66.0.
-
--> **NOTE:**  Only the following regions support create alikafka sasl user.
-[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
 
 ## Example Usage
 
@@ -30,6 +30,12 @@ Basic Usage
 variable "name" {
   default = "tf_example"
 }
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -48,11 +54,6 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = alicloud_vpc.default.id
-}
-
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
 }
 
 resource "alicloud_alikafka_instance" "default" {
@@ -96,25 +97,58 @@ resource "alicloud_alikafka_sasl_acl" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `instance_id` - (Required, ForceNew) ID of the ALIKAFKA Instance that owns the groups.
-* `username` - (Required, ForceNew) Username for the sasl user. The length should between 1 to 64 characters. The user should be an existed sasl user.
-* `acl_resource_type` - (Required, ForceNew) Resource type for this acl. The resource type can only be "Topic", "Group". Since version 1.247.0, the resource type support "Cluster" and "TransactionalId".
-* `acl_resource_name` - (Required, ForceNew) Resource name for this acl. The resource name should be a topic or consumer group name.
-* `acl_resource_pattern_type` - (Required, ForceNew) Resource pattern type for this acl. The resource pattern support two types "LITERAL" and "PREFIXED". "LITERAL": A literal name defines the full name of a resource. The special wildcard character "*" can be used to represent a resource with any name. "PREFIXED": A prefixed name defines a prefix for a resource.
-* `acl_operation_type` - (Required, ForceNew) Operation type for this acl. The operation type can only be "Write" and "Read".
+* `acl_operation_type` - (Required, ForceNew) Operation type. Valid values:
+  - `Write`: write
+  - `Read`: read
+  - `Describe`: read TransactionalId
+  - `IdempotentWrite`: idempotent write to Cluster
+  - `IDEMPOTENT_WRITE`: idempotent write to Cluster, only available for Serverless instances.
+  - `DESCRIBE_CONFIGS`: query configuration, only available for Serverless instances.
+* `acl_operation_types` - (Optional, Available since v1.270.0) Batch authorization operation types. Multiple operations are separated by commas (,). Valid values:
+  - `Write`: write
+  - `Read`: read
+  - `Describe`: read TransactionalId
+  - `IdempotentWrite`: idempotent write to Cluster
+  - `IDEMPOTENT_WRITE`: idempotent write to Cluster, only available for Serverless instances.
+  - `DESCRIBE_CONFIGS`: query configuration, only available for Serverless instances.
+-> **NOTE:**  `acl_operation_types` is only supported for Serverless instances.
+* `acl_permission_type` - (Optional, ForceNew, Available since v1.270.0) Authorization method. Value:
+  - `DENY`: deny.
+  - `ALLOW`: allow.
+-> **NOTE:**  `acl_permission_type` is only supported for Serverless instances.
+* `acl_resource_name` - (Required, ForceNew) The resource name.
+  - The name of the resource, which can be a topic name, Group ID, cluster name, or transaction ID.
+  - You can use an asterisk (*) to represent all resources of this type.
+* `acl_resource_pattern_type` - (Required, ForceNew) Match the pattern. Valid values:
+  - `LITERAL`: exact match
+  - `PREFIXED`: prefix matching
+* `acl_resource_type` - (Required, ForceNew) The resource type. Valid values:
+  - `Topic`: the message Topic.
+  - `Group`: consumer Group.
+  - `Cluster`: the instance.
+  - `TransactionalId`: transaction ID.
+* `host` - (Optional, ForceNew) The host of the acl.
+-> **NOTE:** From version 1.270.0, `host` can be set.
+* `instance_id` - (Required, ForceNew) The instance ID.
+* `username` - (Required, ForceNew) The user name.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<username>:<acl_resource_type>:<acl_resource_name>:<acl_resource_pattern_type>:<acl_operation_type>`.
 
-* `id` - The `key` of the resource supplied above. The value is formulated as `<instance_id>:<username>:<acl_resource_type>:<acl_resource_name>:<acl_resource_pattern_type>:<acl_operation_type>`.
-* `host` - The host of the acl.
+## Timeouts
+
+-> **NOTE:** Available since v1.270.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Sasl Acl.
+* `delete` - (Defaults to 5 mins) Used when delete the Sasl Acl.
 
 ## Import
 
-ALIKAFKA GROUP can be imported using the id, e.g.
+Alikafka Sasl Acl can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_alikafka_sasl_acl.acl alikafka_post-cn-123455abc:username:Topic:test-topic:LITERAL:Write
+$ terraform import alicloud_alikafka_sasl_acl.example <instance_id>:<username>:<acl_resource_type>:<acl_resource_name>:<acl_resource_pattern_type>:<acl_operation_type>
 ```
