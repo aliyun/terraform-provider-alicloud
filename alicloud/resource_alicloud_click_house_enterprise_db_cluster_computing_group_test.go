@@ -98,7 +98,11 @@ func TestAccAliCloudClickHouseEnterpriseDbClusterComputingGroup_basic12417(t *te
 }
 
 var AlicloudClickHouseEnterpriseDbClusterComputingGroupMap12417 = map[string]string{
-	"computing_group_id": CHECKSET,
+	"computing_group_endpoints.#":        CHECKSET,
+	"computing_group_public_endpoints.#": CHECKSET,
+	"computing_group_endpoint_names.#":   CHECKSET,
+	"computing_group_id":                 CHECKSET,
+	"computing_group_status":             CHECKSET,
 }
 
 func AlicloudClickHouseEnterpriseDbClusterComputingGroupBasicDependence12417(name string) string {
