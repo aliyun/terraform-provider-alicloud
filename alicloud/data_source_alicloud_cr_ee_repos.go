@@ -9,64 +9,62 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudCrEERepos() *schema.Resource {
+func dataSourceAliCloudCrEERepos() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCrEEReposRead,
+		Read: dataSourceAliCloudCrEEReposRead,
 		Schema: map[string]*schema.Schema{
-			"instance_id": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"namespace": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringIsValidRegExp,
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
-			"output_file": {
+			"instance_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
+				ForceNew: true,
+			},
+			"namespace": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
 			},
 			"enable_details": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-
-			// Computed values
-			"ids": {
-				Type:     schema.TypeList,
+			"output_file": {
+				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
 			},
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"repos": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"instance_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"namespace": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -95,6 +93,10 @@ func dataSourceAlicloudCrEERepos() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									"image_size": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
 									"digest": {
 										Type:     schema.TypeString,
 										Computed: true,
@@ -103,15 +105,11 @@ func dataSourceAlicloudCrEERepos() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
-									"image_size": {
-										Type:     schema.TypeInt,
-										Computed: true,
-									},
-									"image_update": {
+									"image_create": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
-									"image_create": {
+									"image_update": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
@@ -125,7 +123,7 @@ func dataSourceAlicloudCrEERepos() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCrEEReposRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCrEEReposRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	crService := &CrService{client}
 	pageNo := 1

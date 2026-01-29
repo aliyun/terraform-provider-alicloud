@@ -165,18 +165,34 @@ func (c *CrService) ListCrEENamespaces(instanceId string, pageNo int, pageSize i
 	request.PageSize = requests.NewInteger(pageSize)
 	action := request.GetActionName()
 
-	raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-		return creeClient.ListNamespace(request)
+	var raw interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.ListNamespace(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+	addDebug(action, raw, request.RpcRequest, request)
+
 	if err != nil {
 		return response, WrapErrorf(err, DataDefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, raw, request.RpcRequest, request)
 
 	response, _ = raw.(*cr_ee.ListNamespaceResponse)
+
 	if !response.ListNamespaceIsSuccess {
 		return response, WrapErrorf(errors.New(response.Code), DataDefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
+
 	return response, nil
 }
 
@@ -301,18 +317,34 @@ func (c *CrService) ListCrEERepos(instanceId string, namespace string, pageNo in
 	request.PageSize = requests.NewInteger(pageSize)
 	action := request.GetActionName()
 
-	raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-		return creeClient.ListRepository(request)
+	var raw interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.ListRepository(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+	addDebug(action, raw, request.RpcRequest, request)
+
 	if err != nil {
 		return response, WrapErrorf(err, DataDefaultErrorMsg, fmt.Sprint(instanceId, ":", namespace), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, raw, request.RpcRequest, request)
 
 	response, _ = raw.(*cr_ee.ListRepositoryResponse)
+
 	if !response.ListRepositoryIsSuccess {
 		return response, WrapErrorf(errors.New(response.Code), DataDefaultErrorMsg, fmt.Sprint(instanceId, ":", namespace), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return response, nil
 }
 
@@ -435,18 +467,34 @@ func (c *CrService) ListCrEERepoTags(instanceId string, repoId string, pageNo in
 	request.PageSize = requests.NewInteger(pageSize)
 	action := request.GetActionName()
 
-	raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-		return creeClient.ListRepoTag(request)
+	var raw interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.ListRepoTag(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+	addDebug(action, raw, request.RpcRequest, request)
+
 	if err != nil {
 		return response, WrapErrorf(err, DataDefaultErrorMsg, fmt.Sprint(instanceId, ":", repoId), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, raw, request.RpcRequest, request)
 
 	response, _ = raw.(*cr_ee.ListRepoTagResponse)
+
 	if !response.ListRepoTagIsSuccess {
 		return response, WrapErrorf(errors.New(response.Code), DataDefaultErrorMsg, fmt.Sprint(instanceId, ":", repoId), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return response, nil
 }
 
