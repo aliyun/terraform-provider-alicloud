@@ -32,7 +32,26 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroup() *schema.Resou
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"computing_group_endpoint_names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"computing_group_endpoints": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"computing_group_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"computing_group_public_endpoints": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"computing_group_status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -106,7 +125,7 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupCreate(d *schema
 	d.SetId(fmt.Sprintf("%v:%v", DataDBInstanceNameVar, DataComputingGroupIdVar))
 
 	clickHouseServiceV2 := ClickHouseServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "$.ComputingGroupStatus", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "ComputingGroupStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -129,11 +148,31 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupRead(d *schema.R
 	}
 
 	d.Set("computing_group_description", objectRaw["ComputingGroupDescription"])
+	d.Set("computing_group_status", objectRaw["ComputingGroupStatus"])
 	d.Set("is_readonly", objectRaw["IsReadonly"])
 	d.Set("node_count", objectRaw["NodeCount"])
 	d.Set("node_scale_max", objectRaw["NodeScaleMax"])
 	d.Set("node_scale_min", objectRaw["NodeScaleMin"])
 	d.Set("computing_group_id", objectRaw["ComputingGroupId"])
+
+	computingGroupEndpointNamesRaw := make([]interface{}, 0)
+	if objectRaw["ComputingGroupEndpointNames"] != nil {
+		computingGroupEndpointNamesRaw = convertToInterfaceArray(objectRaw["ComputingGroupEndpointNames"])
+	}
+
+	d.Set("computing_group_endpoint_names", computingGroupEndpointNamesRaw)
+	computingGroupEndpointsRaw := make([]interface{}, 0)
+	if objectRaw["ComputingGroupEndpoints"] != nil {
+		computingGroupEndpointsRaw = convertToInterfaceArray(objectRaw["ComputingGroupEndpoints"])
+	}
+
+	d.Set("computing_group_endpoints", computingGroupEndpointsRaw)
+	computingGroupPublicEndpointsRaw := make([]interface{}, 0)
+	if objectRaw["ComputingGroupPublicEndpoints"] != nil {
+		computingGroupPublicEndpointsRaw = convertToInterfaceArray(objectRaw["ComputingGroupPublicEndpoints"])
+	}
+
+	d.Set("computing_group_public_endpoints", computingGroupPublicEndpointsRaw)
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_instance_id", parts[0])
@@ -187,7 +226,7 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupUpdate(d *schema
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		clickHouseServiceV2 := ClickHouseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "$.ComputingGroupStatus", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "ComputingGroupStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -253,7 +292,7 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupUpdate(d *schema
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		clickHouseServiceV2 := ClickHouseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "$.ComputingGroupStatus", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "ComputingGroupStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}

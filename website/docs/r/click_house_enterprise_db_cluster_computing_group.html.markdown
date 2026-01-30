@@ -104,7 +104,11 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above. The value is formulated as `<db_instance_id>:<computing_group_id>`.
+* `computing_group_endpoint_names` - 当前属性没有在镇元上录入属性描述�
+* `computing_group_endpoints` - 当前属性没有在镇元上录入属性描述�
 * `computing_group_id` - Computing Group ID.
+* `computing_group_public_endpoints` - 当前属性没有在镇元上录入属性描述�
+* `computing_group_status` - Computing group status.
 
 ## Timeouts
 
