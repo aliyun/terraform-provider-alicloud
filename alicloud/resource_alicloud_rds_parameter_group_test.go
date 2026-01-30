@@ -340,7 +340,7 @@ func TestAccAliCloudRdsParameterGroup_basic12250(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"parameter_detail": []map[string]interface{}{
+					"param_detail": []map[string]interface{}{
 						{
 							"param_name":  "loose_performance_schema_max_index_stat",
 							"param_value": "1000",
@@ -354,7 +354,7 @@ func TestAccAliCloudRdsParameterGroup_basic12250(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"parameter_detail.#":   "1",
+						"param_detail.#":       "1",
 						"engine_version":       CHECKSET,
 						"parameter_group_name": name,
 						"parameter_group_desc": "test001",
@@ -365,7 +365,7 @@ func TestAccAliCloudRdsParameterGroup_basic12250(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"parameter_detail": []map[string]interface{}{
+					"param_detail": []map[string]interface{}{
 						{
 							"param_name":  "loose_performance_schema_max_index_stat",
 							"param_value": "2000",
@@ -382,7 +382,7 @@ func TestAccAliCloudRdsParameterGroup_basic12250(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"parameter_detail.#":   "2",
+						"param_detail.#":       "2",
 						"parameter_group_name": name + "_update",
 						"parameter_group_desc": "test02",
 						"resource_group_id":    CHECKSET,
@@ -447,7 +447,7 @@ func TestAccAliCloudRdsParameterGroup_basic12067(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"parameter_detail": []map[string]interface{}{
+					"param_detail": []map[string]interface{}{
 						{
 							"param_name":  "loose_performance_schema_max_index_stat",
 							"param_value": "1000",
@@ -461,7 +461,7 @@ func TestAccAliCloudRdsParameterGroup_basic12067(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"parameter_detail.#":   "1",
+						"param_detail.#":       "1",
 						"engine_version":       CHECKSET,
 						"parameter_group_name": name,
 						"parameter_group_desc": "test001",
@@ -472,7 +472,7 @@ func TestAccAliCloudRdsParameterGroup_basic12067(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"parameter_detail": []map[string]interface{}{
+					"param_detail": []map[string]interface{}{
 						{
 							"param_name":  "loose_performance_schema_max_index_stat",
 							"param_value": "2000",

@@ -77,14 +77,7 @@ The following arguments are supported:
 
 -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
-* `parameter_detail` - (Optional, List) A JSON string that specifies parameters and their values, in the format: {"Parameter1":"Value1","Parameter2":"Value2",...}. For modifiable parameters, see [Configure parameters for an ApsaraDB RDS for MySQL instance](https://help.aliyun.com/document_detail/96063.html) or [Configure parameters for an ApsaraDB RDS for PostgreSQL instance](https://help.aliyun.com/document_detail/96751.html).
-
--> **NOTE:**  * If the `ModifyMode` parameter is set to `Individual`, the specified parameters overwrite the existing parameter template.
-
--> **NOTE:**  * If the `ModifyMode` parameter is set to `Collectivity`, the specified parameters are added to or modify the existing parameter template.
-
--> **NOTE:**  * If you do not specify this parameter, the original parameter settings remain unchanged.
- See [`parameter_detail`](#parameter_detail) below.
+* `param_detail` - (Required, List) A list of parameters. See [`param_detail`](#param_detail) below.
 * `parameter_group_desc` - (Optional) The description of the parameter template. It can be 0 to 200 characters in length.
 * `parameter_group_name` - (Required) The parameter template name.
 * It must start with a letter and can contain letters, digits, periods (.), or underscores (_).
@@ -96,13 +89,11 @@ The following arguments are supported:
 
 -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
-* `param_detail` - (Optional, Deprecated from v1.270.0) The attribute has been deprecated from 1.270.0 and using `parameter_detail` instead.
 
+### `param_detail`
 
-### `parameter_detail`
-
-The parameter_detail supports the following:
-* `param_name` - (Optional) The name of the parameter.  
+The param_detail supports the following:
+* `param_name` - (Optional) The parameter name.
 * `param_value` - (Optional) The parameter value.
 
 ## Attributes Reference

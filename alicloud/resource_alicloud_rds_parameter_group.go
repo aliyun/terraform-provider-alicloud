@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -43,28 +44,9 @@ func resourceAliCloudRdsParameterGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"parameter_detail": {
-				Type:          schema.TypeSet,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"param_detail"},
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"param_value": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"param_name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
 			"param_detail": {
 				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
+				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"param_value": {
@@ -77,8 +59,6 @@ func resourceAliCloudRdsParameterGroup() *schema.Resource {
 						},
 					},
 				},
-				Deprecated:    "Field 'param_detail' has been deprecated from provider version 1.270.0. New field 'parameter_detail' instead.",
-				ConflictsWith: []string{"parameter_detail"},
 			},
 			"parameter_group_desc": {
 				Type:     schema.TypeString,
@@ -117,25 +97,12 @@ func resourceAliCloudRdsParameterGroupCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("parameter_group_desc"); ok {
 		request["ParameterGroupDesc"] = v
 	}
-	request["ParameterGroupName"] = d.Get("parameter_group_name")
-
-	parameterMap := map[string]interface{}{}
-	if v, ok := d.GetOk("parameter_detail"); ok {
-		list := v.(*schema.Set).List()
-		for _, v := range list {
-			v := v.(map[string]interface{})
-			parameterMap[v["param_name"].(string)] = v["param_value"]
-		}
-	} else if v, ok := d.GetOk("param_detail"); ok {
-		list := v.(*schema.Set).List()
-		for _, v := range list {
-			v := v.(map[string]interface{})
-			parameterMap[v["param_name"].(string)] = v["param_value"]
-		}
+	paramDetailJsonPath, err := jsonpath.Get("$", d.Get("param_detail"))
+	if err == nil {
+		request["Parameters"] = convertToInterfaceArray(paramDetailJsonPath)
 	}
-	parameterStr, _ := convertMaptoJsonString(parameterMap)
-	request["Parameters"] = parameterStr
 
+	request["ParameterGroupName"] = d.Get("parameter_group_name")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
@@ -179,18 +146,22 @@ func resourceAliCloudRdsParameterGroupRead(d *schema.ResourceData, meta interfac
 	d.Set("parameter_group_desc", objectRaw["ParameterGroupDesc"])
 	d.Set("parameter_group_name", objectRaw["ParameterGroupName"])
 
-	if v, ok := objectRaw["ParamDetail"].(map[string]interface{})["ParameterDetail"].([]interface{}); ok {
-		parameterDetail := make([]map[string]interface{}, 0)
-		for _, val := range v {
-			item := val.(map[string]interface{})
-			parameterDetail = append(parameterDetail, map[string]interface{}{
-				"param_name":  item["ParamName"],
-				"param_value": item["ParamValue"],
-			})
+	parameterDetailRaw, _ := jsonpath.Get("$.ParamDetail.ParameterDetail", objectRaw)
+	paramDetailMaps := make([]map[string]interface{}, 0)
+	if parameterDetailRaw != nil {
+		for _, parameterDetailChildRaw := range convertToInterfaceArray(parameterDetailRaw) {
+			paramDetailMap := make(map[string]interface{})
+			parameterDetailChildRaw := parameterDetailChildRaw.(map[string]interface{})
+			paramDetailMap["param_name"] = parameterDetailChildRaw["ParamName"]
+			paramDetailMap["param_value"] = parameterDetailChildRaw["ParamValue"]
+
+			paramDetailMaps = append(paramDetailMaps, paramDetailMap)
 		}
-		d.Set("parameter_detail", parameterDetail)
-		d.Set("param_detail", parameterDetail)
 	}
+	if err := d.Set("param_detail", paramDetailMaps); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -218,31 +189,18 @@ func resourceAliCloudRdsParameterGroupUpdate(d *schema.ResourceData, meta interf
 		request["ParameterGroupDesc"] = d.Get("parameter_group_desc")
 	}
 
+	if !d.IsNewResource() && d.HasChange("param_detail") {
+		update = true
+	}
+	paramDetailJsonPath, err := jsonpath.Get("$", d.Get("param_detail"))
+	if err == nil {
+		request["Parameters"] = convertToInterfaceArray(paramDetailJsonPath)
+	}
+
 	if !d.IsNewResource() && d.HasChange("parameter_group_name") {
 		update = true
 	}
 	request["ParameterGroupName"] = d.Get("parameter_group_name")
-	if !d.IsNewResource() && d.HasChange("parameter_detail") {
-		update = true
-	}
-
-	parameterMap := map[string]interface{}{}
-	if v, ok := d.GetOk("parameter_detail"); ok {
-		list := v.(*schema.Set).List()
-		for _, v := range list {
-			v := v.(map[string]interface{})
-			parameterMap[v["param_name"].(string)] = v["param_value"]
-		}
-	} else if v, ok := d.GetOk("param_detail"); ok {
-		list := v.(*schema.Set).List()
-		for _, v := range list {
-			v := v.(map[string]interface{})
-			parameterMap[v["param_name"].(string)] = v["param_value"]
-		}
-	}
-	parameterStr, _ := convertMaptoJsonString(parameterMap)
-	request["Parameters"] = parameterStr
-
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
