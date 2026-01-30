@@ -2,17 +2,17 @@
 subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_db_backup_policy"
-sidebar_current: "docs-alicloud-resource-db-backup-policy"
 description: |-
-  Provides an RDS backup policy resource.
+  Provides a Alicloud RDS Backup Policy resource.
 ---
 
 # alicloud_db_backup_policy
 
-Provides an RDS instance backup policy resource and used to configure instance backup policy, see [What is DB Backup Policy](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-modifybackuppolicy).
+Provides a RDS Backup Policy resource.
 
+Instance Backup settings.
 
--> **NOTE:** Each DB instance has a backup policy and it will be set default values when destroying the resource.
+For information about RDS Backup Policy and how to use it, see [What is Backup Policy](https://next.api.alibabacloud.com/document/Rds/2014-08-15/ModifyBackupPolicy).
 
 -> **NOTE:** Available since v1.5.0.
 
@@ -55,7 +55,7 @@ resource "alicloud_db_instance" "instance" {
 }
 
 resource "alicloud_db_backup_policy" "policy" {
-  instance_id = alicloud_db_instance.instance.id
+  db_instance_id = alicloud_db_instance.instance.id
 }
 ```
 
@@ -124,8 +124,8 @@ The following attributes are exported:
 
 ## Import
 
-RDS backup policy can be imported using the id or instance id, e.g.
+RDS Backup Policy can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_db_backup_policy.example "rm-12345678"
+$ terraform import alicloud_db_backup_policy.example <db_instance_id>
 ```
