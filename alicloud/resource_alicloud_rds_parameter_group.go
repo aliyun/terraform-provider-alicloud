@@ -5,46 +5,57 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudRdsParameterGroup() *schema.Resource {
+func resourceAliCloudRdsParameterGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRdsParameterGroupCreate,
-		Read:   resourceAlicloudRdsParameterGroupRead,
-		Update: resourceAlicloudRdsParameterGroupUpdate,
-		Delete: resourceAlicloudRdsParameterGroupDelete,
+		Create: resourceAliCloudRdsParameterGroupCreate,
+		Read:   resourceAliCloudRdsParameterGroupRead,
+		Update: resourceAliCloudRdsParameterGroupUpdate,
+		Delete: resourceAliCloudRdsParameterGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"engine": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"mariadb", "mysql", "PostgreSQL"}, false),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"engine_version": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"10.3", "5.1", "5.5", "5.6", "5.7", "8.0", "10.0", "11.0", "12.0", "13.0", "14.0", "15.0"}, false),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"modify_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"param_detail": {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"param_name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
 						"param_value": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+						},
+						"param_name": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 					},
 				},
@@ -57,36 +68,44 @@ func resourceAlicloudRdsParameterGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
 
-func resourceAlicloudRdsParameterGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRdsParameterGroupCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateParameterGroup"
-	request := make(map[string]interface{})
-	request["SourceIp"] = client.SourceIp
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	request["Engine"] = d.Get("engine")
-	request["EngineVersion"] = d.Get("engine_version")
-	list := d.Get("param_detail").(*schema.Set).List()
-	paramMap := map[string]interface{}{}
-	for _, v := range list {
-		v := v.(map[string]interface{})
-		paramMap[v["param_name"].(string)] = v["param_value"]
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
-	paramStr, _ := convertMaptoJsonString(paramMap)
-	request["Parameters"] = paramStr
+	request["EngineVersion"] = d.Get("engine_version")
+	request["Engine"] = d.Get("engine")
 	if v, ok := d.GetOk("parameter_group_desc"); ok {
 		request["ParameterGroupDesc"] = v
 	}
+	paramDetailJsonPath, err := jsonpath.Get("$", d.Get("param_detail"))
+	if err == nil {
+		request["Parameters"] = convertToInterfaceArray(paramDetailJsonPath)
+	}
 
 	request["ParameterGroupName"] = d.Get("parameter_group_name")
-	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -94,82 +113,98 @@ func resourceAlicloudRdsParameterGroupCreate(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rds_parameter_group", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ParameterGroupId"]))
 
-	return resourceAlicloudRdsParameterGroupRead(d, meta)
+	return resourceAliCloudRdsParameterGroupUpdate(d, meta)
 }
-func resourceAlicloudRdsParameterGroupRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudRdsParameterGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	rdsService := RdsService{client}
-	object, err := rdsService.DescribeRdsParameterGroup(d.Id())
+	rdsServiceV2 := RdsServiceV2{client}
+
+	objectRaw, err := rdsServiceV2.DescribeRdsParameterGroup(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_rds_parameter_group rdsService.DescribeRdsParameterGroup Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_rds_parameter_group DescribeRdsParameterGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("engine", object["Engine"])
-	d.Set("engine_version", object["EngineVersion"])
-	if v, ok := object["ParamDetail"].(map[string]interface{})["ParameterDetail"].([]interface{}); ok {
-		parameterDetail := make([]map[string]interface{}, 0)
-		for _, val := range v {
-			item := val.(map[string]interface{})
-			parameterDetail = append(parameterDetail, map[string]interface{}{
-				"param_name":  item["ParamName"],
-				"param_value": item["ParamValue"],
-			})
-		}
-		if err := d.Set("param_detail", parameterDetail); err != nil {
-			return WrapError(err)
+
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("engine", objectRaw["Engine"])
+	d.Set("engine_version", objectRaw["EngineVersion"])
+	d.Set("parameter_group_desc", objectRaw["ParameterGroupDesc"])
+	d.Set("parameter_group_name", objectRaw["ParameterGroupName"])
+
+	parameterDetailRaw, _ := jsonpath.Get("$.ParamDetail.ParameterDetail", objectRaw)
+	paramDetailMaps := make([]map[string]interface{}, 0)
+	if parameterDetailRaw != nil {
+		for _, parameterDetailChildRaw := range convertToInterfaceArray(parameterDetailRaw) {
+			paramDetailMap := make(map[string]interface{})
+			parameterDetailChildRaw := parameterDetailChildRaw.(map[string]interface{})
+			paramDetailMap["param_name"] = parameterDetailChildRaw["ParamName"]
+			paramDetailMap["param_value"] = parameterDetailChildRaw["ParamValue"]
+
+			paramDetailMaps = append(paramDetailMaps, paramDetailMap)
 		}
 	}
-	d.Set("parameter_group_desc", object["ParameterGroupDesc"])
-	d.Set("parameter_group_name", object["ParameterGroupName"])
+	if err := d.Set("param_detail", paramDetailMaps); err != nil {
+		return err
+	}
+
 	return nil
 }
-func resourceAlicloudRdsParameterGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudRdsParameterGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var err error
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
-	request := map[string]interface{}{
-		"ParameterGroupId": d.Id(),
-		"SourceIp":         client.SourceIp,
-	}
+
+	var err error
+	action := "ModifyParameterGroup"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ParameterGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if d.HasChange("param_detail") {
-		update = true
-		list := d.Get("param_detail").(*schema.Set).List()
-		paramMap := map[string]interface{}{}
-		for _, v := range list {
-			v := v.(map[string]interface{})
-			paramMap[v["param_name"].(string)] = v["param_value"]
-		}
-		paramStr, _ := convertMaptoJsonString(paramMap)
-		request["Parameters"] = paramStr
+	if v, ok := d.GetOk("modify_mode"); ok {
+		request["ModifyMode"] = v
 	}
-	if d.HasChange("parameter_group_desc") {
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if !d.IsNewResource() && d.HasChange("parameter_group_desc") {
 		update = true
 		request["ParameterGroupDesc"] = d.Get("parameter_group_desc")
 	}
-	if d.HasChange("parameter_group_name") {
+
+	if !d.IsNewResource() && d.HasChange("param_detail") {
 		update = true
-		request["ParameterGroupName"] = d.Get("parameter_group_name")
 	}
+	paramDetailJsonPath, err := jsonpath.Get("$", d.Get("param_detail"))
+	if err == nil {
+		request["Parameters"] = convertToInterfaceArray(paramDetailJsonPath)
+	}
+
+	if !d.IsNewResource() && d.HasChange("parameter_group_name") {
+		update = true
+	}
+	request["ParameterGroupName"] = d.Get("parameter_group_name")
 	if update {
-		action := "ModifyParameterGroup"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -177,29 +212,32 @@ func resourceAlicloudRdsParameterGroupUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudRdsParameterGroupRead(d, meta)
+
+	return resourceAliCloudRdsParameterGroupRead(d, meta)
 }
-func resourceAlicloudRdsParameterGroupDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudRdsParameterGroupDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteParameterGroup"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	request := map[string]interface{}{
-		"ParameterGroupId": d.Id(),
-		"SourceIp":         client.SourceIp,
-	}
-
+	request = make(map[string]interface{})
+	request["ParameterGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -207,11 +245,16 @@ func resourceAlicloudRdsParameterGroupDelete(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
