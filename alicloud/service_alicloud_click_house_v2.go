@@ -778,6 +778,7 @@ func (s *ClickHouseServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
 // DescribeClickHouseEnterpriseDbClusterComputingGroup <<< Encapsulated get interface for ClickHouse EnterpriseDbClusterComputingGroup.
 
 func (s *ClickHouseServiceV2) DescribeClickHouseEnterpriseDbClusterComputingGroup(id string) (object map[string]interface{}, err error) {
