@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -21,8 +20,8 @@ func resourceAliCloudMongodbAuditPolicy() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
-			Update: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(15 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -38,6 +37,11 @@ func resourceAliCloudMongodbAuditPolicy() *schema.Resource {
 			},
 			"storage_period": {
 				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"filter": {
+				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
@@ -91,7 +95,7 @@ func resourceAliCloudMongodbAuditPolicyCreate(d *schema.ResourceData, meta inter
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
 
-	return resourceAliCloudMongodbAuditPolicyRead(d, meta)
+	return resourceAliCloudMongodbAuditPolicyUpdate(d, meta)
 }
 
 func resourceAliCloudMongodbAuditPolicyRead(d *schema.ResourceData, meta interface{}) error {
@@ -119,6 +123,13 @@ func resourceAliCloudMongodbAuditPolicyRead(d *schema.ResourceData, meta interfa
 
 	d.Set("db_instance_id", d.Id())
 
+	objectRaw, err = mongodbServiceV2.DescribeAuditPolicyDescribeAuditLogFilter(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	d.Set("filter", objectRaw["Filter"])
+
 	return nil
 }
 
@@ -128,6 +139,7 @@ func resourceAliCloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+	d.Partial(true)
 
 	var err error
 	action := "ModifyAuditPolicy"
@@ -135,13 +147,15 @@ func resourceAliCloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta inter
 	query = make(map[string]interface{})
 	request["DBInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if d.HasChange("storage_period") {
+	if !d.IsNewResource() && d.HasChange("storage_period") {
 		update = true
+
+		if v, ok := d.GetOkExists("storage_period"); ok {
+			request["StoragePeriod"] = v
+		}
 	}
-	if v, ok := d.GetOk("storage_period"); ok {
-		request["StoragePeriod"] = v
-	}
-	if d.HasChange("audit_status") {
+
+	if !d.IsNewResource() && d.HasChange("audit_status") {
 		update = true
 	}
 	request["AuditStatus"] = convertMongodbAuditPolicyAuditStatusRequest(d.Get("audit_status").(string))
@@ -169,7 +183,42 @@ func resourceAliCloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta inter
 			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 		}
 	}
+	update = false
+	action = "ModifyAuditLogFilter"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DBInstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("filter") {
+		update = true
+	}
+	request["Filter"] = d.Get("filter")
 
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		mongodbServiceV2 := MongodbServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"[Running]"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, mongodbServiceV2.DescribeAsyncMongodbAuditPolicyStateRefreshFunc(d, response, "$.DBInstances.DBInstance[*].DBInstanceStatus", []string{}))
+		if jobDetail, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		}
+	}
+
+	d.Partial(false)
 	return resourceAliCloudMongodbAuditPolicyRead(d, meta)
 }
 

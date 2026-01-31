@@ -78,6 +78,15 @@ The following arguments are supported:
 * `audit_status` - (Required) Audit state, Valid values: `enable`, `disabled`.
 * `db_instance_id` - (Required, ForceNew) Database Instance Id
 * `storage_period` - (Optional, Int) Audit log retention duration. The value range is 1 to 365 days. The default value is 30 days.
+* `filter` - (Optional, Available since v1.270.0) The type of logs collected by the audit log feature of the instance. Separate multiple types with commas (,). Valid values:
+  - `admin`: O & M control operation.
+  - `slow`: slow log.
+  - `query`: the query operation.
+  - `insert`: insert operation.
+  - `update`: The update operation.
+  - `delete`: deletes the operation.
+  - `command`: Protocol command. For example, the aggregate aggregation method.
+-> **NOTE:** `filter` only supports ApsaraDB for MongoDB replica set instances with `storage_type` of `local_ssd`.
 
 ## Attributes Reference
 
@@ -86,14 +95,16 @@ The following attributes are exported:
 
 ## Timeouts
 
+-> **NOTE:** Available since v1.161.0.
+
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 10 mins) Used when create the Audit Policy.
-* `update` - (Defaults to 10 mins) Used when update the Audit Policy.
+* `create` - (Defaults to 5 mins) Used when create the Audit Policy.
+* `update` - (Defaults to 15 mins) Used when update the Audit Policy.
 
 ## Import
 
 Mongodb Audit Policy can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_mongodb_audit_policy.example <id>
+$ terraform import alicloud_mongodb_audit_policy.example <db_instance_id>
 ```
