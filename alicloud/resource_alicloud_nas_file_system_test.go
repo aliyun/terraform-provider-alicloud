@@ -1729,7 +1729,7 @@ resource "alicloud_nas_snapshot" "defaultLXp8tf" {
 `, name)
 }
 
-// Case   12188
+// Case create_cpfs_se_file_system 12188
 func TestAccAliCloudNasFileSystem_basic12188(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_file_system.default"
@@ -1753,9 +1753,8 @@ func TestAccAliCloudNasFileSystem_basic12188(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":  "cpfsse-文件系统同城冗余测试-wyf",
+					"description":  "cpfsse-文件系统同城冗余测试01-wyf",
 					"storage_type": "advance_100",
-					"encrypt_type": "0",
 					"vpc_id":       "${alicloud_vpc.createEVpc_Cpfs.id}",
 					"redundancy_vswitch_ids": []string{
 						"${alicloud_vswitch.CreateVswitchC.id}", "${alicloud_vswitch.CreateVswitchD.id}", "${alicloud_vswitch.CreateVswitchF.id}"},
@@ -1766,9 +1765,8 @@ func TestAccAliCloudNasFileSystem_basic12188(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":              "cpfsse-文件系统同城冗余测试-wyf",
+						"description":              "cpfsse-文件系统同城冗余测试01-wyf",
 						"storage_type":             "advance_100",
-						"encrypt_type":             "0",
 						"vpc_id":                   CHECKSET,
 						"redundancy_vswitch_ids.#": "3",
 						"capacity":                 "500",
@@ -1845,32 +1843,32 @@ variable "name" {
 resource "alicloud_vpc" "createEVpc_Cpfs" {
   is_default  = false
   cidr_block  = "192.168.0.0/16"
-  vpc_name    = "nas-teste1031-vpc"
+  vpc_name    = "nas-teste1223-vpc"
   enable_ipv6 = true
 }
 
 resource "alicloud_vswitch" "CreateVswitchF" {
   is_default   = false
   vpc_id       = alicloud_vpc.createEVpc_Cpfs.id
-  zone_id      = "cn-beijing-i"
+  zone_id      = "cn-beijing-h"
   cidr_block   = "192.168.2.0/24"
-  vswitch_name = "nas-teste1031-vsw1sdw-F"
+  vswitch_name = "nas-teste1223-vsw1sdw-F"
 }
 
 resource "alicloud_vswitch" "CreateVswitchC" {
   is_default   = false
   vpc_id       = alicloud_vpc.createEVpc_Cpfs.id
-  zone_id      = "cn-beijing-l"
+  zone_id      = "cn-beijing-i"
   cidr_block   = "192.168.3.0/24"
-  vswitch_name = "nas-teste1031-vsw2sdw-C"
+  vswitch_name = "nas-teste1223-vsw2sdw-C"
 }
 
 resource "alicloud_vswitch" "CreateVswitchD" {
   is_default   = false
   vpc_id       = alicloud_vpc.createEVpc_Cpfs.id
-  zone_id      = "cn-beijing-h"
+  zone_id      = "cn-beijing-l"
   cidr_block   = "192.168.4.0/24"
-  vswitch_name = "nas-teste1031-vsw3sdw-D"
+  vswitch_name = "nas-teste1223-vsw3sdw-D"
 }
 
 

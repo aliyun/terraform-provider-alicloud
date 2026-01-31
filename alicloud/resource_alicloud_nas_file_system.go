@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -146,11 +147,10 @@ func resourceAliCloudNasFileSystem() *schema.Resource {
 				},
 			},
 			"redundancy_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"LRS", "ZRS"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"redundancy_vswitch_ids": {
 				Type:     schema.TypeList,
@@ -215,7 +215,7 @@ func resourceAliCloudNasFileSystem() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Performance", "Capacity", "standard", "advance", "advance_100", "advance_200", "Premium"}, false),
+				ValidateFunc: StringInSlice([]string{"Performance", "Capacity", "standard", "advance", "advance_100", "advance_200", "Premium", "economic"}, false),
 			},
 			"tags": tagsSchema(),
 			"vswitch_id": {
@@ -302,7 +302,7 @@ func resourceAliCloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"User.InDebt"}) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

@@ -20,12 +20,6 @@ For information about File Storage (NAS) File System and how to use it, see [Wha
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_nas_file_system&exampleId=e4c2e56e-d616-5a3d-e56d-56aa3caacf29cd5c0a18&activeTab=example&spm=docs.r.nas_file_system.0.e4c2e56ed6&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -55,9 +49,6 @@ resource "alicloud_nas_file_system" "default" {
   zone_id = data.alicloud_nas_zones.default.zones.0.zone_id
 }
 ```
-
-
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_nas_file_system&spm=docs.r.nas_file_system.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -101,17 +92,17 @@ Value:
 
 * `kms_key_id` - (Optional, ForceNew, Computed, Available since v1.140.0) The ID of the KMS key.
 This parameter is required only when EncryptType = 2.
-* `nfs_acl` - (Optional, Computed, List, Available since v1.236.0) NFS ACL See [`nfs_acl`](#nfs_acl) below.
-* `options` - (Optional, Computed, List, Available since v1.248.0) Option. See [`options`](#options) below.
+* `nfs_acl` - (Optional, Computed, Set, Available since v1.236.0) NFS ACL See [`nfs_acl`](#nfs_acl) below.
+* `options` - (Optional, Computed, Set, Available since v1.248.0) Option. See [`options`](#options) below.
 * `protocol_type` - (Required, ForceNew) File transfer protocol type.
   - When FileSystemType = standard, the values are NFS and SMB.
   - When FileSystemType = extreme, the value is NFS.
   - When FileSystemType = cpfs, the value is cpfs.
-* `recycle_bin` - (Optional, Computed, List) Recycle Bin See [`recycle_bin`](#recycle_bin) below.
+* `recycle_bin` - (Optional, Computed, Set) Recycle Bin See [`recycle_bin`](#recycle_bin) below.
 * `redundancy_type` - (Optional, ForceNew, Computed, Available since v1.267.0) Storage redundancy type. Only effective for General CPFS.Options: Locally Redundant Storage (LRS), Zone-Redundant Storage (ZRS) Default value: LRS
 * `redundancy_vswitch_ids` - (Optional, ForceNew, List, Available since v1.267.0) Redundancy vSwitch ID list. Only set when the file system's storage redundancy type is Zone-Redundant Storage (ZRS), and must set vSwitch IDs from three different availability zones under the same VPC.
 * `resource_group_id` - (Optional, Computed, Available since v1.236.0) The ID of the resource group.
-* `smb_acl` - (Optional, Computed, List, Available since v1.248.0) SMB ACL See [`smb_acl`](#smb_acl) below.
+* `smb_acl` - (Optional, Computed, Set, Available since v1.248.0) SMB ACL See [`smb_acl`](#smb_acl) below.
 * `snapshot_id` - (Optional, Available since v1.236.0) Only extreme NAS is supported.
 
 -> **NOTE:** A file system is created from a snapshot. The version of the created file system is the same as that of the snapshot source file system. For example, if the source file system version of the snapshot is 1 and you need to create A file system of version 2, you can first create A file system A from the snapshot, then create A file system B that meets the configuration of version 2, copy the data in file system A to file system B, and migrate the business to file system B after the copy is completed.
@@ -149,7 +140,7 @@ The nfs_acl supports the following:
 ### `options`
 
 The options supports the following:
-* `enable_oplock` - (Optional, Computed, Available since v1.248.0) Whether to enable the OpLock function. Value:
+* `enable_oplock` - (Optional, Computed) Whether to enable the OpLock function. Value:
   - true: On.
   - false: does not turn on.
 
@@ -186,7 +177,7 @@ For example, if the user directory is/home, the file system will automatically c
 Whether to reject non-encrypted clients.
   - true: Deny non-encrypted clients.
   - false (default): Non-encrypted clients are not rejected.
-* `super_admin_sid` - (Optional, Available since v1.248.0) The ID of the Super User. The ID rules are as follows:
+* `super_admin_sid` - (Optional) The ID of the Super User. The ID rules are as follows:
   - Must start with S and no other letters can appear after the S at the beginning.
   - At least three dashes (-) apart.
 
@@ -195,14 +186,14 @@ Such as S-1-5-22 or S-1-5-22-23.
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `create_time` - CreateTime
-* `recycle_bin` - Recycle Bin
-  * `enable_time` - Recycle Bin open time
-  * `secondary_size` - Amount of low-frequency data stored in the recycle bin. Unit: Byte.
-  * `size` - The amount of files stored in the Recycle Bin. Unit: Byte.
-* `region_id` - RegionId
-* `status` - File system status. Includes:(such as creating a mount point) can only be performed when the file system is in the Running state.
+* `id` - The ID of the resource supplied above. 
+* `create_time` - CreateTime.
+* `recycle_bin` - Recycle Bin.
+  * `enable_time` - Recycle Bin open time.
+  * `secondary_size` - Amount of low-frequency data stored in the recycle bin.
+  * `size` - The amount of files stored in the Recycle Bin.
+* `region_id` - RegionId.
+* `status` - File system status.
 
 ## Timeouts
 
@@ -216,5 +207,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 File Storage (NAS) File System can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_nas_file_system.example <id>
+$ terraform import alicloud_nas_file_system.example <file_system_id>
 ```
