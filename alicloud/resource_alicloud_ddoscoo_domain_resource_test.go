@@ -145,6 +145,116 @@ func TestAccAliCloudDdosCooDomainResource_https_ext(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"ai_mode": "watch",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ai_mode": "watch",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ai_template": "level30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ai_template": "level30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bw_list_enable": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bw_list_enable": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bw_list_enable": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bw_list_enable": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"black_list": []string{"3.3.3.3", "6.6.6.6", "5.5.5.5"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"black_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"black_list": []string{"3.3.3.3"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"black_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"black_list": []string{"3.3.3.3", "6.6.6.6", "5.5.5.5"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"black_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cc_global_switch": "close",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cc_global_switch": "close",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"white_list": []string{"3.3.3.3", "1.1.1.1", "2.2.2.2"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"white_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"white_list": []string{"1.1.1.1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"white_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"white_list": []string{"3.3.3.3", "1.1.1.1", "2.2.2.2"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"white_list.#": "3",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -176,12 +286,18 @@ func TestAccAliCloudDdosCooDomainResource_none_https_ext(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain":         name,
-					"instance_ids":   []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
-					"real_servers":   []string{"177.167.32.11", "177.167.32.12", "177.167.32.13"},
-					"rs_type":        `0`,
-					"ocsp_enabled":   "true",
-					"custom_headers": "{\\\"22\\\":\\\"$ReqClientIP\\\",\\\"77\\\":\\\"88\\\",\\\"99\\\":\\\"$ReqClientPort\\\"}",
+					"domain":           name,
+					"instance_ids":     []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
+					"real_servers":     []string{"177.167.32.11", "177.167.32.12", "177.167.32.13"},
+					"rs_type":          `0`,
+					"ocsp_enabled":     "true",
+					"custom_headers":   "{\\\"22\\\":\\\"$ReqClientIP\\\",\\\"77\\\":\\\"88\\\",\\\"99\\\":\\\"$ReqClientPort\\\"}",
+					"ai_mode":          "watch",
+					"ai_template":      "level30",
+					"bw_list_enable":   "0",
+					"cc_global_switch": "close",
+					"black_list":       []string{"3.3.3.3", "6.6.6.6", "5.5.5.5"},
+					"white_list":       []string{"3.3.3.3", "1.1.1.1", "2.2.2.2"},
 					"proxy_types": []map[string]interface{}{
 						{
 							"proxy_ports": []string{"80", "8080"},
@@ -195,13 +311,19 @@ func TestAccAliCloudDdosCooDomainResource_none_https_ext(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain":         name,
-						"instance_ids.#": "1",
-						"real_servers.#": "3",
-						"rs_type":        "0",
-						"ocsp_enabled":   "true",
-						"custom_headers": CHECKSET,
-						"proxy_types.#":  "2",
+						"domain":           name,
+						"instance_ids.#":   "1",
+						"real_servers.#":   "3",
+						"rs_type":          "0",
+						"ocsp_enabled":     "true",
+						"custom_headers":   CHECKSET,
+						"ai_mode":          "watch",
+						"ai_template":      "level30",
+						"bw_list_enable":   "0",
+						"cc_global_switch": "close",
+						"black_list.#":     "3",
+						"white_list.#":     "3",
+						"proxy_types.#":    "2",
 					}),
 				),
 			},

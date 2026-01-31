@@ -73,6 +73,20 @@ resource "alicloud_ddoscoo_domain_resource" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `ai_mode` - (Optional, Available since v1.270.0) the mode of the Intelligent Protection policy.
+  - watch: the Warning mode
+  - defense: the Defense mode
+* `ai_template` - (Optional, Available since v1.270.0) the level of the Intelligent Protection policy.
+  - level30: the Low level
+  - level60: the Normal level
+  - level90: the Strict level
+* `black_list` - (Optional, List, Available since v1.270.0) ip blacklist
+* `bw_list_enable` - (Optional, Int, Available since v1.270.0) The status of the blacklist and whitelist feature. Valid values:
+  - 0: Disabled
+  - 1: Enabled
+* `cc_global_switch` - (Optional, Available since v1.270.0) CC safety protection switch.
+  - 0: Disabled
+  - 1: Enabled
 * `cert` - (Optional, Available since v1.231.0) The private key of the certificate that you want to associate. This parameter must be used together with the CertName and Cert parameters.
 
 -> **NOTE:**   If you specify a value for the CertName, Cert, and Key parameters, you do not need to specify a value for the CertId parameter.
@@ -127,11 +141,12 @@ The following arguments are supported:
   - `1`: domain name
 
     If you deploy proxies, such as a Web Application Firewall (WAF) instance, between the origin server and the Anti-DDoS Pro or Anti-DDoS Premium instance, set the value to 1. If you use the domain name, you must enter the address of the proxy, such as the CNAME of WAF.
+* `white_list` - (Optional, List, Available since v1.270.0) IP whitelist list.
 
 ### `proxy_types`
 
 The proxy_types supports the following:
-* `proxy_ports` - (Required, Set) The port numbers.
+* `proxy_ports` - (Required, List) The port numbers.
 * `proxy_type` - (Optional) The type of the protocol. Valid values:
 
   - `http`
