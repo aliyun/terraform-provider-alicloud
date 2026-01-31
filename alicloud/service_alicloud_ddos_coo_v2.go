@@ -224,7 +224,49 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeWebRules(id string) (ob
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+func (s *DdosCooServiceV2) DescribeDomainResourceDescribeDomainCcProtectSwitch(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domains.1"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeDomainCcProtectSwitch"
 
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.ProtectSwitchList[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ProtectSwitchList[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
 func (s *DdosCooServiceV2) DescribeDomainResourceDescribeHeaders(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}

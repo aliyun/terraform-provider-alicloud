@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -27,14 +26,44 @@ func resourceAliCloudDdosCooDomainResource() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"ai_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"watch", "defense"}, false),
+			},
+			"ai_template": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"level30", "level60", "level90"}, false),
+			},
+			"black_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"bw_list_enable": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntInSlice([]int{0, 1}),
+			},
+			"cc_global_switch": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"close", "open"}, false),
+			},
 			"cert": {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
 			},
 			"cert_identifier": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
 			},
 			"cert_name": {
 				Type:     schema.TypeString,
@@ -115,6 +144,11 @@ func resourceAliCloudDdosCooDomainResource() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
+			"white_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -133,14 +167,20 @@ func resourceAliCloudDdosCooDomainResourceCreate(d *schema.ResourceData, meta in
 		request["Domain"] = v
 	}
 
+	if v, ok := d.GetOk("instance_ids"); ok {
+		instanceIdsMapsArray := convertToInterfaceArray(v)
+
+		request["InstanceIds"] = instanceIdsMapsArray
+	}
+
 	if v, ok := d.GetOk("proxy_types"); ok {
 		proxyTypesMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
-			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["ProxyPorts"] = convertToInterfaceArray(dataLoopTmp["proxy_ports"])
-			dataLoopMap["ProxyType"] = dataLoopTmp["proxy_type"]
-			proxyTypesMapsArray = append(proxyTypesMapsArray, dataLoopMap)
+		for _, dataLoop1 := range convertToInterfaceArray(v) {
+			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Map := make(map[string]interface{})
+			dataLoop1Map["ProxyPorts"] = convertToInterfaceArray(dataLoop1Tmp["proxy_ports"])
+			dataLoop1Map["ProxyType"] = dataLoop1Tmp["proxy_type"]
+			proxyTypesMapsArray = append(proxyTypesMapsArray, dataLoop1Map)
 		}
 		request["ProxyTypes"] = proxyTypesMapsArray
 	}
@@ -150,12 +190,6 @@ func resourceAliCloudDdosCooDomainResourceCreate(d *schema.ResourceData, meta in
 		realServersMapsArray := convertToInterfaceArray(v)
 
 		request["RealServers"] = realServersMapsArray
-	}
-
-	if v, ok := d.GetOk("instance_ids"); ok {
-		instanceIdsMapsArray := convertToInterfaceArray(v)
-
-		request["InstanceIds"] = instanceIdsMapsArray
 	}
 
 	if v, ok := d.GetOk("https_ext"); ok {
@@ -204,6 +238,12 @@ func resourceAliCloudDdosCooDomainResourceRead(d *schema.ResourceData, meta inte
 	d.Set("rs_type", objectRaw["RsType"])
 	d.Set("domain", objectRaw["Domain"])
 
+	blackListRaw := make([]interface{}, 0)
+	if objectRaw["BlackList"] != nil {
+		blackListRaw = convertToInterfaceArray(objectRaw["BlackList"])
+	}
+
+	d.Set("black_list", blackListRaw)
 	instanceIdsRaw := make([]interface{}, 0)
 	if objectRaw["InstanceIds"] != nil {
 		instanceIdsRaw = convertToInterfaceArray(objectRaw["InstanceIds"])
@@ -236,23 +276,37 @@ func resourceAliCloudDdosCooDomainResourceRead(d *schema.ResourceData, meta inte
 	}
 
 	d.Set("real_servers", realServersRaw)
+	whiteListRaw := make([]interface{}, 0)
+	if objectRaw["WhiteList"] != nil {
+		whiteListRaw = convertToInterfaceArray(objectRaw["WhiteList"])
+	}
+
+	d.Set("white_list", whiteListRaw)
 
 	objectRaw, err = ddosCooServiceV2.DescribeDomainResourceDescribeWebRules(d.Id())
-	if err != nil {
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
 	d.Set("cert_name", objectRaw["UserCertName"])
 	d.Set("domain", objectRaw["Domain"])
 
-	objectRaw, err = ddosCooServiceV2.DescribeDomainResourceDescribeHeaders(d.Id())
-	if err != nil {
+	objectRaw, err = ddosCooServiceV2.DescribeDomainResourceDescribeDomainCcProtectSwitch(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	if objectRaw["Headers"] != nil {
-		d.Set("custom_headers", convertObjectToJsonString(objectRaw["Headers"]))
+	d.Set("ai_mode", objectRaw["AiMode"])
+	d.Set("ai_template", objectRaw["AiTemplate"])
+	d.Set("bw_list_enable", objectRaw["BlackWhiteListEnable"])
+	d.Set("cc_global_switch", objectRaw["CcGlobalSwitch"])
+
+	objectRaw, err = ddosCooServiceV2.DescribeDomainResourceDescribeHeaders(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
 	}
+
+	d.Set("custom_headers", convertObjectToJsonString(objectRaw["Headers"]))
 
 	return nil
 }
@@ -270,12 +324,36 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Domain"] = d.Id()
+	if !d.IsNewResource() && d.HasChange("instance_ids") {
+		update = true
+	}
+	if v, ok := d.GetOk("instance_ids"); ok || d.HasChange("instance_ids") {
+		instanceIdsMapsArray := convertToInterfaceArray(v)
+
+		request["InstanceIds"] = instanceIdsMapsArray
+	}
+
+	if !d.IsNewResource() && d.HasChange("proxy_types") {
+		update = true
+	}
+	if v, ok := d.GetOk("proxy_types"); ok || d.HasChange("proxy_types") {
+		proxyTypesMapsArray := make([]interface{}, 0)
+		for _, dataLoop1 := range convertToInterfaceArray(v) {
+			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Map := make(map[string]interface{})
+			dataLoop1Map["ProxyPorts"] = convertToInterfaceArray(dataLoop1Tmp["proxy_ports"])
+			dataLoop1Map["ProxyType"] = dataLoop1Tmp["proxy_type"]
+			proxyTypesMapsArray = append(proxyTypesMapsArray, dataLoop1Map)
+		}
+		request["ProxyTypes"] = proxyTypesMapsArray
+	}
 
 	if !d.IsNewResource() && d.HasChange("real_servers") {
 		update = true
 	}
-	if v, ok := d.GetOk("real_servers"); ok {
-		realServersMapsArray := v.(*schema.Set).List()
+	if v, ok := d.GetOk("real_servers"); ok || d.HasChange("real_servers") {
+		realServersMapsArray := convertToInterfaceArray(v)
+
 		request["RealServers"] = realServersMapsArray
 	}
 
@@ -283,29 +361,6 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	request["RsType"] = d.Get("rs_type")
-	if !d.IsNewResource() && d.HasChange("proxy_types") {
-		update = true
-	}
-	if v, ok := d.GetOk("proxy_types"); ok {
-		proxyTypesMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range v.(*schema.Set).List() {
-			dataLoop1Tmp := dataLoop1.(map[string]interface{})
-			dataLoop1Map := make(map[string]interface{})
-			dataLoop1Map["ProxyType"] = dataLoop1Tmp["proxy_type"]
-			dataLoop1Map["ProxyPorts"] = dataLoop1Tmp["proxy_ports"].(*schema.Set).List()
-			proxyTypesMapsArray = append(proxyTypesMapsArray, dataLoop1Map)
-		}
-		request["ProxyTypes"] = proxyTypesMapsArray
-	}
-
-	if !d.IsNewResource() && d.HasChange("instance_ids") {
-		update = true
-	}
-	if v, ok := d.GetOk("instance_ids"); ok {
-		instanceIdsMapsArray := v.(*schema.Set).List()
-		request["InstanceIds"] = instanceIdsMapsArray
-	}
-
 	if !d.IsNewResource() && d.HasChange("https_ext") {
 		update = true
 		request["HttpsExt"] = d.Get("https_ext")
@@ -362,22 +417,6 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Domain"] = d.Id()
-
-	if d.HasChange("cert_name") {
-		update = true
-		request["CertName"] = d.Get("cert_name")
-	}
-
-	if d.HasChange("cert") {
-		update = true
-		request["Cert"] = d.Get("cert")
-	}
-
-	if d.HasChange("key") {
-		update = true
-		request["Key"] = d.Get("key")
-	}
-
 	if d.HasChange("cert_region") {
 		update = true
 		request["CertRegion"] = d.Get("cert_region")
@@ -386,6 +425,21 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 	if d.HasChange("cert_identifier") {
 		update = true
 		request["CertIdentifier"] = d.Get("cert_identifier")
+	}
+
+	if d.HasChange("key") {
+		update = true
+		request["Key"] = d.Get("key")
+	}
+
+	if d.HasChange("cert") {
+		update = true
+		request["Cert"] = d.Get("cert")
+	}
+
+	if d.HasChange("cert_name") {
+		update = true
+		request["CertName"] = d.Get("cert_name")
 	}
 
 	if update {
@@ -406,7 +460,6 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-
 	update = false
 	action = "ModifyHeaders"
 	request = make(map[string]interface{})
@@ -417,6 +470,158 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	request["CustomHeaders"] = d.Get("custom_headers")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "ModifyWebAIProtectMode"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domain"] = d.Id()
+	request["RegionId"] = client.RegionId
+	config := make(map[string]interface{})
+
+	if d.HasChange("ai_template") {
+		update = true
+	}
+	if v, ok := d.GetOk("ai_template"); ok {
+		config["AiTemplate"] = v
+	}
+
+	if d.HasChange("ai_mode") {
+		update = true
+	}
+	if v, ok := d.GetOk("ai_mode"); ok {
+		config["AiMode"] = v
+	}
+
+	request["Config"] = convertObjectToJsonString(config)
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "ConfigDomainSecurityProfile"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domain"] = d.Id()
+
+	ddosCooServiceV2 := DdosCooServiceV2{client}
+
+	objectRaw, err := ddosCooServiceV2.DescribeDomainResourceDescribeDomainCcProtectSwitch(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	v, ok := d.GetOkExists("bw_list_enable")
+	if fmt.Sprint(objectRaw["BlackWhiteListEnable"]) != fmt.Sprint(d.Get("bw_list_enable")) && ok {
+		update = true
+
+		config = make(map[string]interface{})
+		config["bwlist_enable"] = v
+		request["Config"] = convertObjectToJsonString(config)
+	}
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "ConfigWebIpSet"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domain"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("black_list") {
+		update = true
+	}
+	if v, ok := d.GetOk("black_list"); ok || d.HasChange("black_list") {
+		blackListMapsArray := convertToInterfaceArray(v)
+
+		request["BlackList"] = blackListMapsArray
+	}
+
+	if d.HasChange("white_list") {
+		update = true
+	}
+	if v, ok := d.GetOk("white_list"); ok || d.HasChange("white_list") {
+		whiteListMapsArray := convertToInterfaceArray(v)
+
+		request["WhiteList"] = whiteListMapsArray
+	}
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "ModifyWebCCGlobalSwitch"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domain"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("cc_global_switch") {
+		update = true
+	}
+	request["CcGlobalSwitch"] = d.Get("cc_global_switch")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
