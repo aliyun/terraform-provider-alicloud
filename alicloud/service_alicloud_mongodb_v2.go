@@ -307,6 +307,38 @@ func (s *MongodbServiceV2) DescribeAuditPolicyDescribeAuditPolicy(id string) (ob
 	return response, nil
 }
 
+func (s *MongodbServiceV2) DescribeAuditPolicyDescribeAuditLogFilter(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DBInstanceId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeAuditLogFilter"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
 func (s *MongodbServiceV2) MongodbAuditPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.MongodbAuditPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeMongodbAuditPolicy)
 }
