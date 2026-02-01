@@ -1512,7 +1512,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_market_order":                                          resourceAlicloudMarketOrder(),
 			"alicloud_adb_cluster":                                           resourceAliCloudAdbDbCluster(),
 			"alicloud_adb_backup_policy":                                     resourceAlicloudAdbBackupPolicy(),
-			"alicloud_adb_account":                                           resourceAlicloudAdbAccount(),
+			"alicloud_adb_account":                                           resourceAliCloudAdbAccount(),
 			"alicloud_adb_connection":                                        resourceAlicloudAdbConnection(),
 			"alicloud_cen_flowlog":                                           resourceAliCloudCenFlowLog(),
 			"alicloud_kms_secret":                                            resourceAliCloudKmsSecret(),
