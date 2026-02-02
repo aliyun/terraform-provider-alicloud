@@ -173,7 +173,6 @@ func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyDelete(d *schema.R
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

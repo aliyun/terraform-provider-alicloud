@@ -84,11 +84,11 @@ variable "region_id" {
   default = "cn-beijing"
 }
 
-variable "vsw_ip_range_i" {
+variable "vsw__ip_range_i" {
   default = "172.16.1.0/24"
 }
 
-variable "vpc_ip_range" {
+variable "vpc__ip_range" {
   default = "172.16.0.0/12"
 }
 
@@ -97,13 +97,13 @@ variable "zone_id_i" {
 }
 
 resource "alicloud_vpc" "defaultktKLuM" {
-  cidr_block = var.vpc_ip_range
+  cidr_block = var.vpc__ip_range
 }
 
 resource "alicloud_vswitch" "defaultTQWN3k" {
   vpc_id     = alicloud_vpc.defaultktKLuM.id
   zone_id    = var.zone_id_i
-  cidr_block = var.vsw_ip_range_i
+  cidr_block = var.vsw__ip_range_i
 }
 
 resource "alicloud_click_house_enterprise_db_cluster" "default1tTLwe" {
