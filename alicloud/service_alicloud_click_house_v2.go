@@ -384,6 +384,7 @@ func (s *ClickHouseServiceV2) DescribeAsyncDescribeDBInstanceAttribute(d *schema
 }
 
 // DescribeAsyncDescribeDBInstanceAttribute >>> Encapsulated.
+
 // DescribeClickHouseEnterpriseDbClusterBackupPolicy <<< Encapsulated get interface for ClickHouse EnterpriseDbClusterBackupPolicy.
 
 func (s *ClickHouseServiceV2) DescribeClickHouseEnterpriseDbClusterBackupPolicy(id string) (object map[string]interface{}, err error) {
@@ -424,15 +425,18 @@ func (s *ClickHouseServiceV2) DescribeClickHouseEnterpriseDbClusterBackupPolicy(
 }
 
 func (s *ClickHouseServiceV2) ClickHouseEnterpriseDbClusterBackupPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ClickHouseEnterpriseDbClusterBackupPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeClickHouseEnterpriseDbClusterBackupPolicy)
+}
+
+func (s *ClickHouseServiceV2) ClickHouseEnterpriseDbClusterBackupPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeClickHouseEnterpriseDbClusterBackupPolicy(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
