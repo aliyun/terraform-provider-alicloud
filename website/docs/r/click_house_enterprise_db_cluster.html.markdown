@@ -114,8 +114,8 @@ The following arguments are supported:
 * `node_scale_max` - (Optional, Computed, Int, Available since v1.270.0) Maximum value for serverless node auto scaling. Valid values range from 4 to 32 and must be greater than the minimum value.  
 * `node_scale_min` - (Optional, Computed, Int, Available since v1.270.0) The minimum value for serverless node auto-scaling. Valid values: 4–32.
 * `resource_group_id` - (Optional, Computed, Available since v1.270.0) Resource group ID of the cluster.
-* `scale_max` - (Optional) The maximum value for serverless auto scaling. This parameter is not recommended. We recommend that you use NodeCount, NodeScaleMin, and NodeScaleMax to configure auto scaling capabilities.
-* `scale_min` - (Optional) The minimum value for serverless auto scaling. This parameter is not recommended. We recommend that you use NodeCount, NodeScaleMin, and NodeScaleMax to configure auto scaling capabilities.
+* `scale_max` - (Optional, Computed) The maximum value for serverless auto scaling. This parameter is not recommended. We recommend that you use NodeCount, NodeScaleMin, and NodeScaleMax to configure auto scaling capabilities.
+* `scale_min` - (Optional, Computed) The minimum value for serverless auto scaling. This parameter is not recommended. We recommend that you use NodeCount, NodeScaleMin, and NodeScaleMax to configure auto scaling capabilities.
 * `tags` - (Optional, Map, Available since v1.270.0) Tag information.  
 * `vpc_id` - (Optional, ForceNew) The VPC ID.
 * `vswitch_id` - (Optional, ForceNew) vSwitch ID.
