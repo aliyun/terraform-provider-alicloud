@@ -72,11 +72,12 @@ resource "alicloud_vswitch" "defaultkCZhNu" {
 }
 
 resource "alicloud_click_house_enterprise_db_cluster" "defaultQ5vukB" {
-  zone_id    = alicloud_vswitch.defaultkCZhNu.zone_id
-  vpc_id     = alicloud_vpc.defaultp2mwWM.id
-  scale_min  = "8"
-  scale_max  = "8"
-  vswitch_id = alicloud_vswitch.defaultkCZhNu.id
+  zone_id        = alicloud_vswitch.defaultkCZhNu.zone_id
+  vpc_id         = alicloud_vpc.defaultp2mwWM.id
+  node_scale_min = "4"
+  node_scale_max = "4"
+  node_count     = "2"
+  vswitch_id     = alicloud_vswitch.defaultkCZhNu.id
 }
 
 
@@ -104,7 +105,11 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above. The value is formulated as `<db_instance_id>:<computing_group_id>`.
-* `computing_group_id` - Computing Group ID.
+* `computing_group_endpoint_names` - A list of computing group endpoint names.
+* `computing_group_endpoints` - List of computing group endpoints.
+* `computing_group_id` - A resource property field representing the primary resource ID.
+* `computing_group_public_endpoints` - List of public endpoints for the computing group.
+* `computing_group_status` - Computing group status.
 
 ## Timeouts
 
