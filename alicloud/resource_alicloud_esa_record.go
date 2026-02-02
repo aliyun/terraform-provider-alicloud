@@ -50,7 +50,7 @@ func resourceAliCloudEsaRecord() *schema.Resource {
 						"auth_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"public", "private", "private_same_account"}, false),
+							ValidateFunc: StringInSlice([]string{"public", "private", "private_same_account", "private_cross_account"}, false),
 						},
 						"access_key": {
 							Type:      schema.TypeString,

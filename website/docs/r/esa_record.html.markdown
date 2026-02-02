@@ -106,7 +106,7 @@ The auth_conf supports the following:
   - `public`: public read. Select this value when the origin type is OSS or S3 and the origin access is public read.
   - `private`: private read. Select this value when the origin type is S3 and the origin access is private read.
   - `private_same_account`: private read under the same account. Select this value when the origin type is OSS, the origins belong to the same Alibaba Cloud account, and the origins have private read access.
-  - `private_cross_account`: private read cross accounts. Select this value when the origin type is OSS, the origins belong to different Alibaba Cloud accounts, and the origins have private read access.
+  - `private_cross_account`(Available since v1.270.0): private read cross accounts. Select this value when the origin type is OSS, the origins belong to different Alibaba Cloud accounts, and the origins have private read access.
 * `region` - (Optional) The region of the origin. If the origin type is S3, you must specify this value. You can get the region information from the official website of S3.
 * `secret_key` - (Optional) The secret access key of the account to which the origin server belongs. This parameter is required when the SourceType is OSS, and AuthType is private_same_account, or when the SourceType is S3 and AuthType is private.
 * `version` - (Optional) The version of the signature algorithm. This parameter is required when the origin type is S3 and AuthType is private. The following two types are supported:
