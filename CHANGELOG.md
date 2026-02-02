@@ -1,32 +1,35 @@
-## 1.270.0 (Unreleased)
+## 1.271.0 (Unreleased)
+## 1.270.0 (February 03, 2026)
 
-- **New Resource:** `alicloud_cloud_monitor_service_agent_config` [GH-9429]
-- **New Resource:** `alicloud_click_house_enterprise_db_cluster_computing_group` [GH-9435]
-- **New Resource:** `alicloud_ssl_certificates_service_pca_cert` [GH-9453]
-- **New Resource:** `alicloud_max_compute_tenant_role_user_attachment` [GH-9454]
+- **New Resource:** `alicloud_cloud_monitor_service_agent_config` ([#9429](https://github.com/aliyun/terraform-provider-alicloud/issues/9429))
+- **New Resource:** `alicloud_click_house_enterprise_db_cluster_computing_group` ([#9435](https://github.com/aliyun/terraform-provider-alicloud/issues/9435))
+- **New Resource:** `alicloud_ssl_certificates_service_pca_cert` ([#9453](https://github.com/aliyun/terraform-provider-alicloud/issues/9453))
+- **New Resource:** `alicloud_max_compute_tenant_role_user_attachment` ([#9454](https://github.com/aliyun/terraform-provider-alicloud/issues/9454))
 
 ENHANCEMENTS:
 
-- client: Add computenestsupplier endpoint. [GH-9432]
-- resource/alicloud_click_house_enterprise_db_cluster: Added the field description, node_count, node_scale_max, node_scale_min, resource_group_id, tags. [GH-9433]
-- resource/alicloud_esa_cache_rule: Support follow_origin_override for edge_cache_mode. [GH-9437]
-- resource/alicloud_fcv3_custom_domain: Added the field cors_config. [GH-9447]
-- resource/alicloud_alikafka_sasl_acl: Refactored the resource alicloud_alikafka_sasl_acl; Added the field acl_permission_type, acl_operation_types. [GH-9450]
-- resource/alicloud_click_house_enterprise_db_cluster: Added the field category, charge_type, computing_group_ids, endpoints. [GH-9455]
-- resource/alicloud_ddoscoo_domain_resource: Added the field ai_mode, ai_template, black_list, bw_list_enable, cc_global_switch, white_list. [GH-9460]
-- resource/alicloud_mongodb_audit_policy: Added the field filter. [GH-9462]
-- resource/alicloud_click_house_enterprise_db_cluster_backup_policy: improved testcase and document. [GH-9464]
-- resource/alicloud_esa_record: Supported auth_type set to private_cross_account. [GH-9465]
-- data-source/alicloud_cr_ee_repos: Added retry strategy; Improved alicloud_cr_ee_repos testcase and document. [GH-9452]
+- client: Add computenestsupplier endpoint. ([#9432](https://github.com/aliyun/terraform-provider-alicloud/issues/9432))
+- resource/alicloud_click_house_enterprise_db_cluster: Added the field description, node_count, node_scale_max, node_scale_min, resource_group_id, tags. ([#9433](https://github.com/aliyun/terraform-provider-alicloud/issues/9433))
+- resource/alicloud_esa_cache_rule: Support follow_origin_override for edge_cache_mode. ([#9437](https://github.com/aliyun/terraform-provider-alicloud/issues/9437))
+- resource/alicloud_fcv3_custom_domain: Added the field cors_config. ([#9447](https://github.com/aliyun/terraform-provider-alicloud/issues/9447))
+- resource/alicloud_alikafka_sasl_acl: Refactored the resource alicloud_alikafka_sasl_acl; Added the field acl_permission_type, acl_operation_types. ([#9450](https://github.com/aliyun/terraform-provider-alicloud/issues/9450))
+- resource/alicloud_click_house_enterprise_db_cluster: Added the field category, charge_type, computing_group_ids, endpoints. ([#9455](https://github.com/aliyun/terraform-provider-alicloud/issues/9455))
+- resource/alicloud_ehpc_cluster_v2: Added the field key_pair_name. ([#9457](https://github.com/aliyun/terraform-provider-alicloud/issues/9457))
+- resource/alicloud_ddoscoo_domain_resource: Added the field ai_mode, ai_template, black_list, bw_list_enable, cc_global_switch, white_list. ([#9460](https://github.com/aliyun/terraform-provider-alicloud/issues/9460))
+- resource/alicloud_mongodb_audit_policy: Added the field filter. ([#9462](https://github.com/aliyun/terraform-provider-alicloud/issues/9462))
+- resource/alicloud_click_house_enterprise_db_cluster_backup_policy: improved testcase and document. ([#9464](https://github.com/aliyun/terraform-provider-alicloud/issues/9464))
+- resource/alicloud_esa_record: Supported auth_type set to private_cross_account. ([#9465](https://github.com/aliyun/terraform-provider-alicloud/issues/9465))
+- resource/alicloud_click_house_enterprise_db_cluster: Mark scale_max and scale_min as computed. ([#9467](https://github.com/aliyun/terraform-provider-alicloud/issues/9467))
+- data-source/alicloud_cr_ee_repos: Added retry strategy; Improved alicloud_cr_ee_repos testcase and document. ([#9452](https://github.com/aliyun/terraform-provider-alicloud/issues/9452))
 
 BUG FIXES:
 
-- resource/alicloud_fcv3_functions: fix layers not mapped to the service response. [GH-9428]
-- resource/alicloud_vpc: Fixed the error of creating default vpc caused by state refresh. [GH-9436]
-- resource/alicloud_log_store: fix infrequent ttl set. [GH-9438]
-- resource/alicloud_cdn_domain_new: Fixed the update error caused by field scope. [GH-9439]
-- resource/alicloud_elasticsearch_instance: Fixed bug while creating prepaid instance. [GH-9440]
-- resource/alicloud_ssl_certificates_service_pca_certificate: Fixed the diff error caused by field crl_day. [GH-9451]
+- resource/alicloud_fcv3_functions: fix layers not mapped to the service response. ([#9428](https://github.com/aliyun/terraform-provider-alicloud/issues/9428))
+- resource/alicloud_vpc: Fixed the error of creating default vpc caused by state refresh. ([#9436](https://github.com/aliyun/terraform-provider-alicloud/issues/9436))
+- resource/alicloud_log_store: fix infrequent ttl set. ([#9438](https://github.com/aliyun/terraform-provider-alicloud/issues/9438))
+- resource/alicloud_cdn_domain_new: Fixed the update error caused by field scope. ([#9439](https://github.com/aliyun/terraform-provider-alicloud/issues/9439))
+- resource/alicloud_elasticsearch_instance: Fixed bug while creating prepaid instance. ([#9440](https://github.com/aliyun/terraform-provider-alicloud/issues/9440))
+- resource/alicloud_ssl_certificates_service_pca_certificate: Fixed the diff error caused by field crl_day. ([#9451](https://github.com/aliyun/terraform-provider-alicloud/issues/9451))
 
 ## 1.269.0 (January 26, 2026)
 
