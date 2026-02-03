@@ -268,51 +268,72 @@ func (s *CloudApiService) DescribeApiGatewayPluginAttachment(id string) (*clouda
 	return plugin, nil
 }
 
-func (s *CloudApiService) DescribeApiGatewayVpcAccess(id string) (*cloudapi.VpcAccessAttribute, error) {
-	vpc := &cloudapi.VpcAccessAttribute{}
-	request := cloudapi.CreateDescribeVpcAccessesRequest()
-	request.RegionId = s.client.RegionId
+func (s *CloudApiService) DescribeApiGatewayVpcAccess(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "DescribeVpcAccesses"
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
-		return vpc, WrapError(err)
+		return nil, WrapError(err)
 	}
-	var allVpcs []cloudapi.VpcAccessAttribute
 
+	request := map[string]interface{}{
+		"Name":       parts[0],
+		"VpcId":      parts[1],
+		"InstanceId": parts[2],
+		"Port":       parts[3],
+		"PageNumber": 1,
+		"PageSize":   PageSizeLarge,
+	}
+
+	idExist := false
 	for {
-		raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DescribeVpcAccesses(request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
-			return vpc, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*cloudapi.DescribeVpcAccessesResponse)
 
-		allVpcs = append(allVpcs, response.VpcAccessAttributes.VpcAccessAttribute...)
+		resp, err := jsonpath.Get("$.VpcAccessAttributes.VpcAccessAttribute", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VpcAccessAttributes.VpcAccessAttribute", response)
+		}
 
-		if len(allVpcs) < PageSizeLarge {
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(NotFoundErr("ApiGateway:VpcAccess", id), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["Name"]) == parts[0] && fmt.Sprint(v.(map[string]interface{})["VpcId"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["InstanceId"]) == parts[2] && fmt.Sprint(v.(map[string]interface{})["Port"]) == parts[3] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return vpc, WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
-	var filteredVpcsTemp []cloudapi.VpcAccessAttribute
-	for _, vpc := range allVpcs {
-		iPort, _ := strconv.Atoi(parts[3])
-		if vpc.Port == iPort && vpc.InstanceId == parts[2] && vpc.VpcId == parts[1] && vpc.Name == parts[0] {
-			filteredVpcsTemp = append(filteredVpcsTemp, vpc)
-		}
+	if !idExist {
+		return object, WrapErrorf(NotFoundErr("ApiGateway:VpcAccess", id), NotFoundWithResponse, response)
 	}
 
-	if len(filteredVpcsTemp) < 1 {
-		return vpc, WrapErrorf(NotFoundErr("ApiGatewayVpcAccess", id), NotFoundMsg, ProviderERROR)
-	}
-	return &filteredVpcsTemp[0], nil
+	return object, nil
 }
 
 func (s *CloudApiService) WaitForApiGatewayAppAttachment(id string, status Status, timeout int) (err error) {
