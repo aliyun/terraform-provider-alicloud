@@ -529,6 +529,19 @@ func resourceAliyunOtsSearchIndexRead(d *schema.ResourceData, meta interface{}) 
 	if err := d.Set("index_id", d.Id()); err != nil {
 		return WrapError(err)
 	}
+	instanceName, tableName, indexName, _, err := ParseIndexId(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("instance_name", instanceName); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("table_name", tableName); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("index_name", indexName); err != nil {
+		return WrapError(err)
+	}
 	if err := d.Set("create_time", idx.CreateTime); err != nil {
 		return WrapError(err)
 	}

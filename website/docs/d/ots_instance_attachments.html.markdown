@@ -13,7 +13,7 @@ This data source provides the ots instance attachments of the current Alibaba Cl
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_ots_instance_attachments" "attachments_ds" {
   instance_name = "sample-instance"
   name_regex    = "testvpc"

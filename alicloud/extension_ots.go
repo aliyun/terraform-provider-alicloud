@@ -113,6 +113,19 @@ func toInstanceInnerStatus(instanceOuterStatus Status) string {
 	}
 }
 
+// Takes the result of flatmap.Expand for an array of strings
+// and returns a []string
+func expandStringPointerList(configured []interface{}) []*string {
+	vs := make([]*string, 0, len(configured))
+	for _, v := range configured {
+		if v == nil {
+			continue
+		}
+		vs = append(vs, StringPointer(v.(string)))
+	}
+	return vs
+}
+
 type TunnelTypeString string
 
 const (
@@ -202,8 +215,11 @@ type RestOtsInstanceInfo struct {
 	NetworkTypeACL        []string         `json:"NetworkTypeACL" xml:"NetworkTypeACL"`
 	NetworkSourceACL      []string         `json:"NetworkSourceACL" xml:"NetworkSourceACL"`
 	Policy                string           `json:"Policy" xml:"Policy"`
-	PolicyVersion         int              `json:"PolicyVersion" xml:"PolicyVersion"`
+	PolicyVersion         int64            `json:"PolicyVersion" xml:"PolicyVersion"`
 	InstanceDescription   string           `json:"InstanceDescription" xml:"InstanceDescription"`
+	AliasName             string           `json:"AliasName" xml:"AliasName"`
+	PaymentType           string           `json:"PaymentType" xml:"PaymentType"`
+	ElasticVCUUpperLimit  float64          `json:"ElasticVCUUpperLimit" xml:"ElasticVCUUpperLimit"`
 	Quota                 RestOtsQuota     `json:"Quota" xml:"Quota"`
 	Tags                  []RestOtsTagInfo `json:"Tags" xml:"Tags"`
 }
