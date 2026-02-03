@@ -130,8 +130,8 @@ The following arguments are supported:
 * `db_minor_version` - (Optional, ForceNew, Available since 1.247.0) Database minor version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBMinorVersion`. This parameter takes effect only when `db_type` is MySQL and `db_version` is 8.0.
 * `db_node_class` - (Required) The db_node_class of cluster node.
 -> **NOTE:** Node specifications are divided into cluster version, single node version and History Library version. They can't change each other, but the general specification and exclusive specification of cluster version can be changed. 
-  From version 1.204.0, If you need to create a Serverless cluster with MySQL , `db_node_class` can be set to `polar.mysql.sl.small`.
-  From version 1.229.1, If you need to create a Serverless cluster with PostgreSQL 14 using the SENormal edition, `db_node_class` can be set to `polar.pg.sl.small.c`(x86 Architecture). Region can refer to the latest docs(https://help.aliyun.com/zh/polardb/polardb-for-postgresql/the-public-preview-of-polardb-for-postgresql-serverless-ends?spm=a2c4g.11186623.0.0.2e9f6cf0B4rIfC).
+  From version 1.204.0, If you need to create a Serverless cluster with MySQL , `db_node_class` can be set to `polar.mysql.sl.small` for enterprise edition, and `polar.mysql.sl.small.c` for standard edition.
+  From version 1.229.1, If you need to create a Serverless cluster with PostgreSQL, `db_node_class` can be set to `polar.pg.sl.small` for enterprise edition, and `polar.pg.sl.small.c` for standard edition. Region can refer to the latest docs(https://help.aliyun.com/zh/polardb/polardb-for-postgresql/the-public-preview-of-polardb-for-postgresql-serverless-ends?spm=a2c4g.11186623.0.0.2e9f6cf0B4rIfC).
 * `modify_type` - (Optional, Available since 1.71.2) Use as `db_node_class` change class, define upgrade or downgrade. Valid values are `Upgrade`, `Downgrade`, Default to `Upgrade`.
 * `db_node_count` - (Optional, Available since 1.95.0)Number of the PolarDB cluster nodes, default is 2(Each cluster must contain at least a primary node and a read-only node). Add/remove nodes by modifying this parameter, valid values: [2~16].  
 -> **NOTE:** To avoid adding or removing multiple read-only nodes by mistake, the system allows you to add or remove one read-only node at a time.
@@ -146,7 +146,7 @@ The following arguments are supported:
   Its value is same as `db_cluster_ip_array` sub-element `security_ips` value and its db_cluster_ip_array_name is "default".
 * `resource_group_id` (Optional, Computed, Available since 1.96.0) The ID of resource group which the PolarDB cluster belongs. If not specified, then it belongs to the default resource group.
 -> **NOTE:** From version 1.250.0, `resource_group_id` can be modified.
-* `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
+* `vswitch_id` - (Optional, Computed, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 -> **NOTE:** If vswitch_id is not specified, system will get a vswitch belongs to the user automatically.
 * `maintain_time` - (Optional) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
 * `description` - (Optional, Computed) The description of cluster.
@@ -199,7 +199,7 @@ The following arguments are supported:
 * `scale_max` - (Optional, Available since v1.204.0) The maximum number of PCUs per node for scaling. Valid values: 1 PCU to 32 PCUs when serverless_type is `AgileServerless` and 0 PCU to 8 PCUs when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
 * `scale_ro_num_min` - (Optional, Available since v1.204.0) The minimum number of read-only nodes for scaling. Valid values: 0 to 15 when serverless_type is `AgileServerless` and 0 to 7 when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
 * `scale_ro_num_max` - (Optional, Available since v1.204.0) The maximum number of read-only nodes for scaling. Valid values: 0 to 15 when serverless_type is `AgileServerless` and 0 to 7 when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
-* `allow_shut_down` - (Optional, Available since v1.204.0) Specifies whether to enable the no-activity suspension feature. Default value: false. Valid values are `true`, `false`. This parameter is valid only for serverless clusters.
+* `allow_shut_down` - (Optional, Computed, Available since v1.204.0) Specifies whether to enable the no-activity suspension feature. Default value: false. Valid values are `true`, `false`. This parameter is valid only for serverless clusters.
 * `seconds_until_auto_pause` - (Optional, Computed, Available since v1.204.0) The detection period for No-activity Suspension. Valid values: 300 to 86,4005. Unit: seconds. The detection duration must be a multiple of 300 seconds. This parameter is valid only for serverless clusters.
 * `scale_ap_ro_num_min` - (Optional, Available since v1.211.1) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
 * `scale_ap_ro_num_max` - (Optional, Available since v1.211.1) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
@@ -223,7 +223,8 @@ The following arguments are supported:
   -> **NOTE:** This parameter takes effect only if you do not set `creation_option` to CreateGdnStandby and you set `db_type` to MySQL and `db_version` to 8.0. To enable X-Engine on a node, make sure that the memory of the node is greater than or equal to 8 GB in size.
 * `loose_xengine_use_memory_pct` - (Optional, Available since v1.232.0) Set the ratio to enable the X-Engine storage engine. Valid values: 10 to 90.
   -> **NOTE:** When the parameter `loose_xengine` is ON, `loose_xengine_use_memory_pct` takes effect.
-* `db_node_num` - (Optional, Available since 1.210.0) The number of Standard Edition nodes. Default value: `1`. Valid values are `1`, `2`. From version 1.235.0, Valid values for PolarDB for MySQL Standard Edition: `1` to `8`. Valid values for PolarDB for MySQL Enterprise Edition: `1` to `16`.
+* `db_node_num` - (Optional, Available since 1.210.0) The number of Standard and Enterprise Edition nodes. Default value: `1` for Standard Edition, `2` for Enterprise Edition. Valid values are `1`, `2`. From version 1.235.0, Valid values for PolarDB for MySQL Standard Edition: `1` to `8`. Valid values for PolarDB for MySQL Enterprise Edition: `1` to `16`.
+  -> **NOTE:** This parameter only takes effect on creation. To further manage target db node number, please refer to parameter `db_node_count`.
 * `parameter_group_id` - (Optional, Available since 1.210.0) The ID of the parameter template
   -> **NOTE:** You can call the [DescribeParameterGroups](https://www.alibabacloud.com/help/en/polardb/latest/describeparametergroups) operation to query the details of all parameter templates of a specified region, such as the ID of a parameter template.
 * `lower_case_table_names`  - (Optional, ForceNew, Computed, Available since 1.210.0)  Specifies whether the table names are case-sensitive. Default value: `1`.  Valid values are `1`, `0`.
@@ -235,6 +236,7 @@ The following arguments are supported:
 * `target_db_revision_version_code` - (Optional, Available since v1.216.0) The Version Code of the target version, whose parameter values can be obtained from the [DescribeDBClusterVersion](https://www.alibabacloud.com/help/en/polardb/latest/describedbclusterversion) interface.
 * `compress_storage` - (Optional, Available since v1.232.0) Enable storage compression function. The value of this parameter is `ON`. Only MySQL supports.
   -> **NOTE:** When the value of db_type is not MySQL, the value of creation_option is neither empty nor Normal, and the value of storage_type is not PSL4, this field will be ignored.
+* `global_security_group_list` - (Optional, List, Available since v1.271.0) The list of global security ip group ids.
 ### `db_cluster_ip_array`
 
 The db_cluster_ip_array supports the following:
