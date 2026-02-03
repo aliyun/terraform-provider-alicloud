@@ -12,6 +12,7 @@ import (
 
 // Test CloudFirewall PolicyAdvancedConfig. >>> Resource test cases, automatically generated.
 // Case 云防火墙Terraform启用严格模式Strict Mode 10921
+// lintignore: AT001
 func TestAccAliCloudCloudFirewallPolicyAdvancedConfig_basic10921(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_policy_advanced_config.default"

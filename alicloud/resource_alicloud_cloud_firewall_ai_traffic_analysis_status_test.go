@@ -12,6 +12,7 @@ import (
 
 // Test CloudFirewall AiTrafficAnalysisStatus. >>> Resource test cases, automatically generated.
 // Case AiTrafficAnalysisStatus 11208
+// lintignore: AT001
 func TestAccAliCloudCloudFirewallAiTrafficAnalysisStatus_basic11208(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_ai_traffic_analysis_status.default"

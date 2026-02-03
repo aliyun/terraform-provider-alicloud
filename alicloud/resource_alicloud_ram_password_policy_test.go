@@ -11,6 +11,7 @@ import (
 
 // Test Ram PasswordPolicy. >>> Resource test cases, automatically generated.
 // Case  PasswordPolicy测试 9035
+// lintignore: AT001
 func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_password_policy.default"

@@ -11,6 +11,7 @@ import (
 
 // Test Oss BucketVersioning. >>> Resource test cases, automatically generated.
 // Case Versioning测试 6441
+// lintignore: AT001
 func TestAccAliCloudOssBucketVersioning_basic6441(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_versioning.default"
@@ -109,6 +110,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 }
 
 // Case Versioning测试 6441  twin
+// lintignore: AT001
 func TestAccAliCloudOssBucketVersioning_basic6441_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_versioning.default"

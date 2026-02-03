@@ -11,6 +11,7 @@ import (
 
 // Test Oss BucketAccessMonitor. >>> Resource test cases, automatically generated.
 // Case AccessMonitor测试 6451
+// lintignore: AT001
 func TestAccAliCloudOssBucketAccessMonitor_basic6451(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_access_monitor.default"
@@ -92,6 +93,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 }
 
 // Case AccessMonitor测试 6451  twin
+// lintignore: AT001
 func TestAccAliCloudOssBucketAccessMonitor_basic6451_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_access_monitor.default"

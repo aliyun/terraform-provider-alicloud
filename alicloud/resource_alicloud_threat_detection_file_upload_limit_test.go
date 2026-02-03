@@ -11,6 +11,7 @@ import (
 
 // Test ThreatDetection FileUploadLimit. >>> Resource test cases, automatically generated.
 // Case 4279
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionFileUploadLimit_basic4279(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_file_upload_limit.default"
@@ -83,6 +84,7 @@ variable "name" {
 }
 
 // Case 4279  twin
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionFileUploadLimit_basic4279_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_file_upload_limit.default"

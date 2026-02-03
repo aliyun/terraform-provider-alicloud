@@ -167,6 +167,7 @@ data "alicloud_resource_manager_resource_groups" "default"{
 }
 
 // Case 4594
+// lintignore: AT001
 func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_vvp_instance.default"
@@ -340,6 +341,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 }
 
 // Case 4594  twin
+// lintignore: AT001
 func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_vvp_instance.default"

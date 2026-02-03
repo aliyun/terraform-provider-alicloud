@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 	var v ecs.ReservedInstance
 
@@ -170,6 +171,7 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudReservedInstanceBasic1(t *testing.T) {
 	var v ecs.ReservedInstance
 

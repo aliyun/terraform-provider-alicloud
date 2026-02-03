@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// lintignore: AT001
 func TestAccAliCloudWafInstance_basic(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
@@ -170,6 +171,7 @@ func TestAccAliCloudWafInstance_basic(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudWafInstance_intl(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})

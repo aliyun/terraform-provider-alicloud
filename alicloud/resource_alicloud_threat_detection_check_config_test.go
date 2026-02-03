@@ -10,6 +10,7 @@ import (
 )
 
 // Case 检查项扫描策略配置20251209005 12031
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionCheckConfig_basic12031(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_check_config.default"

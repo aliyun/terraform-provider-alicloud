@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAliCloudEfloInvocation_basic10348(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eflo_invocation.default"

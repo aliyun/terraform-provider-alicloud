@@ -11,6 +11,7 @@ import (
 
 // Test CloudPhone Instance. >>> Resource test cases, automatically generated.
 // Case chuyuan_CreateInstance_prod 9932
+// lintignore: AT001
 func TestAccAliCloudCloudPhoneInstance_basic9932(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_phone_instance.default"

@@ -11,6 +11,7 @@ import (
 
 // Test Quotas TemplateService. >>> Resource test cases, automatically generated.
 // Case 启用模版服务测试case_线上 6241
+// lintignore: AT001
 func TestAccAliCloudQuotasTemplateService_basic6241(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_service.default"
@@ -29,7 +30,6 @@ func TestAccAliCloudQuotasTemplateService_basic6241(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		// CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -74,6 +74,7 @@ variable "name" {
 }
 
 // Case 启用模版服务测试case 5843
+// lintignore: AT001
 func TestAccAliCloudQuotasTemplateService_basic5843(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_service.default"
@@ -92,7 +93,6 @@ func TestAccAliCloudQuotasTemplateService_basic5843(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

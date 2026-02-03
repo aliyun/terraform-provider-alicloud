@@ -12,6 +12,7 @@ import (
 
 // Test CloudFirewall ThreatIntelligenceSwitch. >>> Resource test cases, automatically generated.
 // Case ThreatIntelligenceSwitch 11212
+// lintignore: AT001
 func TestAccAliCloudCloudFirewallThreatIntelligenceSwitch_basic11212(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_threat_intelligence_switch.default"

@@ -11,6 +11,7 @@ import (
 
 // Test Oss BucketAcl. >>> Resource test cases, automatically generated.
 // Case 测试BucketAcl 6192
+// lintignore: AT001
 func TestAccAliCloudOssBucketAcl_basic6192(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_acl.default"
@@ -112,6 +113,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 }
 
 // Case 测试BucketAcl 6192  twin
+// lintignore: AT001
 func TestAccAliCloudOssBucketAcl_basic6192_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_acl.default"

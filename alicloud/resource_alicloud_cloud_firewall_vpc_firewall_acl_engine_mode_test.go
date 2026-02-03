@@ -11,6 +11,7 @@ import (
 
 // Test CloudFirewall VpcFirewallAclEngineMode. >>> Resource test cases, automatically generated.
 // Case ACL引擎管理-VPC边界防火墙 12344
+// lintignore: AT001
 func TestAccAliCloudCloudFirewallVpcFirewallAclEngineMode_basic12344(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_vpc_firewall_acl_engine_mode.default"

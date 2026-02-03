@@ -305,6 +305,7 @@ func TestAccAliCloudVPNConnection_basic2(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1316,6 +1317,7 @@ resource "alicloud_vpn_customer_gateway" "changeCustomerGateway" {
 }
 
 // Case VpnConnection测试用例---单隧道-2 5663
+// lintignore: AT001
 func TestAccAliCloudVPNGatewayVpnConnection_basic5663(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_connection.default"
@@ -2165,6 +2167,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5678_twin(t *testing.T) {
 }
 
 // Case VpnConnection测试用例---双Tunnel 3783  twin
+// lintignore: AT001
 func TestAccAliCloudVPNGatewayVpnConnection_basic3783_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_connection.default"

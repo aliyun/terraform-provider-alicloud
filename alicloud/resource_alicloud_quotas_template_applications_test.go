@@ -11,6 +11,7 @@ import (
 
 // Test Quotas TemplateApplications. >>> Resource test cases, automatically generated.
 // Case 5294
+// lintignore: AT001
 func TestAccAliCloudQuotasTemplateApplications_basic5294(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_applications.default"
@@ -100,6 +101,7 @@ resource "alicloud_resource_manager_account" "account" {
 }
 
 // Case 5284
+// lintignore: AT001
 func TestAccAliCloudQuotasTemplateApplications_basic5284(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_applications.default"
@@ -174,6 +176,7 @@ resource "alicloud_resource_manager_account" "account" {
 }
 
 // Case 5278
+// lintignore: AT001
 func TestAccAliCloudQuotasTemplateApplications_basic5278(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_applications.default"

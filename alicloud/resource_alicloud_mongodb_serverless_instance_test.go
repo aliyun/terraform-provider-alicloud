@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// lintignore: AT001
 func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_serverless_instance.default"
@@ -172,6 +173,7 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func SkipTestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_serverless_instance.default"

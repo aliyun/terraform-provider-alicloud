@@ -38,6 +38,7 @@ func TestAccAlicloudVPNPbrRouteEntry_basic0(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

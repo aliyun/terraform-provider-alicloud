@@ -11,6 +11,7 @@ import (
 
 // Test ThreatDetection AssetSelectionConfig. >>> Resource test cases, automatically generated.
 // Case AssetSelectionConfig 9090
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionAssetSelectionConfig_basic9090(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_asset_selection_config.default"

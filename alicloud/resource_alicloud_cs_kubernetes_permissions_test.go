@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAliCloudCSKubernetesPermissions_basic(t *testing.T) {
 	var v []*cs.GrantPermissionsRequestBody
 	resourceId := "alicloud_cs_kubernetes_permissions.default"
@@ -35,7 +36,6 @@ func TestAccAliCloudCSKubernetesPermissions_basic(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

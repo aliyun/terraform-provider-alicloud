@@ -10,6 +10,7 @@ import (
 )
 
 // Skip Test,Because each account can only be opened once
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -29,7 +30,6 @@ func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -144,6 +144,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -615,6 +616,7 @@ variable "name" {
 }
 
 // Case 4253  twin
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -705,6 +707,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -804,6 +807,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic4253_twin_fix(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -875,6 +879,7 @@ func TestAccAliCloudThreatDetectionInstance_basic4253_twin_fix(t *testing.T) {
 
 // Test ThreatDetection Instance. >>> Resource test cases, automatically generated.
 // Case 中国站资源测试用例_20250217_后付费 10249 适配废弃字段post_pay_module_switch
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic10249(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -943,6 +948,7 @@ func TestAccAliCloudThreatDetectionInstance_basic10249(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic10249_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -1006,6 +1012,7 @@ variable "name" {
 }
 
 // Case 中国站资源测试用例_20250217_后付费New 12300
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic12300(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -1109,6 +1116,7 @@ func TestAccAliCloudThreatDetectionInstance_basic12300(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic12300_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
@@ -1172,6 +1180,7 @@ func TestAccAliCloudThreatDetectionInstance_basic12300_twin(t *testing.T) {
 }
 
 // Case 国际站资源测试用例_20250217_后付费Intl 12300
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionInstance_basic12300_intl(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
