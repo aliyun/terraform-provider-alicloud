@@ -1,12 +1,14 @@
 package alicloud
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func Test_dataSourceAlicloudCdnIpInfo(t *testing.T) {
+func TestAccDataSourceAlicloudCdnIpInfo(t *testing.T) {
+	dataSourceCdnIpInfoResourceId := "data.alicloud_cdn_ip_info.test"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -14,20 +16,22 @@ func Test_dataSourceAlicloudCdnIpInfo(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudCdnIpInfosDataSource,
+				Config: testAccCheckAlicloudCdnIpInfosDataSource(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cdn_ip_info.current"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cdn_ip_info.current", "id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cdn_ip_info.current", "cdn_ip"),
-					resource.TestCheckResourceAttr("data.alicloud_cdn_ip_info.current", "cdn_ip", "False"),
+					testAccCheckAlicloudDataSourceID(dataSourceCdnIpInfoResourceId),
+					resource.TestCheckResourceAttrSet(dataSourceCdnIpInfoResourceId, "id"),
+					resource.TestCheckResourceAttrSet(dataSourceCdnIpInfoResourceId, "cdn_ip"),
+					resource.TestCheckResourceAttr(dataSourceCdnIpInfoResourceId, "cdn_ip", "False"),
 				),
 			},
 		},
 	})
 }
 
-const testAccCheckAlicloudCdnIpInfosDataSource = `
-data "alicloud_cdn_ip_info" "current" {
-	ip = "114.114.114.114"
+func testAccCheckAlicloudCdnIpInfosDataSource() string {
+	return fmt.Sprintf(`
+data "alicloud_cdn_ip_info" "test" {
+  ip = "114.114.114.114"
 }
-`
+`)
+}
