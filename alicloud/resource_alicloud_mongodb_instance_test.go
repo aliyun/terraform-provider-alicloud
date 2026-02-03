@@ -228,11 +228,23 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"auto_renew": "true",
+					"auto_renew":          "true",
+					"auto_renew_duration": "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"auto_renew": "true",
+						"auto_renew":          "true",
+						"auto_renew_duration": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew_duration": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew_duration": "6",
 					}),
 				),
 			},
@@ -381,7 +393,7 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "effective_time", "order_type", "parameters", "replica_sets"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "effective_time", "order_type", "parameters"},
 			},
 		},
 	})
@@ -403,7 +415,6 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -411,14 +422,14 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version":      "4.4",
+					"engine_version":      "7.0",
 					"db_instance_class":   "mdb.shard.2x.xlarge.d",
 					"db_instance_storage": "20",
 					"vswitch_id":          "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":      "4.4",
+						"engine_version":      "7.0",
 						"db_instance_class":   "mdb.shard.2x.xlarge.d",
 						"db_instance_storage": "20",
 						"vswitch_id":          CHECKSET,
@@ -427,11 +438,11 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version": "5.0",
+					"engine_version": "8.0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version": "5.0",
+						"engine_version": "8.0",
 					}),
 				),
 			},
@@ -653,34 +664,37 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ssl_action": "Open",
+					"ssl_action":       "Open",
+					"force_encryption": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ssl_status": "Open",
+						"force_encryption": "1",
+						"ssl_status":       "Open",
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"maintain_start_time": "00:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maintain_start_time": "00:00Z",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"maintain_end_time": "03:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maintain_end_time": "03:00Z",
-					}),
-				),
-			},
+			// There is an OpenAPI bug
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"maintain_start_time": "00:00Z",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"maintain_start_time": "00:00Z",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"maintain_end_time": "03:00Z",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"maintain_end_time": "03:00Z",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_storage": "80",
@@ -775,7 +789,7 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "effective_time", "order_type", "parameters", "replica_sets"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "effective_time", "order_type", "parameters"},
 			},
 		},
 	})
@@ -797,7 +811,6 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -805,7 +818,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version":       "4.4",
+					"engine_version":       "8.0",
 					"db_instance_class":    "mdb.shard.2x.xlarge.d",
 					"db_instance_storage":  "80",
 					"storage_engine":       "WiredTiger",
@@ -828,15 +841,19 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 					"replication_factor":        "3",
 					"readonly_replicas":         "2",
 					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"backup_time":               "11:00Z-12:00Z",
-					"backup_period":             []string{"Monday", "Tuesday", "Wednesday"},
-					"backup_retention_period":   "7",
+					// Currently, src_db_instance_id and restore_time cannot be CI tested, local testing has passed
+					//"src_db_instance_id":    "",
+					//"restore_time":    "",
+					"backup_time":             "11:00Z-12:00Z",
+					"backup_period":           []string{"Monday", "Tuesday", "Wednesday"},
+					"backup_retention_period": "7",
 					"backup_retention_policy_on_cluster_deletion": "1",
 					"enable_backup_log":                           "1",
 					"log_backup_retention_period":                 "120",
 					"snapshot_backup_type":                        "Flash",
 					"backup_interval":                             "15",
 					"ssl_action":                                  "Open",
+					"force_encryption":                            "1",
 					"maintain_start_time":                         "00:00Z",
 					"maintain_end_time":                           "03:00Z",
 					"db_instance_release_protection":              "false",
@@ -854,7 +871,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":            "4.4",
+						"engine_version":            "8.0",
 						"db_instance_class":         "mdb.shard.2x.xlarge.d",
 						"db_instance_storage":       "80",
 						"storage_engine":            "WiredTiger",
@@ -883,6 +900,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 						"log_backup_retention_period":                 "120",
 						"snapshot_backup_type":                        "Flash",
 						"backup_interval":                             "15",
+						"force_encryption":                            "1",
 						"ssl_status":                                  "Open",
 						"maintain_start_time":                         "00:00Z",
 						"maintain_end_time":                           "03:00Z",
@@ -899,7 +917,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "effective_time", "order_type", "parameters", "replica_sets"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "effective_time", "order_type", "parameters"},
 			},
 		},
 	})
@@ -920,6 +938,7 @@ var AliCloudMongoDBInstanceMap0 = map[string]string{
 	"retention_period":    CHECKSET,
 	"replica_set_name":    CHECKSET,
 	"ssl_status":          CHECKSET,
+	"zone_infos.#":        CHECKSET,
 	"replica_sets.#":      CHECKSET,
 }
 
@@ -942,6 +961,7 @@ var AliCloudMongoDBInstanceMap1 = map[string]string{
 	"retention_period":        CHECKSET,
 	"replica_set_name":        CHECKSET,
 	"ssl_status":              CHECKSET,
+	"zone_infos.#":            CHECKSET,
 	"replica_sets.#":          CHECKSET,
 }
 

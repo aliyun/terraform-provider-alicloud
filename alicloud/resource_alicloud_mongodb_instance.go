@@ -169,6 +169,19 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"auto_renew_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"src_db_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"restore_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"backup_time": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -217,6 +230,12 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Open", "Close", "Update"}, false),
+			},
+			"force_encryption": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"1", "0"}, false),
 			},
 			"maintain_start_time": {
 				Type:     schema.TypeString,
@@ -304,6 +323,39 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 			"ssl_status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"key_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"zone_infos": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"ins_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"role_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"role_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"replica_sets": {
 				Type:     schema.TypeList,
@@ -477,6 +529,14 @@ func resourceAliCloudMongoDBInstanceCreate(d *schema.ResourceData, meta interfac
 		request["AutoRenew"] = strconv.FormatBool(v.(bool))
 	}
 
+	if v, ok := d.GetOk("src_db_instance_id"); ok {
+		request["SrcDBInstanceId"] = v
+	}
+
+	if v, ok := d.GetOk("restore_time"); ok {
+		request["RestoreTime"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
@@ -547,6 +607,14 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 		}
 
 		d.Set("period", period)
+
+		autoRenewalAttribute, err := ddsService.DescribeMongoDBAutoRenewalAttribute(d.Id(), "replicate")
+		if err != nil {
+			return WrapError(err)
+		}
+
+		d.Set("auto_renew", formatBool(autoRenewalAttribute["AutoRenew"]))
+		d.Set("auto_renew_duration", autoRenewalAttribute["Duration"])
 	}
 
 	groupIp, err := ddsService.DescribeMongoDBSecurityGroupId(d.Id())
@@ -608,6 +676,7 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 	} else {
+		d.Set("force_encryption", sslAction["ForceEncryption"])
 		d.Set("ssl_status", sslAction["SSLStatus"])
 	}
 
@@ -700,6 +769,44 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 			d.Set("replica_sets", replicaSetsMaps)
 		}
 	}
+
+	keyIds, _ := ddsService.DescribeMongoDBUserEncryptionKeyList(d.Id())
+	d.Set("key_ids", keyIds)
+
+	roleZoneInfosList, err := ddsService.DescribeMongoDBRoleZoneInfos(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	roleZoneInfosMaps := make([]map[string]interface{}, 0)
+	for _, roleZoneInfos := range roleZoneInfosList {
+		roleZoneInfosArg := roleZoneInfos.(map[string]interface{})
+		roleZoneInfosMap := map[string]interface{}{}
+
+		if insName, ok := roleZoneInfosArg["InsName"]; ok {
+			roleZoneInfosMap["ins_name"] = insName
+		}
+
+		if nodeType, ok := roleZoneInfosArg["NodeType"]; ok {
+			roleZoneInfosMap["node_type"] = nodeType
+		}
+
+		if roleId, ok := roleZoneInfosArg["RoleId"]; ok {
+			roleZoneInfosMap["role_id"] = roleId
+		}
+
+		if roleType, ok := roleZoneInfosArg["RoleType"]; ok {
+			roleZoneInfosMap["role_type"] = roleType
+		}
+
+		if zoneId, ok := roleZoneInfosArg["ZoneId"]; ok {
+			roleZoneInfosMap["zone_id"] = zoneId
+		}
+
+		roleZoneInfosMaps = append(roleZoneInfosMaps, roleZoneInfosMap)
+	}
+
+	d.Set("zone_infos", roleZoneInfosMaps)
 
 	return nil
 }
@@ -1032,6 +1139,61 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("resource_group_id")
 	}
 
+	update = false
+	modifyInstanceAutoRenewalAttributeReq := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("auto_renew") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("auto_renew"); ok {
+		modifyInstanceAutoRenewalAttributeReq["AutoRenew"] = strconv.FormatBool(v.(bool))
+	}
+
+	autoRenewalAttribute, err := ddsService.DescribeMongoDBAutoRenewalAttribute(d.Id(), "replicate")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	v, ok := d.GetOkExists("auto_renew_duration")
+	if fmt.Sprint(autoRenewalAttribute["Duration"]) != fmt.Sprint(v) && ok {
+		update = true
+	}
+	if formatBool(modifyInstanceAutoRenewalAttributeReq["AutoRenew"]) {
+		modifyInstanceAutoRenewalAttributeReq["Duration"] = fmt.Sprint(v)
+	}
+
+	if update {
+		action := "ModifyInstanceAutoRenewalAttribute"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, modifyInstanceAutoRenewalAttributeReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBInstanceDiskTypeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("auto_renew")
+		d.SetPartial("auto_renew_duration")
+	}
+
 	if !d.IsNewResource() && (d.HasChange("instance_charge_type") && d.Get("instance_charge_type").(string) == "PrePaid") {
 		action := "TransformToPrePaid"
 
@@ -1127,16 +1289,28 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("backup_interval")
 	}
 
+	update = false
+	modifyDBInstanceSSLReq := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+
 	if d.HasChange("ssl_action") {
+		update = true
+	}
+	if v, ok := d.GetOk("ssl_action"); ok {
+		modifyDBInstanceSSLReq["SSLAction"] = v
+	}
+
+	if d.HasChange("force_encryption") {
+		update = true
+
+		if v, ok := d.GetOk("force_encryption"); ok {
+			modifyDBInstanceSSLReq["ForceEncryption"] = v
+		}
+	}
+
+	if update {
 		action := "ModifyDBInstanceSSL"
-
-		modifyDBInstanceSSLReq := map[string]interface{}{
-			"DBInstanceId": d.Id(),
-		}
-
-		if v, ok := d.GetOk("ssl_action"); ok {
-			modifyDBInstanceSSLReq["SSLAction"] = v
-		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
