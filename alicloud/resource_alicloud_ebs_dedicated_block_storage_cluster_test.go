@@ -10,6 +10,7 @@ import (
 )
 
 // Case 1
+// lintignore: AT001
 func SkipTestAccAlicloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
 	var v map[string]interface{}
 	testAccPreCheckWithRegions(t, true, connectivity.EbsDedicatedBlockStorageClusterRegions)

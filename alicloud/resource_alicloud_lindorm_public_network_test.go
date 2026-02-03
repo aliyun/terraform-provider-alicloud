@@ -12,6 +12,7 @@ import (
 
 // Test Lindorm PublicNetwork. >>> Resource test cases, automatically generated.
 // Case PublicNetwork用例_线上 10782
+// lintignore: AT001
 func TestAccAliCloudLindormPublicNetwork_basic10782(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_public_network.default"
@@ -104,6 +105,7 @@ resource "alicloud_lindorm_instance" "defaultQpsLKr" {
 }
 
 // Case PublicNetwork用例1 10758
+// lintignore: AT001
 func TestAccAliCloudLindormPublicNetwork_basic10758(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_public_network.default"

@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAliCloudCSKubernetesAddon_apiserver(t *testing.T) {
 	var v *Component
 
@@ -77,6 +78,7 @@ func TestAccAliCloudCSKubernetesAddon_apiserver(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudCSKubernetesAddon_terway_eniip(t *testing.T) {
 	var v *Component
 
@@ -144,6 +146,7 @@ func TestAccAliCloudCSKubernetesAddon_terway_eniip(t *testing.T) {
 }
 
 // create new addon, upgrade, update and delete
+// lintignore: AT001
 func TestAccAliCloudCSKubernetesAddon_logtail_ds(t *testing.T) {
 	var v *Component
 
@@ -221,6 +224,7 @@ func TestAccAliCloudCSKubernetesAddon_logtail_ds(t *testing.T) {
 }
 
 // create new addon, upgrade, update and delete
+// lintignore: AT001
 func TestAccAliCloudCSKubernetesAddon_ack_node_problem_detector(t *testing.T) {
 	var v *Component
 
@@ -296,6 +300,7 @@ func TestAccAliCloudCSKubernetesAddon_ack_node_problem_detector(t *testing.T) {
 }
 
 // create new addon, and delete with cleanup_cloud_resources
+// lintignore: AT001
 func TestAccAliCloudCSKubernetesAddon_vk(t *testing.T) {
 	var v *Component
 

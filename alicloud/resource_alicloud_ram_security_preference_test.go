@@ -451,6 +451,7 @@ func TestUnitAlicloudRAMSecurityPreference(t *testing.T) {
 
 // Test Ram SecurityPreference. >>> Resource test cases, automatically generated.
 // Case SecurityPreference测试 9192
+// lintignore: AT001
 func TestAccAliCloudRamSecurityPreference_basic9192(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_security_preference.default"
@@ -666,6 +667,7 @@ variable "name" {
 }
 
 // Case SecurityPreference测试_副本1745566136705 10751
+// lintignore: AT001
 func TestAccAliCloudRamSecurityPreference_basic10751(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_security_preference.default"

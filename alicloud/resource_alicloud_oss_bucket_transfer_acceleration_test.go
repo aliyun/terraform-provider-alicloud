@@ -11,6 +11,7 @@ import (
 
 // Test Oss BucketTransferAcceleration. >>> Resource test cases, automatically generated.
 // Case TransferAcceleration测试 6439
+// lintignore: AT001
 func TestAccAliCloudOssBucketTransferAcceleration_basic6439(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_transfer_acceleration.default"
@@ -105,6 +106,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 }
 
 // Case TransferAcceleration测试 6439  twin
+// lintignore: AT001
 func TestAccAliCloudOssBucketTransferAcceleration_basic6439_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_transfer_acceleration.default"

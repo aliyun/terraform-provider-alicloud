@@ -11,6 +11,7 @@ import (
 
 // Test Gpdb BackupPolicy. >>> Resource test cases, automatically generated.
 // Case 3804
+// lintignore: AT001
 func TestAccAliCloudGpdbBackupPolicy_basic3804(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_backup_policy.default"
@@ -204,6 +205,7 @@ resource "alicloud_gpdb_instance" "default" {
 }
 
 // Case 3698
+// lintignore: AT001
 func TestAccAliCloudGpdbBackupPolicy_basic3698(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_backup_policy.default"
@@ -394,6 +396,7 @@ resource "alicloud_gpdb_instance" "default" {
 }
 
 // Case 3804  twin
+// lintignore: AT001
 func TestAccAliCloudGpdbBackupPolicy_basic3804_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_backup_policy.default"
@@ -444,6 +447,7 @@ func TestAccAliCloudGpdbBackupPolicy_basic3804_twin(t *testing.T) {
 }
 
 // Case 3698  twin
+// lintignore: AT001
 func TestAccAliCloudGpdbBackupPolicy_basic3698_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_backup_policy.default"

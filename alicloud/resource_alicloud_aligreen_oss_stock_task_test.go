@@ -36,6 +36,7 @@ resource "alicloud_aligreen_callback" "defaultJnW8Na" {
 }
 
 // Case oss1.0存量检测 7310  raw
+// lintignore: AT001
 func TestAccAliCloudAligreenOssStockTask_basic7310_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_oss_stock_task.default"
@@ -74,7 +75,7 @@ func TestAccAliCloudAligreenOssStockTask_basic7310_raw(t *testing.T) {
 					"video_max_frames":         "200",
 					"video_max_size":           "500",
 					"start_date":               "2024-08-30 00:00:00 +0800",
-					"end_date":                 "2024-08-30 20:42:29 +0800",
+					"end_date":                 "2026-08-30 20:42:29 +0800",
 					"buckets":                  "[{\\\"Bucket\\\":\\\"${alicloud_oss_bucket.defaultPyhXOV.bucket}\\\",\\\"Prefixes\\\":[],\\\"Selected\\\":true}]",
 					"image_scenes": []string{
 						"porn"},

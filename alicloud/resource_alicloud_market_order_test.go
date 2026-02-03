@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAlicloudMarketOrder_basic(t *testing.T) {
 	var v *market.DescribeOrderResponse
 	resourceId := "alicloud_market_order.default"

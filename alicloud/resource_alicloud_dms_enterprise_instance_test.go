@@ -110,7 +110,6 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 		return &DmsEnterpriseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -123,6 +122,7 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

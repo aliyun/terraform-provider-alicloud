@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 	var v *cs.CreateAutoscalingConfigRequest
 	resourceId := "alicloud_cs_autoscaling_config.default"

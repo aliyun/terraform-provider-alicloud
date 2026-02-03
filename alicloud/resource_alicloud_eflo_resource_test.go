@@ -12,6 +12,7 @@ import (
 
 // Test Eflo Resource. >>> Resource test cases, automatically generated.
 // Case Resource资源用例_接入CCAPI_线上 10576
+// lintignore: AT001
 func TestAccAliCloudEfloResource_basic10576(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eflo_resource.default"
@@ -87,6 +88,7 @@ func TestAccAliCloudEfloResource_basic10576(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudEfloResource_basic10576_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eflo_resource.default"

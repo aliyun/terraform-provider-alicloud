@@ -110,6 +110,7 @@ func TestAccAliCloudMSECluster_basic0(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -234,6 +235,7 @@ func TestAccAliCloudMSECluster_changeNetwork(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -309,6 +311,7 @@ func TestAccAliCloudMSECluster_basic1(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -399,6 +402,7 @@ func TestAccAliCloudMSECluster_pro(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -485,6 +489,7 @@ func TestAccAliCloudMSECluster_serverless(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -537,9 +542,9 @@ func TestAccAliCloudMSECluster_VpcId(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -650,9 +655,9 @@ func TestAccAliCloudMSECluster_PrePaid(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheckWithTime(t, []int{22})
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -753,9 +758,9 @@ func TestAccAliCloudMSECluster_single_eni(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

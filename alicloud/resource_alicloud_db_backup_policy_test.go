@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
@@ -293,6 +294,7 @@ resource "alicloud_db_instance" "default" {
 `, name)
 }
 
+// lintignore: AT001
 func TestAccAliCloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
@@ -527,6 +529,7 @@ resource "alicloud_db_instance" "default" {
 `, name)
 }
 
+// lintignore: AT001
 func TestAccAliCloudRdsDBBackupPolicySQLServer(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
@@ -695,6 +698,7 @@ resource "alicloud_db_instance" "default" {
 `, name)
 }
 
+// lintignore: AT001
 func TestAccAliCloudRdsDBBackupPolicySQLServerAlwaysOn(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
@@ -820,6 +824,7 @@ resource "alicloud_db_instance" "default" {
 `, name)
 }
 
+// lintignore: AT001
 func TestAccAliCloudRdsDBBackupPolicyMariaDB(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"

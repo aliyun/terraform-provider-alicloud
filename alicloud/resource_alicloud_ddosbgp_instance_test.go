@@ -11,6 +11,7 @@ import (
 
 // Test DdosBgp Instance. >>> Resource test cases, automatically generated.
 // Case 原生1.0实例_v6实例 11131
+// lintignore: AT001
 func TestAccAliCloudDdosBgpInstance_basic11131(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddosbgp_instance.default"
@@ -120,6 +121,7 @@ func TestAccAliCloudDdosBgpInstance_basic11131(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudDdosBgpInstance_basic11131_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddosbgp_instance.default"
@@ -201,6 +203,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 // Case 原生1.0实例_专业版 11229 适配废弃字段name
+// lintignore: AT001
 func TestAccAliCloudDdosBgpInstance_basic11229(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddosbgp_instance.default"
@@ -310,6 +313,7 @@ func TestAccAliCloudDdosBgpInstance_basic11229(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudDdosBgpInstance_basic11229_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddosbgp_instance.default"

@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// lintignore: AT001
 func TestAccAliCloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_audit_policy.default"
@@ -80,6 +81,7 @@ func TestAccAliCloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudMongoDBAuditPolicy_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_audit_policy.default"
@@ -383,6 +385,7 @@ func TestUnitAliCloudMongoDBAuditPolicy(t *testing.T) {
 
 // Test Mongodb AuditPolicy. >>> Resource test cases, automatically generated.
 // Case 审计日志TF覆盖 11599
+// lintignore: AT001
 func TestAccAliCloudMongodbAuditPolicy_basic11599(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_audit_policy.default"
@@ -464,6 +467,7 @@ func TestAccAliCloudMongodbAuditPolicy_basic11599(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudMongodbAuditPolicy_basic11599_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_audit_policy.default"

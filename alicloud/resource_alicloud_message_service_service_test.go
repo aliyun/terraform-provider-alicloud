@@ -12,6 +12,7 @@ import (
 
 // Test MessageService Service. >>> Resource test cases, automatically generated.
 // Case Service测试用例 10620
+// lintignore: AT001
 func TestAccAliCloudMessageServiceService_basic10620(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_message_service_service.default"

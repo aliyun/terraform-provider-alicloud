@@ -142,6 +142,7 @@ func testAccCheckRamAccountAliasDestroy(s *terraform.State) error {
 
 // Test Ram AccountAlias. >>> Resource test cases, automatically generated.
 // Case  AccountAlias测试 9000
+// lintignore: AT001
 func TestAccAliCloudRamAccountAlias_basic9000(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_account_alias.default"
