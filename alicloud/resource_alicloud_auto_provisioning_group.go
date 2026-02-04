@@ -178,8 +178,8 @@ func resourceAlicloudAutoProvisioningGroupCreate(d *schema.ResourceData, meta in
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.CreateAutoProvisioningGroup(request)
 		})
-		if err != nil {
-			return resource.NonRetryableError(err)
+		if NeedRetry(err) {
+			return resource.RetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.CreateAutoProvisioningGroupResponse)

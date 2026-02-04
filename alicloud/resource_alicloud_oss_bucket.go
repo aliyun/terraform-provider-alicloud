@@ -1124,8 +1124,8 @@ func resourceAlicloudOssBucketCorsUpdate(client *connectivity.AliyunClient, d *s
 				requestInfo = ossClient
 				return nil, ossClient.DeleteBucketCORS(d.Id())
 			})
-			if err != nil {
-				return resource.NonRetryableError(err)
+			if NeedRetry(err) {
+				return resource.RetryableError(err)
 			}
 			addDebug("DeleteBucketCORS", raw, requestInfo, map[string]string{"bucketName": d.Id()})
 			return nil

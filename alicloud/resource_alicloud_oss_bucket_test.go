@@ -231,26 +231,28 @@ func TestAccAliCloudOssBucketBasic(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force_destroy", "lifecycle_rule_allow_same_action_overlap"},
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl": "public-read",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl": "public-read",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl": "public-read-write",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl": "public-read-write",
-					}),
-				),
-			},
+			// Since public ACL creation is disabled by default, `public-*` ACL and policy test instances are disabled.
+			// new created bucjet cannot create
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"acl": "public-read",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"acl": "public-read",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"acl": "public-read-write",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"acl": "public-read-write",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cors_rule": []map[string]interface{}{
@@ -444,14 +446,14 @@ func TestAccAliCloudOssBucketBasic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"policy": `{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"policy": `{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}`,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(nil),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
@@ -488,18 +490,18 @@ func TestAccAliCloudOssBucketBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"acl":            "public-read",
+					"acl":            "private",
 					"cors_rule":      REMOVEKEY,
 					"tags":           REMOVEKEY,
 					"website":        REMOVEKEY,
 					"logging":        REMOVEKEY,
 					"referer_config": REMOVEKEY,
 					"lifecycle_rule": REMOVEKEY,
-					"policy":         REMOVEKEY,
+					//"policy":         REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"acl":                           "public-read",
+						"acl":                           "private",
 						"cors_rule.#":                   "0",
 						"cors_rule.0.allowed_headers.0": REMOVEKEY,
 						"website.#":                     "0",
@@ -1281,14 +1283,6 @@ func TestAccAliCloudOssBucketCheckTransferAcc(t *testing.T) {
 	})
 }
 
-func resourceOssBucketConfigDependence(name string) string {
-	return fmt.Sprintf(`
-resource "alicloud_oss_bucket" "target"{
-	bucket = "%s-t"
-}
-`, name)
-}
-
 func TestAccAliCloudOssBucketBasic1(t *testing.T) {
 	var v oss.GetBucketInfoResult
 
@@ -1318,12 +1312,12 @@ func TestAccAliCloudOssBucketBasic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket": name,
-					"acl":    "public-read",
+					"acl":    "private",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bucket":                  name,
-						"acl":                     "public-read",
+						"acl":                     "private",
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
 						"resource_group_id":       CHECKSET,
@@ -2739,13 +2733,21 @@ func resourceOssBucketConfigBasic(name string) string {
 	return fmt.Sprintf("")
 }
 
+func resourceOssBucketConfigDependence(name string) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "target"{
+  bucket = "%s-t"
+}
+`, name)
+}
+
 func resourceOssBucketResourceGroupDependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_resource_manager_resource_groups" "default" {}
-	locals {
-		resource_group_id  = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-		resource_group_id1 = data.alicloud_resource_manager_resource_groups.default.groups.1.id
-	}`)
+data "alicloud_resource_manager_resource_groups" "default" {}
+locals {
+  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  resource_group_id1 = data.alicloud_resource_manager_resource_groups.default.groups.1.id
+}`)
 }
 
 var ossBucketBasicMap = map[string]string{

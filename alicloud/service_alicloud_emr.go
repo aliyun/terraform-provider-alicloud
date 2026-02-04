@@ -495,8 +495,8 @@ func (s *EmrService) SetEmrClusterTagsNew(d *schema.ResourceData) error {
 			}
 			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 				_, err = client.RpcPost("Emr", "2021-03-20", action, nil, tagResourcesRequest, false)
-				if err != nil {
-					return resource.NonRetryableError(err)
+				if NeedRetry(err) {
+					return resource.RetryableError(err)
 				}
 				addDebug(action, d.Id(), tagResourcesRequest)
 				return nil
@@ -516,8 +516,8 @@ func (s *EmrService) SetEmrClusterTagsNew(d *schema.ResourceData) error {
 			}
 			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 				_, err = client.RpcPost("Emr", "2021-03-20", action, nil, unTagResourcesRequest, false)
-				if err != nil {
-					return resource.NonRetryableError(err)
+				if NeedRetry(err) {
+					return resource.RetryableError(err)
 				}
 				addDebug(action, d.Id(), unTagResourcesRequest)
 				return nil
