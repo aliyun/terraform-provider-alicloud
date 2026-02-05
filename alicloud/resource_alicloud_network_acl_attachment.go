@@ -15,9 +15,12 @@ func resourceAliyunNetworkAclAttachment() *schema.Resource {
 		Read:   resourceAliyunNetworkAclAttachmentRead,
 		Update: resourceAliyunNetworkAclAttachmentUpdate,
 		Delete: resourceAliyunNetworkAclAttachmentDelete,
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-
 			"network_acl_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -44,14 +47,12 @@ func resourceAliyunNetworkAclAttachment() *schema.Resource {
 }
 
 func resourceAliyunNetworkAclAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-
 	d.SetId(d.Get("network_acl_id").(string) + COLON_SEPARATED + resource.UniqueId())
 
 	return resourceAliyunNetworkAclAttachmentUpdate(d, meta)
 }
 
 func resourceAliyunNetworkAclAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -77,7 +78,15 @@ func resourceAliyunNetworkAclAttachmentRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 	d.Set("network_acl_id", networkAclId)
-	d.Set("resources", vpcResource)
+
+	vpcRes := make([]map[string]interface{}, 0)
+	for _, v := range vpcResource {
+		vpcRes = append(vpcRes, map[string]interface{}{
+			"ResourceId":   v.ResourceId,
+			"ResourceType": v.ResourceType,
+		})
+	}
+	d.Set("resources", vpcRes)
 	return nil
 }
 
@@ -172,7 +181,6 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 				return WrapError(err)
 			}
 		}
-		d.SetPartial("resources")
 	}
 
 	return resourceAliyunNetworkAclAttachmentRead(d, meta)
@@ -208,7 +216,7 @@ func resourceAliyunNetworkAclAttachmentDelete(d *schema.ResourceData, meta inter
 		})
 	}
 	request.Resource = &resources
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UnassociateNetworkAcl(request)
 		})

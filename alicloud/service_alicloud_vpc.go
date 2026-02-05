@@ -644,8 +644,7 @@ func (s *VpcService) DescribeNetworkAcl(id string) (object map[string]interface{
 	return object, nil
 }
 
-func (s *VpcService) DescribeNetworkAclAttachment(id string, resource []vpc.Resource) (err error) {
-
+func (s *VpcService) DescribeNetworkAclAttachment(id string, vpcResources []vpc.Resource) (err error) {
 	invoker := NewInvoker()
 	return invoker.Run(func() error {
 		object, err := s.DescribeNetworkAcl(id)
@@ -659,7 +658,7 @@ func (s *VpcService) DescribeNetworkAclAttachment(id string, resource []vpc.Reso
 		success := true
 		for _, source := range resources {
 			success = false
-			for _, res := range resource {
+			for _, res := range vpcResources {
 				item := source.(map[string]interface{})
 				if fmt.Sprint(item["ResourceId"]) == res.ResourceId {
 					success = true

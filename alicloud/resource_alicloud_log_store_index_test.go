@@ -154,19 +154,19 @@ func TestAccAliCloudLogStoreIndex_basic(t *testing.T) {
 
 func resourceLogStoreIndexConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	variable "name" {
-	    default = "%s"
-	}
-	resource "alicloud_log_project" "default" {
-	    name = "${var.name}"
-	    description = "tf unit test"
-	}
-	resource "alicloud_log_store" "default" {
-	    project = "${alicloud_log_project.default.name}"
-	    name = "${var.name}"
-	    retention_period = "3000"
-	    shard_count = 1
-	}
+variable "name" {
+  default = "%s"
+}
+resource "alicloud_log_project" "default" {
+  name        = "${var.name}"
+  description = "tf unit test"
+}
+resource "alicloud_log_store" "default" {
+  project          = "${alicloud_log_project.default.name}"
+  name             = "${var.name}"
+  retention_period = "3000"
+  shard_count      = 1
+}
 	`, name)
 }
 
