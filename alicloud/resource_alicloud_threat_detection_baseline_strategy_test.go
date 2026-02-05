@@ -83,9 +83,6 @@ var AlicloudThreatDetectionBaselineStrategyMap1862 = map[string]string{}
 func AlicloudThreatDetectionBaselineStrategyBasicDependence1862(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
-}
-
-
-`, name)
+  default = "%s"
+}`, name)
 }
