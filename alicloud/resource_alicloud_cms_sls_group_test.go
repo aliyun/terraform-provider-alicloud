@@ -198,6 +198,7 @@ data "alicloud_account" "this" {}
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCloudMonitorServiceSlsGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_sls_group"].Schema).Data(nil, nil)

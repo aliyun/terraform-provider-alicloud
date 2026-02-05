@@ -1365,8 +1365,8 @@ func mapSort(target map[string]string) []string {
 	return result
 }
 
+// lintignore: R001
 func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
-
 	p := Provider().(*schema.Provider).ResourcesMap
 	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
 	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)

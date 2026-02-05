@@ -172,6 +172,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudECDUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecd_user"].Schema).Data(nil, nil)

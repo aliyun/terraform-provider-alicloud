@@ -137,6 +137,7 @@ func AlicloudGaAccessLogBasicDependence0(name string) string {
 `, name, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAlicloudGaAccessLog(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_access_log"].Schema).Data(nil, nil)

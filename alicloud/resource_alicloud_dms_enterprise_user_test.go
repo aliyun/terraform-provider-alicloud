@@ -231,6 +231,7 @@ func DmsEnterpriseUserBasicdependence(name string) string {
 	}`, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudDMSEnterpriseUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(nil, nil)

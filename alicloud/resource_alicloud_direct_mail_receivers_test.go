@@ -167,6 +167,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudDirectMailReceivers(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.DmSupportRegions)

@@ -75,6 +75,7 @@ func AlicloudRosChangeSetBasicDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudROSChangeSet(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ros_change_set"].Schema).Data(nil, nil)

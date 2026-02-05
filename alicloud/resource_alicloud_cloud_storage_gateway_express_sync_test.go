@@ -274,6 +274,7 @@ resource "alicloud_cloud_storage_gateway_gateway_file_share" "default" {
 `, name, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCloudStorageGatewayExpressSync(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_express_sync"].Schema).Data(nil, nil)

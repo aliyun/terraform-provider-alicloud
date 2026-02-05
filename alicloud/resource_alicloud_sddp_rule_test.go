@@ -239,6 +239,7 @@ func AliCloudSDDPRuleBasicDependence0(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAliCloudSDDPRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(nil, nil)

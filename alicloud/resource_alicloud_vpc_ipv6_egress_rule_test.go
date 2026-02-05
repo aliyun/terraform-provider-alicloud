@@ -213,6 +213,7 @@ resource "alicloud_vpc_ipv6_internet_bandwidth" "example" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitVPCIpv6EgressRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_ipv6_egress_rule"].Schema).Data(nil, nil)

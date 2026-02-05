@@ -153,6 +153,7 @@ resource "alicloud_cen_transit_router_vpn_attachment" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudVpnGatewayVcoRoute(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpn_gateway_vco_route"].Schema).Data(nil, nil)

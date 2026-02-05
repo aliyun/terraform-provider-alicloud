@@ -110,6 +110,7 @@ resource "alicloud_eip_address" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudDdosBasicDefenseThreshold(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ddos_basic_defense_threshold"].Schema).Data(nil, nil)

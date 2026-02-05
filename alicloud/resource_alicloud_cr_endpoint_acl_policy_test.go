@@ -83,6 +83,7 @@ data "alicloud_cr_endpoint_acl_service" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCREndpointAclPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cr_endpoint_acl_policy"].Schema).Data(nil, nil)

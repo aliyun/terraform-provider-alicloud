@@ -179,6 +179,7 @@ resource "alicloud_actiontrail_trail" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_actiontrail_history_delivery_job"].Schema).Data(nil, nil)

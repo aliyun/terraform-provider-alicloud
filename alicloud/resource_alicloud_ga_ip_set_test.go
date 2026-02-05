@@ -179,6 +179,7 @@ func AliCloudGaIpSetBasicDependence1(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGaIpSet(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_ip_set"].Schema).Data(nil, nil)

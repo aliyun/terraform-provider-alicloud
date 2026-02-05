@@ -80,6 +80,7 @@ func AliCloudResourceManagerResourceShareBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudResourceManagerResourceShare(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_resource_share"].Schema).Data(nil, nil)

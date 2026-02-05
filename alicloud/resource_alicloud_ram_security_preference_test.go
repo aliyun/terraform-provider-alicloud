@@ -204,6 +204,7 @@ default = "%s"
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudRAMSecurityPreference(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ram_security_preference"].Schema).Data(nil, nil)

@@ -61,6 +61,7 @@ func testAccCheckAlicloudDbfsServiceLinkedRoleDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudDBFSServiceLinkedRole(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_dbfs_service_linked_role"].Schema).Data(nil, nil)

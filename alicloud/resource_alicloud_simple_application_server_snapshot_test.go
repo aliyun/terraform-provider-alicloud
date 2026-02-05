@@ -92,6 +92,7 @@ data "alicloud_simple_application_server_disks" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudSimpleApplicationServerSnapshot(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_simple_application_server_snapshot"].Schema).Data(nil, nil)

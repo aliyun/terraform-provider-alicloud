@@ -338,6 +338,7 @@ data "alicloud_resource_manager_resource_groups" "this" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudWAFInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_waf_instance"].Schema).Data(nil, nil)

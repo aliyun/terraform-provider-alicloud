@@ -320,6 +320,7 @@ resource "alicloud_eip_association" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVPCForwardEntry(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_forward_entry"].Schema).Data(nil, nil)

@@ -1067,6 +1067,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudEIPAddress(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_eip_address"].Schema).Data(nil, nil)

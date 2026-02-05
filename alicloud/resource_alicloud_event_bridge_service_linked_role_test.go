@@ -64,6 +64,7 @@ func AliCloudEventBridgeServiceLinkedRoleBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudEventBridgeServiceLinkedRole(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_event_bridge_service_linked_role"].Schema).Data(nil, nil)

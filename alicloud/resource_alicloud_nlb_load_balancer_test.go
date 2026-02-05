@@ -553,6 +553,7 @@ var AlicloudNLBLoadBalancerMap1 = map[string]string{
 	"load_balancer_name": CHECKSET,
 }
 
+// lintignore: R001
 func TestUnitAlicloudNlbLoadBalancer(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_nlb_load_balancer"].Schema).Data(nil, nil)

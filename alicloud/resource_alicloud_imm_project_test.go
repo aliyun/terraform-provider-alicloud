@@ -218,6 +218,7 @@ resource "alicloud_ram_role" "role" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudImmProject(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_imm_project"].Schema).Data(nil, nil)

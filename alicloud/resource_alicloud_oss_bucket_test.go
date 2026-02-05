@@ -231,8 +231,7 @@ func TestAccAliCloudOssBucketBasic(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force_destroy", "lifecycle_rule_allow_same_action_overlap"},
 			},
-			// Since public ACL creation is disabled by default, `public-*` ACL and policy test instances are disabled.
-			// new created bucjet cannot create
+			// Since public ACL creation is disabled by default, `public-*` ACL and policy test cases are disabled.
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"acl": "public-read",

@@ -152,6 +152,7 @@ func testSweepAmqpVirtualHost(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudAmqpVirtualHost(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_virtual_host"].Schema).Data(nil, nil)

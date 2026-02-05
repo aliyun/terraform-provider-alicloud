@@ -225,6 +225,7 @@ resource "alicloud_ram_role" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudFnfFlow(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.FnFSupportRegions)

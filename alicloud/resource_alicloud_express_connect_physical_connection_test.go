@@ -459,6 +459,7 @@ func AliCloudExpressConnectPhysicalConnectionBasicDependence0(name string) strin
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudExpressConnectPhysicalConnection(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_express_connect_physical_connection"].Schema).Data(nil, nil)

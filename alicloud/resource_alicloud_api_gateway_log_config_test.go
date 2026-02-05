@@ -173,6 +173,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudApiGatewayLogConfig(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_api_gateway_log_config"].Schema).Data(nil, nil)

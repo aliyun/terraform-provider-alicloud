@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// lintignore: R001
 func TestUnitAccAliCloudDdosBgpIp(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ddosbgp_ip"].Schema).Data(nil, nil)

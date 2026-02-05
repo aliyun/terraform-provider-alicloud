@@ -412,6 +412,7 @@ func TestAccAlicloudCloudMonitorServiceHybridMonitorSlsTask_basic1(t *testing.T)
 	})
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudCmsHybridMonitorSlsTask(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_hybrid_monitor_sls_task"].Schema).Data(nil, nil)

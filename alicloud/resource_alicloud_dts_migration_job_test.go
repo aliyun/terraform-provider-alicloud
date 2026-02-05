@@ -278,6 +278,7 @@ resource "alicloud_dts_migration_instance" "default" {
 `, name, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, nil)

@@ -88,6 +88,7 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudECSAutoSnapshotPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, nil)

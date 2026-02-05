@@ -242,6 +242,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVPCTrafficMirrorFilter(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_traffic_mirror_filter"].Schema).Data(nil, nil)

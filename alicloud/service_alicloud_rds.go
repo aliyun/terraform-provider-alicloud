@@ -304,6 +304,7 @@ func (s *RdsService) SetTimeZone(d *schema.ResourceData) error {
 	return nil
 }
 
+// lintignore: R001
 func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string) error {
 	var param []map[string]interface{}
 	documented, ok := d.GetOk(attribute)
@@ -356,6 +357,7 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 	return nil
 }
 
+// lintignore: R001
 func (s *RdsService) RefreshPgHbaConf(d *schema.ResourceData, attribute string) error {
 	response, err := s.DescribePGHbaConfig(d.Id())
 	if err != nil {

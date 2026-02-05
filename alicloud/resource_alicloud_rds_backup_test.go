@@ -386,6 +386,7 @@ resource "alicloud_db_database" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudRdsBackup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_rds_backup"].Schema).Data(nil, nil)

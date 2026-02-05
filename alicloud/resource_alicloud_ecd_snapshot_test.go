@@ -111,6 +111,7 @@ resource "alicloud_ecd_desktop" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudEcdSnapshot(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecd_snapshot"].Schema).Data(nil, nil)

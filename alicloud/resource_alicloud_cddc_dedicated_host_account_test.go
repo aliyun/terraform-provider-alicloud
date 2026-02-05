@@ -116,6 +116,7 @@ resource "alicloud_cddc_dedicated_host" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCddcDedicatedHostAccount(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cddc_dedicated_host_account"].Schema).Data(nil, nil)

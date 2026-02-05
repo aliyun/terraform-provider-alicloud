@@ -471,6 +471,7 @@ func TestAccAlicloudVPNGatewayVpnAttachment_basic1(t *testing.T) {
 	})
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpn_gateway_vpn_attachment"].Schema).Data(nil, nil)

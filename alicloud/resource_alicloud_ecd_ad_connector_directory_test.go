@@ -246,6 +246,7 @@ func AliCloudECDAdConnectorDirectoryBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudECDAdConnectorDirectory(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecd_ad_connector_directory"].Schema).Data(nil, nil)

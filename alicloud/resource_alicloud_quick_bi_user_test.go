@@ -216,6 +216,7 @@ locals{
 `, name, "openapiautomation@test.aliyunid.com")
 }
 
+// lintignore: R001
 func TestUnitAlicloudQuickBIUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_quick_bi_user"].Schema).Data(nil, nil)

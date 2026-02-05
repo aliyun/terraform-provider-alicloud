@@ -128,6 +128,7 @@ resource "alicloud_slb_load_balancer" "default1" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCmsMonitorGroupInstances(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_monitor_group_instances"].Schema).Data(nil, nil)

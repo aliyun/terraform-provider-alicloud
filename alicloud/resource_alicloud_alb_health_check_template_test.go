@@ -613,6 +613,7 @@ func AliCloudAlbHealthCheckTemplateBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudAlbHealthCheckTemplate(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alb_health_check_template"].Schema).Data(nil, nil)

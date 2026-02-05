@@ -626,6 +626,7 @@ EOF
 `, name, defaultRegionToTest, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGaListener(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_listener"].Schema).Data(nil, nil)

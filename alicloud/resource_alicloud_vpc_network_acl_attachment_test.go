@@ -263,6 +263,7 @@ func resourceAlicloudVpcNetworkAclAttachmentBasicDependence2(name string) string
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVpcNetworkAclAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpc_network_acl_attachment"].Schema).Data(nil, nil)

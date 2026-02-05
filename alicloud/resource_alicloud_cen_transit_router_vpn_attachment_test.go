@@ -268,6 +268,7 @@ func TestAccAlicloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
 	})
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudCenTransitRouterVpnAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cen_transit_router_vpn_attachment"].Schema).Data(nil, nil)

@@ -340,6 +340,7 @@ func AliCloudResourceManagerSharedResourceIpamResourceDiscoveryDependence0(name 
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudResourceManagerSharedResource(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_shared_resource"].Schema).Data(nil, nil)

@@ -708,6 +708,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVPCdsafa(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, nil)

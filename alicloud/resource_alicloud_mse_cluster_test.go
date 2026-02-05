@@ -840,6 +840,7 @@ func MseClusterBasicdependence(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudMSECluster(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mse_cluster"].Schema).Data(nil, nil)

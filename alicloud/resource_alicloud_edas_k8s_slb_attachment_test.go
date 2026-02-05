@@ -120,6 +120,7 @@ func testSweepEDASK8sSlbAttachment(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudEDASK8sSlbAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_edas_k8s_slb_attachment"].Schema).Data(nil, nil)

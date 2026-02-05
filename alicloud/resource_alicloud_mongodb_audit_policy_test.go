@@ -162,6 +162,7 @@ resource "alicloud_mongodb_instance" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudMongoDBAuditPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mongodb_audit_policy"].Schema).Data(nil, nil)

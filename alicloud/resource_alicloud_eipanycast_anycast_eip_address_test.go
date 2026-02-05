@@ -234,6 +234,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudEipanycastAnycastEipAddress(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_eipanycast_anycast_eip_address"].Schema).Data(nil, nil)

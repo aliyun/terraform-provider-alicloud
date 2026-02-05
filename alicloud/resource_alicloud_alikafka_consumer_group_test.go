@@ -112,6 +112,7 @@ func testSweepAlikafkaConsumerGroup(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudAliKafkaConsumerGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alikafka_consumer_group"].Schema).Data(nil, nil)

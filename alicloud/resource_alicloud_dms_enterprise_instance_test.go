@@ -313,6 +313,7 @@ func resourceDmsConfigDependence(name string) string {
 	}`, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudDMSEnterprise(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dms_enterprise_instance"].Schema).Data(nil, nil)

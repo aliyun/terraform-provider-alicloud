@@ -389,6 +389,7 @@ func AlicloudHBROtsBackupPlanBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudHBROtsBackupPlan(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_ots_backup_plan"].Schema).Data(nil, nil)

@@ -99,6 +99,7 @@ func AlicloudEcsHpcClusterBasicDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudECSHpcCluster(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_hpc_cluster"].Schema).Data(nil, nil)

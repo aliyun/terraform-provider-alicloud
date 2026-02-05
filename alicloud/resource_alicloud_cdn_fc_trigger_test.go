@@ -111,6 +111,7 @@ data "alicloud_regions" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCdnFcTrigger(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cdn_fc_trigger"].Schema).Data(nil, nil)

@@ -79,6 +79,7 @@ resource "alicloud_vpc_dhcp_options_set" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVPCDhcpOptionsSetAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_dhcp_options_set_attachment"].Schema).Data(nil, nil)

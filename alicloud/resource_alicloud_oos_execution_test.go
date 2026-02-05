@@ -184,6 +184,7 @@ func OosExecutionBasicdependence(name string) string {
 	`, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudOOSExecution(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_oos_execution"].Schema).Data(nil, nil)

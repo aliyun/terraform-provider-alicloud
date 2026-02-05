@@ -456,6 +456,7 @@ func AliCloudMessageServiceTopicBasicDependence9031(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudMessageServiceTopic(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_message_service_topic"].Schema).Data(nil, nil)

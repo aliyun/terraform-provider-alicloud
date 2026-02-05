@@ -504,6 +504,7 @@ func AliCloudGaBandwidthPackageBasicDependence0(name string) string {
 `)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGaBandwidthPackage(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_bandwidth_package"].Schema).Data(nil, nil)

@@ -89,6 +89,7 @@ func ConfigConfigurationRecorderBasicdependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitConfigConfigurationRecorder(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_configuration_recorder"].Schema).Data(nil, nil)

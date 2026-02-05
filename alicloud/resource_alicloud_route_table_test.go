@@ -432,6 +432,7 @@ func TestAccAliCloudVPCRouteTable_RoutePropagationEnableOnCreate(t *testing.T) {
 	})
 }
 
+// lintignore: R001
 func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_route_table"].Schema).Data(nil, nil)

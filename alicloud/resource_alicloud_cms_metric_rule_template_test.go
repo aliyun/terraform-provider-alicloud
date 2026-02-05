@@ -398,6 +398,7 @@ func AliCloudCmsMetricRuleTemplateBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudCmsMetricRuleTemplate(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_metric_rule_template"].Schema).Data(nil, nil)

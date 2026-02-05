@@ -458,6 +458,7 @@ data "alicloud_ram_roles" "this" {
 
 const deliveryChannelCondition = `[\n{\n\"filterType\":\"ResourceType\",\n\"values\":[\n\"ACS::CEN::CenInstance\",\n],\n\"multiple\":true\n}\n]\n`
 
+// lintignore: R001
 func TestUnitAlicloudConfigDeliveryChannel(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_delivery_channel"].Schema).Data(nil, nil)

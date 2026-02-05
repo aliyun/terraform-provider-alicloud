@@ -261,6 +261,7 @@ func AlicloudRosStackBasicDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudROSStack(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ros_stack"].Schema).Data(nil, nil)

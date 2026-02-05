@@ -1544,6 +1544,7 @@ func (s *MongoDBService) ModifyParameters(d *schema.ResourceData, attribute stri
 	return nil
 }
 
+// lintignore: R001
 func (s *MongoDBService) RefreshParameters(d *schema.ResourceData, attribute string) error {
 	var param []map[string]interface{}
 	documented, ok := d.GetOk(attribute)

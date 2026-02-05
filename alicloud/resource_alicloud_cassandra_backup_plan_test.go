@@ -172,6 +172,7 @@ func AlicloudCassandraBackupPlanBasicDependence0(name string) string {
 	`, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCassandraBackupPlan(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(nil, nil)
