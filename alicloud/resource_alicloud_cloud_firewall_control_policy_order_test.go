@@ -136,6 +136,7 @@ func AliCloudCloudFirewallControlPolicyOrderBasicDependence0(name string) string
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudCloudFirewallControlPolicyOrder(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_firewall_control_policy_order"].Schema).Data(nil, nil)

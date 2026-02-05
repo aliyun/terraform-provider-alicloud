@@ -238,6 +238,7 @@ type= "FDL"
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudFnfSchedule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.FnFSupportRegions)

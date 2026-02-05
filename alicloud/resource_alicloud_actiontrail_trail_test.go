@@ -92,6 +92,7 @@ func testSweepActiontrailTrail(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, nil)

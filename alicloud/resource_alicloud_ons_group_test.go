@@ -301,6 +301,7 @@ var onsGroupBasicMap = map[string]string{
 	"remark":   "alicloud_ons_group_remark",
 }
 
+// lintignore: R001
 func TestUnitAlicloudOnsGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ons_group"].Schema).Data(nil, nil)

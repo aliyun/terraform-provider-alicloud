@@ -175,6 +175,7 @@ resource "alicloud_db_account_privilege" "default" {
 `, name, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, nil)

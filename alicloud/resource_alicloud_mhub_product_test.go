@@ -167,6 +167,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudMHUBProduct(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.MHUBSupportRegions)
 	p := Provider().(*schema.Provider).ResourcesMap

@@ -906,6 +906,7 @@ resource "alicloud_resource_manager_resource_group" "example" {
 
 // Test Config Rule. <<< Resource test cases, automatically generated.
 
+// lintignore: R001
 func TestUnitAliCloudConfigRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_rule"].Schema).Data(nil, nil)

@@ -560,6 +560,7 @@ func AliCloudGaForwardingRuleBasicDependence0(name string) string {
 `, name, defaultRegionToTest, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGaForwardingRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_forwarding_rule"].Schema).Data(nil, nil)

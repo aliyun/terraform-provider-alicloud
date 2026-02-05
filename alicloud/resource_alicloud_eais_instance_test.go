@@ -238,6 +238,7 @@ func AliCloudEaisInstanceBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudEaisInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)

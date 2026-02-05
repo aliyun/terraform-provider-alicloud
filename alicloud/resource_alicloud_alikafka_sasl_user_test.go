@@ -440,6 +440,7 @@ func AliCloudAliKafkaSaslUserBasicDependence1(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudAliKafkaSaslUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alikafka_sasl_user"].Schema).Data(nil, nil)

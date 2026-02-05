@@ -162,6 +162,7 @@ func AliCloudCloudStorageGatewayGatewayCacheDiskBasicDependence0(name string) st
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_cache_disk"].Schema).Data(nil, nil)

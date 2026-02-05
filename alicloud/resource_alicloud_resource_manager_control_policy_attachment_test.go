@@ -80,6 +80,7 @@ func AliCloudResourceManagerControlPolicyAttachmentBasicDependence0(name string)
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudResourceManagerControlPolicyAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_control_policy_attachment"].Schema).Data(nil, nil)

@@ -116,6 +116,7 @@ func AliCloudDbfsInstanceAttachmentBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_dbfs_instance_attachment"].Schema).Data(nil, nil)

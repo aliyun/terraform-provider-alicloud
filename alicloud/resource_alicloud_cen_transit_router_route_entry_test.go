@@ -214,6 +214,7 @@ resource "alicloud_cen_transit_router_vbr_attachment" "default" {
 `, name, acctest.RandIntRange(1, 2999))
 }
 
+// lintignore: R001
 func TestUnitAlicloudCenTransitRouterRouteEntry(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router_route_entry"].Schema).Data(nil, nil)

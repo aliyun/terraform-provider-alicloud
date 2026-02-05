@@ -130,6 +130,7 @@ resource "alicloud_waf_domain" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_waf_protection_module"].Schema).Data(nil, nil)

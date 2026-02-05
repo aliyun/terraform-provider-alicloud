@@ -125,6 +125,7 @@ func AlicloudCenTransitRouterCidrBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCenTransitRouterCidr(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cen_transit_router_cidr"].Schema).Data(nil, nil)

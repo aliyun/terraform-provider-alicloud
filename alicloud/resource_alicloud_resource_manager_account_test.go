@@ -171,6 +171,7 @@ data "alicloud_resource_manager_folders" "example" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudResourceManagerAccount(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_account"].Schema).Data(nil, nil)

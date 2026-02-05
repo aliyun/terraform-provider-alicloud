@@ -400,6 +400,7 @@ func AliCloudMessageServiceQueueBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudMessageServiceQueue(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(nil, nil)

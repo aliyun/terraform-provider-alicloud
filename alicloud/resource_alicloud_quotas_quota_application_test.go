@@ -82,6 +82,7 @@ func AlicloudQuotasQuotaApplicationBasicDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_quotas_quota_application"].Schema).Data(nil, nil)

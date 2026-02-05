@@ -310,6 +310,7 @@ resource "alicloud_vpc_traffic_mirror_filter" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVPCTrafficMirrorFilterEgressRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_traffic_mirror_filter_egress_rule"].Schema).Data(nil, nil)

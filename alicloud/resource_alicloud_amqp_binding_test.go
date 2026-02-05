@@ -263,6 +263,7 @@ func AliCloudAmqpBindingBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudAmqpBinding(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_binding"].Schema).Data(nil, nil)

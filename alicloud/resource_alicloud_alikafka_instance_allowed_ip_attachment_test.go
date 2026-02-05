@@ -233,6 +233,7 @@ func AliCloudAliKafkaInstanceAllowedIpAttachmentBasicDependence0(name string) st
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alikafka_instance_allowed_ip_attachment"].Schema).Data(nil, nil)

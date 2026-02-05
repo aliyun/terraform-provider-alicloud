@@ -277,6 +277,7 @@ func AlicloudECDBundleBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudECDBundle(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecd_bundle"].Schema).Data(nil, nil)

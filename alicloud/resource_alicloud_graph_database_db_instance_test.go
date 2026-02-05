@@ -393,6 +393,7 @@ data "alicloud_vswitches" "default" {
 }`, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(nil, nil)

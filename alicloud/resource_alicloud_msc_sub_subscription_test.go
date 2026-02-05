@@ -139,6 +139,7 @@ resource "alicloud_msc_sub_contact" "default2" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudMscSubSubscription(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_msc_sub_subscription"].Schema).Data(nil, nil)

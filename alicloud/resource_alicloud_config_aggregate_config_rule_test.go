@@ -735,6 +735,7 @@ resource "alicloud_config_aggregator" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudConfigAggregateConfigRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(nil, nil)

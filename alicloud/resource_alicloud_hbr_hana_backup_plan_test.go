@@ -214,6 +214,7 @@ func TestAccAlicloudHBRHanaBackupPlan_basic1(t *testing.T) {
 	})
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudHbrHanaBackupPlan(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_hana_backup_plan"].Schema).Data(nil, nil)

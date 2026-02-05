@@ -108,6 +108,7 @@ resource "alicloud_mse_cluster" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudMSEZnode(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mse_znode"].Schema).Data(nil, nil)

@@ -484,6 +484,7 @@ func resourceAliCloudCmsGroupMetricRuleBasicDependence(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudCmsGroupMetricRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_group_metric_rule"].Schema).Data(nil, nil)

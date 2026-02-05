@@ -221,6 +221,7 @@ func AliCloudCloudMonitorServiceNamespaceBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudCloudMonitorServiceNamespace(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_namespace"].Schema).Data(nil, nil)

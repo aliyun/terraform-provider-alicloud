@@ -212,6 +212,7 @@ func AliCloudGaAclEntryAttachmentBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGaAclEntryAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_acl_entry_attachment"].Schema).Data(nil, nil)

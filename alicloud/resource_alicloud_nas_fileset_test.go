@@ -123,6 +123,8 @@ resource "alicloud_nas_file_system" "default" {
 }
 `, name)
 }
+
+// lintignore: R001
 func TestUnitAlicloudNASFileset(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_fileset"].Schema).Data(nil, nil)

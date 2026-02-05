@@ -507,6 +507,7 @@ func AliCloudAdbDbClusterLakeVersionBasicDependence0Twin(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudAdbDbClusterLakeVersion(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_adb_db_cluster_lake_version"].Schema).Data(nil, nil)

@@ -534,6 +534,7 @@ func TestAccAliCloudCenTransitRouterPeerAttachment_basic2(t *testing.T) {
 	})
 }
 
+// lintignore: R001
 func TestUnitAliCloudCenTransitRouterPeerAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router_peer_attachment"].Schema).Data(nil, nil)

@@ -354,6 +354,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudSlbAcl(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_slb_acl"].Schema).Data(nil, nil)

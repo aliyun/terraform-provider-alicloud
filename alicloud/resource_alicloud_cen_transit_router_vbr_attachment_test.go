@@ -222,6 +222,7 @@ func AliCloudCenTransitRouterVbrAttachmentBasicDependence0(name string) string {
 `, name, acctest.RandIntRange(1, 2999))
 }
 
+// lintignore: R001
 func TestUnitAliCloudCenTransitRouterVbrAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router_vbr_attachment"].Schema).Data(nil, nil)

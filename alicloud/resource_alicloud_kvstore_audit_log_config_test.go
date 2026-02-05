@@ -132,6 +132,7 @@ func KvstoreAuditLogConfigBasicdependence(name string) string {
 	`, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudKVStoreAuditLogConfig(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_kvstore_audit_log_config"].Schema).Data(nil, nil)

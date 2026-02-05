@@ -92,6 +92,7 @@ func testSweepCloudSSODirectoryAccessAssignment(region, directoryId string) erro
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudCloudSSOAccessAssignment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_access_assignment"].Schema).Data(nil, nil)

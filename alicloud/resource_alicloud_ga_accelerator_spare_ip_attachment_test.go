@@ -92,6 +92,7 @@ func AliCloudGaAcceleratorSpareIpAttachmentBasicDependence0(name string) string 
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGaAcceleratorSpareIpAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_accelerator_spare_ip_attachment"].Schema).Data(nil, nil)

@@ -241,6 +241,7 @@ data "alicloud_zones" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpc_public_ip_address_pool"].Schema).Data(nil, nil)

@@ -122,6 +122,7 @@ data "alicloud_mse_clusters" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(nil, nil)

@@ -244,6 +244,7 @@ data "alicloud_account" "default" {}
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudEcsImagePipeline(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecs_image_pipeline"].Schema).Data(nil, nil)

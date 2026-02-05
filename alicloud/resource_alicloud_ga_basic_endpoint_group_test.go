@@ -130,6 +130,7 @@ func AliCloudGaBasicEndpointGroupBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGaBasicEndpointGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_basic_endpoint_group"].Schema).Data(nil, nil)

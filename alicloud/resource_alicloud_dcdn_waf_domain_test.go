@@ -141,6 +141,7 @@ func TestAccAliCloudDcdnWafDomain_basic1(t *testing.T) {
 	})
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudDcdnWafDomain(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dcdn_waf_domain"].Schema).Data(nil, nil)

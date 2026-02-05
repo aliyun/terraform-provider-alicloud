@@ -123,6 +123,7 @@ func testSweepExpressConnectVirtualBorderRouters(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudExpressConnectVirtualBorderRouter(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_express_connect_virtual_border_router"].Schema).Data(nil, nil)

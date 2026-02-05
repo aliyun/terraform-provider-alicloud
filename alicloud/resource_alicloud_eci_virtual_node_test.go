@@ -260,6 +260,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name, os.Getenv("KUBE_CONFIG"))
 }
 
+// lintignore: R001
 func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)

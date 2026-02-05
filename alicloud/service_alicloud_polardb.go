@@ -875,6 +875,7 @@ func (s *PolarDBService) RefreshEndpointConfig(d *schema.ResourceData) error {
 	return nil
 }
 
+// lintignore: R001
 func (s *PolarDBService) RefreshParameters(d *schema.ResourceData) error {
 	var param []map[string]interface{}
 	documented, ok := d.GetOk("parameters")

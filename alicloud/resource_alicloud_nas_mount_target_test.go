@@ -289,6 +289,7 @@ resource "alicloud_nas_access_group" "example1" {
 `, name, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudNASMountTarget(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_mount_target"].Schema).Data(nil, nil)

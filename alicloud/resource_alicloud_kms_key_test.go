@@ -1183,6 +1183,7 @@ func AliCloudKmsKeyBasicDependence8856(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudKmsKey(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_kms_key"].Schema).Data(nil, nil)

@@ -113,6 +113,7 @@ locals{
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCloudSSOGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_group"].Schema).Data(nil, nil)

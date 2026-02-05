@@ -194,6 +194,7 @@ variable "logical_id" {
 `, name, defaultRegionToTest, name)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudEDASNamespace(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_edas_namespace"].Schema).Data(nil, nil)

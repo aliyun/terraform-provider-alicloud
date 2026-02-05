@@ -90,8 +90,8 @@ resource "alicloud_ecd_simple_office_site" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudECDNetworkPackage(t *testing.T) {
-
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecd_network_package"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecd_network_package"].Schema).Data(nil, nil)

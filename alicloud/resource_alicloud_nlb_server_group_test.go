@@ -555,6 +555,7 @@ func TestAccAliCloudNlbServerGroup_basic1(t *testing.T) {
 	})
 }
 
+// lintignore: R001
 func TestUnitAccAliCloudNlbServerGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_nlb_server_group"].Schema).Data(nil, nil)

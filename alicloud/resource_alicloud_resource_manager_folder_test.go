@@ -108,6 +108,7 @@ func testSweepResourceManagerFolder(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudResourceManagerFolder(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_folder"].Schema).Data(nil, nil)

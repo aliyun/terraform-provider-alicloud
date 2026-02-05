@@ -248,6 +248,7 @@ resource "alicloud_vswitch" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudPvtzEndpoint(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	rand := acctest.RandIntRange(1000, 9999)

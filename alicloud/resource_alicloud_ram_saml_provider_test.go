@@ -132,6 +132,7 @@ func AliCloudRAMSamlProviderBasicDependence0(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAliCloudRAMSamlProvider(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ram_saml_provider"].Schema).Data(nil, nil)

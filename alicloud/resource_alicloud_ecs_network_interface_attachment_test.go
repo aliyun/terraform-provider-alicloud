@@ -372,6 +372,7 @@ func AliCloudEcsNetworkInterfaceAttachmentBasicDependenceMulti(name string) stri
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudECSNetworkInterfaceAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_network_interface_attachment"].Schema).Data(nil, nil)

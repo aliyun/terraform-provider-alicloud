@@ -152,6 +152,7 @@ func AliCloudMongoDBShardingNetworkPrivateAddressBasicDependence0(name string) s
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_mongodb_sharding_network_private_address"].Schema).Data(nil, nil)

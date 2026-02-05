@@ -720,6 +720,7 @@ func AliCloudNasFileSystemBasicDependence1(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudNasFileSystem(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, nil)

@@ -245,6 +245,7 @@ locals {
 `, name, defaultRegionToTest, defaultRegionToTest, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGaAdditionalCertificate(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_additional_certificate"].Schema).Data(nil, nil)

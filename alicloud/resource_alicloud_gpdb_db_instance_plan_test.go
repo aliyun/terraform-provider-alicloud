@@ -1438,6 +1438,7 @@ func AliCloudGpdbDbInstancePlanBasicDependence1(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAliCloudGpdbDbInstancePlan(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_gpdb_db_instance_plan"].Schema).Data(nil, nil)

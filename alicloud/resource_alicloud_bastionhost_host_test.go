@@ -191,6 +191,7 @@ func AliCloudBastionhostHostBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudBastionhostHost(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_bastionhost_host"].Schema).Data(nil, nil)

@@ -647,6 +647,7 @@ func testAccCheckVPCPeerConnectionExistsWithProviders(n string, res map[string]i
 	}
 }
 
+// lintignore: R001
 func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpc_peer_connection"].Schema).Data(nil, nil)

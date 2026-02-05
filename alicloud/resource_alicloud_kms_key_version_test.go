@@ -100,6 +100,7 @@ func resourceKMSKeyVersionConfigDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudKMSKeyVersion(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_kms_key_version"].Schema).Data(nil, nil)

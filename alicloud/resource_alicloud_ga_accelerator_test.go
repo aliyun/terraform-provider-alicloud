@@ -596,6 +596,7 @@ func AliCloudGaAcceleratorBasicDependence0(name string) string {
 `)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGaAccelerator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ga_accelerator"].Schema).Data(nil, nil)

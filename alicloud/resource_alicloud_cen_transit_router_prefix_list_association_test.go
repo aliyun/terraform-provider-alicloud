@@ -104,6 +104,7 @@ func AlicloudCenTransitRouterPrefixListAssociationBasicDependence0(name string) 
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCenTransitRouterPrefixListAssociation(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cen_transit_router_prefix_list_association"].Schema).Data(nil, nil)

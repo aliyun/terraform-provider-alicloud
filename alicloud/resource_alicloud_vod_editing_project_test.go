@@ -178,6 +178,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vod_editing_project"].Schema).Data(nil, nil)

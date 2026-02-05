@@ -275,6 +275,7 @@ func resourceAmqpExchangeConfigDependence(name string) string {
 
 var AmqpExchangeBasicMap = map[string]string{}
 
+// lintignore: R001
 func TestUnitAlicloudAmqpExchange(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_exchange"].Schema).Data(nil, nil)

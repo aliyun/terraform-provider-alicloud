@@ -276,6 +276,7 @@ func AliCloudECSDeploymentSetBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudECSDeploymentSet(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_deployment_set"].Schema).Data(nil, nil)
