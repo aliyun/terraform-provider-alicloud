@@ -278,7 +278,7 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 
 	d.Set("time_to_live", tableResp.TableOption.TimeToAlive)
 	d.Set("max_version", tableResp.TableOption.MaxVersion)
-	d.Set("allow_update", *tableResp.TableOption.AllowUpdate)
+	d.Set("allow_update", tableResp.TableOption.AllowUpdate)
 	d.Set("deviation_cell_version_in_sec", strconv.FormatInt(tableResp.TableOption.DeviationCellVersionInSec, 10))
 
 	if tableResp.SSEDetails != nil && tableResp.SSEDetails.Enable {
