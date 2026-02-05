@@ -23,7 +23,7 @@ func resourceAlicloudDataWorksFolder() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"folder_id": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				ForceNew: true,
 				Computed: true,
 			},
