@@ -304,7 +304,7 @@ func GetNotFoundMessage(product, id string) string {
 }
 
 func GetTimeoutMessage(product, status string) string {
-	return fmt.Sprintf("Waitting for %s %s is timeout.", product, status)
+	return fmt.Sprintf("Waiting for %s %s is timeout.", product, status)
 }
 
 func GetCreateFailedMessage(product string) string {

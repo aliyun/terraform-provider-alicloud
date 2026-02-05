@@ -169,6 +169,12 @@ func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object 
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
+	// This is an API behavior change. An HTTP status code of 200 will be returned when the resource deleted.
+	// Customize this error message to handle this API change.
+	if response == nil {
+		return nil, WrapErrorf(NotFoundErr("ThreatDetection:BaselineStrategy", id), NotFoundMsg)
+	}
 	v, err := jsonpath.Get("$.Strategy", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Strategy", response)
