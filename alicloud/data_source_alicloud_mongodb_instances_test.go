@@ -8,170 +8,727 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_mongodb_instance.default.name}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_mongodb_instance.default.name}_fake"`,
-		}),
-	}
+func TestAccAliCloudMongoDBInstancesDataSource_basic0(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mongodb_instance.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mongodb_instance.default.id}_fake"]`,
 		}),
 	}
 
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_mongodb_instance.default.name}"`,
-			"tags":       `{Created = "TF"}`,
 		}),
-		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_mongodb_instance.default.name}"`,
-			"tags":       `{Created = "TF1"}`,
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"name_regex": `"${alicloud_mongodb_instance.default.name}_fake"`,
 		}),
 	}
 
-	instanceTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex":    `"${alicloud_mongodb_instance.default.name}"`,
-			"instance_type": `"replicate"`,
-		}),
-		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex":    `"${alicloud_mongodb_instance.default.name}"`,
-			"instance_type": `"sharding"`,
-		}),
-	}
 	instanceClassConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex":     `"${alicloud_mongodb_instance.default.name}"`,
-			"instance_class": `"dds.mongo.mid"`,
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_instance.default.id}"]`,
+			"instance_class": `"${alicloud_mongodb_instance.default.db_instance_class}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex":     `"${alicloud_mongodb_instance.default.name}"`,
-			"instance_class": `"test.rds.mid"`,
-		}),
-	}
-	availabilityZoneConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
-			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.0.id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
-			"availability_zone": `"test_zone"`,
-		}),
-	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
-			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
-			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.0.id}"`,
-			"instance_type":     `"replicate"`,
-			"instance_class":    `"dds.mongo.mid"`,
-		}),
-		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
-			"name_regex":        `"${alicloud_mongodb_instance.default.name}_fake"`,
-			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
-			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.0.id}"`,
-			"instance_type":     `"replicate"`,
-			"instance_class":    `"dds.mongo.mid"`,
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"instance_class": `"${alicloud_mongodb_instance.default.db_instance_class}_fake"`,
 		}),
 	}
 
-	var exisMapFunc = func(rand int) map[string]string {
+	availabilityZoneConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
+			"availability_zone": `"${alicloud_mongodb_instance.default.zone_id}"`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"availability_zone": `"${alicloud_mongodb_instance.default.zone_id}_fake"`,
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":    `["${alicloud_mongodb_instance.default.id}"]`,
+			"status": `"Running"`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"status": `"Deleting"`,
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"tags": `{
+						Created = "TF"
+						For 	= "Instance"
+					  }`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"tags": `{
+						Created = "TF_Update"
+						For 	= "Instance_Update"
+					  }`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
+			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
+			"instance_class":    `"${alicloud_mongodb_instance.default.db_instance_class}"`,
+			"availability_zone": `"${alicloud_mongodb_instance.default.zone_id}"`,
+			"status":            `"Running"`,
+			"tags": `{
+						Created = "TF"
+						For 	= "Instance"
+					  }`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_instance.default.id}_fake"]`,
+			"name_regex":        `"${alicloud_mongodb_instance.default.name}_fake"`,
+			"instance_class":    `"${alicloud_mongodb_instance.default.db_instance_class}_fake"`,
+			"availability_zone": `"${alicloud_mongodb_instance.default.zone_id}_fake"`,
+			"status":            `"Deleting"`,
+			"tags": `{
+						Created = "TF_Update"
+						For 	= "Instance_Update"
+					  }`,
+		}),
+	}
+
+	var existAliCloudMongoDBInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instances.#":                CHECKSET,
-			"instances.0.name":           fmt.Sprintf("tf-testAccMongoDBInstance_datasource_%d", rand),
-			"instances.0.instance_class": "dds.mongo.mid",
-			"instances.0.engine":         "MongoDB",
-			"instances.0.engine_version": "3.4",
-			"instances.0.charge_type":    string(PostPaid),
-			"instances.0.storage":        "10",
-			"instances.0.instance_type":  "replicate",
-			"instances.0.id":             CHECKSET,
-			"instances.0.creation_time":  CHECKSET,
-			"instances.0.region_id":      CHECKSET,
-			"instances.0.status":         CHECKSET,
-			"instances.0.network_type":   CHECKSET,
-			"instances.0.lock_mode":      CHECKSET,
-			"instances.0.tags.%":         "2",
-			"instances.0.tags.Created":   "TF",
-			"instances.0.tags.For":       "acceptance test",
-			"ids.#":                      "1",
-			"ids.0":                      CHECKSET,
-			"names.#":                    "1",
+			"ids.#":                         "1",
+			"names.#":                       "1",
+			"instances.#":                   "1",
+			"instances.0.id":                CHECKSET,
+			"instances.0.engine":            CHECKSET,
+			"instances.0.engine_version":    CHECKSET,
+			"instances.0.instance_type":     CHECKSET,
+			"instances.0.instance_class":    CHECKSET,
+			"instances.0.storage":           CHECKSET,
+			"instances.0.network_type":      CHECKSET,
+			"instances.0.availability_zone": CHECKSET,
+			"instances.0.name":              CHECKSET,
+			"instances.0.charge_type":       CHECKSET,
+			"instances.0.replication":       CHECKSET,
+			"instances.0.lock_mode":         CHECKSET,
+			"instances.0.region_id":         CHECKSET,
+			"instances.0.creation_time":     CHECKSET,
+			"instances.0.expiration_time":   CHECKSET,
+			"instances.0.status":            CHECKSET,
+			"instances.0.tags.%":            "2",
+			"instances.0.tags.Created":      "TF",
+			"instances.0.tags.For":          "Instance",
+			"instances.0.mongos.#":          "0",
+			"instances.0.shards.#":          "0",
+			"instances.0.restore_ranges.#":  "0",
 		}
 	}
-	var fakeMapFunc = func(rand int) map[string]string {
+
+	var fakeAliCloudMongoDBInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instances.#": "0",
 			"ids.#":       "0",
 			"names.#":     "0",
+			"instances.#": "0",
 		}
 	}
 
-	var CheckInfo = dataSourceAttr{
+	var aliCloudMongoDBInstancesCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_mongodb_instances.default",
-		existMapFunc: exisMapFunc,
-		fakeMapFunc:  fakeMapFunc,
+		existMapFunc: existAliCloudMongoDBInstancesDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAliCloudMongoDBInstancesDataSourceNameMapFunc,
 	}
-	CheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, tagsConf, instanceTypeConf, instanceClassConf, availabilityZoneConf, allConf)
+
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	aliCloudMongoDBInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, instanceClassConf, availabilityZoneConf, statusConf, tagsConf, allConf)
 }
 
-func testAccCheckAlicloudMongoDBDataSourceConfig(rand int, attrMap map[string]string) string {
+func TestAccAliCloudMongoDBInstancesDataSource_basic1(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_instance.default.id}"]`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_instance.default.id}"]`,
+			"enable_details": `false`,
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"name_regex":     `"${alicloud_mongodb_instance.default.name}"`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"name_regex":     `"${alicloud_mongodb_instance.default.name}"`,
+			"enable_details": `false`,
+		}),
+	}
+
+	instanceClassConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_instance.default.id}"]`,
+			"instance_class": `"${alicloud_mongodb_instance.default.db_instance_class}"`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_instance.default.id}"]`,
+			"instance_class": `"${alicloud_mongodb_instance.default.db_instance_class}"`,
+			"enable_details": `false`,
+		}),
+	}
+
+	availabilityZoneConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
+			"availability_zone": `"${alicloud_mongodb_instance.default.zone_id}"`,
+			"enable_details":    `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
+			"availability_zone": `"${alicloud_mongodb_instance.default.zone_id}"`,
+			"enable_details":    `false`,
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_instance.default.id}"]`,
+			"status":         `"Running"`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_instance.default.id}"]`,
+			"status":         `"Running"`,
+			"enable_details": `false`,
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"tags": `{
+						Created = "TF"
+						For 	= "Instance"
+					  }`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"tags": `{
+						Created = "TF"
+						For 	= "Instance"
+					  }`,
+			"enable_details": `false`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
+			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
+			"instance_class":    `"${alicloud_mongodb_instance.default.db_instance_class}"`,
+			"availability_zone": `"${alicloud_mongodb_instance.default.zone_id}"`,
+			"status":            `"Running"`,
+			"tags": `{
+						Created = "TF"
+						For 	= "Instance"
+					  }`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
+			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
+			"instance_class":    `"${alicloud_mongodb_instance.default.db_instance_class}"`,
+			"availability_zone": `"${alicloud_mongodb_instance.default.zone_id}"`,
+			"status":            `"Running"`,
+			"tags": `{
+						Created = "TF"
+						For 	= "Instance"
+					  }`,
+			"enable_details": `false`,
+		}),
+	}
+
+	var existAliCloudMongoDBInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                         "1",
+			"names.#":                       "1",
+			"instances.#":                   "1",
+			"instances.0.id":                CHECKSET,
+			"instances.0.engine":            CHECKSET,
+			"instances.0.engine_version":    CHECKSET,
+			"instances.0.instance_type":     CHECKSET,
+			"instances.0.instance_class":    CHECKSET,
+			"instances.0.storage":           CHECKSET,
+			"instances.0.network_type":      CHECKSET,
+			"instances.0.availability_zone": CHECKSET,
+			"instances.0.name":              CHECKSET,
+			"instances.0.charge_type":       CHECKSET,
+			"instances.0.replication":       CHECKSET,
+			"instances.0.lock_mode":         CHECKSET,
+			"instances.0.region_id":         CHECKSET,
+			"instances.0.creation_time":     CHECKSET,
+			"instances.0.expiration_time":   CHECKSET,
+			"instances.0.status":            CHECKSET,
+			"instances.0.tags.%":            "2",
+			"instances.0.tags.Created":      "TF",
+			"instances.0.tags.For":          "Instance",
+			"instances.0.mongos.#":          "0",
+			"instances.0.shards.#":          "0",
+			"instances.0.restore_ranges.#":  CHECKSET,
+		}
+	}
+
+	var fakeAliCloudMongoDBInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                         "1",
+			"names.#":                       "1",
+			"instances.#":                   "1",
+			"instances.0.id":                CHECKSET,
+			"instances.0.engine":            CHECKSET,
+			"instances.0.engine_version":    CHECKSET,
+			"instances.0.instance_type":     CHECKSET,
+			"instances.0.instance_class":    CHECKSET,
+			"instances.0.storage":           CHECKSET,
+			"instances.0.network_type":      CHECKSET,
+			"instances.0.availability_zone": CHECKSET,
+			"instances.0.name":              CHECKSET,
+			"instances.0.charge_type":       CHECKSET,
+			"instances.0.replication":       CHECKSET,
+			"instances.0.lock_mode":         CHECKSET,
+			"instances.0.region_id":         CHECKSET,
+			"instances.0.creation_time":     CHECKSET,
+			"instances.0.expiration_time":   CHECKSET,
+			"instances.0.status":            CHECKSET,
+			"instances.0.tags.%":            "2",
+			"instances.0.tags.Created":      "TF",
+			"instances.0.tags.For":          "Instance",
+			"instances.0.mongos.#":          "0",
+			"instances.0.shards.#":          "0",
+			"instances.0.restore_ranges.#":  "0",
+		}
+	}
+
+	var aliCloudMongoDBInstancesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_mongodb_instances.default",
+		existMapFunc: existAliCloudMongoDBInstancesDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAliCloudMongoDBInstancesDataSourceNameMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	aliCloudMongoDBInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, instanceClassConf, availabilityZoneConf, statusConf, tagsConf, allConf)
+}
+
+func testAccCheckAliCloudMongoDBInstancesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
+
 	config := fmt.Sprintf(`
-data "alicloud_mongodb_zones" "default" {}
+	variable "name" {
+  		default = "tf-MongoDBInstance-%d"
+	}
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+	data "alicloud_mongodb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+	}
+
+	data "alicloud_security_groups" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_mongodb_instance" "default" {
+  		engine_version      = "4.4"
+  		db_instance_class   = "mdb.shard.2x.xlarge.d"
+  		db_instance_storage = 20
+  		vswitch_id          = data.alicloud_vswitches.default.ids.0
+  		name                = var.name
+  		tags = {
+    		Created = "TF"
+    		For     = "Instance"
+  		}
+	}
+
+	data "alicloud_mongodb_instances" "default" {
+		%s
+	}
+`, rand, strings.Join(pairs, " \n "))
+
+	return config
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+func TestAccAliCloudMongoDBShardingInstancesDataSource_basic0(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_mongodb_sharding_instance.default.id}_fake"]`,
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"name_regex": `"${alicloud_mongodb_sharding_instance.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"name_regex": `"${alicloud_mongodb_sharding_instance.default.name}_fake"`,
+		}),
+	}
+
+	availabilityZoneConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"availability_zone": `"${alicloud_mongodb_sharding_instance.default.zone_id}"`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"availability_zone": `"${alicloud_mongodb_sharding_instance.default.zone_id}_fake"`,
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":    `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"status": `"Running"`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"status": `"Deleting"`,
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"tags": `{
+						Created = "TF"
+						For 	= "ShardingInstance"
+					  }`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"tags": `{
+						Created = "TF_Update"
+						For 	= "ShardingInstance_Update"
+					  }`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"name_regex":        `"${alicloud_mongodb_sharding_instance.default.name}"`,
+			"availability_zone": `"${alicloud_mongodb_sharding_instance.default.zone_id}"`,
+			"status":            `"Running"`,
+			"tags": `{
+						Created = "TF"
+						For 	= "ShardingInstance"
+					  }`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_sharding_instance.default.id}_fake"]`,
+			"name_regex":        `"${alicloud_mongodb_sharding_instance.default.name}_fake"`,
+			"availability_zone": `"${alicloud_mongodb_sharding_instance.default.zone_id}_fake"`,
+			"status":            `"Deleting"`,
+			"tags": `{
+						Created = "TF_Update"
+						For 	= "ShardingInstance_Update"
+					  }`,
+		}),
+	}
+
+	var existAliCloudMongoDBShardingInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                         "1",
+			"names.#":                       "1",
+			"instances.#":                   "1",
+			"instances.0.id":                CHECKSET,
+			"instances.0.engine":            CHECKSET,
+			"instances.0.engine_version":    CHECKSET,
+			"instances.0.instance_type":     CHECKSET,
+			"instances.0.instance_class":    CHECKSET,
+			"instances.0.storage":           CHECKSET,
+			"instances.0.network_type":      CHECKSET,
+			"instances.0.availability_zone": CHECKSET,
+			"instances.0.name":              CHECKSET,
+			"instances.0.charge_type":       CHECKSET,
+			"instances.0.lock_mode":         CHECKSET,
+			"instances.0.region_id":         CHECKSET,
+			"instances.0.creation_time":     CHECKSET,
+			"instances.0.expiration_time":   CHECKSET,
+			"instances.0.status":            CHECKSET,
+			"instances.0.tags.%":            "2",
+			"instances.0.tags.Created":      "TF",
+			"instances.0.tags.For":          "ShardingInstance",
+			"instances.0.mongos.#":          CHECKSET,
+			"instances.0.shards.#":          CHECKSET,
+			"instances.0.restore_ranges.#":  "0",
+		}
+	}
+
+	var fakeAliCloudMongoDBShardingInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":       "0",
+			"names.#":     "0",
+			"instances.#": "0",
+		}
+	}
+
+	var aliCloudMongoDBShardingInstancesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_mongodb_instances.default",
+		existMapFunc: existAliCloudMongoDBShardingInstancesDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAliCloudMongoDBShardingInstancesDataSourceNameMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	aliCloudMongoDBShardingInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, availabilityZoneConf, statusConf, tagsConf, allConf)
 }
 
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_name              = "subnet-for-local-test"
+func TestAccAliCloudMongoDBShardingInstancesDataSource_basic1(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"enable_details": `false`,
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"name_regex":     `"${alicloud_mongodb_sharding_instance.default.name}"`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"name_regex":     `"${alicloud_mongodb_sharding_instance.default.name}"`,
+			"enable_details": `false`,
+		}),
+	}
+
+	availabilityZoneConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"availability_zone": `"${alicloud_mongodb_sharding_instance.default.zone_id}"`,
+			"enable_details":    `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"availability_zone": `"${alicloud_mongodb_sharding_instance.default.zone_id}"`,
+			"enable_details":    `false`,
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"status":         `"Running"`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"status":         `"Running"`,
+			"enable_details": `false`,
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"tags": `{
+						Created = "TF"
+						For 	= "ShardingInstance"
+					  }`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"tags": `{
+						Created = "TF"
+						For 	= "ShardingInstance"
+					  }`,
+			"enable_details": `false`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"name_regex":        `"${alicloud_mongodb_sharding_instance.default.name}"`,
+			"availability_zone": `"${alicloud_mongodb_sharding_instance.default.zone_id}"`,
+			"status":            `"Running"`,
+			"tags": `{
+						Created = "TF"
+						For 	= "ShardingInstance"
+					  }`,
+			"enable_details": `true`,
+		}),
+		fakeConfig: testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand, map[string]string{
+
+			"ids":               `["${alicloud_mongodb_sharding_instance.default.id}"]`,
+			"name_regex":        `"${alicloud_mongodb_sharding_instance.default.name}"`,
+			"availability_zone": `"${alicloud_mongodb_sharding_instance.default.zone_id}"`,
+			"status":            `"Running"`,
+			"tags": `{
+						Created = "TF"
+						For 	= "ShardingInstance"
+					  }`,
+			"enable_details": `false`,
+		}),
+	}
+
+	var existAliCloudMongoDBShardingInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                         "1",
+			"names.#":                       "1",
+			"instances.#":                   "1",
+			"instances.0.id":                CHECKSET,
+			"instances.0.engine":            CHECKSET,
+			"instances.0.engine_version":    CHECKSET,
+			"instances.0.instance_type":     CHECKSET,
+			"instances.0.instance_class":    CHECKSET,
+			"instances.0.storage":           CHECKSET,
+			"instances.0.network_type":      CHECKSET,
+			"instances.0.availability_zone": CHECKSET,
+			"instances.0.name":              CHECKSET,
+			"instances.0.charge_type":       CHECKSET,
+			"instances.0.lock_mode":         CHECKSET,
+			"instances.0.region_id":         CHECKSET,
+			"instances.0.creation_time":     CHECKSET,
+			"instances.0.expiration_time":   CHECKSET,
+			"instances.0.status":            CHECKSET,
+			"instances.0.tags.%":            "2",
+			"instances.0.tags.Created":      "TF",
+			"instances.0.tags.For":          "ShardingInstance",
+			"instances.0.mongos.#":          CHECKSET,
+			"instances.0.shards.#":          CHECKSET,
+			"instances.0.restore_ranges.#":  CHECKSET,
+		}
+	}
+
+	var fakeAliCloudMongoDBShardingInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                         "1",
+			"names.#":                       "1",
+			"instances.#":                   "1",
+			"instances.0.id":                CHECKSET,
+			"instances.0.engine":            CHECKSET,
+			"instances.0.engine_version":    CHECKSET,
+			"instances.0.instance_type":     CHECKSET,
+			"instances.0.instance_class":    CHECKSET,
+			"instances.0.storage":           CHECKSET,
+			"instances.0.network_type":      CHECKSET,
+			"instances.0.availability_zone": CHECKSET,
+			"instances.0.name":              CHECKSET,
+			"instances.0.charge_type":       CHECKSET,
+			"instances.0.lock_mode":         CHECKSET,
+			"instances.0.region_id":         CHECKSET,
+			"instances.0.creation_time":     CHECKSET,
+			"instances.0.expiration_time":   CHECKSET,
+			"instances.0.status":            CHECKSET,
+			"instances.0.tags.%":            "2",
+			"instances.0.tags.Created":      "TF",
+			"instances.0.tags.For":          "ShardingInstance",
+			"instances.0.mongos.#":          CHECKSET,
+			"instances.0.shards.#":          CHECKSET,
+			"instances.0.restore_ranges.#":  "0",
+		}
+	}
+
+	var aliCloudMongoDBShardingInstancesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_mongodb_instances.default",
+		existMapFunc: existAliCloudMongoDBShardingInstancesDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAliCloudMongoDBShardingInstancesDataSourceNameMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	aliCloudMongoDBShardingInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, availabilityZoneConf, statusConf, tagsConf, allConf)
 }
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
+func testAccCheckAliCloudMongoDBShardingInstancesDataSourceName(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-variable "name" {
-  default = "tf-testAccMongoDBInstance_datasource_%d"
-}
+	config := fmt.Sprintf(`
+	variable "name" {
+  		default = "tf-MongoDBShardingInstance-%d"
+	}
 
-resource "alicloud_mongodb_instance" "default" {
-  engine_version      = "3.4"
-  db_instance_class   = "dds.mongo.mid"
-  db_instance_storage = 10
-  name                = "${var.name}"
-  vswitch_id          = local.vswitch_id
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
-data "alicloud_mongodb_instances" "default" {
-  %s
-}
-`, rand, strings.Join(pairs, "\n  "))
+	data "alicloud_mongodb_zones" "default" {
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.17.3.0/24"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		cidr_block   = "172.17.3.0/24"
+  		vpc_id       = alicloud_vpc.default.id
+  		zone_id      = data.alicloud_mongodb_zones.default.zones.1.id
+	}
+
+	resource "alicloud_mongodb_sharding_instance" "default" {
+  		engine_version = "4.2"
+  		vswitch_id     = alicloud_vswitch.default.id
+  		zone_id        = alicloud_vswitch.default.zone_id
+  		name           = var.name
+  		mongo_list {
+    		node_class = "dds.mongos.mid"
+  		}
+  		mongo_list {
+    		node_class = "dds.mongos.mid"
+  		}
+  		shard_list {
+    		node_class   = "dds.shard.mid"
+    		node_storage = "10"
+  		}
+  		shard_list {
+    		node_class        = "dds.shard.standard"
+    		node_storage      = "20"
+    		readonly_replicas = "1"
+  		}
+  		tags = {
+    		Created = "TF"
+    		For     = "ShardingInstance"
+  		}
+	}
+
+	data "alicloud_mongodb_instances" "default" {
+  		instance_type = "sharding"
+  		%s
+	}
+`, rand, strings.Join(pairs, " \n "))
+
 	return config
 }
