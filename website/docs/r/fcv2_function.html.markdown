@@ -355,6 +355,7 @@ The custom_container_config supports the following:
 * `args` - (Optional) Container startup parameters.
 * `command` - (Optional) Container start command, equivalent to Docker ENTRYPOINT.
 * `image` - (Optional) Container Image address. Example value: registry-vpc.cn-hangzhou.aliyuncs.com/fc-demo/helloworld:v1beta1.
+* `instance_id` - (Optional) The ID of the image repository for the Container Registry Enterprise Edition. You must specify this parameter when you use an image for Container Registry Enterprise Edition. Example value: cri-xxxxxxxxxx.
 * `web_server_mode` - (Optional) Whether the image is run in Web Server mode. The value of true needs to implement the Web Server in the container image to listen to the port and process the request. The value of false needs to actively exit the process after the container runs, and the ExitCode needs to be 0. Default true.
 
 ### `custom_dns`
