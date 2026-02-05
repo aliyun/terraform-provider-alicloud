@@ -1675,10 +1675,10 @@ func checkControlPlaneLogEnable(d *schema.ResourceData, meta interface{}) error 
 	}
 	if response.Body != nil {
 		if response.Body.LogTtl != nil {
-			d.Set("control_plane_log_ttl", *response.Body.LogTtl)
+			d.Set("control_plane_log_ttl", response.Body.LogTtl)
 		}
 		if response.Body.LogProject != nil {
-			d.Set("control_plane_log_project", *response.Body.LogProject)
+			d.Set("control_plane_log_project", response.Body.LogProject)
 		}
 		components := make([]string, len(response.Body.Components))
 		for i, c := range response.Body.Components {
