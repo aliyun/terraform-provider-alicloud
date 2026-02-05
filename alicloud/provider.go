@@ -1283,7 +1283,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_db_database":                                          resourceAliCloudRdsDatabase(),
 			"alicloud_db_account":                                           resourceAliCloudRdsAccount(),
 			"alicloud_db_account_privilege":                                 resourceAlicloudDBAccountPrivilege(),
-			"alicloud_db_backup_policy":                                     resourceAlicloudDBBackupPolicy(),
+			"alicloud_db_backup_policy":                                     resourceAliCloudRdsBackupPolicy(),
 			"alicloud_db_connection":                                        resourceAlicloudDBConnection(),
 			"alicloud_db_read_write_splitting_connection":                   resourceAlicloudDBReadWriteSplittingConnection(),
 			"alicloud_db_instance":                                          resourceAliCloudDBInstance(),
