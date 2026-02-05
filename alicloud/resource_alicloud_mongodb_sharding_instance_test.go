@@ -217,11 +217,23 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"auto_renew": "true",
+					"auto_renew":          "true",
+					"auto_renew_duration": "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"auto_renew": "true",
+						"auto_renew":          "true",
+						"auto_renew_duration": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew_duration": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew_duration": "6",
 					}),
 				),
 			},
@@ -379,7 +391,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "order_type", "parameters"},
 			},
 		},
 	})
@@ -489,7 +501,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "order_type", "parameters"},
 			},
 		},
 	})
@@ -518,7 +530,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version": "4.4",
+					"engine_version": "7.0",
 					"vswitch_id":     "${alicloud_vswitch.default.id}",
 					"mongo_list": []map[string]interface{}{
 						{
@@ -531,10 +543,10 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 					"shard_list": []map[string]interface{}{
 						{
 							"node_class":   "mdb.shard.8x.large.d",
-							"node_storage": "50",
+							"node_storage": "60",
 						},
 						{
-							"node_class":        "mdb.shard.8x.xlarge.d",
+							"node_class":        "mdb.shard.8x.large.d",
 							"node_storage":      "60",
 							"readonly_replicas": "1",
 						},
@@ -548,7 +560,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":       "4.4",
+						"engine_version":       "7.0",
 						"vswitch_id":           CHECKSET,
 						"mongo_list.#":         "2",
 						"shard_list.#":         "2",
@@ -570,11 +582,11 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version": "5.0",
+					"engine_version": "8.0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version": "5.0",
+						"engine_version": "8.0",
 					}),
 				),
 			},
@@ -726,6 +738,27 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ssl_action":       "Update",
+					"force_encryption": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force_encryption": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force_encryption": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force_encryption": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"ssl_action": "Close",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -845,7 +878,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 							"node_class": "mdb.shard.8x.large.d",
 						},
 						{
-							"node_class": "mdb.shard.8x.xlarge.d",
+							"node_class": "mdb.shard.2x.2xlarge.d",
 						},
 					},
 				}),
@@ -859,18 +892,19 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"shard_list": []map[string]interface{}{
 						{
-							"node_class":   "mdb.shard.8x.large.d",
-							"node_storage": "60",
+							"node_class":        "mdb.shard.8x.xlarge.d",
+							"node_storage":      "100",
+							"readonly_replicas": "2",
 						},
 						{
 							"node_class":        "mdb.shard.8x.xlarge.d",
-							"node_storage":      "80",
-							"readonly_replicas": "1",
+							"node_storage":      "100",
+							"readonly_replicas": "2",
 						},
 						// There is an api bug that does not support to update readonly_replicas
 						//{
 						//	"node_class":        "mdb.shard.8x.xlarge.d",
-						//	"node_storage":      "50",
+						//	"node_storage":      "100",
 						//	"readonly_replicas": "2",
 						//},
 					},
@@ -885,7 +919,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "order_type", "parameters"},
 			},
 		},
 	})
@@ -914,7 +948,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version":            "4.4",
+					"engine_version":            "8.0",
 					"storage_engine":            "WiredTiger",
 					"storage_type":              "cloud_auto",
 					"provisioned_iops":          "2000",
@@ -933,20 +967,23 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					"cloud_disk_encryption_key": "${alicloud_kms_key.default.id}",
 					"account_password":          "YourPassword_123",
 					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"backup_time":               "11:00Z-12:00Z",
-					"backup_period":             []string{"Monday", "Tuesday", "Wednesday"},
-					"backup_retention_period":   "7",
+					// Currently, src_db_instance_id and restore_time cannot be CI tested, local testing has passed
+					//"src_db_instance_id":      "",
+					//"restore_time":            "",
+					"backup_time":             "11:00Z-12:00Z",
+					"backup_period":           []string{"Monday", "Tuesday", "Wednesday"},
+					"backup_retention_period": "7",
 					"backup_retention_policy_on_cluster_deletion": "1",
 					"enable_backup_log":                           "1",
 					"log_backup_retention_period":                 "120",
 					"snapshot_backup_type":                        "Flash",
 					"backup_interval":                             "60",
 					"ssl_action":                                  "Open",
-					// There is an OpenAPI bug
-					//"maintain_start_time":                         "00:00Z",
-					//"maintain_end_time":                           "03:00Z",
-					"db_instance_release_protection": "false",
-					"global_security_group_list":     "${alicloud_mongodb_global_security_ip_group.default.*.id}",
+					"force_encryption":                            "1",
+					"maintain_start_time":                         "00:00Z",
+					"maintain_end_time":                           "03:00Z",
+					"db_instance_release_protection":              "false",
+					"global_security_group_list":                  "${alicloud_mongodb_global_security_ip_group.default.*.id}",
 					"parameters": []interface{}{
 						map[string]interface{}{
 							"name":  "operationProfiling.slowOpThresholdMs",
@@ -967,8 +1004,8 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 							"node_storage": "500",
 						},
 						{
-							"node_class":        "mdb.shard.8x.xlarge.d",
-							"node_storage":      "510",
+							"node_class":        "mdb.shard.8x.large.d",
+							"node_storage":      "500",
 							"readonly_replicas": "1",
 						},
 					},
@@ -985,7 +1022,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":            "4.4",
+						"engine_version":            "8.0",
 						"storage_engine":            "WiredTiger",
 						"storage_type":              "cloud_auto",
 						"provisioned_iops":          "2000",
@@ -1012,18 +1049,19 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 						"log_backup_retention_period":                 "120",
 						"snapshot_backup_type":                        "Flash",
 						"backup_interval":                             "60",
+						"force_encryption":                            "1",
 						"ssl_status":                                  "Open",
-						//"maintain_start_time":                         "00:00Z",
-						//"maintain_end_time":                           "03:00Z",
-						"db_instance_release_protection": "false",
-						"global_security_group_list.#":   "3",
-						"parameters.#":                   "1",
-						"mongo_list.#":                   "2",
-						"shard_list.#":                   "2",
-						"config_server_list.#":           "1",
-						"tags.%":                         "2",
-						"tags.Created":                   "TF",
-						"tags.For":                       "ShardingInstance",
+						"maintain_start_time":                         "00:00Z",
+						"maintain_end_time":                           "03:00Z",
+						"db_instance_release_protection":              "false",
+						"global_security_group_list.#":                "3",
+						"parameters.#":                                "1",
+						"mongo_list.#":                                "2",
+						"shard_list.#":                                "2",
+						"config_server_list.#":                        "1",
+						"tags.%":                                      "2",
+						"tags.Created":                                "TF",
+						"tags.For":                                    "ShardingInstance",
 					}),
 				),
 			},
@@ -1031,7 +1069,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "order_type", "parameters"},
 			},
 		},
 	})
@@ -1054,6 +1092,7 @@ var AliCloudMongoDBShardingInstanceMap0 = map[string]string{
 	"config_server_list.#": CHECKSET,
 	"retention_period":     CHECKSET,
 	"ssl_status":           CHECKSET,
+	"zone_infos.#":         CHECKSET,
 }
 
 func AliCloudMongoDBShardingInstanceBasicDependence0(name string) string {

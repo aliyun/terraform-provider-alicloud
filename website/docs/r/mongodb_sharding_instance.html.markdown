@@ -108,6 +108,11 @@ The following arguments are supported:
 * `cloud_disk_encryption_key` - (Optional, ForceNew, Available since v1.260.0) The ID of the encryption key.
 * `resource_group_id` - (Optional, Available since v1.161.0) The ID of the Resource Group.
 * `auto_renew` - (Optional, Bool, Available since v1.141.0) Auto renew for prepaid. Default value: `false`. Valid values: `true`, `false`.
+* `auto_renew_duration` - (Optional, Int, Available since v1.271.0) The auto-renewal period. Unit: months. Valid values: `1` to `12`.
+-> **NOTE:** If `auto_renew` is set to `true`, `auto_renew_duration` must be set.
+* `src_db_instance_id` - (Optional, Available since v1.271.0) The source instance ID.
+* `restore_time` - (Optional, Available since v1.271.0) The point in time to which you want to restore the instance. You can specify any point in time within the last seven days. The time must be in the yyyy-MM-ddTHH:mm:ssZ format and in UTC.
+-> **NOTE:** You must specify `src_db_instance_id` and `restore_time` only when you clone an instance based on a point in time.
 * `backup_time` - (Optional, Available since v1.42.0) Sharding Instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
 * `backup_retention_period` - (Optional, Int, Available since v1.259.0) The retention period of full backups.
@@ -126,6 +131,11 @@ The following arguments are supported:
   - `Open`: turn on SSL encryption.
   - `Close`: turn off SSL encryption.
   - `Update`: update SSL certificate.
+-> **NOTE:** Once `ssl_action` is set, it isn't allowed to be removed from the Terraform code.
+* `force_encryption` - (Optional, Available since v1.271.0) Specifies whether to forcibly enable SSL encryption for connections. Valid values:
+  - `1`: Forcibly enable SSL encryption.
+  - `0`: Do not forcibly enable SSL encryption.
+-> **NOTE:** `force_encryption` is supported only for MongoDB 7.0 and 8.0 instances that use cloud disks. After you enable forced SSL encryption, only SSL connections to the instance are allowed.
 * `maintain_start_time` - (Optional, Available since v1.259.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available since v1.259.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
@@ -181,6 +191,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Sharding Instance.
 * `retention_period` - (Available since v1.42.0) Instance data backup retention days.
 * `ssl_status` - (Available since v1.259.0) The status of the SSL feature.
+* `key_ids` - (Available since v1.271.0) A list of instance keys.
 * `mongo_list` - The mongo nodes of the instance.
   * `node_id` - The ID of the mongo node.
   * `connect_string` - The endpoint of the mongo node.
@@ -194,7 +205,12 @@ The following attributes are exported:
   * `max_connections` - The max connections of the Config Server node.
   * `max_iops` - The maximum IOPS of the Config Server node.
   * `node_description` - The description of the Config Server node.
-
+* `zone_infos` - (Available since v1.271.0) The information of nodes in the zone.
+  * `ins_name` - The ID of the node.
+  * `node_type` - The type of the node.
+  * `role_id` - The role ID.
+  * `role_type` - The role of the node.
+  * `zone_id` - The zone ID of the node.
 ## Timeouts
 
 -> **NOTE:** Available since v1.126.0.
@@ -210,5 +226,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 MongoDB Sharding Instance can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_mongodb_sharding_instance.example dds-bp1291daeda44195
+$ terraform import alicloud_mongodb_sharding_instance.example <id>
 ```
