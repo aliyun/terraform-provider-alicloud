@@ -1824,6 +1824,49 @@ func (s *MongoDBService) DescribeMongoDBGlobalSecurityGroupIds(id string) (globa
 	return globalSecurityGroupIds, nil
 }
 
+func (s *MongoDBService) DescribeMongoDBRecoverTime(d *schema.ResourceData, id string) (objects []interface{}, err error) {
+	var response map[string]interface{}
+
+	action := "DescribeInstanceRecoverTime"
+
+	if fmt.Sprint(d.Get("instance_type")) == "sharding" {
+		action = "DescribeClusterRecoverTime"
+	}
+
+	client := s.client
+
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.RestoreRanges", response)
+	if err != nil {
+		return objects, nil
+	}
+
+	objects = resp.([]interface{})
+
+	return objects, nil
+}
+
 func (s *MongoDBService) DescribeMongoDBAutoRenewalAttribute(id, instanceType string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeInstanceAutoRenewalAttribute"
