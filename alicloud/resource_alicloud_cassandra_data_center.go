@@ -47,7 +47,6 @@ func resourceAlicloudCassandraDataCenter() *schema.Resource {
 			"data_center_id": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 			"data_center_name": {
 				Type:     schema.TypeString,
