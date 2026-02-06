@@ -52,6 +52,7 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			// lintignore: S018
 			"scaling_rule_metric": {
 				Type:         schema.TypeSet,
 				Optional:     true,
@@ -100,6 +101,7 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"scale_up_rules": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -121,6 +123,7 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"scale_down_rules": {
 							Type:     schema.TypeSet,
 							Optional: true,

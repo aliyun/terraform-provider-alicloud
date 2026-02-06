@@ -52,6 +52,7 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 				Optional: true,
 			},
 
+			// lintignore: S018
 			"full_text": {
 				Type:     schema.TypeSet,
 				Optional: true,

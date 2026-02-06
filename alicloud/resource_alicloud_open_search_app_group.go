@@ -39,6 +39,7 @@ func resourceAlicloudOpenSearchAppGroup() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
+			// lintignore: S018
 			"quota": {
 				Type:     schema.TypeSet,
 				Required: true,

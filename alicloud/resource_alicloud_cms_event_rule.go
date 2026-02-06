@@ -47,6 +47,7 @@ func resourceAliCloudCloudMonitorServiceEventRule() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"DISABLED", "ENABLED"}, false),
 			},
+			// lintignore: S018
 			"event_pattern": {
 				Type:     schema.TypeSet,
 				Required: true,

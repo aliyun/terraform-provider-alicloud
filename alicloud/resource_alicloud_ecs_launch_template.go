@@ -174,6 +174,7 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				Deprecated:    "Field 'name' has been deprecated from provider version 1.120.0. New field 'launch_template_name' instead.",
 				ConflictsWith: []string{"launch_template_name"},
 			},
+			// lintignore: S018
 			"network_interfaces": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -274,6 +275,7 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
+			// lintignore: S018
 			"system_disk": {
 				Type:     schema.TypeSet,
 				Optional: true,

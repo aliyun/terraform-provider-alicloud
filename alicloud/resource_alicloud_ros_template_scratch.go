@@ -58,6 +58,7 @@ func resourceAlicloudRosTemplateScratch() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"source_tag": {
 				Type:         schema.TypeSet,
 				Optional:     true,
@@ -78,6 +79,7 @@ func resourceAlicloudRosTemplateScratch() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"source_resource_group": {
 				Type:     schema.TypeSet,
 				Optional: true,

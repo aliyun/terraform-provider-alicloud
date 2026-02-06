@@ -265,6 +265,7 @@ func resourceAlicloudLogAlert() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"policy_configuration": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -286,6 +287,7 @@ func resourceAlicloudLogAlert() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"group_configuration": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -350,6 +352,7 @@ func resourceAlicloudLogAlert() *schema.Resource {
 				Deprecated:    "Field 'schedule_type' has been deprecated from provider version 1.176.0. New field 'schedule' instead.",
 				ConflictsWith: []string{"schedule"},
 			},
+			// lintignore: S018
 			"schedule": {
 				Type:     schema.TypeSet,
 				Optional: true,

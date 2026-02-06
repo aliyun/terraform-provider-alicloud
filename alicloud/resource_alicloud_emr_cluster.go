@@ -56,6 +56,7 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"local", "user_rds", "dlf"}, false),
 			},
+			// lintignore: S018
 			"meta_store_conf": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -119,6 +120,7 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"modify_cluster_service_config": {
 				Type:     schema.TypeSet,
 				Optional: true,

@@ -98,6 +98,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
+			// lintignore: S018
 			"parameter_filter_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -125,6 +126,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
+			// lintignore: S018
 			"page_404_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -150,6 +152,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
+			// lintignore: S018
 			"refer_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -207,6 +210,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
+			// lintignore: S018
 			"auth_config": {
 				Type:     schema.TypeSet,
 				Optional: true,

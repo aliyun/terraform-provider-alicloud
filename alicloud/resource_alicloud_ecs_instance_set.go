@@ -383,6 +383,7 @@ func resourceAliCloudEcsInstanceSet() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			// lintignore: S018
 			"exclude_instance_filter": {
 				Type:     schema.TypeSet,
 				Optional: true,

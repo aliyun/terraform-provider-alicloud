@@ -45,6 +45,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
+			// lintignore: S018
 			"subscription_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -257,6 +258,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"PRIORITY", "COST_OPTIMIZED"}, false),
 						},
+						// lintignore: S018
 						"subscription_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -294,6 +296,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							},
 							MaxItems: 1,
 						},
+						// lintignore: S018
 						"private_pool_options": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -358,6 +361,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
+						// lintignore: S018
 						"system_disk": {
 							Type:     schema.TypeSet,
 							Required: true,
@@ -425,6 +429,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							Optional: true,
 							Computed: true,
 						},
+						// lintignore: S018
 						"cost_optimized_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -850,6 +855,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							Required:     true,
 							ValidateFunc: validation.StringInSlice([]string{"FAILED_CONTINUE", "FAILED_BLOCK"}, false),
 						},
+						// lintignore: S018
 						"node_selector": {
 							Type:     schema.TypeSet,
 							Required: true,
