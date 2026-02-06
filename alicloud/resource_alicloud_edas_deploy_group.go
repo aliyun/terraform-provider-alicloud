@@ -31,7 +31,6 @@ func resourceAlicloudEdasDeployGroup() *schema.Resource {
 			"group_type": {
 				Type:     schema.TypeInt,
 				Computed: true,
-				ForceNew: true,
 			},
 		},
 	}

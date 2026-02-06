@@ -478,9 +478,9 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 			"instance_types": {
 				Type:     schema.TypeList,
 				Optional: true,
+				MaxItems: 5,
 				Elem: &schema.Schema{
-					Type:     schema.TypeString,
-					MaxItems: 5,
+					Type: schema.TypeString,
 				},
 			},
 			"init_containers": {
@@ -944,7 +944,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	}
 	request["Container"] = Containers
 	// instance_types
-	types := make([]string, 0, int(5))
+	types := make([]string, 0, 5)
 	instanceTypes := d.Get("instance_types").([]interface{})
 	if instanceTypes != nil && len(instanceTypes) > 0 {
 		types = expandStringList(instanceTypes)

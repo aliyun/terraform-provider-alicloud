@@ -40,7 +40,6 @@ func resourceAlicloudEbsDedicatedBlockStorageCluster() *schema.Resource {
 			},
 			"dedicated_block_storage_cluster_id": {
 				Computed: true,
-				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 			"dedicated_block_storage_cluster_name": {
