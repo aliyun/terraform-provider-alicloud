@@ -20,12 +20,6 @@ For information about Max Compute Tenant Role User Attachment and how to use it,
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_max_compute_tenant_role_user_attachment&exampleId=145d8862-76ff-5a2f-f507-39f2f80120cd49b6fc27&activeTab=example&spm=docs.r.max_compute_tenant_role_user_attachment.0.145d886276&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -41,14 +35,21 @@ resource "alicloud_max_compute_tenant_role_user_attachment" "default0" {
 }
 ```
 
-
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_tenant_role_user_attachment&spm=docs.r.max_compute_tenant_role_user_attachment.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
-* `account_id` - (Optional, ForceNew, Computed) This property does not have a description in the spec, please add it before generating code.
-* `tenant_role` - (Optional, ForceNew, Computed) This property does not have a description in the spec, please add it before generating code.
+* `account_id` - (Optional, ForceNew, Computed) Account UID
+
+1. If the user is a primary account, the AccountId format is UID.  
+   Example: 200231703336555555
+
+2. If the user is a RAM user, the AccountId format is p4_UID.  
+   Example: p4_200531704446555555
+
+3. If the user is a RAM role, the AccountId format is v4_UID.  
+   Example: v4_300007628597555555
+
+* `tenant_role` - (Optional, ForceNew, Computed) Tenant role. By default, admin and super_administrator are available. You can add more roles in the console.
 
 ## Attributes Reference
 
