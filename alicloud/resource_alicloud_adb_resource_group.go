@@ -52,6 +52,7 @@ func resourceAliCloudAdbResourceGroup() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			// lintignore: S006
 			"engine_params": {
 				Type:     schema.TypeMap,
 				Optional: true,

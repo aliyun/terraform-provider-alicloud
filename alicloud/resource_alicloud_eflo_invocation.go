@@ -64,6 +64,7 @@ func resourceAliCloudEfloInvocation() *schema.Resource {
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			// lintignore: S006
 			"parameters": {
 				Type:     schema.TypeMap,
 				Optional: true,

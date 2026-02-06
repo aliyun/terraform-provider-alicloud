@@ -342,6 +342,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
+						// lintignore: S006
 						"system_reserved": {
 							Type:     schema.TypeMap,
 							Optional: true,
@@ -368,6 +369,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
+									// lintignore: S006
 									"limits": {
 										Type:     schema.TypeMap,
 										Optional: true,
@@ -395,6 +397,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S006
 						"eviction_soft_grace_period": {
 							Type:     schema.TypeMap,
 							Optional: true,
@@ -415,6 +418,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S006
 						"eviction_soft": {
 							Type:     schema.TypeMap,
 							Optional: true,
@@ -423,6 +427,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S006
 						"kube_reserved": {
 							Type:     schema.TypeMap,
 							Optional: true,
@@ -435,6 +440,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S006
 						"eviction_hard": {
 							Type:     schema.TypeMap,
 							Optional: true,

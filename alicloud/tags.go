@@ -24,6 +24,7 @@ func String(v string) *string {
 	return &v
 }
 
+// lintignore: S006
 func tagsSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,
@@ -31,6 +32,7 @@ func tagsSchema() *schema.Schema {
 	}
 }
 
+// lintignore: S006
 func tagsSchemaForceNew() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,
@@ -39,6 +41,7 @@ func tagsSchemaForceNew() *schema.Schema {
 	}
 }
 
+// lintignore: S006
 func tagsSchemaComputed() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,

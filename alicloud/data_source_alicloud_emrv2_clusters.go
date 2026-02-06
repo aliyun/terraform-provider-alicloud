@@ -124,6 +124,7 @@ func dataSourceAlicloudEmrV2Clusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						// lintignore: S006
 						"state_change_reason": {
 							Type:     schema.TypeMap,
 							Computed: true,

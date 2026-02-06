@@ -204,10 +204,12 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 										Computed: true,
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
+									// lintignore: S006
 									"system_reserved": {
 										Type:     schema.TypeMap,
 										Computed: true,
 									},
+									// lintignore: S006
 									"feature_gates": {
 										Type:     schema.TypeMap,
 										Computed: true,
@@ -229,6 +231,7 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 										Computed: true,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
+												// lintignore: S006
 												"limits": {
 													Type:     schema.TypeMap,
 													Computed: true,
@@ -256,6 +259,7 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									// lintignore: S006
 									"eviction_soft_grace_period": {
 										Type:     schema.TypeMap,
 										Computed: true,
@@ -272,6 +276,7 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									// lintignore: S006
 									"eviction_soft": {
 										Type:     schema.TypeMap,
 										Computed: true,
@@ -280,6 +285,7 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									// lintignore: S006
 									"kube_reserved": {
 										Type:     schema.TypeMap,
 										Computed: true,
@@ -292,6 +298,7 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									// lintignore: S006
 									"eviction_hard": {
 										Type:     schema.TypeMap,
 										Computed: true,
@@ -630,6 +637,7 @@ func dataSourceAliCloudAckNodepools() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"taints": {
 							Type:     schema.TypeList,

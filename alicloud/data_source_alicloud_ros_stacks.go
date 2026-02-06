@@ -133,6 +133,7 @@ func dataSourceAlicloudRosStacks() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"template_description": {
 							Type:     schema.TypeString,

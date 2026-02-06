@@ -34,6 +34,7 @@ func resourceAliCloudEventBridgeEventSource() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			// lintignore: S006
 			"external_source_config": {
 				Type:     schema.TypeMap,
 				Optional: true,

@@ -66,6 +66,7 @@ func resourceAlicloudRosTemplateScratch() *schema.Resource {
 				ExactlyOneOf: []string{"source_resource_group", "source_tag", "source_resources"},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						// lintignore: S006
 						"resource_tags": {
 							Type:     schema.TypeMap,
 							Required: true,

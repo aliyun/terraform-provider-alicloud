@@ -81,6 +81,7 @@ func resourceAliCloudConfigRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			// lintignore: S006
 			"input_parameters": {
 				Type:     schema.TypeMap,
 				Optional: true,

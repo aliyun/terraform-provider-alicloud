@@ -117,6 +117,7 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 													Type:     schema.TypeString,
 													Computed: true,
 												},
+												// lintignore: S006
 												"annotations": {
 													Type:     schema.TypeMap,
 													Computed: true,
@@ -133,6 +134,7 @@ func dataSourceAliCloudSlsAlerts() *schema.Resource {
 													Type:     schema.TypeString,
 													Computed: true,
 												},
+												// lintignore: S006
 												"tokens": {
 													Type:     schema.TypeMap,
 													Computed: true,

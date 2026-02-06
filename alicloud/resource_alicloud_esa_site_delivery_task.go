@@ -65,6 +65,7 @@ func resourceAliCloudEsaSiteDeliveryTask() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S006
 						"header_param": {
 							Type:     schema.TypeMap,
 							Optional: true,
@@ -98,6 +99,7 @@ func resourceAliCloudEsaSiteDeliveryTask() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S006
 						"query_param": {
 							Type:     schema.TypeMap,
 							Optional: true,

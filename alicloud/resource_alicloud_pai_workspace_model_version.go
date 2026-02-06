@@ -33,6 +33,7 @@ func resourceAliCloudPaiWorkspaceModelVersion() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			// lintignore: S006
 			"extra_info": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -47,6 +48,7 @@ func resourceAliCloudPaiWorkspaceModelVersion() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			// lintignore: S006
 			"inference_spec": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -67,6 +69,7 @@ func resourceAliCloudPaiWorkspaceModelVersion() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S006
 			"metrics": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -89,6 +92,7 @@ func resourceAliCloudPaiWorkspaceModelVersion() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			// lintignore: S006
 			"training_spec": {
 				Type:     schema.TypeMap,
 				Optional: true,

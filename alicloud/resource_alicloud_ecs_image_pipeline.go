@@ -88,6 +88,7 @@ func resourceAlicloudEcsImagePipeline() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 			},
+			// lintignore: S006
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,

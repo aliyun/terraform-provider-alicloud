@@ -45,6 +45,7 @@ func dataSourceAliCloudVpcIpamIpams() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			// lintignore: S006
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -105,6 +106,7 @@ func dataSourceAliCloudVpcIpamIpams() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"id": {
 							Type:     schema.TypeString,

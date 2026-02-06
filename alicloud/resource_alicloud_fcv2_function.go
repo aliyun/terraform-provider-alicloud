@@ -193,6 +193,7 @@ func resourceAliCloudFcv2Function() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			// lintignore: S006
 			"environment_variables": {
 				Type:     schema.TypeMap,
 				Optional: true,

@@ -35,6 +35,7 @@ func resourceAlicloudLogAudit() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			// lintignore: S006
 			"variable_map": {
 				Type:     schema.TypeMap,
 				Optional: true,

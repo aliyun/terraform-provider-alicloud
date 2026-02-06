@@ -283,6 +283,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: IntAtLeast(512),
 			},
+			// lintignore: S006
 			"environment_variables": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -605,6 +606,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						// lintignore: S006
 						"params": {
 							Type:     schema.TypeMap,
 							Computed: true,
