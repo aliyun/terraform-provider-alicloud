@@ -2736,6 +2736,7 @@ func init() {
 	}
 }
 
+// lintignore: S018
 func assumeRoleSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeSet,
@@ -2830,6 +2831,7 @@ func assumeRoleWithOidcSchema() *schema.Schema {
 	}
 }
 
+// lintignore: S018
 func signVersionSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeSet,

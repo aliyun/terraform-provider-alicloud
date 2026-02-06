@@ -66,6 +66,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 							Required:     true,
 							ValidateFunc: StringInSlice([]string{"ForwardGroup", "Redirect", "FixedResponse", "Rewrite", "InsertHeader", "TrafficLimit", "TrafficMirror", "Cors", "RemoveHeader"}, false),
 						},
+						// lintignore: S018
 						"fixed_response_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -116,6 +117,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 											},
 										},
 									},
+									// lintignore: S018
 									"server_group_sticky_session": {
 										Type:     schema.TypeSet,
 										Optional: true,
@@ -140,6 +142,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"insert_header_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -164,6 +167,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"remove_header_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -178,6 +182,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"redirect_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -215,6 +220,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"rewrite_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -239,6 +245,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"traffic_limit_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -258,6 +265,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"traffic_mirror_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -268,6 +276,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
+									// lintignore: S018
 									"mirror_group_config": {
 										Type:     schema.TypeSet,
 										Optional: true,
@@ -292,6 +301,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"cors_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -344,6 +354,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 							Required:     true,
 							ValidateFunc: StringInSlice([]string{"Host", "Path", "Header", "QueryString", "Method", "Cookie", "SourceIp", "ResponseHeader", "ResponseStatusCode"}, false),
 						},
+						// lintignore: S018
 						"cookie_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -371,6 +382,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"header_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -390,6 +402,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"response_header_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -409,6 +422,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"response_status_code_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -423,6 +437,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"host_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -437,6 +452,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"method_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -451,6 +467,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"path_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -465,6 +482,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"query_string_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -492,6 +510,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"source_ip_config": {
 							Type:     schema.TypeSet,
 							Optional: true,

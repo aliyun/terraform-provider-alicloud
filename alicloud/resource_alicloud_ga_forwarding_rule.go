@@ -60,6 +60,7 @@ func resourceAliCloudGaForwardingRule() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S018
 						"path_config": {
 							Type:     schema.TypeSet,
 							MaxItems: 1,
@@ -113,6 +114,7 @@ func resourceAliCloudGaForwardingRule() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S018
 						"forward_group_config": {
 							Type:     schema.TypeSet,
 							MaxItems: 1,

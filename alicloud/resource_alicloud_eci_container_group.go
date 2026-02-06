@@ -625,6 +625,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"dns_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -664,6 +665,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"eci_security_context": {
 				Type:     schema.TypeSet,
 				Removed:  "Field 'eci_security_context' has been removed from provider version ?",
@@ -694,6 +696,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"security_context": {
 				Type:     schema.TypeSet,
 				Optional: true,

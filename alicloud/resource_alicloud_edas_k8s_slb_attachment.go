@@ -76,6 +76,7 @@ func resourceAlicloudEdasK8sSlbAttachment() *schema.Resource {
 										Required:     true,
 										ValidateFunc: validation.StringInSlice([]string{"TCP", "HTTP", "HTTPS"}, false),
 									},
+									// lintignore: S018
 									"service_port": {
 										Type:     schema.TypeSet,
 										Required: true,

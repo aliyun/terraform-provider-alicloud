@@ -27,6 +27,7 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			// lintignore: S018
 			"access_log_config": {
 				Type:     schema.TypeSet,
 				Optional: true,

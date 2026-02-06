@@ -98,6 +98,7 @@ func resourceAliCloudEventBridgeRule() *schema.Resource {
 							Computed:     true,
 							ValidateFunc: StringInSlice([]string{"BACKOFF_RETRY", "EXPONENTIAL_DECAY_RETRY"}, false),
 						},
+						// lintignore: S018
 						"dead_letter_queue": {
 							Type:     schema.TypeSet,
 							Optional: true,
