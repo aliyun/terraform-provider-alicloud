@@ -654,6 +654,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeInt},
 			},
+			// lintignore: S006
 			"templates": {
 				Type:     schema.TypeList,
 				Computed: true,

@@ -63,6 +63,7 @@ func resourceAlicloudMarketOrder() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			// lintignore: S006
 			"components": {
 				Type:     schema.TypeMap,
 				Optional: true,

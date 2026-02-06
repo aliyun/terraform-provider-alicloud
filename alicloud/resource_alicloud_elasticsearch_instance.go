@@ -292,6 +292,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			// lintignore: S006
 			"setting_config": {
 				Type:     schema.TypeMap,
 				Optional: true,

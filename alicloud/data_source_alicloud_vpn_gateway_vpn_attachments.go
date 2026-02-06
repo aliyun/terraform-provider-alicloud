@@ -240,6 +240,7 @@ func dataSourceAliCloudVpnGatewayVpnAttachments() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"tunnel_options_specification": {
 							Set: func(v interface{}) int {

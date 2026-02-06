@@ -57,6 +57,7 @@ func dataSourceAliCloudSlsEtls() *schema.Resource {
 										Type:     schema.TypeInt,
 										Computed: true,
 									},
+									// lintignore: S006
 									"parameters": {
 										Type:     schema.TypeMap,
 										Computed: true,

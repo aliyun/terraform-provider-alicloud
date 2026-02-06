@@ -41,6 +41,7 @@ func dataSourceAliCloudArmsEnvironments() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			// lintignore: S006
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -101,6 +102,7 @@ func dataSourceAliCloudArmsEnvironments() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"user_id": {
 							Type:     schema.TypeString,

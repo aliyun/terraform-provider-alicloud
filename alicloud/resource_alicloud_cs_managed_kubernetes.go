@@ -666,6 +666,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				},
 				ForceNew: true,
 			},
+			// lintignore: S006
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,

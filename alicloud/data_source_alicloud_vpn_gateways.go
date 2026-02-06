@@ -165,6 +165,7 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"ssl_vpn_internet_ip": {
 							Type:     schema.TypeString,

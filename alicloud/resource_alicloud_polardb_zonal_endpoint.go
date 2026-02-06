@@ -106,6 +106,7 @@ func resourceAlicloudPolarDBZonalEndpoint() *schema.Resource {
 				Computed:     true,
 				Optional:     true,
 			},
+			// lintignore: S006
 			"endpoint_config": {
 				Type:     schema.TypeMap,
 				Optional: true,

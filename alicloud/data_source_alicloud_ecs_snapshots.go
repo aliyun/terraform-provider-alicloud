@@ -183,6 +183,7 @@ func dataSourceAliCloudEcsSnapshots() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"usage": {
 							Type:     schema.TypeString,

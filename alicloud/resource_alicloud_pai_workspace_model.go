@@ -37,6 +37,7 @@ func resourceAliCloudPaiWorkspaceModel() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			// lintignore: S006
 			"extra_info": {
 				Type:     schema.TypeMap,
 				Optional: true,

@@ -429,6 +429,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				},
 				Deprecated: "Field 'log_config' has been removed from provider version 1.103.0. New field 'addons' replaces it.",
 			},
+			// lintignore: S006
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,

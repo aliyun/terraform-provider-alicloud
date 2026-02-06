@@ -289,6 +289,7 @@ func dataSourceAlicloudEcsLaunchTemplates() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S006
 						"template_tags": {
 							Type:     schema.TypeMap,
 							Computed: true,

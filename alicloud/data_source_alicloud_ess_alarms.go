@@ -106,6 +106,7 @@ func dataSourceAlicloudEssAlarms() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						// lintignore: S006
 						"dimensions": {
 							Type:     schema.TypeMap,
 							Computed: true,
