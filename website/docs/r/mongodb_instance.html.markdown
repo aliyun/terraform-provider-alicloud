@@ -15,9 +15,6 @@ You can see detail product introduction [here](https://www.alibabacloud.com/help
 
 -> **NOTE:** Available since v1.37.0.
 
--> **NOTE:**  The following regions don't support create Classic network MongoDB instance.
-[`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-3`,`ap-southeast-5`,`me-east-1`,`ap-northeast-1`,`eu-west-1`]
-
 -> **NOTE:**  Create MongoDB instance or change instance type and storage would cost 5~10 minutes. Please make full preparation
 
 ## Example Usage
@@ -97,7 +94,8 @@ The following arguments are supported:
 * `hidden_zone_id` - (Optional, Available since v1.199.0) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values. From version 1.253.0, `hidden_zone_id` can be modified.
 * `security_group_id` - (Optional, Available since v1.73.0) The Security Group ID of ECS.
 * `replication_factor` - (Optional, Int) Number of replica set nodes. Valid values: `1`, `3`, `5`, `7`.
-* `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values:`Classic`, `VPC`.
+* `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values: `VPC`.
+-> **NOTE:** From 2022.2.21, `network_type` cannot be set to `Classic`. For more information, see[Product Notification](https://www.alibabacloud.com/help/en/mongodb/product-overview/eol-notice-for-apsaradb-for-mongodb-instances-in-the-classic-network)
 * `name` - (Optional) The name of DB instance. It must be 2 to 256 characters in length.
 * `instance_charge_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PrePaid`, `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version 1.63.0.
 * `period` - (Optional, Int) The duration that you will buy DB instance (in month). It is valid when `instance_charge_type` is `PrePaid`. Default value: `1`. Valid values: [1~9], 12, 24, 36.
@@ -110,7 +108,6 @@ The following arguments are supported:
 * `readonly_replicas` - (Optional, Int, Available since v1.199.0) The number of read-only nodes in the replica set instance. Default value: 0. Valid values: 0 to 5.
 * `resource_group_id` - (Optional, Available since v1.161.0) The ID of the Resource Group.
 * `auto_renew` - (Optional, Bool, Available since v1.141.0) Auto renew for prepaid. Default value: `false`. Valid values: `true`, `false`.
--> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 * `auto_renew_duration` - (Optional, Int, Available since v1.271.0) The auto-renewal period. Unit: months. Valid values: `1` to `12`.
 -> **NOTE:** If `auto_renew` is set to `true`, `auto_renew_duration` must be set.
 * `src_db_instance_id` - (Optional, Available since v1.271.0) The source instance ID.
