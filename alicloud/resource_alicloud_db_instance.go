@@ -118,6 +118,18 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
+			"time_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+
+			"collation": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
@@ -1747,6 +1759,53 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.HasChange("time_zone") || d.HasChange("collation") {
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		action := "ModifyCollationTimeZone"
+		request := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+			"RegionId":     client.RegionId,
+			"SourceIp":     client.SourceIp,
+		}
+
+		if v, ok := d.GetOk("time_zone"); ok && v.(string) != "" {
+			request["Timezone"] = v
+		}
+		if v, ok := d.GetOk("collation"); ok && v.(string) != "" {
+			request["Collation"] = v
+		}
+
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("time_zone")
+		d.SetPartial("collation")
+	}
+
 	if !d.IsNewResource() && (d.HasChange("target_minor_version") || d.HasChange("upgrade_db_instance_kernel_version")) {
 		action := "UpgradeDBInstanceKernelVersion"
 		request := map[string]interface{}{
@@ -1993,6 +2052,14 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err = rdsService.SetTimeZone(d); err != nil {
 		return WrapError(err)
 	}
+
+	if v, ok := instance["TimeZone"]; ok && v != nil && v != "" {
+		d.Set("time_zone", v)
+	}
+	if v, ok := instance["Collation"]; ok && v != nil && v != "" {
+		d.Set("collation", v)
+	}
+	
 	if instance["PayType"] == string(Prepaid) {
 		action := "DescribeInstanceAutoRenewalAttribute"
 		request := map[string]interface{}{
