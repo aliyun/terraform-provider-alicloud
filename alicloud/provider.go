@@ -915,6 +915,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_ddoscoo_domain_precise_access_rule":                   resourceAliCloudDdosCooDomainPreciseAccessRule(),
 			"alicloud_ssl_certificates_service_pca_cert":                    resourceAliCloudSslCertificatesServicePcaCert(),
 			"alicloud_max_compute_tenant_role_user_attachment":              resourceAliCloudMaxComputeTenantRoleUserAttachment(),
 			"alicloud_click_house_enterprise_db_cluster_computing_group":    resourceAliCloudClickHouseEnterpriseDbClusterComputingGroup(),

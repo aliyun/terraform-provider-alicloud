@@ -9,6 +9,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/tidwall/sjson"
@@ -671,3 +672,122 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeDdosCooDomainPreciseAccessRule <<< Encapsulated get interface for DdosCoo DomainPreciseAccessRule.
+
+func (s *DdosCooServiceV2) DescribeDdosCooDomainPreciseAccessRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domains.1"] = parts[0]
+	request["RegionId"] = client.RegionId
+	request["Owner"] = "manual"
+	action := "DescribeWebPreciseAccessRule"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.PreciseAccessConfigList[0].RuleList", response)
+	if err != nil {
+		return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["Name"]) != parts[1] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
+}
+
+func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeDdosCooDomainPreciseAccessRule)
+}
+
+func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		if field == "$.RuleList[*].ConditionList[*]" {
+			e := jsonata.MustCompile("$.RuleList.ConditionList")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+		if field == "$.RuleList[*].ConditionList[*].Content" {
+			e := jsonata.MustCompile("$.RuleList.ConditionList.($exists(Content) ? Content : null)")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+		if field == "$.RuleList[*].ConditionList[*].Field" {
+			e := jsonata.MustCompile("$.RuleList.ConditionList.($exists(Field) ? Field : null)")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+		if field == "$.RuleList[*].ConditionList[*].HeaderName" {
+			e := jsonata.MustCompile("$.RuleList.ConditionList.($exists(HeaderName) ? HeaderName : null)")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+		if field == "$.RuleList[*].ConditionList[*].MatchMethod" {
+			e := jsonata.MustCompile("$.RuleList.ConditionList.($exists(MatchMethod) ? MatchMethod : null)")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeDdosCooDomainPreciseAccessRule >>> Encapsulated.
