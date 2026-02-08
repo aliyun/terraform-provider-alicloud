@@ -791,3 +791,125 @@ func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi
 }
 
 // DescribeDdosCooDomainPreciseAccessRule >>> Encapsulated.
+
+// DescribeDdosCooWebCcRule <<< Encapsulated get interface for DdosCoo WebCcRule.
+
+func (s *DdosCooServiceV2) DescribeDdosCooWebCcRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domain"] = parts[0]
+
+	request["Owner"] = "manual"
+	action := "DescribeWebCCRulesV2"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("WebCcRule", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.WebCCRules[*]", response)
+	if err != nil {
+		return object, WrapErrorf(NotFoundErr("WebCcRule", id), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("WebCcRule", id), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["Expires"]) != "0" {
+			continue
+		}
+		if fmt.Sprint(item["Name"]) != parts[1] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(NotFoundErr("WebCcRule", id), NotFoundMsg, response)
+}
+
+func (s *DdosCooServiceV2) DdosCooWebCcRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.DdosCooWebCcRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeDdosCooWebCcRule)
+}
+
+func (s *DdosCooServiceV2) DdosCooWebCcRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		if field == "$.RuleDetail.Condition[*]" {
+			e := jsonata.MustCompile("$.RuleDetail.Condition")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+		if field == "$.RuleDetail.Condition[*].Content" {
+			e := jsonata.MustCompile("$.RuleDetail.Condition.($exists(Content) ? Content : null)")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+		if field == "$.RuleDetail.Condition[*].Field" {
+			e := jsonata.MustCompile("$.RuleDetail.Condition.($exists(Field) ? Field : null)")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+		if field == "$.RuleDetail.Condition[*].HeaderName" {
+			e := jsonata.MustCompile("$.RuleDetail.Condition.($exists(HeaderName) ? HeaderName : null)")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+		if field == "$.RuleDetail.Condition[*].MatchMethod" {
+			e := jsonata.MustCompile("$.RuleDetail.Condition.($exists(MatchMethod) ? MatchMethod : null)")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeDdosCooWebCcRule >>> Encapsulated.
