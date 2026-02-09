@@ -1,5 +1,5 @@
 ---
-subcategory: "SSL Certificates Service"
+subcategory: "Certificate Management Service (Original SSL Certificate)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ssl_certificates_service_certificates"
 sidebar_current: "docs-alicloud-datasource-ssl-certificates-service-certificates"
