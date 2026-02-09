@@ -109,6 +109,7 @@ func resourceAliCloudEfloExperimentPlanTemplate() *schema.Resource {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
+						// lintignore: S006
 						"setting_params": {
 							Type:     schema.TypeMap,
 							Optional: true,

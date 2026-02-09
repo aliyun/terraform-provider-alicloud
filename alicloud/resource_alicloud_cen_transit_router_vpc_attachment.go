@@ -82,6 +82,7 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 				ConflictsWith: []string{"transit_router_attachment_name"},
 				Computed:      true,
 			},
+			// lintignore: S006
 			"transit_router_vpc_attachment_options": {
 				Type:     schema.TypeMap,
 				Optional: true,

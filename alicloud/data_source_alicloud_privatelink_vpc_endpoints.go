@@ -89,6 +89,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"endpoint_id": {
 							Type:     schema.TypeString,

@@ -43,6 +43,7 @@ func resourceAliCloudSlsEtl() *schema.Resource {
 							Required: true,
 							ForceNew: true,
 						},
+						// lintignore: S006
 						"parameters": {
 							Type:     schema.TypeMap,
 							Optional: true,

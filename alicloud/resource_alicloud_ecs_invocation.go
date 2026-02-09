@@ -57,6 +57,7 @@ func resourceAlicloudEcsInvocation() *schema.Resource {
 					return d.Get("repeat_mode").(string) != "Period"
 				},
 			},
+			// lintignore: S006
 			"parameters": {
 				Type:     schema.TypeMap,
 				Optional: true,

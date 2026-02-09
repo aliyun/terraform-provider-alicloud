@@ -40,6 +40,7 @@ func dataSourceAlicloudEcsImagePipelines() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			// lintignore: S006
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,

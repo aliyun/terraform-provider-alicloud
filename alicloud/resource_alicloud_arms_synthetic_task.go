@@ -186,6 +186,7 @@ func resourceAliCloudArmsSyntheticTask() *schema.Resource {
 										Type:     schema.TypeInt,
 										Optional: true,
 									},
+									// lintignore: S006
 									"custom_header_content": {
 										Type:     schema.TypeMap,
 										Optional: true,
@@ -267,6 +268,7 @@ func resourceAliCloudArmsSyntheticTask() *schema.Resource {
 										Type:     schema.TypeInt,
 										Optional: true,
 									},
+									// lintignore: S006
 									"custom_header_content": {
 										Type:     schema.TypeMap,
 										Optional: true,
@@ -352,6 +354,7 @@ func resourceAliCloudArmsSyntheticTask() *schema.Resource {
 										Type:     schema.TypeInt,
 										Optional: true,
 									},
+									// lintignore: S006
 									"custom_header_content": {
 										Type:     schema.TypeMap,
 										Optional: true,
@@ -483,6 +486,7 @@ func resourceAliCloudArmsSyntheticTask() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
+									// lintignore: S006
 									"request_headers": {
 										Type:     schema.TypeMap,
 										Optional: true,

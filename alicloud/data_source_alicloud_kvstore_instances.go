@@ -130,6 +130,7 @@ func dataSourceAlicloudKvstoreInstances() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						// lintignore: S006
 						"config": {
 							Type:     schema.TypeMap,
 							Computed: true,
@@ -282,6 +283,7 @@ func dataSourceAlicloudKvstoreInstances() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"vswitch_id": {
 							Type:     schema.TypeString,

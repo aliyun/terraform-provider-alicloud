@@ -119,6 +119,7 @@ func dataSourceAlicloudConfigAggregateConfigRules() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						// lintignore: S006
 						"input_parameters": {
 							Type:     schema.TypeMap,
 							Computed: true,

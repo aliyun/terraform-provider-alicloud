@@ -53,6 +53,7 @@ func dataSourceAlicloudEventBridgeEventSources() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						// lintignore: S006
 						"external_source_config": {
 							Type:     schema.TypeMap,
 							Computed: true,

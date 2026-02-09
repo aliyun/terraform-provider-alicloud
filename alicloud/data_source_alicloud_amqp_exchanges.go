@@ -49,6 +49,7 @@ func dataSourceAlicloudAmqpExchanges() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						// lintignore: S006
 						"attributes": {
 							Type:     schema.TypeMap,
 							Computed: true,

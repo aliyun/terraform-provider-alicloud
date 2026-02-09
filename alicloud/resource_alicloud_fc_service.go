@@ -146,6 +146,7 @@ func resourceAlicloudFCService() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						// lintignore: S006
 						"params": {
 							Type:     schema.TypeMap,
 							Required: true,
