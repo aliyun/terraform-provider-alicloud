@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -234,7 +233,7 @@ func resourceAlicloudConfigRuleCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		request["ResourceTypesScope"] = convertListToCommaSeparate(jsonPathResult12.([]interface{}))
 	} else if v, ok := d.GetOk("scope_compliance_resource_types"); ok {
-		request["ResourceTypesScope"] = convertListToCommaSeparate(v.([]interface{}))
+		request["ResourceTypesScope"] = convertListToCommaSeparate(expandSingletonToList(v))
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -432,7 +431,7 @@ func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			request["ResourceTypesScope"] = convertListToCommaSeparate(jsonPathResult10.([]interface{}))
 		} else if v, ok := d.GetOk("scope_compliance_resource_types"); ok {
-			request["ResourceTypesScope"] = convertListToCommaSeparate(v.([]interface{}))
+			request["ResourceTypesScope"] = convertListToCommaSeparate(expandSingletonToList(v))
 		}
 	}
 	if update {
