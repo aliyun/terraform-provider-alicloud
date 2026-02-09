@@ -1049,7 +1049,9 @@ The upgrade_policy supports the following:
 * `kubernetes_version` - (Optional, Available since v1.269.0) Node Kubernetes version
 * `runtime` - (Optional, Available since v1.269.0) Node runtime type
 * `runtime_version` - (Optional, Available since v1.269.0) Node Runtime Version
-* `use_replace` - (Optional, Available since v1.269.0) Whether to use replacement disk upgrade
+* `use_replace` - (Optional, Available since v1.269.0) Whether to use replacement disk upgrade. Valid values:
+  - `true`: Use replacement disk upgrade. Nodes in the node pool will be upgraded by replacing the system disk, and ACK will reinitialize the nodes according to the current node pool configuration (such as node login method, labels, taints, OS image, and runtime version).
+  - `false`: Do not use replacement disk upgrade.
 
 ### `rollout_policy`
 
