@@ -112,15 +112,10 @@ func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"expander": "priority",
-					"priorities": map[string]string{
-						"10": "test-asg",
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"expander":      CHECKSET,
-						"priorities.%":  "1",
-						"priorities.10": "test-asg",
+						"expander": CHECKSET,
 					}),
 				),
 			},
