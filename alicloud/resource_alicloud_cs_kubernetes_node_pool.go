@@ -3285,33 +3285,33 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if v, ok := d.GetOk("upgrade_policy"); ok {
 		upgradePolicyImageIdJsonPath, err := jsonpath.Get("$[0].image_id", v)
-		npVal := d.Get("image_id").(string)
-		if npVal != upgradePolicyImageIdJsonPath {
-			return WrapError(fmt.Errorf("[ERROR] image_id is not equal to upgrade_policy.image_id"))
-		}
 		if err == nil && upgradePolicyImageIdJsonPath != "" {
+			npVal := d.Get("image_id").(string)
+			if npVal != upgradePolicyImageIdJsonPath {
+				return WrapError(fmt.Errorf("[ERROR] image_id is not equal to upgrade_policy.image_id"))
+			}
 			request["image_id"] = upgradePolicyImageIdJsonPath
 		}
 		update = true
 	}
 	if v, ok := d.GetOk("upgrade_policy"); ok {
 		upgradePolicyRuntimeJsonPath, err := jsonpath.Get("$[0].runtime", v)
-		npVal := d.Get("runtime_name").(string)
-		if npVal != upgradePolicyRuntimeJsonPath {
-			return WrapError(fmt.Errorf("[ERROR] runtime_name is not equal to upgrade_policy.runtime"))
-		}
 		if err == nil && upgradePolicyRuntimeJsonPath != "" {
+			npVal := d.Get("runtime_name").(string)
+			if npVal != upgradePolicyRuntimeJsonPath {
+				return WrapError(fmt.Errorf("[ERROR] runtime_name is not equal to upgrade_policy.runtime"))
+			}
 			request["runtime_type"] = upgradePolicyRuntimeJsonPath
 		}
 		update = true
 	}
 	if v, ok := d.GetOk("upgrade_policy"); ok {
 		upgradePolicyRuntimeVersionJsonPath, err := jsonpath.Get("$[0].runtime_version", v)
-		npVal := d.Get("runtime_version").(string)
-		if npVal != upgradePolicyRuntimeVersionJsonPath {
-			return WrapError(fmt.Errorf("[ERROR] runtime_version is not equal to upgrade_policy.runtime_version"))
-		}
 		if err == nil && upgradePolicyRuntimeVersionJsonPath != "" {
+			npVal := d.Get("runtime_version").(string)
+			if npVal != upgradePolicyRuntimeVersionJsonPath {
+				return WrapError(fmt.Errorf("[ERROR] runtime_version is not equal to upgrade_policy.runtime_version"))
+			}
 			request["runtime_version"] = upgradePolicyRuntimeVersionJsonPath
 		}
 		update = true
@@ -3335,13 +3335,12 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 		request["rolling_policy"] = rolling_policy
 
-		localData, err := jsonpath.Get("$[0].node_names", v)
-		if err != nil {
-			return WrapError(err)
-		}
+		localData, _ := jsonpath.Get("$[0].node_names", v)
 		if localData != nil && localData != "" {
 			node_namesMapsArray := convertToInterfaceArray(localData)
-			request["node_names"] = node_namesMapsArray
+			if len(node_namesMapsArray) > 0 {
+				request["node_names"] = node_namesMapsArray
+			}
 		}
 	}
 
