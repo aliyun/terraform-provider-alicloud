@@ -1,4 +1,30 @@
 ## 1.271.0 (Unreleased)
+
+- **New Resource:** `alicloud_ddoscoo_domain_precise_access_rule` [GH-9489]
+- **New Resource:** `alicloud_ddoscoo_web_cc_rule` [GH-9490]
+
+ENHANCEMENTS:
+
+- resource/alicloud_click_house_enterprise_db_cluster_computing_group: Added the field computing_group_endpoint_names, computing_group_endpoints, computing_group_public_endpoints, computing_group_status. [GH-9448]
+- resource/alicloud_polardb_cluster: support global_security_group_list; fix creation_option RecoverFromRecyclebin; fix lower_case_table_names behavior when not manually set; optimize document. [GH-9470]
+- resource/alicloud_mongodb_instance: Added the field auto_renew_duration, src_db_instance_id, restore_time, force_encryption, key_ids, zone_infos. [GH-9475]
+- resource/alicloud_threat_detection_baseline_strategy: Custom 404 error and update test case. [GH-9477]
+- resource/alicloud_mongodb_sharding_instance: Added the field auto_renew_duration, src_db_instance_id, restore_time, force_encryption, key_ids, zone_infos. [GH-9481]
+- resource/alicloud_ecs_auto_snapshot_policy_attachment: Refactored the resource alicloud_ecs_auto_snapshot_policy_attachment; Added the field region_id; Added retry strategy for error code InvalidOperation.Conflict. [GH-9491]
+- data-source/alicloud_cr_ee_repos: Remove ForceNew. [GH-9468]
+- data-source/alicloud_mongodb_instances: Added the field status, restore_ranges, enable_details; Improved alicloud_mongodb_instances testcase and document. [GH-9478]
+- docs: Update max_compute_tenant_role_user_attachment document. [GH-9485]
+- docs: Improved the document mongodb_instance. [GH-9487]
+- docs: Improved subcategory for Cas. [GH-9492]
+
+BUG FIXES:
+
+- resource/alicloud_api_gateway_vpc_access: Fixed the read error. [GH-9472]
+- resource/alicloud_auto_provisioning_group: Fix lint R006, alicloud_edas_k8s_slb_attachment Fix lint R006, alicloud_emrv2_cluster Fix lint R006, alicloud_maxcompute_project Fix lint R006 and update API wrapper, alicloud_oss_bucket Fix lint R006 alicloud_threat_detection_baseline_strategy Fix lint R006. [GH-9476]
+- resource/alicloud_log_store_index: Fix lint issue and update testcases, resource/alicloud_network_acl_attachment: Optimize code and update testcases. [GH-9479]
+- resource/alicloud_data_works_data_source: Fix connection_properties not set bug. [GH-9488]
+- data-source/alicloud_cdn_ip_info: Fix lint AT005. [GH-9471]
+
 ## 1.270.0 (February 03, 2026)
 
 - **New Resource:** `alicloud_cloud_monitor_service_agent_config` ([#9429](https://github.com/aliyun/terraform-provider-alicloud/issues/9429))
@@ -54,7 +80,7 @@ ENHANCEMENTS:
 - resource/alicloud_nas_access_group: Refactored the resource nas_access_group. ([#9425](https://github.com/aliyun/terraform-provider-alicloud/issues/9425))
 - resource/alicloud_cs_managed_kubernetes: Added the field upgrade_policy, control_plane_only; resource/alicloud_cs_kubernetes_node_pool: Added the field pause_policy, batch_interval, node_names, upgrade_policy, kubernetes_version, use_replace, runtime, image_id, runtime_version. ([#9420](https://github.com/aliyun/terraform-provider-alicloud/issues/9420))
 - testcase: Improved alicloud_cloud_firewall_instance_v2 International testcase. ([#9411](https://github.com/aliyun/terraform-provider-alicloud/issues/9411))
-- docs: docs: Deprecated resource cloud_firewall_instance, event_bridge_event_source. ([#9417](https://github.com/aliyun/terraform-provider-alicloud/issues/9417))
+- docs: Deprecated resource cloud_firewall_instance, event_bridge_event_source. ([#9417](https://github.com/aliyun/terraform-provider-alicloud/issues/9417))
 
 BUG FIXES:
 
@@ -1262,7 +1288,7 @@ ENHANCEMENTS:
 - docs: Updates the resource alicloud_nlb_server_group attribute preserve_client_ip_enabled default to true in docs. ([#8335](https://github.com/aliyun/terraform-provider-alicloud/issues/8335))
 - docs: improve examples for config. ([#8372](https://github.com/aliyun/terraform-provider-alicloud/issues/8372))
 - docs: improve examples for esa. ([#8374](https://github.com/aliyun/terraform-provider-alicloud/issues/8374))
-- docs: docs: improve examples for express_connect. ([#8376](https://github.com/aliyun/terraform-provider-alicloud/issues/8376))
+- docs: improve examples for express_connect. ([#8376](https://github.com/aliyun/terraform-provider-alicloud/issues/8376))
 - docs: improve examples for ram. ([#8378](https://github.com/aliyun/terraform-provider-alicloud/issues/8378))
 - docs: improve examples for ecd. ([#8380](https://github.com/aliyun/terraform-provider-alicloud/issues/8380))
 - docs: Improves description of nat_gateway. ([#8381](https://github.com/aliyun/terraform-provider-alicloud/issues/8381))
@@ -1383,7 +1409,7 @@ ENHANCEMENTS:
 - docs: Removes the useless example code. ([#8080](https://github.com/aliyun/terraform-provider-alicloud/issues/8080))
 - docs: Adds a new example for resource alicloud_sls_collection_policy. ([#8083](https://github.com/aliyun/terraform-provider-alicloud/issues/8083))
 - docs: Improves the argument targets description of resource alicloud_cms_alarm. ([#8101](https://github.com/aliyun/terraform-provider-alicloud/issues/8101))
-- docs: docs: fix typo of alicloud_cs_managed_kubernetes_clusters and alicloud_cs_edge_kubernetes_clusters. ([#8107](https://github.com/aliyun/terraform-provider-alicloud/issues/8107))
+- docs: fix typo of alicloud_cs_managed_kubernetes_clusters and alicloud_cs_edge_kubernetes_clusters. ([#8107](https://github.com/aliyun/terraform-provider-alicloud/issues/8107))
 - docs: Improves description for ccapi. ([#8111](https://github.com/aliyun/terraform-provider-alicloud/issues/8111))
 - docs: Improves example for alb_load_balancer_access_log_config_attachment. ([#8117](https://github.com/aliyun/terraform-provider-alicloud/issues/8117))
 - testcase: Fixed alicloud_ga_accelerator_spare_ip_attachment testcase. ([#8058](https://github.com/aliyun/terraform-provider-alicloud/issues/8058))
@@ -1912,7 +1938,7 @@ ENHANCEMENTS:
 - docs: Improves subcategory for ens. ([#7600](https://github.com/aliyun/terraform-provider-alicloud/issues/7600))
 - docs: improve subcategory for Ehpc. ([#7603](https://github.com/aliyun/terraform-provider-alicloud/issues/7603))
 - docs: update version info for cs. ([#7605](https://github.com/aliyun/terraform-provider-alicloud/issues/7605))
-- docs: docs: Improves link sections. ([#7607](https://github.com/aliyun/terraform-provider-alicloud/issues/7607))
+- docs: Improves link sections. ([#7607](https://github.com/aliyun/terraform-provider-alicloud/issues/7607))
 
 BUG FIXES:
 
@@ -2395,7 +2421,7 @@ ENHANCEMENTS:
 - resource/alicloud_ga_listener: Added the field http_version. ([#7103](https://github.com/aliyun/terraform-provider-alicloud/issues/7103))
 - resource/alicloud_ga_ip_set: Supported ip_version set to DUAL_STACK. ([#7109](https://github.com/aliyun/terraform-provider-alicloud/issues/7109))
 - resource/alicloud_cloud_firewall_instance: Supported payment_type set to PayAsYouGo; Supported for new action ReleasePostInstance. ([#7111](https://github.com/aliyun/terraform-provider-alicloud/issues/7111))
-- docs: docs: mark referer_config, policy as Deprecated for alicloud_oss_bucket. ([#7112](https://github.com/aliyun/terraform-provider-alicloud/issues/7112))
+- docs: mark referer_config, policy as Deprecated for alicloud_oss_bucket. ([#7112](https://github.com/aliyun/terraform-provider-alicloud/issues/7112))
 - docs: Improved the document alicloud_slb_rule. ([#7081](https://github.com/aliyun/terraform-provider-alicloud/issues/7081))
 - docs: Improved the document slb_listener. ([#7083](https://github.com/aliyun/terraform-provider-alicloud/issues/7083))
 - docs: Improved the document service_mesh_service_meshes. ([#7084](https://github.com/aliyun/terraform-provider-alicloud/issues/7084))
