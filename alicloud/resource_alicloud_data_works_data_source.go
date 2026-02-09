@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -146,8 +147,12 @@ func resourceAliCloudDataWorksDataSourceRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	if objectRaw["ConnectionProperties"] != nil {
-		d.Set("connection_properties", objectRaw["ConnectionProperties"])
+	if v, ok := objectRaw["ConnectionProperties"]; ok {
+		connPropJson, err := json.Marshal(v)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("connection_properties", string(connPropJson))
 	}
 	if objectRaw["ConnectionPropertiesMode"] != nil {
 		d.Set("connection_properties_mode", objectRaw["ConnectionPropertiesMode"])
