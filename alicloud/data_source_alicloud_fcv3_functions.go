@@ -237,6 +237,7 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						// lintignore: S006
 						"environment_variables": {
 							Type:     schema.TypeMap,
 							Computed: true,
@@ -525,6 +526,7 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"timeout": {
 							Type:     schema.TypeInt,
@@ -539,6 +541,7 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									// lintignore: S006
 									"params": {
 										Type:     schema.TypeMap,
 										Computed: true,

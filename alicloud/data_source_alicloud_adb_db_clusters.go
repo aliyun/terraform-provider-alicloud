@@ -215,6 +215,7 @@ func dataSourceAlicloudAdbDbClusters() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"vpc_cloud_instance_id": {
 							Type:     schema.TypeString,

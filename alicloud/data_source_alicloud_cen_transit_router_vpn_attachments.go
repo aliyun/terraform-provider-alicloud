@@ -80,6 +80,7 @@ func dataSourceAliCloudCenTransitRouterVpnAttachments() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"transit_router_attachment_description": {
 							Type:     schema.TypeString,

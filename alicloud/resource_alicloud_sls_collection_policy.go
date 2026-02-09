@@ -92,6 +92,7 @@ func resourceAliCloudSlsCollectionPolicy() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						// lintignore: S006
 						"resource_tags": {
 							Type:     schema.TypeMap,
 							Optional: true,

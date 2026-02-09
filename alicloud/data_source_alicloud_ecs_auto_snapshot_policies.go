@@ -85,6 +85,7 @@ func dataSourceAlicloudEcsAutoSnapshotPolicies() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"target_copy_regions": {
 							Type:     schema.TypeList,

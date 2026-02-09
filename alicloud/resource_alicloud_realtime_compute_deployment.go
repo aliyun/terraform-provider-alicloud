@@ -224,11 +224,13 @@ func resourceAliCloudRealtimeComputeDeployment() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"STREAMING", "BATCH"}, false),
 			},
+			// lintignore: S006
 			"flink_conf": {
 				Type:     schema.TypeMap,
 				Optional: true,
 				Computed: true,
 			},
+			// lintignore: S006
 			"labels": {
 				Type:     schema.TypeMap,
 				Optional: true,

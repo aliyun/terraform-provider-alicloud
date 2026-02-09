@@ -105,6 +105,7 @@ func dataSourceAliCloudOosParameters() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"constraints": {
 							Type:     schema.TypeString,

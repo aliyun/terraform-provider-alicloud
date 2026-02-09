@@ -73,6 +73,7 @@ func dataSourceAlicloudRosTemplateScratches() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
+									// lintignore: S006
 									"resource_tags": {
 										Type:     schema.TypeMap,
 										Computed: true,

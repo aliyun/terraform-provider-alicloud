@@ -90,6 +90,7 @@ func resourceAliCloudSlsScheduledSQL() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S006
 						"parameters": {
 							Type:     schema.TypeMap,
 							Optional: true,

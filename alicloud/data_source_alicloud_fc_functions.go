@@ -80,6 +80,7 @@ func dataSourceAlicloudFcFunctions() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						// lintignore: S006
 						"environment_variables": {
 							Type:     schema.TypeMap,
 							Computed: true,

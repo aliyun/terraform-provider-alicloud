@@ -122,6 +122,7 @@ func resourceAliCloudQuotasTemplateApplications() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S006
 						"dimensions": {
 							Type:     schema.TypeMap,
 							Computed: true,

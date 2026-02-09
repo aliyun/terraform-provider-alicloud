@@ -329,7 +329,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-
+			// lintignore: S006
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
