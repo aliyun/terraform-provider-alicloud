@@ -277,8 +277,8 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
+	security_group_name   = var.name
+	vpc_id 				  = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_db_instance" "default" {
@@ -317,14 +317,14 @@ func TestAccAliCloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":                 "${alicloud_db_instance.default.id}",
+					"db_instance_id":              "${alicloud_db_instance.default.id}",
 					"enable_backup_log":           "true",
 					"local_log_retention_hours":   "1",
 					"high_space_usage_protection": "Enable",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id": CHECKSET,
+						"db_instance_id": CHECKSET,
 					}),
 				),
 			},
@@ -478,7 +478,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.1.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "PostgreSQL"
 	engine_version = "14.0"
     category = "HighAvailability"
@@ -491,19 +491,19 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.1.id
+  zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
  vswitch_name = var.name
  vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.ids.1
+ zone_id = data.alicloud_db_zones.default.zones.0.id
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids.1
+  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -511,12 +511,12 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
+	security_group_name   = var.name
+	vpc_id 				  = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_db_instance" "default" {
-	engine = "PostgreSQL"
+    engine = "PostgreSQL"
 	engine_version = "14.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
@@ -552,11 +552,11 @@ func TestAccAliCloudRdsDBBackupPolicySQLServer(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_db_instance.default.id}",
+					"db_instance_id": "${alicloud_db_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id": CHECKSET,
+						"db_instance_id": CHECKSET,
 					}),
 				),
 			},
@@ -681,8 +681,8 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
+	security_group_name   = var.name
+	vpc_id 				  = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_db_instance" "default" {
@@ -721,14 +721,14 @@ func TestAccAliCloudRdsDBBackupPolicySQLServerAlwaysOn(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":                  "${alicloud_db_instance.default.id}",
+					"db_instance_id":               "${alicloud_db_instance.default.id}",
 					"backup_priority":              "1",
 					"enable_increment_data_backup": "false",
 					"backup_method":                "Physical",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":                  CHECKSET,
+						"db_instance_id":               CHECKSET,
 						"backup_priority":              "1",
 						"enable_increment_data_backup": "false",
 						"backup_method":                "Physical",
@@ -806,8 +806,8 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
+	security_group_name   = var.name
+	vpc_id 				  = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_db_instance" "default" {
@@ -847,12 +847,12 @@ func TestAccAliCloudRdsDBBackupPolicyMariaDB(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":                 "${alicloud_db_instance.default.id}",
+					"db_instance_id":              "${alicloud_db_instance.default.id}",
 					"high_space_usage_protection": "Enable",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id": CHECKSET,
+						"db_instance_id": CHECKSET,
 					}),
 				),
 			},
@@ -1027,8 +1027,8 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
+	security_group_name   = var.name
+	vpc_id 				  = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_db_instance" "default" {
