@@ -1121,3 +1121,72 @@ func (s *CloudFirewallServiceV2) CloudFirewallInstanceStateRefreshFuncWithApi(id
 }
 
 // DescribeCloudFirewallInstance >>> Encapsulated.
+// DescribeCloudFirewallUserAlarmConfig <<< Encapsulated get interface for CloudFirewall UserAlarmConfig.
+
+func (s *CloudFirewallServiceV2) DescribeCloudFirewallUserAlarmConfig(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	action := "DescribeUserAlarmConfig"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ErrorParametersUid"}) {
+			return object, WrapErrorf(NotFoundErr("UserAlarmConfig", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *CloudFirewallServiceV2) CloudFirewallUserAlarmConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CloudFirewallUserAlarmConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallUserAlarmConfig)
+}
+
+func (s *CloudFirewallServiceV2) CloudFirewallUserAlarmConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCloudFirewallUserAlarmConfig >>> Encapsulated.
