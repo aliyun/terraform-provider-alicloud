@@ -1374,7 +1374,7 @@ func TestAccAliCloudVpcVpc_basic3113_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"ipv6_isp":             "BGP",
 					"description":          "test-update",
-					"cidr_block":           "172.16.0.0/12",
+					"cidr_block":           "10.0.0.0/16",
 					"vpc_name":             name,
 					"classic_link_enabled": "false",
 					"system_route_table_route_propagation_enable": "false",
@@ -1389,7 +1389,7 @@ func TestAccAliCloudVpcVpc_basic3113_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"ipv6_isp":             "BGP",
 						"description":          "test-update",
-						"cidr_block":           "172.16.0.0/12",
+						"cidr_block":           "10.0.0.0/16",
 						"vpc_name":             name,
 						"classic_link_enabled": "false",
 						"system_route_table_route_propagation_enable": "false",
@@ -1397,6 +1397,56 @@ func TestAccAliCloudVpcVpc_basic3113_twin(t *testing.T) {
 						"tags.%":                                      "2",
 						"tags.Created":                                "TF",
 						"tags.For":                                    "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_cidr_blocks": []string{"10.1.0.0/16", "172.16.0.0/16"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_cidr_blocks.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_cidr_blocks": []string{"10.1.0.0/16", "192.168.0.0/16", "172.16.0.0/16"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_cidr_blocks.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_cidr_blocks": []string{"192.168.0.0/16"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_cidr_blocks.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_cidr_blocks": []string{"10.1.0.0/16", "192.168.0.0/16", "172.16.0.0/16"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_cidr_blocks.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_cidr_blocks": []string{"192.168.0.0/16", "10.1.0.0/16", "172.16.0.0/16"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_cidr_blocks.#": "3",
 					}),
 				),
 			},
