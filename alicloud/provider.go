@@ -915,6 +915,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_oss_bucket_archive_direct_read":                       resourceAliCloudOssBucketArchiveDirectRead(),
 			"alicloud_ddoscoo_web_cc_rule":                                  resourceAliCloudDdosCooWebCcRule(),
 			"alicloud_ddoscoo_domain_precise_access_rule":                   resourceAliCloudDdosCooDomainPreciseAccessRule(),
 			"alicloud_ssl_certificates_service_pca_cert":                    resourceAliCloudSslCertificatesServicePcaCert(),
