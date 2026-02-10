@@ -604,11 +604,35 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	if d.HasChange("secondary_cidr_blocks") {
 		oldEntry, newEntry := d.GetChange("secondary_cidr_blocks")
-		removed := oldEntry
-		added := newEntry
+		oldList := oldEntry.([]interface{})
+		newList := newEntry.([]interface{})
 
-		if len(removed.([]interface{})) > 0 {
-			secondaryCidrBlocks := removed.([]interface{})
+		// Calculate differences considering order
+		var removed []interface{}
+		var added []interface{}
+
+		// Find the longest common prefix (items that match in order from the beginning)
+		commonPrefixLen := 0
+		for i := 0; i < len(oldList) && i < len(newList); i++ {
+			if oldList[i] == newList[i] {
+				commonPrefixLen++
+			} else {
+				break
+			}
+		}
+
+		// Remove items from old list that are after the common prefix
+		for i := commonPrefixLen; i < len(oldList); i++ {
+			removed = append(removed, oldList[i])
+		}
+
+		// Add items from new list that are after the common prefix
+		for i := commonPrefixLen; i < len(newList); i++ {
+			added = append(added, newList[i])
+		}
+
+		if len(removed) > 0 {
+			secondaryCidrBlocks := removed
 
 			for _, item := range secondaryCidrBlocks {
 				action := "UnassociateVpcCidrBlock"
@@ -617,11 +641,7 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 				request["VpcId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				if v, ok := item.(string); ok {
-					jsonPathResult, err := jsonpath.Get("$", v)
-					if err != nil {
-						return WrapError(err)
-					}
-					request["SecondaryCidrBlock"] = convertListToCommaSeparate(jsonPathResult.([]interface{}))
+					request["SecondaryCidrBlock"] = convertListToCommaSeparate(expandSingletonToList(v))
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -648,8 +668,8 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 			}
 		}
 
-		if len(added.([]interface{})) > 0 {
-			secondaryCidrBlocks := added.([]interface{})
+		if len(added) > 0 {
+			secondaryCidrBlocks := added
 
 			for _, item := range secondaryCidrBlocks {
 				action := "AssociateVpcCidrBlock"
