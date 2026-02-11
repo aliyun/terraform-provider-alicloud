@@ -203,15 +203,18 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcCenTrFirewall(id string
 }
 
 func (s *CloudFirewallServiceV2) CloudFirewallVpcCenTrFirewallStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CloudFirewallVpcCenTrFirewallStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallVpcCenTrFirewall)
+}
+
+func (s *CloudFirewallServiceV2) CloudFirewallVpcCenTrFirewallStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCloudFirewallVpcCenTrFirewall(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
