@@ -208,7 +208,7 @@ The product_info supports the following:
 * `auto_scaling` - (Optional) is open auto scaling.
 * `message_retention_time` - (Optional, Int) Duration of message retention. Unit: hours.  For the range of values, please refer to [Usage Limits](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/usage-limits)>Resource Quotas>Limitations on Message Retention.  The message storage in AlibabaCloud RocketMQ is fully implemented in a serverless and elastic manner, with charges based on the actual storage space. You can control the storage capacity of messages by adjusting the duration of message retention. For more information, please see [Storage Fees](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/storage-fees).
 * `msg_process_spec` - (Required, ForceNew) Message sending and receiving calculation specifications. For details about the upper limit for sending and receiving messages, see [Instance Specifications](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-specifications).
-* `send_receive_ratio` - (Optional, Float) message send receive ratio.  Value range: [0.2, 0.5].
+* `send_receive_ratio` - (Optional, Float) message send receive ratio.  Value range: [0.05, 0.5].
 * `storage_encryption` - (Optional, ForceNew, Bool, Available since v1.245.0) Specifies whether to enable the encryption at rest feature. Valid values: `true`, `false`.
 * `storage_secret_key` - (Optional, ForceNew, Available since v1.245.0) The key for encryption at rest.
 * `trace_on` - (Optional, Bool, Available since v1.245.0) Whether to enable the message trace function. Valid values: `true`, `false`.
