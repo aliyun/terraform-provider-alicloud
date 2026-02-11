@@ -20,12 +20,6 @@ For information about Cloud Firewall Vpc Cen Tr Firewall and how to use it, see 
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_vpc_cen_tr_firewall&exampleId=37a1e48f-5e2b-3aa6-5c58-4d9edb62f71ef8f83c50&activeTab=example&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.0.37a1e48f5e&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -161,33 +155,44 @@ resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cen_id` - (Required, ForceNew) The ID of the CEN instance.
-* `firewall_description` - (Optional, ForceNew) Firewall description.
-* `firewall_name` - (Required) The name of Cloud Firewall.
-* `firewall_subnet_cidr` - (Required, ForceNew) Required in automatic mode, the CIDR of subnet used to store the firewall ENI in the firewall VPC.
-* `firewall_vpc_cidr` - (Required, ForceNew) Required in automatic mode,  th CIDR of firewall VPC.
+* `cen_id` - (Required, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
+* `firewall_description` - (Optional, ForceNew) The description of the firewall.
+* `firewall_name` - (Required) The name of the Cloud Firewall.
+* `firewall_subnet_cidr` - (Required, ForceNew) The CIDR block of the subnet in the firewall VPC that hosts the firewall ENI in automatic mode.
+* `firewall_vpc_cidr` - (Required, ForceNew) The CIDR block of the firewall VPC in automatic mode.
 * `region_no` - (Required, ForceNew) The region ID of the transit router instance.
-* `route_mode` - (Required, ForceNew) The routing pattern. Value: managed: indicates automatic mode
+* `route_mode` - (Required, ForceNew) The routing mode. Valid values:
+  - `managed`: indicates automatic mode.
+  - `manual`: indicates manual mode.
 
-* `tr_attachment_master_cidr` - (Required, ForceNew) Required in automatic mode, the primary CIDR of network used to connect to the TR in the firewall VPC.
-* `tr_attachment_master_zone` - (Optional) The primary zone of the switch.
+ ~> **NOTE:**  If this parameter is not specified, VPC border firewalls in all routing modes are queried.
 
-* `tr_attachment_slave_cidr` - (Required, ForceNew) Required in automatic mode, the the secondary CIDR of the subnet in the firewall VPC used to connect to TR.
-* `tr_attachment_slave_zone` - (Optional) Switch standby area.
+* `tr_attachment_master_cidr` - (Required, ForceNew) The primary CIDR block of the subnet in the firewall VPC used to connect to the transit router (TR) in automatic mode.
+* `tr_attachment_master_zone` - (Optional) The primary zone of the vSwitch.
+ 
+ ~> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-* `transit_router_id` - (Required, ForceNew) The ID of the transit router instance.
+* `tr_attachment_slave_cidr` - (Required, ForceNew) The secondary CIDR block of the subnet in the firewall VPC used to connect to TR in automatic mode.
+* `tr_attachment_slave_zone` - (Optional) The secondary zone of the vSwitch.
+
+ ~> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
+* `transit_router_id` - (Required, ForceNew) The ID of the Transit Router instance.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `status` - Firewall status. Value:
+* `id` - The ID of the resource supplied above. 
+* `firewall_eni_id` - The ID of the firewall ENI.
+* `firewall_eni_vpc_id` - The ID of the VPC where the firewall ENI resides.
+* `tr_attachment_id` - The ID of the VPC where the firewall ENI resides.
+* `status` - The status of the firewall.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Vpc Cen Tr Firewall.
-* `delete` - (Defaults to 5 mins) Used when delete the Vpc Cen Tr Firewall.
+* `create` - (Defaults to 41 mins) Used when create the Vpc Cen Tr Firewall.
+* `delete` - (Defaults to 46 mins) Used when delete the Vpc Cen Tr Firewall.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Cen Tr Firewall.
 
 ## Import
@@ -195,5 +200,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 Cloud Firewall Vpc Cen Tr Firewall can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cloud_firewall_vpc_cen_tr_firewall.example <id>
+$ terraform import alicloud_cloud_firewall_vpc_cen_tr_firewall.example <firewall_id>
 ```
