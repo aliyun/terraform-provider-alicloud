@@ -18,12 +18,15 @@ import (
 func dataSourceAlicloudImages() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudImagesRead,
-
+		Timeouts: &schema.ResourceTimeout{
+			Read: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
+				AtLeastOneOf: []string{"name_regex", "owners", "image_owner_id"},
 			},
 			"most_recent": {
 				Type:     schema.TypeBool,
@@ -104,7 +107,7 @@ func dataSourceAlicloudImages() *schema.Resource {
 			"architecture": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"i386", "x86_64"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"i386", "x86_64", "arm64"}, false),
 			},
 			"action_type": {
 				Type:         schema.TypeString,
@@ -237,18 +240,13 @@ func dataSourceAlicloudImages() *schema.Resource {
 	}
 }
 
-// dataSourceAlicloudImagesDescriptionRead performs the Alicloud Image lookup.
+// dataSourceAlicloudImagesRead performs the Alicloud Image lookup.
 func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	nameRegex, nameRegexOk := d.GetOk("name_regex")
 	owners, ownersOk := d.GetOk("owners")
-	mostRecent, mostRecentOk := d.GetOk("most_recent")
-	_, imageOwnerIdOk := d.GetOk("image_owner_id")
-
-	if !nameRegexOk && !ownersOk && !mostRecentOk && !imageOwnerIdOk {
-		return WrapError(Error("One of name_regex, owners, most_recent or image_owner_id must be assigned"))
-	}
+	mostRecent := d.Get("most_recent")
 
 	request := ecs.CreateDescribeImagesRequest()
 	request.PageNumber = requests.NewInteger(1)
