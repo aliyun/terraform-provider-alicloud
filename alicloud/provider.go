@@ -1172,7 +1172,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oss_bucket_access_monitor":                            resourceAliCloudOssBucketAccessMonitor(),
 			"alicloud_oss_bucket_user_defined_log_fields":                   resourceAliCloudOssBucketUserDefinedLogFields(),
 			"alicloud_oss_bucket_transfer_acceleration":                     resourceAliCloudOssBucketTransferAcceleration(),
-			"alicloud_sls_scheduled_sql":                                    resourceAliCloudSlsScheduledSQL(),
+			"alicloud_sls_scheduled_sql":                                    resourceAliCloudSlsScheduledSql(),
 			"alicloud_express_connect_router_express_connect_router":        resourceAliCloudExpressConnectRouterExpressConnectRouter(),
 			"alicloud_express_connect_router_vpc_association":               resourceAliCloudExpressConnectRouterExpressConnectRouterVpcAssociation(),
 			"alicloud_express_connect_router_tr_association":                resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociation(),
