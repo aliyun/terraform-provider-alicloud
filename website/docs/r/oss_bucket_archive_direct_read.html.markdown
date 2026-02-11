@@ -20,6 +20,12 @@ For information about OSS Bucket Archive Direct Read and how to use it, see [Wha
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_archive_direct_read&exampleId=2f53f111-5267-6bb6-3441-f494cea59b0f0c4b597a&activeTab=example&spm=docs.r.oss_bucket_archive_direct_read.0.2f53f11152&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -43,6 +49,9 @@ resource "alicloud_oss_bucket_archive_direct_read" "default" {
 ### Deleting `alicloud_oss_bucket_archive_direct_read` or removing it from your configuration
 
 Terraform cannot destroy resource `alicloud_oss_bucket_archive_direct_read`. Terraform will remove this resource from the state file, however resources may remain.
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_oss_bucket_archive_direct_read&spm=docs.r.oss_bucket_archive_direct_read.example&intl_lang=EN_US)
 
 ## Argument Reference
 

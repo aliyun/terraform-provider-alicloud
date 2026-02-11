@@ -20,6 +20,12 @@ For information about DdosCoo Domain Precise Access Rule and how to use it, see 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ddoscoo_domain_precise_access_rule&exampleId=71ff8ba6-9b26-a2e2-1dd5-824142bab2716e012213&activeTab=example&spm=docs.r.ddoscoo_domain_precise_access_rule.0.71ff8ba69b&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
@@ -60,6 +66,9 @@ resource "alicloud_ddoscoo_domain_precise_access_rule" "default" {
   name    = var.name
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ddoscoo_domain_precise_access_rule&spm=docs.r.ddoscoo_domain_precise_access_rule.example&intl_lang=EN_US)
 
 ## Argument Reference
 

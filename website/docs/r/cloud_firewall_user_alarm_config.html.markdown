@@ -20,6 +20,12 @@ For information about Cloud Firewall User Alarm Config and how to use it, see [W
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_user_alarm_config&exampleId=17bd73cd-e7d2-7eda-4c84-f68a07b6ed0546cf3893&activeTab=example&spm=docs.r.cloud_firewall_user_alarm_config.0.17bd73cde7&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_cloud_firewall_user_alarm_config" "default" {
   alarm_config {
@@ -43,6 +49,9 @@ resource "alicloud_cloud_firewall_user_alarm_config" "default" {
 ### Deleting `alicloud_cloud_firewall_user_alarm_config` or removing it from your configuration
 
 Terraform cannot destroy resource `alicloud_cloud_firewall_user_alarm_config`. Terraform will remove this resource from the state file, however resources may remain.
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_user_alarm_config&spm=docs.r.cloud_firewall_user_alarm_config.example&intl_lang=EN_US)
 
 ## Argument Reference
 
