@@ -83,10 +83,10 @@ func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic3609(t *testing.T) {
 }
 
 var AlicloudCloudFirewallVpcCenTrFirewallMap3609 = map[string]string{
-	"firewall_eni_vpc_id": CHECKSET,
-	"firewall_eni_id":     CHECKSET,
-	"tr_attachment_id":    CHECKSET,
-	"status":              CHECKSET,
+	"firewall_eni_vpc_id":        CHECKSET,
+	"firewall_eni_id":            CHECKSET,
+	"firewall_vpc_attachment_id": CHECKSET,
+	"status":                     CHECKSET,
 }
 
 func AlicloudCloudFirewallVpcCenTrFirewallBasicDependence3609(name string) string {
