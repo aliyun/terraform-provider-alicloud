@@ -185,7 +185,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above. 
 * `firewall_eni_id` - The ID of the firewall ENI.
 * `firewall_eni_vpc_id` - The ID of the VPC where the firewall ENI resides.
-* `tr_attachment_id` - The ID of the VPC where the firewall ENI resides.
+* `firewall_vpc_attachment_id` - The ID of the firewall VPC connection.
 * `status` - The status of the firewall.
 
 ## Timeouts

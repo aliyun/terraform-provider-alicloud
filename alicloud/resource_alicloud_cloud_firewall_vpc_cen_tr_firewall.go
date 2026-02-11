@@ -97,7 +97,7 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tr_attachment_id": {
+			"firewall_vpc_attachment_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -222,7 +222,7 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallRead(d *schema.ResourceData, m
 		d.Set("firewall_eni_vpc_id", v)
 	}
 	if v, ok := objectRaw["TrAttachmentId"]; ok {
-		d.Set("tr_attachment_id", v)
+		d.Set("firewall_vpc_attachment_id", v)
 	}
 	return nil
 }
