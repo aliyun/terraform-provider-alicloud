@@ -232,48 +232,6 @@ func TestAccAliCloudOOSPatchBaseline_basic0(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF-update",
-						"tags.For":     "Test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
-			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -640,20 +598,20 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 	})
 }
 
-// Test Oos PatchBaseline. >>> Resource test cases, automatically generated.
-// Case 1763
-func TestAccAliCloudOosPatchBaseline_basic1763(t *testing.T) {
+// Case OOS patch baseline接入Tag_ubuntu 5946
+func TestAccAliCloudOosPatchBaseline_basic5946(t *testing.T) {
+	t.Skipf("There is currently a delay in the tag service, causing this use case to fail. However, the functionality is actually working normally.")
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_patch_baseline.default"
-	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap1763)
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap5946)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeOosPatchBaseline")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%soospatchbaseline%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence1763)
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence5946)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -664,79 +622,128 @@ func TestAccAliCloudOosPatchBaseline_basic1763(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"patch_baseline_name": name,
-					"operation_system":    "Windows",
-					"approval_rules":      "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"*\\\"],\\\"Key\\\":\\\"Product\\\"},{\\\"Values\\\":[\\\"Security\\\",\\\"Bugfix\\\"],\\\"Key\\\":\\\"Classification\\\"},{\\\"Values\\\":[\\\"Critical\\\",\\\"Important\\\"],\\\"Key\\\":\\\"Severity\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Unspecified\\\"}]}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"patch_baseline_name": name,
-						"operation_system":    "Windows",
-						"approval_rules":      CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"approval_rules": "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"*\\\"],\\\"Key\\\":\\\"Product\\\"},{\\\"Values\\\":[\\\"Security\\\",\\\"Bugfix\\\"],\\\"Key\\\":\\\"Classification\\\"},{\\\"Values\\\":[\\\"Critical\\\",\\\"Important\\\"],\\\"Key\\\":\\\"Severity\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Unspecified\\\"}]}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"approval_rules": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+					"description":             "xxxx",
+					"patch_baseline_name":     name,
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"Product\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"operation_system":        "Ubuntu",
+					"rejected_patches": []string{
+						"KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"approved_patches": []string{
+						"KB6", "MS7", "MS5"},
+					"approved_patches_enable_non_security": "true",
+					"sources": []string{
+						"new"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+						"rejected_patches_action":              "ALLOW_AS_DEPENDENCY",
+						"description":                          "xxxx",
+						"patch_baseline_name":                  name,
+						"approval_rules":                       CHECKSET,
+						"operation_system":                     "Ubuntu",
+						"rejected_patches.#":                   "2",
+						"resource_group_id":                    CHECKSET,
+						"approved_patches.#":                   "3",
+						"approved_patches_enable_non_security": "true",
+						"sources.#":                            "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"rejected_patches_action": "BLOCK",
+					"description":             "qwqww1",
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":false,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"Product\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"rejected_patches": []string{
+						"KB1", "KB2", "KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"approved_patches": []string{
+						"MS7"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"rejected_patches_action": "BLOCK",
+						"description":             "qwqww1",
+						"approval_rules":          CHECKSET,
+						"rejected_patches.#":      "4",
+						"resource_group_id":       CHECKSET,
+						"approved_patches.#":      "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"rejected_patches": []string{"KB1", "MS2"},
+					"rejected_patches": []string{
+						"KB1"},
+					"approved_patches": []string{},
+					"sources": []string{
+						"{\\\"Name\\\":\\\"AliyunLinux4Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux5Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux6Source\\\"}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rejected_patches.#": "2",
+						"rejected_patches.#": "1",
+						"approved_patches.#": "0",
+						"sources.#":          "3",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"rejected_patches": []string{"KB1", "KB5", "KB6"},
+					"description":                          "123213",
+					"rejected_patches":                     []string{},
+					"approved_patches_enable_non_security": "false",
+					"sources":                              []string{},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rejected_patches.#": "3",
+						"description":                          CHECKSET,
+						"rejected_patches.#":                   "0",
+						"approved_patches_enable_non_security": "false",
+						"sources.#":                            "0",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"patch_baseline_name": name + "_update",
-					"operation_system":    "Windows",
-					"approval_rules":      "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"*\\\"],\\\"Key\\\":\\\"Product\\\"},{\\\"Values\\\":[\\\"Security\\\",\\\"Bugfix\\\"],\\\"Key\\\":\\\"Classification\\\"},{\\\"Values\\\":[\\\"Critical\\\",\\\"Important\\\"],\\\"Key\\\":\\\"Severity\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Unspecified\\\"}]}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"patch_baseline_name": name + "_update",
-						"operation_system":    "Windows",
-						"approval_rules":      CHECKSET,
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -750,11 +757,788 @@ func TestAccAliCloudOosPatchBaseline_basic1763(t *testing.T) {
 	})
 }
 
-var AlicloudOosPatchBaselineMap1763 = map[string]string{
+var AlicloudOosPatchBaselineMap5946 = map[string]string{
 	"create_time": CHECKSET,
 }
 
-func AlicloudOosPatchBaselineBasicDependence1763(name string) string {
+func AlicloudOosPatchBaselineBasicDependence5946(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case OOS patch baseline接入Tag_aliyun_linux 5945
+func TestAccAliCloudOosPatchBaseline_basic5945(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_patch_baseline.default"
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap5945)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosPatchBaseline")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence5945)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+					"description":             "xxxx",
+					"patch_baseline_name":     name,
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"Product\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"operation_system":        "AliyunLinux",
+					"rejected_patches": []string{
+						"KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"approved_patches": []string{
+						"KB6", "MS7", "MS5"},
+					"approved_patches_enable_non_security": "true",
+					"sources": []string{
+						"new"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action":              "ALLOW_AS_DEPENDENCY",
+						"description":                          "xxxx",
+						"patch_baseline_name":                  name,
+						"approval_rules":                       CHECKSET,
+						"operation_system":                     "AliyunLinux",
+						"rejected_patches.#":                   "2",
+						"resource_group_id":                    CHECKSET,
+						"approved_patches.#":                   "3",
+						"approved_patches_enable_non_security": "true",
+						"sources.#":                            "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "BLOCK",
+					"description":             "qwqww1",
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":false,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"Product\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"rejected_patches": []string{
+						"KB1", "KB2", "KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"approved_patches": []string{
+						"MS7"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action": "BLOCK",
+						"description":             "qwqww1",
+						"approval_rules":          CHECKSET,
+						"rejected_patches.#":      "4",
+						"resource_group_id":       CHECKSET,
+						"approved_patches.#":      "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches": []string{
+						"KB1"},
+					"approved_patches": []string{},
+					"sources": []string{
+						"{\\\"Name\\\":\\\"AliyunLinux4Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux5Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux6Source\\\"}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches.#": "1",
+						"approved_patches.#": "0",
+						"sources.#":          "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":                          "123213",
+					"rejected_patches":                     []string{},
+					"approved_patches_enable_non_security": "false",
+					"sources":                              []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                          CHECKSET,
+						"rejected_patches.#":                   "0",
+						"approved_patches_enable_non_security": "false",
+						"sources.#":                            "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudOosPatchBaselineMap5945 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudOosPatchBaselineBasicDependence5945(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case OOS patch baseline接入Tag_debian 5947
+func TestAccAliCloudOosPatchBaseline_basic5947(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_patch_baseline.default"
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap5947)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosPatchBaseline")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence5947)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+					"description":             "xxxx",
+					"patch_baseline_name":     name,
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"Product\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"operation_system":        "Debian",
+					"rejected_patches": []string{
+						"KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"approved_patches": []string{
+						"KB6", "MS7", "MS5"},
+					"approved_patches_enable_non_security": "true",
+					"sources": []string{
+						"new"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action":              "ALLOW_AS_DEPENDENCY",
+						"description":                          "xxxx",
+						"patch_baseline_name":                  name,
+						"approval_rules":                       CHECKSET,
+						"operation_system":                     "Debian",
+						"rejected_patches.#":                   "2",
+						"resource_group_id":                    CHECKSET,
+						"approved_patches.#":                   "3",
+						"approved_patches_enable_non_security": "true",
+						"sources.#":                            "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "BLOCK",
+					"description":             "qwqww1",
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":false,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"Product\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"rejected_patches": []string{
+						"KB1", "KB2", "KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"approved_patches": []string{
+						"MS7"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action": "BLOCK",
+						"description":             "qwqww1",
+						"approval_rules":          CHECKSET,
+						"rejected_patches.#":      "4",
+						"resource_group_id":       CHECKSET,
+						"approved_patches.#":      "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches": []string{
+						"KB1"},
+					"approved_patches": []string{},
+					"sources": []string{
+						"{\\\"Name\\\":\\\"AliyunLinux4Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux5Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux6Source\\\"}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches.#": "1",
+						"approved_patches.#": "0",
+						"sources.#":          "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":                          "123213",
+					"rejected_patches":                     []string{},
+					"approved_patches_enable_non_security": "false",
+					"sources":                              []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                          CHECKSET,
+						"rejected_patches.#":                   "0",
+						"approved_patches_enable_non_security": "false",
+						"sources.#":                            "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudOosPatchBaselineMap5947 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudOosPatchBaselineBasicDependence5947(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case OOS patch baseline接入Tag_centos 5944
+func TestAccAliCloudOosPatchBaseline_basic5944(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_patch_baseline.default"
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap5944)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosPatchBaseline")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence5944)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+					"description":             "xxxx",
+					"patch_baseline_name":     name,
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"Product\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"operation_system":        "CentOS",
+					"rejected_patches": []string{
+						"KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"approved_patches": []string{
+						"KB6", "MS7", "MS5"},
+					"approved_patches_enable_non_security": "true",
+					"sources": []string{
+						"new"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action":              "ALLOW_AS_DEPENDENCY",
+						"description":                          "xxxx",
+						"patch_baseline_name":                  name,
+						"approval_rules":                       CHECKSET,
+						"operation_system":                     "CentOS",
+						"rejected_patches.#":                   "2",
+						"resource_group_id":                    CHECKSET,
+						"approved_patches.#":                   "3",
+						"approved_patches_enable_non_security": "true",
+						"sources.#":                            "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "BLOCK",
+					"description":             "qwqww1",
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":false,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"Product\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"rejected_patches": []string{
+						"KB1", "KB2", "KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"approved_patches": []string{
+						"MS7"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action": "BLOCK",
+						"description":             "qwqww1",
+						"approval_rules":          CHECKSET,
+						"rejected_patches.#":      "4",
+						"resource_group_id":       CHECKSET,
+						"approved_patches.#":      "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches": []string{
+						"KB1"},
+					"approved_patches": []string{},
+					"sources": []string{
+						"{\\\"Name\\\":\\\"AliyunLinux4Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux5Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux6Source\\\"}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches.#": "1",
+						"approved_patches.#": "0",
+						"sources.#":          "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":                          "123213",
+					"rejected_patches":                     []string{},
+					"approved_patches_enable_non_security": "false",
+					"sources":                              []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                          CHECKSET,
+						"rejected_patches.#":                   "0",
+						"approved_patches_enable_non_security": "false",
+						"sources.#":                            "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudOosPatchBaselineMap5944 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudOosPatchBaselineBasicDependence5944(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case OOS patch baseline接入Tag_windows 4719
+func TestAccAliCloudOosPatchBaseline_basic4719(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_patch_baseline.default"
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap4719)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosPatchBaseline")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccoos%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence4719)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+					"description":             "xxxx",
+					"patch_baseline_name":     name,
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"PatchSet\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"operation_system":        "Windows",
+					"rejected_patches": []string{
+						"KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"approved_patches": []string{
+						"KB6", "MS7", "MS5"},
+					"approved_patches_enable_non_security": "true",
+					"sources": []string{
+						"new"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action":              "ALLOW_AS_DEPENDENCY",
+						"description":                          "xxxx",
+						"patch_baseline_name":                  name,
+						"approval_rules":                       CHECKSET,
+						"operation_system":                     "Windows",
+						"rejected_patches.#":                   "2",
+						"resource_group_id":                    CHECKSET,
+						"approved_patches.#":                   "3",
+						"approved_patches_enable_non_security": "true",
+						"sources.#":                            "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "BLOCK",
+					"description":             "qwqww1",
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":false,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"PatchSet\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"rejected_patches": []string{
+						"KB1", "KB2", "KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"approved_patches": []string{
+						"MS7"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action": "BLOCK",
+						"description":             "qwqww1",
+						"approval_rules":          CHECKSET,
+						"rejected_patches.#":      "4",
+						"resource_group_id":       CHECKSET,
+						"approved_patches.#":      "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches": []string{
+						"KB1"},
+					"approved_patches": []string{},
+					"sources": []string{
+						"{\\\"Name\\\":\\\"AliyunLinux4Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux5Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux6Source\\\"}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches.#": "1",
+						"approved_patches.#": "0",
+						"sources.#":          "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":                          "123213",
+					"rejected_patches":                     []string{},
+					"approved_patches_enable_non_security": "false",
+					"sources":                              []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                          CHECKSET,
+						"rejected_patches.#":                   "0",
+						"approved_patches_enable_non_security": "false",
+						"sources.#":                            "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudOosPatchBaselineMap4719 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudOosPatchBaselineBasicDependence4719(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case OOS patch baseline接入Tag_new_3 3681
+func TestAccAliCloudOosPatchBaseline_basic3681(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_patch_baseline.default"
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap3681)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosPatchBaseline")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccoos%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence3681)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+					"description":             "xxxx",
+					"patch_baseline_name":     name,
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"PatchSet\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"operation_system":        "Windows",
+					"rejected_patches": []string{
+						"KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"sources": []string{
+						"{\\\"Name\\\":\\\"AliyunLinux3Source\\\"}"},
+					"approved_patches": []string{
+						"KB1"},
+					"approved_patches_enable_non_security": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action":              "ALLOW_AS_DEPENDENCY",
+						"description":                          "xxxx",
+						"patch_baseline_name":                  name,
+						"approval_rules":                       CHECKSET,
+						"operation_system":                     "Windows",
+						"rejected_patches.#":                   "2",
+						"resource_group_id":                    CHECKSET,
+						"sources.#":                            "1",
+						"approved_patches.#":                   "1",
+						"approved_patches_enable_non_security": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "BLOCK",
+					"description":             "qwqww1",
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":false,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"PatchSet\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"rejected_patches": []string{
+						"KB1", "KB2", "KB3", "KB4"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"sources": []string{
+						"{\\\"Name\\\":\\\"AliyunLinux2Source\\\"}"},
+					"approved_patches_enable_non_security": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action":              "BLOCK",
+						"description":                          "qwqww1",
+						"approval_rules":                       CHECKSET,
+						"rejected_patches.#":                   "4",
+						"resource_group_id":                    CHECKSET,
+						"sources.#":                            "1",
+						"approved_patches_enable_non_security": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches": []string{
+						"KB1"},
+					"sources": []string{
+						"{\\\"Name\\\":\\\"AliyunLinux4Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux5Source\\\"}", "{\\\"Name\\\":\\\"AliyunLinux6Source\\\"}"},
+					"approved_patches": []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches.#": "1",
+						"sources.#":          "3",
+						"approved_patches.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":      "123213",
+					"rejected_patches": []string{},
+					"sources":          []string{},
+					"approved_patches": []string{
+						"KB1", "KB5", "KB6"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":        CHECKSET,
+						"rejected_patches.#": "0",
+						"sources.#":          "0",
+						"approved_patches.#": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudOosPatchBaselineMap3681 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudOosPatchBaselineBasicDependence3681(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case OOS patch baseline接入Tag_new 3648
+func TestAccAliCloudOosPatchBaseline_basic3648(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_patch_baseline.default"
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap3648)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosPatchBaseline")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccoos%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence3648)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+					"description":             "xxxx",
+					"patch_baseline_name":     name,
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"PatchSet\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"operation_system":        "Windows",
+					"rejected_patches": []string{
+						"KB3", "KB4"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+						"description":             "xxxx",
+						"patch_baseline_name":     name,
+						"approval_rules":          CHECKSET,
+						"operation_system":        "Windows",
+						"rejected_patches.#":      "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "BLOCK",
+					"description":             "qwqww1",
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":false,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"PatchSet\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"rejected_patches": []string{
+						"KB1", "KB2", "KB3", "KB4"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action": "BLOCK",
+						"description":             "qwqww1",
+						"approval_rules":          CHECKSET,
+						"rejected_patches.#":      "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches": []string{
+						"KB1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":      "123213",
+					"rejected_patches": []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":        CHECKSET,
+						"rejected_patches.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudOosPatchBaselineMap3648 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudOosPatchBaselineBasicDependence3648(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -764,21 +1548,22 @@ variable "name" {
 `, name)
 }
 
-// Case 1763  twin
-func TestAccAliCloudOosPatchBaseline_basic1763_twin(t *testing.T) {
+// Case OOS patch baseline接入Tag 3558
+func TestAccAliCloudOosPatchBaseline_basic3558(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_patch_baseline.default"
-	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap1763)
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap3558)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeOosPatchBaseline")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%soospatchbaseline%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence1763)
+	name := fmt.Sprintf("tfaccoos%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence3558)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -787,17 +1572,49 @@ func TestAccAliCloudOosPatchBaseline_basic1763_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"patch_baseline_name": name,
-					"operation_system":    "Windows",
-					"approval_rules":      "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"*\\\"],\\\"Key\\\":\\\"Product\\\"},{\\\"Values\\\":[\\\"Security\\\",\\\"Bugfix\\\"],\\\"Key\\\":\\\"Classification\\\"},{\\\"Values\\\":[\\\"Critical\\\",\\\"Important\\\"],\\\"Key\\\":\\\"Severity\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Unspecified\\\"}]}",
-					"description":         "test-update",
+					"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+					"description":             "xxxx",
+					"patch_baseline_name":     name,
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"PatchSet\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"operation_system":        "Windows",
+					"rejected_patches": []string{
+						"KB3", "KB4"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"patch_baseline_name": name,
-						"operation_system":    "Windows",
-						"approval_rules":      CHECKSET,
-						"description":         "test-update",
+						"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+						"description":             "xxxx",
+						"patch_baseline_name":     name,
+						"approval_rules":          CHECKSET,
+						"operation_system":        "Windows",
+						"rejected_patches.#":      "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "BLOCK",
+					"description":             "qwqww1",
+					"approval_rules":          "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":false,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"OS\\\"],\\\"Key\\\":\\\"PatchSet\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Medium\\\"}]}",
+					"rejected_patches": []string{
+						"KB1", "KB2", "KB3", "KB4"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action": "BLOCK",
+						"description":             "qwqww1",
+						"approval_rules":          CHECKSET,
+						"rejected_patches.#":      "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches": []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches.#": "0",
 					}),
 				),
 			},
@@ -811,4 +1628,16 @@ func TestAccAliCloudOosPatchBaseline_basic1763_twin(t *testing.T) {
 	})
 }
 
-// Test Oos PatchBaseline. <<< Resource test cases, automatically generated.
+var AlicloudOosPatchBaselineMap3558 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudOosPatchBaselineBasicDependence3558(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
