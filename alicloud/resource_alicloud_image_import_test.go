@@ -139,6 +139,77 @@ func TestAccAliCloudImageImport_basic0_twin(t *testing.T) {
 
 }
 
+func TestAccAliCloudImageImport_features(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_image_import.default"
+	ra := resourceAttrInit(resourceId, AliCloudImageImportMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeImageById")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%simageimport%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudImageImportBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_name": name,
+					"features": []map[string]interface{}{
+						{
+							"nvme_support": "supported",
+						},
+					},
+					"disk_device_mapping": []map[string]interface{}{
+						{
+							"oss_bucket": "${alicloud_oss_bucket.default.id}",
+							"oss_object": "${alicloud_oss_bucket_object.default.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_name":              name,
+						"features.#":              "1",
+						"features.0.nvme_support": "supported",
+						"disk_device_mapping.#":   "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_name": name + "-update",
+					"features": []map[string]interface{}{
+						{
+							"nvme_support": "unsupported",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_name":              name + "-update",
+						"features.0.nvme_support": "unsupported",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"license_type"},
+			},
+		},
+	})
+
+}
+
 var AliCloudImageImportMap0 = map[string]string{
 	"platform":   CHECKSET,
 	"boot_mode":  CHECKSET,
