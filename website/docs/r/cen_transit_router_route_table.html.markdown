@@ -2,26 +2,23 @@
 subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_route_table"
-sidebar_current: "docs-alicloud-resource-cen-transit_router_route_table"
 description: |-
-  Provides a Alicloud CEN transit router route table resource.
+  Provides a Alicloud Cloud Enterprise Network (CEN) Transit Router Route Table resource.
 ---
 
 # alicloud_cen_transit_router_route_table
 
-Provides a CEN transit router route table resource.[What is Cen Transit Router Route Table](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitrouterroutetable)
+Provides a Cloud Enterprise Network (CEN) Transit Router Route Table resource.
+
+
+
+For information about Cloud Enterprise Network (CEN) Transit Router Route Table and how to use it, see [What is Transit Router Route Table](https://next.api.alibabacloud.com/document/Cbn/2017-09-12/CreateTransitRouterRouteTable).
 
 -> **NOTE:** Available since v1.126.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_transit_router_route_table&exampleId=211d07b1-a361-eb99-e650-8592dad85dc1c35ad0e5&activeTab=example&spm=docs.r.cen_transit_router_route_table.0.211d07b1a3&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 resource "alicloud_cen_instance" "example" {
@@ -39,39 +36,43 @@ resource "alicloud_cen_transit_router_route_table" "example" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_route_table&spm=docs.r.cen_transit_router_route_table.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
+* `route_table_options` - (Optional, Set, Available since v1.269.0) Routing Table function options. See [`route_table_options`](#route_table_options) below.
+* `tags` - (Optional, Map, Available since v1.201.0) The tag of the resource
+* `transit_router_id` - (Required, ForceNew) TransitRouterId
+* `transit_router_route_table_description` - (Optional, Computed) TransitRouterRouteTableDescription
+* `transit_router_route_table_name` - (Optional) TransitRouterRouteTableName
 
-* `transit_router_id` - (Required, ForceNew) The ID of the transit router.
-* `transit_router_route_table_name` - (Optional) The name of the transit router route table.
-* `transit_router_route_table_description` - (Optional) The description of the transit router route table.
-* `tags` - (Optional, Available since v1.201.0) A mapping of tags to assign to the resource.
-* `dry_run` - (Optional) The dry run.
+### `route_table_options`
+
+The route_table_options supports the following:
+* `multi_region_ecmp` - (Optional, Available since v1.269.0) Multi-region equivalent route, value:
+  - `disable` (default): disables multi-region equivalent routes. After you disable multi-Region equivalent routes, routes with the same prefix learned from different regions will select TR with the smallest Region ID as the next hop (in alphabetical order) if other route attributes are the same. At this time, the traffic delay and the bandwidth consumed between different regions will change. Please make sure to fully evaluate before closing.
+  - `enable`: enable multi-region equivalent routing. When multi-region equivalent routes are enabled, routes with the same prefix learned from different regions will form equivalent routes when other route attributes are the same. At this time, the traffic delay and the bandwidth consumed between different regions will change. Please make sure to fully evaluate before opening.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_route_table_id>`.
-* `status` - The associating status of the Transit Router.
-* `transit_router_route_table_id` - The id of the transit router route table.
-* `transit_router_route_table_type` - The type of the transit router route table. Valid values: `Custom`, `System`.
+* `id` - The ID of the resource supplied above. 
+* `create_time` - The creation time of the resource
+* `region_id` - The region ID of the resource
+* `status` - The status of the resource
+* `transit_router_route_table_id` - TransitRouterRouteTableId
+* `transit_router_route_table_type` - TransitRouterRouteTableType
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 3 mins) Used when creating the cen transit router route table (until it reaches the initial `Active` status).
-* `update` - (Defaults to 3 mins) Used when update the cen transit router route table.
-* `delete` - (Defaults to 3 mins) Used when delete the cen transit router route table.
+* `create` - (Defaults to 5 mins) Used when create the Transit Router Route Table.
+* `delete` - (Defaults to 5 mins) Used when delete the Transit Router Route Table.
+* `update` - (Defaults to 5 mins) Used when update the Transit Router Route Table.
 
 ## Import
 
-CEN transit router route table  can be imported using the id, e.g.
+Cloud Enterprise Network (CEN) Transit Router Route Table can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cen_transit_router_route_table.default tr-*********:vtb-********
+$ terraform import alicloud_cen_transit_router_route_table.example <transit_router_route_table_id>
 ```
