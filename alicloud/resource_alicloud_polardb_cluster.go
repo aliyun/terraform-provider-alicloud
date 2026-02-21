@@ -57,7 +57,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: StringInSlice([]string{"Upgrade", "Downgrade"}, false),
 				Optional:     true,
-				Default:      "Upgrade",
+				Computed:     true,
 			},
 			"db_node_count": {
 				Type:         schema.TypeInt,
@@ -1274,7 +1274,11 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			request := polardb.CreateModifyDBNodeClassRequest()
 			request.RegionId = client.RegionId
 			request.DBClusterId = d.Id()
-			request.ModifyType = d.Get("modify_type").(string)
+			if w, ok := d.GetOk("modify_type"); ok {
+				request.ModifyType = w.(string)
+			} else {
+				request.ModifyType = "Upgrade"
+			}
 			request.DBNodeTargetClass = d.Get("db_node_class").(string)
 			if v, ok := d.GetOk("sub_category"); ok && v.(string) != "" {
 				request.SubCategory = convertPolarDBSubCategoryUpdateRequest(v.(string))
