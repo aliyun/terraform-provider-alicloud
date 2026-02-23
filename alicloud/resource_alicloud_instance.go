@@ -799,6 +799,21 @@ func resourceAliCloudInstance() *schema.Resource {
 				Computed: true,
 				Removed:  "Field `io_optimized` has been removed from provider version 1.213.1.",
 			},
+			"security_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"confidential_computing_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: StringInSlice([]string{"TDX", "Enclave"}, false),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1287,6 +1302,18 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["CpuOptions.TopologyType"] = topologyType
 	}
 
+	if v, ok := d.GetOk("security_options"); ok {
+		if securityOptionsList, ok := v.([]interface{}); ok {
+			for _, raw := range securityOptionsList {
+				if securityOptionsArg, ok := raw.(map[string]interface{}); ok {
+					if v, ok := securityOptionsArg["confidential_computing_mode"]; ok {
+						request["SecurityOptions.ConfidentialComputingMode"] = v
+					}
+				}
+			}
+		}
+	}
+
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
@@ -1392,6 +1419,20 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("auto_release_time", instance.AutoReleaseTime)
 	}
 	d.Set("tags", ecsService.tagsToMap(instance.Tags.Tag))
+	// The ConfidentialComputingMode is not exposed via the SecurityOptions
+	// field of DescribeInstances (it is returned empty even on TDX/Enclave
+	// instances). It is instead surfaced as a system tag, so read it back
+	// from there to keep state in sync with the cloud after create/import.
+	for _, tag := range instance.Tags.Tag {
+		if tag.TagKey == "acs:ecs:confidentialComputingMode" && tag.TagValue != "" {
+			d.Set("security_options", []map[string]interface{}{
+				{
+					"confidential_computing_mode": tag.TagValue,
+				},
+			})
+			break
+		}
+	}
 	d.Set("hpc_cluster_id", instance.HpcClusterId)
 	d.Set("deployment_set_id", instance.DeploymentSetId)
 	d.Set("deployment_set_group_no", instance.DeploymentSetGroupNo)
