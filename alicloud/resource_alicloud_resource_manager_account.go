@@ -236,8 +236,8 @@ func resourceAliCloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 
 	if !d.IsNewResource() && d.HasChange("display_name") {
 		update = true
+		request["NewDisplayName"] = d.Get("display_name")
 	}
-	request["NewDisplayName"] = d.Get("display_name")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -261,6 +261,10 @@ func resourceAliCloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 	query = make(map[string]interface{})
 	request["AccountId"] = d.Id()
 
+	if !d.IsNewResource() && d.HasChange("payer_account_id") {
+		update = true
+	}
+	request["PayerAccountId"] = d.Get("payer_account_id")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {

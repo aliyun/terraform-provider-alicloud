@@ -336,6 +336,16 @@ func testAccPreCheckWithResourceManagerFloderIdSetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithResourceManagerAccount(t *testing.T) {
+	if os.Getenv("RESOURCE_MANAGER_ALICLOUD_ACCESS_KEY") == "" || os.Getenv("RESOURCE_MANAGER_ALICLOUD_SECRET_KEY") == "" {
+		t.Skip("Skipping the test case with RESOURCE_MANAGER_ALICLOUD_ACCESS_KEY or RESOURCE_MANAGER_ALICLOUD_SECRET_KEY is empty")
+		t.Skipped()
+	} else {
+		os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("RESOURCE_MANAGER_ALICLOUD_ACCESS_KEY"))
+		os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("RESOURCE_MANAGER_ALICLOUD_SECRET_KEY"))
+	}
+}
+
 func testAccPreCheckWithEnvVariable(t *testing.T, envVariableName string) {
 	if v := strings.TrimSpace(os.Getenv(envVariableName)); v == "" {
 		t.Skipf("Skipping the test case with no env variable %s", envVariableName)
