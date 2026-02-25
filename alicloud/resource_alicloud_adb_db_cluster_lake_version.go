@@ -52,7 +52,6 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"secondary_vswitch_id": {
@@ -296,7 +295,7 @@ func resourceAliCloudAdbDbClusterLakeVersionCreate(d *schema.ResourceData, meta 
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, false)
+		response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -433,7 +432,7 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		action := "ModifyDBCluster"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, false)
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
@@ -477,7 +476,7 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		action := "ModifyClusterAccessWhiteList"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyClusterAccessWhiteListReq, false)
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyClusterAccessWhiteListReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -563,7 +562,7 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		action := "ModifyDBClusterDescription"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyDBClusterDescriptionReq, false)
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyDBClusterDescriptionReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -603,7 +602,7 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		action := "ModifyDBClusterResourceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyDBClusterResourceGroupReq, false)
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyDBClusterResourceGroupReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -625,6 +624,57 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		}
 
 		d.SetPartial("resource_group_id")
+	}
+
+	update = false
+	modifyDBClusterPayTypeReq := map[string]interface{}{
+		"RegionId":    client.RegionId,
+		"DbClusterId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("payment_type") {
+		update = true
+	}
+	modifyDBClusterPayTypeReq["PayType"] = convertAdbDbClusterLakeVersionPaymentTypeRequest(d.Get("payment_type"))
+
+	if modifyDBClusterPayTypeReq["PayType"] == string(Prepaid) {
+		if v, ok := d.GetOkExists("period"); ok {
+			usedTime := v.(int)
+			modifyDBClusterPayTypeReq["UsedTime"] = strconv.Itoa(usedTime)
+			modifyDBClusterPayTypeReq["Period"] = string(Month)
+			if usedTime > 9 {
+				modifyDBClusterPayTypeReq["UsedTime"] = strconv.Itoa(usedTime / 12)
+				modifyDBClusterPayTypeReq["Period"] = string(Year)
+			}
+		}
+	}
+
+	if update {
+		action := "ModifyDBClusterPayType"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("adb", "2019-03-15", action, nil, modifyDBClusterPayTypeReq, true)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBClusterPayTypeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("payment_type")
 	}
 
 	d.Partial(false)
@@ -652,7 +702,7 @@ func resourceAliCloudAdbDbClusterLakeVersionDelete(d *schema.ResourceData, meta 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, false)
+		response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

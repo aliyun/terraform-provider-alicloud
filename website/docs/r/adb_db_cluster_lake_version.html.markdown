@@ -64,7 +64,7 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The vpc ID of the resource.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch.
 * `zone_id` - (Required, ForceNew) The zone ID of the resource.
-* `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`. **NOTE:** From version 1.245.0, `payment_type` can be set to `Subscription`.
+* `payment_type` - (Required) The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`. **NOTE:** From version 1.245.0, `payment_type` can be set to `Subscription`. From version 1.272.0, `payment_type` can be modified.
 * `secondary_vswitch_id` - (Optional, ForceNew, Available since v1.248.0) The ID of the secondary zone.
 * `secondary_zone_id` - (Optional, ForceNew, Available since v1.248.0) The ID of the secondary vSwitch.
 * `product_form` - (Optional, ForceNew, Available since v1.245.0) The product form of the cluster. Valid values:
