@@ -2,12 +2,112 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_vpc_ipam_ipam", &resource.Sweeper{
+		Name: "alicloud_vpc_ipam_ipam",
+		F:    testSweepVpcIpamIpam,
+		Dependencies: []string{
+			"alicloud_vpc_ipam_ipam_pool",
+		},
+	})
+}
+
+func testSweepVpcIpamIpam(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"tfacc",
+		"testAcc",
+		"default",
+	}
+
+	ipamIds := make([]string, 0)
+	action := "ListIpams"
+	var response map[string]interface{}
+	request := map[string]interface{}{
+		"MaxResults": PageSizeLarge,
+		"RegionId":   client.RegionId,
+	}
+	for {
+		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, nil, request, true)
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve VPC IPAM in service list: %s", err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.Ipams", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Ipams", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			skip := true
+			item := v.(map[string]interface{})
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["IpamName"])), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping VPC IPAM: %v (%v)", item["IpamName"], item["IpamId"])
+					continue
+				}
+			}
+			ipamIds = append(ipamIds, fmt.Sprint(item["IpamId"]))
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+
+	for _, id := range ipamIds {
+		log.Printf("[INFO] Deleting VPC IPAM: (%s)", id)
+		action := "DeleteIpam"
+		request := map[string]interface{}{
+			"IpamId":   id,
+			"RegionId": client.RegionId,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(time.Minute*10, func() *resource.RetryError {
+			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete VPC IPAM (%s): %v", id, err)
+			continue
+		}
+	}
+	return nil
+}
 
 // Test VpcIpam Ipam. >>> Resource test cases, automatically generated.
 // Case test_ipam_20250115 10035
@@ -21,7 +121,7 @@ func TestAccAliCloudVpcIpamIpam_basic10035(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcipamipam%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccvpcipam%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpamIpamBasicDependence10035)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -136,6 +236,7 @@ var AlicloudVpcIpamIpamMap10035 = map[string]string{
 	"create_time":              CHECKSET,
 	"region_id":                CHECKSET,
 	"private_default_scope_id": CHECKSET,
+	"public_default_scope_id":  CHECKSET,
 }
 
 func AlicloudVpcIpamIpamBasicDependence10035(name string) string {
@@ -161,7 +262,7 @@ func TestAccAliCloudVpcIpamIpam_basic7856(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcipamipam%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccvpcipam%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpamIpamBasicDependence7856)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -276,6 +377,7 @@ var AlicloudVpcIpamIpamMap7856 = map[string]string{
 	"create_time":              CHECKSET,
 	"region_id":                CHECKSET,
 	"private_default_scope_id": CHECKSET,
+	"public_default_scope_id":  CHECKSET,
 }
 
 func AlicloudVpcIpamIpamBasicDependence7856(name string) string {
