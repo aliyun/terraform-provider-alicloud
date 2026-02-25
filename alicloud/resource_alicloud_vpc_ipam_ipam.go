@@ -47,6 +47,10 @@ func resourceAliCloudVpcIpamIpam() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"public_default_scope_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"region_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -85,7 +89,8 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("operating_region_list"); ok {
-		operatingRegionListMapsArray := v.(*schema.Set).List()
+		operatingRegionListMapsArray := convertToInterfaceArray(v)
+
 		request["OperatingRegionList"] = operatingRegionListMapsArray
 	}
 
@@ -134,34 +139,21 @@ func resourceAliCloudVpcIpamIpamRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["IpamDescription"] != nil {
-		d.Set("ipam_description", objectRaw["IpamDescription"])
-	}
-	if objectRaw["IpamName"] != nil {
-		d.Set("ipam_name", objectRaw["IpamName"])
-	}
-	if objectRaw["PrivateDefaultScopeId"] != nil {
-		d.Set("private_default_scope_id", objectRaw["PrivateDefaultScopeId"])
-	}
-	if objectRaw["RegionId"] != nil {
-		d.Set("region_id", objectRaw["RegionId"])
-	}
-	if objectRaw["ResourceGroupId"] != nil {
-		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	}
-	if objectRaw["IpamStatus"] != nil {
-		d.Set("status", objectRaw["IpamStatus"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("ipam_description", objectRaw["IpamDescription"])
+	d.Set("ipam_name", objectRaw["IpamName"])
+	d.Set("private_default_scope_id", objectRaw["PrivateDefaultScopeId"])
+	d.Set("public_default_scope_id", objectRaw["PublicDefaultScopeId"])
+	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("status", objectRaw["IpamStatus"])
 
-	operatingRegionList1Raw := make([]interface{}, 0)
+	operatingRegionListRaw := make([]interface{}, 0)
 	if objectRaw["OperatingRegionList"] != nil {
-		operatingRegionList1Raw = objectRaw["OperatingRegionList"].([]interface{})
+		operatingRegionListRaw = convertToInterfaceArray(objectRaw["OperatingRegionList"])
 	}
 
-	d.Set("operating_region_list", operatingRegionList1Raw)
+	d.Set("operating_region_list", operatingRegionListRaw)
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
@@ -176,8 +168,8 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	update := false
 	d.Partial(true)
 
-	action := "UpdateIpam"
 	var err error
+	action := "UpdateIpam"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["IpamId"] = d.Id()
@@ -242,22 +234,23 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if d.HasChange("operating_region_list") {
+		var err error
 		oldEntry, newEntry := d.GetChange("operating_region_list")
 		oldEntrySet := oldEntry.(*schema.Set)
 		newEntrySet := newEntry.(*schema.Set)
 		removed := oldEntrySet.Difference(newEntrySet)
 		added := newEntrySet.Difference(oldEntrySet)
 
-		if removed.Len() > 0 {
+		if added.Len() > 0 {
 			action := "UpdateIpam"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["IpamId"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
-			localData := removed.List()
-			removeOperatingRegionMapsArray := localData
-			request["RemoveOperatingRegion"] = removeOperatingRegionMapsArray
+			localData := added.List()
+			addOperatingRegionMapsArray := localData
+			request["AddOperatingRegion"] = addOperatingRegionMapsArray
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -278,16 +271,16 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 
 		}
 
-		if added.Len() > 0 {
+		if removed.Len() > 0 {
 			action := "UpdateIpam"
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["IpamId"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
-			localData := added.List()
-			addOperatingRegionMapsArray := localData
-			request["AddOperatingRegion"] = addOperatingRegionMapsArray
+			localData := removed.List()
+			removeOperatingRegionMapsArray := localData
+			request["RemoveOperatingRegion"] = removeOperatingRegionMapsArray
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -335,8 +328,6 @@ func resourceAliCloudVpcIpamIpamDelete(d *schema.ResourceData, meta interface{})
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
