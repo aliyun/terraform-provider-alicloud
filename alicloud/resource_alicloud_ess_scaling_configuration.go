@@ -572,9 +572,12 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	instanceType := d.Get("instance_type").(string)
 	instanceTypes := d.Get("instance_types").([]interface{})
 	instanceTypeOverrides := d.Get("instance_type_override").(*schema.Set).List()
-	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) && (instanceTypeOverrides == nil || len(instanceTypeOverrides) == 0) {
-		return WrapError(Error("instance_type or instance_types or instance_type_override must be assigned"))
+
+	instancePatternInfos := d.Get("instance_pattern_info").(*schema.Set).List()
+	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) && (instanceTypeOverrides == nil || len(instanceTypeOverrides) == 0) && (instancePatternInfos == nil || len(instancePatternInfos) == 0) {
+		return WrapError(Error("instance_type or instance_types or instance_type_override or instance_pattern_info must be assigned"))
 	}
+
 	request["ImageId"] = d.Get("image_id")
 	request["ScalingGroupId"] = d.Get("scaling_group_id")
 	request["PasswordInherit"] = d.Get("password_inherit")
@@ -789,6 +792,27 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		}
 		request["SpotPriceLimit"] = spotPriceLimitsMaps
 	}
+
+	if v, ok := d.GetOk("network_interfaces"); ok {
+		networkInterfacesMaps := make([]map[string]interface{}, 0)
+		networkInterfaces := v.(*schema.Set).List()
+		for _, rew := range networkInterfaces {
+			networkInterfacesMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+
+			if instanceType, ok := item["instance_type"].(string); ok && instanceType != "" {
+				networkInterfacesMap["InstanceType"] = instanceType
+			}
+			if networkInterfaceTrafficMode, ok := item["network_interface_traffic_mode"].(string); ok && networkInterfaceTrafficMode != "" {
+				networkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfaceTrafficMode
+			}
+			networkInterfacesMap["Ipv6AddressCount"] = item["ipv6_address_count"].(int)
+			networkInterfacesMap["SecurityGroupIds"] = item["security_group_ids"]
+			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
+		}
+		request["NetworkInterfaces"] = networkInterfacesMaps
+	}
+
 	if v, ok := d.GetOk("instance_pattern_info"); ok {
 		instancePatternInfosMaps := make([]map[string]interface{}, 0)
 		instancePatternInfos := v.(*schema.Set).List()
@@ -814,10 +838,10 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			if item["minimum_cpu_core_count"] != 0 {
 				instancePatternInfosMap["MinimumCpuCoreCount"] = item["minimum_cpu_core_count"].(int)
 			}
-			if item["minimum_memory_size"] != 0 {
+			if item["minimum_memory_size"].(float64) > 0.00 {
 				instancePatternInfosMap["MinimumMemorySize"] = strconv.FormatFloat(item["minimum_memory_size"].(float64), 'f', 2, 64)
 			}
-			if item["maximum_memory_size"] != 0 {
+			if item["maximum_memory_size"].(float64) > 0.00 {
 				instancePatternInfosMap["MaximumMemorySize"] = strconv.FormatFloat(item["maximum_memory_size"].(float64), 'f', 2, 64)
 			}
 			if item["minimum_eni_quantity"] != 0 {
@@ -835,10 +859,10 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			if item["minimum_initial_credit"] != 0 {
 				instancePatternInfosMap["MinimumInitialCredit"] = item["minimum_initial_credit"].(int)
 			}
-			if item["minimum_gpu_amount"] != 0 {
+			if item["minimum_gpu_amount"].(int) > 0 {
 				instancePatternInfosMap["MinimumGpuAmount"] = item["minimum_gpu_amount"].(int)
 			}
-			if item["maximum_gpu_amount"] != 0 {
+			if item["maximum_gpu_amount"].(int) > 0 {
 				instancePatternInfosMap["MaximumGpuAmount"] = item["maximum_gpu_amount"].(int)
 			}
 
@@ -881,25 +905,6 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			instancePatternInfosMaps = append(instancePatternInfosMaps, instancePatternInfosMap)
 		}
 		request["InstancePatternInfo"] = instancePatternInfosMaps
-	}
-	if v, ok := d.GetOk("network_interfaces"); ok {
-		networkInterfacesMaps := make([]map[string]interface{}, 0)
-		networkInterfaces := v.(*schema.Set).List()
-		for _, rew := range networkInterfaces {
-			networkInterfacesMap := make(map[string]interface{})
-			item := rew.(map[string]interface{})
-
-			if instanceType, ok := item["instance_type"].(string); ok && instanceType != "" {
-				networkInterfacesMap["InstanceType"] = instanceType
-			}
-			if networkInterfaceTrafficMode, ok := item["network_interface_traffic_mode"].(string); ok && networkInterfaceTrafficMode != "" {
-				networkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfaceTrafficMode
-			}
-			networkInterfacesMap["Ipv6AddressCount"] = item["ipv6_address_count"].(int)
-			networkInterfacesMap["SecurityGroupIds"] = item["security_group_ids"]
-			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
-		}
-		request["NetworkInterfaces"] = networkInterfacesMaps
 	}
 
 	if v, ok := d.GetOk("custom_priorities"); ok {
@@ -1308,10 +1313,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				if pack["minimum_cpu_core_count"] != 0 {
 					instancePatternInfo["MinimumCpuCoreCount"] = strconv.Itoa(pack["minimum_cpu_core_count"].(int))
 				}
-				if pack["minimum_memory_size"].(float64) != 0 {
+				if pack["minimum_memory_size"].(float64) > 0.00 {
 					instancePatternInfo["MinimumMemorySize"] = strconv.FormatFloat(pack["minimum_memory_size"].(float64), 'f', 2, 64)
 				}
-				if pack["maximum_memory_size"].(float64) != 0 {
+				if pack["maximum_memory_size"].(float64) > 0.00 {
 					instancePatternInfo["MaximumMemorySize"] = strconv.FormatFloat(pack["maximum_memory_size"].(float64), 'f', 2, 64)
 				}
 				if pack["minimum_eni_quantity"] != 0 {
@@ -1329,10 +1334,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				if pack["minimum_initial_credit"] != 0 {
 					instancePatternInfo["MinimumInitialCredit"] = pack["minimum_initial_credit"].(int)
 				}
-				if pack["minimum_gpu_amount"] != 0 {
+				if pack["minimum_gpu_amount"].(int) > 0 {
 					instancePatternInfo["MinimumGpuAmount"] = pack["minimum_gpu_amount"].(int)
 				}
-				if pack["maximum_gpu_amount"] != 0 {
+				if pack["maximum_gpu_amount"].(int) > 0 {
 					instancePatternInfo["MaximumGpuAmount"] = pack["maximum_gpu_amount"].(int)
 				}
 
