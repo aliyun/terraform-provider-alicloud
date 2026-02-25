@@ -71,6 +71,11 @@ func resourceAliCloudVpcIpamIpamPool() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"ipv6_isp": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"pool_region_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -113,33 +118,8 @@ func resourceAliCloudVpcIpamIpamPoolCreate(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	request["IpamScopeId"] = d.Get("ipam_scope_id")
-	if v, ok := d.GetOk("ipam_pool_name"); ok {
-		request["IpamPoolName"] = v
-	}
-	if v, ok := d.GetOk("ipam_pool_description"); ok {
-		request["IpamPoolDescription"] = v
-	}
 	if v, ok := d.GetOk("pool_region_id"); ok {
 		request["PoolRegionId"] = v
-	}
-	if v, ok := d.GetOkExists("allocation_default_cidr_mask"); ok {
-		request["AllocationDefaultCidrMask"] = v
-	}
-	if v, ok := d.GetOkExists("allocation_max_cidr_mask"); ok {
-		request["AllocationMaxCidrMask"] = v
-	}
-	if v, ok := d.GetOkExists("allocation_min_cidr_mask"); ok {
-		request["AllocationMinCidrMask"] = v
-	}
-	if v, ok := d.GetOk("ip_version"); ok {
-		request["IpVersion"] = v
-	}
-	if v, ok := d.GetOk("source_ipam_pool_id"); ok {
-		request["SourceIpamPoolId"] = v
-	}
-	if v, ok := d.GetOkExists("auto_import"); ok {
-		request["AutoImport"] = v
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
@@ -149,6 +129,34 @@ func resourceAliCloudVpcIpamIpamPoolCreate(d *schema.ResourceData, meta interfac
 		request = expandTagsToMap(request, tagsMap)
 	}
 
+	if v, ok := d.GetOk("source_ipam_pool_id"); ok {
+		request["SourceIpamPoolId"] = v
+	}
+	if v, ok := d.GetOk("ipv6_isp"); ok {
+		request["Ipv6Isp"] = v
+	}
+	if v, ok := d.GetOkExists("allocation_max_cidr_mask"); ok {
+		request["AllocationMaxCidrMask"] = v
+	}
+	if v, ok := d.GetOkExists("allocation_default_cidr_mask"); ok {
+		request["AllocationDefaultCidrMask"] = v
+	}
+	if v, ok := d.GetOkExists("allocation_min_cidr_mask"); ok {
+		request["AllocationMinCidrMask"] = v
+	}
+	request["IpamScopeId"] = d.Get("ipam_scope_id")
+	if v, ok := d.GetOk("ipam_pool_description"); ok {
+		request["IpamPoolDescription"] = v
+	}
+	if v, ok := d.GetOk("ip_version"); ok {
+		request["IpVersion"] = v
+	}
+	if v, ok := d.GetOkExists("auto_import"); ok {
+		request["AutoImport"] = v
+	}
+	if v, ok := d.GetOk("ipam_pool_name"); ok {
+		request["IpamPoolName"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
@@ -186,48 +194,21 @@ func resourceAliCloudVpcIpamIpamPoolRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	if objectRaw["AllocationDefaultCidrMask"] != nil {
-		d.Set("allocation_default_cidr_mask", objectRaw["AllocationDefaultCidrMask"])
-	}
-	if objectRaw["AllocationMaxCidrMask"] != nil {
-		d.Set("allocation_max_cidr_mask", objectRaw["AllocationMaxCidrMask"])
-	}
-	if objectRaw["AllocationMinCidrMask"] != nil {
-		d.Set("allocation_min_cidr_mask", objectRaw["AllocationMinCidrMask"])
-	}
-	if objectRaw["AutoImport"] != nil {
-		d.Set("auto_import", objectRaw["AutoImport"])
-	}
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["IpVersion"] != nil {
-		d.Set("ip_version", objectRaw["IpVersion"])
-	}
-	if objectRaw["IpamPoolDescription"] != nil {
-		d.Set("ipam_pool_description", objectRaw["IpamPoolDescription"])
-	}
-	if objectRaw["IpamPoolName"] != nil {
-		d.Set("ipam_pool_name", objectRaw["IpamPoolName"])
-	}
-	if objectRaw["IpamScopeId"] != nil {
-		d.Set("ipam_scope_id", objectRaw["IpamScopeId"])
-	}
-	if objectRaw["PoolRegionId"] != nil {
-		d.Set("pool_region_id", objectRaw["PoolRegionId"])
-	}
-	if objectRaw["ResourceGroupId"] != nil {
-		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	}
-	if objectRaw["SourceIpamPoolId"] != nil {
-		d.Set("source_ipam_pool_id", objectRaw["SourceIpamPoolId"])
-	}
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
-	if objectRaw["IpamRegionId"] != nil {
-		d.Set("region_id", objectRaw["IpamRegionId"])
-	}
+	d.Set("allocation_default_cidr_mask", objectRaw["AllocationDefaultCidrMask"])
+	d.Set("allocation_max_cidr_mask", objectRaw["AllocationMaxCidrMask"])
+	d.Set("allocation_min_cidr_mask", objectRaw["AllocationMinCidrMask"])
+	d.Set("auto_import", objectRaw["AutoImport"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("ip_version", objectRaw["IpVersion"])
+	d.Set("ipam_pool_description", objectRaw["IpamPoolDescription"])
+	d.Set("ipam_pool_name", objectRaw["IpamPoolName"])
+	d.Set("ipam_scope_id", objectRaw["IpamScopeId"])
+	d.Set("ipv6_isp", objectRaw["Ipv6Isp"])
+	d.Set("pool_region_id", objectRaw["PoolRegionId"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("source_ipam_pool_id", objectRaw["SourceIpamPoolId"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("region_id", objectRaw["IpamRegionId"])
 
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
@@ -243,16 +224,16 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 	update := false
 	d.Partial(true)
 
-	action := "UpdateIpamPool"
 	var err error
+	action := "UpdateIpamPool"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["IpamPoolId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-	if d.HasChange("ipam_pool_name") {
+	if d.HasChange("allocation_min_cidr_mask") {
 		update = true
-		request["IpamPoolName"] = d.Get("ipam_pool_name")
+		request["AllocationMinCidrMask"] = d.Get("allocation_min_cidr_mask")
 	}
 
 	if d.HasChange("ipam_pool_description") {
@@ -260,19 +241,14 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 		request["IpamPoolDescription"] = d.Get("ipam_pool_description")
 	}
 
-	if d.HasChange("allocation_default_cidr_mask") {
-		update = true
-		request["AllocationDefaultCidrMask"] = d.Get("allocation_default_cidr_mask")
-	}
-
 	if d.HasChange("allocation_max_cidr_mask") {
 		update = true
 		request["AllocationMaxCidrMask"] = d.Get("allocation_max_cidr_mask")
 	}
 
-	if d.HasChange("allocation_min_cidr_mask") {
+	if d.HasChange("allocation_default_cidr_mask") {
 		update = true
-		request["AllocationMinCidrMask"] = d.Get("allocation_min_cidr_mask")
+		request["AllocationDefaultCidrMask"] = d.Get("allocation_default_cidr_mask")
 	}
 
 	if v, ok := d.GetOkExists("clear_allocation_default_cidr_mask"); ok {
@@ -281,6 +257,11 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 	if d.HasChange("auto_import") {
 		update = true
 		request["AutoImport"] = d.Get("auto_import")
+	}
+
+	if d.HasChange("ipam_pool_name") {
+		update = true
+		request["IpamPoolName"] = d.Get("ipam_pool_name")
 	}
 
 	if update {
@@ -357,8 +338,6 @@ func resourceAliCloudVpcIpamIpamPoolDelete(d *schema.ResourceData, meta interfac
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
