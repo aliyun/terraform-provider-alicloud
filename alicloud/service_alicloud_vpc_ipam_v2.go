@@ -64,18 +64,15 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpam(id string) (object map[string]int
 }
 
 func (s *VpcIpamServiceV2) VpcIpamIpamStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return s.VpcIpamIpamStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpcIpamIpam)
-}
-
-func (s *VpcIpamServiceV2) VpcIpamIpamStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := call(id)
+		object, err := s.DescribeVpcIpamIpam(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
+
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -311,18 +308,15 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPool(id string) (object map[string
 }
 
 func (s *VpcIpamServiceV2) VpcIpamIpamPoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return s.VpcIpamIpamPoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpcIpamIpamPool)
-}
-
-func (s *VpcIpamServiceV2) VpcIpamIpamPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := call(id)
+		object, err := s.DescribeVpcIpamIpamPool(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
+
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -351,16 +345,18 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolCidr(id string) (object map[st
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	parts := strings.Split(id, ":")
+
+	parts, err := splitIpamPoolCidrId(id)
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
-	action := "ListIpamPoolCidrs"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Cidr"] = parts[1]
 	request["IpamPoolId"] = parts[0]
 	request["RegionId"] = client.RegionId
+	action := "ListIpamPoolCidrs"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -393,15 +389,18 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolCidr(id string) (object map[st
 }
 
 func (s *VpcIpamServiceV2) VpcIpamIpamPoolCidrStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.VpcIpamIpamPoolCidrStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpcIpamIpamPoolCidr)
+}
+
+func (s *VpcIpamServiceV2) VpcIpamIpamPoolCidrStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeVpcIpamIpamPoolCidr(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
