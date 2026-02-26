@@ -57,7 +57,6 @@ func testAlicloudEcsPrefixList(region string) error {
 		return nil
 	}
 	result, _ := resp.([]interface{})
-	sweeped := false
 	for _, v := range result {
 		item := v.(map[string]interface{})
 		skip := true
@@ -75,7 +74,6 @@ func testAlicloudEcsPrefixList(region string) error {
 			log.Printf("[INFO] Skipping Ecs SnapShot Policy: %s (%s)", item["Description"], item["Id"])
 			continue
 		}
-		sweeped = true
 		action = "DeletePrefixList"
 		request := map[string]interface{}{
 			"PrefixListId": item["PrefixListId"],
@@ -85,10 +83,9 @@ func testAlicloudEcsPrefixList(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Ecs PrefixList (%s (%v)): %s", item["Description"].(string), item["Id"].(float64), err)
 		}
-		if sweeped {
-			// Waiting 30 seconds to ensure these Ecs SnapShot Policy have been deleted.
-			time.Sleep(30 * time.Second)
-		}
+		// Waiting 30 seconds to ensure these Ecs SnapShot Policy have been deleted.
+		time.Sleep(30 * time.Second)
+
 		log.Printf("[INFO] Delete Ecs PrefixList success: %v ", item["Id"].(float64))
 	}
 	return nil

@@ -67,7 +67,7 @@ func testSweepEipanycastAnycastEipAddress(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			skip := false
+			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["Name"])), strings.ToLower(prefix)) {
 					skip = false
