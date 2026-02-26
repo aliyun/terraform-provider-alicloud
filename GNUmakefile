@@ -227,7 +227,30 @@ minimal-test-set:
 	fi; \
 	go run scripts/testing/minimal_test_set_calculator.go -resource $(RESOURCE) -format $$FORMAT
 
-.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set
+# Sweep test resources in a specific region
+# Usage: 
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc_ipam_ipam
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc_ipam_ipam SWEEP_ALL=1  # Delete all resources, skip prefix check
+# Note: For resources with dependencies (specified in Dependencies field), include them with pipe separator.
+#       Example: RESOURCE="alicloud_vpc_ipam_ipam_pool|alicloud_vpc_ipam_ipam"
+sweep:
+	@if [ -z "$(REGION)" ]; then \
+		echo "Error: REGION is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
+		exit 1; \
+	fi
+	@if [ -z "$(RESOURCE)" ]; then \
+		echo "Error: RESOURCE is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
+		exit 1; \
+	fi
+	@if [ "$(SWEEP_ALL)" = "1" ]; then \
+		echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)..."; \
+		SWEEPER_SKIP_PREFIX=1 TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+	else \
+		echo "Sweeping $(RESOURCE) in region $(REGION)..."; \
+		TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+	fi
+
+.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep
 
 all: mac windows linux
 

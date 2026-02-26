@@ -62,14 +62,24 @@ func testSweepVpcIpamIpam(region string) error {
 			skip := true
 			item := v.(map[string]interface{})
 			if !sweepAll() {
+				// Get ipam name, handle nil case
+				ipamName := ""
+				if item["IpamName"] != nil {
+					ipamName = fmt.Sprint(item["IpamName"])
+				}
+				// Skip if name is empty or doesn't match prefix
+				if ipamName == "" {
+					log.Printf("[INFO] Skipping VPC IPAM with empty name: (%v)", item["IpamId"])
+					continue
+				}
 				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["IpamName"])), strings.ToLower(prefix)) {
+					if strings.HasPrefix(strings.ToLower(ipamName), strings.ToLower(prefix)) {
 						skip = false
 						break
 					}
 				}
 				if skip {
-					log.Printf("[INFO] Skipping VPC IPAM: %v (%v)", item["IpamName"], item["IpamId"])
+					log.Printf("[INFO] Skipping VPC IPAM: %v (%v)", ipamName, item["IpamId"])
 					continue
 				}
 			}

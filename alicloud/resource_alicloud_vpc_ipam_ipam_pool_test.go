@@ -2,12 +2,122 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_vpc_ipam_ipam_pool", &resource.Sweeper{
+		Name: "alicloud_vpc_ipam_ipam_pool",
+		F:    testSweepVpcIpamIpamPool,
+		Dependencies: []string{
+			"alicloud_vpc_ipam_ipam_pool_cidr",
+		},
+	})
+}
+
+func testSweepVpcIpamIpamPool(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test",
+		"tf-test",
+		"tfacc",
+		"testAcc",
+		"default",
+	}
+
+	ipamPoolIds := make([]string, 0)
+	action := "ListIpamPools"
+	var response map[string]interface{}
+	request := map[string]interface{}{
+		"MaxResults": PageSizeLarge,
+		"RegionId":   client.RegionId,
+	}
+	for {
+		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, nil, request, true)
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve VPC IPAM Pool in service list: %s", err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.IpamPools", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.IpamPools", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			skip := true
+			item := v.(map[string]interface{})
+			if !sweepAll() {
+				// Get pool name, handle nil case
+				poolName := ""
+				if item["IpamPoolName"] != nil {
+					poolName = fmt.Sprint(item["IpamPoolName"])
+				}
+				// Skip if name is empty or doesn't match prefix
+				if poolName == "" {
+					log.Printf("[INFO] Skipping VPC IPAM Pool with empty name: (%v)", item["IpamPoolId"])
+					continue
+				}
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(poolName), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping VPC IPAM Pool: %v (%v)", poolName, item["IpamPoolId"])
+					continue
+				}
+			}
+			ipamPoolIds = append(ipamPoolIds, fmt.Sprint(item["IpamPoolId"]))
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+
+	for _, id := range ipamPoolIds {
+		log.Printf("[INFO] Deleting VPC IPAM Pool: (%s)", id)
+		action := "DeleteIpamPool"
+		request := map[string]interface{}{
+			"IpamPoolId": id,
+			"RegionId":   client.RegionId,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(time.Minute*10, func() *resource.RetryError {
+			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete VPC IPAM Pool (%s): %v", id, err)
+			continue
+		}
+	}
+	return nil
+}
 
 // Case test_public_ipv6_ipam_pool 8026
 func TestAccAliCloudVpcIpamIpamPool_basic8026(t *testing.T) {
