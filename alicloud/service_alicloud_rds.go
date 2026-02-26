@@ -603,7 +603,7 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 			value := i.(map[string]interface{})["value"].(string)
 			allConfig[key] = value
 		}
-		if err := s.WaitForDBParameter(d.Id(), DefaultLongTimeout, allConfig); err != nil {
+		if err := s.WaitForDBParameter(d.Id(), DefaultLongTimeout, allConfig, map[string]string{"max_connections": "max_connections"}); err != nil {
 			return WrapError(err)
 		}
 		// wait instance status is Normal after modifying
@@ -1514,7 +1514,7 @@ func (s *RdsService) RdsTaskStateRefreshFunc(id string, taskAction string) resou
 // Status of DB instance is Running after ModifyParameters API was
 // call, so we can not just wait for instance status become
 // Running, we should wait until parameters have expected values.
-func (s *RdsService) WaitForDBParameter(instanceId string, timeout int, expects map[string]string) error {
+func (s *RdsService) WaitForDBParameter(instanceId string, timeout int, expects, ignoreParams map[string]string) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribeParameters(instanceId)
@@ -1541,19 +1541,24 @@ func (s *RdsService) WaitForDBParameter(instanceId string, timeout int, expects 
 
 		match := true
 
-		got_value := ""
-		expected_value := ""
+		gotValue := ""
+		expectedValue := ""
 
 		for name, expect := range expects {
-			if actual, ok := actuals[name]; ok {
-				if expect != actual {
-					match = false
-					got_value = actual
-					expected_value = expect
-					break
-				}
+			if _, ok := ignoreParams[name]; ok {
+				log.Printf("Sync DB instance parameters. Ignore parameter: %s", name)
+				continue
 			} else {
-				match = false
+				if actual, ok := actuals[name]; ok {
+					if expect != actual {
+						match = false
+						gotValue = actual
+						expectedValue = expect
+						break
+					}
+				} else {
+					match = false
+				}
 			}
 		}
 
@@ -1564,7 +1569,7 @@ func (s *RdsService) WaitForDBParameter(instanceId string, timeout int, expects 
 		time.Sleep(DefaultIntervalShort * time.Second)
 
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, instanceId, GetFunc(1), timeout, got_value, expected_value, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, instanceId, GetFunc(1), timeout, gotValue, expectedValue, ProviderERROR)
 		}
 	}
 	return nil
