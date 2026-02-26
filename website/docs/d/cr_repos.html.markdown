@@ -47,7 +47,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `name` - Name of container registry namespace.
   * `summary` - The repository general information.
   * `repo_type` - `PUBLIC` or `PRIVATE`, repository's visibility.
-  * `domain_list` - The repository domain list.
+  * `domain_list` - A list of repository domain:
     * `public` - Domain of public endpoint.
     * `internal` - Domain of internal endpoint, only in some regions.
     * `vpc` - Domain of vpc endpoint.

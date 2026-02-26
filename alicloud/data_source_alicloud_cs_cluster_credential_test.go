@@ -30,25 +30,25 @@ func TestAccAliCloudCSClusterCredentialDataSource(t *testing.T) {
 
 	var existCSClusterCredentialMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"cluster_id":                         CHECKSET,
-			"cluster_name":                       REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
-			"kube_config":                        CHECKSET,
-			"certificate_authority.cluster_cert": CHECKSET,
-			"certificate_authority.client_cert":  CHECKSET,
-			"certificate_authority.client_key":   CHECKSET,
-			"expiration":                         CHECKSET,
+			"cluster_id":                           CHECKSET,
+			"cluster_name":                         REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
+			"kube_config":                          CHECKSET,
+			"certificate_authority.0.cluster_cert": CHECKSET,
+			"certificate_authority.0.client_cert":  CHECKSET,
+			"certificate_authority.0.client_key":   CHECKSET,
+			"expiration":                           CHECKSET,
 		}
 	}
 
 	var fakeCSClusterCredentialMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"cluster_id":                         CHECKSET,
-			"cluster_name":                       REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
-			"kube_config":                        CHECKSET,
-			"certificate_authority.cluster_cert": CHECKSET,
-			"certificate_authority.client_cert":  CHECKSET,
-			"certificate_authority.client_key":   CHECKSET,
-			"expiration":                         CHECKSET,
+			"cluster_id":                           CHECKSET,
+			"cluster_name":                         REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
+			"kube_config":                          CHECKSET,
+			"certificate_authority.0.cluster_cert": CHECKSET,
+			"certificate_authority.0.client_cert":  CHECKSET,
+			"certificate_authority.0.client_key":   CHECKSET,
+			"expiration":                           CHECKSET,
 		}
 	}
 

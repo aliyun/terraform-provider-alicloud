@@ -122,7 +122,7 @@ var AlicloudApiGatewayInstanceMap5800 = map[string]string{
 func AlicloudApiGatewayInstanceBasicDependence5800(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 
@@ -233,7 +233,7 @@ var AlicloudApiGatewayInstanceMap5806 = map[string]string{
 func AlicloudApiGatewayInstanceBasicDependence5806(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 
@@ -363,36 +363,36 @@ var AlicloudApiGatewayVpcConnectInstanceCheckMap = map[string]string{
 func AlicloudApiGatewayVpcConnectInstanceBasicDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 resource "alicloud_vpc" "vpc" {
-    cidr_block = "172.16.0.0/12"
-    vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
 }
 
 resource "alicloud_vswitch" "vswitch_1" {
-    vpc_id       = alicloud_vpc.vpc.id
-    cidr_block   = "172.16.0.0/16"
-    zone_id      = "cn-hangzhou-j"
-    vswitch_name = "${var.name}_1"
+  vpc_id       = alicloud_vpc.vpc.id
+  cidr_block   = "172.16.0.0/16"
+  zone_id      = "cn-hangzhou-j"
+  vswitch_name = "${var.name}_1"
 }
 
 resource "alicloud_vswitch" "vswitch_2" {
-    vpc_id       = alicloud_vpc.vpc.id
-    cidr_block   = "172.17.0.0/16"
-    zone_id      = "cn-hangzhou-k"
-    vswitch_name = "${var.name}_2"
+  vpc_id       = alicloud_vpc.vpc.id
+  cidr_block   = "172.17.0.0/16"
+  zone_id      = "cn-hangzhou-k"
+  vswitch_name = "${var.name}_2"
 }
 
 resource "alicloud_security_group" "security_group_1" {
-    vpc_id              = alicloud_vpc.vpc.id
-    security_group_name = "${var.name}_1"
+  vpc_id              = alicloud_vpc.vpc.id
+  security_group_name = "${var.name}_1"
 }
 
 resource "alicloud_security_group" "security_group_2" {
-    vpc_id              = alicloud_vpc.vpc.id
-    security_group_name = "${var.name}_2"
+  vpc_id              = alicloud_vpc.vpc.id
+  security_group_name = "${var.name}_2"
 }
 
 data "alicloud_account" "current" {
@@ -479,9 +479,11 @@ func TestAccAliCloudApiGatewayVpcConnectInstance(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"to_connect_vpc_ip_block": map[string]interface{}{
-						"cidr_block": "10.1.0.0/24",
-						"customized": "true",
+					"to_connect_vpc_ip_block": []map[string]interface{}{
+						{
+							"cidr_block": "10.1.0.0/24",
+							"customized": "true",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -666,9 +668,11 @@ func TestAccAliCloudApiGatewayVpcConnectInstance_twin2(t *testing.T) {
 							"security_group": "${alicloud_security_group.security_group_2.id}",
 						},
 					},
-					"to_connect_vpc_ip_block": map[string]interface{}{
-						"cidr_block": "10.1.0.0/24",
-						"customized": "true",
+					"to_connect_vpc_ip_block": []map[string]interface{}{
+						{
+							"cidr_block": "10.1.0.0/24",
+							"customized": "true",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(

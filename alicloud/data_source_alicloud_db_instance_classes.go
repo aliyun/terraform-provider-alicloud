@@ -115,7 +115,7 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 							Computed: true,
 						},
 						"storage_range": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -221,10 +221,12 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 			mapping := map[string]interface{}{
 				"instance_class": fmt.Sprint(instanceClassItem["DBInstanceClass"]),
 				"zone_ids":       zoneIds,
-				"storage_range": map[string]interface{}{
-					"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
-					"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
-					"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+				"storage_range": []map[string]interface{}{
+					{
+						"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
+						"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
+						"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+					},
 				},
 			}
 			s = append(s, mapping)
@@ -398,10 +400,12 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 								mapping := map[string]interface{}{
 									"instance_class": fmt.Sprint(instanceClassItem["DBInstanceClass"]),
 									"zone_ids":       zoneIds,
-									"storage_range": map[string]interface{}{
-										"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
-										"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
-										"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+									"storage_range": []map[string]interface{}{
+										{
+											"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
+											"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
+											"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+										},
 									},
 								}
 								s = append(s, mapping)
