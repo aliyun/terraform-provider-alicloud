@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -16,24 +15,31 @@ func resourceAliCloudVpcIpamIpamPoolCidr() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudVpcIpamIpamPoolCidrCreate,
 		Read:   resourceAliCloudVpcIpamIpamPoolCidrRead,
+		Update: resourceAliCloudVpcIpamIpamPoolCidrUpdate,
 		Delete: resourceAliCloudVpcIpamIpamPoolCidrDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cidr": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"ipam_pool_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"netmask_length": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -53,11 +59,18 @@ func resourceAliCloudVpcIpamIpamPoolCidrCreate(d *schema.ResourceData, meta inte
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["IpamPoolId"] = d.Get("ipam_pool_id")
-	request["Cidr"] = d.Get("cidr")
+	if v, ok := d.GetOk("ipam_pool_id"); ok {
+		request["IpamPoolId"] = v
+	}
+	if v, ok := d.GetOk("cidr"); ok {
+		request["Cidr"] = v
+	}
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
+	if v, ok := d.GetOkExists("netmask_length"); ok {
+		request["NetmaskLength"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
@@ -76,7 +89,7 @@ func resourceAliCloudVpcIpamIpamPoolCidrCreate(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_ipam_ipam_pool_cidr", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", request["IpamPoolId"], request["Cidr"]))
+	d.SetId(fmt.Sprintf("%v#%v", request["IpamPoolId"], response["Cidr"]))
 
 	return resourceAliCloudVpcIpamIpamPoolCidrRead(d, meta)
 }
@@ -95,40 +108,38 @@ func resourceAliCloudVpcIpamIpamPoolCidrRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
-	if objectRaw["Cidr"] != nil {
-		d.Set("cidr", objectRaw["Cidr"])
-	}
-	if objectRaw["IpamPoolId"] != nil {
-		d.Set("ipam_pool_id", objectRaw["IpamPoolId"])
-	}
+	d.Set("status", objectRaw["Status"])
+	d.Set("cidr", objectRaw["Cidr"])
+	d.Set("ipam_pool_id", objectRaw["IpamPoolId"])
 
+	return nil
+}
+
+func resourceAliCloudVpcIpamIpamPoolCidrUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[INFO] Cannot update resource Alicloud Resource Ipam Pool Cidr.")
 	return nil
 }
 
 func resourceAliCloudVpcIpamIpamPoolCidrDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	parts := strings.Split(d.Id(), ":")
+	parts, err := splitIpamPoolCidrId(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
 	action := "DeleteIpamPoolCidr"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	var err error
 	request = make(map[string]interface{})
 	request["IpamPoolId"] = parts[0]
 	request["Cidr"] = parts[1]
 	request["RegionId"] = client.RegionId
-
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -148,4 +159,21 @@ func resourceAliCloudVpcIpamIpamPoolCidrDelete(d *schema.ResourceData, meta inte
 	}
 
 	return nil
+}
+
+// splitIpamPoolCidrId splits the resource ID with backward compatibility
+// Returns [ipamPoolId, cidr]
+// Supports both "#" (new) and ":" (old) separators
+func splitIpamPoolCidrId(id string) ([]string, error) {
+	var parts []string
+	// Try new separator "#" first
+	if strings.Contains(id, "#") {
+		parts = strings.Split(id, "#")
+	} else if strings.Contains(id, ":") {
+		// Fall back to old separator ":"
+		parts = strings.Split(id, ":")
+	} else {
+		return nil, fmt.Errorf("invalid Resource Id %s. Expected separator '#' or ':'", id)
+	}
+	return parts, nil
 }

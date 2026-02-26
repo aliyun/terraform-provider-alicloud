@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -74,6 +73,7 @@ func resourceAliCloudVpcIpamIpamPool() *schema.Resource {
 			"ipv6_isp": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"pool_region_id": {
