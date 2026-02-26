@@ -2,14 +2,17 @@
 subcategory: "AnalyticDB for MySQL (ADB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_adb_account"
-sidebar_current: "docs-alicloud-resource-adb-account"
 description: |-
-  Provides a ADB account resource.
+  Provides a Alicloud AnalyticDB for MySQL (ADB) Account resource.
 ---
 
 # alicloud_adb_account
 
-Provides a [ADB](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/latest/api-doc-adb-2019-03-15-api-doc-createaccount) account resource and used to manage databases.
+Provides a AnalyticDB for MySQL (ADB) Account resource.
+
+
+
+For information about AnalyticDB for MySQL (ADB) Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/latest/api-doc-adb-2019-03-15-api-doc-createaccount).
 
 -> **NOTE:** Available since v1.71.0.
 
@@ -22,33 +25,27 @@ Provides a [ADB](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/lates
 </div></div>
 
 ```terraform
-variable "creation" {
-  default = "ADB"
-}
-
 variable "name" {
-  default = "tfexample"
+  default = "terraform_example"
 }
 
-data "alicloud_adb_zones" "default" {}
+data "alicloud_adb_zones" "default" {
+}
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
 }
+
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_adb_zones.default.ids.0
-}
-
-locals {
-  vswitch_id = data.alicloud_vswitches.default.ids.0
 }
 
 resource "alicloud_adb_db_cluster" "cluster" {
   db_cluster_category = "MixedStorage"
   mode                = "flexible"
   compute_resource    = "8Core32GB"
-  vswitch_id          = local.vswitch_id
+  vswitch_id          = data.alicloud_vswitches.default.ids.0
   description         = var.name
 }
 
@@ -65,27 +62,43 @@ resource "alicloud_adb_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `db_cluster_id` - (Required, ForceNew) The Id of cluster in which account belongs.
-* `account_name` - (Required, ForceNew) Operation account requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letter and have no more than 16 characters.
-* `account_password` - (Optional) Operation password. It may consist of letters, digits, or underlines, with a length of 6 to 32 characters. You have to specify one of `account_password` and `kms_encrypted_password` fields.
+* `account_description` - (Optional) The description of the account.
+* `account_name` - (Required, ForceNew) The name of the database account. The name must meet the following requirements:
+  - Start with a lowercase letter and end with a lowercase letter or a digit.
+  - Contain only lowercase letters, digits, and underscores (_).
+  - Its length must be between 2 and 16 characters.
+  - Cannot be a reserved name, such as root, admin, or opsadmin.
+* `account_password` - (Optional) The password of the database account. The password must meet the following requirements:
+  - It must consist of uppercase letters, lowercase letters, digits, and special characters.
+  - The allowed special characters are: (!), (@), (#), ($), (%), (^), (&), (*), (()), (_), (+), (-), (=).
+  - Its length must be between 8 and 32 characters.
+* `account_type` - (Optional, ForceNew, Available since v1.272.0) The type of the account. Valid values:
+  - `Normal`: A standard account. You can create up to 256 standard accounts for a cluster.
+  - `Super` (default): A privileged account. You can create only one privileged account for a cluster.
+* `db_cluster_id` - (Required, ForceNew) The cluster ID of the data warehouse edition.
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `account_description` - (Optional) Account description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
-* `account_type` - (Optional, ForceNew, Removed since provider version 1.81.0) The type of the database account. Default Value: `Super`. Valid values:
-  - `Normal`: standard account. Up to 256 standard accounts can be created for a cluster.
-  - `Super`: privileged account. Only a single privileged account can be created for a cluster.
+* `tags` - (Optional, ForceNew, Map, Available since v1.272.0) The tag of the resource.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above. The value is formulated as `<db_cluster_id>:<account_name>`.
+* `status` - (Available since v1.272.0) The status of the account.
 
-* `id` - The current account resource ID. Composed of instance ID and account name with format `<instance_id>:<name>`.
+## Timeouts
+
+-> **NOTE:** Available since v1.272.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Account.
+* `delete` - (Defaults to 5 mins) Used when delete the Account.
+* `update` - (Defaults to 5 mins) Used when update the Account.
 
 ## Import
 
-ADB account can be imported using the id, e.g.
+AnalyticDB for MySQL (ADB) Account can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_adb_account.example am-12345:tf_account
+$ terraform import alicloud_adb_account.example <db_cluster_id>:<account_name>
 ```
