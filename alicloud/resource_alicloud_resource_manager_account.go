@@ -256,7 +256,6 @@ func resourceAliCloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	update = false
 	action = "UpdatePayerForAccount"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
