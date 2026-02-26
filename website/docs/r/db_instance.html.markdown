@@ -14,6 +14,7 @@ Provides an RDS instance resource. A DB instance is an isolated database environ
 For information about RDS and how to use it, see [What is ApsaraDB for RDS](https://www.alibabacloud.com/help/en/doc-detail/26092.htm).
 
 -> **NOTE:** This resource has a fatal bug in the version v1.155.0. If you want to use new feature, please upgrade it to v1.156.0.
+
 -> **NOTE:** Available since v1.155.0.
 
 ## Example Usage
@@ -632,12 +633,15 @@ The following arguments are supported:
   * If the instance is attached with a read-only instance, you can use this parameter to synchronize the IP address whitelist to the read-only instance. If the instance is attached with multiple read-only instances, the read-only instances must be separated by commas (,).
   * If the instance is not attached with a read-only instance, this parameter is empty.
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) . See [`parameters`](#parameters) below.
+  
+  ~> **NOTE:** The system will use `520` or `532` connections from `max_connections` depending on your instance type.
+
 * `force_restart` - (Optional, Available since v1.75.0) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
-  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+  - Key: It can be up to 64 characters in length. It cannot begin with `aliyun`, `acs:`, `aliyun`, or `https://`. It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with `aliyun`, `acs:`, `http://`, or `https://`. It can be a null string.
 
-  Note: From 1.63.0, the tag key and value are case sensitive. Before that, they are not case sensitive.
+  ~> **Note:** From 1.63.0, the tag key and value are case sensitive. Before that, they are not case sensitive.
 
 * `security_group_id` - (Deprecated) It has been deprecated from 1.69.0 and use `security_group_ids` instead.
 * `security_group_ids` - (Optional, List(string), Available since v1.69.0) The list IDs to join ECS Security Group. At most supports three security groups.
@@ -651,9 +655,12 @@ The following arguments are supported:
   - true: upgrade
   - false: not to upgrade
 
--> **NOTE:** Database Engine and Version: Supports only MySQL 5.7 or 8.0 instances.
--> **NOTE:** Storage Type: Supports only ESSD cloud disks and general-purpose cloud disks.
--> **NOTE:** Activation Stage: Supports only during instance creation or when enabling write optimization features for existing  (high-availability/cluster series) instances.
+  -> **NOTE:** Database Engine and Version: Supports only MySQL `5.7` or `8.0` instances.
+  
+  -> **NOTE:** Storage Type: Supports only ESSD cloud disks and general-purpose cloud disks.
+  
+  -> **NOTE:** Activation Stage: Supports only during instance creation or when enabling write optimization features for existing  (high-availability/cluster series) instances.
+
 * `optimized_writes` - (Optional, Available since v1.245.0) Write optimization function switch. supported engine type: `MySQL`. Valid values:
   - optimized: Enable
   - none: Disable
