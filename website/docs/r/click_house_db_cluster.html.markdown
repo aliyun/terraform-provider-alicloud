@@ -58,7 +58,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "23.8"
+  db_cluster_version      = "25.3"
   category                = "Basic"
   db_cluster_class        = "S8"
   db_cluster_network_type = "vpc"
@@ -83,7 +83,7 @@ The following arguments are supported:
   * Under the condition that the category is the `Basic`, Valid values: `LS20`, `LS40`, `LS80`,`S8`, `S16`, `S32`, `S64`,`S80`, `S104`.
   * Under the condition that the category is the `HighAvailability`, Valid values: `LC20`, `LC40`, `LC80`,`C8`, `C16`, `C32`, `C64`, `C80`, `C104`.
 * `db_cluster_network_type` - (Required, ForceNew) The DBCluster network type. Valid values: `vpc`.
-* `db_cluster_version` - (Required, ForceNew) The DBCluster version. Valid values: `20.3.10.75`, `20.8.7.15`, `21.8.10.19`, `22.8.5.29`, `23.8`. **NOTE:** `19.15.2.2` is no longer supported. From version 1.191.0, `db_cluster_version` can be set to `22.8.5.29`.
+* `db_cluster_version` - (Required, ForceNew) The DBCluster version. Valid values: `20.3.10.75`, `20.8.7.15`, `21.8.10.19`, `22.8.5.29`, `23.8`, `25.3`. **NOTE:** `19.15.2.2` is no longer supported. From version 1.191.0, `db_cluster_version` can be set to `22.8.5.29`.
 * `db_node_storage` - (Required) The db node storage.
 * `db_node_group_count` - (Required, ForceNew) The db node group count. The number should between 1 and 48.
 * `encryption_key` - (Optional, ForceNew) Key management service KMS key ID. It is valid and required when encryption_type is `CloudDisk`.
