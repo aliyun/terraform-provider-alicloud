@@ -1942,6 +1942,77 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterEnableDynamoDB"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":       CHECKSET,
+		"db_node_class":     CHECKSET,
+		"db_type":           CHECKSET,
+		"db_version":        CHECKSET,
+		"connection_string": REGEXMATCH + clusterConnectionStringRegexp,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":         "PostgreSQL",
+					"db_version":      "14",
+					"pay_type":        "PostPaid",
+					"db_node_count":   "2",
+					"db_node_class":   "polar.pg.x4.medium",
+					"enable_dynamodb": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_dynamodb": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_dynamodb": false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_dynamodb": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_dynamodb": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_dynamodb": "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPolarDBCluster_Xengine(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testAccPolarDBCluster-x-engine"

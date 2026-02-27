@@ -237,6 +237,8 @@ The following arguments are supported:
 * `compress_storage` - (Optional, Available since v1.232.0) Enable storage compression function. The value of this parameter is `ON`. Only MySQL supports.
   -> **NOTE:** When the value of db_type is not MySQL, the value of creation_option is neither empty nor Normal, and the value of storage_type is not PSL4, this field will be ignored.
 * `global_security_group_list` - (Optional, List, Available since v1.271.0) The list of global security ip group ids.
+* `enable_dynamodb` - (Optional, Bool, Available since v1.271.0) Specifies whether to enable DynamoDB compatibility. Valid values: `true`, `false`.
+  -> **NOTE:** This parameter is valid only when the DBType parameter is set to PostgreSQL.
 ### `db_cluster_ip_array`
 
 The db_cluster_ip_array supports the following:
