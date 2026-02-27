@@ -1133,7 +1133,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		}
 	}
 
-	if d.HasChange("enable_kibana_private_network") {
+	initedEnableKibanaPrivateNetwork := false
+	if _, ok := d.GetOkExists("enable_kibana_private_network"); ok && d.IsNewResource() {
+		initedEnableKibanaPrivateNetwork = true
+	}
+	if initedEnableKibanaPrivateNetwork || d.HasChange("enable_kibana_private_network") {
 		var err error
 		target := d.Get("enable_kibana_private_network").(bool)
 
@@ -1309,7 +1313,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		}
 	}
 
-	if d.HasChange("enable_public") {
+	initedEnablePublic := false
+	if _, ok := d.GetOkExists("enable_public"); ok && d.IsNewResource() {
+		initedEnablePublic = true
+	}
+	if initedEnablePublic || d.HasChange("enable_public") {
 		var err error
 		target := d.Get("enable_public").(bool)
 
@@ -1391,7 +1399,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		}
 	}
 
-	if d.HasChange("enable_kibana_public_network") {
+	initedEnableKibanaPublicNetwork := false
+	if _, ok := d.GetOkExists("enable_kibana_public_network"); ok && d.IsNewResource() {
+		initedEnableKibanaPublicNetwork = true
+	}
+	if initedEnableKibanaPublicNetwork || d.HasChange("enable_kibana_public_network") {
 		var err error
 		target := d.Get("enable_kibana_public_network").(bool)
 
