@@ -95,6 +95,10 @@ func resourceAliCloudFcv2Function() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"instance_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -381,6 +385,10 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 		if nodeNative15 != "" {
 			customContainerConfig["webServerMode"] = nodeNative15
 		}
+		nodeNative16, _ := jsonpath.Get("$[0].instance_id", v)
+		if nodeNative16 != "" {
+			customContainerConfig["instanceID"] = nodeNative16
+		}
 		objectDataLocalMap["customContainerConfig"] = customContainerConfig
 	}
 	if v, ok := d.GetOk("ca_port"); ok {
@@ -576,6 +584,7 @@ func resourceAliCloudFcv2FunctionRead(d *schema.ResourceData, meta interface{}) 
 		customContainerConfigMap["command"] = customContainerConfig1Raw["command"]
 		customContainerConfigMap["image"] = customContainerConfig1Raw["image"]
 		customContainerConfigMap["web_server_mode"] = customContainerConfig1Raw["webServerMode"]
+		customContainerConfigMap["instance_id"] = customContainerConfig1Raw["instanceID"]
 		customContainerConfigMaps = append(customContainerConfigMaps, customContainerConfigMap)
 	}
 	d.Set("custom_container_config", customContainerConfigMaps)
@@ -817,6 +826,10 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 			nodeNative14, _ := jsonpath.Get("$[0].web_server_mode", v)
 			if nodeNative14 != "" {
 				customContainerConfig["webServerMode"] = nodeNative14
+			}
+			nodeNative15, _ := jsonpath.Get("$[0].instance_id", v)
+			if nodeNative15 != "" {
+				customContainerConfig["instanceId"] = nodeNative15
 			}
 			objectDataLocalMap["customContainerConfig"] = customContainerConfig
 		}
