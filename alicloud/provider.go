@@ -1359,6 +1359,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oss_bucket":                    resourceAlicloudOssBucket(),
 			"alicloud_oss_bucket_object":             resourceAlicloudOssBucketObject(),
 			"alicloud_oss_bucket_replication":        resourceAlicloudOssBucketReplication(),
+			"alicloud_oss_bucket_resource_group":      resourceAlicloudOssBucketResourceGroup(),
 			"alicloud_ons_instance":                  resourceAlicloudOnsInstance(),
 			"alicloud_ons_topic":                     resourceAlicloudOnsTopic(),
 			"alicloud_ons_group":                     resourceAlicloudOnsGroup(),
