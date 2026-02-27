@@ -541,6 +541,11 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"enable_dynamodb": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -1264,6 +1269,39 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("serverless_rule_cpu_enlarge_threshold")
 	}
 
+	if d.HasChange("enable_dynamodb") || d.IsNewResource() {
+		if v, ok := d.GetOk("db_type"); ok && v.(string) == "PostgreSQL" {
+			var action string
+			if v, ok := d.GetOk("enable_dynamodb"); ok && v.(bool) == true {
+				action = "EnableDBClusterDynamoDB"
+			} else {
+				action = "DisableDBClusterDynamoDB"
+			}
+			request := map[string]interface{}{"DBClusterId": d.Id()}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					addDebug(action, response, request)
+				}
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			// wait cluster status change from ConfigSwitching to running
+			stateConf := BuildStateConf([]string{"ConfigSwitching", "NetAddressCreating", "NetAddressDeleting"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 4*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("enable_dynamodb")
+		}
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -1786,6 +1824,9 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if clusterInfo["StoragePayType"] != nil {
 		d.Set("storage_pay_type", getChargeType(clusterInfo["StoragePayType"].(string)))
 	}
+	if clusterInfo["DynamoDB"] != nil {
+		d.Set("enable_dynamodb", convertPolarDBEnableDynamoDBReadResponse(clusterInfo["DynamoDB"].(string)))
+	}
 	if clusterInfo["ServerlessType"] != nil {
 		d.Set("serverless_type", clusterInfo["ServerlessType"].(string))
 		serverlessInfo, err := polarDBService.DescribeDBClusterServerlessConfig(d.Id())
@@ -2239,4 +2280,14 @@ func convertPolarDBHotStandbyClusterStatusReadResponse(source string) string {
 		return "EQUAL"
 	}
 	return "OFF"
+}
+
+func convertPolarDBEnableDynamoDBReadResponse(source string) bool {
+	switch source {
+	case "ON":
+		return true
+	case "OFF":
+		return false
+	}
+	return false
 }
