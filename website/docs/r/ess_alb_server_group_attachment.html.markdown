@@ -111,6 +111,9 @@ resource "alicloud_alb_server_group" "default" {
     cookie                 = "tf-example"
     sticky_session_type    = "Server"
   }
+  lifecycle {
+    ignore_changes = [servers]
+  }
 }
 
 resource "alicloud_ess_alb_server_group_attachment" "default" {
