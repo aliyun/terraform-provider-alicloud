@@ -22,6 +22,10 @@ For more details supported regions, see [Service endpoints](https://www.alibabac
 
 -> **NOTE:** Available since v1.93.0.
 
+-> **NOTE:** FCV3 is the latest version of Alibaba Cloud Function Compute service. It provides enhanced performance, more features, and better scalability compared to previous versions (FC and FCV2). We strongly recommend using FCV3 for all new function compute deployments.
+
+-> **DEPRECATED:** This resource has been deprecated and will be removed in a future version. We recommend migrating to FCV3, where you can create functions directly using `alicloud_fcv3_function` without the need for a separate service resource.
+
 ## Example Usage
 
 Basic Usage
