@@ -1,27 +1,28 @@
-## 1.272.0 (Unreleased)
+## 1.273.0 (Unreleased)
+## 1.272.0 (March 2, 2026)
 
-- **New Resource:** `alicloud_live_domain` [GH-9513]
+- **New Resource:** `alicloud_live_domain` ([#9513](https://github.com/aliyun/terraform-provider-alicloud/issues/9513))
 
 ENHANCEMENTS:
 
-- resource/alicloud_oos_patch_baseline: Support Fedora, Suse, RockyLinux for operation_system. [GH-9515]
-- resource/alicloud_vpc_ipam_ipam: Added the field public_default_scope_id. [GH-9518]
-- resource/alicloud_vpc_ipam_ipam_pool: Added the field ipv6_isp. [GH-9519]
-- resource/alicloud_adb_db_cluster_lake_version: Removed the ForceNew for field payment_type; Supported for new action ModifyDBClusterPayType. [GH-9520]
-- resource/alicloud_vpc_ipam_ipam_pool: marked ipv6_isp as Computed; resource/alicloud_vpc_ipam_ipam_pool_cidr: add new attribute netmask_length. [GH-9524]
-- resource/alicloud_api_gateway_vpc_access: sort import, resource/alicloud_resource_manager_account: fix cannot update issue. [GH-9526]
-- resource/alicloud_elasticsearch_instance: Fixed bug while creating enable_kibana_public_network with false. [GH-9528]
-- resource/alicloud_resource_manager_account: Fixed the update error. [GH-9534]
-- docs: Update max_compute_tenant_role_user_attachment document. [GH-9532]
-- docs: Update ehpc_cluster document. [GH-9533]
-- docs: Deprecated fc old version. [GH-9536]
+- resource/alicloud_oos_patch_baseline: Support Fedora, Suse, RockyLinux for operation_system. ([#9515](https://github.com/aliyun/terraform-provider-alicloud/issues/9515))
+- resource/alicloud_vpc_ipam_ipam: Added the field public_default_scope_id. ([#9518](https://github.com/aliyun/terraform-provider-alicloud/issues/9518))
+- resource/alicloud_vpc_ipam_ipam_pool: Added the field ipv6_isp. ([#9519](https://github.com/aliyun/terraform-provider-alicloud/issues/9519))
+- resource/alicloud_adb_db_cluster_lake_version: Removed the ForceNew for field payment_type; Supported for new action ModifyDBClusterPayType. ([#9520](https://github.com/aliyun/terraform-provider-alicloud/issues/9520))
+- resource/alicloud_vpc_ipam_ipam_pool: marked ipv6_isp as Computed; resource/alicloud_vpc_ipam_ipam_pool_cidr: add new attribute netmask_length. ([#9524](https://github.com/aliyun/terraform-provider-alicloud/issues/9524))
+- resource/alicloud_api_gateway_vpc_access: sort import, resource/alicloud_resource_manager_account: fix cannot update issue. ([#9526](https://github.com/aliyun/terraform-provider-alicloud/issues/9526))
+- resource/alicloud_elasticsearch_instance: Fixed bug while creating enable_kibana_public_network with false. ([#9528](https://github.com/aliyun/terraform-provider-alicloud/issues/9528))
+- resource/alicloud_resource_manager_account: Fixed the update error. ([#9534](https://github.com/aliyun/terraform-provider-alicloud/issues/9534))
+- docs: Update max_compute_tenant_role_user_attachment document. ([#9532](https://github.com/aliyun/terraform-provider-alicloud/issues/9532))
+- docs: Update ehpc_cluster document. ([#9533](https://github.com/aliyun/terraform-provider-alicloud/issues/9533))
+- docs: Deprecated fc old version. ([#9536](https://github.com/aliyun/terraform-provider-alicloud/issues/9536))
 
 BUG FIXES:
 
-- resource/alicloud_ess_scaling_configuration: Fix when instance_type instance_types and instance_type_override do not set, only set instance_pattern_info exception. [GH-9516]
-- resource/alicloud_resource_manager_account: Fixed the update error caused by field payer_account_id; Improved alicloud_resource_manager_account testcase. [GH-9517]
-- resource/alicloud_db_instance: Fix parameter.max_connections is cannot update bug. [GH-9529]
-- testcase: fix sweeper for vpc. [GH-9530]
+- resource/alicloud_ess_scaling_configuration: Fix when instance_type instance_types and instance_type_override do not set, only set instance_pattern_info exception. ([#9516](https://github.com/aliyun/terraform-provider-alicloud/issues/9516))
+- resource/alicloud_resource_manager_account: Fixed the update error caused by field payer_account_id; Improved alicloud_resource_manager_account testcase. ([#9517](https://github.com/aliyun/terraform-provider-alicloud/issues/9517))
+- resource/alicloud_db_instance: Fix parameter.max_connections is cannot update bug. ([#9529](https://github.com/aliyun/terraform-provider-alicloud/issues/9529))
+- testcase: fix sweeper for vpc. ([#9530](https://github.com/aliyun/terraform-provider-alicloud/issues/9530))
 
 ## 1.271.0 (February 11, 2026)
 

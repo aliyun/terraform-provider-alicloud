@@ -22,6 +22,12 @@ For information about Max Compute Tenant Role User Attachment and how to use it,
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_max_compute_tenant_role_user_attachment&exampleId=145d8862-76ff-5a2f-f507-39f2f80120cd49b6fc27&activeTab=example&spm=docs.r.max_compute_tenant_role_user_attachment.0.145d886276&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -36,6 +42,9 @@ resource "alicloud_max_compute_tenant_role_user_attachment" "default0" {
   tenant_role = "admin"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_max_compute_tenant_role_user_attachment&spm=docs.r.max_compute_tenant_role_user_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 
