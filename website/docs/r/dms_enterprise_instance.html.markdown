@@ -164,7 +164,10 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when creating the DMS enterprise instance. 
+* `create` - (Defaults to 30 mins) Used when creating the DMS enterprise instance. 
+* `update` - (Defaults to 30 mins) Used when updating the DMS enterprise instance.
+* `read` - (Defaults to 5 mins) Used when reading the DMS enterprise instance.
+* `delete` - (Defaults to 30 mins) Used when deleting the DMS enterprise instance.
 
 ## Import
 

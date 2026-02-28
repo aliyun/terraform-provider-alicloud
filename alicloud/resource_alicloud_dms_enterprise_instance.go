@@ -21,50 +21,25 @@ func resourceAlicloudDmsEnterpriseInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Read:   schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"data_link_name": {
+			"database_user": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true,
 			},
 			"database_password": {
 				Type:      schema.TypeString,
 				Required:  true,
 				Sensitive: true,
 			},
-			"database_user": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"dba_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"dba_nick_name": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"dba_uid": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
-			},
-			"ddl_online": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntInSlice([]int{0, 1, 2}),
-			},
-			"ecs_instance_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"ecs_region": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 			"env_type": {
 				Type:     schema.TypeString,
@@ -78,24 +53,6 @@ func resourceAlicloudDmsEnterpriseInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-			},
-			"instance_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"instance_name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"instance_alias"},
-			},
-			"instance_alias": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				Deprecated:    "Field 'instance_alias' has been deprecated from version 1.100.0. Use 'instance_name' instead.",
-				ConflictsWith: []string{"instance_name"},
 			},
 			"instance_source": {
 				Type:     schema.TypeString,
@@ -123,6 +80,52 @@ func resourceAlicloudDmsEnterpriseInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"data_link_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"dba_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"dba_nick_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ddl_online": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntInSlice([]int{0, 1, 2}),
+			},
+			"ecs_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"ecs_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"instance_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"instance_alias"},
+			},
+			"instance_alias": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Deprecated:    "Field 'instance_alias' has been deprecated from version 1.100.0. Use 'instance_name' instead.",
+				ConflictsWith: []string{"instance_name"},
 			},
 			"safe_rule_id": {
 				Type:     schema.TypeString,
@@ -168,15 +171,25 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "RegisterInstance"
-	request := make(map[string]interface{})
+	request := map[string]interface{}{
+		"DatabasePassword": d.Get("database_password").(string),
+		"DatabaseUser":     d.Get("database_user").(string),
+		"DbaUid":           d.Get("dba_uid").(int),
+		"EnvType":          d.Get("env_type").(string),
+		"ExportTimeout":    d.Get("export_timeout").(int),
+		"Host":             d.Get("host").(string),
+		"InstanceSource":   d.Get("instance_source").(string),
+		"InstanceType":     d.Get("instance_type").(string),
+		"NetworkType":      d.Get("network_type").(string),
+		"Port":             d.Get("port").(int),
+		"QueryTimeout":     d.Get("query_timeout").(int),
+		"SafeRule":         d.Get("safe_rule").(string),
+	}
 	var err error
 	if v, ok := d.GetOk("data_link_name"); ok {
 		request["DataLinkName"] = v
 	}
 
-	request["DatabasePassword"] = d.Get("database_password")
-	request["DatabaseUser"] = d.Get("database_user")
-	request["DbaUid"] = d.Get("dba_uid")
 	if v, ok := d.GetOk("ddl_online"); ok {
 		request["DdlOnline"] = v
 	}
@@ -189,9 +202,6 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 		request["EcsRegion"] = v
 	}
 
-	request["EnvType"] = d.Get("env_type")
-	request["ExportTimeout"] = d.Get("export_timeout")
-	request["Host"] = d.Get("host")
 	if v, ok := d.GetOk("instance_name"); ok {
 		request["InstanceAlias"] = v
 	} else if v, ok := d.GetOk("instance_alias"); ok {
@@ -200,12 +210,6 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 		return WrapError(Error(`[ERROR] Argument "instance_alias" or "instance_name" must be set one!`))
 	}
 
-	request["InstanceSource"] = d.Get("instance_source")
-	request["InstanceType"] = d.Get("instance_type")
-	request["NetworkType"] = d.Get("network_type")
-	request["Port"] = d.Get("port")
-	request["QueryTimeout"] = d.Get("query_timeout")
-	request["SafeRule"] = d.Get("safe_rule")
 	if v, ok := d.GetOk("sid"); ok {
 		request["Sid"] = v
 	}
@@ -244,8 +248,7 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 	}
 
 	d.SetId(fmt.Sprint(request["Host"], ":", request["Port"]))
-
-	return resourceAlicloudDmsEnterpriseInstanceUpdate(d, meta)
+	return resourceAlicloudDmsEnterpriseInstanceRead(d, meta)
 }
 func resourceAlicloudDmsEnterpriseInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -286,7 +289,6 @@ func resourceAlicloudDmsEnterpriseInstanceRead(d *schema.ResourceData, meta inte
 	d.Set("use_dsql", formatInt(object["UseDsql"]))
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("dba_nick_name", object["DbaNickName"])
-
 	return nil
 }
 func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -302,11 +304,11 @@ func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta in
 		"Host": parts[0],
 		"Port": parts[1],
 	}
-	if !d.IsNewResource() && d.HasChange("database_password") {
+	if d.HasChange("database_password") {
 		update = true
 	}
 	request["DatabasePassword"] = d.Get("database_password")
-	if !d.IsNewResource() && d.HasChange("database_user") {
+	if d.HasChange("database_user") {
 		update = true
 	}
 	request["DatabaseUser"] = d.Get("database_user")
@@ -314,11 +316,11 @@ func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	request["DbaId"] = d.Get("dba_id")
-	if !d.IsNewResource() && d.HasChange("env_type") {
+	if d.HasChange("env_type") {
 		update = true
 	}
 	request["EnvType"] = d.Get("env_type")
-	if !d.IsNewResource() && d.HasChange("export_timeout") {
+	if d.HasChange("export_timeout") {
 		update = true
 	}
 	request["ExportTimeout"] = d.Get("export_timeout")
@@ -326,26 +328,26 @@ func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	request["InstanceId"] = d.Get("instance_id")
-	if !d.IsNewResource() && d.HasChange("instance_name") {
+	if d.HasChange("instance_name") {
 		update = true
 		request["InstanceAlias"] = d.Get("instance_name")
 	}
-	if !d.IsNewResource() && d.HasChange("instance_alias") {
+	if d.HasChange("instance_alias") {
 		update = true
 		request["InstanceAlias"] = d.Get("instance_alias")
 	}
 	if request["InstanceAlias"] == nil {
 		request["InstanceAlias"] = d.Get("instance_name")
 	}
-	if !d.IsNewResource() && d.HasChange("instance_source") {
+	if d.HasChange("instance_source") {
 		update = true
 	}
 	request["InstanceSource"] = d.Get("instance_source")
-	if !d.IsNewResource() && d.HasChange("instance_type") {
+	if d.HasChange("instance_type") {
 		update = true
 	}
 	request["InstanceType"] = d.Get("instance_type")
-	if !d.IsNewResource() && d.HasChange("query_timeout") {
+	if d.HasChange("query_timeout") {
 		update = true
 	}
 	request["QueryTimeout"] = d.Get("query_timeout")
@@ -353,31 +355,31 @@ func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	request["SafeRuleId"] = d.Get("safe_rule_id")
-	if !d.IsNewResource() && d.HasChange("data_link_name") {
+	if d.HasChange("data_link_name") {
 		update = true
 		request["DataLinkName"] = d.Get("data_link_name")
 	}
-	if !d.IsNewResource() && d.HasChange("ddl_online") {
+	if d.HasChange("ddl_online") {
 		update = true
 		request["DdlOnline"] = d.Get("ddl_online")
 	}
-	if !d.IsNewResource() && d.HasChange("ecs_instance_id") {
+	if d.HasChange("ecs_instance_id") {
 		update = true
 		request["EcsInstanceId"] = d.Get("ecs_instance_id")
 	}
-	if !d.IsNewResource() && d.HasChange("ecs_region") {
+	if d.HasChange("ecs_region") {
 		update = true
 		request["EcsRegion"] = d.Get("ecs_region")
 	}
-	if !d.IsNewResource() && d.HasChange("sid") {
+	if d.HasChange("sid") {
 		update = true
 		request["Sid"] = d.Get("sid")
 	}
-	if !d.IsNewResource() && d.HasChange("use_dsql") {
+	if d.HasChange("use_dsql") {
 		update = true
 		request["UseDsql"] = d.Get("use_dsql")
 	}
-	if !d.IsNewResource() && d.HasChange("vpc_id") {
+	if d.HasChange("vpc_id") {
 		update = true
 		request["VpcId"] = d.Get("vpc_id")
 	}
