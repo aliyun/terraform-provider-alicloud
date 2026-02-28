@@ -14,6 +14,7 @@ Creates a Function Compute service alias. Creates an alias that points to the sp
 
 -> **NOTE:** Available since v1.104.0.
 
+-> **DEPRECATED:** This resource (alicloud_fc_alias) represents the legacy Function Compute API. For new deployments and advanced features, please use the `alicloud_fcv3_alias` resource which provides access to the latest FCV3 capabilities. The legacy FC alias supports only basic functionality and does not include newer features available in FCV3.
 
 ## Example Usage
 
