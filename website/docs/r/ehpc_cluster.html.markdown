@@ -15,6 +15,8 @@ For information about Ehpc Cluster and how to use it, see [What is Cluster](http
 
 -> **NOTE:** Available since v1.173.0.
 
+-> **DEPRECATED:** This resource has been deprecated. Please use `alicloud_ehpc_cluster_v2` for new deployments as it provides enhanced functionality and is actively maintained.
+
 ## Example Usage
 
 Basic Usage
