@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudApiGatewayGroupPluginAttachment(t *testing.T) {
+func TestAccAliCloudApiGatewayGroupPluginAttachment(t *testing.T) {
 	var v *cloudapi.PluginAttribute
 
 	resourceId := "alicloud_api_gateway_group_plugin_attachment.default"
