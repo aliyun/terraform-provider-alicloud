@@ -35,7 +35,7 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 					"site_name":         name,
 					"coverage":          "overseas",
 					"access_type":       "NS",
-					"instance_id":       "${alicloud_esa_rate_plan_instance.defaultIEoDfU.id}",
+					"instance_id":       "${data.alicloud_esa_sites.default.sites.0.instance_id}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"paused":            "false",
 				}),
@@ -57,6 +57,36 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"coverage": "global",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_mode": "weak",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_mode": "weak",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_mode": "hard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_mode": "hard",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_mode": "default",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_mode": "default",
 					}),
 				),
 			},
@@ -123,14 +153,8 @@ variable "name" {
     default = "%s"
 }
 
-resource "alicloud_esa_rate_plan_instance" "defaultIEoDfU" {
-  type         = "NS"
-  auto_renew   = true
-  period       = "1"
-  payment_type = "Subscription"
-  coverage     = "overseas"
-  auto_pay     = true
-  plan_name    = "basic"
+data "alicloud_esa_sites" "default" {
+  plan_subscribe_type = "enterpriseplan"
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {

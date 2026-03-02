@@ -20,12 +20,6 @@ For information about ESA Site and how to use it, see [What is Site](https://www
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_site&exampleId=526a6ad2-d747-8099-80fe-4adba67e465727294d3a&activeTab=example&spm=docs.r.esa_site.0.526a6ad2d7&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -62,9 +56,6 @@ resource "alicloud_esa_site" "default" {
 }
 ```
 
-
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_esa_site&spm=docs.r.esa_site.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
@@ -77,6 +68,14 @@ The following arguments are supported:
 * `add_real_client_ip_header` - (Optional, Available since v1.244.0) Add the "ali-real-client-ip" header containing the real client IP. Value range:
   - `on`: Enable.
   - `off`: Disable.
+* `ai_mode` - (Optional, Computed, Available since v1.272.0) HTTP DDoS Intelligent Protection Mode. Valid values:
+  - `observe`: Observe.
+  - `defense`: Block.
+* `ai_template` - (Optional, Computed, Available since v1.272.0) HTTP DDoS Intelligent Protection Level. Values:
+  - `level0`: Very Loose.
+  - `level30`: Loose.
+  - `level60`: Normal.
+  - `level90`: Strict.
 * `cache_architecture_mode` - (Optional, Computed, Available since v1.244.0) Multi-level cache architecture mode. Possible values:
   - `edge`: Edge cache layer.
   - `edge_smart`: Edge cache layer + intelligent cache layer.
@@ -102,6 +101,11 @@ The following arguments are supported:
 * `flatten_mode` - (Optional, Available since v1.251.0) CNAME flattening mode. Possible values:
   - `flatten_all`: Flatten all.
   - `flatten_at_root`: Flatten only the root domain. The default is to flatten the root domain.
+* `global_mode` - (Optional, Computed, Available since v1.272.0) HTTP DDoS Attack Protection Policy Modes. Valid values:
+  - `very weak`: indicates a very permissive setting.
+  - `weak`: indicates a permissive setting.
+  - `default`: indicates a normal setting.
+  - `hard`: indicates a strict setting.
 * `instance_id` - (Required, ForceNew) The ID of the associated package instance.
 * `ipv6_enable` - (Optional, Computed, Available since v1.244.0) Specifies whether to enable IPv6. Valid values:
   - `on`
@@ -135,8 +139,8 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Site.
-* `delete` - (Defaults to 5 mins) Used when delete the Site.
+* `create` - (Defaults to 45 mins) Used when create the Site.
+* `delete` - (Defaults to 15 mins) Used when delete the Site.
 * `update` - (Defaults to 5 mins) Used when update the Site.
 
 ## Import
@@ -144,5 +148,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 ESA Site can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_esa_site.example <id>
+$ terraform import alicloud_esa_site.example <site_id>
 ```
