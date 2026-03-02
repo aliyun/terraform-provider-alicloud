@@ -132,7 +132,9 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 					"export_timeout":    "2000",
 					"ecs_region":        os.Getenv("ALICLOUD_REGION"),
 					"ddl_online":        "0",
+					"sell_trust":        "false",
 				}),
+				ExpectNonEmptyPlan: true, // database_user will be encrypted if sell_trust=false
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"dba_uid":         CHECKSET,
@@ -152,6 +154,7 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 						"ddl_online":      "0",
 						"use_dsql":        CHECKSET,
 						"data_link_name":  CHECKSET,
+						"sell_trust":      "false",
 					}),
 				),
 			},
@@ -163,11 +166,15 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"env_type": "dev",
+					"env_type":   "dev",
+					"sell_trust": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"env_type": "dev",
+						"env_type":   "dev",
+						"sell_trust": "true",
+						// database_user will be plain text if sell_trust=true
+						"database_user": CHECKSET,
 					}),
 				),
 			},
