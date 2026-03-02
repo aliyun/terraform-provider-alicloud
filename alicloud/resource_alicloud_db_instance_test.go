@@ -987,6 +987,8 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
 					"category":                 "HighAvailability",
+					"collation":                "Chinese_PRC_CI_AS",
+					"time_zone":                "China Standard Time",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -996,6 +998,8 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 						"instance_storage":         CHECKSET,
 						"db_instance_storage_type": "cloud_essd",
 						"category":                 "HighAvailability",
+						"collation":                "Chinese_PRC_CI_AS",
+						"time_zone":                "China Standard Time",
 					}),
 				),
 			},
@@ -1021,7 +1025,7 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"instance_type": "mssql.x4.medium.s2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1085,6 +1089,18 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 					testAccCheck(map[string]string{
 						"security_group_id":    CHECKSET,
 						"security_group_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_zone": "UTC",
+					"collation": "SQL_Latin1_General_CP1_CI_AS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_zone": "UTC",
+						"collation": "SQL_Latin1_General_CP1_CI_AS",
 					}),
 				),
 			},
