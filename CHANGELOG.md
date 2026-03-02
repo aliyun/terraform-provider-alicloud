@@ -1,4 +1,10 @@
 ## 1.273.0 (Unreleased)
+## 1.272.1 (March 2, 2026)
+
+ENHANCEMENTS:
+- resource/alicloud_esa_site: Added the field ai_mode, ai_template, global_mode. ([#9539](https://github.com/aliyun/terraform-provider-alicloud/issues/9539))
+- resource/alicloud_elasticsearch_instance: Added the field kibana_private_domain. ([#9540](https://github.com/aliyun/terraform-provider-alicloud/issues/9540))
+
 ## 1.272.0 (March 2, 2026)
 
 - **New Resource:** `alicloud_live_domain` ([#9513](https://github.com/aliyun/terraform-provider-alicloud/issues/9513))
