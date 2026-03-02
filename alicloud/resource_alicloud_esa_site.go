@@ -21,9 +21,9 @@ func resourceAliCloudEsaSite() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(45 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(15 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"access_type": {
@@ -38,6 +38,16 @@ func resourceAliCloudEsaSite() *schema.Resource {
 			"add_real_client_ip_header": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"ai_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"ai_template": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"cache_architecture_mode": {
 				Type:     schema.TypeString,
@@ -75,6 +85,11 @@ func resourceAliCloudEsaSite() *schema.Resource {
 			"flatten_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"global_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -174,7 +189,7 @@ func resourceAliCloudEsaSiteCreate(d *schema.ResourceData, meta interface{}) err
 	d.SetId(fmt.Sprint(response["SiteId"]))
 
 	esaServiceV2 := EsaServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"pending"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, esaServiceV2.EsaSiteStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"pending"}, d.Timeout(schema.TimeoutCreate), 3*time.Minute, esaServiceV2.EsaSiteStateRefreshFuncWithApi(d.Id(), "Status", []string{}, esaServiceV2.DescribeEsaSite))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -247,6 +262,14 @@ func resourceAliCloudEsaSiteRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("cache_reserve_enable", objectRaw["Enable"])
 	d.Set("cache_reserve_instance_id", objectRaw["CacheReserveInstanceId"])
 
+	objectRaw, err = esaServiceV2.DescribeSiteDescribeHttpDDoSAttackIntelligentProtection(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	d.Set("ai_mode", objectRaw["AiMode"])
+	d.Set("ai_template", objectRaw["AiTemplate"])
+
 	objectRaw, err = esaServiceV2.DescribeSiteGetTieredCache(d.Id())
 	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
@@ -296,6 +319,12 @@ func resourceAliCloudEsaSiteRead(d *schema.ResourceData, meta interface{}) error
 
 	d.Set("paused", objectRaw["Paused"])
 
+	objectRaw, err = esaServiceV2.DescribeSiteDescribeHttpDDoSAttackProtection(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	d.Set("global_mode", objectRaw["GlobalMode"])
 	return nil
 }
 
@@ -398,7 +427,7 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		esaServiceV2 := EsaServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"pending"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, esaServiceV2.EsaSiteStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"pending"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, esaServiceV2.EsaSiteStateRefreshFuncWithApi(d.Id(), "Status", []string{}, esaServiceV2.DescribeEsaSite))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -473,6 +502,11 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 	if d.HasChange("add_real_client_ip_header") {
 		update = true
 		request["AddRealClientIpHeader"] = d.Get("add_real_client_ip_header")
+	}
+
+	if d.HasChange("real_client_ip_header_name") {
+		update = true
+		request["RealClientIpHeaderName"] = d.Get("real_client_ip_header_name")
 	}
 
 	if d.HasChange("site_version") {
@@ -726,6 +760,66 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 		request["Enable"] = d.Get("cache_reserve_enable")
 	}
 
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "SetHttpDDoSAttackProtection"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SiteId"] = d.Id()
+
+	if d.HasChange("global_mode") {
+		update = true
+	}
+	request["GlobalMode"] = d.Get("global_mode")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "SetHttpDDoSAttackIntelligentProtection"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SiteId"] = d.Id()
+
+	if d.HasChange("ai_template") {
+		update = true
+	}
+	request["AiTemplate"] = d.Get("ai_template")
+	if d.HasChange("ai_mode") {
+		update = true
+	}
+	request["AiMode"] = d.Get("ai_mode")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
