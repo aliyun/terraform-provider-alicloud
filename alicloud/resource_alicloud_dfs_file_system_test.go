@@ -101,6 +101,7 @@ func testSweepDFSFileSystem(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dfs_file_system"].Schema).Data(nil, nil)

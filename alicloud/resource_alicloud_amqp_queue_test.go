@@ -134,6 +134,7 @@ func AliCloudAmqpQueueBasicDependence0(name string) string {
 
 var AliCloudAmqpQueueMap0 = map[string]string{}
 
+// lintignore: R001
 func TestUnitAliCloudAmqpQueue(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_queue"].Schema).Data(nil, nil)

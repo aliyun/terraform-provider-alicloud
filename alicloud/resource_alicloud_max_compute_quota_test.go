@@ -11,6 +11,7 @@ import (
 
 // Test MaxCompute Quota. >>> Resource test cases, automatically generated.
 // Case Quota发布terraform-包年包月标准计算 10404
+// lintignore: AT001
 func TestAccAliCloudMaxComputeQuota_basic10404(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_max_compute_quota.default"
@@ -213,6 +214,7 @@ variable "sub_quota_nickname_2" {
 }
 
 // Case 后付费测试用例 6979
+// lintignore: AT001
 func TestAccAliCloudMaxComputeQuota_basic6979(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_max_compute_quota.default"

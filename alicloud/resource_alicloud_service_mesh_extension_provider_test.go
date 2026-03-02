@@ -113,6 +113,7 @@ func resourceAlicloudServiceMeshExtensionProviderBasicDependence(name string) st
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudServiceMeshExtensionProvider(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_service_mesh_extension_provider"].Schema).Data(nil, nil)

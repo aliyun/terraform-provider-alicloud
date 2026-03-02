@@ -103,6 +103,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_schedulerx_namespace"].Schema).Data(nil, nil)

@@ -342,6 +342,7 @@ func expandReplicationRule(d *schema.ResourceData) ReplicationRule {
 	return rule
 }
 
+// lintignore: R001
 func flattenReplicationRule(d *schema.ResourceData, rc *ReplicationConfiguration, rp map[string]interface{}, ruleId string) error {
 	rule := make(map[string]interface{})
 	for _, r := range rc.Rules {
@@ -618,7 +619,7 @@ func resourceAlicloudOssBucketReplicationRead(d *schema.ResourceData, meta inter
 		}
 	}
 
-	// Update to resouce data
+	// Update to resource data
 	d.Set("bucket", bucket)
 	err = flattenReplicationRule(d, rc, rule_progress, ruleId)
 	if err != nil {

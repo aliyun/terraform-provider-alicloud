@@ -530,6 +530,7 @@ var AlicloudSAEApplicationScalingRuleMap0 = map[string]string{
 	"app_id": CHECKSET,
 }
 
+// lintignore: R001
 func TestUnitAlicloudSAEApplicationScalingRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_sae_application_scaling_rule"].Schema).Data(nil, nil)

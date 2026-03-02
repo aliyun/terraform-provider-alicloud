@@ -157,6 +157,7 @@ func AliCloudDdosBasicThresholdBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAliCloudDdosBasicThreshold(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ddos_basic_threshold"].Schema).Data(nil, nil)

@@ -112,6 +112,7 @@ func TestAccAlicloudBrainIndustrialPidOrganization_basic(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -149,6 +150,7 @@ func AlicloudBrainIndustrialPidOrganizationBasicDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudBrainIndustrialPidOrganization(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_brain_industrial_pid_organization"].Schema).Data(nil, nil)

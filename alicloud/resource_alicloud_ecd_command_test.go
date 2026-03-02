@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// lintignore: AT001
 func TestAccAlicloudECDCommand_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
@@ -113,6 +114,7 @@ resource "alicloud_ecd_desktop" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudECDCommand(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecd_command"].Schema).Data(nil, nil)

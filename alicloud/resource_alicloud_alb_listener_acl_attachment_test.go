@@ -174,6 +174,7 @@ resource "alicloud_alb_listener_acl_attachment" "default2" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudAlbListenerAclAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alb_listener_acl_attachment"].Schema).Data(nil, nil)

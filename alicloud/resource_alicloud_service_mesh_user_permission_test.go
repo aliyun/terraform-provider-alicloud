@@ -153,6 +153,7 @@ resource "alicloud_service_mesh_service_mesh" "default1" {
 `, name, fmt.Sprintf("%s%d", name, acctest.RandIntRange(1, 999)))
 }
 
+// lintignore: R001
 func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_service_mesh_user_permission"].Schema).Data(nil, nil)

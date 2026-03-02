@@ -263,6 +263,7 @@ data "alicloud_zones" default {}
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudECSDedicatedHostCluster(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_dedicated_host_cluster"].Schema).Data(nil, nil)

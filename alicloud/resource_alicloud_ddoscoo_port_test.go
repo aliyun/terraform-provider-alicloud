@@ -186,6 +186,7 @@ data "alicloud_ddoscoo_instances" "default" {}
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudDdoscooPort(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.DdoscooSupportedRegions)

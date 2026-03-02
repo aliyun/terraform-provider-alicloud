@@ -100,6 +100,7 @@ func AlicloudPrivatelinkVpcEndpointConnectionBasicDependence(name string) string
 `)
 }
 
+// lintignore: R001
 func TestUnitAlicloudPrivatelinkVpcEndpointConnection(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_connection"].Schema).Data(nil, nil)

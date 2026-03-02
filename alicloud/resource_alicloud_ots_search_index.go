@@ -541,7 +541,7 @@ func resourceAliyunOtsSearchIndexRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	if err := d.Set("current_sync_timestamp", *idx.SyncStat.CurrentSyncTimestamp); err != nil {
+	if err := d.Set("current_sync_timestamp", idx.SyncStat.CurrentSyncTimestamp); err != nil {
 		return WrapError(err)
 	}
 

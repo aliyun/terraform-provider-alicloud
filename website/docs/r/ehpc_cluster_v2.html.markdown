@@ -21,7 +21,7 @@ For information about Ehpc Cluster V2 and how to use it, see [What is Cluster V2
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_ehpc_cluster_v2&exampleId=978e6f01-de79-af72-4f8f-524a662efe04d454e39f&activeTab=example&spm=docs.r.ehpc_cluster_v2.0.978e6f01de&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ehpc_cluster_v2&exampleId=0c55a428-eb99-e56f-1d51-a5b38c350d4abddffba9&activeTab=example&spm=docs.r.ehpc_cluster_v2.0.0c55a428eb&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -75,9 +75,8 @@ resource "alicloud_nas_access_rule" "example" {
   source_cidr_ip    = "10.0.0.0/24"
 }
 
-resource "alicloud_security_group" "example" {
-  vpc_id              = alicloud_vpc.example.id
-  security_group_type = "normal"
+resource "alicloud_ecs_key_pair" "example" {
+  key_pair_name = var.name
 }
 
 resource "alicloud_nas_mount_target" "example" {
@@ -88,18 +87,19 @@ resource "alicloud_nas_mount_target" "example" {
   file_system_id    = alicloud_nas_file_system.example.id
 }
 
+resource "alicloud_security_group" "example" {
+  vpc_id              = alicloud_vpc.example.id
+  security_group_type = "normal"
+}
 
 resource "alicloud_ehpc_cluster_v2" "default" {
   cluster_credentials {
-    password = "aliHPC123"
+    key_pair_name = alicloud_ecs_key_pair.example.id
   }
-  cluster_vpc_id      = alicloud_vpc.example.id
-  cluster_category    = "Standard"
+
   cluster_mode        = "Integrated"
-  security_group_id   = alicloud_security_group.example.id
-  cluster_name        = "minimal-example-cluster"
-  deletion_protection = true
-  client_version      = "2.0.47"
+  cluster_vpc_id      = alicloud_vpc.example.id
+  deletion_protection = "true"
   shared_storages {
     mount_directory     = "/home"
     nas_directory       = "/"
@@ -109,35 +109,38 @@ resource "alicloud_ehpc_cluster_v2" "default" {
     mount_options       = "-t nfs -o vers=3,nolock,proto=tcp,noresvport"
   }
   shared_storages {
-    mount_directory     = "/opt"
     nas_directory       = "/"
     mount_target_domain = alicloud_nas_mount_target.example.mount_target_domain
     protocol_type       = "NFS"
     file_system_id      = alicloud_nas_file_system.example.id
     mount_options       = "-t nfs -o vers=3,nolock,proto=tcp,noresvport"
+    mount_directory     = "/opt"
   }
   shared_storages {
+    mount_options       = "-t nfs -o vers=3,nolock,proto=tcp,noresvport"
     mount_directory     = "/ehpcdata"
     nas_directory       = "/"
     mount_target_domain = alicloud_nas_mount_target.example.mount_target_domain
     protocol_type       = "NFS"
     file_system_id      = alicloud_nas_file_system.example.id
-    mount_options       = "-t nfs -o vers=3,nolock,proto=tcp,noresvport"
   }
+
   cluster_vswitch_id = alicloud_vswitch.example.id
+  cluster_category   = "Standard"
+  security_group_id  = alicloud_security_group.example.id
+  cluster_name       = var.name
   manager {
     manager_node {
+      spot_strategy = "NoSpot"
       system_disk {
         category = "cloud_essd"
         size     = "40"
         level    = "PL0"
       }
-      enable_ht            = true
+      enable_ht            = "true"
       instance_charge_type = "PostPaid"
       image_id             = "centos_7_6_x64_20G_alibase_20211130.vhd"
-      spot_price_limit     = 0
       instance_type        = "ecs.c6.xlarge"
-      spot_strategy        = "NoSpot"
     }
     scheduler {
       type    = "SLURM"
@@ -170,7 +173,7 @@ The following arguments are supported:
 
   - Standard
   - Serverless
-* `cluster_credentials` - (Required, ForceNew, List) Security credentials for the cluster. See [`cluster_credentials`](#cluster_credentials) below.
+* `cluster_credentials` - (Required, ForceNew, Set) Security credentials for the cluster. See [`cluster_credentials`](#cluster_credentials) below.
 * `cluster_mode` - (Optional, ForceNew) The deployment mode of the cluster. Valid values:
 
   - Integrated
@@ -181,11 +184,11 @@ The following arguments are supported:
 You can call the [DescribeVpcs](https://www.alibabacloud.com/help/en/doc-detail/448581.html) operation to query information about the created VPCs and vSwitches.
 * `cluster_vpc_id` - (Optional, ForceNew) The ID of the virtual private cloud (VPC) in which the cluster resides.
 * `deletion_protection` - (Optional) The idle duration of the compute nodes allowed by the cluster.
-* `manager` - (Optional, ForceNew, List) The configurations of the cluster management node. See [`manager`](#manager) below.
+* `manager` - (Optional, ForceNew, Set) The configurations of the cluster management node. See [`manager`](#manager) below.
 * `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group to which the cluster belongs.
 You can call the [ListResourceGroups](https://www.alibabacloud.com/help/en/doc-detail/158855.html) operation to obtain the IDs of the resource groups.
 * `security_group_id` - (Optional, ForceNew) The security group ID.
-* `shared_storages` - (Required, ForceNew, Set) List of cluster shared storage configurations. See [`shared_storages`](#shared_storages) below.
+* `shared_storages` - (Required, ForceNew, List) List of cluster shared storage configurations. See [`shared_storages`](#shared_storages) below.
 
 ### `addons`
 
@@ -198,15 +201,16 @@ The addons supports the following:
 ### `cluster_credentials`
 
 The cluster_credentials supports the following:
+* `key_pair_name` - (Optional, ForceNew, Available since v1.270.0) The SSH key of root of the cluster node.
 * `password` - (Optional, ForceNew) The root password of the cluster node. It is 8 to 20 characters in length and must contain three types of characters: uppercase and lowercase letters, numbers, and special symbols. Special symbols can be: () ~! @ # $ % ^ & * - = + { } [ ] : ; ',. ? /
 
 ### `manager`
 
 The manager supports the following:
-* `directory_service` - (Optional, ForceNew, List) The configurations of the domain account service. See [`directory_service`](#manager-directory_service) below.
-* `dns` - (Optional, ForceNew, List) The configurations of the domain name resolution service. See [`dns`](#manager-dns) below.
-* `manager_node` - (Optional, ForceNew, List) The hardware configurations of the management node. See [`manager_node`](#manager-manager_node) below.
-* `scheduler` - (Optional, ForceNew, List) The configurations of the scheduler service. See [`scheduler`](#manager-scheduler) below.
+* `directory_service` - (Optional, ForceNew, Set) The configurations of the domain account service. See [`directory_service`](#manager-directory_service) below.
+* `dns` - (Optional, ForceNew, Set) The configurations of the domain name resolution service. See [`dns`](#manager-dns) below.
+* `manager_node` - (Optional, ForceNew, Set) The hardware configurations of the management node. See [`manager_node`](#manager-manager_node) below.
+* `scheduler` - (Optional, ForceNew, Set) The configurations of the scheduler service. See [`scheduler`](#manager-scheduler) below.
 
 ### `manager-directory_service`
 
@@ -239,7 +243,7 @@ The manager-manager_node supports the following:
   - When PeriodUnit = Month: 1, 2, 3, 6, 12, 24, 36, 48, 60.
 
 Default value: 1.
-* `duration` - (Optional, ForceNew, Int) The duration of the preemptible instance, in hours. Value:
+* `duration` - (Optional, ForceNew, Computed, Int) The duration of the preemptible instance, in hours. Value:
   - : After the instance is created, Alibaba Cloud will ensure that the instance will not be automatically released after one hour of operation. After one hour, the system will compare the bid price with the market price in real time and check the resource inventory to determine the holding and recycling of the instance.
   - 0: After creation, Alibaba Cloud does not guarantee the running time of the instance. The system compares the bid price with the market price in real time and checks the resource inventory to determine the holding and recycling of the instance.
 
@@ -262,7 +266,7 @@ Default value: 1.
   - NoSpot: normal pay-as-you-go instances (default).
   - SpotWithPriceLimit: set the upper limit price for the preemptible instance.
   - SpotAsPriceGo: The system automatically bids, following the actual price of the current market.
-* `system_disk` - (Optional, ForceNew, List) System disk configuration of the management node. See [`system_disk`](#manager-manager_node-system_disk) below.
+* `system_disk` - (Optional, ForceNew, Set) System disk configuration of the management node. See [`system_disk`](#manager-manager_node-system_disk) below.
 
 ### `manager-scheduler`
 
@@ -313,8 +317,8 @@ The shared_storages supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `create_time` - The time when the cluster was created. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mmZ format. The time is displayed in UTC. For more information, see [ISO 8601](~~25696~~).
+* `id` - The ID of the resource supplied above. 
+* `create_time` - The time when the cluster was created.
 * `manager` - The configurations of the cluster management node.
   * `manager_node` - The hardware configurations of the management node.
     * `expired_time` - The expiration time of the management node.
@@ -332,5 +336,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 Ehpc Cluster V2 can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ehpc_cluster_v2.example <id>
+$ terraform import alicloud_ehpc_cluster_v2.example <cluster_id>
 ```

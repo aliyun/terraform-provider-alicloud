@@ -122,6 +122,7 @@ func resourceAliCloudCmsGroupMetricRule() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"escalations": {
 				Type:     schema.TypeSet,
 				Required: true,
@@ -178,6 +179,7 @@ func resourceAliCloudCmsGroupMetricRule() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"warn": {
 							Type:     schema.TypeSet,
 							Optional: true,

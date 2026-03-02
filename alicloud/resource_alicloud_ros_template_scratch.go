@@ -58,6 +58,7 @@ func resourceAlicloudRosTemplateScratch() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"source_tag": {
 				Type:         schema.TypeSet,
 				Optional:     true,
@@ -65,6 +66,7 @@ func resourceAlicloudRosTemplateScratch() *schema.Resource {
 				ExactlyOneOf: []string{"source_resource_group", "source_tag", "source_resources"},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						// lintignore: S006
 						"resource_tags": {
 							Type:     schema.TypeMap,
 							Required: true,
@@ -78,6 +80,7 @@ func resourceAlicloudRosTemplateScratch() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"source_resource_group": {
 				Type:     schema.TypeSet,
 				Optional: true,

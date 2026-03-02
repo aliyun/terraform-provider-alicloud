@@ -53,7 +53,6 @@ func testSweepMSECluster(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
 		}
-		sweeped := false
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
@@ -67,7 +66,6 @@ func testSweepMSECluster(region string) error {
 				log.Printf("[INFO] Skipping Mse Clusters: %s (%s)", item["ClusterAliasName"], item["InstanceId"])
 				continue
 			}
-			sweeped = true
 			action = "DeleteCluster"
 			request := map[string]interface{}{
 				"InstanceId": item["InstanceId"],
@@ -76,10 +74,10 @@ func testSweepMSECluster(region string) error {
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Mse Clusters (%s (%s)): %s", item["ClusterAliasName"].(string), item["InstanceId"].(string), err)
 			}
-			if sweeped {
-				// Waiting 30 seconds to ensure these Mse Clusters have been deleted.
-				time.Sleep(30 * time.Second)
-			}
+
+			// Waiting 30 seconds to ensure these Mse Clusters have been deleted.
+			time.Sleep(30 * time.Second)
+
 			log.Printf("[INFO] Delete mse cluster success: %s ", item["InstanceId"].(string))
 		}
 		if len(result) < PageSizeLarge {
@@ -110,6 +108,7 @@ func TestAccAliCloudMSECluster_basic0(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -234,6 +233,7 @@ func TestAccAliCloudMSECluster_changeNetwork(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -309,6 +309,7 @@ func TestAccAliCloudMSECluster_basic1(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -399,6 +400,7 @@ func TestAccAliCloudMSECluster_pro(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -485,6 +487,7 @@ func TestAccAliCloudMSECluster_serverless(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -537,9 +540,9 @@ func TestAccAliCloudMSECluster_VpcId(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -650,9 +653,9 @@ func TestAccAliCloudMSECluster_PrePaid(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheckWithTime(t, []int{22})
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -753,9 +756,9 @@ func TestAccAliCloudMSECluster_single_eni(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -835,6 +838,7 @@ func MseClusterBasicdependence(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudMSECluster(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mse_cluster"].Schema).Data(nil, nil)

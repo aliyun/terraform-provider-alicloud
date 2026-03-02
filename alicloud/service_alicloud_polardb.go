@@ -875,6 +875,7 @@ func (s *PolarDBService) RefreshEndpointConfig(d *schema.ResourceData) error {
 	return nil
 }
 
+// lintignore: R001
 func (s *PolarDBService) RefreshParameters(d *schema.ResourceData) error {
 	var param []map[string]interface{}
 	documented, ok := d.GetOk("parameters")
@@ -1598,9 +1599,17 @@ func (s *PolarDBService) DescribeDBSecurityGroups(clusterId string) ([]string, e
 func (s *PolarDBService) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) error {
 	if _, ok := d.GetOk("db_cluster_ip_array"); ok {
 		removed, added := d.GetChange("db_cluster_ip_array")
+
+		targetIpArrayNames := make(map[string]bool)
+		for _, e := range added.(*schema.Set).List() {
+			pack := e.(map[string]interface{})
+			ipArrayName := pack["db_cluster_ip_array_name"].(string)
+			targetIpArrayNames[ipArrayName] = true
+		}
+
 		for _, e := range removed.(*schema.Set).List() {
 			pack := e.(map[string]interface{})
-			if fmt.Sprint(pack["db_cluster_ip_array_name"]) == "default" {
+			if fmt.Sprint(pack["db_cluster_ip_array_name"]) == "default" || targetIpArrayNames[pack["db_cluster_ip_array_name"].(string)] {
 				continue
 			}
 			//ips expand string list
@@ -2012,4 +2021,47 @@ func (s *PolarDBService) DescribeDBClusterStandbyAz(d *schema.ResourceData, time
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
+}
+
+func (s *PolarDBService) DescribePolarDBGlobalSecurityGroupIds(id string) (globalSecurityGroupIds []string, err error) {
+	action := "DescribeGlobalSecurityIPGroupRelation"
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"DBClusterId": id,
+	}
+	var response map[string]interface{}
+	client := s.client
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return globalSecurityGroupIds, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.GlobalSecurityIPGroupRel", response)
+	if err != nil {
+		return globalSecurityGroupIds, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GlobalSecurityIPGroupRel", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return globalSecurityGroupIds, nil
+	}
+
+	for _, v := range resp.([]interface{}) {
+		globalSecurityGroupIds = append(globalSecurityGroupIds, fmt.Sprint(v.(map[string]interface{})["GlobalSecurityGroupId"]))
+	}
+
+	return globalSecurityGroupIds, nil
 }

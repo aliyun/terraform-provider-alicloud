@@ -11,6 +11,7 @@ import (
 
 // Test CloudFirewall IPSConfig. >>> Resource test cases, automatically generated.
 // Case 修改IPS拦截模式 10240
+// lintignore: AT001
 func TestAccAliCloudCloudFirewallIPSConfig_basic10240(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_ips_config.default"

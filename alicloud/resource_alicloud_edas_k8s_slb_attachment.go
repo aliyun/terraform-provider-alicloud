@@ -76,6 +76,7 @@ func resourceAlicloudEdasK8sSlbAttachment() *schema.Resource {
 										Required:     true,
 										ValidateFunc: validation.StringInSlice([]string{"TCP", "HTTP", "HTTPS"}, false),
 									},
+									// lintignore: S018
 									"service_port": {
 										Type:     schema.TypeSet,
 										Required: true,
@@ -111,6 +112,7 @@ func resourceAlicloudEdasK8sSlbAttachment() *schema.Resource {
 	}
 }
 
+// lintignore: R006
 func resourceAlicloudEdasK8sSlbAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
@@ -220,6 +222,7 @@ func filterSlbInfo(slbInfo string) (*[]map[string]interface{}, error) {
 	return &filteredSlbInfo, nil
 }
 
+// lintignore: R006
 func resourceAlicloudEdasK8sSlbAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
@@ -248,6 +251,7 @@ func resourceAlicloudEdasK8sSlbAttachmentUpdate(d *schema.ResourceData, meta int
 	return resourceAlicloudEdasK8sSlbAttachmentRead(d, meta)
 }
 
+// lintignore: R006
 func resourceAlicloudEdasK8sSlbAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}

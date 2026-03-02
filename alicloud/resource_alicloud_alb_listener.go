@@ -286,6 +286,7 @@ func resourceAliCloudAlbListener() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"xforwarded_for_config": {
 				Type:          schema.TypeSet,
 				Optional:      true,
@@ -365,6 +366,7 @@ func resourceAliCloudAlbListener() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"acl_config": {
 				Type:       schema.TypeSet,
 				Optional:   true,

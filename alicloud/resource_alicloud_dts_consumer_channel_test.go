@@ -173,6 +173,7 @@ resource "alicloud_dts_subscription_job" "default" {
 `, name, os.Getenv("ALICLOUD_REGION"))
 }
 
+// lintignore: R001
 func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dts_consumer_channel"].Schema).Data(nil, nil)

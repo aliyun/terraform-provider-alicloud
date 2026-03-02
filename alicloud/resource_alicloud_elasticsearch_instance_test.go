@@ -669,6 +669,7 @@ func TestAccAliCloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -799,6 +800,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -816,7 +818,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 					"zone_count":                       "1",
 					"enable_public":                    "true",
 					"enable_kibana_private_network":    "false",
-					"enable_kibana_public_network":     "true",
+					"enable_kibana_public_network":     "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -833,7 +835,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 						"zone_count":                       "1",
 						"enable_public":                    "true",
 						"enable_kibana_private_network":    "false",
-						"enable_kibana_public_network":     "true",
+						"enable_kibana_public_network":     "false",
 					}),
 				),
 			},
@@ -851,6 +853,63 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_kibana_public_network": "true",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_private_network":    "true",
+					"kibana_private_security_group_id": "${local.security_group}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_private_network":    "true",
+						"kibana_private_security_group_id": CHECKSET,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_public_network": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_public_network": "false",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_private_network": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_private_network": "false",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_public_network": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_public_network": "true",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_private_network": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_private_network": "true",
 					}),
 				),
 			},
@@ -959,6 +1018,7 @@ func TestAccAliCloudElasticsearchInstance_onecs(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1005,6 +1065,17 @@ func TestAccAliCloudElasticsearchInstance_onecs(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"kibana_private_whitelist.#": "2",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_public": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_public": "true",
 					}),
 				),
 			},

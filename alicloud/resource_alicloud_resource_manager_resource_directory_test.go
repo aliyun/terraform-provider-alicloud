@@ -102,6 +102,7 @@ func ResourceManagerResourceDirectoryBasicdependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAliCloudResourceManagerResourceDirectory(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_resource_directory"].Schema).Data(nil, nil)

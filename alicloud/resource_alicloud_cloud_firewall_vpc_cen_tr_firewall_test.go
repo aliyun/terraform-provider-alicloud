@@ -10,14 +10,89 @@ import (
 )
 
 // Test CloudFirewall VpcCenTrFirewall. >>> Resource test cases, automatically generated.
+// Case VpcCenTrFirewall全生命周期测试_副本1689148389922 3609
+func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic3609(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_vpc_cen_tr_firewall.default"
+	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallVpcCenTrFirewallMap3609)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallVpcCenTrFirewall")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudFirewallVpcCenTrFirewallBasicDependence3609)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"firewall_description":      "VpcCenTrFirewall created by terraform",
+					"region_no":                 "${var.region}",
+					"route_mode":                "managed",
+					"cen_id":                    "${alicloud_cen_instance.cen.id}",
+					"firewall_vpc_cidr":         "${var.firewall_vpc_cidr}",
+					"transit_router_id":         "${alicloud_cen_transit_router.tr.transit_router_id}",
+					"tr_attachment_master_cidr": "${var.tr_attachment_master_cidr}",
+					"firewall_name":             name,
+					"firewall_subnet_cidr":      "${var.firewall_subnet_cidr}",
+					"tr_attachment_slave_cidr":  "${var.tr_attachment_slave_cidr}",
+					"tr_attachment_master_zone": "${var.zone1}",
+					"tr_attachment_slave_zone":  "${var.zone2}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"firewall_description":      "VpcCenTrFirewall created by terraform",
+						"region_no":                 CHECKSET,
+						"route_mode":                "managed",
+						"cen_id":                    CHECKSET,
+						"firewall_vpc_cidr":         CHECKSET,
+						"transit_router_id":         CHECKSET,
+						"tr_attachment_master_cidr": CHECKSET,
+						"firewall_name":             CHECKSET,
+						"firewall_subnet_cidr":      CHECKSET,
+						"tr_attachment_slave_cidr":  CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"firewall_name": "${var.firewall_name_update}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"firewall_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"tr_attachment_master_zone", "tr_attachment_slave_zone"},
+			},
+		},
+	})
+}
+
 var AlicloudCloudFirewallVpcCenTrFirewallMap3609 = map[string]string{
-	"status": CHECKSET,
+	"firewall_eni_vpc_id":        CHECKSET,
+	"firewall_eni_id":            CHECKSET,
+	"firewall_vpc_attachment_id": CHECKSET,
+	"status":                     CHECKSET,
 }
 
 func AlicloudCloudFirewallVpcCenTrFirewallBasicDependence3609(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 variable "description" {
@@ -105,6 +180,7 @@ resource "alicloud_route_table" "foo" {
 }
 
 resource "alicloud_cen_transit_router_vpc_attachment" "tr-vpc1" {
+  auto_publish_route_enabled = false
   zone_mappings {
     vswitch_id = alicloud_vswitch.vpc1vsw1.id
     zone_id    = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[1]
@@ -113,87 +189,11 @@ resource "alicloud_cen_transit_router_vpc_attachment" "tr-vpc1" {
     zone_id    = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[2]
     vswitch_id = alicloud_vswitch.vpc1vsw2.id
   }
-  vpc_id = alicloud_vpc.vpc1.id
-  cen_id = alicloud_cen_instance.cen.id
+  vpc_id            = alicloud_vpc.vpc1.id
+  cen_id            = alicloud_cen_instance.cen.id
   transit_router_id = alicloud_cen_transit_router.tr.transit_router_id
-  depends_on = [alicloud_route_table.foo]
-}
-
-
-
-`, name)
-}
-
-// Case VpcCenTrFirewall全生命周期测试_副本1689148389922 3609  raw
-func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic3609_raw(t *testing.T) {
-	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	resourceId := "alicloud_cloud_firewall_vpc_cen_tr_firewall.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallVpcCenTrFirewallMap3609)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudFirewallVpcCenTrFirewall")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scloudfirewallvpccentrfirewall%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudFirewallVpcCenTrFirewallBasicDependence3609)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"firewall_description":      "VpcCenTrFirewall created by terraform",
-					"region_no":                 "${var.region}",
-					"route_mode":                "managed",
-					"cen_id":                    "${alicloud_cen_transit_router_vpc_attachment.tr-vpc1.cen_id}",
-					"firewall_vpc_cidr":         "${var.firewall_vpc_cidr}",
-					"transit_router_id":         "${alicloud_cen_transit_router.tr.transit_router_id}",
-					"tr_attachment_master_cidr": "${var.tr_attachment_master_cidr}",
-					"firewall_name":             name,
-					"firewall_subnet_cidr":      "${var.firewall_subnet_cidr}",
-					"tr_attachment_slave_cidr":  "${var.tr_attachment_slave_cidr}",
-					"tr_attachment_master_zone": "${data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[1]}",
-					"tr_attachment_slave_zone":  "${data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[2]}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"firewall_description":      "VpcCenTrFirewall created by terraform",
-						"region_no":                 CHECKSET,
-						"route_mode":                "managed",
-						"cen_id":                    CHECKSET,
-						"firewall_vpc_cidr":         CHECKSET,
-						"transit_router_id":         CHECKSET,
-						"tr_attachment_master_cidr": CHECKSET,
-						"firewall_name":             CHECKSET,
-						"firewall_subnet_cidr":      CHECKSET,
-						"tr_attachment_slave_cidr":  CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"firewall_name": "${var.firewall_name_update}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"firewall_name": CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"tr_attachment_master_zone", "tr_attachment_slave_zone"},
-			},
-		},
-	})
+  depends_on        = [alicloud_route_table.foo]
+}`, name)
 }
 
 // Test CloudFirewall VpcCenTrFirewall. <<< Resource test cases, automatically generated.

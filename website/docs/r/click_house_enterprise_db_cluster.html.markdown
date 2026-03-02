@@ -20,6 +20,12 @@ For information about Click House Enterprise Db Cluster and how to use it, see [
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_click_house_enterprise_db_cluster&exampleId=8ce07065-3a31-4351-ee77-0e550bbea75663424c64&activeTab=example&spm=docs.r.click_house_enterprise_db_cluster.0.8ce070653a&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -105,6 +111,9 @@ resource "alicloud_click_house_enterprise_db_cluster" "default" {
 }
 ```
 
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_click_house_enterprise_db_cluster&spm=docs.r.click_house_enterprise_db_cluster.example&intl_lang=EN_US)
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -114,8 +123,8 @@ The following arguments are supported:
 * `node_scale_max` - (Optional, Computed, Int, Available since v1.270.0) Maximum value for serverless node auto scaling. Valid values range from 4 to 32 and must be greater than the minimum value.  
 * `node_scale_min` - (Optional, Computed, Int, Available since v1.270.0) The minimum value for serverless node auto-scaling. Valid values: 4–32.
 * `resource_group_id` - (Optional, Computed, Available since v1.270.0) Resource group ID of the cluster.
-* `scale_max` - (Optional) The maximum value for serverless auto scaling. This parameter is not recommended. We recommend that you use NodeCount, NodeScaleMin, and NodeScaleMax to configure auto scaling capabilities.
-* `scale_min` - (Optional) The minimum value for serverless auto scaling. This parameter is not recommended. We recommend that you use NodeCount, NodeScaleMin, and NodeScaleMax to configure auto scaling capabilities.
+* `scale_max` - (Optional, Computed) The maximum value for serverless auto scaling. This parameter is not recommended. We recommend that you use NodeCount, NodeScaleMin, and NodeScaleMax to configure auto scaling capabilities.
+* `scale_min` - (Optional, Computed) The minimum value for serverless auto scaling. This parameter is not recommended. We recommend that you use NodeCount, NodeScaleMin, and NodeScaleMax to configure auto scaling capabilities.
 * `tags` - (Optional, Map, Available since v1.270.0) Tag information.  
 * `vpc_id` - (Optional, ForceNew) The VPC ID.
 * `vswitch_id` - (Optional, ForceNew) vSwitch ID.

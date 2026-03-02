@@ -111,6 +111,7 @@ resource "alicloud_simple_application_server_snapshot" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitSimpleApplicationServerCustomImage(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_simple_application_server_custom_image"].Schema).Data(nil, nil)

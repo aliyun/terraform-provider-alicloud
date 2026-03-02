@@ -437,6 +437,7 @@ resource "alicloud_arms_alert_contact_group" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudARMSDispatchRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(nil, nil)

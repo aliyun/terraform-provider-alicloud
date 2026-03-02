@@ -598,6 +598,7 @@ resource "alicloud_nlb_server_group" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudNlbListener(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_nlb_listener"].Schema).Data(nil, nil)

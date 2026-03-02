@@ -171,6 +171,7 @@ func TestAccAliCloudGPDBAccount_basic1(t *testing.T) {
 	})
 }
 
+// lintignore: R001
 func TestUnitAlicloudGPDBAccount(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_gpdb_account"].Schema).Data(nil, nil)

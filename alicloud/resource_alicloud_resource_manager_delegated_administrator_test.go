@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// lintignore: R001
 func TestUnitAccAliCloudResourceManagerDelegatedAdministrator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_delegated_administrator"].Schema).Data(nil, nil)

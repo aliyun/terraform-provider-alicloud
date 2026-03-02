@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -146,41 +147,45 @@ func resourceAliCloudDataWorksDataSourceRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	if objectRaw["ConnectionProperties"] != nil {
-		d.Set("connection_properties", objectRaw["ConnectionProperties"])
+	if v, ok := objectRaw["ConnectionProperties"]; ok {
+		connPropJson, err := json.Marshal(v)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("connection_properties", string(connPropJson))
 	}
-	if objectRaw["ConnectionPropertiesMode"] != nil {
-		d.Set("connection_properties_mode", objectRaw["ConnectionPropertiesMode"])
+	if v, ok := objectRaw["ConnectionPropertiesMode"]; ok {
+		d.Set("connection_properties_mode", v)
 	}
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
+	if v, ok := objectRaw["CreateTime"]; ok {
+		d.Set("create_time", v)
 	}
-	if objectRaw["CreateUser"] != nil {
-		d.Set("create_user", objectRaw["CreateUser"])
+	if v, ok := objectRaw["CreateUser"]; ok {
+		d.Set("create_user", v)
 	}
-	if objectRaw["Name"] != nil {
-		d.Set("data_source_name", objectRaw["Name"])
+	if v, ok := objectRaw["Name"]; ok {
+		d.Set("data_source_name", v)
 	}
-	if objectRaw["Description"] != nil {
-		d.Set("description", objectRaw["Description"])
+	if v, ok := objectRaw["Description"]; ok {
+		d.Set("description", v)
 	}
-	if objectRaw["ModifyTime"] != nil {
-		d.Set("modify_time", objectRaw["ModifyTime"])
+	if v, ok := objectRaw["ModifyTime"]; ok {
+		d.Set("modify_time", v)
 	}
-	if objectRaw["ModifyUser"] != nil {
-		d.Set("modify_user", objectRaw["ModifyUser"])
+	if v, ok := objectRaw["ModifyUser"]; ok {
+		d.Set("modify_user", v)
 	}
-	if objectRaw["QualifiedName"] != nil {
-		d.Set("qualified_name", objectRaw["QualifiedName"])
+	if v, ok := objectRaw["QualifiedName"]; ok {
+		d.Set("qualified_name", v)
 	}
-	if objectRaw["Type"] != nil {
-		d.Set("type", objectRaw["Type"])
+	if v, ok := objectRaw["Type"]; ok {
+		d.Set("type", v)
 	}
-	if objectRaw["Id"] != nil {
-		d.Set("data_source_id", objectRaw["Id"])
+	if v, ok := objectRaw["Id"]; ok {
+		d.Set("data_source_id", v)
 	}
-	if objectRaw["ProjectId"] != nil {
-		d.Set("project_id", objectRaw["ProjectId"])
+	if v, ok := objectRaw["ProjectId"]; ok {
+		d.Set("project_id", v)
 	}
 
 	return nil

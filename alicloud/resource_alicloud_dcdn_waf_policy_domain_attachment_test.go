@@ -96,6 +96,7 @@ resource "alicloud_dcdn_waf_policy" "default" {
 `, name, rand)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dcdn_waf_policy_domain_attachment"].Schema).Data(nil, nil)

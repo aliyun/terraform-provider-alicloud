@@ -51,7 +51,6 @@ func resourceAlicloudResourceManagerPolicyVersion() *schema.Resource {
 			"version_id": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 				Removed:  "Field 'version_id' has been removed from provider version 1.100.0.",
 			},
 		},

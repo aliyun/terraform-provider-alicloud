@@ -494,6 +494,7 @@ func dataSourceAlicloudEmrClusters() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"user_defined_emr_ecs_role": {
 							Type:     schema.TypeString,

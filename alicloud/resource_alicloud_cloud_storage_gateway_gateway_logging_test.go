@@ -154,6 +154,7 @@ resource "alicloud_log_store" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCloudStorageGatewayGatewayLogging(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_logging"].Schema).Data(nil, nil)

@@ -109,6 +109,7 @@ resource "alicloud_cen_transit_router" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudCENTrafficMarkingPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cen_traffic_marking_policy"].Schema).Data(nil, nil)

@@ -202,6 +202,7 @@ resource "alicloud_vpc" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudVpcIpv4Gateway(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpc_ipv4_gateway"].Schema).Data(nil, nil)

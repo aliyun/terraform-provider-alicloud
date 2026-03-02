@@ -161,33 +161,44 @@ resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cen_id` - (Required, ForceNew) The ID of the CEN instance.
-* `firewall_description` - (Optional, ForceNew) Firewall description.
-* `firewall_name` - (Required) The name of Cloud Firewall.
-* `firewall_subnet_cidr` - (Required, ForceNew) Required in automatic mode, the CIDR of subnet used to store the firewall ENI in the firewall VPC.
-* `firewall_vpc_cidr` - (Required, ForceNew) Required in automatic mode,  th CIDR of firewall VPC.
+* `cen_id` - (Required, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
+* `firewall_description` - (Optional, ForceNew) The description of the firewall.
+* `firewall_name` - (Required) The name of the Cloud Firewall.
+* `firewall_subnet_cidr` - (Required, ForceNew) The CIDR block of the subnet in the firewall VPC that hosts the firewall ENI in automatic mode.
+* `firewall_vpc_cidr` - (Required, ForceNew) The CIDR block of the firewall VPC in automatic mode.
 * `region_no` - (Required, ForceNew) The region ID of the transit router instance.
-* `route_mode` - (Required, ForceNew) The routing pattern. Value: managed: indicates automatic mode
+* `route_mode` - (Required, ForceNew) The routing mode. Valid values:
+  - `managed`: indicates automatic mode.
+  - `manual`: indicates manual mode.
 
-* `tr_attachment_master_cidr` - (Required, ForceNew) Required in automatic mode, the primary CIDR of network used to connect to the TR in the firewall VPC.
-* `tr_attachment_master_zone` - (Optional) The primary zone of the switch.
+ ~> **NOTE:**  If this parameter is not specified, VPC border firewalls in all routing modes are queried.
 
-* `tr_attachment_slave_cidr` - (Required, ForceNew) Required in automatic mode, the the secondary CIDR of the subnet in the firewall VPC used to connect to TR.
-* `tr_attachment_slave_zone` - (Optional) Switch standby area.
+* `tr_attachment_master_cidr` - (Required, ForceNew) The primary CIDR block of the subnet in the firewall VPC used to connect to the transit router (TR) in automatic mode.
+* `tr_attachment_master_zone` - (Optional) The primary zone of the vSwitch.
+ 
+ ~> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-* `transit_router_id` - (Required, ForceNew) The ID of the transit router instance.
+* `tr_attachment_slave_cidr` - (Required, ForceNew) The secondary CIDR block of the subnet in the firewall VPC used to connect to TR in automatic mode.
+* `tr_attachment_slave_zone` - (Optional) The secondary zone of the vSwitch.
+
+ ~> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
+* `transit_router_id` - (Required, ForceNew) The ID of the Transit Router instance.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `status` - Firewall status. Value:
+* `id` - The ID of the resource supplied above. 
+* `firewall_eni_id` - The ID of the firewall ENI.
+* `firewall_eni_vpc_id` - The ID of the VPC where the firewall ENI resides.
+* `firewall_vpc_attachment_id` - The ID of the firewall VPC connection.
+* `status` - The status of the firewall.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Vpc Cen Tr Firewall.
-* `delete` - (Defaults to 5 mins) Used when delete the Vpc Cen Tr Firewall.
+* `create` - (Defaults to 41 mins) Used when create the Vpc Cen Tr Firewall.
+* `delete` - (Defaults to 46 mins) Used when delete the Vpc Cen Tr Firewall.
 * `update` - (Defaults to 5 mins) Used when update the Vpc Cen Tr Firewall.
 
 ## Import
@@ -195,5 +206,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 Cloud Firewall Vpc Cen Tr Firewall can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cloud_firewall_vpc_cen_tr_firewall.example <id>
+$ terraform import alicloud_cloud_firewall_vpc_cen_tr_firewall.example <firewall_id>
 ```

@@ -331,6 +331,7 @@ resource "alicloud_resource_manager_resource_group" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCmsMonitorGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_monitor_group"].Schema).Data(nil, nil)

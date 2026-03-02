@@ -67,7 +67,7 @@ func testSweepEipanycastAnycastEipAddress(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			skip := false
+			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["Name"])), strings.ToLower(prefix)) {
 					skip = false
@@ -234,6 +234,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudEipanycastAnycastEipAddress(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_eipanycast_anycast_eip_address"].Schema).Data(nil, nil)

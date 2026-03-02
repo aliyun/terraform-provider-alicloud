@@ -80,6 +80,12 @@ func resourceAliCloudEhpcClusterV2() *schema.Resource {
 				MaxItems:  1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"key_pair_name": {
+							Type:      schema.TypeString,
+							Optional:  true,
+							ForceNew:  true,
+							Sensitive: true,
+						},
 						"password": {
 							Type:      schema.TypeString,
 							Optional:  true,
@@ -516,12 +522,13 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	if v, ok := d.GetOkExists("deletion_protection"); ok {
-		request["DeletionProtection"] = v
-	}
 	clusterCredentials := make(map[string]interface{})
 
 	if v := d.Get("cluster_credentials"); v != nil {
+		keyPairName1, _ := jsonpath.Get("$[0].key_pair_name", v)
+		if keyPairName1 != nil && keyPairName1 != "" {
+			clusterCredentials["KeyPairName"] = keyPairName1
+		}
 		password1, _ := jsonpath.Get("$[0].password", v)
 		if password1 != nil && password1 != "" {
 			clusterCredentials["Password"] = password1
@@ -534,6 +541,9 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 		request["ClusterCredentials"] = string(clusterCredentialsJson)
 	}
 
+	if v, ok := d.GetOkExists("deletion_protection"); ok {
+		request["DeletionProtection"] = v
+	}
 	if v, ok := d.GetOk("cluster_vswitch_id"); ok {
 		request["ClusterVSwitchId"] = v
 	}

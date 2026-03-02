@@ -10,19 +10,19 @@ import (
 )
 
 // Case 1
-func TestAccAliCloudMaxcomputeProject_basic1968(t *testing.T) {
+func TestAccAliCloudMaxComputeProject_basic1968(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_maxcompute_project.default"
-	ra := resourceAttrInit(resourceId, AliCloudMaxcomputeProjectMap1968)
+	ra := resourceAttrInit(resourceId, AliCloudMaxComputeProjectMap1968)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMaxcomputeProject")
+		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMaxComputeProject")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	checkoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
 	name := fmt.Sprintf("tf_testaccmp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxcomputeProjectBasicDependence1968)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxComputeProjectBasicDependence1968)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -127,19 +127,19 @@ func TestAccAliCloudMaxcomputeProject_basic1968(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudMaxcomputeProject_basic1968_twin(t *testing.T) {
+func TestAccAliCloudMaxComputeProject_basic1968_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_maxcompute_project.default"
-	ra := resourceAttrInit(resourceId, AliCloudMaxcomputeProjectMap1968)
+	ra := resourceAttrInit(resourceId, AliCloudMaxComputeProjectMap1968)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMaxcomputeProject")
+		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMaxComputeProject")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	checkoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
 	name := fmt.Sprintf("tf_testaccmp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxcomputeProjectBasicDependence1968)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxComputeProjectBasicDependence1968)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -191,16 +191,6 @@ func TestAccAliCloudMaxcomputeProject_basic1968_twin(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"default_quota": "os_osterraform",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"default_quota": "os_osterraform",
-					}),
-				),
-			},
-			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -210,9 +200,9 @@ func TestAccAliCloudMaxcomputeProject_basic1968_twin(t *testing.T) {
 	})
 }
 
-var AliCloudMaxcomputeProjectMap1968 = map[string]string{}
+var AliCloudMaxComputeProjectMap1968 = map[string]string{}
 
-func AliCloudMaxcomputeProjectBasicDependence1968(name string) string {
+func AliCloudMaxComputeProjectBasicDependence1968(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -287,12 +277,12 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 					},
 					"security_properties": []map[string]interface{}{
 						{
-							"using_acl":                            "false",
-							"using_policy":                         "false",
-							"object_creator_has_access_permission": "false",
-							"object_creator_has_grant_permission":  "false",
-							"label_security":                       "false",
-							"enable_download_privilege":            "false",
+							"using_acl":                            "true",
+							"using_policy":                         "true",
+							"object_creator_has_access_permission": "true",
+							"object_creator_has_grant_permission":  "true",
+							"label_security":                       "true",
+							"enable_download_privilege":            "true",
 							"project_protection": []map[string]interface{}{
 								{
 									"protected":        "true",

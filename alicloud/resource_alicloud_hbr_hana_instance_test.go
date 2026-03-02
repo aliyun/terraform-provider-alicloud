@@ -247,6 +247,7 @@ var AlicloudHBRHanaInstanceMap1 = map[string]string{
 	"vault_id":         CHECKSET,
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudHbrHanaInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_hana_instance"].Schema).Data(nil, nil)

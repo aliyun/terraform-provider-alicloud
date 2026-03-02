@@ -603,6 +603,7 @@ func (dsa *dataSourceAttr) checkDataSourceAttr(rand int) (exist, empty resourceA
 }
 
 // according to configs generate step list and execute the test
+// lintignore: AT001
 func (dsa *dataSourceAttr) dataSourceTestCheck(t *testing.T, rand int, configs ...dataSourceTestAccConfig) {
 	var steps []resource.TestStep
 	for _, conf := range configs {
@@ -618,6 +619,7 @@ func (dsa *dataSourceAttr) dataSourceTestCheck(t *testing.T, rand int, configs .
 }
 
 // according to configs generate step list and execute the test with preCheck
+// lintignore: AT001
 func (dsa *dataSourceAttr) dataSourceTestCheckWithPreCheck(t *testing.T, rand int, preCheck func(), configs ...dataSourceTestAccConfig) {
 	var steps []resource.TestStep
 	for _, conf := range configs {

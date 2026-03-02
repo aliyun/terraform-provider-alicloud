@@ -1,5 +1,5 @@
 ---
-subcategory: "SSL Certificates"
+subcategory: "Certificate Management Service (Original SSL Certificate)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ssl_certificates_service_pca_certificate"
 description: |-

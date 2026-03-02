@@ -3,14 +3,16 @@ subcategory: "Log Service (SLS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_sls_scheduled_sql"
 description: |-
-  Provides a Alicloud SLS Scheduled SQL resource.
+  Provides a Alicloud Log Service (SLS) Scheduled Sql resource.
 ---
 
 # alicloud_sls_scheduled_sql
 
-Provides a SLS Scheduled SQL resource. Scheduled SQL task.
+Provides a Log Service (SLS) Scheduled Sql resource.
 
-For information about SLS Scheduled SQL and how to use it, see [What is Scheduled SQL](https://www.alibabacloud.com/help/zh/sls/developer-reference/api-sls-2020-12-30-createscheduledsql).
+Scheduled SQL task.
+
+For information about Log Service (SLS) Scheduled Sql and how to use it, see [What is Scheduled Sql](https://www.alibabacloud.com/help/zh/sls/developer-reference/api-sls-2020-12-30-createscheduledsql).
 
 -> **NOTE:** Available since v1.224.0.
 
@@ -84,64 +86,75 @@ resource "alicloud_sls_scheduled_sql" "default" {
 }
 ```
 
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_scheduled_sql&spm=docs.r.sls_scheduled_sql.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional) Task Description.
-* `display_name` - (Required) Task Display Name.
-* `project` - (Required, ForceNew) Log project.
-* `schedule` - (Required, ForceNew) The scheduling type is generally not required by default. If there is a strong timing requirement, if it must be imported every Monday at 8 o'clock, cron can be used. See [`schedule`](#schedule) below.
-* `scheduled_sql_configuration` - (Required, ForceNew) Task Configuration. See [`scheduled_sql_configuration`](#scheduled_sql_configuration) below.
-* `scheduled_sql_name` - (Required, ForceNew) Timed SQL name.
+* `description` - (Optional) Job description.
+* `display_name` - (Required) Task display name.
+* `project` - (Required, ForceNew) A short description of struct.
+* `schedule` - (Required, ForceNew, Set) Schedule type. This field generally does not need to be specified. If you have strict scheduling requirements—for example, running an import job every Monday at 8:00 AM—you can use a cron expression. See [`schedule`](#schedule) below.
+* `scheduled_sql_configuration` - (Required, ForceNew, Set) Task configuration. See [`scheduled_sql_configuration`](#scheduled_sql_configuration) below.
+* `scheduled_sql_name` - (Required, ForceNew) The job name. The naming rules are as follows:
+  - Job names must be unique within the same project.
+  - The name can contain only lowercase letters, digits, hyphens (-), and underscores (_).
+  - The name must start and end with a lowercase letter or digit.
+  - The length must be between 2 and 64 characters.
+* `status` - (Optional, Computed, Available since v1.271.0) The status of the scheduled SQL job.
 
 ### `schedule`
 
 The schedule supports the following:
-* `cron_expression` - (Optional) Cron expression, minimum precision is minutes, 24-hour clock. For example, 0 0/1 **indicates that the check is performed every one hour from 00:00. When type is set to Cron, cronExpression must be set.
-* `delay` - (Optional) Delay time.
-* `interval` - (Optional) Time interval, such as 5m, 1H.
-* `run_immediately` - (Optional) Whether to execute the OSS import task immediately after it is created.
-* `time_zone` - (Optional) Time Zone.
-* `type` - (Optional) Check the frequency type. Log Service checks the query and analysis results based on the frequency you configured. The value is as follows: FixedRate: checks the query and analysis results at fixed intervals. Cron: specifies a time interval through a Cron expression, and checks the query and analysis results at the specified time interval. Weekly: Check the query and analysis results at a fixed point in time on the day of the week. Daily: checks the query and analysis results at a fixed time point every day. Hourly: Check query and analysis results every hour.
+* `cron_expression` - (Optional) Cron expression with a minimum precision of minutes in 24-hour format. For example, 0 0/1 * * * means checking once every hour starting from 00:00. When type is set to Cron, cronExpression must be specified.
+* `delay` - (Optional, Int) Delay duration.
+* `interval` - (Optional) Time interval, such as 5m or 1h.
+* `run_immediately` - (Optional) Specifies whether to run the OSS import job immediately after it is created.
+* `time_zone` - (Optional) Time zone.
+* `type` - (Optional) The check frequency type. Log Service checks query and analysis results based on the frequency you configure. Valid values:
+FixedRate: Checks query and analysis results at fixed intervals.
+Cron: Uses a cron expression to specify the interval and checks query and analysis results accordingly.
+Weekly: Checks query and analysis results once at a fixed time on a specific day of the week.
+Daily: Checks query and analysis results once at a fixed time each day.
+Hourly: Checks query and analysis results once every hour.
 
 ### `scheduled_sql_configuration`
 
 The scheduled_sql_configuration supports the following:
-* `data_format` - (Optional, ForceNew) Write Mode.
-* `dest_endpoint` - (Optional) Target Endpoint.
-* `dest_logstore` - (Optional) Target Logstore.
-* `dest_project` - (Optional) Target Project.
-* `dest_role_arn` - (Optional) Write target role ARN.
-* `from_time` - (Optional, ForceNew) Schedule Start Time.
-* `from_time_expr` - (Optional) SQL time window-start.
-* `max_retries` - (Optional) Maximum retries.
-* `max_run_time_in_seconds` - (Optional) SQL timeout.
+* `data_format` - (Optional, ForceNew) Write mode.  
+* `dest_endpoint` - (Optional) The destination endpoint.
+* `dest_logstore` - (Optional) The destination Logstore.
+* `dest_project` - (Optional) The destination project.
+* `dest_role_arn` - (Optional) Destination write role ARN.  
+* `from_time` - (Optional, ForceNew, Int) The start time of the schedule.
+* `from_time_expr` - (Optional) SQL time window - start.  
+* `max_retries` - (Optional, Int) Maximum number of retries.
+* `max_run_time_in_seconds` - (Optional, Int) SQL timeout.  
 * `parameters` - (Optional, Map) Parameter configuration.
-* `resource_pool` - (Optional) Resource Pool.
-* `role_arn` - (Optional) Read role ARN.
+* `resource_pool` - (Optional) Resource pool.  
+* `role_arn` - (Optional) Source read role ARN.  
 * `script` - (Optional) SQL statement.
-* `source_logstore` - (Optional, ForceNew) Source Logstore.
+* `source_logstore` - (Optional, ForceNew) The source Logstore.
 * `sql_type` - (Optional) SQL type.
-* `to_time` - (Optional, ForceNew) Time at end of schedule.
-* `to_time_expr` - (Optional) SQL time window-end.
+* `to_time` - (Optional, ForceNew, Int) Scheduled end time.  
+* `to_time_expr` - (Optional) End of the SQL time window.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<project>:<scheduled_sql_name>`.
+* `id` - The ID of the resource supplied above. The value is formulated as `<project>:<scheduled_sql_name>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Scheduled SQL.
-* `delete` - (Defaults to 5 mins) Used when delete the Scheduled SQL.
-* `update` - (Defaults to 5 mins) Used when update the Scheduled SQL.
+* `create` - (Defaults to 5 mins) Used when create the Scheduled Sql.
+* `delete` - (Defaults to 5 mins) Used when delete the Scheduled Sql.
+* `update` - (Defaults to 5 mins) Used when update the Scheduled Sql.
 
 ## Import
 
-SLS Scheduled SQL can be imported using the id, e.g.
+Log Service (SLS) Scheduled Sql can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_sls_scheduled_sql.example <project>:<scheduled_sql_name>

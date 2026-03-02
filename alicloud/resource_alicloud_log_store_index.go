@@ -52,6 +52,7 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 				Optional: true,
 			},
 
+			// lintignore: S018
 			"full_text": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -252,7 +253,7 @@ func resourceAlicloudLogStoreIndexRead(d *schema.ResourceData, meta interface{})
 	d.Set("log_reduce", index.LogReduce)
 	d.Set("log_reduce_black_list", index.LogReduceBlackListDict)
 	d.Set("log_reduce_white_list", index.LogReduceWhiteListDict)
-	d.Set("max_text_len", index.MaxTextLen)
+	d.Set("max_text_len", int(index.MaxTextLen))
 	if line := index.Line; line != nil {
 		mapping := map[string]interface{}{
 			"case_sensitive":  line.CaseSensitive,

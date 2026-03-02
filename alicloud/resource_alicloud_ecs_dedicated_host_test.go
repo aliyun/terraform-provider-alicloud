@@ -172,6 +172,7 @@ func TestAccAlicloudECSDedicatedHost_basic1(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -294,6 +295,7 @@ func EcsDedicatedHostBasicdependence(name string) string {
 `)
 }
 
+// lintignore: R001
 func TestUnitAlicloudECSDedicatedHost(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecs_dedicated_host"].Schema).Data(nil, nil)

@@ -257,6 +257,7 @@ resource "alicloud_mhub_product" "default"{
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudMHUBApp(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.MHUBSupportRegions)
 	p := Provider().(*schema.Provider).ResourcesMap

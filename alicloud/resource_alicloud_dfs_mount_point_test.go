@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// lintignore: R001
 func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(nil, nil)

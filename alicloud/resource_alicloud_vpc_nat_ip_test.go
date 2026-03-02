@@ -193,6 +193,7 @@ resource "alicloud_vpc_nat_ip_cidr" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVPCNatIp(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_nat_ip"].Schema).Data(nil, nil)

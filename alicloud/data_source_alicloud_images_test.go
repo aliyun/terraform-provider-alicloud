@@ -290,7 +290,7 @@ func TestAccAlicloudECSImagesDataSource_linux(t *testing.T) {
 	imagesCheckInfo.dataSourceTestCheck(t, rand, ubuntuConf, openSuseConf, freebsdConf, centOsConf, debianConf, aliyunConf)
 }
 
-func TestAccAlicloudECSImagesDataSource_ImageOwnerId(t *testing.T) {
+func TestAccAlicloudECSImagesDataSource_imageOwnerId(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_images.default"
 

@@ -135,6 +135,7 @@ func resourceAliCloudEsaLoadBalancer() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						// lintignore: S006
 						"pool_weights": {
 							Type:     schema.TypeMap,
 							Optional: true,

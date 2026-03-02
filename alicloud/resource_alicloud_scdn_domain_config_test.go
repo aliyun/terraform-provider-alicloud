@@ -209,6 +209,7 @@ var scdnDomainConfigBasicMap = map[string]string{
 	"status":    "success",
 }
 
+// lintignore: R001
 func TestUnitAlicloudScdnDomainConfig(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_scdn_domain_config"].Schema).Data(nil, nil)

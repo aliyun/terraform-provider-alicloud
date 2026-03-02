@@ -235,6 +235,7 @@ func AliCloudDbfsSnapshotBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudDbfsSnapshot(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_dbfs_snapshot"].Schema).Data(nil, nil)

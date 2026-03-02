@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func SkipTestAccAliCloudCddcDedicatedPropreHost_basic4362(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_propre_host.default"
@@ -181,6 +182,7 @@ locals {
 }
 
 // Case 4363
+// lintignore: AT001
 func SkipTestAccAliCloudCddcDedicatedPropreHost_basic4363(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_propre_host.default"

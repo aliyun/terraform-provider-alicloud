@@ -326,6 +326,75 @@ func TestAccAliCloudConfigRule_status(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudConfigRule_fixbug(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_rule.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigRuleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccConfigRule%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigRuleBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_name":                       name,
+					"risk_level":                      "1",
+					"scope_compliance_resource_types": "ACS::ECS::Instance",
+					"config_rule_trigger_types":       "ConfigurationItemChangeNotification",
+					"source_identifier":               "ecs-instances-in-vpc",
+					"source_owner":                    "ALIYUN",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_name":                       name,
+						"risk_level":                      "1",
+						"scope_compliance_resource_types": "ACS::ECS::Instance",
+						"config_rule_trigger_types":       "ConfigurationItemChangeNotification",
+						"source_identifier":               "ecs-instances-in-vpc",
+						"source_owner":                    "ALIYUN",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "INACTIVE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "INACTIVE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "ACTIVE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "ACTIVE",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
+
 var AliCloudConfigRuleMap0 = map[string]string{}
 
 func AliCloudConfigRuleBasicDependence0(name string) string {
@@ -906,6 +975,7 @@ resource "alicloud_resource_manager_resource_group" "example" {
 
 // Test Config Rule. <<< Resource test cases, automatically generated.
 
+// lintignore: R001
 func TestUnitAliCloudConfigRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_rule"].Schema).Data(nil, nil)

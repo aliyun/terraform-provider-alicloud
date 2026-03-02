@@ -32,6 +32,7 @@ func TestAccAlicloudSASServiceLinkedRole_basic0(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{}),
@@ -56,6 +57,7 @@ func testAccCheckAlicloudSecurityCenterServiceLinkedRoleDependence(name string) 
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudSASServiceLinkedRole(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_security_center_service_linked_role"].Schema).Data(nil, nil)

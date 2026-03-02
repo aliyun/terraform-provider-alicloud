@@ -189,6 +189,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudDcdnWafPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dcdn_waf_policy"].Schema).Data(nil, nil)

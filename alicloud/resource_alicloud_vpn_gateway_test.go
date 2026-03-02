@@ -388,6 +388,7 @@ func TestAccAliCloudVPNGateway_basic2(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -518,6 +519,7 @@ func TestAccAliCloudVPNGateway_basic3(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -615,6 +617,7 @@ func TestAccAliCloudVPNGateway_basic4(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -720,6 +723,7 @@ resource "alicloud_vswitch" "default1" {
 
 // Test VPNGateway VPNGateway. >>> Resource test cases, automatically generated.
 // Case 5658
+// lintignore: AT001
 func TestAccAliCloudVPNGatewayVPNGateway_basic5658(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_gateway.default"
@@ -895,6 +899,7 @@ data "alicloud_vswitches" "default1" {
 }
 
 // Case 5485
+// lintignore: AT001
 func TestAccAliCloudVPNGatewayVPNGateway_basic5485(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_gateway.default"
@@ -1052,6 +1057,7 @@ data "alicloud_vswitches" "default1" {
 }
 
 // Case 5632
+// lintignore: AT001
 func TestAccAliCloudVPNGatewayVPNGateway_basic5632(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_gateway.default"
@@ -1209,6 +1215,7 @@ data "alicloud_vswitches" "default1" {
 }
 
 // Case 3671
+// lintignore: AT001
 func TestAccAliCloudVPNGatewayVPNGateway_basic3671(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_gateway.default"
@@ -1512,6 +1519,7 @@ data "alicloud_vswitches" "default1" {
 }
 
 // Case 5489
+// lintignore: AT001
 func TestAccAliCloudVPNGatewayVPNGateway_basic5489(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_gateway.default"
@@ -1672,6 +1680,7 @@ data "alicloud_vswitches" "default1" {
 }
 
 // Case 5488
+// lintignore: AT001
 func TestAccAliCloudVPNGatewayVPNGateway_basic5488(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_gateway.default"

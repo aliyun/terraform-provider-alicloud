@@ -10,6 +10,7 @@ import (
 )
 
 // Case HttpsCofig测试 6361
+// lintignore: AT001
 func TestAccAliCloudOssBucketHttpsConfig_basic6361(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_https_config.default"
@@ -108,6 +109,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 }
 
 // Case HttpsCofig测试 6361  twin
+// lintignore: AT001
 func TestAccAliCloudOssBucketHttpsConfig_basic6361_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_https_config.default"
@@ -165,6 +167,7 @@ func TestAccAliCloudOssBucketHttpsConfig_basic6361_twin(t *testing.T) {
 }
 
 // Case CipherSuit测试
+// lintignore: AT001
 func TestAccAliCloudOssBucketHttpsConfig_cipherSuit(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_https_config.default"

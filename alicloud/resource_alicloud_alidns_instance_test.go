@@ -78,6 +78,7 @@ func resourceAlidnsInstanceConfigDependence(name string) string {
 
 var AlidnsInstanceBasicMap = map[string]string{}
 
+// lintignore: R001
 func TestUnitAlicloudAlidnsInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alidns_instance"].Schema).Data(nil, nil)

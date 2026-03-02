@@ -118,6 +118,7 @@ func testSweepConfigAggregator(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudConfigAggregator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_aggregator"].Schema).Data(nil, nil)

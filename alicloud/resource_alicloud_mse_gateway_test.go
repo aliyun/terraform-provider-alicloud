@@ -248,6 +248,7 @@ data "alicloud_vswitches" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudMSEGateway(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_mse_gateway"].Schema).Data(nil, nil)

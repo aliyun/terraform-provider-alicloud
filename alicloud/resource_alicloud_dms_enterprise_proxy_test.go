@@ -137,6 +137,7 @@ resource "alicloud_dms_enterprise_instance" "default" {
 `, name, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudDmsEnterpriseProxy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dms_enterprise_proxy"].Schema).Data(nil, nil)

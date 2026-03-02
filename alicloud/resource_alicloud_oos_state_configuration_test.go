@@ -329,6 +329,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudOOSStateConfiguration(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_oos_state_configuration"].Schema).Data(nil, nil)

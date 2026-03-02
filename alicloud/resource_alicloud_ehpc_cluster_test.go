@@ -388,6 +388,7 @@ data "alicloud_images" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudEhpcCluster(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ehpc_cluster"].Schema).Data(nil, nil)

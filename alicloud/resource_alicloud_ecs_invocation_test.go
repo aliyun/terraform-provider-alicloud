@@ -253,6 +253,7 @@ func AliCloudECSInvocationBasicDependence1(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudECSInvocation(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecs_invocation"].Schema).Data(nil, nil)

@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 	var v yundun_bastionhost.Instance
 	resourceId := "alicloud_bastionhost_instance.default"
@@ -30,7 +31,6 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -293,6 +293,7 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 	var v yundun_bastionhost.Instance
 	resourceId := "alicloud_bastionhost_instance.default"
@@ -313,7 +314,6 @@ func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -78,20 +78,20 @@ func testSweepNlbLoadBalancer(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 
+			lbName := ""
+			if item["LoadBalancerName"] != nil {
+				lbName = fmt.Sprint(item["LoadBalancerName"])
+			}
+
 			skip := true
 			if !sweepAll() {
 				for _, prefix := range prefixes {
-
-					if item["LoadBalancerName"] == nil {
-						item["LoadBalancerName"] = ""
-					}
-
-					if strings.HasPrefix(strings.ToLower(item["LoadBalancerName"].(string)), strings.ToLower(prefix)) {
+					if strings.HasPrefix(strings.ToLower(lbName), strings.ToLower(prefix)) {
 						skip = false
 					}
 				}
 				if skip {
-					log.Printf("[INFO] Skipping Nlb Load Balancer: %s", item["LoadBalancerName"].(string))
+					log.Printf("[INFO] Skipping Nlb Load Balancer: %s", lbName)
 					continue
 				}
 			}
@@ -107,9 +107,9 @@ func testSweepNlbLoadBalancer(region string) error {
 			request["DeletionProtectionEnabled"] = "false"
 			_, err = aliyunClient.RpcPost("Nlb", "2022-04-30", action, nil, request, true)
 			if err != nil {
-				log.Printf("[ERROR] Failed to UpdateLoadBalancerProtection Nlb Load Balancer (%s): %s", item["LoadBalancerName"].(string), err)
+				log.Printf("[ERROR] Failed to UpdateLoadBalancerProtection Nlb Load Balancer (%s): %s", lbName, err)
 			}
-			log.Printf("[INFO] UpdateLoadBalancerProtection Nlb Load Balancer success: %s ", item["LoadBalancerName"].(string))
+			log.Printf("[INFO] UpdateLoadBalancerProtection Nlb Load Balancer success: %s ", lbName)
 
 			action = "DeleteLoadBalancer"
 			request := map[string]interface{}{
@@ -118,9 +118,9 @@ func testSweepNlbLoadBalancer(region string) error {
 			}
 			_, err = aliyunClient.RpcPost("Nlb", "2022-04-30", action, nil, request, false)
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Nlb Load Balancer (%s): %s", item["LoadBalancerName"].(string), err)
+				log.Printf("[ERROR] Failed to delete Nlb Load Balancer (%s): %s", lbName, err)
 			}
-			log.Printf("[INFO] Delete Nlb Load Balancer success: %s ", item["LoadBalancerName"].(string))
+			log.Printf("[INFO] Delete Nlb Load Balancer success: %s ", lbName)
 		}
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
@@ -553,6 +553,7 @@ var AlicloudNLBLoadBalancerMap1 = map[string]string{
 	"load_balancer_name": CHECKSET,
 }
 
+// lintignore: R001
 func TestUnitAlicloudNlbLoadBalancer(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_nlb_load_balancer"].Schema).Data(nil, nil)

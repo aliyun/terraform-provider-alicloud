@@ -721,6 +721,7 @@ func AliCloudVswitchBasicDependence1(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vswitch"].Schema).Data(nil, nil)

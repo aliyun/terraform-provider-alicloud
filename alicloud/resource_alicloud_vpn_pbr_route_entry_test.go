@@ -38,6 +38,7 @@ func TestAccAlicloudVPNPbrRouteEntry_basic0(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -198,6 +199,7 @@ resource "alicloud_vpn_connection" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVPNPbrRouteEntry(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpn_pbr_route_entry"].Schema).Data(nil, nil)

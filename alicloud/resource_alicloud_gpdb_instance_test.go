@@ -425,6 +425,7 @@ func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -915,6 +916,7 @@ func AliCloudGPDBDBInstanceBasicDependence2(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudGPDBDBInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_gpdb_instance"].Schema).Data(nil, nil)

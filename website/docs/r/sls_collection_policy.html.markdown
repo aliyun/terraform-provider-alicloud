@@ -3,22 +3,22 @@ subcategory: "Log Service (SLS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_sls_collection_policy"
 description: |-
-  Provides a Alicloud SLS Collection Policy resource.
+  Provides a Alicloud Log Service (SLS) Collection Policy resource.
 ---
 
 # alicloud_sls_collection_policy
 
-Provides a SLS Collection Policy resource.
+Provides a Log Service (SLS) Collection Policy resource.
 
 Orchestration policies for cloud product log collection.
 
-For information about SLS Collection Policy and how to use it, see [What is Collection Policy](https://www.alibabacloud.com/help/zh/sls/developer-reference/api-sls-2020-12-30-upsertcollectionpolicy).
+For information about Log Service (SLS) Collection Policy and how to use it, see [What is Collection Policy](https://www.alibabacloud.com/help/zh/sls/developer-reference/api-sls-2020-12-30-upsertcollectionpolicy).
 
 -> **NOTE:** Available since v1.232.0.
 
 ## Example Usage
 
-Enable real-time log query for all of OSS buckets.
+Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_sls_collection_policy&exampleId=260f3fed-9de1-c582-2eee-b0c0657d8292b81d0b6e&activeTab=example&spm=docs.r.sls_collection_policy.0.260f3fed9d&intl_lang=EN_US" target="_blank">
@@ -157,53 +157,54 @@ resource "alicloud_sls_collection_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `centralize_config` - (Optional, List) Centralized transfer configuration. See [`centralize_config`](#centralize_config) below.
-* `centralize_enabled` - (Optional) Whether to enable centralized Conversion. The default value is false.
-* `data_code` - (Required, ForceNew) Log type encoding.
-* `data_config` - (Optional, ForceNew, List) The configuration is supported only when the log type is global. For example, if the productCode is sls, global logs will be collected to the corresponding region during the first configuration. See [`data_config`](#data_config) below.
-* `enabled` - (Required) Whether to open.
-* `policy_config` - (Required, List) Collection rule configuration. See [`policy_config`](#policy_config) below.
-* `policy_name` - (Required, ForceNew) The name of the rule, with a minimum of 3 characters and a maximum of 63 characters, must start with a letter.
+* `centralize_config` - (Optional, Computed, Set) Centralized forwarding configuration. See [`centralize_config`](#centralize_config) below.
+* `centralize_enabled` - (Optional) Specifies whether to enable centralized forwarding. Default value: false.
+* `data_code` - (Required, ForceNew) Log type code.
+* `data_config` - (Optional, ForceNew, Computed, Set) This parameter can be configured only when the log type is a global log type—for example, when productCode is sls. It indicates that global logs will be collected to the specified region upon initial configuration. See [`data_config`](#data_config) below.
+* `enabled` - (Required) Whether enabled.
+* `policy_config` - (Required, Set) Collection rule configuration. See [`policy_config`](#policy_config) below.
+* `policy_name` - (Required, ForceNew) The naming rules are as follows:
+  - It can contain only lowercase letters, digits, hyphens (-), and underscores (_).
+  - It must start with a letter.
+  - Its length must be between 3 and 63 characters.
 * `product_code` - (Required, ForceNew) Product code.
-* `resource_directory` - (Optional, List) For Resource Directory configuration, the account must have opened the resource directory and be an administrator or a delegated administrator. See [`resource_directory`](#resource_directory) below.
+* `resource_directory` - (Optional, Computed, Set) Resource Directory configuration. The account must have Resource Directory enabled and be either a management account or a delegated administrator. See [`resource_directory`](#resource_directory) below.
 
 ### `centralize_config`
 
 The centralize_config supports the following:
-* `dest_logstore` - (Optional) When the central logstore is transferred to the destination logstore, its geographical attribute should be consistent with the destRegion and belong to the destProject.
-* `dest_project` - (Optional) The geographical attributes of the centralized transfer project should be consistent with the destRegion.
-* `dest_region` - (Optional) Centralized transfer destination area.
-* `dest_ttl` - (Optional, Int) The number of days for the central transfer destination. This is valid only if the central transfer destination log store is not created for the first time.
+* `dest_logstore` - (Optional) Destination Logstore for centralized forwarding. Its region must match destRegion and it must belong to destProject.
+* `dest_project` - (Optional) Destination project for centralized forwarding. Its region must match destRegion.
+* `dest_region` - (Optional) Destination region for centralized forwarding.
+* `dest_ttl` - (Optional, Int) Retention period (in days) for the destination Logstore in centralized forwarding. This setting takes effect only when the destination Logstore is created for the first time.
 
 ### `data_config`
 
 The data_config supports the following:
-* `data_region` - (Optional, ForceNew) If and only if the log type is global log type, for example, if productCode is sls, global logs will be collected to the corresponding region during the first configuration.
+* `data_region` - (Optional, ForceNew) This parameter can be configured only when the log type is a global log type—for example, when productCode is sls. It indicates that global logs will be collected to the specified region upon initial configuration.
 
 ### `policy_config`
 
 The policy_config supports the following:
-* `instance_ids` - (Optional, List) A collection of instance IDs, valid only if resourceMode is instanceMode. Only instances whose instance ID is in the instance ID collection are collected.
-* `regions` - (Optional, List) The region collection to which the instance belongs. Valid only when resourceMode is set to attributeMode. Wildcard characters are supported. If the region collection filter item is an empty array, it means that you do not need to filter by region, and all instances meet the filtering condition of the region collection. Otherwise, only instances with region attributes in the region collection are collected. The region collection and resource label of the instance. The instance objects are collected only when all of them are met.
-* `resource_mode` - (Required) Resource collection mode. If all is configured, all instances under the account will be collected to the default logstore. If attributeMode is configured, filtering will be performed according to the region attribute and resource label of the instance. If instanceMode is configured, filtering will be performed according to the instance ID.
-* `resource_tags` - (Optional, Map) Resource label, valid if and only if resourceMode is attributeMode.
-
-  If the resource label filter item is empty, it means that you do not need to filter by resource label, and all instances meet the resource label filter condition. Otherwise, only instances whose resource label attributes meet the resource label configuration are collected.
-
-  The resource tag and the region collection to which the instance belongs work together. The instance objects are collected only when all of them are met.
+* `instance_ids` - (Optional, List) The set of instance IDs. This parameter is valid only when resourceMode is set to instanceMode. Only instances whose IDs are included in this set are collected.
+* `regions` - (Optional, List) The set of regions to which instances belong. This parameter is valid only when resourceMode is set to attributeMode and supports wildcards. If the region set filter is an empty array, no region-based filtering is applied, and all instances satisfy the region condition. Otherwise, only instances whose region attribute is included in this region set are collected. The region set and resource tags work together. An instance is collected only if it satisfies both conditions.
+* `resource_mode` - (Required) Resource collection mode. If set to all, all instances under the account are collected into the default Logstore. If set to attributeMode, instances are filtered based on their region attributes and resource tags. If set to instanceMode, instances are filtered by their instance IDs.
+* `resource_tags` - (Optional, Map) Resource tags. This parameter is valid only when resourceMode is set to attributeMode.  
+If the resource tag filter is empty, no filtering by resource tags is applied, and all instances satisfy the resource tag condition. Otherwise, only instances whose resource tag attributes fully match the specified resource tag configuration are collected.  
+Resource tags and the region set of the instance work together. An instance is collected only if it satisfies both conditions.
 
 ### `resource_directory`
 
 The resource_directory supports the following:
-* `account_group_type` - (Optional) Support all mode all and custom mode custom under this resource directory
-* `members` - (Optional, List) When the resource directory is configured in the custom mode, the corresponding member account list
+* `account_group_type` - (Optional) Supports the all (select all) mode and custom mode under this Resource Directory.
+* `members` - (Optional, List) The list of member accounts when the Resource Directory is configured in custom mode.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `data_config` - The configuration is supported only when the log type is global. For example, if the productCode is sls, global logs will be collected to the corresponding region during the first configuration.
-  * `data_project` - Valid only when the log type is global. For example, if the productCode is sls, the log is collected to the default dedicated Project of the account in a specific dataRegion.
+* `id` - The ID of the resource supplied above. 
+* `data_config` - This parameter can be configured only when the log type is a global log type—for example, when productCode is sls.
+  * `data_project` - This setting is valid only when the log type is a global log type—for example, when productCode is sls.
 
 ## Timeouts
 
@@ -214,8 +215,8 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-SLS Collection Policy can be imported using the id, e.g.
+Log Service (SLS) Collection Policy can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_sls_collection_policy.example <id>
+$ terraform import alicloud_sls_collection_policy.example <policy_name>
 ```

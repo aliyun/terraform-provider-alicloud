@@ -133,6 +133,7 @@ resource "alicloud_mongodb_instance" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mongodb_account"].Schema).Data(nil, nil)

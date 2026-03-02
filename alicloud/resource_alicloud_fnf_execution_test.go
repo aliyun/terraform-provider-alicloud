@@ -118,6 +118,7 @@ resource "alicloud_fnf_flow" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudFnFExecution(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.FnFSupportRegions)

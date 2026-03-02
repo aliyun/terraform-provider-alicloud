@@ -102,6 +102,7 @@ func testSweepDtsSubscriptionJob(region string) error {
 	return nil
 }
 
+// lintignore: AT001
 func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_subscription_job.default"
@@ -261,6 +262,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_subscription_job.default"

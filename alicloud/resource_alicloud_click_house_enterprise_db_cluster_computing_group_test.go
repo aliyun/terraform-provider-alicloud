@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -10,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Test ClickHouse EnterpriseDbClusterComputingGroup. >>> Resource test cases, automatically generated.
-// Case 线上-企业版CK-多计算组 12417
 func TestAccAliCloudClickHouseEnterpriseDbClusterComputingGroup_basic12417(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_enterprise_db_cluster_computing_group.default"
@@ -98,7 +95,11 @@ func TestAccAliCloudClickHouseEnterpriseDbClusterComputingGroup_basic12417(t *te
 }
 
 var AlicloudClickHouseEnterpriseDbClusterComputingGroupMap12417 = map[string]string{
-	"computing_group_id": CHECKSET,
+	"computing_group_endpoints.#":        CHECKSET,
+	"computing_group_public_endpoints.#": CHECKSET,
+	"computing_group_endpoint_names.#":   CHECKSET,
+	"computing_group_id":                 CHECKSET,
+	"computing_group_status":             CHECKSET,
 }
 
 func AlicloudClickHouseEnterpriseDbClusterComputingGroupBasicDependence12417(name string) string {
@@ -150,15 +151,14 @@ resource "alicloud_vswitch" "defaultkCZhNu" {
 }
 
 resource "alicloud_click_house_enterprise_db_cluster" "defaultQ5vukB" {
-  zone_id    = alicloud_vswitch.defaultkCZhNu.zone_id
-  vpc_id     = alicloud_vpc.defaultp2mwWM.id
-  scale_min  = "8"
-  scale_max  = "8"
-  vswitch_id = alicloud_vswitch.defaultkCZhNu.id
+  zone_id        = alicloud_vswitch.defaultkCZhNu.zone_id
+  vpc_id         = alicloud_vpc.defaultp2mwWM.id
+  node_scale_min = "4"
+  node_scale_max = "4"
+  node_count     = "2"
+  vswitch_id     = alicloud_vswitch.defaultkCZhNu.id
 }
 
 
 `, name)
 }
-
-// Test ClickHouse EnterpriseDbClusterComputingGroup. <<< Resource test cases, automatically generated.

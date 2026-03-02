@@ -17,17 +17,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudECSAutoSnapshotPolicyAttachmentBasic(t *testing.T) {
+func TestAccAliCloudEcsAutoSnapshotPolicyAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_auto_snapshot_policy_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsAutoSnapshotPolicyAttachmentMap)
-	rc := resourceCheckInit(resourceId, &v, func() interface{} {
-		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	})
+	ra := resourceAttrInit(resourceId, AliCloudEcsAutoSnapshotPolicyAttachmentMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsAutoSnapshotPolicyAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAccAlicloudEcsAutoSnapshotPolicyAttachment%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsAutoSnapshotPolicyAttachmentBasicDependence)
+	name := fmt.Sprintf("tf-testAccAliCloudEcsAutoSnapshotPolicyAttachment%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsAutoSnapshotPolicyAttachmentBasicDependence0)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -39,64 +39,56 @@ func TestAccAlicloudECSAutoSnapshotPolicyAttachmentBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"disk_id":                 "${alicloud_ecs_disk.default.id}",
 					"auto_snapshot_policy_id": "${alicloud_ecs_auto_snapshot_policy.default.id}",
+					"disk_id":                 "${alicloud_ecs_disk.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"auto_snapshot_policy_id": CHECKSET,
+						"disk_id":                 CHECKSET,
+					}),
 				),
 			},
 			{
-				ResourceName: resourceId,
-				ImportState:  true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
 }
 
-var AlicloudEcsAutoSnapshotPolicyAttachmentMap = map[string]string{
-	"auto_snapshot_policy_id": CHECKSET,
-	"disk_id":                 CHECKSET,
+var AliCloudEcsAutoSnapshotPolicyAttachmentMap0 = map[string]string{
+	"region_id": CHECKSET,
 }
 
-func AlicloudEcsAutoSnapshotPolicyAttachmentBasicDependence(name string) string {
+func AliCloudEcsAutoSnapshotPolicyAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-			default = "%s"
-		}
+  		default = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
 
 	resource "alicloud_ecs_auto_snapshot_policy" "default" {
-		name              = "var.name"
-		repeat_weekdays   = ["1"]
-		retention_days    =  -1
-		time_points       = ["1"]
-		tags 	 = {
-			Created = "TF"
-			For 	= "acceptance test"
-		}
+  		name            = "var.name"
+  		repeat_weekdays = ["1", "2", "3"]
+  		retention_days  = 1
+  		time_points     = ["1", "2", "3"]
 	}
-	data "alicloud_zones" default {
-	  available_resource_creation = "Instance"
-	}
+
 	resource "alicloud_ecs_disk" "default" {
-		zone_id = "${data.alicloud_zones.default.zones.0.id}"
-		category = "cloud_efficiency"
-		delete_auto_snapshot = "true"
-		description = "Test For Terraform"
-		disk_name = var.name
-		enable_auto_snapshot = "true"
-		encrypted = "true"
-		size = "500"
-		tags = {
-			Created     = "TF"
-			Environment = "Acceptance-test"
-		}
+  		zone_id = data.alicloud_zones.default.zones.0.id
+  		size    = "500"
 	}
-		
 `, name)
 }
 
-func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
+// lintignore: R001
+func TestUnitAliCloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy_attachment"].Schema).Data(nil, nil)
@@ -184,7 +176,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyAttachmentCreate(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyAttachmentCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -201,7 +193,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyAttachmentCreate(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyAttachmentCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -218,7 +210,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyAttachmentCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyAttachmentCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -236,7 +228,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyAttachmentCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyAttachmentCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -254,7 +246,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyAttachmentDelete(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyAttachmentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -271,7 +263,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyAttachmentDelete(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyAttachmentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -288,7 +280,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyAttachmentDelete(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyAttachmentDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -305,7 +297,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyAttachmentRead(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyAttachmentRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -321,7 +313,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicyAttachment(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyAttachmentRead(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyAttachmentRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})

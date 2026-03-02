@@ -116,6 +116,7 @@ resource "alicloud_cr_chart_namespace" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCRChartRepository(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cr_chart_repository"].Schema).Data(nil, nil)

@@ -121,6 +121,7 @@ func AliCloudEcsSessionManagerStatusBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudEcsSessionManagerStatus(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_session_manager_status"].Schema).Data(nil, nil)

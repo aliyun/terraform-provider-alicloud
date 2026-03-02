@@ -30,6 +30,7 @@ func resourceAliCloudEfloExperimentPlan() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			// lintignore: S006
 			"external_params": {
 				Type:     schema.TypeMap,
 				Optional: true,

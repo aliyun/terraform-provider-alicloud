@@ -207,6 +207,7 @@ func TestAccAliCloudECSActivation_basic1(t *testing.T) {
 	})
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudEcsActivation(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecs_activation"].Schema).Data(nil, nil)

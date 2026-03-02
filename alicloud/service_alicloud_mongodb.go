@@ -1544,6 +1544,7 @@ func (s *MongoDBService) ModifyParameters(d *schema.ResourceData, attribute stri
 	return nil
 }
 
+// lintignore: R001
 func (s *MongoDBService) RefreshParameters(d *schema.ResourceData, attribute string) error {
 	var param []map[string]interface{}
 	documented, ok := d.GetOk(attribute)
@@ -1821,4 +1822,179 @@ func (s *MongoDBService) DescribeMongoDBGlobalSecurityGroupIds(id string) (globa
 	}
 
 	return globalSecurityGroupIds, nil
+}
+
+func (s *MongoDBService) DescribeMongoDBRecoverTime(d *schema.ResourceData, id string) (objects []interface{}, err error) {
+	var response map[string]interface{}
+
+	action := "DescribeInstanceRecoverTime"
+
+	if fmt.Sprint(d.Get("instance_type")) == "sharding" {
+		action = "DescribeClusterRecoverTime"
+	}
+
+	client := s.client
+
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.RestoreRanges", response)
+	if err != nil {
+		return objects, nil
+	}
+
+	objects = resp.([]interface{})
+
+	return objects, nil
+}
+
+func (s *MongoDBService) DescribeMongoDBAutoRenewalAttribute(id, instanceType string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeInstanceAutoRenewalAttribute"
+	client := s.client
+	request := map[string]interface{}{
+		"RegionId":       s.client.RegionId,
+		"DBInstanceId":   id,
+		"DBInstanceType": instanceType,
+	}
+
+	idExist := false
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.Items.Item", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.Item", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, nil
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["DbInstanceId"]) == id {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, nil
+	}
+
+	return object, nil
+}
+
+func (s *MongoDBService) DescribeMongoDBRoleZoneInfos(id string) (objects []interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeRoleZoneInfo"
+
+	client := s.client
+
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.ZoneInfos.ZoneInfo", response)
+	if err != nil {
+		return objects, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ZoneInfos.ZoneInfo", response)
+	}
+
+	objects = resp.([]interface{})
+
+	return objects, nil
+}
+
+func (s *MongoDBService) DescribeMongoDBUserEncryptionKeyList(id string) (keyIds []interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeUserEncryptionKeyList"
+
+	client := s.client
+
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return keyIds, nil
+	}
+
+	resp, err := jsonpath.Get("$.KeyIds.KeyId", response)
+	if err != nil {
+		return keyIds, WrapErrorf(err, FailedGetAttributeMsg, id, "$.KeyIds.KeyId", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return keyIds, nil
+	}
+
+	keyIds = resp.([]interface{})
+
+	return keyIds, nil
 }

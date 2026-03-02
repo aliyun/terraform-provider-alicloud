@@ -36,7 +36,7 @@ func TestAccAliCloudDataWorksDataSource_basic8927(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"type":                       "hive",
 					"data_source_name":           name,
-					"connection_properties":      "{   \\\"address\\\": [     {       \\\"host\\\": \\\"127.0.0.1\\\",       \\\"port\\\": \\\"1234\\\"     }   ],   \\\"database\\\": \\\"hive_database\\\",   \\\"metaType\\\": \\\"HiveMetastore\\\",   \\\"metastoreUris\\\": \\\"thrift://123:123\\\",   \\\"version\\\": \\\"2.3.9\\\",   \\\"loginMode\\\": \\\"Anonymous\\\",   \\\"securityProtocol\\\": \\\"authTypeNone\\\",   \\\"envType\\\": \\\"Prod\\\",   \\\"properties\\\": {     \\\"key1\\\": \\\"value1\\\"   } }",
+					"connection_properties":      "{\\\"address\\\":[{\\\"host\\\":\\\"127.0.0.1\\\",\\\"port\\\":\\\"1234\\\"}],\\\"database\\\":\\\"hive_database\\\",\\\"metaType\\\":\\\"HiveMetastore\\\",\\\"metastoreUris\\\":\\\"thrift://123:123\\\",\\\"version\\\":\\\"2.3.9\\\",\\\"loginMode\\\":\\\"Anonymous\\\",\\\"securityProtocol\\\":\\\"authTypeNone\\\",\\\"envType\\\":\\\"Prod\\\",\\\"properties\\\":{\\\"key1\\\":\\\"value1\\\"}}",
 					"connection_properties_mode": "UrlMode",
 					"project_id":                 "${alicloud_data_works_project.defaultkguw4R.id}",
 					"description":                "描述信息-初始状态",
@@ -45,7 +45,7 @@ func TestAccAliCloudDataWorksDataSource_basic8927(t *testing.T) {
 					testAccCheck(map[string]string{
 						"type":                       "hive",
 						"data_source_name":           name,
-						"connection_properties":      "{   \"address\": [     {       \"host\": \"127.0.0.1\",       \"port\": \"1234\"     }   ],   \"database\": \"hive_database\",   \"metaType\": \"HiveMetastore\",   \"metastoreUris\": \"thrift://123:123\",   \"version\": \"2.3.9\",   \"loginMode\": \"Anonymous\",   \"securityProtocol\": \"authTypeNone\",   \"envType\": \"Prod\",   \"properties\": {     \"key1\": \"value1\"   } }",
+						"connection_properties":      "{\"address\":[{\"host\":\"127.0.0.1\",\"port\":\"1234\"}],\"database\":\"hive_database\",\"envType\":\"Prod\",\"loginMode\":\"Anonymous\",\"metaType\":\"HiveMetastore\",\"metastoreUris\":\"thrift://123:123\",\"properties\":{\"key1\":\"value1\"},\"securityProtocol\":\"authTypeNone\",\"version\":\"2.3.9\"}",
 						"connection_properties_mode": "UrlMode",
 						"project_id":                 CHECKSET,
 						"description":                "描述信息-初始状态",
@@ -60,7 +60,7 @@ func TestAccAliCloudDataWorksDataSource_basic8927(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_properties":      "{     \"clusterIdentifier\": \"cdh_cluster\",     \"database\": \"hive_database\",     \"loginMode\": \"Anonymous\",     \"securityProtocol\": \"authTypeNone\",     \"envType\": \"Prod\" }",
+						"connection_properties":      "{\"clusterIdentifier\":\"cdh_cluster\",\"database\":\"hive_database\",\"envType\":\"Prod\",\"loginMode\":\"Anonymous\",\"securityProtocol\":\"authTypeNone\"}",
 						"connection_properties_mode": "CdhMode",
 						"description":                "描述信息-状态1",
 					}),
@@ -74,7 +74,7 @@ func TestAccAliCloudDataWorksDataSource_basic8927(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_properties":      "{   \"address\": [     {       \"host\": \"127.0.0.1\",       \"port\": \"1234\"     }   ],   \"database\": \"hive_database\",   \"metaType\": \"HiveMetastore\",   \"metastoreUris\": \"thrift://123:123\",   \"version\": \"2.3.9\",   \"loginMode\": \"Anonymous\",   \"securityProtocol\": \"authTypeNone\",   \"envType\": \"Prod\",   \"properties\": {     \"key1\": \"value1\"   } }",
+						"connection_properties":      "{\"address\":[{\"host\":\"127.0.0.1\",\"port\":\"1234\"}],\"database\":\"hive_database\",\"envType\":\"Prod\",\"loginMode\":\"Anonymous\",\"metaType\":\"HiveMetastore\",\"metastoreUris\":\"thrift://123:123\",\"properties\":{\"key1\":\"value1\"},\"securityProtocol\":\"authTypeNone\",\"version\":\"2.3.9\"}",
 						"connection_properties_mode": "UrlMode",
 						"description":                "描述信息-最终状态",
 					}),
@@ -84,7 +84,7 @@ func TestAccAliCloudDataWorksDataSource_basic8927(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"connection_properties"},
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})

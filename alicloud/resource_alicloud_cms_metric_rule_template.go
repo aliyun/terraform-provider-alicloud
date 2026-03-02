@@ -83,6 +83,7 @@ func resourceAliCloudCmsMetricRuleTemplate() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						// lintignore: S018
 						"escalations": {
 							Type:     schema.TypeSet,
 							Optional: true,

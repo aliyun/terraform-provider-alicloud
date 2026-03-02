@@ -11,6 +11,7 @@ import (
 
 // Test Oss BucketRequestPayment. >>> Resource test cases, automatically generated.
 // Case RequestPayment测试 6448
+// lintignore: AT001
 func TestAccAliCloudOssBucketRequestPayment_basic6448(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_request_payment.default"
@@ -104,6 +105,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 }
 
 // Case RequestPayment测试 6448  twin
+// lintignore: AT001
 func TestAccAliCloudOssBucketRequestPayment_basic6448_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oss_bucket_request_payment.default"

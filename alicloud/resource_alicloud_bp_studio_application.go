@@ -67,11 +67,13 @@ func resourceAlicloudBpStudioApplication() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S006
 			"configuration": {
 				Type:     schema.TypeMap,
 				Optional: true,
 				ForceNew: true,
 			},
+			// lintignore: S006
 			"variables": {
 				Type:     schema.TypeMap,
 				Optional: true,

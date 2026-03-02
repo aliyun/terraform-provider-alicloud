@@ -1,3 +1,4 @@
+// lintignore: S013
 package alicloud
 
 import (

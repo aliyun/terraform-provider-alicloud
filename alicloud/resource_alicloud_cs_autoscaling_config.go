@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -138,15 +139,14 @@ func resourceAlicloudCSAutoscalingConfigRead(d *schema.ResourceData, meta interf
 
 	object, err := csClient.GetCsKubernetesAddonInstance(clusterId, scalerType)
 	if err != nil {
-		if NotFoundError(err) {
-			return nil
-		}
-		return WrapError(err)
+		log.Printf("[DEBUG] Resource resource_alicloud_cs_autoscaling_config GetClusterAddonInstance Failed!!! %s", err)
+		return nil
 	}
 	addon_configRaw := make(map[string]interface{})
 	err = json.Unmarshal([]byte(object.Config), &addon_configRaw)
 	if err != nil {
-		return WrapError(err)
+		log.Printf("[DEBUG] Resource resource_alicloud_cs_autoscaling_config GetClusterAddonInstance Failed!!! %s", err)
+		return nil
 	}
 
 	if v, ok := addon_configRaw["ScaleDownUnneededTime"]; ok {

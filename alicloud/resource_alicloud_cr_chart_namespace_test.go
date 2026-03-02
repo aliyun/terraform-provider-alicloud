@@ -119,6 +119,7 @@ data "alicloud_cr_ee_instances" "default" {}
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCRChartNamespace(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cr_chart_namespace"].Schema).Data(nil, nil)

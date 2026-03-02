@@ -770,7 +770,7 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^aliyun",
+		"image_id":          REGEXMATCH + "^debian",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -947,7 +947,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesCreate(t *testing.T)
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^aliyun",
+		"image_id":          REGEXMATCH + "^debian",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -1019,7 +1019,7 @@ func TestAccAliCloudEssScalingConfiguration_CustomPrioritiesModify(t *testing.T)
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^aliyun",
+		"image_id":          REGEXMATCH + "^debian",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -1233,10 +1233,10 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint_
 					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
 					"image_id":                  "aliyun_3_9_x64_20G_alibase_20231219.vhd",
 					"dedicated_host_cluster_id": "${alicloud_ecs_dedicated_host_cluster.default.id}",
-					"instance_type":             "${data.alicloud_instance_types.c6.instance_types.0.id}",
+					"instance_type":             "ecs.c9i.large",
 					"security_group_id":         "${alicloud_security_group.default1.id}",
 					"force_delete":              "true",
-					"system_disk_category":      "cloud_ssd",
+					"system_disk_category":      "cloud_essd",
 					"http_endpoint":             "enabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1350,10 +1350,10 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"image_id":             "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
+					"instance_type":        "ecs.c9i.large",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
-					"system_disk_category": "cloud_ssd",
+					"system_disk_category": "cloud_essd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1662,7 +1662,7 @@ func TestAccAliCloudEssScalingConfiguration_Multi(t *testing.T) {
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^aliyun",
+		"image_id":          REGEXMATCH + "^debian",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -1762,7 +1762,7 @@ func resourceEssScalingConfigurationConfigDependences(name string) string {
 	}
 
 	data "alicloud_images" "default1" {
-		name_regex  = "^ubu"
+		name_regex  = "^debian"
   		most_recent = true
   		owners      = "system"
 	}
@@ -1965,7 +1965,7 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
   		owners      = "system"
 	}
 	data "alicloud_images" "default2" {
-		name_regex  = "^aliyun"
+		name_regex  = "^debian"
   		most_recent = true
   		owners      = "system"
 	}
@@ -1984,6 +1984,48 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 		description             = var.name
 		pending_window_in_days  = "7"
 		key_state               = "Enabled"
+	}
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+func resourceEssScalingConfigurationConfigDependenceOnlyInstancePatternInfo(name string) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "%s"
+	}
+	resource "alicloud_security_group" "default1" {
+	  name   = "${var.name}"
+	  vpc_id = "${alicloud_vpc.default.id}"
+	}
+
+	data "alicloud_images" "default1" {
+		name_regex  = "^centos.*_64"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_images" "default2" {
+		name_regex  = "^debian"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_instance_types" "t5" {
+      instance_type_family = "ecs.t5"
+	}
+    data "alicloud_instance_types" "c6" {
+      
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+	 data "alicloud_instance_types" "default12" {
+      instance_type_family = "ecs.n4"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
@@ -2042,7 +2084,7 @@ func resourceEssScalingConfiguration_NetworkInterfaces(name string) string {
   		owners      = "system"
 	}
     data "alicloud_instance_types" "c6" {
-        instance_type_family = "ecs.sn1ne"
+        instance_type_family = "ecs.c9i.lar"
     }
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
@@ -2067,7 +2109,7 @@ func resourceEssScalingConfigurationConfigMutilDependence(name string) string {
 	}
 
 	data "alicloud_images" "default1" {
-		name_regex  = "^aliyun"
+		name_regex  = "^debian"
   		most_recent = true
   		owners      = "system"
 	}
@@ -2092,7 +2134,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^aliyun",
+		"image_id":          REGEXMATCH + "^debian",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -2351,6 +2393,241 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudEssScalingConfiguration_OnlyInstancePatternInfo(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.ipi"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	basicMap := map[string]string{
+		"scaling_group_id":        CHECKSET,
+		"security_group_id":       CHECKSET,
+		"image_id":                REGEXMATCH + "^debian",
+		"override":                "false",
+		"instance_pattern_info.#": "1",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigDependenceOnlyInstancePatternInfo)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+					"image_id":          "${data.alicloud_images.default2.images.0.id}",
+					"security_group_id": "${alicloud_security_group.default.id}",
+					"force_delete":      "true",
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "4",
+							"memory":                  "8.00",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86"},
+							"excluded_instance_types": []string{"ecs.c6.large"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "security_group_id"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"active": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"active": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_category": "cloud_ssd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_category": "cloud_ssd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_performance_level": "PL1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_performance_level": "PL1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"host_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"host_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"spot_strategy": "NoSpot",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_strategy":    "NoSpot",
+						"spot_price_limit": NOSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "4",
+							"memory":                  "8.00",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86"},
+							"excluded_instance_types": []string{"ecs.c6.large"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_pattern_info.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "4",
+							"memory":                  "8.0",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86"},
+							"excluded_instance_types": []string{"ecs.c6.large"},
+						},
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "2",
+							"memory":                  "8.0",
+							"max_price":               "2.1",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86"},
+							"excluded_instance_types": []string{"ecs.c6.large"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_pattern_info.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":                   "EntryLevel",
+							"minimum_cpu_core_count":                  "4",
+							"maximum_cpu_core_count":                  "4",
+							"memory":                                  "8.0",
+							"burstable_performance":                   "Include",
+							"architectures":                           []string{"X86"},
+							"excluded_instance_types":                 []string{"ecs.c6.large"},
+							"minimum_eni_quantity":                    "1",
+							"minimum_eni_private_ip_address_quantity": "1",
+							"minimum_eni_ipv6_address_quantity":       "1",
+							"minimum_baseline_credit":                 "1",
+							"minimum_gpu_amount":                      "1",
+							"maximum_gpu_amount":                      "1",
+						},
+						{
+							"instance_family_level":   "EntryLevel",
+							"minimum_cpu_core_count":  "2",
+							"maximum_cpu_core_count":  "2",
+							"memory":                  "8.0",
+							"max_price":               "2.1",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86"},
+							"excluded_instance_types": []string{"ecs.c6.large"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_pattern_info.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":                   "EntryLevel",
+							"minimum_cpu_core_count":                  "2",
+							"maximum_cpu_core_count":                  "4",
+							"memory":                                  "8.0",
+							"burstable_performance":                   "Include",
+							"architectures":                           []string{"X86"},
+							"excluded_instance_types":                 []string{"ecs.c6.large"},
+							"minimum_eni_quantity":                    "2",
+							"minimum_eni_private_ip_address_quantity": "2",
+							"minimum_eni_ipv6_address_quantity":       "2",
+							"minimum_baseline_credit":                 "2",
+							"minimum_gpu_amount":                      "2",
+							"maximum_gpu_amount":                      "2",
+						},
+						{
+							"instance_family_level":   "EntryLevel",
+							"minimum_cpu_core_count":  "4",
+							"maximum_cpu_core_count":  "8",
+							"memory":                  "8.0",
+							"max_price":               "2.1",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86"},
+							"excluded_instance_types": []string{"ecs.c6.large"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_pattern_info.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_InstanceTypeFamiliesAndInstanceCategories(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
@@ -2360,7 +2637,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_InstanceTypeFami
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^ubu",
+		"image_id":          REGEXMATCH + "^debian",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -2591,7 +2868,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_CpuAndRange(t *t
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^ubu",
+		"image_id":          REGEXMATCH + "^debian",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -2895,10 +3172,10 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"image_id":             "aliyun_3_9_x64_20G_alibase_20231219.vhd",
-					"instance_type":        "${data.alicloud_instance_types.c6.instance_types.0.id}",
+					"instance_type":        "ecs.c9i.large",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
-					"system_disk_category": "cloud_ssd",
+					"system_disk_category": "cloud_essd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2977,7 +3254,7 @@ func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^aliyun",
+		"image_id":          REGEXMATCH + "^debian",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)

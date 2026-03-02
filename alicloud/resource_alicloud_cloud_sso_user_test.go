@@ -89,6 +89,7 @@ func testSweepCloudSsoDirectoryUser(region, directoryId string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAliCloudCloudSSOUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_user"].Schema).Data(nil, nil)

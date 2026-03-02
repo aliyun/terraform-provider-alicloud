@@ -566,6 +566,7 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"StopCharging", "KeepCharging", "Not-applicable"}, false),
 			},
+			// lintignore: S018
 			"maintenance_time": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -707,6 +708,7 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			// lintignore: S018
 			"image_options": {
 				Type:     schema.TypeSet,
 				Optional: true,

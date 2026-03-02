@@ -66,21 +66,23 @@ func testSweepRouterInterfaces(region string) error {
 		name := v.Name
 		id := v.RouterInterfaceId
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		// If a RI name is not set successfully, it should be fetched by vpc name and deleted.
-		if skip {
-			if need, err := service.needSweepVpc(v.VpcInstanceId, ""); err == nil {
-				skip = !need
+			// If a RI name is not set successfully, it should be fetched by vpc name and deleted.
+			if skip {
+				if need, err := service.needSweepVpc(v.VpcInstanceId, ""); err == nil {
+					skip = !need
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Router Interface: %s (%s)", name, id)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping Router Interface: %s (%s)", name, id)
+				continue
+			}
 		}
 		log.Printf("[INFO] Deleting Router Interface: %s (%s)", name, id)
 		req := vpc.CreateDeleteRouterInterfaceRequest()

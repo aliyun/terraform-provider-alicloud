@@ -22,9 +22,9 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(20 * time.Minute),
+			Create: schema.DefaultTimeout(41 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(46 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cen_id": {
@@ -89,6 +89,18 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"firewall_eni_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"firewall_eni_vpc_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"firewall_vpc_attachment_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -105,24 +117,24 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallCreate(d *schema.ResourceData,
 	var endpoint string
 	request = make(map[string]interface{})
 
-	request["FirewallName"] = d.Get("firewall_name")
-	request["RouteMode"] = d.Get("route_mode")
-	request["TransitRouterId"] = d.Get("transit_router_id")
-	request["RegionNo"] = d.Get("region_no")
-	request["FirewallVpcCidr"] = d.Get("firewall_vpc_cidr")
-	request["FirewallSubnetCidr"] = d.Get("firewall_subnet_cidr")
-	request["TrAttachmentSlaveCidr"] = d.Get("tr_attachment_slave_cidr")
-	request["TrAttachmentMasterCidr"] = d.Get("tr_attachment_master_cidr")
 	request["CenId"] = d.Get("cen_id")
+	request["TrAttachmentMasterCidr"] = d.Get("tr_attachment_master_cidr")
 	if v, ok := d.GetOk("firewall_description"); ok {
 		request["FirewallDescription"] = v
 	}
 	if v, ok := d.GetOk("tr_attachment_slave_zone"); ok {
 		request["TrAttachmentSlaveZone"] = v
 	}
+	request["FirewallSubnetCidr"] = d.Get("firewall_subnet_cidr")
+	request["RouteMode"] = d.Get("route_mode")
+	request["RegionNo"] = d.Get("region_no")
+	request["TransitRouterId"] = d.Get("transit_router_id")
+	request["FirewallName"] = d.Get("firewall_name")
+	request["TrAttachmentSlaveCidr"] = d.Get("tr_attachment_slave_cidr")
 	if v, ok := d.GetOk("tr_attachment_master_zone"); ok {
 		request["TrAttachmentMasterZone"] = v
 	}
+	request["FirewallVpcCidr"] = d.Get("firewall_vpc_cidr")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
@@ -169,40 +181,49 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallRead(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 
-	if objectRaw["CenId"] != nil {
-		d.Set("cen_id", objectRaw["CenId"])
+	if v, ok := objectRaw["CenId"]; ok {
+		d.Set("cen_id", v)
 	}
-	if objectRaw["FirewallDescription"] != nil {
-		d.Set("firewall_description", objectRaw["FirewallDescription"])
+	if v, ok := objectRaw["FirewallDescription"]; ok {
+		d.Set("firewall_description", v)
 	}
-	if objectRaw["FirewallName"] != nil {
-		d.Set("firewall_name", objectRaw["FirewallName"])
+	if v, ok := objectRaw["FirewallName"]; ok {
+		d.Set("firewall_name", v)
 	}
-	if objectRaw["FirewallSubnetCidr"] != nil {
-		d.Set("firewall_subnet_cidr", objectRaw["FirewallSubnetCidr"])
+	if v, ok := objectRaw["FirewallSubnetCidr"]; ok {
+		d.Set("firewall_subnet_cidr", v)
 	}
-	if objectRaw["FirewallVpcCidr"] != nil {
-		d.Set("firewall_vpc_cidr", objectRaw["FirewallVpcCidr"])
+	if v, ok := objectRaw["FirewallVpcCidr"]; ok {
+		d.Set("firewall_vpc_cidr", v)
 	}
-	if objectRaw["RegionNo"] != nil {
-		d.Set("region_no", objectRaw["RegionNo"])
+	if v, ok := objectRaw["RegionNo"]; ok {
+		d.Set("region_no", v)
 	}
-	if objectRaw["RouteMode"] != nil {
-		d.Set("route_mode", objectRaw["RouteMode"])
+	if v, ok := objectRaw["RouteMode"]; ok {
+		d.Set("route_mode", v)
 	}
-	if objectRaw["FirewallStatus"] != nil {
-		d.Set("status", objectRaw["FirewallStatus"])
+	if v, ok := objectRaw["FirewallStatus"]; ok {
+		d.Set("status", v)
 	}
-	if objectRaw["TrAttachmentMasterCidr"] != nil {
-		d.Set("tr_attachment_master_cidr", objectRaw["TrAttachmentMasterCidr"])
+	if v, ok := objectRaw["TrAttachmentMasterCidr"]; ok {
+		d.Set("tr_attachment_master_cidr", v)
 	}
-	if objectRaw["TrAttachmentSlaveCidr"] != nil {
-		d.Set("tr_attachment_slave_cidr", objectRaw["TrAttachmentSlaveCidr"])
+	if v, ok := objectRaw["TrAttachmentSlaveCidr"]; ok {
+		d.Set("tr_attachment_slave_cidr", v)
 	}
-	if objectRaw["TransitRouterId"] != nil {
-		d.Set("transit_router_id", objectRaw["TransitRouterId"])
+	if v, ok := objectRaw["TransitRouterId"]; ok {
+		d.Set("transit_router_id", v)
 	}
 
+	if v, ok := objectRaw["FirewallEniId"]; ok {
+		d.Set("firewall_eni_id", v)
+	}
+	if v, ok := objectRaw["FirewallEniVpcId"]; ok {
+		d.Set("firewall_eni_vpc_id", v)
+	}
+	if v, ok := objectRaw["TrAttachmentId"]; ok {
+		d.Set("firewall_vpc_attachment_id", v)
+	}
 	return nil
 }
 
@@ -217,7 +238,7 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallUpdate(d *schema.ResourceData,
 	var endpoint string
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["FirewallId"] = d.Id()
+	request["FirewallId"] = d.Id()
 
 	if d.HasChange("firewall_name") {
 		update = true
@@ -260,7 +281,7 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallDelete(d *schema.ResourceData,
 	var err error
 	var endpoint string
 	request = make(map[string]interface{})
-	query["FirewallId"] = d.Id()
+	request["FirewallId"] = d.Id()
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -283,14 +304,14 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallDelete(d *schema.ResourceData,
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ErrorTrFirewallNotExist"}) {
+		if IsExpectedErrors(err, []string{"ErrorTrFirewallNotExist"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	cloudFirewallServiceV2 := CloudFirewallServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, cloudFirewallServiceV2.CloudFirewallVpcCenTrFirewallStateRefreshFunc(d.Id(), "FirewallStatus", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 30*time.Second, cloudFirewallServiceV2.CloudFirewallVpcCenTrFirewallStateRefreshFunc(d.Id(), "FirewallStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

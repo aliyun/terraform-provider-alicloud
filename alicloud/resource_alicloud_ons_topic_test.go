@@ -206,6 +206,7 @@ var onsTopicBasicMap = map[string]string{
 	"remark":       "alicloud_ons_topic_remark",
 }
 
+// lintignore: R001
 func TestUnitAlicloudOnsTopic(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ons_topic"].Schema).Data(nil, nil)

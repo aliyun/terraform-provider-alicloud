@@ -258,6 +258,7 @@ resource "alicloud_vswitch" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudHavip(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_havip"].Schema).Data(nil, nil)

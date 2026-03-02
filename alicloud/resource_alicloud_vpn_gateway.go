@@ -409,7 +409,6 @@ func resourceAliCloudVPNGatewayVPNGatewayUpdate(d *schema.ResourceData, meta int
 }
 
 func resourceAliCloudVPNGatewayVPNGatewayDelete(d *schema.ResourceData, meta interface{}) error {
-
 	if v, ok := d.GetOk("payment_type"); ok {
 		if v == "Subscription" {
 			log.Printf("[WARN] Cannot destroy resource alicloud_vpn_gateway which payment_type valued Subscription. Terraform will remove this resource from the state file, however resources may remain.")

@@ -250,6 +250,7 @@ func dataSourceAliCloudEssScalingGroups() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"capacity_options_on_demand_base_capacity": {
 							Type:     schema.TypeInt,

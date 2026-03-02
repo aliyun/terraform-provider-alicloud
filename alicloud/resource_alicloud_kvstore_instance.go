@@ -85,6 +85,7 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			// lintignore: S006
 			"config": {
 				Type:          schema.TypeMap,
 				Optional:      true,

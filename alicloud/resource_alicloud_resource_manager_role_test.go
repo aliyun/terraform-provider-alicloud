@@ -104,6 +104,7 @@ func ResourceManagerRoleBasicdependence(name string) string {
 `)
 }
 
+// lintignore: R001
 func TestUnitAlicloudResourceManagerRole(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_role"].Schema).Data(nil, nil)

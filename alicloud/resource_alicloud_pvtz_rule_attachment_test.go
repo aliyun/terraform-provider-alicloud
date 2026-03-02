@@ -150,6 +150,7 @@ resource "alicloud_pvtz_rule" "default" {
 `, name, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAlicloudPvtzRuleAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	rand := acctest.RandIntRange(10000, 99999)

@@ -11,6 +11,7 @@ import (
 
 // Test ThreatDetection AssetBind. >>> Resource test cases, automatically generated.
 // Case 后付费授权绑定 10510
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionAssetBind_basic10510(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_asset_bind.default"

@@ -123,6 +123,7 @@ func resourceAlicloudVpcPublicIpAddressPoolCidrBlockBasicDependence(name string)
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudVpcPublicIpAddressPoolCidrBlock(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpc_public_ip_address_pool_cidr_block"].Schema).Data(nil, nil)

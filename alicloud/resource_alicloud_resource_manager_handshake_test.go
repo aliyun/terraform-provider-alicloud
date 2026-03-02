@@ -150,6 +150,7 @@ resource "alicloud_resource_manager_account" "example" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudResourceManagerHandshake(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_handshake"].Schema).Data(nil, nil)

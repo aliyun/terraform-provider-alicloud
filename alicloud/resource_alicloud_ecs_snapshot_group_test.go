@@ -324,6 +324,7 @@ resource "alicloud_disk_attachment" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudECSSnapshotGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_snapshot_group"].Schema).Data(nil, nil)

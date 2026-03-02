@@ -400,6 +400,7 @@ var AlicloudDBSBackupPlanMap1 = map[string]string{
 	"used_time":                            NOSET,
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudDbsBackupPlan(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dbs_backup_plan"].Schema).Data(nil, nil)

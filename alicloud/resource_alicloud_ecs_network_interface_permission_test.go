@@ -109,6 +109,7 @@ data "alicloud_account" "default" {}
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudECSNetworkInterfacePermission(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecs_network_interface_permission"].Schema).Data(nil, nil)

@@ -93,6 +93,7 @@ func resourceAlicloudSaeIngress() *schema.Resource {
 					},
 				},
 			},
+			// lintignore: S018
 			"default_rule": {
 				Type:     schema.TypeSet,
 				Optional: true,

@@ -337,6 +337,7 @@ resource "alicloud_waf_domain" "domain" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudWAFCertificate(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_waf_certificate"].Schema).Data(nil, nil)

@@ -173,6 +173,7 @@ var kmsAliasBasicMap = map[string]string{
 	"key_id": CHECKSET,
 }
 
+// lintignore: R001
 func TestUnitAlicloudKMSAlias(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_kms_alias"].Schema).Data(nil, nil)

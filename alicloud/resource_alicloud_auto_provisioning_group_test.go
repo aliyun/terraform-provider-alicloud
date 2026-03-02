@@ -37,10 +37,6 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		// module name
-		//IDRefreshName: resourceId,
-
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -249,13 +245,14 @@ func TestAccAlicloudAutoProvisioningGroup_valid(t *testing.T) {
 func resourceAutoProvisioningGroupConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
-	variable "name" {
-		default = "%s"
-	}
-    resource "alicloud_launch_template" "template" {
-          name                          = "${var.name}"
-          image_id                      = "${data.alicloud_images.default.images.0.id}"
-          instance_type                 = "ecs.sn1ne.large"
-          security_group_id             = "${alicloud_security_group.default.id}"
-    }`, EcsInstanceCommonTestCase, name)
+
+variable "name" {
+  default = "%s"
+}
+resource "alicloud_launch_template" "template" {
+  name              = "${var.name}"
+  image_id          = "${data.alicloud_images.default.images.0.id}"
+  instance_type     = "ecs.sn1ne.large"
+  security_group_id = "${alicloud_security_group.default.id}"
+}`, EcsInstanceCommonTestCase, name)
 }

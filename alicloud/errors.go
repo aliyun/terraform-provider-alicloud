@@ -90,9 +90,6 @@ func NotFoundError(err error) bool {
 		}
 		return NotFoundError(e.Cause)
 	}
-	if err == nil {
-		return false
-	}
 
 	if e, ok := err.(*tea.SDKError); ok {
 		return tea.IntValue(e.StatusCode) == 404 || regexp.MustCompile(NotFound).MatchString(tea.StringValue(e.Message))
@@ -304,7 +301,7 @@ func GetNotFoundMessage(product, id string) string {
 }
 
 func GetTimeoutMessage(product, status string) string {
-	return fmt.Sprintf("Waitting for %s %s is timeout.", product, status)
+	return fmt.Sprintf("Waiting for %s %s is timeout.", product, status)
 }
 
 func GetCreateFailedMessage(product string) string {

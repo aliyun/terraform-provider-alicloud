@@ -127,9 +127,9 @@ func resourceAlicloudFCAliasRead(d *schema.ResourceData, meta interface{}) error
 	}
 	serviceName := parts[0]
 	d.Set("service_name", serviceName)
-	d.Set("alias_name", *response.AliasName)
-	d.Set("description", *response.Description)
-	d.Set("service_version", *response.VersionID)
+	d.Set("alias_name", response.AliasName)
+	d.Set("description", response.Description)
+	d.Set("service_version", response.VersionID)
 
 	if err := d.Set("routing_config", flattenFCAliasRoutingConfig(response.AdditionalVersionWeight)); err != nil {
 		return fmt.Errorf("error setting FC alias routing_config: %s", err)

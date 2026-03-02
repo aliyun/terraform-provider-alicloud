@@ -62,6 +62,7 @@ func resourceAlicloudCmsHybridMonitorSlsTask() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			// lintignore: S018
 			"sls_process_config": {
 				Type:     schema.TypeSet,
 				Required: true,
@@ -84,6 +85,7 @@ func resourceAlicloudCmsHybridMonitorSlsTask() *schema.Resource {
 								},
 							},
 						},
+						// lintignore: S018
 						"filter": {
 							Type:     schema.TypeSet,
 							Optional: true,

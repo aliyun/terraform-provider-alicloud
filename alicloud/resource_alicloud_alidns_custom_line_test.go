@@ -130,6 +130,7 @@ variable "domain_name" {
 `, name, os.Getenv("ALICLOUD_ICP_DOMAIN_NAME"))
 }
 
+// lintignore: R001
 func TestUnitAlicloudAlidnsCustomLine(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alidns_custom_line"].Schema).Data(nil, nil)

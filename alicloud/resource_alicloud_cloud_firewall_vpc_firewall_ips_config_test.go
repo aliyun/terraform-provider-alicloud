@@ -11,6 +11,7 @@ import (
 
 // Test CloudFirewall VpcFirewallIpsConfig. >>> Resource test cases, automatically generated.
 // Case 入侵防护设置 7786
+// lintignore: AT001
 func TestAccAliCloudCloudFirewallVpcFirewallIpsConfig_basic7786(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_vpc_firewall_ips_config.default"

@@ -15,9 +15,6 @@ You can see detail product introduction [here](https://www.alibabacloud.com/help
 
 -> **NOTE:** Available since v1.37.0.
 
--> **NOTE:**  The following regions don't support create Classic network MongoDB instance.
-[`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-3`,`ap-southeast-5`,`me-east-1`,`ap-northeast-1`,`eu-west-1`]
-
 -> **NOTE:**  Create MongoDB instance or change instance type and storage would cost 5~10 minutes. Please make full preparation
 
 ## Example Usage
@@ -97,7 +94,8 @@ The following arguments are supported:
 * `hidden_zone_id` - (Optional, Available since v1.199.0) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values. From version 1.253.0, `hidden_zone_id` can be modified.
 * `security_group_id` - (Optional, Available since v1.73.0) The Security Group ID of ECS.
 * `replication_factor` - (Optional, Int) Number of replica set nodes. Valid values: `1`, `3`, `5`, `7`.
-* `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values:`Classic`, `VPC`.
+* `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values: `VPC`.
+-> **NOTE:** From 2022.2.21, `network_type` cannot be set to `Classic`. For more information, see[Product Notification](https://www.alibabacloud.com/help/en/mongodb/product-overview/eol-notice-for-apsaradb-for-mongodb-instances-in-the-classic-network)
 * `name` - (Optional) The name of DB instance. It must be 2 to 256 characters in length.
 * `instance_charge_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PrePaid`, `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version 1.63.0.
 * `period` - (Optional, Int) The duration that you will buy DB instance (in month). It is valid when `instance_charge_type` is `PrePaid`. Default value: `1`. Valid values: [1~9], 12, 24, 36.
@@ -110,7 +108,11 @@ The following arguments are supported:
 * `readonly_replicas` - (Optional, Int, Available since v1.199.0) The number of read-only nodes in the replica set instance. Default value: 0. Valid values: 0 to 5.
 * `resource_group_id` - (Optional, Available since v1.161.0) The ID of the Resource Group.
 * `auto_renew` - (Optional, Bool, Available since v1.141.0) Auto renew for prepaid. Default value: `false`. Valid values: `true`, `false`.
-  -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
+* `auto_renew_duration` - (Optional, Int, Available since v1.271.0) The auto-renewal period. Unit: months. Valid values: `1` to `12`.
+-> **NOTE:** If `auto_renew` is set to `true`, `auto_renew_duration` must be set.
+* `src_db_instance_id` - (Optional, Available since v1.271.0) The source instance ID.
+* `restore_time` - (Optional, Available since v1.271.0) The point in time to which you want to restore the instance. You can specify any point in time within the last seven days. The time must be in the yyyy-MM-ddTHH:mm:ssZ format and in UTC.
+-> **NOTE:** You must specify `src_db_instance_id` and `restore_time` only when you clone an instance based on a point in time.
 * `backup_time` - (Optional, Available since v1.42.0) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday].
 * `backup_retention_period` - (Optional, Int, Available since v1.213.1) The retention period of full backups.
@@ -130,13 +132,19 @@ The following arguments are supported:
   - `Open`: turn on SSL encryption.
   - `Close`: turn off SSL encryption.
   - `Update`: update SSL certificate.
+-> **NOTE:** Once `ssl_action` is set, it isn't allowed to be removed from the Terraform code.
+* `force_encryption` - (Optional, Available since v1.271.0) Specifies whether to forcibly enable SSL encryption for connections. Valid values:
+  - `1`: Forcibly enable SSL encryption.
+  - `0`: Do not forcibly enable SSL encryption.
+-> **NOTE:** `force_encryption` is supported only for MongoDB 7.0 and 8.0 instances that use cloud disks. After you enable forced SSL encryption, only SSL connections to the instance are allowed.
 * `maintain_start_time` - (Optional, Available since v1.56.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available since v1.56.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+-> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 * `effective_time` - (Optional, Available since v1.215.0) The time when the changed configurations take effect. Valid values: `Immediately`, `MaintainTime`.
 * `order_type` - (Optional, Available since v1.134.0) The type of configuration changes performed. Default value: `DOWNGRADE`. Valid values:
   - `UPGRADE`: The specifications are upgraded.
   - `DOWNGRADE`: The specifications are downgraded.
-    **NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
+-> **NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
 * `tde_status` - (Optional, Available since v1.73.0) The TDE(Transparent Data Encryption) status. Note: `tde_status` cannot be set to `disabled` after it is enabled, see [Transparent Data Encryption](https://www.alibabacloud.com/help/en/mongodb/user-guide/configure-tde-for-an-apsaradb-for-mongodb-instance) for more details.
 * `encryptor_name` - (Optional, Available since v1.212.0) The encryption method. **NOTE:** `encryptor_name` is valid only when `tde_status` is set to `enabled`.
 * `encryption_key` - (Optional, Available since v1.212.0) The ID of the custom key.
@@ -161,6 +169,13 @@ The following attributes are exported:
 * `retention_period` - Instance data backup retention days. Available since v1.42.0.
 * `replica_set_name` - The name of the mongo replica set.
 * `ssl_status` - Status of the SSL feature.
+* `key_ids` - (Available since v1.271.0) A list of instance keys.
+* `zone_infos` - (Available since v1.271.0) The information of nodes in the zone.
+  * `ins_name` - The ID of the node.
+  * `node_type` - The type of the node.
+  * `role_id` - The role ID.
+  * `role_type` - The role of the node.
+  * `zone_id` - The zone ID of the node.
 * `replica_sets` - Replica set instance information.
   * `vpc_id` - The private network ID of the node.
   * `vswitch_id` - The virtual switch ID to launch DB instances in one VPC.

@@ -14,6 +14,8 @@ Manages an asynchronous invocation configuration for a FC Function or Alias.
 
 -> **NOTE:** Available since v1.100.0.
 
+-> **DEPRECATED:** This resource (alicloud_fc_function_async_invoke_config) represents the legacy Function Compute API. For new deployments and advanced features, please use the `alicloud_fcv3_async_invoke_config` resource which provides access to the latest FCV3 capabilities. The legacy FC async invoke config supports only basic functionality and does not include newer features available in FCV3.
+
 ## Example Usage
 
 ### Destination Configuration

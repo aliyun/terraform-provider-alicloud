@@ -43,6 +43,7 @@ func resourceAlicloudDBReadWriteSplittingConnection() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Standard", "Custom"}, false),
 			},
+			// lintignore: S006
 			"weight": {
 				Type:     schema.TypeMap,
 				Optional: true,

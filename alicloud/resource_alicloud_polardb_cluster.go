@@ -147,6 +147,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"maintain_time": {
@@ -346,6 +347,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"allow_shut_down": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				Computed:         true,
 				ValidateFunc:     StringInSlice([]string{"true", "false"}, false),
 				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
 			},
@@ -533,6 +535,11 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed:         true,
 				ValidateFunc:     StringInSlice([]string{"ON", "OFF"}, false),
 				DiffSuppressFunc: polardbCompressStorageDiffSuppressFunc,
+			},
+			"global_security_group_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
@@ -1536,6 +1543,36 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("resource_group_id")
 	}
 
+	if d.HasChange("global_security_group_list") {
+		action := "ModifyGlobalSecurityIPGroupRelation"
+		globalSecurityGroupIds := expandStringList(d.Get("global_security_group_list").(*schema.Set).List())
+		globalSecurityGroupIdStr := strings.Join(globalSecurityGroupIds[:], COMMA_SEPARATED)
+		request := map[string]interface{}{
+			"RegionId":              client.RegionId,
+			"DBClusterId":           d.Id(),
+			"GlobalSecurityGroupId": globalSecurityGroupIdStr,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				addDebug(action, response, request)
+			}
+			return nil
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, ProviderERROR)
+		}
+		d.SetPartial("global_security_group_list")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudPolarDBClusterRead(d, meta)
 }
@@ -1821,6 +1858,12 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 	d.Set("db_minor_version", versionInfo["DBMinorVersion"])
 
+	globalSecurityGroupIds, err := polarDBService.DescribePolarDBGlobalSecurityGroupIds(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("global_security_group_list", globalSecurityGroupIds)
+
 	return nil
 }
 
@@ -1918,6 +1961,11 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	}
 
 	if exist && v.(string) == "MigrationFromRDS" {
+		request["CreationOption"] = d.Get("creation_option").(string)
+		request["SourceResourceId"] = d.Get("source_resource_id").(string)
+	}
+
+	if exist && v.(string) == "RecoverFromRecyclebin" {
 		request["CreationOption"] = d.Get("creation_option").(string)
 		request["SourceResourceId"] = d.Get("source_resource_id").(string)
 	}
@@ -2075,9 +2123,8 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	if v, ok := d.GetOk("parameter_group_id"); ok {
 		request["ParameterGroupId"] = v.(string)
 	}
-	LowerCaseTableNames := d.Get("lower_case_table_names")
-	if LowerCaseTableNames != nil {
-		request["LowerCaseTableNames"] = LowerCaseTableNames.(int)
+	if v, ok := d.GetOkExists("lower_case_table_names"); ok {
+		request["LowerCaseTableNames"] = v.(int)
 	}
 
 	if v, ok := d.GetOk("default_time_zone"); ok {

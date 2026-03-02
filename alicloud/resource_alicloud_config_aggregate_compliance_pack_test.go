@@ -583,6 +583,7 @@ func AliCloudConfigAggregateCompliancePackBasicDependence1(name string) string {
 `, name, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAliCloudConfigAggregateCompliancePack(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_aggregate_compliance_pack"].Schema).Data(nil, nil)

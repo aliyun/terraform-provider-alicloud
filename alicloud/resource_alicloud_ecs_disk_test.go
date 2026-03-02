@@ -90,6 +90,7 @@ func testAliCloudEcsDisk(region string) error {
 	return nil
 }
 
+// lintignore: R001
 func TestUnitECSDisk(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(nil, nil)

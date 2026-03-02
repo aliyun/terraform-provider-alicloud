@@ -43,7 +43,6 @@ func resourceAlicloudEdasApplicationPackageAttachment() *schema.Resource {
 			"last_package_version": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 		},
 	}

@@ -280,6 +280,7 @@ func AliCloudSAEGreyTagRouteBasicDependence0(name string) string {
 `, name, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAliCloudSAEGreyTagRoute(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_sae_grey_tag_route"].Schema).Data(nil, nil)

@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -166,10 +165,12 @@ func resourceAliCloudClickHouseEnterpriseDbCluster() *schema.Resource {
 			"scale_max": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"scale_min": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,

@@ -14,6 +14,8 @@ For information about FCV2 Function and how to use it, see [What is Function](ht
 
 -> **NOTE:** Available since v1.208.0.
 
+-> **NOTE:** This resource (alicloud_fc_function) represents the legacy Function Compute API. For new deployments and advanced features, please use the `alicloud_fcv3_function` resource which provides access to the latest FCV3 capabilities.
+
 ## Example Usage
 
 Basic Usage

@@ -92,6 +92,7 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			// lintignore: S018
 			"network_attributes": {
 				Type:     schema.TypeSet,
 				Optional: true,

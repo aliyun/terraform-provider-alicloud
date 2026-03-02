@@ -10,7 +10,9 @@ description: |-
 
 Provides a Max Compute Tenant Role User Attachment resource.
 
+Binding relationship between tenant roles and users
 
+-> **WARNING:** Using TenantRoleUserAttachment restricts the use of the [MaxCompute Console > Tenant Management > Tenant Attributes > Use Account ID] feature. If you use the [Use Account ID] feature in the console, TenantRoleUserAttachment becomes unavailable and requires approximately one hour to recover.
 
 For information about Max Compute Tenant Role User Attachment and how to use it, see [What is Tenant Role User Attachment](https://next.api.alibabacloud.com/document/MaxCompute/2022-01-04/UpdateTenantUserRoles).
 
@@ -38,8 +40,18 @@ resource "alicloud_max_compute_tenant_role_user_attachment" "default0" {
 ## Argument Reference
 
 The following arguments are supported:
-* `account_id` - (Optional, ForceNew, Computed) This property does not have a description in the spec, please add it before generating code.
-* `tenant_role` - (Optional, ForceNew, Computed) This property does not have a description in the spec, please add it before generating code.
+* `account_id` - (Optional, ForceNew, Computed) Account UID
+
+1. If the user is a primary account, the AccountId format is UID.  
+   Example: 200231703336555555
+
+2. If the user is a RAM user, the AccountId format is p4_UID.  
+   Example: p4_200531704446555555
+
+3. If the user is a RAM role, the AccountId format is v4_UID.  
+   Example: v4_300007628597555555
+
+* `tenant_role` - (Optional, ForceNew, Computed) Tenant role. By default, admin and super_administrator are available. You can add more roles in the console.
 
 ## Attributes Reference
 

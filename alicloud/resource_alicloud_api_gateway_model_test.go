@@ -100,6 +100,7 @@ func resourceAlicloudApiGatewayModelBasicDependence(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudApiGatewayModel(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_api_gateway_model"].Schema).Data(nil, nil)

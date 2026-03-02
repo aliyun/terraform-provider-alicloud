@@ -465,6 +465,7 @@ resource "alicloud_log_store" "change" {
 
 const configDeliveryChannelCondition = `[\n{\n\"filterType\":\"ResourceType\",\n\"values\":[\n\"ACS::CEN::CenInstance\",\n],\n\"multiple\":true\n}\n]\n`
 
+// lintignore: R001
 func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_delivery"].Schema).Data(nil, nil)

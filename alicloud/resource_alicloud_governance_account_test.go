@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAliCloudGovernanceAccount_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_governance_account.default"
@@ -78,6 +79,7 @@ func TestAccAliCloudGovernanceAccount_basic0(t *testing.T) {
 	})
 }
 
+// lintignore: AT001
 func TestAccAliCloudGovernanceAccount_basic7372(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_governance_account.default"

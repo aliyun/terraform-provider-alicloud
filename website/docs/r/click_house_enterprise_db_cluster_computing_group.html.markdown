@@ -20,6 +20,12 @@ For information about Click House Enterprise Db Cluster Computing Group and how 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_click_house_enterprise_db_cluster_computing_group&exampleId=41ac95ef-2ebb-0954-0373-9717f54e7af1f3c1eca1&activeTab=example&spm=docs.r.click_house_enterprise_db_cluster_computing_group.0.41ac95ef2e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -72,11 +78,12 @@ resource "alicloud_vswitch" "defaultkCZhNu" {
 }
 
 resource "alicloud_click_house_enterprise_db_cluster" "defaultQ5vukB" {
-  zone_id    = alicloud_vswitch.defaultkCZhNu.zone_id
-  vpc_id     = alicloud_vpc.defaultp2mwWM.id
-  scale_min  = "8"
-  scale_max  = "8"
-  vswitch_id = alicloud_vswitch.defaultkCZhNu.id
+  zone_id        = alicloud_vswitch.defaultkCZhNu.zone_id
+  vpc_id         = alicloud_vpc.defaultp2mwWM.id
+  node_scale_min = "4"
+  node_scale_max = "4"
+  node_count     = "2"
+  vswitch_id     = alicloud_vswitch.defaultkCZhNu.id
 }
 
 
@@ -89,6 +96,9 @@ resource "alicloud_click_house_enterprise_db_cluster_computing_group" "default" 
   is_readonly                 = false
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_click_house_enterprise_db_cluster_computing_group&spm=docs.r.click_house_enterprise_db_cluster_computing_group.example&intl_lang=EN_US)
 
 ## Argument Reference
 
@@ -104,7 +114,11 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above. The value is formulated as `<db_instance_id>:<computing_group_id>`.
-* `computing_group_id` - Computing Group ID.
+* `computing_group_endpoint_names` - A list of computing group endpoint names.
+* `computing_group_endpoints` - List of computing group endpoints.
+* `computing_group_id` - A resource property field representing the primary resource ID.
+* `computing_group_public_endpoints` - List of public endpoints for the computing group.
+* `computing_group_status` - Computing group status.
 
 ## Timeouts
 

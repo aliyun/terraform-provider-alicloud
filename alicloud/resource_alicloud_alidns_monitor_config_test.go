@@ -208,6 +208,7 @@ resource "alicloud_alidns_address_pool" "default" {
 `, name, os.Getenv("ALICLOUD_ICP_DOMAIN_NAME"))
 }
 
+// lintignore: R001
 func TestUnitAlicloudAlidnsMonitorConfig(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alidns_monitor_config"].Schema).Data(nil, nil)

@@ -54,6 +54,7 @@ func resourceAlicloudEciVirtualNode() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			// lintignore: S006
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,

@@ -40,12 +40,12 @@ func testSweepEdasApplication(region string) error {
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 		return edasClient.ListApplication(applicationListRq)
 	})
-	if err != nil {
+	if err != nil || raw == nil {
 		log.Printf("[ERROR] Failed to retrieve edas application in service list: %s", err)
 	}
 
 	listApplicationResponse, _ := raw.(*edas.ListApplicationResponse)
-	if listApplicationResponse.Code != 200 {
+	if listApplicationResponse == nil || listApplicationResponse.Code != 200 {
 		log.Printf("[ERROR] Failed to retrieve edas application in service list: %v", listApplicationResponse)
 		return nil
 	}

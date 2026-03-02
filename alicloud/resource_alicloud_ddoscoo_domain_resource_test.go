@@ -352,6 +352,7 @@ func AliCloudDdoscooDomainResourceBasicDependence0(name string) string {
 `)
 }
 
+// lintignore: R001
 func TestUnitAliCloudDdoscooDomainResource(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.DdoscooSupportedRegions)

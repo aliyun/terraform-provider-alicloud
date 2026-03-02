@@ -123,6 +123,7 @@ func AlicloudEcsCommandBasicDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudECSCommand(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_command"].Schema).Data(nil, nil)

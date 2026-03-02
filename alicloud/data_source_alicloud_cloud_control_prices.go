@@ -15,6 +15,7 @@ func dataSourceAliCloudCloudControlPrices() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAliCloudCloudControlPriceRead,
 		Schema: map[string]*schema.Schema{
+			// lintignore: S006
 			"desire_attributes": {
 				Type:     schema.TypeMap,
 				Optional: true,

@@ -156,8 +156,8 @@ func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object 
 	runtime.SetAutoretry(true)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
-		if err != nil {
-			return resource.NonRetryableError(err)
+		if NeedRetry(err) {
+			return resource.RetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -168,6 +168,12 @@ func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object 
 			return nil, WrapErrorf(NotFoundErr("ThreatDetection:BaselineStrategy", id), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// This is an API behavior change. An HTTP status code of 200 will be returned when the resource deleted.
+	// Customize this error message to handle this API change.
+	if response == nil {
+		return nil, WrapErrorf(NotFoundErr("ThreatDetection:BaselineStrategy", id), NotFoundMsg)
 	}
 	v, err := jsonpath.Get("$.Strategy", response)
 	if err != nil {
@@ -189,8 +195,8 @@ func (s *SasService) DescribeStrategy(id string) (object map[string]interface{},
 	runtime.SetAutoretry(true)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
-		if err != nil {
-			return resource.NonRetryableError(err)
+		if NeedRetry(err) {
+			return resource.RetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)

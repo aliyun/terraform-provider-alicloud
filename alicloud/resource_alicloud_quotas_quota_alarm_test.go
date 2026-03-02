@@ -36,6 +36,7 @@ func TestAccAlicloudQuotasQuotaAlarm_basic(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -107,6 +108,7 @@ func AlicloudQuotasQuotaAlarmBasicDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_quotas_quota_alarm"].Schema).Data(nil, nil)

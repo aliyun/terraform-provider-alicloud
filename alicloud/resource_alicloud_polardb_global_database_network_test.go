@@ -217,6 +217,7 @@ resource "alicloud_polardb_cluster" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudPolarDBGlobalDatabaseNetwork(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_polardb_global_database_network"].Schema).Data(nil, nil)

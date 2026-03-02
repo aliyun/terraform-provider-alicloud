@@ -2166,17 +2166,17 @@ func TestAccAliCloudEmrV2Cluster_basic3(t *testing.T) {
 func resourceEmrV2ClusterCommonConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
-	variable "name" {
-		default = "%s"
-	}
+variable "name" {
+  default = "%s"
+}
 	`, EmrV2CommonTestCase, name)
 }
 
 func resourceEmrV2ClusterAckConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
-	variable "name" {
-		default = "%s"
-	}
+variable "name" {
+  default = "%s"
+}
 	`, EmrV2AckConfigTestCase, name)
 }

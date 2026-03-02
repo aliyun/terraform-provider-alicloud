@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// lintignore: AT001
 func TestAccAliCloudThreatDetectionLogMeta_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_log_meta.default"

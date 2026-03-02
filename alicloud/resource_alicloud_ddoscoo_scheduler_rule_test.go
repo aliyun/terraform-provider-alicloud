@@ -126,6 +126,7 @@ data "alicloud_resource_manager_resource_groups" "defaults" {
 `
 }
 
+// lintignore: R001
 func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ddoscoo_scheduler_rule"].Schema).Data(nil, nil)

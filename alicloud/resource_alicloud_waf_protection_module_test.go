@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// lintignore: AT001
 func TestAccAliCloudWafProtectionModule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
@@ -129,6 +130,7 @@ resource "alicloud_waf_domain" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_waf_protection_module"].Schema).Data(nil, nil)

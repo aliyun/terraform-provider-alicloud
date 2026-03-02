@@ -79,6 +79,7 @@ resource "alicloud_vpc" "defaultvpc" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudVpcIpv4CidrBlock(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_vpc_ipv4_cidr_block"].Schema).Data(nil, nil)

@@ -223,6 +223,7 @@ data "alicloud_vswitches" "default" {
 }`, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudECDRamDirectory(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecd_ram_directory"].Schema).Data(nil, nil)

@@ -59,7 +59,6 @@ func testSweepRosTemplate(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Templates", response)
 		}
-		sweeped := false
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
@@ -73,7 +72,6 @@ func testSweepRosTemplate(region string) error {
 				log.Printf("[INFO] Skipping Ros Template: %s", item["TemplateName"].(string))
 				continue
 			}
-			sweeped = true
 			action = "DeleteTemplate"
 			request := map[string]interface{}{
 				"TemplateId": item["TemplateId"],
@@ -82,10 +80,9 @@ func testSweepRosTemplate(region string) error {
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ros Template (%s): %s", item["TemplateName"].(string), err)
 			}
-			if sweeped {
-				// Waiting 5 seconds to ensure Ros Template have been deleted.
-				time.Sleep(5 * time.Second)
-			}
+			// Waiting 5 seconds to ensure Ros Template have been deleted.
+			time.Sleep(5 * time.Second)
+
 			log.Printf("[INFO] Delete Ros Template success: %s ", item["TemplateName"].(string))
 		}
 		if len(result) < PageSizeLarge {
@@ -218,6 +215,7 @@ func AlicloudRosTemplateBasicDependence(name string) string {
 	return ""
 }
 
+// lintignore: R001
 func TestUnitAlicloudROSTemplate(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ros_template"].Schema).Data(nil, nil)

@@ -297,6 +297,7 @@ variable "name" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_nlb_security_policy"].Schema).Data(nil, nil)

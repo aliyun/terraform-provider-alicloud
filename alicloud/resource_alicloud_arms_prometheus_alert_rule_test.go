@@ -288,6 +288,7 @@ resource "alicloud_arms_dispatch_rule" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudARMSPrometheusAlertRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	rand := acctest.RandIntRange(10000, 99999)

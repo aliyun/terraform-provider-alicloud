@@ -790,6 +790,7 @@ resource "alicloud_oss_bucket" "default" {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAlicloudCloudStorageGatewayGatewayFileShare(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_file_share"].Schema).Data(nil, nil)

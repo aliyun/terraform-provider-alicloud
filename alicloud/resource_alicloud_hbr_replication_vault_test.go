@@ -309,6 +309,7 @@ func testAccCheckHBRReplicationVaultDestroyWithProvider(s *terraform.State, prov
 	return nil
 }
 
+// lintignore: R001
 func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_replication_vault"].Schema).Data(nil, nil)

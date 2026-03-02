@@ -142,6 +142,7 @@ func AliCloudCloudSSOSCIMServerCredentialBasicDependence0(name string) string {
 `, name)
 }
 
+// lintignore: R001
 func TestUnitAliCloudCloudSSOSCIMServerCredential(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_scim_server_credential"].Schema).Data(nil, nil)

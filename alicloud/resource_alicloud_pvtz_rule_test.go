@@ -184,6 +184,7 @@ resource "alicloud_pvtz_endpoint" "default" {
 `, name, defaultRegionToTest)
 }
 
+// lintignore: R001
 func TestUnitAlicloudPvtzRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_pvtz_rule"].Schema).Data(nil, nil)

@@ -12,6 +12,7 @@ import (
 
 // Test CloudMonitorService AgentConfig. >>> Resource test cases, automatically generated.
 // Case AgentConfigTest 5607
+// lintignore: AT001
 func TestAccAliCloudCloudMonitorServiceAgentConfig_basic5607(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_monitor_service_agent_config.default"

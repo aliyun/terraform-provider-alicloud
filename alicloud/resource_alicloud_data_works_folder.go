@@ -24,7 +24,6 @@ func resourceAlicloudDataWorksFolder() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"folder_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Computed: true,
 			},
 			"folder_path": {
