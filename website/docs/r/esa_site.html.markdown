@@ -77,10 +77,10 @@ The following arguments are supported:
 * `add_real_client_ip_header` - (Optional, Available since v1.244.0) Add the "ali-real-client-ip" header containing the real client IP. Value range:
   - `on`: Enable.
   - `off`: Disable.
-* `ai_mode` - (Optional, Computed, Available since v1.272.0) HTTP DDoS Intelligent Protection Mode. Valid values:
+* `ai_mode` - (Optional, Computed, Available since v1.272.1) HTTP DDoS Intelligent Protection Mode. Valid values:
   - `observe`: Observe.
   - `defense`: Block.
-* `ai_template` - (Optional, Computed, Available since v1.272.0) HTTP DDoS Intelligent Protection Level. Values:
+* `ai_template` - (Optional, Computed, Available since v1.272.1) HTTP DDoS Intelligent Protection Level. Values:
   - `level0`: Very Loose.
   - `level30`: Loose.
   - `level60`: Normal.
@@ -110,7 +110,7 @@ The following arguments are supported:
 * `flatten_mode` - (Optional, Available since v1.251.0) CNAME flattening mode. Possible values:
   - `flatten_all`: Flatten all.
   - `flatten_at_root`: Flatten only the root domain. The default is to flatten the root domain.
-* `global_mode` - (Optional, Computed, Available since v1.272.0) HTTP DDoS Attack Protection Policy Modes. Valid values:
+* `global_mode` - (Optional, Computed, Available since v1.272.1) HTTP DDoS Attack Protection Policy Modes. Valid values:
   - `very weak`: indicates a very permissive setting.
   - `weak`: indicates a permissive setting.
   - `default`: indicates a normal setting.
