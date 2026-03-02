@@ -81,6 +81,10 @@ func resourceAlicloudDmsEnterpriseInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"sell_trust": {
+				Type:     schema.TypeBool,
+				Required: true,
+			},
 			"data_link_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -170,7 +174,7 @@ func resourceAlicloudDmsEnterpriseInstance() *schema.Resource {
 func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	action := "RegisterInstance"
+	action := "AddInstance"
 	request := map[string]interface{}{
 		"DatabasePassword": d.Get("database_password").(string),
 		"DatabaseUser":     d.Get("database_user").(string),
@@ -230,11 +234,17 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 		request["VpcId"] = v
 	}
 
+	request["EnableSellTrust"] = "N"
+	sellTrust := d.Get("sell_trust").(bool)
+	if sellTrust {
+		request["EnableSellTrust"] = "Y"
+	}
+
 	wait := incrementalWait(3*time.Second, 2*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"RegisterInstanceFailure"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"AddInstanceFailure"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -289,6 +299,7 @@ func resourceAlicloudDmsEnterpriseInstanceRead(d *schema.ResourceData, meta inte
 	d.Set("use_dsql", formatInt(object["UseDsql"]))
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("dba_nick_name", object["DbaNickName"])
+	d.Set("sell_trust", object["SellTrust"])
 	return nil
 }
 func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -383,6 +394,12 @@ func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta in
 		update = true
 		request["VpcId"] = d.Get("vpc_id")
 	}
+
+	request["EnableSellTrust"] = "N"
+	if enableSellTrust := d.Get("sell_trust").(bool); enableSellTrust {
+		request["EnableSellTrust"] = "Y"
+	}
+
 	if update {
 		if _, ok := d.GetOkExists("skip_test"); ok {
 			request["SkipTest"] = d.Get("skip_test")
@@ -390,7 +407,7 @@ func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta in
 		if _, ok := d.GetOk("tid"); ok {
 			request["Tid"] = d.Get("tid")
 		}
-		action := "UpdateInstance"
+		action := "ModifyInstance"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, false)

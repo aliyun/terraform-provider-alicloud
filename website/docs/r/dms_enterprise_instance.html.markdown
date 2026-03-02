@@ -129,6 +129,10 @@ The following arguments are supported:
 * `port` - (Required, ForceNew) Access port of the target database.
 * `database_user` - (Required) Database access account.
 * `database_password` - (Required) Database access password.
+* `sell_trust` -(Required) Whether to enable the security hosting feature for the database instance. Possible values: `true`, `false`.
+
+ ~>**NOTE:** The `database_user` will be encrypted if `sell_trust` set to `false`.
+
 * `instance_alias` - It has been deprecated from provider version 1.100.0 and 'instance_name' instead.
 * `instance_name` - (Optional, Available since v1.100.0) Instance name, to help users quickly distinguish positioning.
 * `dba_uid` - (Required, ForceNew)  The DBA of the instance is passed into the Alibaba Cloud uid of the DBA.
