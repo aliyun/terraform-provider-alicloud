@@ -90,7 +90,7 @@ func dataSourceAlicloudCSServerlessKubernetesClusters() *schema.Resource {
 							Computed: true,
 						},
 						"connections": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -263,7 +263,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 			connection["api_server_intranet"] = endpoints.IntranetApiServerEndpoint
 		}
 
-		mapping["connections"] = connection
+		mapping["connections"] = []interface{}{connection}
 
 		request := vpc.CreateDescribeNatGatewaysRequest()
 		request.VpcId = ct.VpcId

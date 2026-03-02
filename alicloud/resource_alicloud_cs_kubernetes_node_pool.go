@@ -1835,7 +1835,7 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	d.SetId(fmt.Sprintf("%v:%v", ClusterId, response["nodepool_id"]))
 
 	ackServiceV2 := AckServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
+	stateConf := BuildStateConf([]string{}, []string{"success", "running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}
@@ -3040,7 +3040,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ackServiceV2 := AckServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
+		stateConf := BuildStateConf([]string{}, []string{"success", "running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 		}
@@ -3256,7 +3256,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ackServiceV2 := AckServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
+		stateConf := BuildStateConf([]string{}, []string{"success", "running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 		}
@@ -3363,7 +3363,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ackServiceV2 := AckServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
+		stateConf := BuildStateConf([]string{}, []string{"success", "running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 		}
@@ -3436,7 +3436,7 @@ func resourceAliCloudAckNodepoolDelete(d *schema.ResourceData, meta interface{})
 	}
 
 	ackServiceV2 := AckServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
+	stateConf := BuildStateConf([]string{}, []string{"success", "running"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 	}

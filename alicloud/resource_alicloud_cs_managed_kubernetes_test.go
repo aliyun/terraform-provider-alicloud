@@ -494,7 +494,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
+func TestAccAliCloudCSManagedKubernetes_auto(t *testing.T) {
 	var v *cs.KubernetesClusterDetail
 
 	resourceId := "alicloud_cs_managed_kubernetes.default"
@@ -617,7 +617,7 @@ func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudCSManagedKubernetesForProfile(t *testing.T) {
+func TestAccAliCloudCSManagedKubernetes_forProfile(t *testing.T) {
 	var v *cs.KubernetesClusterDetail
 
 	resourceId := "alicloud_cs_managed_kubernetes.default"
@@ -657,7 +657,7 @@ func TestAccAliCloudCSManagedKubernetesForProfile(t *testing.T) {
 					"service_cidr":                   "172.23.0.0/16",
 					"ip_stack":                       "ipv4",
 					"timezone":                       "Asia/Shanghai",
-					"skip_set_certificate_authority": "true",
+					"skip_set_certificate_authority": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -673,7 +673,7 @@ func TestAccAliCloudCSManagedKubernetesForProfile(t *testing.T) {
 						"ip_stack":                       "ipv4",
 						"timezone":                       "Asia/Shanghai",
 						"resource_group_id":              CHECKSET,
-						"skip_set_certificate_authority": "true",
+						"skip_set_certificate_authority": "false",
 					}),
 				),
 			},
@@ -872,30 +872,30 @@ data "alicloud_enhanced_nat_available_zones" "enhanced" {
 }
 
 var csManagedKubernetesBasicMap = map[string]string{
-	"new_nat_gateway":                    "true",
-	"slb_internet_enabled":               "true",
-	"name":                               CHECKSET,
-	"security_group_id":                  CHECKSET,
-	"version":                            CHECKSET,
-	"certificate_authority.cluster_cert": CHECKSET,
-	"certificate_authority.client_cert":  CHECKSET,
-	"certificate_authority.client_key":   CHECKSET,
-	"connections.api_server_internet":    CHECKSET,
-	"connections.api_server_intranet":    CHECKSET,
-	"connections.master_public_ip":       CHECKSET,
-	"connections.service_domain":         CHECKSET,
-	"worker_ram_role_name":               CHECKSET,
-	"vpc_id":                             CHECKSET,
-	"resource_group_id":                  CHECKSET,
-	"slb_internet":                       CHECKSET,
-	"slb_intranet":                       CHECKSET,
-	"cluster_spec":                       CHECKSET,
-	"slb_id":                             CHECKSET,
+	"new_nat_gateway":                      "true",
+	"slb_internet_enabled":                 "true",
+	"name":                                 CHECKSET,
+	"security_group_id":                    CHECKSET,
+	"version":                              CHECKSET,
+	"certificate_authority.0.cluster_cert": CHECKSET,
+	"certificate_authority.0.client_cert":  CHECKSET,
+	"certificate_authority.0.client_key":   CHECKSET,
+	"connections.0.api_server_internet":    CHECKSET,
+	"connections.0.api_server_intranet":    CHECKSET,
+	"connections.0.master_public_ip":       CHECKSET,
+	"connections.0.service_domain":         CHECKSET,
+	"worker_ram_role_name":                 CHECKSET,
+	"vpc_id":                               CHECKSET,
+	"resource_group_id":                    CHECKSET,
+	"slb_internet":                         CHECKSET,
+	"slb_intranet":                         CHECKSET,
+	"cluster_spec":                         CHECKSET,
+	"slb_id":                               CHECKSET,
 }
 
 // Test Ack Cluster. >>> Resource test cases, automatically generated.
 // Case 集群测试-升级 12341
-func TestAccAliCloudAckCluster_basic12341(t *testing.T) {
+func TestAccAliCloudCSManagedKubernetes_basic12341(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cs_managed_kubernetes.default"
 	ra := resourceAttrInit(resourceId, map[string]string{})
@@ -931,7 +931,7 @@ func TestAccAliCloudAckCluster_basic12341(t *testing.T) {
 						"${var.zone_id}"},
 					"cluster_spec":        "ack.pro.small",
 					"deletion_protection": "false",
-					"version":             "1.32.7-aliyun.1",
+					"version":             "1.35.0-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

@@ -51,7 +51,7 @@ func resourceAlicloudCRRepo() *schema.Resource {
 			},
 			// computed
 			"domain_list": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -167,7 +167,7 @@ func resourceAlicloudCRRepoRead(d *schema.ResourceData, meta interface{}) error 
 	domainList["internal"] = response.Data.Repo.RepoDomainList.Internal
 	domainList["vpc"] = response.Data.Repo.RepoDomainList.Vpc
 
-	d.Set("domain_list", domainList)
+	d.Set("domain_list", []interface{}{domainList})
 
 	return nil
 }

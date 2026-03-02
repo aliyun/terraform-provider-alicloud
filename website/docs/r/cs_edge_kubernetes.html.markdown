@@ -167,7 +167,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
 * `cluster_spec` - (Optional, Available since v1.185.0) The cluster specifications of kubernetes cluster,which can be empty. Valid values:
   * ack.standard : Standard edge clusters.
   * ack.pro.small : Professional edge clusters.
-* `runtime` - (Optional, Available since v1.185.0) The runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). See [`runtime`](#runtime) below.
+* `runtime` - (Optional, Available since v1.185.0) A list of runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). See [`runtime`](#runtime) below.
 * `availability_zone` - (Optional) The ID of availability zone.
 * `skip_set_certificate_authority` - (Optional) Configure whether to save certificate authority data for your cluster to attribute `certificate_authority`. For cluster security, recommended configuration as `true`. Will be removed with attribute certificate_authority removed.
 
@@ -283,12 +283,12 @@ The following attributes are exported:
   * `name` - Node name.
   * `private_ip` - The private IP address of node.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
-* `connections` - (Map) Map of kubernetes cluster connection information.
+* `connections` - (List) A list of kubernetes cluster connection information.
   * `api_server_internet` - API Server Internet endpoint.
   * `api_server_intranet` - API Server Intranet endpoint.
   * `master_public_ip` - Master node SSH IP address.
   * `service_domain` - Service Access Domain.
-* `certificate_authority` - (Map, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
+* `certificate_authority` - (List, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
   * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
   * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.

@@ -25,7 +25,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 		Create: resourceAlicloudCSManagedKubernetesCreate,
 		Read:   resourceAlicloudCSManagedKubernetesRead,
 		Update: resourceAlicloudCSManagedKubernetesUpdate,
-		Delete: resourceAlicloudCSKubernetesDelete,
+		Delete: resourceAlicloudCSKubernetesDelete, // TODO Refactor delete from k8s resources
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -404,7 +404,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Description: "cluster local domain ",
 			},
 			"runtime": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -515,7 +515,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Deprecated: "Field 'cluster_ca_cert' has been deprecated from provider version 1.248.0. From version 1.248.0, new DataSource 'alicloud_cs_cluster_credential' is recommended to manage cluster's kubeconfig, you can also save the 'certificate_authority.cluster_cert' attribute content of new DataSource 'alicloud_cs_cluster_credential' to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.",
 			},
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -540,7 +540,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"connections": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -1293,7 +1293,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 	}
 	connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), tea.StringValue(object.RegionId))
 
-	d.Set("connections", connection)
+	d.Set("connections", []interface{}{connection})
 	d.Set("slb_internet", connection["master_public_ip"])
 	if endPoint["intranet_api_server_endpoint"] != "" {
 		d.Set("slb_intranet", strings.Split(strings.Split(endPoint["intranet_api_server_endpoint"], ":")[1], "/")[2])

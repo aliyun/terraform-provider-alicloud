@@ -16,24 +16,23 @@ import (
 )
 
 const (
-	EdgeKubernetesDefaultTimeoutInMinutes = 60
-	EdgeProfile                           = "Edge"
+	EdgeProfile = "Edge"
 )
 
 func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSEdgeKubernetesCreate,
-		Read:   resourceAlicloudCSKubernetesRead,
+		Read:   resourceAlicloudCSKubernetesRead, // TODO Refactor read from k8s resources
 		Update: resourceAlicloudCSEdgeKubernetesUpdate,
-		Delete: resourceAlicloudCSKubernetesDelete,
+		Delete: resourceAlicloudCSKubernetesDelete, // TODO Refactor delete from k8s resources
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(EdgeKubernetesDefaultTimeoutInMinutes * time.Minute),
-			Update: schema.DefaultTimeout(EdgeKubernetesDefaultTimeoutInMinutes * time.Minute),
-			Delete: schema.DefaultTimeout(EdgeKubernetesDefaultTimeoutInMinutes * time.Minute),
+			Create: schema.DefaultTimeout(60 * time.Minute),
+			Update: schema.DefaultTimeout(60 * time.Minute),
+			Delete: schema.DefaultTimeout(60 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -181,7 +180,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"runtime": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -307,7 +306,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 			},
 			// computed parameters start
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -332,7 +331,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"connections": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{

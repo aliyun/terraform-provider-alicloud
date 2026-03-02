@@ -263,7 +263,7 @@ func dataSourceAlicloudCSKubernetesClusters() *schema.Resource {
 							},
 						},
 						"connections": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -652,7 +652,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		}
 		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", ct.ClusterID, ct.RegionID)
 
-		mapping["connections"] = connection
+		mapping["connections"] = []interface{}{connection}
 
 		request := vpc.CreateDescribeNatGatewaysRequest()
 		request.VpcId = ct.VPCID

@@ -136,7 +136,7 @@ func resourceAliCloudApiGatewayInstance() *schema.Resource {
 				Computed: true,
 			},
 			"to_connect_vpc_ip_block": {
-				Type:          schema.TypeMap,
+				Type:          schema.TypeList,
 				Optional:      true,
 				ConflictsWith: []string{"delete_vpc_ip_block"},
 				Elem: &schema.Resource{
@@ -339,8 +339,8 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 		request["IPV6Enabled"] = v
 	}
 	if d.HasChange("to_connect_vpc_ip_block") {
-		if v, ok := d.GetOk("to_connect_vpc_ip_block"); ok {
-			originalVpcIpBlock := v.(map[string]interface{})
+		if v, ok := d.GetOk("to_connect_vpc_ip_block"); ok && len(v.([]interface{})) > 0 {
+			originalVpcIpBlock := v.([]interface{})[0].(map[string]interface{})
 			newVpcIpBlock := make(map[string]interface{})
 			if cidrBlock, ok := originalVpcIpBlock["cidr_block"]; ok {
 				newVpcIpBlock["CidrBlock"] = cidrBlock

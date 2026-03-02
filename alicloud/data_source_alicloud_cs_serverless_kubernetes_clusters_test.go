@@ -66,7 +66,7 @@ func TestAccAliCloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.deletion_protection": CHECKSET,
 			"clusters.0.tags.%":              CHECKSET,
 			"clusters.0.endpoint_public_access_enabled": CHECKSET,
-			"clusters.0.connections.%":                  CHECKSET,
+			"clusters.0.connections.#":                  CHECKSET,
 		}
 	}
 
@@ -91,39 +91,39 @@ func TestAccAliCloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 func dataSourceCSServerlessKubernetesClustersConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "%s"
+  default = "%s"
 }
 
 data "alicloud_zones" "default" {
-	available_resource_creation = "VSwitch"
+  available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_vpc" "vpc" {
-	vpc_name   = var.name
-	cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-	vpc_id            = alicloud_vpc.vpc.id
-	cidr_block        = cidrsubnet(alicloud_vpc.vpc.cidr_block, 8, 8)
-	zone_id           = data.alicloud_zones.default.zones.0.id
-	vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.vpc.id
+  cidr_block   = cidrsubnet(alicloud_vpc.vpc.cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 resource "alicloud_cs_serverless_kubernetes" "default" {
   name_prefix                    = "${var.name}"
   vpc_id                         = alicloud_vpc.vpc.id
   vswitch_ids                    = [alicloud_vswitch.vswitch.id]
-  new_nat_gateway                = true
-  cluster_spec                   = "ack.pro.small" 
+  new_nat_gateway                = false
+  cluster_spec                   = "ack.pro.small"
   endpoint_public_access_enabled = true
   private_zone                   = false
   deletion_protection            = false
   service_cidr                   = "10.0.1.0/24"
   load_balancer_spec             = "slb.s2.small"
   tags = {
-		"k-aa":"v-aa"
-		"k-bb":"v-aa",
+    "k-aa" : "v-aa"
+    "k-bb" : "v-aa",
   }
 }
 `, name)
