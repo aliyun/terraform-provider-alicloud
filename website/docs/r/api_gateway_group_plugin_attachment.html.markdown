@@ -1,0 +1,65 @@
+---
+subcategory: "Api Gateway"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_api_gateway_plugin_attachment"
+sidebar_current: "docs-alicloud-resource-api-gateway-plugin-attachment"
+description: |-
+  Provides a Alicloud Api Gateway Plugin Attachment Resource.
+---
+
+# alicloud_api_gateway_group_plugin_attachment
+
+Provides a plugin attachment resource.It is used for attaching a specific plugin to an api group.
+
+For information about Api Gateway Plugin attachment and how to use it, see [Attach Plugin to specified API GROUP](https://www.alibabacloud.com/help/en/api-gateway/traditional-api-gateway/developer-reference/api-cloudapi-2016-07-14-attachgroupplugin)
+
+-> **NOTE:** Available since v1.272.0.
+
+-> **NOTE:** Terraform will auto build plugin attachment while it uses `alicloud_api_gateway_group_plugin_attachment` to build.
+
+## Example Usage
+
+Basic Usage
+
+
+```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
+variable "name" {
+  default = "terraform_example"
+}
+resource "alicloud_api_gateway_group" "example" {
+  name        = var.name
+  description = var.name
+}
+
+resource "alicloud_api_gateway_plugin" "example" {
+  description = "tf_example"
+  plugin_name = "tf_example"
+  plugin_data = jsonencode({ "allowOrigins" : "api.foo.com", "allowMethods" : "GET,POST,PUT,DELETE,HEAD,OPTIONS,PATCH", "allowHeaders" : "Authorization,Accept,Accept-Ranges,Cache-Control,Range,Date,Content-Type,Content-Length,Content-MD5,User-Agent,X-Ca-Signature,X-Ca-Signature-Headers,X-Ca-Signature-Method,X-Ca-Key,X-Ca-Timestamp,X-Ca-Nonce,X-Ca-Stage,X-Ca-Request-Mode,x-ca-deviceid", "exposeHeaders" : "Content-MD5,Server,Date,Latency,X-Ca-Request-Id,X-Ca-Error-Code,X-Ca-Error-Message", "maxAge" : 172800, "allowCredentials" : true })
+  plugin_type = "cors"
+}
+
+resource "alicloud_api_gateway_group_plugin_attachment" "example" {
+  group_id   = alicloud_api_gateway_group.example.id
+  plugin_id  = alicloud_api_gateway_plugin.example.id
+  stage_name = "RELEASE"
+}
+```
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_api_gateway_plugin_attachment&spm=docs.r.api_gateway_plugin_attachment.example&intl_lang=EN_US)
+
+## Argument Reference
+
+The following arguments are supported:
+* `group_id` - (Required, ForceNew) The group that plugin attaches to.
+* `plugin_id` - (Required, ForceNew) The plugin that attaches to the group.
+* `stage_name` - (Required, ForceNew) Stage that the plugin attaches to.
+
+## Attributes Reference
+
+The following attributes are exported:
+
+* `id` - The ID of the plugin attachment of api gateway., formatted as `<group_id>:<plugin_id>:<stage_name>`.
