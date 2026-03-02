@@ -183,6 +183,10 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"kibana_private_domain": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"kibana_private_security_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -844,6 +848,7 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 	d.Set("instance_category", objectRaw["instanceCategory"])
 	d.Set("kibana_domain", objectRaw["kibanaDomain"])
 	d.Set("kibana_port", objectRaw["kibanaPort"])
+	d.Set("kibana_private_domain", objectRaw["kibanaPrivateDomain"])
 	d.Set("payment_type", convertElasticsearchInstanceResultpaymentTypeResponse(objectRaw["paymentType"]))
 	d.Set("instance_charge_type", getChargeType(objectRaw["paymentType"].(string)))
 	d.Set("protocol", objectRaw["protocol"])
@@ -1837,7 +1842,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -2222,6 +2227,7 @@ func convertElasticsearchInstanceResultpaymentTypeResponse(source interface{}) i
 	}
 	return source
 }
+
 func convertElasticsearchInstancepaymentTypeRequest(source interface{}) interface{} {
 	source = fmt.Sprint(source)
 	switch source {

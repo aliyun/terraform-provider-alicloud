@@ -20,12 +20,6 @@ For information about Elasticsearch Instance and how to use it, see [What is Ins
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_elasticsearch_instance&exampleId=73805ca0-8968-cf9a-4e8e-205d4afdd97b26ab1e4d&activeTab=example&spm=docs.r.elasticsearch_instance.0.73805ca089&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "tf-example"
@@ -62,9 +56,6 @@ resource "alicloud_elasticsearch_instance" "default" {
 }
 ```
 
-
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_elasticsearch_instance&spm=docs.r.elasticsearch_instance.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
@@ -72,57 +63,80 @@ The following arguments are supported:
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored, but you have to specify one of `password` and `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `period` - (Optional) The duration that you will buy Elasticsearch instance (in month). It is valid when PaymentType is `Subscription`. Valid values: [1~9], 12, 24, 36. Default to 1. From version 1.69.2, when to modify this value, the resource can renewal a `PrePaid` instance.
-* `auto_renew_duration` - (Optional, Int) Renewal Period
-* `client_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch cluster coordination node configuration See [`client_node_configuration`](#client_node_configuration) below.
-* `data_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch data node information See [`data_node_configuration`](#data_node_configuration) below.
-* `description` - (Optional, Computed) Instance name
-* `enable_kibana_private_network` - (Optional, Computed, Available since v1.87.0) Whether to enable Kibana private network access.
+* `auto_renew_duration` - (Optional, Int) Number of auto-renewal periods.  
+* `client_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Configuration of dedicated coordinating nodes in the Elasticsearch cluster.   See [`client_node_configuration`](#client_node_configuration) below.
+* `data_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch data node information. See [`data_node_configuration`](#data_node_configuration) below.
+* `description` - (Optional, Computed) Instance name, which supports fuzzy search. For example, searching for all instances containing `abc` may return instances named `abc`, `abcde`, `xyabc`, or `xabcy`.
+* `enable_kibana_private_network` - (Optional, Computed, Available since v1.87.0) Indicates whether private network access to Kibana is enabled. Valid values:  
+  - true: Enabled  
+  - false: Disabled  
+* `enable_kibana_public_network` - (Optional, Computed, Available since v1.87.0) Specifies whether to enable public access to Kibana. Valid values:  
+  - true: Enables public access.  
+  - false: Disables public access.  
+* `enable_public` - (Optional, Computed, Available since v1.87.0) Specifies whether to enable a public endpoint for the instance. Valid values:
+  - true: Enables the public endpoint.
+  - false: Disables the public endpoint.
+* `force` - (Optional, Available since v1.267.0) Whether to force a restart:
+  - true: Yes  
+  - false (default): No.
 
-The meaning of the value is as follows:
-  - true: On.
-  - false: does not open.
-* `enable_kibana_public_network` - (Optional, Computed, Available since v1.87.0) Does Kibana enable public access
-* `enable_public` - (Optional, Computed, Available since v1.87.0) Whether to enable Kibana public network access.
+-> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
-The meaning of the value is as follows:
-  - true: On.
-  - false: does not open.
-* `force` - (Optional, Available since v1.267.0) Whether to force changes
+* `instance_category` - (Optional, ForceNew, Computed, Available since v1.267.0) Edition type:  
+  - x-pack: Creates a commercial edition instance, or a kernel-enhanced edition instance without Indexing Service or OpenStore enabled.  
+  - IS: Creates a kernel-enhanced edition instance with Indexing Service or OpenStore enabled.  
+* `kibana_configuration` - (Optional, Computed, Set, Available since v1.267.0) The configuration of Elasticsearch Kibana nodes. See [`kibana_configuration`](#kibana_configuration) below.
+* `kibana_private_security_group_id` - (Optional) List of security groups.
+* `kibana_private_whitelist` - (Optional, Computed, List, Available since v1.87.0) List of IP addresses in the whitelist. This parameter is available when whiteIpGroup is empty and is used to modify the default group's whitelist.  
+* `kibana_whitelist` - (Optional, Computed, List) The list of IP addresses in the whitelist. This parameter is available when whiteIpGroup is empty and modifies the default group's whitelist.
+* `master_configuration` - (Optional, Computed, Set, Available since v1.267.0) Configuration information for Elasticsearch dedicated master nodes. See [`master_configuration`](#master_configuration) below.
+* `order_action_type` - (Optional, Available since v1.267.0) Configuration change type. Valid values:
+  - upgrade (default): Upgrade configuration
+  - downgrade: Downgrade configuration.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+-> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
-* `instance_category` - (Optional, ForceNew, Computed, Available since v1.267.0) Version type.
-* `kibana_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch Kibana node settings See [`kibana_configuration`](#kibana_configuration) below.
-* `kibana_private_security_group_id` - (Optional) Kibana private network security group ID
-* `kibana_private_whitelist` - (Optional, Computed, List, Available since v1.87.0) Cluster Kibana node private network access whitelist
-* `kibana_whitelist` - (Optional, Computed, List) Kibana private network access whitelist
-* `master_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch proprietary master node configuration information See [`master_configuration`](#master_configuration) below.
-* `order_action_type` - (Optional, Available since v1.267.0) The instance changes the operation type. UPGRADE, UPGRADE. DOWNGRADE, DOWNGRADE.
+* `password` - (Optional) The access password for the instance. It must be 8 to 32 characters in length and contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters (!@#$%^&*()_+-=).  
+* `payment_type` - (Optional, Computed, Available since v1.267.0) The billing method of the instance. Supported values:
+  - `prepaid`: Subscription
+  - `postpaid`: Pay-as-you-go
+* `private_whitelist` - (Optional, Computed, List) The list of IP addresses in the whitelist. This parameter is available when whiteIpGroup is empty and modifies the default group's whitelist.
+* `protocol` - (Optional, Computed, Available since v1.101.0) The access protocol. Supported protocols: HTTP and HTTPS.  
+* `public_whitelist` - (Optional, Computed, List) The IP address whitelist. This parameter is available when whiteIpGroup is empty and is used to modify the default group's whitelist.
+* `renew_status` - (Optional, Computed) The renewal status. Valid values:
+  - AutoRenewal: Auto-renewal.
+  - ManualRenewal: Manual renewal.
+  - NotRenewal: No renewal.
+* `renewal_duration_unit` - (Optional, Computed) The unit of the auto-renewal period. Valid values:  
+  - M: Month.  
+  - Y: Year.  
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+-> **NOTE:**  This parameter is required when RenewalStatus is set to AutoRenewal.  
 
-* `password` - (Optional) The access password of the instance.
-* `payment_type` - (Optional, Computed, Available since v1.267.0) The payment method of the instance. Optional values: `prepaid` (subscription) and `postpaid` (pay-as-you-go)
-* `private_whitelist` - (Optional, Computed, List) Elasticsearch private network whitelist. (Same as EsIpWhitelist)
-* `protocol` - (Optional, Computed, Available since v1.101.0) Access protocol. Optional values: `HTTP` and **HTTPS * *.
-* `public_whitelist` - (Optional, Computed, List) Elasticseach public network access whitelist IP list
-* `renew_status` - (Optional, Computed) Renewal Status
-* `renewal_duration_unit` - (Optional, Computed) Renewal Period Unit
-* `resource_group_id` - (Optional, ForceNew, Computed, Available since v1.86.0) Resource group to which the instance belongs
-* `setting_config` - (Optional, Computed, Map, Available since v1.125.0) Configuration information
-* `tags` - (Optional, Computed, Map, Available since v1.73.0) Collection of tag key-value pairs
-* `update_strategy` - (Optional, Available since v1.267.0) The change policy for Elasticsearch.
+* `resource_group_id` - (Optional, ForceNew, Computed, Available since v1.86.0) The ID of the resource group to which the instance belongs.
+* `setting_config` - (Optional, Computed, Map, Available since v1.125.0) YML configuration file settings for the instance.
+* `tags` - (Optional, Computed, Map, Available since v1.73.0) Instance tag group.
+* `update_strategy` - (Optional, Available since v1.267.0) Elasticsearch update strategy (for example, index updates, cluster upgrades, or service deployments). Valid values:
+  - blue_green: Blue-green deployment, which enables seamless switching by running two identical environments (blue and green) in parallel.
+  - normal: In-place update, which applies changes directly in the current environment (for example, upgrades or scaling) without requiring additional resources.
+  - intelligent: Intelligent update, where the system automatically analyzes the update type and environment status to dynamically select the optimal strategy (either blue-green or in-place).
 
-The values are as follows:
-  - blue_green: blue-green change, which can realize seamless switching by running two identical environments (blue environment and green environment) in parallel.
-  - normal: In-place changes, changes are made directly in the current environment (for example, upgrades, scaling) without additional resources.
-  - intelligent: intelligent change, the system automatically analyzes the change type and environmental status, and dynamically selects the optimal change method (that is, blue-green change or in-situ change).
+-> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+* `version` - (Required, ForceNew) The instance version. Valid values:
+  - 8.5.1_with_X-Pack
+  - 7.10_with_X-Pack
+  - 6.7_with_X-Pack
+  - 7.7_with_X-Pack
+  - 6.8_with_X-Pack
+  - 6.3_with_X-Pack
+  - 5.6_with_X-Pack
+  - 5.5.3_with_X-Pack
 
-* `version` - (Required, ForceNew) Instance version
-* `warm_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Elasticsearch cluster cold data node configuration See [`warm_node_configuration`](#warm_node_configuration) below.
-* `zone_count` - (Optional, ForceNew, Computed, Int) The number of zones in the Elasticsearch instance.
+-> **NOTE:**  The versions listed above might not include all versions supported by Elasticsearch instances. You can call the [GetRegionConfiguration](https://help.aliyun.com/document_detail/254099.html) operation to view the actual supported versions.
+
+* `warm_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Cold data node configuration for the Elasticsearch cluster. See [`warm_node_configuration`](#warm_node_configuration) below.
+* `zone_count` - (Optional, ForceNew, Computed, Int) The number of zones for the instance. Valid values: 1, 2, and 3. Default value: 1.  
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 
@@ -149,58 +163,65 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ### `client_node_configuration`
 
 The client_node_configuration supports the following:
-* `amount` - (Optional, Int, Available since v1.267.0) Number of disks in the Elasticsearch cluster coordination node
-* `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Elasticsearch cluster coordinates node disk size
-* `disk_type` - (Optional, ForceNew, Available since v1.267.0) Elasticsearch cluster coordination node disk type
-* `spec` - (Optional, Available since v1.267.0) Elasticsearch cluster coordination node specification
+* `amount` - (Optional, Int, Available since v1.267.0) Number of nodes.  
+* `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Node storage capacity, in GB.
+* `disk_type` - (Optional, ForceNew, Available since v1.267.0) Storage type of the node. Only ultra disk (cloud_efficiency) is supported.  
+* `spec` - (Optional) Node specification. You can view specification details in [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
 ### `data_node_configuration`
 
 The data_node_configuration supports the following:
-* `amount` - (Optional, Computed, Int, Available since v1.267.0) Number of data nodes in the Elasticsearch cluster
-* `disk` - (Optional, Int, Available since v1.267.0) Elasticsearch data node disk size
-* `disk_encryption` - (Optional, ForceNew, Computed, Available since v1.267.0) Whether the Elasticsearch data node disk is encrypted
-* `disk_type` - (Optional, ForceNew, Computed, Available since v1.267.0) Elasticsearch cluster data node disk type
-* `performance_level` - (Optional, Computed, Available since v1.267.0) Elasticsearch cluster data node Essd disk level
-* `spec` - (Required, Available since v1.267.0) Elasticsearch data node specification
+* `amount` - (Optional, Computed, Int, Available since v1.267.0) Number of data nodes. Valid values: 2 to 50.
+* `disk` - (Optional, Int, Available since v1.267.0) Storage capacity per node, in GB.
+* `disk_encryption` - (Optional, ForceNew, Computed, Available since v1.267.0) Whether to enable cloud disk encryption:
+  - true: Enabled
+  - false: Disabled.
+* `disk_type` - (Optional, ForceNew, Computed, Available since v1.267.0) Node disk type. Supported types:
+  - cloud_ssd: SSD cloud disk
+  - cloud_efficiency: Ultra cloud disk.
+* `performance_level` - (Optional, Computed, Available since v1.267.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
+* `spec` - (Required, Available since v1.267.0) Node specification. For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
 ### `kibana_configuration`
 
 The kibana_configuration supports the following:
-* `amount` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) The number of disks of the Elasticsearch Kibana node. The default value is 1.
-* `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Elasticsearch Kibana node disk size
-* `spec` - (Required, Available since v1.267.0) Elasticsearch Kibana node disk specifications
+* `amount` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) The number of nodes.
+* `disk` - (Optional, ForceNew, Computed, Int, Available since v1.267.0) Storage capacity per node, in GB.
+* `spec` - (Required, Available since v1.267.0) Node specification. For specification details, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
 ### `master_configuration`
 
 The master_configuration supports the following:
-* `amount` - (Optional, ForceNew, Int, Available since v1.267.0) Elasticsearch proprietary master node number of disks
-* `disk` - (Optional, ForceNew, Int, Available since v1.267.0) Elasticsearch proprietary master node disk size
-* `disk_type` - (Optional, ForceNew, Available since v1.267.0) Elasticsearch proprietary master node disk type
-* `spec` - (Optional, Available since v1.267.0) Elasticsearch proprietary master node specifications
+* `amount` - (Optional, ForceNew, Int, Available since v1.267.0) Number of nodes.
+* `disk` - (Optional, ForceNew, Int, Available since v1.267.0) Node storage capacity, in GB.
+* `disk_type` - (Optional, ForceNew, Available since v1.267.0) Node storage type. Only cloud_ssd (SSD cloud disk) is supported.
+* `spec` - (Optional, Available since v1.267.0) Node specification. For specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
 ### `warm_node_configuration`
 
 The warm_node_configuration supports the following:
-* `amount` - (Optional, Int, Available since v1.267.0) Elasticsearch cluster cold data node disk number
-* `disk` - (Optional, Int, Available since v1.267.0) Elasticsearch cluster cold data node disk size
-* `disk_encryption` - (Optional, ForceNew, Available since v1.267.0) Elasticsearch cluster cold data node Disk encryption
-* `disk_type` - (Optional, ForceNew, Available since v1.267.0) Elasticsearch cluster cold data node disk type
-* `spec` - (Optional, Available since v1.267.0) Elasticsearch cluster cold data node Disk Specification
+* `amount` - (Optional, Int, Available since v1.267.0) Number of nodes.
+* `disk` - (Optional, Int, Available since v1.267.0) Storage capacity per node, in GB.
+* `disk_encryption` - (Optional, ForceNew, Available since v1.267.0) Whether to enable disk encryption. The values are as follows:
+  - true: Enabled.
+  - false: Disabled.
+* `disk_type` - (Optional, ForceNew, Available since v1.267.0) Storage type for the node. Only `cloud_efficiency` (ultra disk) is supported.
+* `spec` - (Optional, Available since v1.267.0) Node specification. For specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above. 
-* `arch_type` - Schema Type:.
-* `create_time` - Instance creation time.
-* `domain` - Elasticsearch cluster private domain name.
-* `kibana_domain` - Kibana address.
-* `kibana_port` - The port assigned by the Kibana node.
-* `public_domain` - The public network address of the current instance.
-* `public_port` - Elasticsearch cluster public network access port
+* `arch_type` - The deployment mode or architecture type:.
+* `create_time` - The time when the instance was created.
+* `domain` - The internal network address of the instance.
+* `kibana_domain` - Kibana endpoint.
+* `kibana_port` - The access port for Kibana.
+* `kibana_private_domain` - The private endpoint of Kibana.
+* `public_domain` - The public endpoint of the instance.
+* `public_port` - The public access port of the instance.
 * `port` - Instance connection port.
-* `status` - Instance change status
+* `status` - The status of the instance.
 
 ## Timeouts
 
