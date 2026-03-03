@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"strings"
 	"time"
 
@@ -10,23 +11,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudDBBackupPolicy() *schema.Resource {
+func resourceAliCloudRdsBackupPolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDBBackupPolicyCreate,
-		Read:   resourceAlicloudDBBackupPolicyRead,
-		Update: resourceAlicloudDBBackupPolicyUpdate,
-		Delete: resourceAlicloudDBBackupPolicyDelete,
+		Create: resourceAliCloudRdsBackupPolicyCreate,
+		Read:   resourceAliCloudRdsBackupPolicyRead,
+		Update: resourceAliCloudRdsBackupPolicyUpdate,
+		Delete: resourceAliCloudRdsBackupPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"instance_id": {
-				Type:     schema.TypeString,
-				ForceNew: true,
-				Required: true,
+			"db_instance_id": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ExactlyOneOf: []string{"db_instance_id", "instance_id"},
 			},
-
+			"instance_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				Deprecated:    "Field 'instance_id' has been deprecated from provider version 1.270.0. New field 'db_instance_id' instead.",
+				ConflictsWith: []string{"db_instance_id"},
+			},
 			"backup_period": {
 				Type:       schema.TypeSet,
 				Elem:       &schema.Schema{Type: schema.TypeString},
@@ -204,41 +218,51 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDBBackupPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRdsBackupPolicyCreate(d *schema.ResourceData, meta interface{}) error {
 
-	d.SetId(d.Get("instance_id").(string))
-
-	return resourceAlicloudDBBackupPolicyUpdate(d, meta)
+	if _, ok := d.GetOk("db_instance_id"); ok {
+		d.SetId(d.Get("db_instance_id").(string))
+	} else if _, ok := d.GetOk("instance_id"); ok {
+		d.SetId(d.Get("instance_id").(string))
+	} else {
+		return WrapError(Error(`[ERROR] Argument "instance_id" or "db_instance_id" must be set one!`))
+	}
+	return resourceAliCloudRdsBackupPolicyUpdate(d, meta)
 }
 
-func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRdsBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	rdsService := RdsService{client}
-	object, err := rdsService.DescribeBackupPolicy(d.Id())
+	rdsServiceV2 := RdsServiceV2{client}
+
+	objectRaw, err := rdsServiceV2.DescribeRdsBackupPolicy(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_db_backup_policy DescribeRdsBackupPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	d.Set("instance_id", d.Id())
-	d.Set("backup_time", object["PreferredBackupTime"])
-	d.Set("backup_period", strings.Split(object["PreferredBackupPeriod"].(string), ","))
-	d.Set("retention_period", formatInt(object["BackupRetentionPeriod"]))
-	d.Set("preferred_backup_time", object["PreferredBackupTime"])
-	d.Set("preferred_backup_period", strings.Split(object["PreferredBackupPeriod"].(string), ","))
-	d.Set("backup_retention_period", formatInt(object["BackupRetentionPeriod"]))
-	d.Set("log_backup", object["BackupLog"] == "Enable")
-	d.Set("enable_backup_log", object["EnableBackupLog"] == "1")
-	d.Set("log_retention_period", formatInt(object["LogBackupRetentionPeriod"]))
-	d.Set("log_backup_retention_period", formatInt(object["LogBackupRetentionPeriod"]))
-	d.Set("local_log_retention_hours", formatInt(object["LocalLogRetentionHours"]))
-	d.Set("local_log_retention_space", formatInt(object["LocalLogRetentionSpace"]))
-	d.Set("released_keep_policy", object["ReleasedKeepPolicy"])
-	d.Set("category", object["Category"])
-	d.Set("enable_increment_data_backup", object["EnableIncrementDataBackup"].(bool))
-	d.Set("log_backup_local_retention_number", object["LogBackupLocalRetentionNumber"])
+	d.Set("db_instance_id", d.Id())
+	d.Set("backup_time", objectRaw["PreferredBackupTime"])
+	d.Set("backup_period", strings.Split(objectRaw["PreferredBackupPeriod"].(string), ","))
+	d.Set("retention_period", formatInt(objectRaw["BackupRetentionPeriod"]))
+	d.Set("preferred_backup_time", objectRaw["PreferredBackupTime"])
+	d.Set("preferred_backup_period", strings.Split(objectRaw["PreferredBackupPeriod"].(string), ","))
+	d.Set("backup_retention_period", formatInt(objectRaw["BackupRetentionPeriod"]))
+	d.Set("log_backup", objectRaw["BackupLog"] == "Enable")
+	d.Set("enable_backup_log", objectRaw["EnableBackupLog"] == "1")
+	d.Set("log_retention_period", formatInt(objectRaw["LogBackupRetentionPeriod"]))
+	d.Set("log_backup_retention_period", formatInt(objectRaw["LogBackupRetentionPeriod"]))
+	d.Set("local_log_retention_hours", formatInt(objectRaw["LocalLogRetentionHours"]))
+	d.Set("local_log_retention_space", formatInt(objectRaw["LocalLogRetentionSpace"]))
+	d.Set("released_keep_policy", objectRaw["ReleasedKeepPolicy"])
+	d.Set("category", objectRaw["Category"])
+	d.Set("enable_increment_data_backup", objectRaw["EnableIncrementDataBackup"].(bool))
+	d.Set("log_backup_local_retention_number", objectRaw["LogBackupLocalRetentionNumber"])
+	rdsService := RdsService{client}
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -250,23 +274,23 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 	// At present, the sql server database does not support setting high_space_usage_protection and it`s has default value
 	if instance["Engine"] == "SQLServer" {
 		d.Set("high_space_usage_protection", "Enable")
-		d.Set("backup_method", object["BackupMethod"])
+		d.Set("backup_method", objectRaw["BackupMethod"])
 	} else {
-		d.Set("high_space_usage_protection", object["HighSpaceUsageProtection"])
-		d.Set("backup_interval", object["BackupInterval"])
+		d.Set("high_space_usage_protection", objectRaw["HighSpaceUsageProtection"])
+		d.Set("backup_interval", objectRaw["BackupInterval"])
 	}
 	if instance["Engine"] == "SQLServer" && instance["Category"] == "AlwaysOn" {
-		d.Set("backup_priority", formatInt(object["BackupPriority"]))
+		d.Set("backup_priority", formatInt(objectRaw["BackupPriority"]))
 	}
-	d.Set("log_backup_frequency", object["LogBackupFrequency"])
-	d.Set("compress_type", object["CompressType"])
-	d.Set("archive_backup_retention_period", formatInt(object["ArchiveBackupRetentionPeriod"]))
-	d.Set("archive_backup_keep_count", formatInt(object["ArchiveBackupKeepCount"]))
-	d.Set("archive_backup_keep_policy", object["ArchiveBackupKeepPolicy"])
+	d.Set("log_backup_frequency", objectRaw["LogBackupFrequency"])
+	d.Set("compress_type", objectRaw["CompressType"])
+	d.Set("archive_backup_retention_period", formatInt(objectRaw["ArchiveBackupRetentionPeriod"]))
+	d.Set("archive_backup_keep_count", formatInt(objectRaw["ArchiveBackupKeepCount"]))
+	d.Set("archive_backup_keep_policy", objectRaw["ArchiveBackupKeepPolicy"])
 	return nil
 }
 
-func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRdsBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	updateForData := false
@@ -305,10 +329,10 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 
-	return resourceAlicloudDBBackupPolicyRead(d, meta)
+	return resourceAliCloudRdsBackupPolicyRead(d, meta)
 }
 
-func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRdsBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 
