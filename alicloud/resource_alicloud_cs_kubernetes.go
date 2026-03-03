@@ -478,7 +478,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Removed:  "Field 'node_port_range' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
 			"runtime": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -558,7 +558,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Deprecated: "Field 'cluster_ca_cert' has been deprecated from provider version 1.248.0. From version 1.248.0, new DataSource 'alicloud_cs_cluster_credential' is recommended to manage cluster's kubeconfig, you can also save the 'certificate_authority.cluster_cert' attribute content of new DataSource 'alicloud_cs_cluster_credential' to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.",
 			},
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -583,7 +583,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"connections": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -871,7 +871,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 	roaCsClient, err := client.NewRoaCsClient()
 	if err == nil {
 		csClient := CsClient{client: roaCsClient}
-		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
+		stateConf := BuildStateConf([]string{}, []string{"success", "running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "createCluster", jobDetail)
 		}
@@ -1279,7 +1279,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), object.RegionId)
 	}
 
-	d.Set("connections", connection)
+	d.Set("connections", []interface{}{connection})
 	d.Set("slb_internet", connection["master_public_ip"])
 	if endPoint["intranet_api_server_endpoint"] != "" {
 		d.Set("slb_intranet", strings.Split(strings.Split(endPoint["intranet_api_server_endpoint"], ":")[1], "/")[2])
@@ -1639,8 +1639,10 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	}
 
 	if runtime, ok := d.GetOk("runtime"); ok {
-		if v := runtime.(map[string]interface{}); len(v) > 0 {
-			creationArgs.Runtime = expandKubernetesRuntimeConfig(v)
+		if raw := runtime.([]interface{}); len(raw) > 0 {
+			if v := raw[0].(map[string]interface{}); len(v) > 0 {
+				creationArgs.Runtime = expandKubernetesRuntimeConfig(v)
+			}
 		}
 	}
 
@@ -1708,12 +1710,11 @@ func flattenAlicloudCSCertificate(certificate *roacs.DescribeClusterUserKubeconf
 	kubeConfig := make(map[string]interface{})
 	_ = yaml.Unmarshal([]byte(tea.StringValue(certificate.Config)), &kubeConfig)
 
-	m := make(map[string]string)
-	m["cluster_cert"] = kubeConfig["clusters"].([]interface{})[0].(map[interface{}]interface{})["cluster"].(map[interface{}]interface{})["certificate-authority-data"].(string)
-	m["client_cert"] = kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-certificate-data"].(string)
-	m["client_key"] = kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-key-data"].(string)
-
-	return m
+	return map[string]string{
+		"cluster_cert": kubeConfig["clusters"].([]interface{})[0].(map[interface{}]interface{})["cluster"].(map[interface{}]interface{})["certificate-authority-data"].(string),
+		"client_cert":  kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-certificate-data"].(string),
+		"client_key":   kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-key-data"].(string),
+	}
 }
 
 // ACK pro maintenance window

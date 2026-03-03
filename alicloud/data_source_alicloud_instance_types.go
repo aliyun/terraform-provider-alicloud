@@ -156,7 +156,7 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"gpu": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -172,7 +172,7 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 							},
 						},
 						"burstable_instance": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -224,7 +224,7 @@ func dataSourceAliCloudInstanceTypes() *schema.Resource {
 							Computed: true,
 						},
 						"local_storage": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -517,12 +517,12 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []instance
 			"amount":   strconv.Itoa(formatInt(t.InstanceType["GPUAmount"])),
 			"category": t.InstanceType["GPUSpec"],
 		}
-		mapping["gpu"] = gpu
+		mapping["gpu"] = []interface{}{gpu}
 		brust := map[string]interface{}{
 			"initial_credit":  strconv.Itoa(formatInt(t.InstanceType["InitialCredit"])),
 			"baseline_credit": strconv.Itoa(formatInt(t.InstanceType["BaselineCredit"])),
 		}
-		mapping["burstable_instance"] = brust
+		mapping["burstable_instance"] = []interface{}{brust}
 		local := map[string]interface{}{
 			"amount":   strconv.Itoa(formatInt(t.InstanceType["LocalStorageAmount"])),
 			"category": t.InstanceType["LocalStorageCategory"],
@@ -532,7 +532,7 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []instance
 		} else {
 			local["capacity"] = "0"
 		}
-		mapping["local_storage"] = local
+		mapping["local_storage"] = []interface{}{local}
 
 		ids = append(ids, fmt.Sprint(t.InstanceType["InstanceTypeId"]))
 		s = append(s, mapping)

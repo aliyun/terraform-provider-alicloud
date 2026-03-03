@@ -61,7 +61,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The id of Container Registry repository. The value is in format `namespace/repository`.
-* `domain_list` - (Optional) The repository domain list.
+* `domain_list` - (Optional) A list of repository domain.
   * `public` - Domain of public endpoint.
   * `internal` - Domain of internal endpoint, only in some regions.
   * `vpc` - Domain of vpc endpoint.

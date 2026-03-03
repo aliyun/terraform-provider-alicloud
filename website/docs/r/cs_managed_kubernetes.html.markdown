@@ -435,7 +435,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specify the `pod
 * `worker_data_disk_category` - (Removed) The data disk category of worker, use `worker_data_disks` to instead it.
 * `worker_data_disk_size` - (Removed) The data disk size of worker, use `worker_data_disks` to instead it.
 * `worker_numbers` - (Removed) The number of workers, use `worker_number` to instead it.
-* `runtime` - (Removed since v1.212.0) The runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). See [`runtime`](#runtime) below.
+* `runtime` - (Removed since v1.212.0) A list of the runtime of the containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). See [`runtime`](#runtime) below.
 * `enable_ssh` - (Removed since v1.212.0) Enable login to the node through SSH. Default to `false`.
 * `rds_instances` - (Removed since v1.212.0) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `install_cloud_monitor` - (Removed since v1.212.0) Install cloud monitor agent on ECS. Default is `true` in previous version. From provider version 1.208.0, the default value is `false`.
@@ -851,13 +851,13 @@ The following attributes are exported:
   * `id` - ID of the node.
   * `name` - Node name.
   * `private_ip` - The private IP address of node.
-* `connections` - Map of kubernetes cluster connection information.
+* `connections` - A list of kubernetes cluster connection information.
   * `api_server_internet` - API Server Internet endpoint.
   * `api_server_intranet` - API Server Intranet endpoint.
   * `master_public_ip` - Master node SSH IP address.
   * `service_domain` - Service Access Domain.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
-* `certificate_authority` - (Map, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
+* `certificate_authority` - (List, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
   * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
   * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.

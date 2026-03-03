@@ -7,7 +7,7 @@ description: |-
   Provides a list of Container Service Serverless Kubernetes Clusters to be used by the alicloud_cs_serverless_kubernetes_clusters resource.
 ---
 
-# alicloud\_cs\_serverless\_kubernetes\_clusters
+# alicloud_cs_serverless_kubernetes_clusters
 
 This data source provides a list Container Service Serverless Kubernetes Clusters on Alibaba Cloud.
 
@@ -53,7 +53,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `security_group_id` - The ID of security group where the current cluster  is located.
   * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
   * `deletion_protection` - Whether the cluster support delete protection.  
-  * `connections` - Map of serverless cluster connection information. It contains several attributes to `Block Connections`.
+  * `connections` - A list of serverless cluster connection information.
     * `api_server_internet` - API Server Internet endpoint.
     * `api_server_intranet` - API Server Intranet endpoint.
     * `master_public_ip` - Master node SSH IP address.

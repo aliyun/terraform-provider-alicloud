@@ -223,7 +223,7 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 							},
 						},
 						"connections": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -517,7 +517,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		}
 		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", ct.ClusterID, ct.RegionID)
 
-		mapping["connections"] = connection
+		mapping["connections"] = []interface{}{connection}
 
 		mapping["state"] = ct.State
 		object, err := csClient.DescribeClusterDetail(ct.ClusterID)
