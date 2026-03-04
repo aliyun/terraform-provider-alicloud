@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
+func TestAccAliCloudPolarDBNodeClasses(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.PolarDBSupportRegions)
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_polardb_node_classes.default"
