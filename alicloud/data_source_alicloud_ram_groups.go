@@ -152,7 +152,7 @@ func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) e
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
-		if err != nil {
+		if err != nil && !NotFoundError(err) {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
