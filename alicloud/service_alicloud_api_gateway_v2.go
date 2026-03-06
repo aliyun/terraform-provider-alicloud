@@ -320,6 +320,76 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayAclEntryAttachmentAttribute(id s
 	return object, WrapErrorf(NotFoundErr("AclEntryAttachment", id), NotFoundWithResponse, response)
 }
 
+func (s *ApiGatewayServiceV2) DescribeApiGatewayGroupPluginAttachment(id string) (object map[string]interface{}, err error) {
+	parts, err2 := ParseResourceId(id, 3)
+	if err2 != nil {
+		return object, WrapError(err2)
+	}
+
+	client := s.client
+	var response map[string]interface{}
+
+	action := "DescribePluginsByGroup"
+	request := make(map[string]interface{})
+	request["GroupId"] = parts[0]
+	request["StageName"] = parts[2]
+	request["PageSize"] = 100
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(1*time.Minute), func() *resource.RetryError {
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvokeDescribePluginsByGroupApiFail"}) {
+			return object, WrapErrorf(NotFoundErr("GroupPluginAttachment", id), NotFoundMsg, response)
+		}
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// 获取数据
+	v, err := jsonpath.Get("$.Plugins.PluginAttribute[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, "$.Plugins.PluginAttribute[*]", response)
+	}
+
+	// 检查数据是否存在
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("GroupPluginAttachment", id), NotFoundMsg, response)
+	}
+
+	// 处理查询到的数据
+	plugins := v.([]interface{})
+
+	// 找到匹配的插件（根据 plugin_id）
+	pluginId := parts[1]
+
+	var foundPlugin map[string]interface{}
+
+	for _, plugin := range plugins {
+		pluginMap := plugin.(map[string]interface{})
+		if pluginMap["PluginId"].(string) == pluginId {
+			foundPlugin = pluginMap
+			break
+		}
+	}
+
+	if foundPlugin == nil {
+		return object, WrapErrorf(NotFoundErr("GroupPluginAttachment", id), NotFoundMsg, response)
+	}
+
+	return foundPlugin, nil
+}
+
 func (s *ApiGatewayServiceV2) DescribeApiGatewayInstanceAclAttachmentAttribute(id string) (object map[string]interface{}, err error) {
 	parts, err := ParseResourceIds(id)
 	if err != nil {
