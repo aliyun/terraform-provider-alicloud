@@ -145,6 +145,7 @@ func TestAccAliCloudRdsBackup_PostgreSQL(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -297,12 +298,13 @@ func TestAccAliCloudRdsBackup_SQLServer1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_id":    "${alicloud_db_instance.default.id}",
-					"backup_strategy":   "db",
-					"backup_method":     "Physical",
-					"backup_type":       "FullBackup",
-					"db_name":           "${alicloud_db_database.default.name}",
-					"remove_from_state": "true",
+					"db_instance_id":          "${alicloud_db_instance.default.id}",
+					"backup_strategy":         "db",
+					"backup_method":           "Physical",
+					"backup_type":             "FullBackup",
+					"backup_retention_period": "7",
+					"db_name":                 "${alicloud_db_database.default.name}",
+					"remove_from_state":       "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -318,7 +320,7 @@ func TestAccAliCloudRdsBackup_SQLServer1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy"},
+				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_retention_period"},
 			},
 		},
 	})
@@ -483,7 +485,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudRdsBackupCreate(d, rawClient)
+		err := resourceAliCloudRdsBackupCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -500,7 +502,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudRdsBackupCreate(d, rawClient)
+		err := resourceAliCloudRdsBackupCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -517,7 +519,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudRdsBackupCreate(dCreate, rawClient)
+		err := resourceAliCloudRdsBackupCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -529,7 +531,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 		patcheDescribeBackups := gomonkey.ApplyMethod(reflect.TypeOf(&RdsService{}), "DescribeRdsBackup", func(*RdsService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudRdsBackupUpdate(d, rawClient)
+		err := resourceAliCloudRdsBackupUpdate(d, rawClient)
 		patcheDescribeBackups.Reset()
 		assert.Nil(t, err)
 	})
@@ -544,7 +546,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudRdsBackupDelete(d, rawClient)
+		err := resourceAliCloudRdsBackupDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -561,7 +563,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudRdsBackupDelete(d, rawClient)
+		err := resourceAliCloudRdsBackupDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -579,7 +581,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 			return responseMock["DeleteNormal"]("")
 		})
 
-		err := resourceAlicloudRdsBackupDelete(d, rawClient)
+		err := resourceAliCloudRdsBackupDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -596,7 +598,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudRdsBackupDelete(d, rawClient)
+		err := resourceAliCloudRdsBackupDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -617,7 +619,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudRdsBackupDelete(resourceData, rawClient)
+		err := resourceAliCloudRdsBackupDelete(resourceData, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -634,7 +636,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudRdsBackupRead(d, rawClient)
+		err := resourceAliCloudRdsBackupRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -650,7 +652,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudRdsBackupRead(d, rawClient)
+		err := resourceAliCloudRdsBackupRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
