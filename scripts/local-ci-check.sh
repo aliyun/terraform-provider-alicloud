@@ -27,6 +27,7 @@ SKIP_ERRCHECK=true  # Default: skip errcheck locally (CI still runs it)
 SKIP_MARKDOWN_LINT=true  # Default: skip markdown lint locally (CI still runs it)
 SKIP_MARKDOWN_LINK_CHECK=true  # Default: skip markdown link check locally (CI still runs it)
 SKIP_EXAMPLE_TEST=false  # Default: run example tests (use --skip-example-test to disable)
+SKIP_RESOURCE_TEST=false  # Default: run resource integration tests (use --skip-resource-test to disable)
 STRICT_MODE=false  # Strict mode checks ALL docs like CI does
 
 while [[ $# -gt 0 ]]; do
@@ -59,11 +60,16 @@ while [[ $# -gt 0 ]]; do
       SKIP_EXAMPLE_TEST=true
       shift
       ;;
+    --skip-resource-test)
+      SKIP_RESOURCE_TEST=true
+      shift
+      ;;
     --quick)
       SKIP_BUILD=true
       SKIP_TEST=true
       SKIP_ERRCHECK=true
       SKIP_EXAMPLE_TEST=true
+      SKIP_RESOURCE_TEST=true
       shift
       ;;
     --strict)
@@ -81,7 +87,8 @@ while [[ $# -gt 0 ]]; do
       echo "  --run-markdown-lint       Run markdown lint (default: skipped locally)"
       echo "  --run-markdown-link-check Run markdown link check (default: skipped locally)"
       echo "  --skip-example-test       Skip example tests (default: enabled)"
-      echo "  --quick                   Skip build, tests, errcheck, and example tests (faster checks)"
+      echo "  --skip-resource-test      Skip resource integration tests (default: enabled)"
+      echo "  --quick                   Skip build, tests, errcheck, example tests, and resource tests (faster checks)"
       echo "  --strict                  Check ALL docs (like CI), not just changed files"
       echo "  -h, --help                Show this help message"
       echo ""
@@ -709,6 +716,89 @@ else
         fi
       fi
     fi
+  fi
+fi
+
+# ============================================================================
+# 7. Resource Integration Tests
+# ============================================================================
+
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}  Part 7: Resource Integration Tests${NC}"
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo
+
+CHANGED_RESOURCE_FILES=$(echo "$CHANGED_FILES" | grep -E "^alicloud/(resource|data_source)_alicloud_.*\.go$" | grep -v "_test\.go$" || true)
+
+if [ -z "$CHANGED_RESOURCE_FILES" ]; then
+  echo -e "${BLUE}▶ No resource or data source changes detected${NC}"
+  echo -e "${GREEN}✓ SKIPPED: Resource Integration Tests (no resource changes)${NC}"
+  echo
+elif [ "$SKIP_RESOURCE_TEST" = true ]; then
+  echo -e "${YELLOW}⚠ Skipping Resource Integration Tests (use default to enable)${NC}"
+  echo
+  echo -e "${BLUE}Changed resources detected:${NC}"
+  for file in $CHANGED_RESOURCE_FILES; do
+    resource_name=$(basename "$file" .go | sed -E 's/^(resource|data_source)_//')
+    echo -e "  - ${resource_name}"
+  done
+  echo
+  echo -e "${BLUE}💡 To enable resource integration tests, run:${NC}"
+  echo -e "  ${GREEN}make ci-check${NC}  (default behavior, requires credentials)"
+  echo
+else
+  if [ -z "$ALICLOUD_ACCESS_KEY" ] || [ -z "$ALICLOUD_SECRET_KEY" ]; then
+    echo -e "${RED}✗ Cannot run resource integration tests: AliCloud credentials not set${NC}"
+    echo
+    echo -e "${YELLOW}Please set the following environment variables:${NC}"
+    echo -e "  ${GREEN}export ALICLOUD_ACCESS_KEY=your_access_key${NC}"
+    echo -e "  ${GREEN}export ALICLOUD_SECRET_KEY=your_secret_key${NC}"
+    echo -e "  ${GREEN}export ALICLOUD_REGION=cn-hangzhou${NC}  ${YELLOW}# optional${NC}"
+    echo
+    echo -e "${BLUE}💡 To skip resource integration tests:${NC}"
+    echo -e "  ${GREEN}make ci-check SKIP_TEST=1${NC}"
+    echo
+    FAILED_CHECKS+=("Resource Integration Tests (credentials not set)")
+  else
+    RESOURCE_NAMES=""
+    for file in $CHANGED_RESOURCE_FILES; do
+      resource_name=$(basename "$file" .go | sed -E 's/^(resource|data_source)_//')
+      RESOURCE_NAMES="${RESOURCE_NAMES}${resource_name} "
+    done
+    RESOURCE_NAMES=$(echo "$RESOURCE_NAMES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+    RESOURCE_COUNT=$(echo "$RESOURCE_NAMES" | wc -w | tr -d ' ')
+    echo -e "${BLUE}▶ Found ${RESOURCE_COUNT} changed resource(s) to test:${NC}"
+    for resource in $RESOURCE_NAMES; do
+      echo -e "  - ${resource}"
+    done
+    echo
+    echo -e "${YELLOW}⚠ WARNING: Resource integration tests will create REAL resources in your AliCloud account!${NC}"
+    echo
+
+    RESOURCE_TEST_FAILED=false
+    for resource in $RESOURCE_NAMES; do
+      echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+      echo -e "${BLUE}▶ Running integration tests for: ${resource}${NC}"
+      echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+      if make -C "$PROJECT_ROOT" test-resource-debug RESOURCE="${resource}"; then
+        echo -e "${GREEN}✓ PASSED: Resource Integration Test (${resource})${NC}"
+        PASSED_CHECKS+=("Resource Integration Test (${resource})")
+      else
+        echo -e "${RED}✗ FAILED: Resource Integration Test (${resource})${NC}"
+        FAILED_CHECKS+=("Resource Integration Test (${resource})")
+        RESOURCE_TEST_FAILED=true
+      fi
+      echo
+    done
+
+    if [ "$RESOURCE_TEST_FAILED" = true ]; then
+      echo -e "${RED}✗ Some resource integration tests failed${NC}"
+    else
+      echo -e "${GREEN}✓ All resource integration tests passed${NC}"
+    fi
+    echo
   fi
 fi
 

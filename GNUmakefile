@@ -173,8 +173,9 @@ commit:
 
 # Local CI checks
 # Usage:
-#   make ci-check                    # Run all checks including example tests (default)
+#   make ci-check                    # Run all checks including example tests and resource integration tests (default)
 #   make ci-check SKIP_EXAMPLE=1     # Run all checks except example tests
+#   make ci-check SKIP_TEST=1        # Skip resource integration tests
 #   make ci-check SKIP_BUILD=1       # Skip build check
 #   make ci-check-quick              # Quick check (skip build, tests, errcheck, and example tests)
 ci-check: fmtcheck
@@ -200,13 +201,14 @@ ci-check: fmtcheck
 	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
 	    fi; \
 	fi
-	@if [ "$(SKIP_EXAMPLE)" = "1" ]; then \
-		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-example-test --skip-build; \
-	elif [ "$(SKIP_BUILD)" = "1" ]; then \
-		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-build; \
-	else \
-		bash "$(CURDIR)/scripts/local-ci-check.sh" --skip-build; \
-	fi
+	@CI_CHECK_FLAGS="--skip-build"; \
+	if [ "$(SKIP_EXAMPLE)" = "1" ]; then \
+		CI_CHECK_FLAGS="$$CI_CHECK_FLAGS --skip-example-test"; \
+	fi; \
+	if [ "$(SKIP_TEST)" = "1" ]; then \
+		CI_CHECK_FLAGS="$$CI_CHECK_FLAGS --skip-resource-test"; \
+	fi; \
+	bash "$(CURDIR)/scripts/local-ci-check.sh" $$CI_CHECK_FLAGS
 
 # Quick CI check (skip build and tests)
 ci-check-quick:

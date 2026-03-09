@@ -178,6 +178,11 @@ func resourceAliCloudEcsNetworkInterface() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"delete_on_release": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -267,6 +272,10 @@ func resourceAliCloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 		request["SourceDestCheck"] = v
 	}
 
+	if v, ok := d.GetOkExists("delete_on_release"); ok {
+		request["DeleteOnRelease"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
@@ -353,6 +362,7 @@ func resourceAliCloudEcsNetworkInterfaceRead(d *schema.ResourceData, meta interf
 	d.Set("instance_type", object["Type"])
 	d.Set("network_interface_traffic_mode", object["NetworkInterfaceTrafficMode"])
 	d.Set("source_dest_check", object["SourceDestCheck"])
+	d.Set("delete_on_release", object["DeleteOnRelease"])
 
 	return nil
 }
@@ -411,6 +421,14 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		}
 	}
 
+	if d.HasChange("delete_on_release") {
+		update = true
+
+		if v, ok := d.GetOkExists("delete_on_release"); ok {
+			request["DeleteOnRelease"] = v
+		}
+	}
+
 	if update {
 		action := "ModifyNetworkInterfaceAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -437,6 +455,7 @@ func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		d.SetPartial("security_groups")
 		d.SetPartial("security_group_ids")
 		d.SetPartial("source_dest_check")
+		d.SetPartial("delete_on_release")
 
 		if updateSecurityGroup {
 			time.Sleep(500 * time.Millisecond)
