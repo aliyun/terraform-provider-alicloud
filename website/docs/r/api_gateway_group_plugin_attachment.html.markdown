@@ -13,7 +13,7 @@ Provides a plugin attachment resource.It is used for attaching a specific plugin
 
 For information about Api Gateway Plugin attachment and how to use it, see [Attach Plugin to specified API GROUP](https://www.alibabacloud.com/help/en/api-gateway/traditional-api-gateway/developer-reference/api-cloudapi-2016-07-14-attachgroupplugin)
 
--> **NOTE:** Available since v1.272.0.
+-> **NOTE:** Available since v1.273.0
 
 -> **NOTE:** Terraform will auto build plugin attachment while it uses `alicloud_api_gateway_group_plugin_attachment` to build.
 
@@ -63,3 +63,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the plugin attachment of api gateway., formatted as `<group_id>:<plugin_id>:<stage_name>`.
+
+## Import
+
+Api Gateway Model can be imported using the id, e.g.
