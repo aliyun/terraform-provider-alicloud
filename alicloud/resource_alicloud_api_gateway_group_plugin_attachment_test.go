@@ -46,7 +46,11 @@ func TestAccAliCloudApiGatewayGroupPluginAttachment(t *testing.T) {
 					"plugin_id":  "${alicloud_api_gateway_plugin.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"group_id":   CHECKSET,
+						"stage_name": "RELEASE",
+						"plugin_id":  CHECKSET,
+					}),
 				),
 			},
 			{
