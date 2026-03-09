@@ -106,13 +106,11 @@ func resourceAlicloudApiGatewayGroupPluginAttachmentRead(d *schema.ResourceData,
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_api_gateway_group_plugin_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	// 获取数据
 	v, err := jsonpath.Get("$.Plugins.PluginAttribute[*]", response)
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "$.Plugins.PluginAttribute[*]", response)
 	}
 
-	// 检查数据是否存在
 	if len(v.([]interface{})) == 0 {
 		if !d.IsNewResource() {
 			log.Printf("[DEBUG] Resource not found, removing from state")
@@ -122,10 +120,8 @@ func resourceAlicloudApiGatewayGroupPluginAttachmentRead(d *schema.ResourceData,
 		return WrapErrorf(NotFoundErr("GroupPluginAttachment", d.Id()), NotFoundMsg, response)
 	}
 
-	// 处理查询到的数据
 	plugins := v.([]interface{})
 
-	// 找到匹配的插件（根据 plugin_id）
 	pluginId := parts[1]
 
 	var foundPlugin map[string]interface{}
@@ -147,9 +143,9 @@ func resourceAlicloudApiGatewayGroupPluginAttachmentRead(d *schema.ResourceData,
 		return WrapErrorf(NotFoundErr("GroupPluginAttachment", d.Id()), NotFoundMsg, response)
 	}
 
-	d.Set("group_id", parts[0])   // 从 ID 中获取
-	d.Set("stage_name", parts[2]) // 从 ID 中获取 (假设 parts[2] 是 stage_name)
-	d.Set("plugin_id", parts[1])  // 从 ID 中获取 (假设 parts[1] 是 plugin_id)
+	d.Set("group_id", parts[0])
+	d.Set("stage_name", parts[2])
+	d.Set("plugin_id", parts[1])
 
 	return nil
 
