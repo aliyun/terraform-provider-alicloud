@@ -66,4 +66,8 @@ The following attributes are exported:
 
 ## Import
 
-Api Gateway Model can be imported using the id, e.g.
+Api Gateway group plugin attachment a can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_api_gateway_group_plugin_attachment.example <group_id>:<plugin_id>:<stage_name>
+```
