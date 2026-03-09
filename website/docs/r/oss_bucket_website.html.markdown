@@ -42,6 +42,8 @@ resource "alicloud_oss_bucket" "defaultnVj9x3" {
   bucket        = "${var.name}-${random_uuid.default.result}"
   storage_class = "Standard"
   lifecycle {
+    # When you use `alicloud_oss_bucket_website`, you must add `ignore_changes` for the `website` attribute
+    # on `alicloud_oss_bucket` to avoid unexpected diffs caused by both resources managing the same configuration.
     ignore_changes = [website]
   }
 }
