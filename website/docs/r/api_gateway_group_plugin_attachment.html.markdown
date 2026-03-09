@@ -62,7 +62,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the plugin attachment of api gateway., formatted as `<group_id>:<plugin_id>:<stage_name>`.
+* `id` - The resource ID of the group plugin attachment. The value formats as `<group_id>:<plugin_id>:<stage_name>`.
 
 ## Import
 
