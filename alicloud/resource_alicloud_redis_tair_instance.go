@@ -64,6 +64,14 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Immediately", "MaintainTime"}, false),
 			},
+			"encryption_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"encryption_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"engine_version": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -181,6 +189,10 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"secondary_zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -234,6 +246,12 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"tde_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"enabled", "disabled"}, false),
 			},
 			"tags": tagsSchema(),
 			"tair_instance_id": {
@@ -527,6 +545,18 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	}
 	if objectRaw["SecurityGroupId"] != nil {
 		d.Set("security_group_id", objectRaw["SecurityGroupId"])
+	}
+
+	checkValue00 := d.Get("instance_type")
+	checkValue01 := d.Get("engine_version")
+	if (checkValue00 == "tair_rdb") && (InArray(fmt.Sprint(checkValue01), []string{"6.0", "7.0"})) {
+		objectRaw, err = redisServiceV2.DescribeTairInstanceDescribeInstanceTDEStatus(d.Id())
+		if err != nil && !NotFoundError(err) {
+			return WrapError(err)
+		}
+
+		d.Set("tde_status", objectRaw["TDEStatus"])
+
 	}
 
 	objectRaw, err = redisServiceV2.DescribeTairInstanceDescribeInstanceSSL(d.Id())
@@ -1007,6 +1037,48 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		}
 		redisServiceV2 := RedisServiceV2{client}
 		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "ModifyInstanceTDE"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("encryption_name"); ok {
+		request["EncryptionName"] = v
+	}
+	if v, ok := d.GetOk("role_arn"); ok {
+		request["RoleArn"] = v
+	}
+	if v, ok := d.GetOk("encryption_key"); ok {
+		request["EncryptionKey"] = v
+	}
+	if d.HasChange("tde_status") {
+		update = true
+	}
+	request["TDEStatus"] = d.Get("tde_status")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		redisServiceV2 := RedisServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
