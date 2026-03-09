@@ -16,9 +16,6 @@ func TestAccAliCloudApiGatewayGroupPluginAttachment(t *testing.T) {
 	resourceId := "alicloud_api_gateway_group_plugin_attachment.default"
 	ra := resourceAttrInit(resourceId, apiGatewayGroupPluginAttachmentBasicMap)
 
-	//serviceFunc := func() interface{} {
-	//	return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	//}
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ApiGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeApiGatewayGroupPluginAttachment")
@@ -42,14 +39,14 @@ func TestAccAliCloudApiGatewayGroupPluginAttachment(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"group_id":   "${alicloud_api_gateway_group.default.id}",
-					"stage_name": "RELEASE",
 					"plugin_id":  "${alicloud_api_gateway_plugin.default.id}",
+					"stage_name": "RELEASE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"group_id":   CHECKSET,
-						"stage_name": "RELEASE",
 						"plugin_id":  CHECKSET,
+						"stage_name": "RELEASE",
 					}),
 				),
 			},
@@ -85,6 +82,6 @@ resource "alicloud_api_gateway_plugin" "default" {
 
 var apiGatewayGroupPluginAttachmentBasicMap = map[string]string{
 	"group_id":   CHECKSET,
-	"stage_name": "RELEASE",
 	"plugin_id":  CHECKSET,
+	"stage_name": "RELEASE",
 }

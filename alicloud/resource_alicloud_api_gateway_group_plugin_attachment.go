@@ -2,8 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
-	"log"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -76,76 +74,21 @@ func resourceAlicloudApiGatewayGroupPluginAttachmentCreate(d *schema.ResourceDat
 
 func resourceAlicloudApiGatewayGroupPluginAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+	apiGatewayServiceV2 := ApiGatewayServiceV2{client}
 
-	action := "DescribePluginsByGroup"
-	request := make(map[string]interface{})
-	var err error
-	parts, err := ParseResourceId(d.Id(), 3)
-	if err != nil {
-		return WrapErrorf(fmt.Errorf("id is not a expe"), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	request["GroupId"] = parts[0]
-	request["StageName"] = parts[2]
-	request["PageSize"] = 100
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, false)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(action, response, request)
-		return nil
-	})
+	objectRaw, err := apiGatewayServiceV2.DescribeApiGatewayGroupPluginAttachment(d.Id())
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_api_gateway_group_plugin_attachment", action, AlibabaCloudSdkGoERROR)
-	}
-
-	v, err := jsonpath.Get("$.Plugins.PluginAttribute[*]", response)
-	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "$.Plugins.PluginAttribute[*]", response)
-	}
-
-	if len(v.([]interface{})) == 0 {
-		if !d.IsNewResource() {
-			log.Printf("[DEBUG] Resource not found, removing from state")
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapErrorf(NotFoundErr("GroupPluginAttachment", d.Id()), NotFoundMsg, response)
+		return WrapError(err)
 	}
 
-	plugins := v.([]interface{})
-
-	pluginId := parts[1]
-
-	var foundPlugin map[string]interface{}
-
-	for _, plugin := range plugins {
-		pluginMap := plugin.(map[string]interface{})
-		if pluginMap["PluginId"].(string) == pluginId {
-			foundPlugin = pluginMap
-			break
-		}
-	}
-
-	if foundPlugin == nil {
-		if !d.IsNewResource() {
-			log.Printf("[DEBUG] Plugin attachment not found, removing from state")
-			d.SetId("")
-			return nil
-		}
-		return WrapErrorf(NotFoundErr("GroupPluginAttachment", d.Id()), NotFoundMsg, response)
-	}
-
-	d.Set("group_id", parts[0])
-	d.Set("stage_name", parts[2])
-	d.Set("plugin_id", parts[1])
+	d.Set("group_id", objectRaw["GroupId"])
+	d.Set("stage_name", objectRaw["StageName"])
+	d.Set("plugin_id", objectRaw["PluginId"])
 
 	return nil
 
