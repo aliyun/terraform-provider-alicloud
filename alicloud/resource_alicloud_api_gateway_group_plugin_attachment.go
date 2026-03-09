@@ -86,10 +86,18 @@ func resourceAlicloudApiGatewayGroupPluginAttachmentRead(d *schema.ResourceData,
 		return WrapError(err)
 	}
 
-	d.Set("group_id", objectRaw["GroupId"].(string))
-	d.Set("stage_name", objectRaw["StageName"].(string))
-	d.Set("plugin_id", objectRaw["PluginId"].(string))
-
+	err = d.Set("group_id", objectRaw["GroupId"].(string))
+	if err != nil {
+		return WrapError(err)
+	}
+	err = d.Set("stage_name", objectRaw["StageName"].(string))
+	if err != nil {
+		return WrapError(err)
+	}
+	err = d.Set("plugin_id", objectRaw["PluginId"].(string))
+	if err != nil {
+		return WrapError(err)
+	}
 	return nil
 
 }

@@ -366,7 +366,6 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayGroupPluginAttachment(id string)
 	}
 
 	plugins := v.([]interface{})
-
 	pluginId := parts[1]
 
 	var foundPlugin map[string]interface{}
@@ -375,6 +374,8 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayGroupPluginAttachment(id string)
 		pluginMap := plugin.(map[string]interface{})
 		if pluginMap["PluginId"].(string) == pluginId {
 			foundPlugin = pluginMap
+			foundPlugin["GroupId"] = parts[0]
+			foundPlugin["StageName"] = parts[2]
 			break
 		}
 	}
