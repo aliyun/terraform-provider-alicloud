@@ -191,6 +191,40 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeSecurityGroupConfiguration(
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceTDEStatus(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeInstanceTDEStatus"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
 func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceSSL(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
