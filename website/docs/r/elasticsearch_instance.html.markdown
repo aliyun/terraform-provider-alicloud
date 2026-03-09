@@ -48,7 +48,7 @@ resource "alicloud_elasticsearch_instance" "default" {
   vswitch_id                       = alicloud_vswitch.default.id
   password                         = "Examplw1234"
   version                          = "7.10_with_X-Pack"
-  instance_charge_type             = "PostPaid"
+  payment_type                     = "PayAsYouGo"
   data_node_amount                 = "2"
   data_node_spec                   = "elasticsearch.sn2ne.large"
   data_node_disk_size              = "20"
@@ -107,8 +107,8 @@ The following arguments are supported:
 
 * `password` - (Optional) The access password for the instance. It must be 8 to 32 characters in length and contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters (!@#$%^&*()_+-=).  
 * `payment_type` - (Optional, Computed, Available since v1.267.0) The billing method of the instance. Supported values:
-  - `prepaid`: Subscription
-  - `postpaid`: Pay-as-you-go
+  - `PayAsYouGo`: Pay-as-you-go
+  - `Subscription`: Subscription
 * `private_whitelist` - (Optional, Computed, List) The list of IP addresses in the whitelist. This parameter is available when whiteIpGroup is empty and modifies the default group's whitelist.
 * `protocol` - (Optional, Computed, Available since v1.101.0) The access protocol. Supported protocols: HTTP and HTTPS.  
 * `public_whitelist` - (Optional, Computed, List) The IP address whitelist. This parameter is available when whiteIpGroup is empty and is used to modify the default group's whitelist.
@@ -149,7 +149,7 @@ The following arguments are supported:
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 
-* `instance_charge_type` - (Optional, Deprecated since v1.261.0) Valid values are `PrePaid`, `PostPaid`. Default to `PostPaid`. From version 1.69.0, the Elasticsearch cluster allows you to update your instance_charge_ype from `PostPaid` to `PrePaid`, the following attributes are required: `period`.
+* `instance_charge_type` - (Optional, Deprecated since v1.261.0) Valid values are `PrePaid`, `PostPaid`. Default to `PostPaid`. From version 1.69.0, the Elasticsearch cluster allows you to update your instance_charge_ype from `PostPaid` to `PrePaid`, the following attributes are required: `period`. Use `payment_type` instead with values `PayAsYouGo` or `Subscription`.
 * `client_node_spec` - (Optional, Deprecated since v1.261.0) The client node spec. If specified, client node will be created.
 * `client_node_amount` - (Optional, Deprecated since v1.261.0) The Elasticsearch cluster's client node quantity, between 2 and 25.
 * `master_node_spec` - (Optional, Deprecated since v1.261.0) The dedicated master node spec. If specified, dedicated master node will be created.
