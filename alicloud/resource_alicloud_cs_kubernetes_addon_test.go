@@ -381,10 +381,10 @@ data "alicloud_zones" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_instance_types" "default" {
-  availability_zone    = data.alicloud_zones.default.zones.0.id
-  cpu_core_count       = 4
-  memory_size          = 8
-  eni_amount           = 4
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  cpu_core_count    = 4
+  memory_size       = 8
+  eni_amount        = 4
 }
 
 data "alicloud_vpcs" "default" {
@@ -404,29 +404,48 @@ resource "alicloud_vswitch" "vswitch" {
   vswitch_name = var.name
 }
 
-data "alicloud_cs_managed_kubernetes_clusters" "default" {
-  name_regex = "^Terway-Default"
-}
 
 resource "alicloud_cs_managed_kubernetes" "default" {
-  count                = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? 0 : 1
-  name_prefix          = var.name
-  cluster_spec         = "ack.pro.small"
-  worker_vswitch_ids   = [local.vswitch_id]
-  pod_vswitch_ids      = [local.vswitch_id]
-  new_nat_gateway      = false
-  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
-  slb_internet_enabled = false
+  name_prefix                  = var.name
+  cluster_spec                 = "ack.pro.small"
+  vswitch_ids                  = [local.vswitch_id]
+  pod_vswitch_ids              = [local.vswitch_id]
+  new_nat_gateway              = false
+  service_cidr                 = cidrsubnet("172.16.0.0/16", 4, 7)
+  slb_internet_enabled         = false
   is_enterprise_security_group = true
   addons {
     name = "terway-eniip"
   }
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "ALB"
+  }
+
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "SLB"
+  }
+
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "SLS_Data"
+  }
+
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "SLS_ControlPlane"
+  }
+
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "PrivateZone"
+  }
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  count                = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? 0 : 1
-  name                 = var.name
-  cluster_id           = local.cluster_id
+  node_pool_name       = var.name
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [local.vswitch_id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_essd"
@@ -436,7 +455,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-  cluster_id = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
+  cluster_id = alicloud_cs_managed_kubernetes.default.id
 }
 `, name)
 }

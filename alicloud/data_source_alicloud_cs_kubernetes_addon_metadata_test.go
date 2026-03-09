@@ -24,7 +24,10 @@ func TestAccAliCloudCSKubernetesAddonMetadataDataSource(t *testing.T) {
 				Config: dataSourceCSAddonMetadataConfigDependence(name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_id": CHECKSET,
+						"cluster_id":    CHECKSET,
+						"name":          CHECKSET,
+						"version":       "v0.16.6",
+						"config_schema": REGEXMATCH + `[\s\S]+`,
 					}),
 				),
 			},
@@ -35,22 +38,22 @@ func TestAccAliCloudCSKubernetesAddonMetadataDataSource(t *testing.T) {
 func dataSourceCSAddonMetadataConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "%s"
+  default = "%s"
 }
 
 data "alicloud_zones" "default" {
-  available_resource_creation  = "VSwitch"
+  available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
-	availability_zone          = data.alicloud_zones.default.zones.0.id
-	cpu_core_count             = 4
-	memory_size                = 8
-	kubernetes_node_role       = "Worker"
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 4
+  memory_size          = 8
+  kubernetes_node_role = "Worker"
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING-ACK$"
+  name_regex = "^default-NODELETING-ACK$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -59,11 +62,11 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 locals {
@@ -74,17 +77,44 @@ locals {
 resource "alicloud_cs_managed_kubernetes" "default" {
   name                 = var.name
   cluster_spec         = "ack.pro.small"
-  worker_vswitch_ids   = [local.vswitch_id]
+  vswitch_ids          = [local.vswitch_id]
+  pod_vswitch_ids      = [local.vswitch_id]
   new_nat_gateway      = false
-  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
-  slb_internet_enabled = true
+  slb_internet_enabled = false
+  addons {
+    name = "terway-eniip"
+  }
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "ALB"
+  }
+
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "SLB"
+  }
+
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "SLS_Data"
+  }
+
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "SLS_ControlPlane"
+  }
+
+  delete_options {
+    delete_mode   = "delete"
+    resource_type = "PrivateZone"
+  }
 }
 
 data "alicloud_cs_kubernetes_addon_metadata" "default" {
   cluster_id = alicloud_cs_managed_kubernetes.default.id
-  name       = "migrate-controller"
-  version    = "v1.6.3-6fd55d8-aliyun"
+  name       = "security-inspector"
+  version    = "v0.16.6"
 }
 `, name)
 }
