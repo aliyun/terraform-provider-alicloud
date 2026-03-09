@@ -356,21 +356,17 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayGroupPluginAttachment(id string)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	// 获取数据
 	v, err := jsonpath.Get("$.Plugins.PluginAttribute[*]", response)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, "$.Plugins.PluginAttribute[*]", response)
 	}
 
-	// 检查数据是否存在
 	if len(v.([]interface{})) == 0 {
 		return object, WrapErrorf(NotFoundErr("GroupPluginAttachment", id), NotFoundMsg, response)
 	}
 
-	// 处理查询到的数据
 	plugins := v.([]interface{})
 
-	// 找到匹配的插件（根据 plugin_id）
 	pluginId := parts[1]
 
 	var foundPlugin map[string]interface{}
