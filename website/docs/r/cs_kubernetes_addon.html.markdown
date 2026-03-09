@@ -105,8 +105,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The id of addon, which consists of the cluster id and the addon name, with the structure <cluster_ud>:<addon_name>.
-* `next_version` - The version which addon can be upgraded to.
-* `can_upgrade` - Is the addon ready for upgrade.
+* `next_version` - (Deprecated since v1.273.0) The version which addon can be upgraded to.
+* `can_upgrade` - (Deprecated since v1.273.0) Is the addon ready for upgrade.
 * `required` - Is it a mandatory addon to be installed.
 
 ## Timeouts
