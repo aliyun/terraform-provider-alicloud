@@ -830,6 +830,7 @@ func TestAccAliCloudECSNetworkInterface_basic4(t *testing.T) {
 					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":          name,
+					"delete_on_release":    "false",
 					"private_ip_addresses": []string{fmt.Sprintf("${cidrhost(alicloud_vswitch.default.cidr_block, %d)}", rand), fmt.Sprintf("${cidrhost(alicloud_vswitch.default.cidr_block, %d)}", rand+1)},
 					"tags": map[string]string{
 						"Created": "TF-update",
@@ -843,6 +844,7 @@ func TestAccAliCloudECSNetworkInterface_basic4(t *testing.T) {
 						"security_groups.#": "1",
 						"resource_group_id": CHECKSET,
 						"description":       name,
+						"delete_on_release": "false",
 						"private_ips.#":     "2",
 						"tags.%":            "2",
 						"tags.Created":      "TF-update",
@@ -854,6 +856,72 @@ func TestAccAliCloudECSNetworkInterface_basic4(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSNetworkInterface_deleteOnRelease(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_network_interface.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsNetworkInterface")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(2, 253)
+	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsNetworkInterfaceBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_interface_name": name,
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"security_group_ids":     []string{"${alicloud_security_group.default.0.id}"},
+					"delete_on_release":      "true",
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_interface_name": CHECKSET,
+						"vswitch_id":             CHECKSET,
+						"security_group_ids.#":   "1",
+						"delete_on_release":      "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_on_release": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delete_on_release": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_on_release": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delete_on_release": "true",
+					}),
+				),
 			},
 		},
 	})
