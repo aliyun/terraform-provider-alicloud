@@ -42,6 +42,9 @@ resource "alicloud_oss_bucket" "CreateBucket" {
   storage_class = "Standard"
   bucket        = "${var.name}-${random_integer.default.result}"
   lifecycle {
+    # When you use `alicloud_oss_bucket_server_side_encryption`, you must add `ignore_changes` for the
+    # `server_side_encryption_rule` attribute on `alicloud_oss_bucket` to avoid unexpected diffs caused by
+    # both resources managing the same configuration.
     ignore_changes = [
       server_side_encryption_rule,
     ]

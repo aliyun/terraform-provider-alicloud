@@ -43,6 +43,9 @@ resource "alicloud_oss_bucket" "CreateBucket" {
   storage_class = "Standard"
   bucket        = "${var.name}-${random_integer.default.result}"
   lifecycle {
+    # When you use `alicloud_oss_bucket_transfer_acceleration`, you must add `ignore_changes` for the
+    # `transfer_acceleration` attribute on `alicloud_oss_bucket` to avoid unexpected diffs caused by
+    # both resources managing the same configuration.
     ignore_changes = [
       transfer_acceleration,
     ]

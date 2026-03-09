@@ -15,6 +15,8 @@ Provides a resource to create a oss bucket and set its attribution.
 
 -> **NOTE:** Available since v1.2.0.
 
+-> **NOTE:** When using standalone sub-resources (e.g., `alicloud_oss_bucket_policy`, `alicloud_oss_bucket_logging`, `alicloud_oss_bucket_cors`, `alicloud_oss_bucket_website`, `alicloud_oss_bucket_versioning`, `alicloud_oss_bucket_referer`, `alicloud_oss_bucket_server_side_encryption`, `alicloud_oss_bucket_transfer_acceleration`, `alicloud_oss_bucket_acl`) alongside `alicloud_oss_bucket`, you **must** add a [`lifecycle`](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) block with `ignore_changes` for the corresponding attribute on `alicloud_oss_bucket`. This prevents Terraform from detecting spurious diffs caused by the same configuration being managed by both the bucket resource and the standalone sub-resource. Without `ignore_changes`, Terraform may attempt to revert changes made by the sub-resource on every apply, causing unexpected behavior.
+
 ## Example Usage
 
 Private Bucket
@@ -361,6 +363,64 @@ resource "alicloud_oss_bucket_acl" "default" {
   acl    = "private"
 }
 ```
+
+Using sub-resources with ignore_changes
+
+When managing bucket configurations through standalone sub-resources such as `alicloud_oss_bucket_policy`, `alicloud_oss_bucket_logging`, or `alicloud_oss_bucket_cors`, you must use a `lifecycle` block with `ignore_changes` on the `alicloud_oss_bucket` to prevent Terraform from detecting configuration drift. The sub-resource manages the corresponding attribute independently, so without `ignore_changes`, Terraform will see the attribute value differ from the bucket's inline configuration and attempt to revert it on every plan/apply.
+
+```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+resource "alicloud_oss_bucket" "example" {
+  bucket = "example-sub-resources-${random_integer.default.result}"
+
+  # When using standalone sub-resources to manage bucket configurations,
+  # you must add `ignore_changes` for the corresponding attributes.
+  # Otherwise, Terraform will detect a diff between the inline attribute
+  # and the sub-resource, and attempt to revert the sub-resource's changes.
+  lifecycle {
+    ignore_changes = [
+      policy,
+      logging,
+      website,
+      cors_rule,
+      versioning,
+      referer_config,
+      server_side_encryption_rule,
+      transfer_acceleration,
+    ]
+  }
+}
+
+resource "alicloud_oss_bucket_acl" "example" {
+  bucket = alicloud_oss_bucket.example.bucket
+  acl    = "private"
+}
+
+resource "alicloud_oss_bucket_policy" "example" {
+  bucket = alicloud_oss_bucket.example.bucket
+  policy = jsonencode({
+    "Version" : "1",
+    "Statement" : [{
+      "Action" : ["oss:PutObject", "oss:GetObject"],
+      "Effect" : "Deny",
+      "Principal" : ["1234567890"],
+      "Resource" : ["acs:oss:*:1234567890:*/*"]
+    }]
+  })
+}
+
+resource "alicloud_oss_bucket_logging" "example" {
+  bucket        = alicloud_oss_bucket.example.bucket
+  target_bucket = alicloud_oss_bucket.example.bucket
+  target_prefix = "log/"
+}
+```
+
+-> **NOTE:** You only need to include the attributes in `ignore_changes` that correspond to the sub-resources you are actually using. For example, if you only use `alicloud_oss_bucket_policy`, you only need `ignore_changes = [policy]`.
 
 IA Bucket
 
