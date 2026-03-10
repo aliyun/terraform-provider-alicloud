@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -37,6 +36,27 @@ func resourceAliCloudHbrPolicyBinding() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"oss_detail": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"ignore_archive_object": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"inventory_cleanup_policy": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"inventory_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
 						"udm_detail": {
 							Type:     schema.TypeList,
 							Optional: true,
@@ -195,6 +215,23 @@ func resourceAliCloudHbrPolicyBindingCreate(d *schema.ResourceData, meta interfa
 
 	if v := d.Get("advanced_options"); !IsNil(v) {
 		advancedOptions := make(map[string]interface{})
+		ossDetail := make(map[string]interface{})
+		ignoreArchiveObject1, _ := jsonpath.Get("$[0].oss_detail[0].ignore_archive_object", d.Get("advanced_options"))
+		if ignoreArchiveObject1 != nil && ignoreArchiveObject1 != "" {
+			ossDetail["IgnoreArchiveObject"] = ignoreArchiveObject1
+		}
+		inventoryId1, _ := jsonpath.Get("$[0].oss_detail[0].inventory_id", d.Get("advanced_options"))
+		if inventoryId1 != nil && inventoryId1 != "" {
+			ossDetail["InventoryId"] = inventoryId1
+		}
+		inventoryCleanupPolicy1, _ := jsonpath.Get("$[0].oss_detail[0].inventory_cleanup_policy", d.Get("advanced_options"))
+		if inventoryCleanupPolicy1 != nil && inventoryCleanupPolicy1 != "" {
+			ossDetail["InventoryCleanupPolicy"] = inventoryCleanupPolicy1
+		}
+
+		if len(ossDetail) > 0 {
+			advancedOptions["OssDetail"] = ossDetail
+		}
 		udmDetail := make(map[string]interface{})
 		diskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].disk_id_list", d.Get("advanced_options"))
 		if diskIdList1 != nil && diskIdList1 != "" {
@@ -211,9 +248,10 @@ func resourceAliCloudHbrPolicyBindingCreate(d *schema.ResourceData, meta interfa
 
 		if len(udmDetail) > 0 {
 			advancedOptions["UdmDetail"] = udmDetail
-			if len(advancedOptions) > 0 {
-				policyBindingListDataList["AdvancedOptions"] = advancedOptions
-			}
+		}
+
+		if len(advancedOptions) > 0 {
+			policyBindingListDataList["AdvancedOptions"] = advancedOptions
 		}
 	}
 
@@ -280,15 +318,32 @@ func resourceAliCloudHbrPolicyBindingRead(d *schema.ResourceData, meta interface
 
 	advancedOptionsMaps := make([]map[string]interface{}, 0)
 	advancedOptionsMap := make(map[string]interface{})
-	udmDetailRawObj, _ := jsonpath.Get("$.AdvancedOptions.UdmDetail", objectRaw)
-	udmDetailRaw := make(map[string]interface{})
-	if udmDetailRawObj != nil {
-		udmDetailRaw = udmDetailRawObj.(map[string]interface{})
+	advancedOptionsRaw := make(map[string]interface{})
+	if objectRaw["AdvancedOptions"] != nil {
+		advancedOptionsRaw = objectRaw["AdvancedOptions"].(map[string]interface{})
 	}
-	if len(udmDetailRaw) > 0 {
+	if len(advancedOptionsRaw) > 0 {
 
+		ossDetailMaps := make([]map[string]interface{}, 0)
+		ossDetailMap := make(map[string]interface{})
+		ossDetailRaw := make(map[string]interface{})
+		if advancedOptionsRaw["OssDetail"] != nil {
+			ossDetailRaw = advancedOptionsRaw["OssDetail"].(map[string]interface{})
+		}
+		if len(ossDetailRaw) > 0 {
+			ossDetailMap["ignore_archive_object"] = ossDetailRaw["IgnoreArchiveObject"]
+			ossDetailMap["inventory_cleanup_policy"] = ossDetailRaw["InventoryCleanupPolicy"]
+			ossDetailMap["inventory_id"] = ossDetailRaw["InventoryId"]
+
+			ossDetailMaps = append(ossDetailMaps, ossDetailMap)
+		}
+		advancedOptionsMap["oss_detail"] = ossDetailMaps
 		udmDetailMaps := make([]map[string]interface{}, 0)
 		udmDetailMap := make(map[string]interface{})
+		udmDetailRaw := make(map[string]interface{})
+		if advancedOptionsRaw["UdmDetail"] != nil {
+			udmDetailRaw = advancedOptionsRaw["UdmDetail"].(map[string]interface{})
+		}
 		if len(udmDetailRaw) > 0 {
 			udmDetailMap["destination_kms_key_id"] = udmDetailRaw["DestinationKmsKeyId"]
 
@@ -328,16 +383,42 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 	action := "UpdatePolicyBinding"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["DataSourceId"] = parts[2]
 	request["PolicyId"] = parts[0]
+	request["DataSourceId"] = parts[2]
 	request["SourceType"] = parts[1]
+
+	if d.HasChange("disabled") {
+		update = true
+		request["Disabled"] = d.Get("disabled")
+	}
 
 	if d.HasChange("advanced_options") {
 		update = true
 		advancedOptions := make(map[string]interface{})
 
 		if v := d.Get("advanced_options"); v != nil {
+			ossDetail := make(map[string]interface{})
+			ignoreArchiveObject1, _ := jsonpath.Get("$[0].oss_detail[0].ignore_archive_object", d.Get("advanced_options"))
+			if ignoreArchiveObject1 != nil && ignoreArchiveObject1 != "" {
+				ossDetail["IgnoreArchiveObject"] = ignoreArchiveObject1
+			}
+			inventoryId1, _ := jsonpath.Get("$[0].oss_detail[0].inventory_id", d.Get("advanced_options"))
+			if inventoryId1 != nil && inventoryId1 != "" {
+				ossDetail["InventoryId"] = inventoryId1
+			}
+			inventoryCleanupPolicy1, _ := jsonpath.Get("$[0].oss_detail[0].inventory_cleanup_policy", d.Get("advanced_options"))
+			if inventoryCleanupPolicy1 != nil && inventoryCleanupPolicy1 != "" {
+				ossDetail["InventoryCleanupPolicy"] = inventoryCleanupPolicy1
+			}
+
+			if len(ossDetail) > 0 {
+				advancedOptions["OssDetail"] = ossDetail
+			}
 			udmDetail := make(map[string]interface{})
+			diskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].disk_id_list", d.Get("advanced_options"))
+			if diskIdList1 != nil && diskIdList1 != "" {
+				udmDetail["DiskIdList"] = diskIdList1
+			}
 			excludeDiskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].exclude_disk_id_list", d.Get("advanced_options"))
 			if excludeDiskIdList1 != nil && excludeDiskIdList1 != "" {
 				udmDetail["ExcludeDiskIdList"] = excludeDiskIdList1
@@ -345,10 +426,6 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 			destinationKmsKeyId1, _ := jsonpath.Get("$[0].udm_detail[0].destination_kms_key_id", d.Get("advanced_options"))
 			if destinationKmsKeyId1 != nil && destinationKmsKeyId1 != "" {
 				udmDetail["DestinationKmsKeyId"] = destinationKmsKeyId1
-			}
-			diskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].disk_id_list", d.Get("advanced_options"))
-			if diskIdList1 != nil && diskIdList1 != "" {
-				udmDetail["DiskIdList"] = diskIdList1
 			}
 
 			if len(udmDetail) > 0 {
@@ -361,11 +438,6 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 			}
 			request["AdvancedOptions"] = string(advancedOptionsJson)
 		}
-	}
-
-	if d.HasChange("disabled") {
-		update = true
-		request["Disabled"] = d.Get("disabled")
 	}
 
 	if d.HasChange("include") {
