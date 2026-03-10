@@ -1,25 +1,33 @@
 ---
 name: provider-resource-acceptance
-description: Automated acceptance workflow for Terraform Provider resource releases. Covers fetching Aone workitem, branch checkout, code review, running acceptance tests, fixing failures, and reporting results back to Aone.
+description: Automated acceptance workflow for Terraform Provider resource releases. Supports two modes - Aone-driven (from workitem link) and local-branch (already on feature branch). Covers code review, acceptance testing, fixing failures, and CI checks.
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
   domain: terraform-provider
-  triggers: resource acceptance, 资源验收, 发布验收, 自动审核, resource release review, acceptance test workflow
+  triggers: resource acceptance, 资源验收, 发布验收, 自动审核, resource release review, acceptance test workflow, 验收当前分支
 ---
 
 # Provider Resource Acceptance
 
-End-to-end automated acceptance workflow for Terraform Provider resource releases triggered by Aone workitems.
+End-to-end automated acceptance workflow for Terraform Provider resource releases.
 
-## Applicable Scenarios
+## Workflow Modes
 
-This skill applies when:
-1. The Aone workitem title follows the pattern: `[Terraform 资源发布自动审核流程] 产品 [xxx] 资源 [xxx]`
-2. The user is working in the Alibaba Cloud Terraform Provider repository
+This skill supports two trigger modes. Detect which mode applies and skip irrelevant steps.
 
-## Step 1: Fetch Aone Workitem Details
+| Mode | Trigger                                                           | Aone Steps | Git Steps |
+|---|-------------------------------------------------------------------|---|---|
+| **Mode A: Aone-driven** | User provides an Aone workitem ID or link                         | ✅ Fetch workitem, extract branch, report results | ✅ Checkout branch, rebase |
+| **Mode B: Local branch** | User is already on a feature branch, or says "验收当前分支" or "验收当前资源" | ❌ Skip all Aone interaction | ❌ Skip checkout (already there) |
 
-Use MCP tools to get the workitem details and comments:
+**Detection logic:**
+- If user provides a workitem ID/link → Mode A
+- If user says "验收当前分支" / "验收当前资源"" / "validate current resource" / "validate current branch" is already on a `feature/*` branch → Mode B
+- If unclear → ask the user
+
+## Step 1: Obtain Branch Context (Mode-dependent)
+
+### Mode A: Aone-driven
 
 1. Call `coop_query_workitem_detail(workitemId)` to get the title, description, and status
 2. Call `coop_get_workitem_comments(workitemId)` to get all comments
@@ -27,195 +35,251 @@ Use MCP tools to get the workitem details and comments:
 
 > **Note:** The branch name is in the comment section, NOT in the workitem description.
 
-## Step 2: Switch to the Target Branch and Sync with Master
-
-Switch to the target branch:
+4. Switch to the target branch and sync:
 
 ```bash
 git checkout <branch_name>
-```
-
-Then rebase the branch onto the latest master:
-
-```bash
 git pull --rebase alicloud master
 ```
 
-### If There Are Conflicts
+If there are rebase conflicts, resolve them file by file, then `git add <file>` and `git rebase --continue`.
 
-1. Resolve the merge conflicts in the affected files
-2. Stage the resolved files: `git add <file_path>`
-3. Continue the rebase: `git rebase --continue`
-4. Repeat until the rebase completes
+**Checkpoint:** `git branch --show-current` shows the target branch, `git status` shows a clean tree.
 
-Checkpoint: `git branch --show-current` should show the target branch name, and `git status` should show a clean working tree.
+### Mode B: Local branch
 
-## Step 3: Code Review (Resource Review)
+1. Confirm we're on a feature branch:
 
-Execute the **Resource Review** SOP process against the code on this branch.
+```bash
+git branch --show-current
+```
 
-> **Important:** Even if the Aone workitem already has historical review records, you MUST perform a fresh review.
+2. If already on a `feature/*` branch, proceed directly to Step 2.
 
-Load the relevant review skill or follow the project's resource review SOP.
+## Step 2: Code Review
 
-### If Review Fails
+Execute the **provider-resource-review** skill against the changed files on this branch.
 
-1. Summarize the failure reasons
-2. Post the failure reasons as a comment on the Aone workitem via `coop_add_comment(workitemId, content)`
-3. **Stop here** — validation is complete (failed)
+> **Important:** Load the review skill: `load_skills=["provider-resource-review"]`. Even if the Aone workitem has historical review records, always perform a fresh review.
 
-### If Review Passes
+The review skill covers:
+- Schema validation (attribute tags, types, constraints)
+- CRUD function correctness (ID construction, parameter encoding, error handling)
+- Test quality (naming conventions, coverage, anti-patterns)
+- Documentation accuracy
 
-Proceed to Step 4.
+### If Review Finds Issues
 
-## Step 4: Locate and Verify Test Cases
+1. Fix all issues found during review
+2. Record what was fixed (for the commit message and Aone reporting)
+3. **Mode A only:** Post the fix details as a comment on the Aone workitem via `coop_add_comment(workitemId, content)`
 
-1. Find the resource acceptance test file: `alicloud/resource_alicloud_<product>_<resource>_test.go`
-2. Confirm test cases exist for this resource
+### If Review Passes with No Issues
+
+Proceed to Step 3.
+
+## Step 3: Locate and Verify Test Cases
+
+Find the test file: `alicloud/resource_alicloud_<product>_<resource>_test.go`
+
+Confirm that:
+1. Test cases exist for this resource
+2. New/modified attributes have test coverage
+3. `TestAcc*` functions are present (ignore unit tests)
 
 ### If No Test Cases Found
 
-1. Post a comment on the Aone workitem: "找不到资源测试用例，验收失败"
-2. **Stop here** — validation is complete (failed)
+- **Mode A:** Post comment: "找不到资源测试用例，验收失败" → **Stop**
+- **Mode B:** Report to user: "No test cases found for this resource" → **Stop**
 
-## Step 5: Run a Single Test Case First
+## Step 4: Run a Single Test Case First
 
-Pick one specific test case and run it individually to verify the basic setup:
+Pick one test case — preferably a new test case added in this branch — and run it individually:
 
 ```bash
-make test-resource-debug RESOURCE=alicloud_<product>_<resource> TESTCASE=<TestCaseName> LOGLEVEL=TRACE LOGFILE=vpc-test.log
-```
-
-Example:
-```bash
-make test-resource-debug RESOURCE=alicloud_vpc TESTCASE=TestAccAliCloudVpcVpc_basic9656 LOGLEVEL=TRACE LOGFILE=vpc-test.log
+make test-resource-debug RESOURCE=alicloud_<product>_<resource> TESTCASE=<TestCaseName> LOGLEVEL=TRACE LOGFILE=<resource>-test.log
 ```
 
 ### If the Test Fails
 
-1. Analyze the failure root cause
-2. Fix the issue
+1. Analyze the failure root cause from the log output
+2. Fix the issue in the resource code or test code
 3. **Record** the error details and fix description
-4. Post the error info and fix process as a comment on the Aone workitem
+4. **Mode A only:** Post the error info and fix process as a comment on the Aone workitem
 5. Re-run the test to confirm it passes
 6. Repeat until this test case passes
 
 ### If the Test Passes
 
-Proceed to Step 6.
+Proceed to Step 5.
 
-## Step 6: Run All Test Cases for the Resource
+## Step 5: Run All Test Cases
 
-Run the full test suite for this resource without specifying a single test case:
+Run the full test suite for this resource:
 
 ```bash
 make test-resource-debug RESOURCE=alicloud_<product>_<resource>
 ```
 
-Example:
-```bash
-make test-resource-debug RESOURCE=alicloud_vpc
-```
-
 ### If Any Tests Fail
 
-1. For each failing test case, repeat the Step 5 fix process:
-   - Analyze the root cause
+For each failing test:
+
+1. **Determine if it's pre-existing or caused by our changes:**
+   - If the failing test was NOT modified in our branch AND uses mock credentials or cross-account features → likely pre-existing
+   - If the failing test was modified or tests new functionality → must fix
+
+2. **For failures caused by our changes:**
+   - Analyze root cause
    - Fix the issue
-   - Post error details and fix process to the Aone workitem
-2. Re-run all tests after fixing
-3. Repeat until **all** test cases pass
+   - **Mode A only:** Post error details and fix to Aone
+   - Re-run all tests after fixing
+
+3. **For pre-existing failures:**
+   - Document the test name and failure reason
+   - Confirm it's unrelated to our changes
+   - Proceed (do NOT fix pre-existing issues unless asked)
 
 ### If All Tests Pass
 
-Proceed to Step 7.
+Proceed to Step 6.
 
-## Step 7: Commit Changes
+## Step 6: Commit Changes
 
-Squash all changes into **a single commit** using the project's commit tool:
+All changes (code fixes, test adjustments, etc.) must be squashed into **a single commit**.
 
 ```bash
 make commit
 ```
 
-> **Important:** All changes (code fixes, test adjustments, etc.) must be squashed into one commit. Do NOT use `git commit` directly — always use `make commit`.
+> **Important:** Do NOT use `git commit` directly — always use `make commit`, which auto-generates the correct commit message format.
 
-## Step 8: Run CI Check
+If there was already a commit on the branch and `make commit` creates a second one, squash them:
 
-Run the full CI check to ensure all checks pass:
+```bash
+# Count commits on branch relative to master
+git log --oneline master..HEAD
+
+# If more than 1 commit, squash:
+git reset --soft HEAD~N  # N = number of commits to squash
+git commit -m "<original commit message from the first commit>"
+```
+
+**Checkpoint:** `git log --oneline master..HEAD` shows exactly 1 commit.
+
+## Step 7: Run CI Check
 
 ```bash
 make ci-check
 ```
 
+This runs:
+- `gofmt` and `goimports` checks
+- `go vet`
+- Basic checks (no `fmt.Println`, doc links)
+- Testing coverage rate check (must be 100%)
+- Documentation checks (terrafmt, spelling, content, consistency)
+- Example tests (apply + destroy against real infrastructure)
+- Resource integration tests (full acceptance test suite)
+
 ### If CI Check Fails
 
 1. Read the error output carefully
 2. Fix the reported issues
-3. Re-run the relevant tests if code was changed (repeat Step 5/6 as needed)
-4. Squash fixes into the same commit: `make commit`
+3. If code was changed, re-run the relevant tests (repeat Step 4/5 as needed)
+4. Re-squash into one commit: squash with the original commit message
 5. Re-run `make ci-check`
 6. Repeat until CI check passes
 
+### CI Check Timeout
+
+The integration test phase re-runs all acceptance tests, which can take 30+ minutes. If the CI check times out:
+
+1. Check that all quality checks before the integration tests passed (gofmt, goimports, go vet, coverage, docs)
+2. If quality checks all passed AND we already ran all tests successfully in Step 5 → the timeout is acceptable
+3. Report which tests completed before timeout
+
 ### If CI Check Passes
 
-Post a comment on the Aone workitem: "所有测试用例通过，CI检查通过，验收成功"
+- **Mode A:** Post comment: "所有测试用例通过，CI检查通过，验收成功"
+- **Mode B:** Report success to user
 
 ## Important Notes
 
 1. **Skip unit tests** — Only run resource acceptance tests (`TestAcc*`), ignore unit tests
-2. **All failures must be resolved** — API errors, inventory issues, and quota problems must all be fixed; never skip a failing test
+2. **All failures must be resolved** — API errors, inventory issues, and quota problems must all be fixed; never skip a failing test that's related to our changes
 3. **Remove auto-generated comment** — Once you modify any resource code file, delete the first-line comment: `// Package alicloud. This file is generated automatically...`
-4. **Always report to Aone** — Every significant action (review failure, test failure, test success) must be posted as a comment to the Aone workitem
+4. **Mode A: Always report to Aone** — Every significant action (review failure, test failure, test success) must be posted as a comment to the Aone workitem
+5. **Mode B: Report to user directly** — No Aone interaction needed
 
 ## Troubleshooting
 
 ### Quota Exceeded
 
-If a test fails due to resource quota limits, use the sweep command to clean up resources in that region:
+If a test fails due to resource quota limits, clean up resources:
 
 ```bash
 make sweep REGION=cn-hangzhou RESOURCE=alicloud_<resource>
 ```
 
-> **Note:** The `RESOURCE` in the sweep command should match the resource that exceeded the quota, which may NOT be the resource under test.
+> The `RESOURCE` in the sweep command should match the resource that exceeded quota, which may NOT be the resource under test.
 
 ### Region Not Supported
 
-If a test fails because the region doesn't support the resource, add a region-specific `PreCheck` in the test case:
+If a test fails because the region doesn't support the resource, add a region-specific `PreCheck`:
 
 ```go
-// Reference: resource_alicloud_vpc_ipam_ipam_test.go
 PreCheck: func() {
     testAccPreCheck(t)
     testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 },
 ```
 
+### Pre-existing Test Failures
+
+If a test that was NOT modified in our branch fails:
+
+1. Check if it uses mock credentials (`cross_account_user_id = 1`)
+2. Check if it depends on external resources not available in the test environment
+3. If confirmed pre-existing, document it and proceed
+4. Do NOT fix pre-existing issues unless explicitly asked
+
 ## Acceptance Criteria
 
-A release validation is **successful** only when:
-1. Resource code review passes
-2. **All** acceptance test cases pass
-3. `make ci-check` passes with exit code 0
+A release validation is **successful** when:
+1. Code review passes (via `provider-resource-review` skill)
+2. **All** acceptance test cases pass (pre-existing failures documented but not blocking)
+3. `make ci-check` quality checks pass
+4. All changes squashed into a single commit
 
 ### Exception
 
 If the failure is due to a **dependent resource type not existing** (dependency resource unavailable), the validation task ends as "unable to continue" — this is NOT considered a pass or fail, just an early termination.
 
-## Example Workflow
+## Example Workflows
 
-### Validating a resource release for SLS Alert
+### Mode A: Aone-driven validation for SLS Alert
 
-1. **Fetch Aone workitem** — Get workitem details and extract branch `feature/SLS-Alert-update-1767947524953`
-2. **Checkout branch** — `git checkout feature/SLS-Alert-update-1767947524953`
-3. **Code review** — Run resource review SOP on the changed files
-4. **Review passed** — Proceed to testing
-5. **Run single test** — `make test-resource-debug RESOURCE=alicloud_sls_alert TESTCASE=TestAccAliCloudSlsAlert_basic0001`
-6. **Single test passed** — Run all tests
-7. **Run all tests** — `make test-resource-debug RESOURCE=alicloud_sls_alert`
-8. **2 tests failed** — Fix issues, post error details to Aone
-9. **Re-run all tests** — All pass
-10. **Commit** — `make commit` to squash all changes into one commit
-11. **CI check** — `make ci-check` passes
-12. **Post success** — Comment on Aone: "所有测试用例通过，CI检查通过，验收成功"
+1. **Fetch Aone workitem** → Get details, extract branch `feature/SLS-Alert-update-1767947524953`
+2. **Checkout branch** → `git checkout feature/SLS-Alert-update-1767947524953`
+3. **Code review** → Load `provider-resource-review` skill, review changed files
+4. **Review passed** → Proceed to testing
+5. **Run single test** → `make test-resource-debug RESOURCE=alicloud_sls_alert TESTCASE=TestAccAliCloudSlsAlert_basic0001`
+6. **Single test passed** → Run all tests
+7. **Run all tests** → `make test-resource-debug RESOURCE=alicloud_sls_alert`
+8. **2 tests failed** → Fix issues, post error details to Aone
+9. **Re-run all tests** → All pass
+10. **Commit** → `make commit`, squash to single commit
+11. **CI check** → `make ci-check` passes
+12. **Post success** → Comment on Aone: "所有测试用例通过，CI检查通过，验收成功"
+
+### Mode B: Local branch validation for HBR PolicyBinding
+
+1. **Confirm branch** → Already on `feature/HBR-PolicyBinding-update-1770810266269`
+2. **Code review** → Load `provider-resource-review`, review 4 changed files
+3. **Found 4 issues** → Fixed: auto-gen comment, Create ID construction, Delete encoding, hardcoded test names
+4. **Run single test** → `make test-resource-debug RESOURCE=alicloud_hbr_policy_binding TESTCASE=TestAccAliCloudHbrPolicyBinding_basic6221` → PASS
+5. **Run all tests** → 14/15 passed, 1 pre-existing failure (basic7232, cross-account mock)
+6. **Commit** → `make commit`, squashed to single commit
+7. **CI check** → All quality checks passed, example test passed
+8. **Report to user** → "验收完成：14/15 测试通过，1个预存在失败，CI质量检查全部通过"
