@@ -19,7 +19,7 @@ import (
 // TestFetchKeybasePubkeys is an integration test that calls the real Keybase API.
 // It is skipped when the KEYBASE_INTEGRATION environment variable is unset to
 // avoid flakiness in offline / CI environments.
-func TestUnitFetchKeybasePubkeys(t *testing.T) {
+func TestUnitCommonFetchKeybasePubkeys(t *testing.T) {
 	if os.Getenv("KEYBASE_INTEGRATION") == "" {
 		t.Skip("skipping Keybase integration test: set KEYBASE_INTEGRATION=1 to run")
 	}
@@ -57,7 +57,7 @@ func TestUnitFetchKeybasePubkeys(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 // TestFetchKeybasePubkeys_NilInput verifies that a nil slice returns nil, nil.
-func TestUnitFetchKeybasePubkeys_NilInput(t *testing.T) {
+func TestUnitCommonFetchKeybasePubkeys_NilInput(t *testing.T) {
 	got, err := FetchKeybasePubkeys(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -68,7 +68,7 @@ func TestUnitFetchKeybasePubkeys_NilInput(t *testing.T) {
 }
 
 // TestFetchKeybasePubkeys_EmptyInput verifies that an empty slice returns nil, nil.
-func TestUnitFetchKeybasePubkeys_EmptyInput(t *testing.T) {
+func TestUnitCommonFetchKeybasePubkeys_EmptyInput(t *testing.T) {
 	got, err := FetchKeybasePubkeys([]string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -80,7 +80,7 @@ func TestUnitFetchKeybasePubkeys_EmptyInput(t *testing.T) {
 
 // TestFetchKeybasePubkeys_NoKeybasePrefix verifies that input entries without
 // the "keybase:" prefix are silently ignored and nil is returned.
-func TestUnitFetchKeybasePubkeys_NoKeybasePrefix(t *testing.T) {
+func TestUnitCommonFetchKeybasePubkeys_NoKeybasePrefix(t *testing.T) {
 	got, err := FetchKeybasePubkeys([]string{"justausername", "another"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -92,7 +92,7 @@ func TestUnitFetchKeybasePubkeys_NoKeybasePrefix(t *testing.T) {
 
 // TestFetchKeybasePubkeys_MockServer tests the full HTTP + JSON parsing path
 // against a local mock server, avoiding any real network calls.
-func TestUnitFetchKeybasePubkeys_MockServer(t *testing.T) {
+func TestUnitCommonFetchKeybasePubkeys_MockServer(t *testing.T) {
 	// Build a minimal Keybase-shaped JSON response with an empty bundle to
 	// exercise the "missing key" error path without hitting the real API.
 	mockResp := `{"status":{"name":"OK"},"them":[{"public_keys":{"primary":{"bundle":""}}}]}`
@@ -148,7 +148,7 @@ func TestUnitFetchKeybasePubkeys_MockServer(t *testing.T) {
 // DecodeJSONFromReader tests
 // ---------------------------------------------------------------------------
 
-func TestUnitDecodeJSONFromReader_NilReader(t *testing.T) {
+func TestUnitCommonDecodeJSONFromReader_NilReader(t *testing.T) {
 	var out interface{}
 	err := DecodeJSONFromReader(nil, &out)
 	if err == nil {
@@ -159,7 +159,7 @@ func TestUnitDecodeJSONFromReader_NilReader(t *testing.T) {
 	}
 }
 
-func TestUnitDecodeJSONFromReader_NilOutput(t *testing.T) {
+func TestUnitCommonDecodeJSONFromReader_NilOutput(t *testing.T) {
 	r := strings.NewReader(`{"key":"value"}`)
 	err := DecodeJSONFromReader(r, nil)
 	if err == nil {
@@ -170,7 +170,7 @@ func TestUnitDecodeJSONFromReader_NilOutput(t *testing.T) {
 	}
 }
 
-func TestUnitDecodeJSONFromReader_ValidJSON(t *testing.T) {
+func TestUnitCommonDecodeJSONFromReader_ValidJSON(t *testing.T) {
 	r := strings.NewReader(`{"name":"alicloud","count":42}`)
 	var out map[string]interface{}
 	if err := DecodeJSONFromReader(r, &out); err != nil {
@@ -185,7 +185,7 @@ func TestUnitDecodeJSONFromReader_ValidJSON(t *testing.T) {
 	}
 }
 
-func TestUnitDecodeJSONFromReader_InvalidJSON(t *testing.T) {
+func TestUnitCommonDecodeJSONFromReader_InvalidJSON(t *testing.T) {
 	r := strings.NewReader(`{not valid json}`)
 	var out interface{}
 	if err := DecodeJSONFromReader(r, &out); err == nil {
@@ -193,7 +193,7 @@ func TestUnitDecodeJSONFromReader_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestUnitDecodeJSONFromReader_EmptyJSON(t *testing.T) {
+func TestUnitCommonDecodeJSONFromReader_EmptyJSON(t *testing.T) {
 	r := strings.NewReader(`{}`)
 	var out map[string]interface{}
 	if err := DecodeJSONFromReader(r, &out); err != nil {
@@ -204,7 +204,7 @@ func TestUnitDecodeJSONFromReader_EmptyJSON(t *testing.T) {
 	}
 }
 
-func TestUnitDecodeJSONFromReader_JSONArray(t *testing.T) {
+func TestUnitCommonDecodeJSONFromReader_JSONArray(t *testing.T) {
 	r := strings.NewReader(`[1,2,3]`)
 	var out []interface{}
 	if err := DecodeJSONFromReader(r, &out); err != nil {
@@ -215,7 +215,7 @@ func TestUnitDecodeJSONFromReader_JSONArray(t *testing.T) {
 	}
 }
 
-func TestUnitDecodeJSONFromReader_NestedStruct(t *testing.T) {
+func TestUnitCommonDecodeJSONFromReader_NestedStruct(t *testing.T) {
 	type Inner struct {
 		Value string
 	}

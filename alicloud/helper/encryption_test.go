@@ -41,7 +41,7 @@ func testNewPGPKey(t *testing.T) (b64Key string, entity *openpgp.Entity) {
 
 // TestGetEntities_Valid verifies that a well-formed base64-encoded PGP public
 // key is decoded into exactly one entity with the expected fingerprint.
-func TestUnitGetEntities_Valid(t *testing.T) {
+func TestUnitCommonGetEntities_Valid(t *testing.T) {
 	b64Key, want := testNewPGPKey(t)
 
 	got, err := GetEntities([]string{b64Key})
@@ -59,7 +59,7 @@ func TestUnitGetEntities_Valid(t *testing.T) {
 }
 
 // TestGetEntities_MultipleKeys verifies that multiple keys are decoded in order.
-func TestUnitGetEntities_MultipleKeys(t *testing.T) {
+func TestUnitCommonGetEntities_MultipleKeys(t *testing.T) {
 	k1, e1 := testNewPGPKey(t)
 	k2, e2 := testNewPGPKey(t)
 
@@ -81,7 +81,7 @@ func TestUnitGetEntities_MultipleKeys(t *testing.T) {
 }
 
 // TestGetEntities_Empty verifies that an empty input returns an empty slice.
-func TestUnitGetEntities_Empty(t *testing.T) {
+func TestUnitCommonGetEntities_Empty(t *testing.T) {
 	got, err := GetEntities([]string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -93,7 +93,7 @@ func TestUnitGetEntities_Empty(t *testing.T) {
 
 // TestGetEntities_InvalidBase64 verifies that an invalid base64 string yields
 // an error that mentions the decoding failure.
-func TestUnitGetEntities_InvalidBase64(t *testing.T) {
+func TestUnitCommonGetEntities_InvalidBase64(t *testing.T) {
 	_, err := GetEntities([]string{"not-valid-base64!!!"})
 	if err == nil {
 		t.Fatal("expected error for invalid base64, got nil")
@@ -105,7 +105,7 @@ func TestUnitGetEntities_InvalidBase64(t *testing.T) {
 
 // TestGetEntities_InvalidPGP verifies that valid base64 whose payload is not
 // a PGP packet returns an error.
-func TestUnitGetEntities_InvalidPGP(t *testing.T) {
+func TestUnitCommonGetEntities_InvalidPGP(t *testing.T) {
 	notPGP := base64.StdEncoding.EncodeToString([]byte("this is definitely not a pgp packet"))
 	_, err := GetEntities([]string{notPGP})
 	if err == nil {
@@ -119,7 +119,7 @@ func TestUnitGetEntities_InvalidPGP(t *testing.T) {
 
 // TestGetFingerprints_WithEntities checks that GetFingerprints returns the
 // correct hex fingerprint when entities are supplied and pgpKeys is nil.
-func TestUnitGetFingerprints_WithEntities(t *testing.T) {
+func TestUnitCommonGetFingerprints_WithEntities(t *testing.T) {
 	_, entity := testNewPGPKey(t)
 
 	fps, err := GetFingerprints(nil, []*openpgp.Entity{entity})
@@ -137,7 +137,7 @@ func TestUnitGetFingerprints_WithEntities(t *testing.T) {
 
 // TestGetFingerprints_WithPGPKeys checks that GetFingerprints derives entities
 // from pgpKeys when entities is nil.
-func TestUnitGetFingerprints_WithPGPKeys(t *testing.T) {
+func TestUnitCommonGetFingerprints_WithPGPKeys(t *testing.T) {
 	b64Key, entity := testNewPGPKey(t)
 
 	fps, err := GetFingerprints([]string{b64Key}, nil)
@@ -155,7 +155,7 @@ func TestUnitGetFingerprints_WithPGPKeys(t *testing.T) {
 
 // TestGetFingerprints_MultipleEntities checks that multiple entities are handled
 // in the correct order.
-func TestUnitGetFingerprints_MultipleEntities(t *testing.T) {
+func TestUnitCommonGetFingerprints_MultipleEntities(t *testing.T) {
 	_, e1 := testNewPGPKey(t)
 	_, e2 := testNewPGPKey(t)
 
@@ -175,7 +175,7 @@ func TestUnitGetFingerprints_MultipleEntities(t *testing.T) {
 }
 
 // TestGetFingerprints_InvalidKey checks that an invalid key string causes an error.
-func TestUnitGetFingerprints_InvalidKey(t *testing.T) {
+func TestUnitCommonGetFingerprints_InvalidKey(t *testing.T) {
 	_, err := GetFingerprints([]string{"not-base64!!!"}, nil)
 	if err == nil {
 		t.Fatal("expected error for invalid key, got nil")
@@ -183,7 +183,7 @@ func TestUnitGetFingerprints_InvalidKey(t *testing.T) {
 }
 
 // TestGetFingerprints_EmptyEntities checks the empty case for both parameters.
-func TestUnitGetFingerprints_EmptyEntities(t *testing.T) {
+func TestUnitCommonGetFingerprints_EmptyEntities(t *testing.T) {
 	fps, err := GetFingerprints(nil, []*openpgp.Entity{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -199,7 +199,7 @@ func TestUnitGetFingerprints_EmptyEntities(t *testing.T) {
 
 // TestEncryptShares_LengthMismatch checks that mismatched slice lengths return
 // an error that mentions "mismatch".
-func TestUnitEncryptShares_LengthMismatch(t *testing.T) {
+func TestUnitCommonEncryptShares_LengthMismatch(t *testing.T) {
 	b64Key, _ := testNewPGPKey(t)
 
 	_, _, err := EncryptShares(
@@ -216,7 +216,7 @@ func TestUnitEncryptShares_LengthMismatch(t *testing.T) {
 
 // TestEncryptShares_Valid checks that valid inputs produce a non-empty
 // ciphertext and the correct fingerprint.
-func TestUnitEncryptShares_Valid(t *testing.T) {
+func TestUnitCommonEncryptShares_Valid(t *testing.T) {
 	b64Key, entity := testNewPGPKey(t)
 	plaintext := []byte("hello, PGP world!")
 
@@ -242,7 +242,7 @@ func TestUnitEncryptShares_Valid(t *testing.T) {
 
 // TestEncryptShares_EmptyInput checks that empty slices return empty results
 // without error.
-func TestUnitEncryptShares_EmptyInput(t *testing.T) {
+func TestUnitCommonEncryptShares_EmptyInput(t *testing.T) {
 	fps, cts, err := EncryptShares([][]byte{}, []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -253,7 +253,7 @@ func TestUnitEncryptShares_EmptyInput(t *testing.T) {
 }
 
 // TestEncryptShares_InvalidKey checks that an invalid PGP key causes an error.
-func TestUnitEncryptShares_InvalidKey(t *testing.T) {
+func TestUnitCommonEncryptShares_InvalidKey(t *testing.T) {
 	_, _, err := EncryptShares([][]byte{[]byte("data")}, []string{"not-base64!!!"})
 	if err == nil {
 		t.Fatal("expected error for invalid key, got nil")
@@ -262,7 +262,7 @@ func TestUnitEncryptShares_InvalidKey(t *testing.T) {
 
 // TestEncryptShares_MultipleShares verifies that multiple (plaintext, key) pairs
 // are all encrypted independently.
-func TestUnitEncryptShares_MultipleShares(t *testing.T) {
+func TestUnitCommonEncryptShares_MultipleShares(t *testing.T) {
 	k1, _ := testNewPGPKey(t)
 	k2, _ := testNewPGPKey(t)
 	p1 := []byte("secret one")
@@ -287,7 +287,7 @@ func TestUnitEncryptShares_MultipleShares(t *testing.T) {
 
 // TestEncryptValue_Valid checks that EncryptValue returns a non-empty fingerprint
 // and a valid base64-encoded ciphertext.
-func TestUnitEncryptValue_Valid(t *testing.T) {
+func TestUnitCommonEncryptValue_Valid(t *testing.T) {
 	b64Key, _ := testNewPGPKey(t)
 
 	fp, encrypted, err := EncryptValue(b64Key, "super-secret-password", "test password")
@@ -312,7 +312,7 @@ func TestUnitEncryptValue_Valid(t *testing.T) {
 
 // TestEncryptValue_EmptyValue checks that encrypting an empty value still
 // succeeds (PGP can encrypt zero-length messages).
-func TestUnitEncryptValue_EmptyValue(t *testing.T) {
+func TestUnitCommonEncryptValue_EmptyValue(t *testing.T) {
 	b64Key, _ := testNewPGPKey(t)
 
 	fp, encrypted, err := EncryptValue(b64Key, "", "empty value test")
@@ -329,7 +329,7 @@ func TestUnitEncryptValue_EmptyValue(t *testing.T) {
 
 // TestEncryptValue_InvalidKey checks that an invalid key causes an error whose
 // message includes the description parameter.
-func TestUnitEncryptValue_InvalidKey(t *testing.T) {
+func TestUnitCommonEncryptValue_InvalidKey(t *testing.T) {
 	_, _, err := EncryptValue("not-base64!!!", "secret", "test description")
 	if err == nil {
 		t.Fatal("expected error for invalid key, got nil")
@@ -341,7 +341,7 @@ func TestUnitEncryptValue_InvalidKey(t *testing.T) {
 
 // TestEncryptValue_FingerprintConsistency verifies that the fingerprint returned
 // by EncryptValue matches the one returned by GetFingerprints for the same key.
-func TestUnitEncryptValue_FingerprintConsistency(t *testing.T) {
+func TestUnitCommonEncryptValue_FingerprintConsistency(t *testing.T) {
 	b64Key, _ := testNewPGPKey(t)
 
 	fp, _, err := EncryptValue(b64Key, "data", "fp consistency test")
@@ -367,7 +367,7 @@ func TestUnitEncryptValue_FingerprintConsistency(t *testing.T) {
 
 // TestRetrieveGPGKey_Direct checks that a key without the "keybase:" prefix is
 // returned unchanged.
-func TestUnitRetrieveGPGKey_Direct(t *testing.T) {
+func TestUnitCommonRetrieveGPGKey_Direct(t *testing.T) {
 	b64Key, _ := testNewPGPKey(t)
 
 	result, err := RetrieveGPGKey(b64Key)
@@ -380,7 +380,7 @@ func TestUnitRetrieveGPGKey_Direct(t *testing.T) {
 }
 
 // TestRetrieveGPGKey_Empty checks that an empty string is returned as-is.
-func TestUnitRetrieveGPGKey_Empty(t *testing.T) {
+func TestUnitCommonRetrieveGPGKey_Empty(t *testing.T) {
 	result, err := RetrieveGPGKey("")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -392,7 +392,7 @@ func TestUnitRetrieveGPGKey_Empty(t *testing.T) {
 
 // TestRetrieveGPGKey_ArbitraryString checks that any non-keybase string is
 // returned verbatim without triggering a network call.
-func TestUnitRetrieveGPGKey_ArbitraryString(t *testing.T) {
+func TestUnitCommonRetrieveGPGKey_ArbitraryString(t *testing.T) {
 	for _, input := range []string{
 		"just-a-string",
 		"BEGIN PGP PUBLIC KEY BLOCK",
