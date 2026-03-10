@@ -6,9 +6,52 @@ import (
 	"testing"
 
 	"github.com/alibabacloud-go/tea/tea"
+	sdkCredentials "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/stretchr/testify/assert"
 )
+
+// mockCredential implements credential.Credential for testing purposes.
+// When err is non-nil, GetCredential returns an error so getAuthCredential
+// does not override the Config's AccessKey/SecretKey/SecurityToken fields.
+type mockCredential struct {
+	accessKeyId     string
+	accessKeySecret string
+	securityToken   string
+	err             error
+}
+
+func (m *mockCredential) GetAccessKeyId() (*string, error) {
+	return tea.String(m.accessKeyId), m.err
+}
+
+func (m *mockCredential) GetAccessKeySecret() (*string, error) {
+	return tea.String(m.accessKeySecret), m.err
+}
+
+func (m *mockCredential) GetSecurityToken() (*string, error) {
+	return tea.String(m.securityToken), m.err
+}
+
+func (m *mockCredential) GetBearerToken() *string {
+	return tea.String("")
+}
+
+func (m *mockCredential) GetType() *string {
+	return tea.String("mock")
+}
+
+func (m *mockCredential) GetCredential() (*credentials.CredentialModel, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &credentials.CredentialModel{
+		AccessKeyId:     tea.String(m.accessKeyId),
+		AccessKeySecret: tea.String(m.accessKeySecret),
+		SecurityToken:   tea.String(m.securityToken),
+		Type:            tea.String("mock"),
+	}, nil
+}
 
 func TestUnitCommonRefreshAuthCredential_ECS_Role(t *testing.T) {
 	client := NewTestClient(t)
@@ -523,4 +566,231 @@ func TestUnitCommonNeedRefreshCredential(t *testing.T) {
 			assert.Equal(t, tc.expected, result, tc.description)
 		})
 	}
+}
+
+func TestUnitCommonGetAuthCredential_StsToken(t *testing.T) {
+	// When Credential returns error, fields on Config are preserved.
+	config := &Config{
+		AccessKey:     "test-ak",
+		SecretKey:     "test-sk",
+		SecurityToken: "test-sts-token",
+		Credential:    &mockCredential{err: fmt.Errorf("skip credential override")},
+	}
+	result := config.getAuthCredential(true)
+	assert.NotNil(t, result, "Should return a non-nil credential")
+	_, ok := result.(*sdkCredentials.StsTokenCredential)
+	assert.True(t, ok, "Should return StsTokenCredential when stsSupported=true and SecurityToken is set")
+}
+
+func TestUnitCommonGetAuthCredential_StsNotSupported(t *testing.T) {
+	config := &Config{
+		AccessKey:     "test-ak",
+		SecretKey:     "test-sk",
+		SecurityToken: "test-sts-token",
+		Credential:    &mockCredential{err: fmt.Errorf("skip credential override")},
+	}
+	result := config.getAuthCredential(false)
+	assert.NotNil(t, result)
+	_, ok := result.(*sdkCredentials.AccessKeyCredential)
+	assert.True(t, ok, "Should return AccessKeyCredential when stsSupported=false (SecurityToken is ignored)")
+}
+
+func TestUnitCommonGetAuthCredential_RamRoleArn(t *testing.T) {
+	config := &Config{
+		AccessKey:          "test-ak",
+		SecretKey:          "test-sk",
+		RamRoleArn:         "acs:ram::123456789012:role/testrole",
+		RamRoleSessionName: "test-session",
+		Credential:         &mockCredential{err: fmt.Errorf("skip credential override")},
+	}
+	result := config.getAuthCredential(true)
+	assert.NotNil(t, result)
+	_, ok := result.(*sdkCredentials.RamRoleArnCredential)
+	assert.True(t, ok, "Should return RamRoleArnCredential when RamRoleArn is set (no ExternalId)")
+}
+
+func TestUnitCommonGetAuthCredential_RamRoleArnWithExternalId(t *testing.T) {
+	config := &Config{
+		AccessKey:          "test-ak",
+		SecretKey:          "test-sk",
+		RamRoleArn:         "acs:ram::123456789012:role/testrole",
+		RamRoleSessionName: "test-session",
+		RamRoleExternalId:  "ext-12345",
+		Credential:         &mockCredential{err: fmt.Errorf("skip credential override")},
+	}
+	result := config.getAuthCredential(true)
+	assert.NotNil(t, result)
+	_, ok := result.(*sdkCredentials.RamRoleArnCredential)
+	assert.True(t, ok, "Should return RamRoleArnCredential when RamRoleArn+ExternalId are set")
+}
+
+func TestUnitCommonGetAuthCredential_AccessKey(t *testing.T) {
+	config := &Config{
+		AccessKey:  "test-ak",
+		SecretKey:  "test-sk",
+		Credential: &mockCredential{err: fmt.Errorf("skip credential override")},
+	}
+	result := config.getAuthCredential(true)
+	assert.NotNil(t, result)
+	_, ok := result.(*sdkCredentials.AccessKeyCredential)
+	assert.True(t, ok, "Should return AccessKeyCredential when only AK/SK are set")
+}
+
+func TestUnitCommonGetAuthCredential_EcsRoleName(t *testing.T) {
+	config := &Config{
+		EcsRoleName: "test-ecs-role",
+		Credential:  &mockCredential{err: fmt.Errorf("skip credential override")},
+	}
+	result := config.getAuthCredential(true)
+	assert.NotNil(t, result)
+	_, ok := result.(*sdkCredentials.EcsRamRoleCredential)
+	assert.True(t, ok, "Should return EcsRamRoleCredential when only EcsRoleName is set")
+}
+
+func TestUnitCommonGetAuthCredential_EmptyCredentials(t *testing.T) {
+	config := &Config{
+		Credential: &mockCredential{err: fmt.Errorf("skip credential override")},
+	}
+	result := config.getAuthCredential(true)
+	assert.NotNil(t, result)
+	_, ok := result.(*sdkCredentials.AccessKeyCredential)
+	assert.True(t, ok, "Should return empty AccessKeyCredential when no credentials are set")
+}
+
+func TestUnitCommonGetAuthCredential_CredentialOverridesFields(t *testing.T) {
+	// When Credential.GetCredential() succeeds, it overrides Config fields.
+	// We set up a mock that returns AK/SK with a security token.
+	mock := &mockCredential{
+		accessKeyId:     "override-ak",
+		accessKeySecret: "override-sk",
+		securityToken:   "override-token",
+	}
+	config := &Config{
+		AccessKey:     "original-ak",
+		SecretKey:     "original-sk",
+		SecurityToken: "",
+		Credential:    mock,
+	}
+	result := config.getAuthCredential(true)
+	assert.NotNil(t, result)
+	// After credential override, SecurityToken="override-token" → StsTokenCredential
+	_, ok := result.(*sdkCredentials.StsTokenCredential)
+	assert.True(t, ok, "Credential override should set SecurityToken and return StsTokenCredential")
+}
+
+func TestUnitCommonSetAuthByAssumeRole_EmptyAccessKey(t *testing.T) {
+	config := &Config{
+		AccessKey:  "",
+		RamRoleArn: "acs:ram::123456789012:role/testrole",
+	}
+	err := config.setAuthByAssumeRole()
+	assert.NoError(t, err, "Empty AccessKey should cause early return with no error")
+	assert.Nil(t, config.Credential, "Credential should remain nil when AccessKey is empty")
+}
+
+func TestUnitCommonSetAuthByAssumeRole_EmptyRamRoleArn(t *testing.T) {
+	config := &Config{
+		AccessKey:  "test-ak",
+		SecretKey:  "test-sk",
+		RamRoleArn: "",
+	}
+	err := config.setAuthByAssumeRole()
+	assert.NoError(t, err, "Empty RamRoleArn should cause early return with no error")
+	assert.Nil(t, config.Credential, "Credential should remain nil when RamRoleArn is empty")
+}
+
+func TestUnitCommonSetAuthByAssumeRole_BothEmpty(t *testing.T) {
+	config := &Config{}
+	err := config.setAuthByAssumeRole()
+	assert.NoError(t, err, "Both empty should cause early return with no error")
+}
+
+func TestUnitCommonSetAuthByAssumeRole_WithStsEndpoint(t *testing.T) {
+	// With StsEndpoint set, but invalid credentials → GetCredential will fail with network error.
+	// We verify the error message wraps "refresh Ram Role Arn credential failed".
+	config := &Config{
+		AccessKey:          "fake-ak",
+		SecretKey:          "fake-sk",
+		RamRoleArn:         "acs:ram::123456789012:role/testrole",
+		RamRoleSessionName: "test-session",
+		StsEndpoint:        "sts.cn-hangzhou.aliyuncs.com",
+	}
+	err := config.setAuthByAssumeRole()
+	if err != nil {
+		assert.Contains(t, err.Error(), "refresh Ram Role Arn credential failed",
+			"Error should mention credential refresh failure")
+	}
+	// Either succeeds (unlikely without real creds) or fails with the expected error message.
+}
+
+func TestUnitCommonSetAuthByAssumeRole_WithTimeouts(t *testing.T) {
+	// Ensure timeout config fields are used without panics.
+	config := &Config{
+		AccessKey:            "fake-ak",
+		SecretKey:            "fake-sk",
+		RamRoleArn:           "acs:ram::123456789012:role/testrole",
+		RamRoleSessionName:   "test-session",
+		ClientConnectTimeout: 3000,
+		ClientReadTimeout:    5000,
+	}
+	err := config.setAuthByAssumeRole()
+	if err != nil {
+		assert.Contains(t, err.Error(), "refresh Ram Role Arn credential failed")
+	}
+}
+
+func TestUnitCommonSetAuthByAssumeRole_WithSecurityToken(t *testing.T) {
+	// SecurityToken path: config.SetSecurityToken is called when c.SecurityToken != "".
+	config := &Config{
+		AccessKey:          "fake-ak",
+		SecretKey:          "fake-sk",
+		SecurityToken:      "fake-sts-token",
+		RamRoleArn:         "acs:ram::123456789012:role/testrole",
+		RamRoleSessionName: "test-session",
+	}
+	err := config.setAuthByAssumeRole()
+	if err != nil {
+		assert.Contains(t, err.Error(), "refresh Ram Role Arn credential failed")
+	}
+}
+
+func TestUnitCommonSetAuthCredentialByEcsRoleName_WithAccessKey(t *testing.T) {
+	config := &Config{
+		AccessKey:   "existing-ak",
+		EcsRoleName: "test-role",
+	}
+	err := config.setAuthCredentialByEcsRoleName()
+	assert.NoError(t, err, "Non-empty AccessKey should cause early return with no error")
+	assert.Nil(t, config.Credential, "Credential should remain nil when AccessKey is set")
+}
+
+func TestUnitCommonSetAuthCredentialByEcsRoleName_EmptyRoleName(t *testing.T) {
+	config := &Config{
+		AccessKey:   "",
+		EcsRoleName: "",
+	}
+	err := config.setAuthCredentialByEcsRoleName()
+	assert.NoError(t, err, "Empty EcsRoleName should cause early return with no error")
+	assert.Nil(t, config.Credential, "Credential should remain nil when EcsRoleName is empty")
+}
+
+func TestUnitCommonSetAuthCredentialByEcsRoleName_BothEmpty(t *testing.T) {
+	config := &Config{}
+	err := config.setAuthCredentialByEcsRoleName()
+	assert.NoError(t, err, "Both empty should cause early return with no error")
+}
+
+func TestUnitCommonSetAuthCredentialByEcsRoleName_WithRoleName(t *testing.T) {
+	// EcsRoleName set, AccessKey empty → attempts to call ECS metadata service.
+	// In a non-ECS environment this will fail; verify error message is correct.
+	config := &Config{
+		AccessKey:   "",
+		EcsRoleName: "test-ecs-role",
+	}
+	err := config.setAuthCredentialByEcsRoleName()
+	if err != nil {
+		assert.Contains(t, err.Error(), "refresh Ecs Ram Role credential failed",
+			"Error should mention ECS credential refresh failure")
+	}
+	// If running on an actual ECS instance with the role, it should succeed and set Credential.
 }

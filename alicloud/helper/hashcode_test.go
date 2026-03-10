@@ -8,7 +8,7 @@ import (
 )
 
 // TestHashcode compare local hash with terraform-plugin-sdk v1 hash
-func TestUnitHashcode(t *testing.T) {
+func TestUnitCommonHashcode(t *testing.T) {
 	testCases := []struct {
 		name  string
 		input string
@@ -43,7 +43,7 @@ func TestUnitHashcode(t *testing.T) {
 }
 
 // TestHashcode_NonNegative verifies that Hashcode always returns a non-negative integer.
-func TestUnitHashcode_NonNegative(t *testing.T) {
+func TestUnitCommonHashcode_NonNegative(t *testing.T) {
 	inputs := []string{
 		"",
 		"a",
@@ -62,7 +62,7 @@ func TestUnitHashcode_NonNegative(t *testing.T) {
 
 // TestHashcode_Deterministic verifies that repeated calls with the same input always
 // produce the same result.
-func TestUnitHashcode_Deterministic(t *testing.T) {
+func TestUnitCommonHashcode_Deterministic(t *testing.T) {
 	inputs := []string{"", "hello", "alicloud_vpc.default", "你好"}
 	for _, s := range inputs {
 		first := Hashcode(s)
@@ -76,7 +76,7 @@ func TestUnitHashcode_Deterministic(t *testing.T) {
 
 // TestHashcode_DifferentInputsDifferentHashes verifies that distinct inputs
 // produce distinct hash values for a representative set of strings.
-func TestUnitHashcode_DifferentInputsDifferentHashes(t *testing.T) {
+func TestUnitCommonHashcode_DifferentInputsDifferentHashes(t *testing.T) {
 	pairs := [][2]string{
 		{"hello", "world"},
 		{"alicloud_vpc.a", "alicloud_vpc.b"},
@@ -94,7 +94,7 @@ func TestUnitHashcode_DifferentInputsDifferentHashes(t *testing.T) {
 // TestHashcode_BoundaryValues exercises boundary conditions of the int type.
 // On a 32-bit system the CRC32 value may overflow into negative territory;
 // the implementation must still return a non-negative integer.
-func TestUnitHashcode_BoundaryValues(t *testing.T) {
+func TestUnitCommonHashcode_BoundaryValues(t *testing.T) {
 	// Ensure the return value never exceeds math.MaxInt32 on 32-bit and is
 	// always non-negative regardless of platform.
 	_ = math.MaxInt32 // keep import used
