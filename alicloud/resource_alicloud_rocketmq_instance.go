@@ -217,9 +217,10 @@ func resourceAliCloudRocketmqInstance() *schema.Resource {
 							ForceNew: true,
 						},
 						"send_receive_ratio": {
-							Type:     schema.TypeFloat,
-							Optional: true,
-							Computed: true,
+							Type:         schema.TypeFloat,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: FloatBetween(0.05, 0.5),
 						},
 						"message_retention_time": {
 							Type:     schema.TypeInt,
