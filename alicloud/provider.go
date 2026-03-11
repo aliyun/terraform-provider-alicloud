@@ -993,6 +993,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_actiontrail_advanced_query_template":                  resourceAliCloudActiontrailAdvancedQueryTemplate(),
 			"alicloud_eflo_node_group_attachment":                           resourceAliCloudEfloNodeGroupAttachment(),
 			"alicloud_sls_logtail_config":                                   resourceAliCloudSlsLogtailConfig(),
+			"alicloud_sls_logtail_pipeline_config":                          resourceAliCloudSlsLogtailPipelineConfig(),
 			"alicloud_message_service_event_rule":                           resourceAliCloudMessageServiceEventRule(),
 			"alicloud_esa_custom_scene_policy":                              resourceAliCloudEsaCustomScenePolicy(),
 			"alicloud_esa_version":                                          resourceAliCloudEsaVersion(),
