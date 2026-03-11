@@ -144,6 +144,9 @@ The following arguments are supported:
   * **serverless_ha**: SQLServer Serverless High Availability Edition. (Available since v1.207.0)
   * **cluster**: MySQL Cluster Edition. (Available since v1.207.0)
 * `certificate` - (Optional) The file that contains the certificate used for TDE.
+* `tags` - (Optional, Available since v1.273.0) A mapping of tags to assign to the resource.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `client_ca_cert` - (Optional) This parameter is only supported by the RDS PostgreSQL cloud disk version. It indicates the public key of the client certification authority. If the value of client_ca_enabled is 1, this parameter must be configured.
 * `client_ca_enabled` - (Optional) The client ca enabled.
 * `client_cert_revocation_list` - (Optional) This parameter is only supported by the RDS PostgreSQL cloud disk version, which indicates that the client revokes the certificate file. If the value of client_crl_enabled is 1, this parameter must be configured.

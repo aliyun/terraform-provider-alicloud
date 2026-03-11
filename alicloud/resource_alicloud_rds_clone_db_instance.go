@@ -444,6 +444,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 					return false
 				},
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -706,6 +707,11 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 	d.Set("tcp_connection_type", res["TcpConnectionType"])
+	tags, err := rdsService.describeTags(d)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", rdsService.tagsToMap(tags))
 	return nil
 }
 func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -724,6 +730,9 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapError(err)
 		}
+	}
+	if err := rdsService.setInstanceTags(d); err != nil {
+		return WrapError(err)
 	}
 	if d.HasChange("deletion_protection") && d.Get("payment_type") == "PayAsYouGo" {
 		err := rdsService.ModifyDBInstanceDeletionProtection(d, "deletion_protection")
