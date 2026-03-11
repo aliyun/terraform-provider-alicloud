@@ -117,6 +117,33 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"db_instance_description": "tf-testAccDBInstance_instance_name",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -734,7 +761,7 @@ resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   db_instance_storage_type = "cloud_essd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_type            = "mysql.n2e.small.xc"
   instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   vswitch_id               = data.alicloud_vswitches.default.ids.0
   instance_name            = var.name
