@@ -1732,7 +1732,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_msc_sub_subscription":                                  resourceAlicloudMscSubSubscription(),
 			"alicloud_sddp_instance":                                         resourceAlicloudSddpInstance(),
 			"alicloud_vpc_nat_ip_cidr":                                       resourceAliCloudNatGatewayNatIpCidr(),
-			"alicloud_vpc_nat_ip":                                            resourceAlicloudVpcNatIp(),
+			"alicloud_vpc_nat_ip":                                            resourceAliCloudNatGatewayNatIp(),
 			"alicloud_quick_bi_user":                                         resourceAlicloudQuickBiUser(),
 			"alicloud_vod_domain":                                            resourceAlicloudVodDomain(),
 			"alicloud_arms_dispatch_rule":                                    resourceAlicloudArmsDispatchRule(),
