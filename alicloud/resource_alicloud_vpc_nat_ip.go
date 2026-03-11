@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -10,24 +11,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudVpcNatIp() *schema.Resource {
+func resourceAliCloudNatGatewayNatIp() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudVpcNatIpCreate,
-		Read:   resourceAlicloudVpcNatIpRead,
-		Update: resourceAlicloudVpcNatIpUpdate,
-		Delete: resourceAlicloudVpcNatIpDelete,
+		Create: resourceAliCloudNatGatewayNatIpCreate,
+		Read:   resourceAliCloudNatGatewayNatIpRead,
+		Update: resourceAliCloudNatGatewayNatIpUpdate,
+		Delete: resourceAliCloudNatGatewayNatIpDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Computed: true,
 			},
 			"nat_gateway_id": {
 				Type:     schema.TypeString,
@@ -37,25 +38,21 @@ func resourceAlicloudVpcNatIp() *schema.Resource {
 			"nat_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
-				Computed: true,
-			},
-			"nat_ip_id": {
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 			"nat_ip_cidr": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
-			},
-			"nat_ip_cidr_id": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 			"nat_ip_description": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"nat_ip_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"nat_ip_name": {
 				Type:     schema.TypeString,
@@ -65,42 +62,49 @@ func resourceAlicloudVpcNatIp() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"nat_ip_cidr_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field `nat_ip_cidr_id` has been removed from provider version 1.274.0.",
+			},
 		},
 	}
 }
 
-func resourceAlicloudVpcNatIpCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNatGatewayNatIpCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateNatIp"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	if v, ok := d.GetOkExists("dry_run"); ok {
-		request["DryRun"] = v
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("nat_gateway_id"); ok {
+		request["NatGatewayId"] = v
 	}
-	request["NatGatewayId"] = d.Get("nat_gateway_id")
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("nat_ip_name"); ok {
+		request["NatIpName"] = v
+	}
+	request["NatIpCidr"] = d.Get("nat_ip_cidr")
 	if v, ok := d.GetOk("nat_ip"); ok {
 		request["NatIp"] = v
 	}
-	if v, ok := d.GetOk("nat_ip_cidr"); ok {
-		request["NatIpCidr"] = v
-	}
-	if v, ok := d.GetOk("nat_ip_cidr_id"); ok {
-		request["NatIpCidrId"] = v
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
 	}
 	if v, ok := d.GetOk("nat_ip_description"); ok {
 		request["NatIpDescription"] = v
 	}
-	if v, ok := d.GetOk("nat_ip_name"); ok {
-		request["NatIpName"] = v
-	}
-	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("CreateNatIp")
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.NatGateway"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -109,78 +113,79 @@ func resourceAlicloudVpcNatIpCreate(d *schema.ResourceData, meta interface{}) er
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_nat_ip", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["NatGatewayId"], ":", response["NatIpId"]))
-	vpcService := VpcService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcNatIpStateRefreshFunc(d.Id(), []string{}))
+	d.SetId(fmt.Sprintf("%v:%v", request["NatGatewayId"], response["NatIpId"]))
+
+	nATGatewayServiceV2 := NATGatewayServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nATGatewayServiceV2.NatGatewayNatIpStateRefreshFunc(d.Id(), "NatIpStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudVpcNatIpRead(d, meta)
+	return resourceAliCloudNatGatewayNatIpRead(d, meta)
 }
-func resourceAlicloudVpcNatIpRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
 
-	object, err := vpcService.DescribeVpcNatIp(d.Id())
+func resourceAliCloudNatGatewayNatIpRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	nATGatewayServiceV2 := NATGatewayServiceV2{client}
+
+	objectRaw, err := nATGatewayServiceV2.DescribeNatGatewayNatIp(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_vpc_nat_ip vpcService.DescribeVpcNatIp Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpc_nat_ip DescribeNatGatewayNatIp Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("nat_gateway_id", object["NatGatewayId"])
-	d.Set("nat_ip", object["NatIp"])
-	d.Set("nat_ip_id", object["NatIpId"])
-	d.Set("nat_ip_cidr", object["NatIpCidr"])
-	d.Set("nat_ip_description", object["NatIpDescription"])
-	d.Set("nat_ip_name", object["NatIpName"])
-	d.Set("status", object["NatIpStatus"])
+
+	d.Set("nat_ip", objectRaw["NatIp"])
+	d.Set("nat_ip_cidr", objectRaw["NatIpCidr"])
+	d.Set("nat_ip_description", objectRaw["NatIpDescription"])
+	d.Set("nat_ip_name", objectRaw["NatIpName"])
+	d.Set("status", objectRaw["NatIpStatus"])
+	d.Set("nat_gateway_id", objectRaw["NatGatewayId"])
+	d.Set("nat_ip_id", objectRaw["NatIpId"])
+
 	return nil
 }
-func resourceAlicloudVpcNatIpUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudNatGatewayNatIpUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
+
+	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "ModifyNatIpAttribute"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["NatIpId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	if d.HasChange("nat_ip_name") {
+		update = true
+		request["NatIpName"] = d.Get("nat_ip_name")
 	}
-	request := map[string]interface{}{
-		"RegionId": client.RegionId,
-		"NatIpId":  parts[1],
+
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
 	}
 	if d.HasChange("nat_ip_description") {
 		update = true
+		request["NatIpDescription"] = d.Get("nat_ip_description")
 	}
-	if v, ok := d.GetOk("nat_ip_description"); ok {
-		request["NatIpDescription"] = v
-	}
-	if d.HasChange("nat_ip_name") {
-		update = true
-	}
-	if v, ok := d.GetOk("nat_ip_name"); ok {
-		request["NatIpName"] = v
-	}
-	request["RegionId"] = client.RegionId
-	if d.HasChange("dry_run") || d.IsNewResource() {
-		update = true
-		if v, ok := d.GetOkExists("dry_run"); ok {
-			request["DryRun"] = v
-		}
-	}
+
 	if update {
-		action := "ModifyNatIpAttribute"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			request["ClientToken"] = buildClientToken("ModifyNatIpAttribute")
-			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -195,32 +200,33 @@ func resourceAlicloudVpcNatIpUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudVpcNatIpRead(d, meta)
+
+	return resourceAliCloudNatGatewayNatIpRead(d, meta)
 }
-func resourceAlicloudVpcNatIpDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudNatGatewayNatIpDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+	parts := strings.Split(d.Id(), ":")
 	action := "DeleteNatIp"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	request := map[string]interface{}{
-		"NatIpId": parts[1],
-	}
+	request = make(map[string]interface{})
+	request["NatGatewayId"] = parts[0]
+	request["NatIpId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("DeleteNatIp")
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.NatGateway"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -229,12 +235,19 @@ func resourceAlicloudVpcNatIpDelete(d *schema.ResourceData, meta interface{}) er
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpcNatIpStateRefreshFunc(d.Id(), []string{}))
+
+	nATGatewayServiceV2 := NATGatewayServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nATGatewayServiceV2.NatGatewayNatIpStateRefreshFunc(d.Id(), "NatIpStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
