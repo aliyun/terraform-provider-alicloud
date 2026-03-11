@@ -703,6 +703,8 @@ The following arguments are supported:
 * `ca_type` - (Optional, Available since v1.124.1) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the SSLEnabled parameter to 1, the default value of this parameter is aliyun. **NOTE:** From version 1.231.0, `ca_type` start  support `MySQL` engine. Value range:
   - aliyun: a cloud certificate
   - custom: a custom certificate
+* `collation` - (Optional, Available since v1.271.0) The collation of the instance. Only for SQLServer.
+* `time_zone` - (Optional, Available since v1.271.0) The time zone of the instance. Only for SQLServer.
 * `server_cert` - (Optional, Available since v1.124.1) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter. **NOTE:** From version 1.231.0, `server_cert` start  support `MySQL` engine.
 * `server_key` - (Optional, Available since v1.124.1) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter. **NOTE:** From version 1.231.0, `server_key` start support `MySQL` engine.
 * `client_ca_enabled` - (Optional, Available since v1.124.1) Specifies whether to enable the public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
