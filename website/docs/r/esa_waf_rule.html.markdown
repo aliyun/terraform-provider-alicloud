@@ -311,13 +311,13 @@ The shared-actions-response supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waf_rule_id>`.
+* `waf_rule_id` - The unique identifier of the WAF rule.
 * `config` - The specific configuration of the WAF rule.
   * `id` - The internal unique ID of the WAF rule.
   * `managed_group_id` - The ID of the managed rule group (deprecated).
   * `managed_rulesets` - The managed rulesets referenced by this rule and their configurations.
     * `number_enabled` - Number of rules currently enabled.
     * `number_total` - Total number of rules in this ruleset.
-* `waf_rule_id` - The unique identifier of the WAF rule.
 
 ## Timeouts
 

@@ -115,7 +115,7 @@ func resourceAliCloudEsaCompressionRuleCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("brotli"); ok {
 		request["Brotli"] = v
 	}
-	wait := incrementalWait(5*time.Second, 0*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
@@ -219,7 +219,7 @@ func resourceAliCloudEsaCompressionRuleUpdate(d *schema.ResourceData, meta inter
 	}
 
 	if update {
-		wait := incrementalWait(5*time.Second, 0*time.Second)
+		wait := incrementalWait(5*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
@@ -253,7 +253,7 @@ func resourceAliCloudEsaCompressionRuleDelete(d *schema.ResourceData, meta inter
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
 
-	wait := incrementalWait(5*time.Second, 0*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {

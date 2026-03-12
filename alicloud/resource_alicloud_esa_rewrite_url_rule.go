@@ -119,11 +119,11 @@ func resourceAliCloudEsaRewriteUrlRuleCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("rewrite_uri_type"); ok {
 		request["RewriteUriType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -246,11 +246,11 @@ func resourceAliCloudEsaRewriteUrlRuleUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(5*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"LockFailed"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -280,11 +280,11 @@ func resourceAliCloudEsaRewriteUrlRuleDelete(d *schema.ResourceData, meta interf
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(1*time.Second, 0*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalException"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "InternalException"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

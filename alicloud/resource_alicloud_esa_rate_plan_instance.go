@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -49,8 +48,8 @@ func resourceAliCloudEsaRatePlanInstance() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
+				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Subscription"}, false),
 			},
 			"period": {
@@ -107,9 +106,9 @@ func resourceAliCloudEsaRatePlanInstanceCreate(d *schema.ResourceData, meta inte
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -126,7 +125,7 @@ func resourceAliCloudEsaRatePlanInstanceCreate(d *schema.ResourceData, meta inte
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 
 	esaServiceV2 := EsaServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, esaServiceV2.EsaRatePlanInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, esaServiceV2.EsaRatePlanInstanceStateRefreshFuncWithApi(d.Id(), "InstanceStatus", []string{}, esaServiceV2.DescribeRatePlanInstanceDescribeRatePlanInstanceStatus))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -161,8 +160,8 @@ func resourceAliCloudEsaRatePlanInstanceRead(d *schema.ResourceData, meta interf
 		d.Set("status", objectRaw["Status"])
 	}
 
-	objectRaw, err = esaServiceV2.DescribeDescribeRatePlanInstanceStatus(d.Id())
-	if err != nil {
+	objectRaw, err = esaServiceV2.DescribeRatePlanInstanceDescribeRatePlanInstanceStatus(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
@@ -179,8 +178,9 @@ func resourceAliCloudEsaRatePlanInstanceUpdate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "UpdateRatePlanSpec"
+
 	var err error
+	action := "UpdateRatePlanSpec"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -198,11 +198,11 @@ func resourceAliCloudEsaRatePlanInstanceUpdate(d *schema.ResourceData, meta inte
 
 	request["AutoPay"] = true
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(5*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, false)
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -215,7 +215,7 @@ func resourceAliCloudEsaRatePlanInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		esaServiceV2 := EsaServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, esaServiceV2.EsaRatePlanInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, esaServiceV2.EsaRatePlanInstanceStateRefreshFuncWithApi(d.Id(), "InstanceStatus", []string{}, esaServiceV2.DescribeRatePlanInstanceDescribeRatePlanInstanceStatus))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -244,8 +244,7 @@ func resourceAliCloudEsaRatePlanInstanceDelete(d *schema.ResourceData, meta inte
 	if client.IsInternationalAccount() {
 		request["ProductType"] = "dcdn_dpsplan_public_intl"
 	}
-
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
@@ -284,13 +283,14 @@ func convertEsaRatePlanInstanceInstanceInfoBillingModeResponse(source interface{
 	}
 	return source
 }
+
 func convertEsaRatePlanInstanceChargeTypeRequest(source interface{}) interface{} {
 	source = fmt.Sprint(source)
 	switch source {
-	case "PayAsYouGo":
-		return "POSTPAY"
 	case "Subscription":
 		return "PREPAY"
+	case "PayAsYouGo":
+		return "POSTPAY"
 	}
 	return source
 }

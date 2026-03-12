@@ -82,11 +82,11 @@ func resourceAliCloudEsaWafRulesetCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("name"); ok {
 		request["Name"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -145,7 +145,7 @@ func resourceAliCloudEsaWafRulesetUpdate(d *schema.ResourceData, meta interface{
 	request["SiteId"] = parts[1]
 	request["Id"] = parts[0]
 
-	if v, ok := d.GetOk("site_version"); ok {
+	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
 	}
 	if d.HasChange("status") {
@@ -154,11 +154,11 @@ func resourceAliCloudEsaWafRulesetUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(5*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -191,11 +191,11 @@ func resourceAliCloudEsaWafRulesetDelete(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
