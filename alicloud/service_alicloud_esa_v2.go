@@ -1105,7 +1105,7 @@ func (s *EsaServiceV2) DescribeEsaHttpRequestHeaderModificationRule(id string) (
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1338,7 +1338,7 @@ func (s *EsaServiceV2) DescribeEsaHttpResponseHeaderModificationRule(id string) 
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1415,7 +1415,7 @@ func (s *EsaServiceV2) DescribeEsaHttpsBasicConfiguration(id string) (object map
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1529,7 +1529,7 @@ func (s *EsaServiceV2) DescribeEsaCompressionRule(id string) (object map[string]
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1603,7 +1603,7 @@ func (s *EsaServiceV2) DescribeEsaHttpsApplicationConfiguration(id string) (obje
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"TooManyRequests", "undefined"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1755,7 +1755,7 @@ func (s *EsaServiceV2) DescribeEsaCacheRule(id string) (object map[string]interf
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"LockFailed"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1912,7 +1912,7 @@ func (s *EsaServiceV2) DescribeEsaImageTransform(id string) (object map[string]i
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -4329,6 +4329,7 @@ func (s *EsaServiceV2) EsaLoadBalancerStateRefreshFuncWithApi(id string, field s
 }
 
 // DescribeEsaLoadBalancer >>> Encapsulated.
+
 // DescribeEsaHttpIncomingRequestHeaderModificationRule <<< Encapsulated get interface for Esa HttpIncomingRequestHeaderModificationRule.
 
 func (s *EsaServiceV2) DescribeEsaHttpIncomingRequestHeaderModificationRule(id string) (object map[string]interface{}, err error) {
@@ -4353,7 +4354,7 @@ func (s *EsaServiceV2) DescribeEsaHttpIncomingRequestHeaderModificationRule(id s
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -4402,6 +4403,7 @@ func (s *EsaServiceV2) EsaHttpIncomingRequestHeaderModificationRuleStateRefreshF
 }
 
 // DescribeEsaHttpIncomingRequestHeaderModificationRule >>> Encapsulated.
+
 // DescribeEsaHttpIncomingResponseHeaderModificationRule <<< Encapsulated get interface for Esa HttpIncomingResponseHeaderModificationRule.
 
 func (s *EsaServiceV2) DescribeEsaHttpIncomingResponseHeaderModificationRule(id string) (object map[string]interface{}, err error) {
@@ -4426,7 +4428,7 @@ func (s *EsaServiceV2) DescribeEsaHttpIncomingResponseHeaderModificationRule(id 
 		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
