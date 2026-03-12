@@ -107,6 +107,10 @@ func dataSourceAlicloudNlbServerGroups() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									"health_check_http_version": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
 									"health_check_url": {
 										Type:     schema.TypeString,
 										Computed: true,
@@ -301,6 +305,7 @@ func dataSourceAlicloudNlbServerGroupsRead(d *schema.ResourceData, meta interfac
 				healthCheckMap["health_check_interval"] = healthCheck["HealthCheckInterval"]
 				healthCheckMap["health_check_type"] = healthCheck["HealthCheckType"]
 				healthCheckMap["health_check_url"] = healthCheck["HealthCheckUrl"]
+				healthCheckMap["health_check_http_version"] = healthCheck["HealthCheckHttpVersion"]
 				healthCheckMap["healthy_threshold"] = healthCheck["HealthyThreshold"]
 				healthCheckMap["unhealthy_threshold"] = healthCheck["UnhealthyThreshold"]
 				healthCheckMap["http_check_method"] = healthCheck["HttpCheckMethod"]
