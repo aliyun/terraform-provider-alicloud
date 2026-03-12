@@ -9,12 +9,11 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
+func dataSourceAliCloudDBInstanceClasses() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDBInstanceClassesRead,
+		Read: dataSourceAliCloudDBInstanceClassesRead,
 
 		Schema: map[string]*schema.Schema{
 			"zone_id": {
@@ -24,7 +23,7 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 			"engine": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB"}, false),
+				ValidateFunc: StringInSlice([]string{"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB"}, false),
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
@@ -33,13 +32,13 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 			"sorted_by": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Price"}, false),
+				ValidateFunc: StringInSlice([]string{"Price"}, false),
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      PostPaid,
-				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid), string(Serverless)}, false),
+				ValidateFunc: StringInSlice([]string{string(PostPaid), string(PrePaid), string(Serverless)}, false),
 			},
 			"db_instance_class": {
 				Type:     schema.TypeString,
@@ -48,22 +47,22 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 			"category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic", "serverless_standard", "serverless_ha", "cluster"}, false),
+				ValidateFunc: StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic", "serverless_standard", "serverless_ha", "cluster"}, false),
 			},
 			"storage_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3", "general_essd"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3", "general_essd"}, false),
 			},
 			"db_instance_storage_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3", "general_essd"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3", "general_essd"}, false),
 			},
 			"commodity_code": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"bards", "rds", "rords", "rds_rordspre_public_cn", "bards_intl", "rds_intl", "rords_intl", "rds_rordspre_public_intl", "rds_serverless_public_cn", "rds_serverless_public_intl"}, false),
+				ValidateFunc: StringInSlice([]string{"bards", "rds", "rords", "rds_rordspre_public_cn", "bards_intl", "rds_intl", "rords_intl", "rds_rordspre_public_intl", "rds_serverless_public_cn", "rds_serverless_public_intl"}, false),
 			},
 			"db_instance_id": {
 				Type:     schema.TypeString,
@@ -141,14 +140,9 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudDBInstanceClassesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	instanceChargeType := d.Get("instance_charge_type").(string)
-	if instanceChargeType == string(PostPaid) {
-		instanceChargeType = string(Postpaid)
-	} else {
-		instanceChargeType = string(Prepaid)
-	}
 	zoneId, zoneIdOk := d.GetOk("zone_id")
 	engine, engineOk := d.GetOk("engine")
 	engineVersion, engineVersionOk := d.GetOk("engine_version")
@@ -175,7 +169,7 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 			"RegionId":              client.RegionId,
 			"SourceIp":              client.SourceIp,
 			"ZoneId":                zoneId,
-			"InstanceChargeType":    instanceChargeType,
+			"InstanceChargeType":    convertDBInstanceChargeTypeRequest(instanceChargeType),
 			"Engine":                engine,
 			"EngineVersion":         engineVersion,
 			"DBInstanceStorageType": dbInstanceStorageType,
@@ -427,4 +421,15 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 		}
 	}
 	return nil
+}
+
+func convertDBInstanceChargeTypeRequest(source string) string {
+	switch source {
+	case "PostPaid":
+		return "Postpaid"
+	case "PrePaid":
+		return "Prepaid"
+	}
+
+	return source
 }
