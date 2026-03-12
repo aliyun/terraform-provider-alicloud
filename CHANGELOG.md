@@ -1,4 +1,36 @@
 ## 1.273.0 (Unreleased)
+
+- **New Resource:** `alicloud_nlb_hd_monitor_region_config` [GH-9545]
+- **New Resource:** `alicloud_simple_application_server_disk` [GH-9553]
+
+ENHANCEMENTS:
+
+- provider: Supported new region cn-zhongwei. [GH-9571]
+- resource/alicloud_polardb_cluster: add enable_dynamodb compatibility. [GH-9531]
+- resource/alicloud_dms_enterprise_instance: Update legacy to latest API. [GH-9538]
+- resource/alicloud_rds_backup: Added the field backup_retention_period. [GH-9546]
+- resource/alicloud_vpc_nat_ip_cidr: Refactored the resource alicloud_vpc_nat_ip_cidr; Added the field create_time. [GH-9547]
+- resource/alicloud_ecs_network_interface: Added the field delete_on_release. [GH-9548]
+- resource/alicloud_redis_tair_instance: Added the field tde_status, encryption_name, encryption_key, role_arn. [GH-9552]
+- resource/alicloud_adb_account: Refactored the resource alicloud_adb_account; Added the field account_type, tags, status. [GH-9557]
+- resource/alicloud_rds_clone_db_instance: CloneDbInstance Support Tags. [GH-9558]
+- resource/alicloud_hbr_policy_binding: Added the field oss_detail, ignore_archive_object, inventory_cleanup_policy, inventory_id. [GH-9559]
+- data-source/alicloud_ram_groups: Handle 404 error. [GH-9544]
+- testcase: Improves unit tests. [GH-9560]
+- testcase: Improves test for common utils. [GH-9561]
+- testcase: Improves test for common utils. [GH-9562]
+- docs: fix payment_type valid values documentation for elasticsearch_instance. [GH-9549]
+- docs: Update oss_bucket, oss_bucket_cors, oss_bucket_policy, oss_bucket_referer documents. [GH-9550]
+- docs: Update pvtz_service document. [GH-9551]
+- docs: Update SKILL document. [GH-9555]
+- docs: update ess_scaling_configuration document. [GH-9563]
+
+BUG FIXES:
+
+- resource/alicloud_dms_enterprise_instance: Fix create always trigger update bug. [GH-9537]
+- resource/alicloud_config_aggregator: Fix the number parsing overflow issue. [GH-9543]
+- data-source/alicloud_db_instance_classes: Fixed instance_charge_type invalid error. [GH-9570]
+
 ## 1.272.1 (March 2, 2026)
 
 ENHANCEMENTS:
