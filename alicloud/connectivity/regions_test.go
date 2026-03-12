@@ -5,7 +5,7 @@ import "testing"
 func TestUnitCommonRegionDefinitions(t *testing.T) {
 	t.Run("AllExportedRegionsInValidRegions", func(t *testing.T) {
 		definedRegions := []Region{
-			Hangzhou, Qingdao, Beijing,
+			Hangzhou, Qingdao, Beijing, ZhongWei,
 		}
 
 		validMap := make(map[Region]bool)
