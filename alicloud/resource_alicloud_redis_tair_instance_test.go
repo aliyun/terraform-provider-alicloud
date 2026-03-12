@@ -3,10 +3,13 @@ package alicloud
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	tea "github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 // Case 3314
@@ -2230,3 +2233,147 @@ resource "alicloud_vswitch" "defaultVSwitch" {
 }
 
 // Test Redis TairInstance. <<< Resource test cases, automatically generated.
+
+func TestUnitRedisTairInstanceCreateRetryLogic(t *testing.T) {
+	type callResult struct {
+		errCode string
+	}
+
+	// buildRetryFunc mirrors the retry closure in resourceAliCloudRedisTairInstanceCreate.
+	// waitFn replaces the real wait() (180s sleep) so tests can count invocations
+	// without actually sleeping.
+	buildRetryFunc := func(results []callResult, waitFn func()) (callCount int, finalErr error) {
+		internalErrRetryCount := 0
+		resource.Retry(1*time.Minute, func() *resource.RetryError {
+			if callCount >= len(results) {
+				return nil
+			}
+			r := results[callCount]
+			callCount++
+
+			if r.errCode == "" {
+				return nil
+			}
+
+			errCode := r.errCode
+			errMsg := r.errCode
+			err := &tea.SDKError{
+				Code:       &errCode,
+				Data:       &errMsg,
+				Message:    &errMsg,
+				StatusCode: tea.Int(400),
+			}
+
+			if (NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"})) && internalErrRetryCount < 2 {
+				waitFn()
+				internalErrRetryCount++
+				return resource.RetryableError(err)
+			}
+			finalErr = err
+			return resource.NonRetryableError(err)
+		})
+		return
+	}
+
+	// ── InternalError path ──────────────────────────────────────────────────
+
+	t.Run("InternalError succeeds on second attempt: wait called once", func(t *testing.T) {
+		waitCalls := 0
+		callCount, err := buildRetryFunc(
+			[]callResult{{errCode: "InternalError"}, {errCode: ""}},
+			func() { waitCalls++ },
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, callCount)
+		assert.Equal(t, 1, waitCalls, "expected one 180s wait")
+	})
+
+	t.Run("InternalError succeeds on third attempt: wait called twice", func(t *testing.T) {
+		waitCalls := 0
+		callCount, err := buildRetryFunc(
+			[]callResult{{errCode: "InternalError"}, {errCode: "InternalError"}, {errCode: ""}},
+			func() { waitCalls++ },
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, callCount)
+		assert.Equal(t, 2, waitCalls, "expected two 180s waits")
+	})
+
+	t.Run("InternalError exceeds retry limit: wait called twice then returns error", func(t *testing.T) {
+		waitCalls := 0
+		callCount, err := buildRetryFunc(
+			[]callResult{{errCode: "InternalError"}, {errCode: "InternalError"}, {errCode: "InternalError"}},
+			func() { waitCalls++ },
+		)
+		assert.Error(t, err)
+		assert.True(t, IsExpectedErrors(err, []string{"InternalError"}))
+		assert.Equal(t, 3, callCount)
+		assert.Equal(t, 2, waitCalls, "third InternalError hits the counter limit and is returned as non-retryable")
+	})
+
+	// ── NeedRetry path (Throttling etc.) ─────────────────────────────────
+
+	t.Run("Throttling succeeds on third attempt: all retryable errors share the same counter", func(t *testing.T) {
+		waitCalls := 0
+		callCount, err := buildRetryFunc(
+			[]callResult{{errCode: "Throttling"}, {errCode: "Throttling"}, {errCode: ""}},
+			func() { waitCalls++ },
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, callCount)
+		assert.Equal(t, 2, waitCalls)
+	})
+
+	t.Run("Throttling exceeds retry limit: returns error after 3 requests", func(t *testing.T) {
+		waitCalls := 0
+		callCount, err := buildRetryFunc(
+			[]callResult{{errCode: "Throttling"}, {errCode: "Throttling"}, {errCode: "Throttling"}},
+			func() { waitCalls++ },
+		)
+		assert.Error(t, err)
+		assert.Equal(t, 3, callCount)
+		assert.Equal(t, 2, waitCalls, "third Throttling hits the shared counter limit and is returned as non-retryable")
+	})
+
+	// ── Mixed path: InternalError and NeedRetry share one counter ────────
+
+	t.Run("InternalError and Throttling mixed: share the same retry counter, max 3 requests total", func(t *testing.T) {
+		waitCalls := 0
+		callCount, err := buildRetryFunc(
+			[]callResult{
+				{errCode: "Throttling"},
+				{errCode: "InternalError"},
+				{errCode: "Throttling"},
+			},
+			func() { waitCalls++ },
+		)
+		// counter reaches 2 after the second call; third call is non-retryable
+		assert.Error(t, err)
+		assert.Equal(t, 3, callCount)
+		assert.Equal(t, 2, waitCalls)
+	})
+
+	// ── Edge cases ────────────────────────────────────────────────────────
+
+	t.Run("non-retryable error returns immediately without calling wait", func(t *testing.T) {
+		waitCalls := 0
+		callCount, err := buildRetryFunc(
+			[]callResult{{errCode: "InvalidParameter"}},
+			func() { waitCalls++ },
+		)
+		assert.Error(t, err)
+		assert.Equal(t, 1, callCount)
+		assert.Equal(t, 0, waitCalls)
+	})
+
+	t.Run("succeeds on first attempt: wait never called", func(t *testing.T) {
+		waitCalls := 0
+		callCount, err := buildRetryFunc(
+			[]callResult{{errCode: ""}},
+			func() { waitCalls++ },
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, callCount)
+		assert.Equal(t, 0, waitCalls)
+	})
+}

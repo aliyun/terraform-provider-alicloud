@@ -376,12 +376,14 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("connection_string_prefix"); ok {
 		request["ConnectionStringPrefix"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(180*time.Second, 180*time.Second)
+	internalErrRetryCount := 0
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if (NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"})) && internalErrRetryCount < 2 {
 				wait()
+				internalErrRetryCount++
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
