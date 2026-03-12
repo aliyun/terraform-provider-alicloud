@@ -21,7 +21,7 @@ For information about Elasticsearch Instance and how to use it, see [What is Ins
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_elasticsearch_instance&exampleId=73805ca0-8968-cf9a-4e8e-205d4afdd97b26ab1e4d&activeTab=example&spm=docs.r.elasticsearch_instance.0.73805ca089&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_elasticsearch_instance&exampleId=ff9aa1ff-143b-55d0-84a7-5f970be0be6c0f659aa5&activeTab=example&spm=docs.r.elasticsearch_instance.0.ff9aa1ff14&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

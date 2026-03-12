@@ -1,35 +1,40 @@
-## 1.273.0 (Unreleased)
+## 1.274.0 (Unreleased)
+## 1.273.0 (March 13, 2026)
 
-- **New Resource:** `alicloud_nlb_hd_monitor_region_config` [GH-9545]
-- **New Resource:** `alicloud_simple_application_server_disk` [GH-9553]
+- **New Resource:** `alicloud_nlb_hd_monitor_region_config` ([#9545](https://github.com/aliyun/terraform-provider-alicloud/issues/9545))
+- **New Resource:** `alicloud_simple_application_server_disk` ([#9553](https://github.com/aliyun/terraform-provider-alicloud/issues/9553))
+- **New Resource:** `alicloud_sls_logtail_pipeline_config` ([#9567](https://github.com/aliyun/terraform-provider-alicloud/issues/9567))
 
 ENHANCEMENTS:
 
-- provider: Supported new region cn-zhongwei. [GH-9571]
-- resource/alicloud_polardb_cluster: add enable_dynamodb compatibility. [GH-9531]
-- resource/alicloud_dms_enterprise_instance: Update legacy to latest API. [GH-9538]
-- resource/alicloud_rds_backup: Added the field backup_retention_period. [GH-9546]
-- resource/alicloud_vpc_nat_ip_cidr: Refactored the resource alicloud_vpc_nat_ip_cidr; Added the field create_time. [GH-9547]
-- resource/alicloud_ecs_network_interface: Added the field delete_on_release. [GH-9548]
-- resource/alicloud_redis_tair_instance: Added the field tde_status, encryption_name, encryption_key, role_arn. [GH-9552]
-- resource/alicloud_adb_account: Refactored the resource alicloud_adb_account; Added the field account_type, tags, status. [GH-9557]
-- resource/alicloud_rds_clone_db_instance: CloneDbInstance Support Tags. [GH-9558]
-- resource/alicloud_hbr_policy_binding: Added the field oss_detail, ignore_archive_object, inventory_cleanup_policy, inventory_id. [GH-9559]
-- data-source/alicloud_ram_groups: Handle 404 error. [GH-9544]
-- testcase: Improves unit tests. [GH-9560]
-- testcase: Improves test for common utils. [GH-9561]
-- testcase: Improves test for common utils. [GH-9562]
-- docs: fix payment_type valid values documentation for elasticsearch_instance. [GH-9549]
-- docs: Update oss_bucket, oss_bucket_cors, oss_bucket_policy, oss_bucket_referer documents. [GH-9550]
-- docs: Update pvtz_service document. [GH-9551]
-- docs: Update SKILL document. [GH-9555]
-- docs: update ess_scaling_configuration document. [GH-9563]
+- provider: Supported new region cn-zhongwei. ([#9571](https://github.com/aliyun/terraform-provider-alicloud/issues/9571))
+- resource/alicloud_polardb_cluster: add enable_dynamodb compatibility. ([#9531](https://github.com/aliyun/terraform-provider-alicloud/issues/9531))
+- resource/alicloud_dms_enterprise_instance: Update legacy to latest API. ([#9538](https://github.com/aliyun/terraform-provider-alicloud/issues/9538))
+- resource/alicloud_rds_backup: Added the field backup_retention_period. ([#9546](https://github.com/aliyun/terraform-provider-alicloud/issues/9546))
+- resource/alicloud_vpc_nat_ip_cidr: Refactored the resource alicloud_vpc_nat_ip_cidr; Added the field create_time. ([#9547](https://github.com/aliyun/terraform-provider-alicloud/issues/9547))
+- resource/alicloud_ecs_network_interface: Added the field delete_on_release. ([#9548](https://github.com/aliyun/terraform-provider-alicloud/issues/9548))
+- resource/alicloud_redis_tair_instance: Added the field tde_status, encryption_name, encryption_key, role_arn. ([#9552](https://github.com/aliyun/terraform-provider-alicloud/issues/9552))
+- resource/alicloud_adb_account: Refactored the resource alicloud_adb_account; Added the field account_type, tags, status. ([#9557](https://github.com/aliyun/terraform-provider-alicloud/issues/9557))
+- resource/alicloud_rds_clone_db_instance: CloneDbInstance Support Tags. ([#9558](https://github.com/aliyun/terraform-provider-alicloud/issues/9558))
+- resource/alicloud_hbr_policy_binding: Added the field oss_detail, ignore_archive_object, inventory_cleanup_policy, inventory_id. ([#9559](https://github.com/aliyun/terraform-provider-alicloud/issues/9559))
+- resource/alicloud_cs_kubernetes_addon: marks next_version and can_upgrade attributes as deprecated, fix potential panic when updating addon; improve tests. ([#9569](https://github.com/aliyun/terraform-provider-alicloud/issues/9569))
+- resource/alicloud_redis_tair_instance: Add retry code and improved testcase and document. ([#9573](https://github.com/aliyun/terraform-provider-alicloud/issues/9573))
+- resource/alicloud_esa_*: Add retry codes. ([#9574](https://github.com/aliyun/terraform-provider-alicloud/issues/9574))
+- data-source/alicloud_ram_groups: Handle 404 error. ([#9544](https://github.com/aliyun/terraform-provider-alicloud/issues/9544))
+- testcase: Improves unit tests. ([#9560](https://github.com/aliyun/terraform-provider-alicloud/issues/9560))
+- testcase: Improves test for common utils. ([#9561](https://github.com/aliyun/terraform-provider-alicloud/issues/9561))
+- testcase: Improves test for common utils. ([#9562](https://github.com/aliyun/terraform-provider-alicloud/issues/9562))
+- docs: fix payment_type valid values documentation for elasticsearch_instance. ([#9549](https://github.com/aliyun/terraform-provider-alicloud/issues/9549))
+- docs: Update oss_bucket, oss_bucket_cors, oss_bucket_policy, oss_bucket_referer documents. ([#9550](https://github.com/aliyun/terraform-provider-alicloud/issues/9550))
+- docs: Update pvtz_service document. ([#9551](https://github.com/aliyun/terraform-provider-alicloud/issues/9551))
+- docs: Update SKILL document. ([#9555](https://github.com/aliyun/terraform-provider-alicloud/issues/9555))
+- docs: update ess_scaling_configuration document. ([#9563](https://github.com/aliyun/terraform-provider-alicloud/issues/9563))
 
 BUG FIXES:
 
-- resource/alicloud_dms_enterprise_instance: Fix create always trigger update bug. [GH-9537]
-- resource/alicloud_config_aggregator: Fix the number parsing overflow issue. [GH-9543]
-- data-source/alicloud_db_instance_classes: Fixed instance_charge_type invalid error. [GH-9570]
+- resource/alicloud_dms_enterprise_instance: Fix create always trigger update bug. ([#9537](https://github.com/aliyun/terraform-provider-alicloud/issues/9537))
+- resource/alicloud_config_aggregator: Fix the number parsing overflow issue. ([#9543](https://github.com/aliyun/terraform-provider-alicloud/issues/9543))
+- data-source/alicloud_db_instance_classes: Fixed instance_charge_type invalid error. ([#9570](https://github.com/aliyun/terraform-provider-alicloud/issues/9570))
 
 ## 1.272.1 (March 2, 2026)
 

@@ -21,7 +21,7 @@ For information about OSS Bucket Website and how to use it, see [What is Bucket 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_website&exampleId=49cb70e8-a10e-3389-bebc-3698726a8a22625c0946&activeTab=example&spm=docs.r.oss_bucket_website.0.49cb70e8a1&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_oss_bucket_website&exampleId=a228841f-6055-ddb6-6b0e-b1e4c4d87c6479f7e4ad&activeTab=example&spm=docs.r.oss_bucket_website.0.a228841f60&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

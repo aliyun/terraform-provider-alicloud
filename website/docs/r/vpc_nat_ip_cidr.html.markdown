@@ -21,7 +21,7 @@ For information about Nat Gateway Nat Ip Cidr and how to use it, see [What is Na
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_nat_ip_cidr&exampleId=000eaaad-f5a6-1069-db06-017eb984b300379dfd0f&activeTab=example&spm=docs.r.vpc_nat_ip_cidr.0.000eaaadf5&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc_nat_ip_cidr&exampleId=6049371f-2af9-3c61-f2a3-b369cb923f00ad4678d9&activeTab=example&spm=docs.r.vpc_nat_ip_cidr.0.6049371f2a&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
