@@ -303,7 +303,7 @@ func resourceAliCloudEsaRecordCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("source_type"); ok {
 		request["SourceType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
@@ -551,7 +551,7 @@ func resourceAliCloudEsaRecordUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(5*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
@@ -583,7 +583,7 @@ func resourceAliCloudEsaRecordDelete(d *schema.ResourceData, meta interface{}) e
 	request = make(map[string]interface{})
 	request["RecordId"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {

@@ -40,8 +40,9 @@ func resourceAliCloudEsaVideoProcessing() *schema.Resource {
 				Optional: true,
 			},
 			"flv_video_seek_mode": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"by_byte", "by_time"}, false),
 			},
 			"mp4_seek_end": {
 				Type:     schema.TypeString,
@@ -56,8 +57,9 @@ func resourceAliCloudEsaVideoProcessing() *schema.Resource {
 				Optional: true,
 			},
 			"rule_enable": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"rule_name": {
 				Type:     schema.TypeString,
@@ -78,8 +80,9 @@ func resourceAliCloudEsaVideoProcessing() *schema.Resource {
 				ForceNew: true,
 			},
 			"video_seek_enable": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 		},
 	}
@@ -132,11 +135,11 @@ func resourceAliCloudEsaVideoProcessingCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("mp4_seek_start"); ok {
 		request["Mp4SeekStart"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -254,11 +257,11 @@ func resourceAliCloudEsaVideoProcessingUpdate(d *schema.ResourceData, meta inter
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(5*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -288,11 +291,11 @@ func resourceAliCloudEsaVideoProcessingDelete(d *schema.ResourceData, meta inter
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

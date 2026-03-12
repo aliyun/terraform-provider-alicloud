@@ -100,7 +100,7 @@ func resourceAliCloudEsaImageTransformCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("enable"); ok {
 		request["Enable"] = v
 	}
-	wait := incrementalWait(5*time.Second, 0*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
@@ -192,7 +192,7 @@ func resourceAliCloudEsaImageTransformUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if update {
-		wait := incrementalWait(5*time.Second, 0*time.Second)
+		wait := incrementalWait(5*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
@@ -226,7 +226,7 @@ func resourceAliCloudEsaImageTransformDelete(d *schema.ResourceData, meta interf
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
 
-	wait := incrementalWait(5*time.Second, 0*time.Second)
+	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
