@@ -129,7 +129,7 @@ The following arguments are supported:
 * `port` - (Required, ForceNew) Access port of the target database.
 * `database_user` - (Required) Database access account.
 * `database_password` - (Required) Database access password.
-* `sell_trust` -(Required) Whether to enable the security hosting feature for the database instance. Possible values: `true`, `false`.
+* `sell_trust` -(Required, Available since v1.273.0) Whether to enable the security hosting feature for the database instance. Possible values: `true`, `false`.
 
  ~>**NOTE:** The `database_user` will be encrypted if `sell_trust` set to `false`.
 
