@@ -113,12 +113,12 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 
 	var existDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instance_classes.#":                    CHECKSET,
-			"instance_classes.0.instance_class":     CHECKSET,
-			"instance_classes.0.storage_range.min":  CHECKSET,
-			"instance_classes.0.storage_range.max":  CHECKSET,
-			"instance_classes.0.storage_range.step": CHECKSET,
-			"instance_classes.0.zone_ids.0.id":      CHECKSET,
+			"instance_classes.#":                      CHECKSET,
+			"instance_classes.0.instance_class":       CHECKSET,
+			"instance_classes.0.storage_range.0.min":  CHECKSET,
+			"instance_classes.0.storage_range.0.max":  CHECKSET,
+			"instance_classes.0.storage_range.0.step": CHECKSET,
+			"instance_classes.0.zone_ids.0.id":        CHECKSET,
 		}
 	}
 
@@ -148,19 +148,6 @@ data "alicloud_db_zones" "default" {
   instance_charge_type= "PostPaid"
   engine = "MySQL"
   db_instance_storage_type = "local_ssd"
-}
-data "alicloud_db_zones" "true" {
-  instance_charge_type= "PostPaid"
-  engine = "MySQL"
-  db_instance_storage_type = "local_ssd"
-  multi = true
-}
-data "alicloud_db_zones" "serverless_zones"{
-    engine = "MySQL"
-    engine_version = "8.0"
-    instance_charge_type = "Serverless"
-    category = "serverless_basic"
-    db_instance_storage_type = "cloud_essd"
 }
 `)
 }

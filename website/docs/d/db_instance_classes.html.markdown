@@ -71,7 +71,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `sub_zone_ids` - A list of sub zone ids which in the id - e.g If `id` is `cn-beijing-MAZ5(a,b)`, `sub_zone_ids` will be `["cn-beijing-a", "cn-beijing-b"]`.
   * `instance_class` - DB Instance available class.
   * `price` - Unit price of instance specifications.
-  * `storage_range` - DB Instance available storage range.
+  * `storage_range` - A list of DB Instance available storage range.
     * `min` - DB Instance available storage min value.
     * `max` - DB Instance available storage max value.
     * `step` - DB Instance available storage increase step.
