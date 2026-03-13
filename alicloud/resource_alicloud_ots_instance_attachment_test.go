@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
+	ots "github.com/alibabacloud-go/tablestore-20201209/v3/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAliCloudOtsInstanceAttachmentBasic(t *testing.T) {
-	var v ots.VpcInfo
+	var v ots.ListVpcInfoByInstanceResponseBodyVpcInfos
 
 	resourceId := "alicloud_ots_instance_attachment.default"
 	ra := resourceAttrInit(resourceId, otsInstanceAttachmentBasicMap)
@@ -56,7 +56,7 @@ func TestAccAliCloudOtsInstanceAttachmentBasic(t *testing.T) {
 }
 
 func TestAccAliCloudOtsInstanceAttachmentHighPerformance(t *testing.T) {
-	var v ots.VpcInfo
+	var v ots.ListVpcInfoByInstanceResponseBodyVpcInfos
 
 	resourceId := "alicloud_ots_instance_attachment.default"
 	ra := resourceAttrInit(resourceId, otsInstanceAttachmentBasicMap)

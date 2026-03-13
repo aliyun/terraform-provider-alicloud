@@ -7,14 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
+	ots "github.com/alibabacloud-go/tablestore-20201209/v3/client"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -39,37 +37,30 @@ func testSweepOtsInstances(region string) error {
 		"tftest",
 	}
 
-	var insts []ots.InstanceInfo
-	req := ots.CreateListInstanceRequest()
-	req.RegionId = client.RegionId
-	req.Method = "GET"
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNum = requests.NewInteger(1)
+	var insts []*ots.ListInstancesResponseBodyInstances
+	req := new(ots.ListInstancesRequest)
+	req.MaxResults = Int32Pointer(PageSizeLarge)
 	for {
 		raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-			return otsClient.ListInstance(req)
+			return otsClient.ListInstances(req)
 		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving OTS Instances: %s", err)
 		}
-		resp, _ := raw.(*ots.ListInstanceResponse)
-		if resp == nil || len(resp.InstanceInfos.InstanceInfo) < 1 {
+		resp := raw.(*ots.ListInstancesResponse)
+		body := resp.Body
+		if len(body.Instances) < 1 {
 			break
 		}
-		insts = append(insts, resp.InstanceInfos.InstanceInfo...)
+		insts = append(insts, body.Instances...)
 
-		if len(resp.InstanceInfos.InstanceInfo) < PageSizeLarge {
+		if body.NextToken == nil {
 			break
 		}
-
-		if page, err := getNextpageNumber(req.PageNum); err != nil {
-			return err
-		} else {
-			req.PageNum = page
-		}
+		req.NextToken = body.NextToken
 	}
 	for _, v := range insts {
-		name := v.InstanceName
+		name := *v.InstanceName
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
@@ -105,8 +96,8 @@ func testSweepOtsInstances(region string) error {
 			time.Sleep(30 * time.Second)
 		}
 		log.Printf("[INFO] Deleting OTS Instance: %s", name)
-		req := ots.CreateDeleteInstanceRequest()
-		req.InstanceName = name
+		req := new(ots.DeleteInstanceRequest)
+		req.InstanceName = StringPointer(name)
 		_, err = client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
 			return otsClient.DeleteInstance(req)
 		})
@@ -146,7 +137,7 @@ func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string,
 }
 
 func TestAccAliCloudOtsInstance_basic(t *testing.T) {
-	var v ots.InstanceInfo
+	var v *ots.ListInstancesResponseBodyInstances
 
 	resourceId := "alicloud_ots_instance.default"
 	ra := resourceAttrInit(resourceId, otsInstanceBasicMap)
@@ -161,6 +152,9 @@ func TestAccAliCloudOtsInstance_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
+	rand = acctest.RandIntRange(10000, 99999)
+	alias := fmt.Sprintf("tf-testAcc%d", rand)
+	policy := `{\"Statement\": [{\"Action\": [\"ots:*\"], \"Resource\": [\"acs:ots:*:*:instance/tf-testAcc*\"], \"Principal\": [\"*\"], \"Effect\": \"Allow\", \"Condition\": {\"IpAddress\": {\"acs:SourceIp\": [\"0.0.0.0/32\"]}}}], \"Version\": \"1\"}`
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -176,20 +170,34 @@ func TestAccAliCloudOtsInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":          name,
+					"alias_name":    alias,
 					"description":   name,
 					"instance_type": "Capacity",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                 name,
+						"alias_name":           alias,
 						"description":          name,
 						"instance_type":        "Capacity",
 						"network_type_acl.#":   "3",
 						"network_source_acl.#": "1",
 						"resource_group_id":    CHECKSET,
 						"accessed_by":          "Any",
+						"policy_version":       "0",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alias_name":  name,
+					"description": alias,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alias_name":  name,
+						"description": alias,
+					})),
 			},
 			{
 				ResourceName:      resourceId,
@@ -266,12 +274,34 @@ func TestAccAliCloudOtsInstance_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy": policy,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy":         CHECKSET,
+						"policy_version": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy":         REMOVEKEY,
+						"policy_version": "2",
+					}),
+				),
+			},
 		},
 	})
 }
 
 func TestAccAliCloudOtsInstance_acl(t *testing.T) {
-	var v ots.InstanceInfo
+	var v *ots.ListInstancesResponseBodyInstances
 
 	resourceId := "alicloud_ots_instance.default"
 	ra := resourceAttrInit(resourceId, otsInstanceBasicMap)
@@ -399,7 +429,7 @@ func TestAccAliCloudOtsInstance_acl(t *testing.T) {
 }
 
 func TestAccAliCloudOtsInstanceHighPerformance(t *testing.T) {
-	var v ots.InstanceInfo
+	var v *ots.ListInstancesResponseBodyInstances
 
 	resourceId := "alicloud_ots_instance.default"
 	ra := resourceAttrInit(resourceId, otsInstanceBasicMap)
@@ -522,7 +552,7 @@ func TestAccAliCloudOtsInstanceHighPerformance(t *testing.T) {
 }
 
 func TestAccAliCloudOtsInstance_multi(t *testing.T) {
-	var v ots.InstanceInfo
+	var v *ots.ListInstancesResponseBodyInstances
 
 	resourceId := "alicloud_ots_instance.default.4"
 	ra := resourceAttrInit(resourceId, otsInstanceBasicMap)
@@ -578,28 +608,4 @@ var otsInstanceBasicMap = map[string]string{
 	"accessed_by":   "Any",
 	"instance_type": CHECKSET,
 	"description":   CHECKSET,
-}
-
-func testAccCheckOtsInstanceExist(n string, instance *RestOtsInstanceInfo) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found OTS table: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("no OTS table ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		otsService := OtsService{client}
-
-		response, err := otsService.DescribeOtsInstance(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-		instance = &response
-		return nil
-	}
 }
