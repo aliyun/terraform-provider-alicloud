@@ -8,11 +8,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
+func TestAccAliCloudRdsDBInstanceClassesDatasource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_db_instance_classes.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", testAccCheckAlicloudDBInstanceClassesDataSourceConfig)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", testAccCheckAliCloudDBInstanceClassesDataSourceConfig)
 
 	ZoneIDConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -142,7 +142,7 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 		ChargeTypeConfPostpaid, CategoryConf, StorageTypeConf, CommodityCodeConf, GeneralEssdConf, ServerlessConf, allConf)
 }
 
-func testAccCheckAlicloudDBInstanceClassesDataSourceConfig(name string) string {
+func testAccCheckAliCloudDBInstanceClassesDataSourceConfig(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_db_zones" "default" {
   instance_charge_type= "PostPaid"
