@@ -10,23 +10,23 @@ import (
 )
 
 // Test Adb LakeAccount. >>> Resource test cases, automatically generated.
-// Case 5287
-func TestAccAliCloudAdbLakeAccount_basic5287(t *testing.T) {
+// Case 湖仓账号测试用例 5218
+func TestAccAliCloudAdbLakeAccount_basic5218(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_lake_account.default"
-	ra := resourceAttrInit(resourceId, AlicloudAdbLakeAccountMap5287)
+	ra := resourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAdbLakeAccount")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sadblakeaccount%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAdbLakeAccountBasicDependence5287)
+	name := fmt.Sprintf("tfaccadb%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -34,90 +34,44 @@ func TestAccAliCloudAdbLakeAccount_basic5287(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":    "${alicloud_adb_db_cluster_lake_version.CreateInstance.id}",
+					"db_cluster_id":    "${alicloud_adb_db_cluster_lake_version.default.id}",
 					"account_type":     "Super",
-					"account_name":     "tfnormal",
-					"account_password": "normal@2022",
+					"account_name":     "tf_account_name_supper",
+					"account_password": "YourPassword123!",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id":    CHECKSET,
-						"account_type":     "Super",
-						"account_name":     "tfnormal",
-						"account_password": "normal@2022",
+						"db_cluster_id": CHECKSET,
+						"account_type":  "Super",
+						"account_name":  "tf_account_name_supper",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_description": "test_tf_des",
+					"account_description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_description": "test_tf_des",
+						"account_description": name,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_privileges": []map[string]interface{}{
-						{
-							"privilege_type": "Column",
-							"privilege_object": []map[string]interface{}{
-								{
-									"database": "MYSQL",
-									"table":    "COLUMNS_PRIV",
-									"column":   "DB",
-								},
-							},
-							"privileges": []string{
-								"create", "select", "update"},
-						},
-					},
+					"account_password": "YourPassword123!update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_privileges.#": "1",
-					}),
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "normal@2022",
+					"ram_user_list": []string{"${alicloud_ram_user.default.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "normal@2022",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_description": "test_tf_des2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_description": "test_tf_des2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_description": "test_tf_des",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_description": "test_tf_des",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_password": "normal@2022",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_password": "normal@2022",
+						"ram_user_list.#": "1",
 					}),
 				),
 			},
@@ -166,55 +120,88 @@ func TestAccAliCloudAdbLakeAccount_basic5287(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_description": "test_tf_des2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_description": "test_tf_des2",
-					}),
-				),
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
 			},
+		},
+	})
+}
+
+func TestAccAliCloudAdbLakeAccount_basic5218_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_adb_lake_account.default"
+	ra := resourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAdbLakeAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccadb%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "normal@2023",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_password": "normal@2023",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_description": "test_tf_des",
-					"db_cluster_id":       "${alicloud_adb_db_cluster_lake_version.CreateInstance.id}",
+					"db_cluster_id":       "${alicloud_adb_db_cluster_lake_version.default.id}",
 					"account_type":        "Super",
-					"account_name":        "tfnormal",
-					"account_password":    "normal@2022",
+					"account_name":        "tf_account_name_supper",
+					"account_password":    "YourPassword123!",
+					"account_description": name,
+					"ram_user_list":       []string{"${alicloud_ram_user.default.id}"},
 					"account_privileges": []map[string]interface{}{
+						{
+							"privilege_type": "Database",
+							"privilege_object": []map[string]interface{}{
+								{
+									"database": "MYSQL",
+								},
+							},
+							"privileges": []string{
+								"select", "update"},
+						},
+						{
+							"privilege_type": "Table",
+							"privilege_object": []map[string]interface{}{
+								{
+									"database": "INFORMATION_SCHEMA",
+									"table":    "ENGINES",
+								},
+							},
+							"privileges": []string{
+								"update"},
+						},
 						{
 							"privilege_type": "Column",
 							"privilege_object": []map[string]interface{}{
 								{
-									"database": "MYSQL",
-									"table":    "COLUMNS_PRIV",
-									"column":   "DB",
+									"database": "INFORMATION_SCHEMA",
+									"table":    "COLUMNS",
+									"column":   "PRIVILEGES",
 								},
 							},
 							"privileges": []string{
-								"create", "select", "update"},
+								"update"},
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_description":  "test_tf_des",
 						"db_cluster_id":        CHECKSET,
 						"account_type":         "Super",
-						"account_name":         "tfnormal",
-						"account_password":     "normal@2022",
-						"account_privileges.#": "1",
+						"account_name":         "tf_account_name_supper",
+						"account_description":  name,
+						"ram_user_list.#":      "1",
+						"account_privileges.#": "3",
 					}),
 				),
 			},
@@ -228,134 +215,247 @@ func TestAccAliCloudAdbLakeAccount_basic5287(t *testing.T) {
 	})
 }
 
-var AlicloudAdbLakeAccountMap5287 = map[string]string{
+func TestAccAliCloudAdbLakeAccount_basic5220(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_adb_lake_account.default"
+	ra := resourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAdbLakeAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccadb%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":    "${alicloud_adb_db_cluster_lake_version.default.id}",
+					"account_type":     "Normal",
+					"account_name":     "tf_account_name_normal",
+					"account_password": "YourPassword123!",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id": CHECKSET,
+						"account_type":  "Normal",
+						"account_name":  "tf_account_name_normal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword123!update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ram_user_list": []string{"${alicloud_ram_user.default.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ram_user_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_privileges": []map[string]interface{}{
+						{
+							"privilege_type": "Database",
+							"privilege_object": []map[string]interface{}{
+								{
+									"database": "MYSQL",
+								},
+							},
+							"privileges": []string{
+								"select", "update"},
+						},
+						{
+							"privilege_type": "Table",
+							"privilege_object": []map[string]interface{}{
+								{
+									"database": "INFORMATION_SCHEMA",
+									"table":    "ENGINES",
+								},
+							},
+							"privileges": []string{
+								"update"},
+						},
+						{
+							"privilege_type": "Column",
+							"privilege_object": []map[string]interface{}{
+								{
+									"database": "INFORMATION_SCHEMA",
+									"table":    "COLUMNS",
+									"column":   "PRIVILEGES",
+								},
+							},
+							"privileges": []string{
+								"update"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_privileges.#": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAdbLakeAccount_basic5220_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_adb_lake_account.default"
+	ra := resourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAdbLakeAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccadb%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":       "${alicloud_adb_db_cluster_lake_version.default.id}",
+					"account_type":        "Normal",
+					"account_name":        "tf_account_name_normal",
+					"account_password":    "YourPassword123!",
+					"account_description": name,
+					"ram_user_list":       []string{"${alicloud_ram_user.default.id}"},
+					"account_privileges": []map[string]interface{}{
+						{
+							"privilege_type": "Database",
+							"privilege_object": []map[string]interface{}{
+								{
+									"database": "MYSQL",
+								},
+							},
+							"privileges": []string{
+								"select", "update"},
+						},
+						{
+							"privilege_type": "Table",
+							"privilege_object": []map[string]interface{}{
+								{
+									"database": "INFORMATION_SCHEMA",
+									"table":    "ENGINES",
+								},
+							},
+							"privileges": []string{
+								"update"},
+						},
+						{
+							"privilege_type": "Column",
+							"privilege_object": []map[string]interface{}{
+								{
+									"database": "INFORMATION_SCHEMA",
+									"table":    "COLUMNS",
+									"column":   "PRIVILEGES",
+								},
+							},
+							"privileges": []string{
+								"update"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id":        CHECKSET,
+						"account_type":         "Normal",
+						"account_name":         "tf_account_name_normal",
+						"account_description":  name,
+						"ram_user_list.#":      "1",
+						"account_privileges.#": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+		},
+	})
+}
+
+var AliCloudAdbLakeAccountMap5218 = map[string]string{
 	"status": CHECKSET,
 }
 
-func AlicloudAdbLakeAccountBasicDependence5287(name string) string {
+func AliCloudAdbLakeAccountBasicDependence5218(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+	data "alicloud_adb_zones" "default" {
+	}
+	
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+	
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_adb_zones.default.ids.0
+	}
+	
+	resource "alicloud_ram_user" "default" {
+  		name = var.name
+	}
 
-resource "alicloud_vpc" "VPCID" {
-  vpc_name = var.name
-
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "VSWITCHID" {
-  vpc_id       = alicloud_vpc.VPCID.id
-  zone_id      = "cn-hangzhou-k"
-  vswitch_name = var.name
-
-  cidr_block = "172.16.0.0/24"
-}
-
-resource "alicloud_adb_db_cluster_lake_version" "CreateInstance" {
-  storage_resource        = "0ACU"
-  zone_id                 = "cn-hangzhou-k"
-  vpc_id                  = alicloud_vpc.VPCID.id
-  vswitch_id              = alicloud_vswitch.VSWITCHID.id
-  db_cluster_description  = "tf自动化测试-杭州-资源组"
-  compute_resource        = "16ACU"
-  db_cluster_version      = "5.0"
-  payment_type            = "PayAsYouGo"
-  security_ips            = "127.0.0.1"
-}
-
-
+	resource "alicloud_adb_db_cluster_lake_version" "default" {
+  		db_cluster_version            = "5.0"
+  		vpc_id                        = data.alicloud_vpcs.default.ids.0
+  		vswitch_id                    = data.alicloud_vswitches.default.ids.0
+  		zone_id                       = data.alicloud_adb_zones.default.ids.0
+  		compute_resource              = "128ACU"
+  		storage_resource              = "0ACU"
+  		payment_type                  = "PayAsYouGo"
+  		enable_default_resource_group = false
+	}
 `, name)
-}
-
-// Case 5287  twin
-func TestAccAliCloudAdbLakeAccount_basic5287_twin(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_adb_lake_account.default"
-	ra := resourceAttrInit(resourceId, AlicloudAdbLakeAccountMap5287)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAdbLakeAccount")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sadblakeaccount%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAdbLakeAccountBasicDependence5287)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_description": "test_tf_des2",
-					"db_cluster_id":       "${alicloud_adb_db_cluster_lake_version.CreateInstance.id}",
-					"account_type":        "Super",
-					"account_name":        "tfnormal",
-					"account_password":    "normal@2023",
-					"account_privileges": []map[string]interface{}{
-						{
-							"privilege_type": "Database",
-							"privilege_object": []map[string]interface{}{
-								{
-									"database": "MYSQL",
-								},
-							},
-							"privileges": []string{
-								"select", "update"},
-						},
-						{
-							"privilege_type": "Table",
-							"privilege_object": []map[string]interface{}{
-								{
-									"database": "INFORMATION_SCHEMA",
-									"table":    "ENGINES",
-								},
-							},
-							"privileges": []string{
-								"update"},
-						},
-						{
-							"privilege_type": "Column",
-							"privilege_object": []map[string]interface{}{
-								{
-									"database": "INFORMATION_SCHEMA",
-									"table":    "COLUMNS",
-									"column":   "PRIVILEGES",
-								},
-							},
-							"privileges": []string{
-								"update"},
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_description":  "test_tf_des2",
-						"db_cluster_id":        CHECKSET,
-						"account_type":         "Super",
-						"account_name":         "tfnormal",
-						"account_password":     "normal@2023",
-						"account_privileges.#": "3",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
-			},
-		},
-	})
 }
 
 // Test Adb LakeAccount. <<< Resource test cases, automatically generated.

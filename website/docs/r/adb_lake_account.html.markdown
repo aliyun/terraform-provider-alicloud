@@ -3,15 +3,16 @@ subcategory: "AnalyticDB for MySQL (ADB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_adb_lake_account"
 description: |-
-  Provides a Alicloud ADB Lake Account resource.
+  Provides a Alicloud AnalyticDB for MySQL (ADB) Lake Account resource.
 ---
 
 # alicloud_adb_lake_account
 
-Provides a ADB Lake Account resource. Account of the DBClusterLakeVesion.
+Provides a AnalyticDB for MySQL (ADB) Lake Account resource.
 
-For information about ADB Lake Account and how to use it, see [What is Lake Account](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/developer-reference/api-adb-2021-12-01-createaccount).
-For information about ADB Lake Account Privileges and how to use it, see [What are Lake Account Privileges](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/developer-reference/api-adb-2021-12-01-modifyaccountprivileges/).
+Account of the DBClusterLakeVesion.
+
+For information about AnalyticDB for MySQL (ADB) Lake Account and how to use it, see [What is Lake Account](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/developer-reference/api-adb-2021-12-01-modifyaccountprivileges/).
 
 -> **NOTE:** Available since v1.214.0.
 
@@ -120,6 +121,7 @@ The following arguments are supported:
 * `account_privileges` - (Optional) List of permissions granted. See [`account_privileges`](#account_privileges) below.
 * `account_type` - (Optional, ForceNew) The type of the account.
 * `db_cluster_id` - (Required, ForceNew) The DBCluster ID.
+* `ram_user_list` - (Optional, List, Available since v1.274.0) List of Alibaba Cloud RAM user IDs to bind.
 
 ### `account_privileges`
 
