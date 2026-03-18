@@ -49,6 +49,22 @@ func resourceAliCloudResourceManagerResourceShare() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"resource_properties": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_arn": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"property": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"resource_share_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -105,17 +121,29 @@ func resourceAliCloudResourceManagerResourceShareCreate(d *schema.ResourceData, 
 		request["Targets"] = targetsMapsArray
 	}
 
+	if v, ok := d.GetOk("resource_properties"); ok {
+		resourcePropertiesMapsArray := make([]interface{}, 0)
+		for _, dataLoop1 := range convertToInterfaceArray(v) {
+			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Map := make(map[string]interface{})
+			dataLoop1Map["ResourceArn"] = dataLoop1Tmp["resource_arn"]
+			dataLoop1Map["Property"] = dataLoop1Tmp["property"]
+			resourcePropertiesMapsArray = append(resourcePropertiesMapsArray, dataLoop1Map)
+		}
+		request["ResourceProperties"] = resourcePropertiesMapsArray
+	}
+
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("resources"); ok {
 		resourcesMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range convertToInterfaceArray(v) {
-			dataLoop1Tmp := dataLoop1.(map[string]interface{})
-			dataLoop1Map := make(map[string]interface{})
-			dataLoop1Map["ResourceType"] = dataLoop1Tmp["resource_type"]
-			dataLoop1Map["ResourceId"] = dataLoop1Tmp["resource_id"]
-			resourcesMapsArray = append(resourcesMapsArray, dataLoop1Map)
+		for _, dataLoop2 := range convertToInterfaceArray(v) {
+			dataLoop2Tmp := dataLoop2.(map[string]interface{})
+			dataLoop2Map := make(map[string]interface{})
+			dataLoop2Map["ResourceType"] = dataLoop2Tmp["resource_type"]
+			dataLoop2Map["ResourceId"] = dataLoop2Tmp["resource_id"]
+			resourcesMapsArray = append(resourcesMapsArray, dataLoop2Map)
 		}
 		request["Resources"] = resourcesMapsArray
 	}
@@ -322,7 +350,7 @@ func resourceAliCloudResourceManagerResourceShareDelete(d *schema.ResourceData, 
 	}
 
 	resourceManagerServiceV2 := ResourceManagerServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourceManagerServiceV2.ResourceManagerResourceShareStateRefreshFunc(d.Id(), "ResourceShareStatus", []string{"Active"}))
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourceManagerServiceV2.ResourceManagerResourceShareStateRefreshFunc(d.Id(), "ResourceShareStatus", []string{"Active"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
