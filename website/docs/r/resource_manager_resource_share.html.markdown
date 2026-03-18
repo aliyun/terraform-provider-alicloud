@@ -28,7 +28,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 resource "alicloud_resource_manager_resource_share" "example" {
@@ -54,6 +54,8 @@ The following arguments are supported:
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.261.0) The ID of the resource group
+* `resource_properties` - (Optional, Set, Available since v1.274.0) A list of resource properties. See [`resource_properties`](#resource_properties) below.
+
 * `resource_share_name` - (Required) The name of resource share.
 * `resources` - (Optional, List, Available since v1.261.0) List of shared resources. See [`resources`](#resources) below.
 
@@ -64,6 +66,11 @@ The following arguments are supported:
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
+### `resource_properties`
+
+The resource_properties supports the following:
+* `property` - (Optional, Available since v1.274.0) The resource property.
+* `resource_arn` - (Optional, Available since v1.274.0) The ARN of the resource.
 
 ### `resources`
 
