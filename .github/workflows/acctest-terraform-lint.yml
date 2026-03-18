@@ -27,7 +27,7 @@ jobs:
       contents: read
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
       - name: errcheck
         uses: reviewdog/action-golangci-lint@v2
         with:
@@ -36,3 +36,13 @@ jobs:
           level: info
           reviewdog_version: 'v0.21.0'
           golangci_lint_version: 'v2.7.2'
+
+  tflint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+      - run: make tools
+      - run: make tflint

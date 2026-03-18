@@ -27,6 +27,7 @@ func resourceAliCloudSlsLogtailPipelineConfig() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		// lintignore: S006
 		Schema: map[string]*schema.Schema{
 			"aggregators": {
 				Type:     schema.TypeList,
