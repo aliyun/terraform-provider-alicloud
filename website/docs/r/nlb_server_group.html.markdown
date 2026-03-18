@@ -142,7 +142,7 @@ Valid values: `5` to `50`.
 Default value: `10`.
 * `health_check_req` - (Optional, Available since v1.243.0) UDP healthy check request string, the value is a character string of 512 characters
 * `health_check_type` - (Optional, Computed) The protocol that you want to use for health checks. Valid values: `TCP` (default) and `HTTP`.
-* `health_check_http_version` - (Optional, Computed) The HTTP protocol version for health checks. Valid values: `HTTP1.0` (default) and `HTTP1.1`.
+* `health_check_http_version` - (Optional, Computed, Available since v1.274.0) The HTTP protocol version for health checks. Valid values: `HTTP1.0` (default) and `HTTP1.1`.
 
 -> **NOTE:**  This parameter takes effect only when `HealthCheckType` is set to `HTTP`.
 
