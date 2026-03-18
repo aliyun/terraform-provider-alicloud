@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Nlb Server Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.186.0+.
+-> **NOTE:** Available since v1.186.0+.
 
 ## Example Usage
 
@@ -43,7 +43,7 @@ The following arguments are supported:
 * `server_group_type` - (Optional, ForceNew) The type of the server group. Valid values: `Instance`, `Ip`.
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Available`, `Configuring`, `Creating`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -55,6 +55,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `health_check` - The configurations of health checks.
 		* `health_check_interval` - The interval between two consecutive health checks.
 		* `health_check_type` - The protocol that is used for health checks.
+		* `health_check_http_version` - The HTTP protocol version for health checks.
 		* `healthy_threshold` - The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy.
 		* `unhealthy_threshold` - The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy.
 		* `health_check_http_code` - The HTTP status codes returned for health checks.
