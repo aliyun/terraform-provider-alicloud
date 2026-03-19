@@ -73,11 +73,14 @@ The following arguments are supported:
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
+* `properties_resource_arn` - (Optional, Available since v1.274.0) The ARN of the resource.
+
 * `resource_arn` - (Optional, ForceNew, Available since v1.268.0) Associated resource ARN.
 
 -> **NOTE:**  This parameter is not available when the association type 'AssociationType' is the resource consumer 'Target'.
 
 * `resource_id` - (Optional, ForceNew, Computed) The ID of the shared resource.
+* `resource_property` - (Optional, ForceNew, Available since v1.274.0) The property of the resource.
 * `resource_share_id` - (Required, ForceNew) The ID of the resource share.
 * `resource_type` - (Optional, ForceNew, Computed) The type of the shared resource.
 
