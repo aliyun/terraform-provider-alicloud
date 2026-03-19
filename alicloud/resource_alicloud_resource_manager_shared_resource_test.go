@@ -563,7 +563,7 @@ func TestUnitAliCloudResourceManagerSharedResource(t *testing.T) {
 func TestAccAliCloudResourceManagerSharedResource_basic11979(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_shared_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerSharedResourceMap11979)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMap11979)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerSharedResource")
@@ -571,7 +571,7 @@ func TestAccAliCloudResourceManagerSharedResource_basic11979(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourceBasicDependence11979)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourceBasicDependence11979)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -607,12 +607,12 @@ func TestAccAliCloudResourceManagerSharedResource_basic11979(t *testing.T) {
 	})
 }
 
-var AlicloudResourceManagerSharedResourceMap11979 = map[string]string{
+var AliCloudResourceManagerSharedResourceMap11979 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
 }
 
-func AlicloudResourceManagerSharedResourceBasicDependence11979(name string) string {
+func AliCloudResourceManagerSharedResourceBasicDependence11979(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -646,7 +646,7 @@ resource "alicloud_resource_manager_resource_share" "rs" {
 func TestAccAliCloudResourceManagerSharedResource_resourceArn(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_shared_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerSharedResourceMapResourceArn)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMapResourceArn)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerSharedResource")
@@ -654,7 +654,7 @@ func TestAccAliCloudResourceManagerSharedResource_resourceArn(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourceResourceArnDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourceResourceArnDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -684,12 +684,12 @@ func TestAccAliCloudResourceManagerSharedResource_resourceArn(t *testing.T) {
 	})
 }
 
-var AlicloudResourceManagerSharedResourceMapResourceArn = map[string]string{
+var AliCloudResourceManagerSharedResourceMapResourceArn = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
 }
 
-func AlicloudResourceManagerSharedResourceResourceArnDependence(name string) string {
+func AliCloudResourceManagerSharedResourceResourceArnDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -734,7 +734,7 @@ locals {
 func TestAccAliCloudResourceManagerSharedResource_basic12018(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_shared_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerSharedResourceMap12018)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMap12018)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerSharedResource")
@@ -742,7 +742,7 @@ func TestAccAliCloudResourceManagerSharedResource_basic12018(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourceBasicDependence12018)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourceBasicDependence12018)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -775,12 +775,12 @@ func TestAccAliCloudResourceManagerSharedResource_basic12018(t *testing.T) {
 	})
 }
 
-var AlicloudResourceManagerSharedResourceMap12018 = map[string]string{
+var AliCloudResourceManagerSharedResourceMap12018 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
 }
 
-func AlicloudResourceManagerSharedResourceBasicDependence12018(name string) string {
+func AliCloudResourceManagerSharedResourceBasicDependence12018(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -815,7 +815,7 @@ resource "alicloud_resource_manager_resource_share" "rs" {
 func TestAccAliCloudResourceManagerSharedResource_basic7570(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_shared_resource.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerSharedResourceMap7570)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMap7570)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerSharedResource")
@@ -823,7 +823,7 @@ func TestAccAliCloudResourceManagerSharedResource_basic7570(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourceBasicDependence7570)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourceBasicDependence7570)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -856,12 +856,12 @@ func TestAccAliCloudResourceManagerSharedResource_basic7570(t *testing.T) {
 	})
 }
 
-var AlicloudResourceManagerSharedResourceMap7570 = map[string]string{
+var AliCloudResourceManagerSharedResourceMap7570 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
 }
 
-func AlicloudResourceManagerSharedResourceBasicDependence7570(name string) string {
+func AliCloudResourceManagerSharedResourceBasicDependence7570(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -889,6 +889,76 @@ resource "alicloud_resource_manager_resource_share" "rs" {
 }
 
 
+`, name)
+}
+
+// Case SharedResource_20260310_resourceArn 12622
+func TestAccAliCloudResourceManagerSharedResource_basic12622(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_shared_resource.default"
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerSharedResourceMap12622)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerSharedResource")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerSharedResourceBasicDependence12622)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_share_id":       "${alicloud_resource_manager_resource_share.default.id}",
+					"resource_arn":            "${alicloud_service_catalog_portfolio.default.portfolio_arn}",
+					"permission_name":         "AliyunRSDefaultPermissionServiceCatalogPortfolio",
+					"properties_resource_arn": "${alicloud_service_catalog_portfolio.default.portfolio_arn}",
+					"resource_property":       `{\"sharePrincipals\":false,\"shareTagOptions\":false}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_share_id":       CHECKSET,
+						"properties_resource_arn": CHECKSET,
+						"resource_property":       CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"permission_name", "properties_resource_arn"},
+			},
+		},
+	})
+}
+
+var AliCloudResourceManagerSharedResourceMap12622 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AliCloudResourceManagerSharedResourceBasicDependence12622(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	resource "alicloud_resource_manager_resource_share" "default" {
+  		resource_share_name = var.name
+	}
+
+	resource "alicloud_service_catalog_portfolio" "default" {
+  		portfolio_name = var.name
+  		provider_name  = var.name
+	}
 `, name)
 }
 

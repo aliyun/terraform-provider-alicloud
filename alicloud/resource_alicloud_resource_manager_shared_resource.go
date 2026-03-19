@@ -37,6 +37,10 @@ func resourceAliCloudResourceManagerSharedResource() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"properties_resource_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"resource_arn": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -44,6 +48,12 @@ func resourceAliCloudResourceManagerSharedResource() *schema.Resource {
 				ForceNew: true,
 			},
 			"resource_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"resource_property": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -82,6 +92,20 @@ func resourceAliCloudResourceManagerSharedResourceCreate(d *schema.ResourceData,
 		request["ResourceShareId"] = v
 	}
 	request["RegionId"] = client.RegionId
+
+	resourcePropertiesDataList := make(map[string]interface{})
+
+	if v, ok := d.GetOk("resource_property"); ok {
+		resourcePropertiesDataList["Property"] = v
+	}
+
+	if v, ok := d.GetOk("properties_resource_arn"); ok {
+		resourcePropertiesDataList["ResourceArn"] = v
+	}
+
+	ResourcePropertiesMap := make([]interface{}, 0)
+	ResourcePropertiesMap = append(ResourcePropertiesMap, resourcePropertiesDataList)
+	request["ResourceProperties"] = ResourcePropertiesMap
 
 	if v, ok := d.GetOk("resource_arn"); ok {
 		localData, err := jsonpath.Get("$", v)
@@ -159,6 +183,7 @@ func resourceAliCloudResourceManagerSharedResourceRead(d *schema.ResourceData, m
 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("resource_arn", objectRaw["ResourceArn"])
+	d.Set("resource_property", objectRaw["ResourceProperty"])
 	d.Set("status", objectRaw["AssociationStatus"])
 	d.Set("resource_id", objectRaw["EntityId"])
 	d.Set("resource_share_id", objectRaw["ResourceShareId"])
@@ -185,10 +210,21 @@ func resourceAliCloudResourceManagerSharedResourceDelete(d *schema.ResourceData,
 	request["ResourceShareId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	jsonString := convertObjectToJsonString(request)
-	jsonString, _ = sjson.Set(jsonString, "Resources.0.ResourceId", parts[1])
-	jsonString, _ = sjson.Set(jsonString, "Resources.0.ResourceType", parts[2])
-	_ = json.Unmarshal([]byte(jsonString), &request)
+	onlyArnType := []string{"PolarDBBackupSet"}
+
+	if InArray(parts[2], onlyArnType) {
+		if v, ok := d.GetOk("resource_arn"); ok {
+			localData, _ := jsonpath.Get("$", v)
+			resourceArnsMapsArray := convertToInterfaceArray(localData)
+
+			request["ResourceArns"] = resourceArnsMapsArray
+		}
+	} else {
+		jsonString := convertObjectToJsonString(request)
+		jsonString, _ = sjson.Set(jsonString, "Resources.0.ResourceId", parts[1])
+		jsonString, _ = sjson.Set(jsonString, "Resources.0.ResourceType", parts[2])
+		_ = json.Unmarshal([]byte(jsonString), &request)
+	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
