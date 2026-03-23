@@ -278,14 +278,17 @@ The data_disks supports the following:
   - cloud_ssd：[20, 32768]
   - cloud_essd：[20, 32768]
   - ephemeral_ssd: [5, 800]
-* `category` - (Optional, ForceNew) The category of the disk:
+* `category` - (Optional, ForceNew) The category of the disk. Default value: `cloud_efficiency`. Valid values:
   - `cloud`: The general cloud disk.
   - `cloud_efficiency`: The efficiency cloud disk.
   - `cloud_ssd`: The SSD cloud disk.
   - `cloud_essd`: The ESSD cloud disk.
   - `ephemeral_ssd`: The local SSD disk.
   - `cloud_auto`: The AutoPL cloud disk.
-    Default to `cloud_efficiency`.
+  - `cloud_essd_entry` (Available since v1.232.0) : The ESSD Entry disk.
+  - `cloud_regional_disk_auto` (Available since v1.274.0) : The Regional ESSD.
+  - `elastic_ephemeral_disk_standard` (Available since v1.274.0) : The standard elastic ephemeral disk.
+  - `elastic_ephemeral_disk_premium` (Available since v1.274.0) : The premium elastic ephemeral disk.
 * `performance_level` - (Optional, ForceNew) The performance level of the ESSD used as data disk:
   - `PL0`: A single ESSD can deliver up to 10,000 random read/write IOPS.
   - `PL1`: A single ESSD can deliver up to 50,000 random read/write IOPS.
