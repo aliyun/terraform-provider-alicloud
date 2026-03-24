@@ -2048,3 +2048,22 @@ func convertYamlToObject(configured interface{}) (map[string]interface{}, error)
 
 	return result, nil
 }
+
+func IsSlicesValuesEqual(left, right []interface{}) bool {
+	if len(left) != len(right) {
+		return false
+	}
+
+	leftMap := make(map[interface{}]struct{}, len(left))
+	for _, v := range left {
+		leftMap[v] = struct{}{}
+	}
+
+	for _, v := range right {
+		if _, ok := leftMap[v]; !ok {
+			return false
+		}
+	}
+
+	return true
+}

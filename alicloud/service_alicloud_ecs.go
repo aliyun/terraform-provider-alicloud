@@ -611,17 +611,85 @@ func (s *EcsService) DescribeKeyPair(id string) (keyPair ecs.KeyPair, err error)
 
 }
 
-func (s *EcsService) DescribeEcsKeyPairAttachment(id string) (keyPair ecs.KeyPair, err error) {
-	index := strings.LastIndexByte(id, ':')
-	keyPairName := id[:index]
-	keyPair, err = s.DescribeKeyPair(keyPairName)
+func (s *EcsService) DescribeEcsKeyPairAttachment(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeInstances"
+
+	client := s.client
+
+	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return keyPair, WrapError(err)
+		err = WrapError(err)
+		return
 	}
-	if keyPair.KeyPairName != keyPairName {
-		err = WrapErrorf(NotFoundErr("KeyPairAttachment", id), NotFoundMsg, ProviderERROR)
+
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"KeyPairName": parts[0],
+		"InstanceIds": parts[1],
+		"MaxResults":  PageSizeLarge,
 	}
-	return keyPair, nil
+
+	idExist := false
+	instanceIds := make([]interface{}, 0)
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.Instances.Instance", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances.Instance", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(NotFoundErr("Ecs:KeyPairAttachment", id), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["KeyPairName"]) == parts[0] {
+				instanceIds = append(instanceIds, v.(map[string]interface{})["InstanceId"])
+				object = v.(map[string]interface{})
+			}
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+
+	ids, err := convertJsonStringToList(parts[1])
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+
+	if IsSlicesValuesEqual(instanceIds, ids) {
+		idExist = true
+		return object, nil
+	}
+
+	if !idExist {
+		return object, WrapErrorf(NotFoundErr("Ecs:KeyPairAttachment", id), NotFoundWithResponse, response)
+	}
+
+	return object, nil
 }
 
 func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
@@ -3804,6 +3872,39 @@ func (s *EcsService) RebootEcsInstance(id string) (err error) {
 	request["ForceStop"] = true
 
 	action := "RebootInstance"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
+
+func (s *EcsService) RebootEcsInstances(id []interface{}) (err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+	request["ForceReboot"] = true
+
+	action := "RebootInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {

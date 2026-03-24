@@ -4283,3 +4283,116 @@ func TestUnitCommonConvertLowercaseTags(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitCommonIsSlicesValuesEqual(t *testing.T) {
+	tests := []struct {
+		name     string
+		left     []interface{}
+		right    []interface{}
+		expected bool
+	}{
+		{
+			name:     "OrderStringSlice",
+			left:     []interface{}{"a", "b", "c"},
+			right:    []interface{}{"a", "b", "c"},
+			expected: true,
+		},
+		{
+			name:     "DisorderStringSlice",
+			left:     []interface{}{"b", "c", "a"},
+			right:    []interface{}{"a", "b", "c"},
+			expected: true,
+		},
+		{
+			name:     "NotEqualStringSlice",
+			left:     []interface{}{"a", "b", "d"},
+			right:    []interface{}{"a", "b", "c"},
+			expected: false,
+		},
+		{
+			name:     "OrderIntSlice",
+			left:     []interface{}{1, 2, 3, 4, 5},
+			right:    []interface{}{1, 2, 3, 4, 5},
+			expected: true,
+		},
+		{
+			name:     "DisorderIntSlice",
+			left:     []interface{}{5, 3, 1, 4, 2},
+			right:    []interface{}{1, 2, 3, 4, 5},
+			expected: true,
+		},
+		{
+			name:     "NotEqualIntSlice",
+			left:     []interface{}{1, 2, 3, 6, 5},
+			right:    []interface{}{1, 2, 3, 4, 5},
+			expected: false,
+		},
+		{
+			name:     "OrderFloatSlice",
+			left:     []interface{}{1.1, 2.2, 3.3},
+			right:    []interface{}{1.1, 2.2, 3.3},
+			expected: true,
+		},
+		{
+			name:     "DisorderFloatSlice",
+			left:     []interface{}{3.3, 1.1, 2.2},
+			right:    []interface{}{1.1, 2.2, 3.3},
+			expected: true,
+		},
+		{
+			name:     "NotEqualFloatSlice",
+			left:     []interface{}{1.1, 2.2, 6.6},
+			right:    []interface{}{1.1, 2.2, 3.3},
+			expected: false,
+		},
+		{
+			name:     "OrderBoolSlice",
+			left:     []interface{}{true, false},
+			right:    []interface{}{true, false},
+			expected: true,
+		},
+		{
+			name:     "DisorderBoolSlice",
+			left:     []interface{}{false, true},
+			right:    []interface{}{true, false},
+			expected: true,
+		},
+		{
+			name:     "OrderMixedTypeSlice",
+			left:     []interface{}{1, "a", true},
+			right:    []interface{}{1, "a", true},
+			expected: true,
+		},
+		{
+			name:     "DisorderMixedTypeSlice",
+			left:     []interface{}{"a", true, 1},
+			right:    []interface{}{1, "a", true},
+			expected: true,
+		},
+		{
+			name:     "NotEqualMixedTypeSlice",
+			left:     []interface{}{1, "b", true},
+			right:    []interface{}{1, "a", true},
+			expected: false,
+		},
+		{
+			name:     "EmptySlice",
+			left:     []interface{}{},
+			right:    []interface{}{},
+			expected: true,
+		},
+		{
+			name:     "NilSlice",
+			left:     nil,
+			right:    nil,
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsSlicesValuesEqual(tt.left, tt.right)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
