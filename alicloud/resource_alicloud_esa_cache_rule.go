@@ -88,6 +88,18 @@ func resourceAliCloudEsaCacheRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"post_body_cache_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"post_body_size_limit": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"post_cache": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"query_string": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -180,6 +192,9 @@ func resourceAliCloudEsaCacheRuleCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("site_version"); ok {
 		request["SiteVersion"] = v
 	}
+	if v, ok := d.GetOk("post_cache"); ok {
+		request["PostCache"] = v
+	}
 	if v, ok := d.GetOk("query_string_mode"); ok {
 		request["QueryStringMode"] = v
 	}
@@ -219,11 +234,17 @@ func resourceAliCloudEsaCacheRuleCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("rule_enable"); ok {
 		request["RuleEnable"] = v
 	}
+	if v, ok := d.GetOk("post_body_size_limit"); ok {
+		request["PostBodySizeLimit"] = v
+	}
 	if v, ok := d.GetOk("rule_name"); ok {
 		request["RuleName"] = v
 	}
 	if v, ok := d.GetOk("browser_cache_ttl"); ok {
 		request["BrowserCacheTtl"] = v
+	}
+	if v, ok := d.GetOk("post_body_cache_key"); ok {
+		request["PostBodyCacheKey"] = v
 	}
 	if v, ok := d.GetOk("cache_reserve_eligibility"); ok {
 		request["CacheReserveEligibility"] = v
@@ -293,6 +314,9 @@ func resourceAliCloudEsaCacheRuleRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("edge_status_code_cache_ttl", objectRaw["EdgeStatusCodeCacheTtl"])
 	d.Set("include_cookie", objectRaw["IncludeCookie"])
 	d.Set("include_header", objectRaw["IncludeHeader"])
+	d.Set("post_body_cache_key", objectRaw["PostBodyCacheKey"])
+	d.Set("post_body_size_limit", objectRaw["PostBodySizeLimit"])
+	d.Set("post_cache", objectRaw["PostCache"])
 	d.Set("query_string", objectRaw["QueryString"])
 	d.Set("query_string_mode", objectRaw["QueryStringMode"])
 	d.Set("rule", objectRaw["Rule"])
@@ -341,6 +365,11 @@ func resourceAliCloudEsaCacheRuleUpdate(d *schema.ResourceData, meta interface{}
 	if d.HasChange("additional_cacheable_ports") {
 		update = true
 		request["AdditionalCacheablePorts"] = d.Get("additional_cacheable_ports")
+	}
+
+	if d.HasChange("post_cache") {
+		update = true
+		request["PostCache"] = d.Get("post_cache")
 	}
 
 	if d.HasChange("query_string_mode") {
@@ -408,6 +437,11 @@ func resourceAliCloudEsaCacheRuleUpdate(d *schema.ResourceData, meta interface{}
 		request["RuleEnable"] = d.Get("rule_enable")
 	}
 
+	if d.HasChange("post_body_size_limit") {
+		update = true
+		request["PostBodySizeLimit"] = d.Get("post_body_size_limit")
+	}
+
 	if d.HasChange("rule_name") {
 		update = true
 		request["RuleName"] = d.Get("rule_name")
@@ -436,6 +470,11 @@ func resourceAliCloudEsaCacheRuleUpdate(d *schema.ResourceData, meta interface{}
 	if d.HasChange("edge_status_code_cache_ttl") {
 		update = true
 		request["EdgeStatusCodeCacheTtl"] = d.Get("edge_status_code_cache_ttl")
+	}
+
+	if d.HasChange("post_body_cache_key") {
+		update = true
+		request["PostBodyCacheKey"] = d.Get("post_body_cache_key")
 	}
 
 	if d.HasChange("user_language") {

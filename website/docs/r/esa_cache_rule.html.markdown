@@ -93,6 +93,11 @@ The following arguments are supported:
 * `edge_status_code_cache_ttl` - (Optional) Status code cache expiration time in seconds.
 * `include_cookie` - (Optional) When generating the cache key, add the specified cookie names and their values. Multiple values are supported, separated by spaces.
 * `include_header` - (Optional) When generating the cache key, add the specified header names and their values. Multiple values are supported, separated by spaces.
+* `post_body_cache_key` - (Optional, Available since v1.274.0) Processing pattern for the cache key.
+  - `md5`: Compute the MD5 hash of the request body, then include the resulting MD5 value in the cache key.
+  - `ignore`: Exclude the request body content from the cache key.
+* `post_body_size_limit` - (Optional, Available since v1.274.0) Body size limit. The value is a numeric value in KB. Body sizes from 1 KB to 8 KB are supported. If the value is empty, it defaults to 8 KB.
+* `post_cache` - (Optional, Available since v1.274.0) Toggle for the Post cache feature.
 * `query_string` - (Optional) Query strings to be reserved or excluded. Multiple values are supported, separated by spaces.
 * `query_string_mode` - (Optional) The processing mode for query strings when generating the cache key. Possible values:
   - `ignore_all`: Ignore all.
