@@ -24,6 +24,7 @@ func TestAccAliCloudECSKeyPairAttachment_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -32,14 +33,20 @@ func TestAccAliCloudECSKeyPairAttachment_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"key_pair_name": "${alicloud_ecs_key_pair.default.id}",
-					"instance_ids":  []string{"${alicloud_instance.default.id}"},
+					"instance_ids":  "${alicloud_instance.default.*.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"key_pair_name":  CHECKSET,
-						"instance_ids.#": "1",
+						"instance_ids.#": "5",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 		},
 	})
@@ -60,6 +67,7 @@ func TestAccAliCloudECSKeyPairAttachment_basic0_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -68,15 +76,21 @@ func TestAccAliCloudECSKeyPairAttachment_basic0_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"key_pair_name": "${alicloud_ecs_key_pair.default.id}",
-					"instance_ids":  []string{"${alicloud_instance.default.id}"},
+					"instance_ids":  "${alicloud_instance.default.*.id}",
 					"force":         "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"key_pair_name":  CHECKSET,
-						"instance_ids.#": "1",
+						"instance_ids.#": "5",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 		},
 	})
@@ -97,6 +111,7 @@ func TestAccAliCloudECSKeyPairAttachment_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -105,14 +120,20 @@ func TestAccAliCloudECSKeyPairAttachment_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"key_name":     "${alicloud_ecs_key_pair.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.id}"},
+					"instance_ids": "${alicloud_instance.default.*.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"key_name":       CHECKSET,
-						"instance_ids.#": "1",
+						"instance_ids.#": "5",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 		},
 	})
@@ -133,6 +154,7 @@ func TestAccAliCloudECSKeyPairAttachment_basic1_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -141,15 +163,21 @@ func TestAccAliCloudECSKeyPairAttachment_basic1_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"key_name":     "${alicloud_ecs_key_pair.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.id}"},
+					"instance_ids": "${alicloud_instance.default.*.id}",
 					"force":        "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"key_name":       CHECKSET,
-						"instance_ids.#": "1",
+						"instance_ids.#": "5",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 		},
 	})
@@ -163,44 +191,34 @@ func AliCloudEcsKeyPairAttachmentBasicDependence0(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_resource_manager_resource_groups" "default" {
-  		status = "OK"
-	}
-
-	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_efficiency"
-  		available_resource_creation = "VSwitch"
-	}
-
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  		most_recent = true
-  		owners      = "system"
+  		name_regex = "^ubuntu_18.*64"
+  		owners     = "system"
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone = data.alicloud_zones.default.zones.0.id
   		image_id          = data.alicloud_images.default.images.0.id
 	}
-
+	
 	resource "alicloud_vpc" "default" {
   		vpc_name   = var.name
   		cidr_block = "192.168.0.0/16"
 	}
-
+	
 	resource "alicloud_vswitch" "default" {
   		vswitch_name = var.name
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = "192.168.192.0/24"
-  		zone_id      = data.alicloud_zones.default.zones.0.id
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 	}
-
+	
 	resource "alicloud_security_group" "default" {
   		name   = var.name
   		vpc_id = alicloud_vpc.default.id
 	}
 
 	resource "alicloud_instance" "default" {
+  		count                      = 5
   		image_id                   = data.alicloud_images.default.images.0.id
   		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
   		security_groups            = alicloud_security_group.default.*.id
