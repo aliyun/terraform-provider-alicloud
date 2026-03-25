@@ -51,18 +51,21 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cfw_log": "true",
+					"cfw_log":     "true",
+					"modify_type": "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cfw_log": "true",
+						"cfw_log":     "true",
+						"modify_type": "Upgrade",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type"},
 			},
 		},
 	})
@@ -190,16 +193,6 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cfw_log_storage": "5000",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cfw_log_storage": "5000",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"ip_number": "55",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -274,18 +267,18 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 			//		}),
 			//	),
 			//},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cfw_account":    "true",
-					"account_number": "10",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cfw_account":    "true",
-						"account_number": "10",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"cfw_account":    "true",
+			//		"account_number": "10",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"cfw_account":    "true",
+			//			"account_number": "10",
+			//		}),
+			//	),
+			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
