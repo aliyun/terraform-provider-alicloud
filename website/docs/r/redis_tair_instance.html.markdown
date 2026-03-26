@@ -164,6 +164,9 @@ The following attributes are exported:
 * `region_id` - Region Id
 * `status` - The status of the resource
 * `tair_instance_id` - The ID of the resource.
+* `cert_download_url` - The download URL of the SSL certificate.
+* `ssl_expired_time` - The expiration time of the SSL certificate.
+* `cert_common_name` - The common name (CN) of the SSL certificate.
 
 ## Timeouts
 
