@@ -459,16 +459,16 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 
 	direction := d.Get("type").(string)
 
-	port_range := d.Get("port_range").(string)
-	request.QueryParams["PortRange"] = port_range
+	portRange := d.Get("port_range").(string)
+	request.QueryParams["PortRange"] = portRange
 
 	if v, ok := d.GetOk("ip_protocol"); ok {
 		request.QueryParams["IpProtocol"] = v.(string)
 		if v.(string) == string(Tcp) || v.(string) == string(Udp) {
-			if port_range == AllPortRange {
+			if portRange == AllPortRange {
 				return nil, fmt.Errorf("'tcp' and 'udp' can support port range: [1, 65535]. Please correct it and try again.")
 			}
-		} else if port_range != AllPortRange {
+		} else if portRange != AllPortRange {
 			return nil, fmt.Errorf("'icmp', 'gre' and 'all' only support port range '-1/-1'. Please correct it and try again.")
 		}
 	}
@@ -539,20 +539,11 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 	}
 
 	request.QueryParams["SecurityGroupId"] = sgId
-
-	description := d.Get("description").(string)
-	request.QueryParams["Description"] = description
-
+	request.QueryParams["Description"] = d.Get("description").(string)
 	return request, nil
 }
 
 func parseSecurityRuleId(d *schema.ResourceData, meta interface{}, index int) (result string) {
 	parts := strings.Split(d.Id(), ":")
-	defer func() {
-		if e := recover(); e != nil {
-			log.Printf("Panicing %s\r\n", e)
-			result = ""
-		}
-	}()
 	return parts[index]
 }
