@@ -11,19 +11,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudForwardEntry() *schema.Resource {
+func resourceAliCloudNatGatewayForwardEntry() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudForwardEntryCreate,
-		Read:   resourceAlicloudForwardEntryRead,
-		Update: resourceAlicloudForwardEntryUpdate,
-		Delete: resourceAlicloudForwardEntryDelete,
+		Create: resourceAliCloudNatGatewayForwardEntryCreate,
+		Read:   resourceAliCloudNatGatewayForwardEntryRead,
+		Update: resourceAliCloudNatGatewayForwardEntryUpdate,
+		Delete: resourceAliCloudNatGatewayForwardEntryDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
-			Update: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"external_ip": {
@@ -43,13 +43,6 @@ func resourceAlicloudForwardEntry() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"name"},
-			},
-			"name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				Deprecated:    "Field 'name' has been deprecated from provider version 1.119.1. New field 'forward_entry_name' instead.",
-				ConflictsWith: []string{"forward_entry_name"},
 			},
 			"forward_table_id": {
 				Type:     schema.TypeString,
@@ -72,210 +65,242 @@ func resourceAlicloudForwardEntry() *schema.Resource {
 			"port_break": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Deprecated:    "Field `name` has been deprecated from provider version 1.119.1. New field `forward_entry_name` instead.",
+				ConflictsWith: []string{"forward_entry_name"},
+			},
 		},
 	}
 }
 
-func resourceAlicloudForwardEntryCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNatGatewayForwardEntryCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	var response map[string]interface{}
+
 	action := "CreateForwardEntry"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("forward_table_id"); ok {
+		request["ForwardTableId"] = v
+	}
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	request["InternalIp"] = d.Get("internal_ip")
+	request["IpProtocol"] = d.Get("ip_protocol")
+	if v, ok := d.GetOkExists("port_break"); ok {
+		request["PortBreak"] = v
+	}
 	request["ExternalIp"] = d.Get("external_ip")
-	request["ExternalPort"] = d.Get("external_port")
+	request["InternalPort"] = d.Get("internal_port")
 	if v, ok := d.GetOk("forward_entry_name"); ok {
 		request["ForwardEntryName"] = v
 	} else if v, ok := d.GetOk("name"); ok {
 		request["ForwardEntryName"] = v
 	}
-
-	request["ForwardTableId"] = d.Get("forward_table_id")
-	request["InternalIp"] = d.Get("internal_ip")
-	request["InternalPort"] = d.Get("internal_port")
-	request["IpProtocol"] = d.Get("ip_protocol")
-	if v, ok := d.GetOkExists("port_break"); ok {
-		request["PortBreak"] = v
-	}
-
-	request["RegionId"] = client.RegionId
+	request["ExternalPort"] = d.Get("external_port")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidIp.NotInNatgw", "OperationConflict", "TaskConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "TaskConflict", "OperationUnsupported.EipInBinding", "IncorrectStatus", "InvalidIp.NotInNatgw"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_forward_entry", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["ForwardTableId"], ":", response["ForwardEntryId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.ForwardEntryStateRefreshFunc(d.Id(), []string{}))
+	d.SetId(fmt.Sprintf("%v:%v", request["ForwardTableId"], response["ForwardEntryId"]))
+
+	nATGatewayServiceV2 := NATGatewayServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nATGatewayServiceV2.NatGatewayForwardEntryStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudForwardEntryRead(d, meta)
+	return resourceAliCloudNatGatewayForwardEntryRead(d, meta)
 }
-func resourceAlicloudForwardEntryRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudNatGatewayForwardEntryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	if !strings.Contains(d.Id(), COLON_SEPARATED) {
-		d.SetId(d.Get("forward_table_id").(string) + COLON_SEPARATED + d.Id())
+	nATGatewayServiceV2 := NATGatewayServiceV2{client}
+
+	if !strings.Contains(d.Id(), ":") {
+		d.SetId(fmt.Sprintf("%v:%v", d.Get("forward_table_id"), d.Id()))
 	}
-	object, err := vpcService.DescribeForwardEntry(d.Id())
+
+	objectRaw, err := nATGatewayServiceV2.DescribeNatGatewayForwardEntry(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_forward_entry vpcService.DescribeForwardEntry Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_forward_entry DescribeNatGatewayForwardEntry Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("forward_entry_id", parts[1])
-	d.Set("forward_table_id", parts[0])
-	d.Set("external_ip", object["ExternalIp"])
-	d.Set("external_port", object["ExternalPort"])
-	d.Set("forward_entry_name", object["ForwardEntryName"])
-	d.Set("name", object["ForwardEntryName"])
-	d.Set("internal_ip", object["InternalIp"])
-	d.Set("internal_port", object["InternalPort"])
-	d.Set("ip_protocol", object["IpProtocol"])
-	d.Set("status", object["Status"])
+
+	d.Set("external_ip", objectRaw["ExternalIp"])
+	d.Set("external_port", objectRaw["ExternalPort"])
+	d.Set("forward_entry_name", objectRaw["ForwardEntryName"])
+	d.Set("internal_ip", objectRaw["InternalIp"])
+	d.Set("internal_port", objectRaw["InternalPort"])
+	d.Set("ip_protocol", objectRaw["IpProtocol"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("forward_entry_id", objectRaw["ForwardEntryId"])
+	d.Set("forward_table_id", objectRaw["ForwardTableId"])
+	d.Set("name", objectRaw["ForwardEntryName"])
+
 	return nil
 }
-func resourceAlicloudForwardEntryUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudNatGatewayForwardEntryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+	var request map[string]interface{}
 	var response map[string]interface{}
-	var err error
-	if !strings.Contains(d.Id(), COLON_SEPARATED) {
-		d.SetId(d.Get("forward_table_id").(string) + COLON_SEPARATED + d.Id())
-	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	var query map[string]interface{}
 	update := false
-	request := map[string]interface{}{
-		"ForwardEntryId": parts[1],
-		"ForwardTableId": parts[0],
+
+	if !strings.Contains(d.Id(), ":") {
+		d.SetId(fmt.Sprintf("%v:%v", d.Get("forward_table_id"), d.Id()))
 	}
+
+	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "ModifyForwardEntry"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ForwardTableId"] = parts[0]
+	request["ForwardEntryId"] = parts[1]
 	request["RegionId"] = client.RegionId
-	if d.HasChange("external_ip") {
-		update = true
-		request["ExternalIp"] = d.Get("external_ip")
-	}
-	if d.HasChange("external_port") {
-		update = true
-		request["ExternalPort"] = d.Get("external_port")
-	}
-	if d.HasChange("forward_entry_name") {
-		update = true
-		request["ForwardEntryName"] = d.Get("forward_entry_name")
-	}
-	if d.HasChange("name") {
-		update = true
-		request["ForwardEntryName"] = d.Get("name")
-	}
+	request["ClientToken"] = buildClientToken(action)
 	if d.HasChange("internal_ip") {
 		update = true
-		request["InternalIp"] = d.Get("internal_ip")
 	}
-	if d.HasChange("internal_port") {
-		update = true
-		request["InternalPort"] = d.Get("internal_port")
-	}
+	request["InternalIp"] = d.Get("internal_ip")
 	if d.HasChange("ip_protocol") {
 		update = true
-		request["IpProtocol"] = d.Get("ip_protocol")
+	}
+	request["IpProtocol"] = d.Get("ip_protocol")
+	if v, ok := d.GetOkExists("port_break"); ok {
+		request["PortBreak"] = v
+	}
+	if d.HasChange("external_ip") {
+		update = true
+	}
+	request["ExternalIp"] = d.Get("external_ip")
+	if d.HasChange("internal_port") {
+		update = true
+	}
+	request["InternalPort"] = d.Get("internal_port")
+	if d.HasChange("forward_entry_name") {
+		update = true
+
+		if v, ok := d.GetOk("forward_entry_name"); ok {
+			request["ForwardEntryName"] = v
+		}
+	}
+
+	if d.HasChange("external_port") {
+		update = true
+	}
+	request["ExternalPort"] = d.Get("external_port")
+
+	if d.HasChange("name") {
+		update = true
+
+		if v, ok := d.GetOk("name"); ok {
+			request["ForwardEntryName"] = v
+		}
 	}
 	if update {
-		if _, ok := d.GetOkExists("port_break"); ok {
-			request["PortBreak"] = d.Get("port_break")
-		}
-		action := "ModifyForwardEntry"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationUnsupported.EipInBinding", "IncorretForwardEntryStatus"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.ForwardEntryStateRefreshFunc(d.Id(), []string{}))
+		nATGatewayServiceV2 := NATGatewayServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nATGatewayServiceV2.NatGatewayForwardEntryStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
-	return resourceAlicloudForwardEntryRead(d, meta)
-}
-func resourceAlicloudForwardEntryDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	if !strings.Contains(d.Id(), COLON_SEPARATED) {
-		d.SetId(d.Get("forward_table_id").(string) + COLON_SEPARATED + d.Id())
-	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	vpcService := VpcService{client}
-	action := "DeleteForwardEntry"
-	var response map[string]interface{}
-	request := map[string]interface{}{
-		"ForwardEntryId": parts[1],
-		"ForwardTableId": parts[0],
-	}
 
+	return resourceAliCloudNatGatewayForwardEntryRead(d, meta)
+}
+
+func resourceAliCloudNatGatewayForwardEntryDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	if !strings.Contains(d.Id(), ":") {
+		d.SetId(fmt.Sprintf("%v:%v", d.Get("forward_table_id"), d.Id()))
+	}
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteForwardEntry"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["ForwardTableId"] = parts[0]
+	request["ForwardEntryId"] = parts[1]
 	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"UnknownError", "OperationConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.NATGW", "OperationConflict", "UnknownError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidForwardEntryId.NotFound", "InvalidForwardTableId.NotFound", "InvalidRegionId.NotFound"}) {
+		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.ForwardEntryStateRefreshFunc(d.Id(), []string{}))
+
+	nATGatewayServiceV2 := NATGatewayServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nATGatewayServiceV2.NatGatewayForwardEntryStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
