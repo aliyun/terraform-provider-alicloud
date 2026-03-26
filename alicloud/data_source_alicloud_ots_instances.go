@@ -3,6 +3,7 @@ package alicloud
 import (
 	"regexp"
 
+	ots "github.com/alibabacloud-go/tablestore-20201209/v3/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -145,20 +146,20 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	var filteredInstanceNames []string
 	for _, instanceName := range allInstanceNames {
 		// name_regex mismatch
-		if nameReg != nil && !nameReg.MatchString(instanceName) {
+		if nameReg != nil && !nameReg.MatchString(*instanceName) {
 			continue
 		}
 		// ids mismatch
 		if len(idsMap) != 0 {
-			if _, ok := idsMap[instanceName]; !ok {
+			if _, ok := idsMap[*instanceName]; !ok {
 				continue
 			}
 		}
-		filteredInstanceNames = append(filteredInstanceNames, instanceName)
+		filteredInstanceNames = append(filteredInstanceNames, *instanceName)
 	}
 
 	// get full instance info via GetInstance
-	var allInstances []RestOtsInstanceInfo
+	var allInstances []*ots.GetInstanceResponseBody
 	for _, instanceName := range filteredInstanceNames {
 		instanceInfo, err := otsService.DescribeOtsInstance(instanceName)
 		if err != nil {
@@ -168,7 +169,7 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	}
 
 	// filter by tag.
-	var filteredInstances []RestOtsInstanceInfo
+	var filteredInstances []*ots.GetInstanceResponseBody
 	if v, ok := d.GetOk("tags"); ok {
 		if vmap, ok := v.(map[string]interface{}); ok && len(vmap) > 0 {
 			for _, instance := range allInstances {
@@ -185,29 +186,33 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	return otsInstancesDecriptionAttributes(d, filteredInstances, meta)
 }
 
-func otsInstancesDecriptionAttributes(d *schema.ResourceData, instances []RestOtsInstanceInfo, meta interface{}) error {
+func otsInstancesDecriptionAttributes(d *schema.ResourceData, instances []*ots.GetInstanceResponseBody, meta interface{}) error {
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
 	for _, instance := range instances {
 		mapping := map[string]interface{}{
-			"id":                 instance.InstanceName,
-			"name":               instance.InstanceName,
-			"status":             toInstanceOuterStatus(instance.InstanceStatus),
-			"cluster_type":       instance.InstanceSpecification,
-			"create_time":        instance.CreateTime,
-			"user_id":            instance.UserId,
-			"resource_group_id":  instance.ResourceGroupId,
-			"network_type_acl":   instance.NetworkTypeACL,
-			"network_source_acl": instance.NetworkSourceACL,
-			"policy":             instance.Policy,
-			"policy_version":     instance.PolicyVersion,
-			"description":        instance.InstanceDescription,
-			"table_quota":        instance.Quota.TableQuota,
-			"tags":               otsRestTagsToMap(instance.Tags),
+			"id":                      instance.InstanceName,
+			"name":                    instance.InstanceName,
+			"status":                  toInstanceOuterStatus(*instance.InstanceStatus),
+			"cluster_type":            instance.InstanceSpecification,
+			"create_time":             instance.CreateTime,
+			"user_id":                 instance.UserId,
+			"resource_group_id":       instance.ResourceGroupId,
+			"network_type_acl":        instance.NetworkTypeACL,
+			"network_source_acl":      instance.NetworkSourceACL,
+			"accessed_by":             instance.Network,
+			"policy":                  instance.Policy,
+			"policy_version":          instance.PolicyVersion,
+			"description":             instance.InstanceDescription,
+			"alias_name":              instance.AliasName,
+			"payment_type":            instance.PaymentType,
+			"elastic_vcs_upper_limit": instance.ElasticVCUUpperLimit,
+			"table_quota":             instance.TableQuota,
+			"tags":                    otsRestTagsToMap(instance.Tags),
 		}
-		names = append(names, instance.InstanceName)
-		ids = append(ids, instance.InstanceName)
+		names = append(names, *instance.InstanceName)
+		ids = append(ids, *instance.InstanceName)
 		s = append(s, mapping)
 	}
 

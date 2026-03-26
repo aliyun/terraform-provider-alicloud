@@ -16,6 +16,8 @@ import (
 	gatewayclient "github.com/alibabacloud-go/alibabacloud-gateway-sls/client"
 	roaCS "github.com/alibabacloud-go/cs-20151215/v5/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	"github.com/alibabacloud-go/darabonba-openapi/v2/utils"
+	ots "github.com/alibabacloud-go/tablestore-20201209/v3/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -51,7 +53,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
@@ -67,6 +68,7 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
+	credential "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/cs"
@@ -884,7 +886,8 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 	if client.otsconn != nil && !client.config.needRefreshCredential() {
 		return do(client.otsconn)
 	}
-	product := "ots"
+	product := "tablestore"
+	config := new(utils.Config)
 	endpoint, err := client.loadApiEndpoint(product)
 	if err != nil {
 		return nil, err
@@ -892,10 +895,12 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	otsconn, err := ots.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	config.SetRegionId(client.config.RegionId).SetEndpoint(endpoint)
+	cred, err := credential.NewCredential(client.config.getCredentialConfig(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
 	}
+	config.SetCredential(cred)
 
 	proxy, err := client.getHttpProxy()
 	if proxy != nil {
@@ -906,17 +911,19 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 
 		if !skip {
 			if client.config.Protocol == "HTTPS" {
-				otsconn.SetHttpsProxy(proxy.String())
+				config.SetHttpsProxy(proxy.String())
 			} else {
-				otsconn.SetHttpProxy(proxy.String())
+				config.SetHttpProxy(proxy.String())
 			}
 		}
 	}
 
-	otsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	otsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	otsconn.SourceIp = client.config.SourceIp
-	otsconn.SecureTransport = client.config.SecureTransport
+	config.SetReadTimeout(client.config.ClientReadTimeout)
+	config.SetConnectTimeout(client.config.ClientConnectTimeout)
+	otsconn, err := ots.NewClient(config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
+	}
 	client.otsconn = otsconn
 
 	return do(client.otsconn)
