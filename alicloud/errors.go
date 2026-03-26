@@ -227,6 +227,11 @@ func NeedRetry(err error) bool {
 		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
 			return true
 		}
+		// This error is a sign of server throttling against a singe container resource, such as modifying NAT entries against a same table
+		// Refer to https://next.api.aliyun.com/troubleshoot?q=OperationConflict\u0026product=Vpc for more information
+		if *e.Code == "OperationConflict" {
+			return true
+		}
 	}
 
 	if e, ok := err.(*errors.ServerError); ok {
