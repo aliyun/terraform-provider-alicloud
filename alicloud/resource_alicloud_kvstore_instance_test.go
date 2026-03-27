@@ -627,7 +627,10 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ssl_enable": "Enable",
+						"ssl_enable":        "Enable",
+						"cert_download_url": CHECKSET,
+						"ssl_expired_time":  CHECKSET,
+						"cert_common_name":  CHECKSET,
 					}),
 				),
 			},
@@ -682,7 +685,10 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ssl_enable": "Disable",
+						"ssl_enable":        "Disable",
+						"cert_download_url": "",
+						"ssl_expired_time":  "",
+						"cert_common_name":  "",
 					}),
 				),
 			},
@@ -2196,7 +2202,10 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ssl_enable": "Enable",
+						"ssl_enable":        "Enable",
+						"cert_download_url": CHECKSET,
+						"ssl_expired_time":  CHECKSET,
+						"cert_common_name":  CHECKSET,
 					}),
 				),
 			},
@@ -2336,6 +2345,9 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 					testAccCheck(map[string]string{
 						"ssl_enable":                "Disable",
 						"private_connection_prefix": CHECKSET,
+						"cert_download_url":         "",
+						"ssl_expired_time":          "",
+						"cert_common_name":          "",
 					}),
 				),
 			},

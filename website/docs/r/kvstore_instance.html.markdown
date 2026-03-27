@@ -304,6 +304,9 @@ The following attributes are exported:
 * `qps` - Theoretical maximum QPS value.
 * `connection_domain`- Intranet connection address of the KVStore instance.
 * `status` - The status of KVStore DBInstance.
+* `cert_download_url` - The download URL of the SSL certificate.
+* `ssl_expired_time` - The expiration time of the SSL certificate.
+* `cert_common_name` - The common name (CN) of the SSL certificate.
 
 ## Timeouts
 
