@@ -768,11 +768,11 @@ func (s *EsaServiceV2) DescribeEsaRatePlanInstance(id string) (object map[string
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListUserRatePlanInstances"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = id
-	query["RegionId"] = client.RegionId
+
+	action := "ListUserRatePlanInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -802,12 +802,13 @@ func (s *EsaServiceV2) DescribeEsaRatePlanInstance(id string) (object map[string
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
-	if currentStatus == "offline" {
+	if fmt.Sprint(currentStatus) == "offline" {
 		return object, WrapErrorf(NotFoundErr("RatePlanInstance", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+
 func (s *EsaServiceV2) DescribeRatePlanInstanceDescribeRatePlanInstanceStatus(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
