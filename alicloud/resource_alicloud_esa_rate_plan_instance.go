@@ -83,26 +83,26 @@ func resourceAliCloudEsaRatePlanInstanceCreate(d *schema.ResourceData, meta inte
 	var err error
 	request = make(map[string]interface{})
 
-	if v, ok := d.GetOk("plan_name"); ok {
-		request["PlanName"] = v
-	}
 	if v, ok := d.GetOk("coverage"); ok {
 		request["Coverage"] = v
 	}
-	if v, ok := d.GetOk("type"); ok {
-		request["Type"] = v
-	}
 	if v, ok := d.GetOkExists("auto_renew"); ok {
 		request["AutoRenew"] = v
-	}
-	if v, ok := d.GetOkExists("period"); ok {
-		request["Period"] = v
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
 		request["ChargeType"] = convertEsaRatePlanInstanceChargeTypeRequest(v.(string))
 	}
 	if v, ok := d.GetOkExists("auto_pay"); ok {
 		request["AutoPay"] = v
+	}
+	if v, ok := d.GetOk("plan_name"); ok {
+		request["PlanName"] = v
+	}
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
+	}
+	if v, ok := d.GetOkExists("period"); ok {
+		request["Period"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -147,27 +147,17 @@ func resourceAliCloudEsaRatePlanInstanceRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["BillingMode"] != nil {
-		d.Set("payment_type", convertEsaRatePlanInstanceInstanceInfoBillingModeResponse(objectRaw["BillingMode"]))
-	}
-	if objectRaw["PlanName"] != nil {
-		d.Set("plan_name", objectRaw["PlanName"])
-	}
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("payment_type", convertEsaRatePlanInstanceInstanceInfoBillingModeResponse(objectRaw["BillingMode"]))
+	d.Set("plan_name", objectRaw["PlanName"])
+	d.Set("status", objectRaw["Status"])
 
 	objectRaw, err = esaServiceV2.DescribeRatePlanInstanceDescribeRatePlanInstanceStatus(d.Id())
 	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	if objectRaw["InstanceStatus"] != nil {
-		d.Set("instance_status", objectRaw["InstanceStatus"])
-	}
+	d.Set("instance_status", objectRaw["InstanceStatus"])
 
 	return nil
 }
@@ -185,20 +175,20 @@ func resourceAliCloudEsaRatePlanInstanceUpdate(d *schema.ResourceData, meta inte
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
 
-	request["OrderType"] = "UPGRADE"
-	if d.HasChange("plan_name") {
-		update = true
-		request["TargetPlanName"] = d.Get("plan_name")
-	}
-
 	if d.HasChange("payment_type") {
 		update = true
 	}
 	request["ChargeType"] = convertEsaRatePlanInstanceChargeTypeRequest(d.Get("payment_type").(string))
 
 	request["AutoPay"] = true
+	request["OrderType"] = "UPGRADE"
+	if d.HasChange("plan_name") {
+		update = true
+		request["TargetPlanName"] = d.Get("plan_name")
+	}
+
 	if update {
-		wait := incrementalWait(5*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
@@ -268,6 +258,12 @@ func resourceAliCloudEsaRatePlanInstanceDelete(d *schema.ResourceData, meta inte
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	esaServiceV2 := EsaServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, esaServiceV2.EsaRatePlanInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return nil
