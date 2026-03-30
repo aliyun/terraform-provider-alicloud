@@ -25,7 +25,7 @@ func TestAccAliCloudCSKubernetesPolicyInstance_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceID, name, AliCloudCSKubernetesPolicyInstanceBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceID,
@@ -109,10 +109,6 @@ variable "vswitch_cidrs" {
   default = ["10.1.0.0/16", "10.2.0.0/16"]
 }
 
-variable "cluster_name" {
-  default = "example-create-cluster"
-}
-
 variable "pod_cidr" {
   default = "172.16.0.0/16"
 }
@@ -141,7 +137,7 @@ resource "alicloud_vswitch" "CreateVSwitch" {
 
 resource "alicloud_cs_managed_kubernetes" "CreateCluster" {
   name                         = var.name
-  cluster_spec                 = "ack.pro.small"
+  cluster_spec                 = "ack.standard"
   profile                      = "Default"
   vswitch_ids                  = split(",", join(",", alicloud_vswitch.CreateVSwitch.*.id))
   pod_cidr                     = var.pod_cidr

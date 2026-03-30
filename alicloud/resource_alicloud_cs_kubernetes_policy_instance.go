@@ -54,6 +54,7 @@ func resourceAliCloudCSKubernetesPolicyInstance() *schema.Resource {
 			"action": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"warn", "deny"}, false),
 			},
 			"policy_name": {
