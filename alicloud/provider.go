@@ -1397,6 +1397,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_swarm":                                              resourceAlicloudCSSwarm(),
 			"alicloud_cs_kubernetes":                                         resourceAlicloudCSKubernetes(),
 			"alicloud_cs_kubernetes_addon":                                   resourceAlicloudCSKubernetesAddon(),
+			"alicloud_cs_kms_encryption":                                     resourceAlicloudCSKMSEncryption(),
 			"alicloud_cs_managed_kubernetes":                                 resourceAlicloudCSManagedKubernetes(),
 			"alicloud_cs_edge_kubernetes":                                    resourceAlicloudCSEdgeKubernetes(),
 			"alicloud_cs_serverless_kubernetes":                              resourceAlicloudCSServerlessKubernetes(),
