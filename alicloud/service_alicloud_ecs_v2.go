@@ -965,3 +965,74 @@ func (s *EcsServiceV2) EcsAutoSnapshotPolicyAttachmentStateRefreshFuncWithApi(id
 }
 
 // DescribeEcsAutoSnapshotPolicyAttachment >>> Encapsulated.
+
+// DescribeEcsDiskDefaultKMSKeyId <<< Encapsulated get interface for Ecs Disk Default KMS Key ID.
+
+func (s *EcsServiceV2) DescribeEcsDiskDefaultKMSKeyId(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeDiskDefaultKMSKeyId"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = id // Use region ID as the identifier
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeEcsDiskDefaultKMSKeyId >>> Encapsulated.
+
+// DescribeEcsDiskEncryptionByDefaultStatus <<< Encapsulated get interface for Ecs Disk Encryption By Default Status.
+
+func (s *EcsServiceV2) DescribeEcsDiskEncryptionByDefaultStatus(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeDiskEncryptionByDefaultStatus"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = id // Use region ID as the identifier
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// Return the response normally regardless of encryption status
+	return response, nil
+}
+
+// DescribeEcsDiskEncryptionByDefaultStatus >>> Encapsulated.
