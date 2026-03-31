@@ -72,3 +72,4 @@ The following arguments are supported.
   * `next_version` - The next version of this addon can be upgraded to.
   * `required` - Whether the addon is a system addon.
   * `current_config` - The current custom configuration of the addon. **Note:** Available in v1.166.0+
+  * `supported_actions` - (Available since v1.274.0) A set of actions supported by the addon, such as `Install`, `Upgrade`, `Modify`, `Uninstall`.

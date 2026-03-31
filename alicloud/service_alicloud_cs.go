@@ -412,17 +412,7 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 
 		addon.ComponentName = name
 		addon.Required = tea.BoolValue(addonInfo.InstallByDefault)
-		// DescribeAddon
-		addonInfoDetail, err := s.DescribeAddon(clusterId, name, "")
-		if err != nil {
-			return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeAddon", err)
-		}
-
-		if addonInfoDetail == nil || addonInfoDetail.Body == nil {
-			return nil, WrapErrorf(fmt.Errorf("DescribeAddon response body is nil"), DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeAddon", err)
-		}
-
-		addon.NextVersion = getNextVersion(addonInfoDetail)
+		addon.SupportedActions = tea.StringSliceValue(addonInfo.SupportedActions)
 
 		// GetClusterAddonInstance
 		addonInstance, err := s.GetCsKubernetesAddonInstance(clusterId, name)
@@ -434,6 +424,19 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 			}
 			return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesExistedAddons", err)
 		}
+
+		// DescribeAddon
+		addonInfoDetail, err := s.DescribeAddon(clusterId, name, addonInstance.Version)
+		if err != nil {
+			return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeAddon", err)
+		}
+
+		if addonInfoDetail == nil || addonInfoDetail.Body == nil {
+			return nil, WrapErrorf(fmt.Errorf("DescribeAddon response body is nil"), DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeAddon", err)
+		}
+
+		addon.NextVersion = getNextVersion(addonInfoDetail)
+
 		// Update if addon installed
 		addon.Version = addonInstance.Version
 		addon.Config = addonInstance.Config
