@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -22,7 +21,7 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(9 * time.Minute),
+			Create: schema.DefaultTimeout(30 * time.Minute),
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
@@ -50,6 +49,13 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"professional", "enterprise", "vip", "serverless"}, false),
+			},
+			"listener_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"tcp_and_ssl", "ssl_only"}, false),
 			},
 			"max_connections": {
 				Type:     schema.TypeInt,
@@ -142,6 +148,11 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 					return true
 				},
 			},
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"serverless_charge_type": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -175,6 +186,17 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: IntInSlice([]int{-1, 0, 3, 7, 15}),
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vswitch_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -192,15 +214,34 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
+	request["PaymentType"] = d.Get("payment_type")
+	if v, ok := d.GetOk("period_cycle"); ok {
+		request["PeriodCycle"] = v
+	}
+	request["SecurityGroupId"] = d.Get("security_group_id")
+	if v, ok := d.GetOk("max_eip_tps"); ok {
+		request["MaxEipTps"] = v
+	}
+	if v, ok := d.GetOk("serverless_charge_type"); ok {
+		request["ServerlessChargeType"] = v
+	}
+	if v, ok := d.GetOk("edition"); ok {
+		request["Edition"] = v
+	}
+	if v, ok := d.GetOk("instance_type"); ok {
+		request["InstanceType"] = v
+	}
+	if v, ok := d.GetOk("renewal_status"); ok {
+		request["RenewStatus"] = v
+	}
+	if v, ok := d.GetOk("storage_size"); ok {
+		request["StorageSize"] = v
+	}
 	if v, ok := d.GetOkExists("auto_renew"); ok {
 		request["AutoRenew"] = v
 	}
 	if v, ok := d.GetOk("max_tps"); ok {
 		request["MaxPrivateTps"] = v
-	}
-	request["PaymentType"] = d.Get("payment_type")
-	if v, ok := d.GetOk("period_cycle"); ok {
-		request["PeriodCycle"] = v
 	}
 	if v, ok := d.GetOkExists("tracing_storage_time"); ok {
 		request["TracingStorageTime"] = v
@@ -220,32 +261,24 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("support_eip"); ok {
 		request["SupportEip"] = v
 	}
-	if v, ok := d.GetOk("max_eip_tps"); ok {
-		request["MaxEipTps"] = v
+	if v, ok := d.GetOk("vswitch_ids"); ok {
+		vswitchIdsMapsArray := convertListToJsonString(convertToInterfaceArray(v))
+
+		request["VswitchIds"] = vswitchIdsMapsArray
 	}
-	if v, ok := d.GetOk("serverless_charge_type"); ok {
-		request["ServerlessChargeType"] = v
-	}
-	if v, ok := d.GetOk("edition"); ok {
-		request["Edition"] = v
+
+	if v, ok := d.GetOk("listener_mode"); ok {
+		request["ListenerMode"] = v
 	}
 	if v, ok := d.GetOk("queue_capacity"); ok {
 		request["QueueCapacity"] = v
 	}
-	if v, ok := d.GetOk("instance_type"); ok {
-		request["InstanceType"] = v
-	}
-	if v, ok := d.GetOk("renewal_status"); ok {
-		request["RenewStatus"] = v
-	}
+	request["VpcId"] = d.Get("vpc_id")
 	if v, ok := d.GetOkExists("provisioned_capacity"); ok {
 		request["ProvisionedCapacity"] = v
 	}
 	if v, ok := d.GetOkExists("period"); ok {
 		request["Period"] = v
-	}
-	if v, ok := d.GetOk("storage_size"); ok {
-		request["StorageSize"] = v
 	}
 	if v, ok := d.GetOkExists("max_connections"); ok {
 		request["MaxConnections"] = v
@@ -297,16 +330,26 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("edition", objectRaw["Edition"])
 	d.Set("instance_name", objectRaw["InstanceName"])
 	d.Set("instance_type", convertAmqpInstanceDataInstanceTypeResponse(objectRaw["InstanceType"]))
+	d.Set("listener_mode", objectRaw["ListenerMode"])
 	d.Set("max_connections", objectRaw["MaxConnections"])
 	d.Set("max_eip_tps", objectRaw["MaxEipTps"])
 	d.Set("max_tps", objectRaw["MaxTps"])
 	d.Set("provisioned_capacity", objectRaw["ProvisionedCapacity"])
 	d.Set("queue_capacity", objectRaw["MaxQueue"])
+	d.Set("security_group_id", objectRaw["SecurityGroupId"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("storage_size", objectRaw["StorageSize"])
 	d.Set("support_eip", objectRaw["SupportEIP"])
 	d.Set("support_tracing", objectRaw["SupportTracing"])
 	d.Set("tracing_storage_time", objectRaw["TracingStorageTime"])
+	d.Set("vpc_id", objectRaw["VpcId"])
+
+	vswitchIdsRaw := make([]interface{}, 0)
+	if objectRaw["VswitchIds"] != nil {
+		vswitchIdsRaw = convertToInterfaceArray(objectRaw["VswitchIds"])
+	}
+
+	d.Set("vswitch_ids", vswitchIdsRaw)
 
 	if convertAmqpInstanceDataInstanceTypeResponse(objectRaw["InstanceType"]) == "SERVERLESS" {
 		d.Set("payment_type", "PayAsYouGo")
