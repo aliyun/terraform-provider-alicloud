@@ -16,7 +16,6 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -144,7 +143,7 @@ func TestAccAliCloudVPC_basic(t *testing.T) {
 	}, "DescribeVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := connectivity.VCRRandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -299,7 +298,7 @@ func TestAccAliCloudVPC_enableIpv6(t *testing.T) {
 	}, "DescribeVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := connectivity.VCRRandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcBasicDependence1)
 	resource.Test(t, resource.TestCase{
@@ -449,7 +448,7 @@ func TestAccAliCloudVPC_basic1(t *testing.T) {
 	}, "DescribeVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := connectivity.VCRRandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcBasicDependence1)
 	resource.Test(t, resource.TestCase{
@@ -517,7 +516,7 @@ func TestAccAliCloudVPC_basic2(t *testing.T) {
 	}, "DescribeVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := connectivity.VCRRandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcBasicDependence1)
 	resource.Test(t, resource.TestCase{
@@ -580,7 +579,7 @@ func TestAccAliCloudVPC_isNotDefault(t *testing.T) {
 	}, "DescribeVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := connectivity.VCRRandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcBasicDependence1)
 	resource.Test(t, resource.TestCase{
@@ -643,7 +642,7 @@ func TestAccAliCloudVPC_isDefault(t *testing.T) {
 	}, "DescribeVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := connectivity.VCRRandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcBasicDependence1)
 	resource.Test(t, resource.TestCase{
@@ -1152,7 +1151,7 @@ func TestAccAliCloudVpcVpc_basic3113(t *testing.T) {
 	}, "DescribeVpcVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := connectivity.VCRRandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%svpcvpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcVpcBasicDependence3113)
 	resource.Test(t, resource.TestCase{
@@ -1359,7 +1358,7 @@ func TestAccAliCloudVpcVpc_basic3113_twin(t *testing.T) {
 	}, "DescribeVpcVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := connectivity.VCRRandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%svpcvpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcVpcBasicDependence3113)
 	resource.Test(t, resource.TestCase{
@@ -1471,7 +1470,7 @@ func TestAccAliCloudVpcVpc_basic9656(t *testing.T) {
 	}, "DescribeVpcVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := connectivity.VCRRandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%svpcvpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcVpcBasicDependence9656)
 	resource.Test(t, resource.TestCase{

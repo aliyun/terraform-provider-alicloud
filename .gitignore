@@ -43,3 +43,6 @@ coverage.out
 
 .qwenignore
 .terraflow/
+
+# VCR cassettes (contain API responses, may include account-specific data)
+**/testdata/vcr/

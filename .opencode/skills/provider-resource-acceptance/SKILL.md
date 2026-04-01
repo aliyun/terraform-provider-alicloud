@@ -47,7 +47,7 @@ Execute `provider-resource-review` skill (`load_skills=["provider-resource-revie
 Pick a **new** `TestAcc*_basic` test case from this branch. If none, pick simplest existing `_basic`.
 
 ```bash
-make test-resource-debug RESOURCE=alicloud_<X> TESTCASE=<TestName> LOGLEVEL=TRACE LOGFILE=<X>-test.log
+make acctest RESOURCE=alicloud_<X> TESTCASE=<TestName> LOGLEVEL=TRACE LOGFILE=<X>-test.log
 ```
 
 Fix failures, re-run. Mode A: post errors/fixes to Aone.
@@ -55,7 +55,7 @@ Fix failures, re-run. Mode A: post errors/fixes to Aone.
 ## Step 5: Run All Tests
 
 ```bash
-make test-resource-debug RESOURCE=alicloud_<X>
+make acctest RESOURCE=alicloud_<X>
 ```
 
 For each failure:

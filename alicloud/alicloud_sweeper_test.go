@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -14,6 +15,16 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	if os.Getenv("VCR_PATH") != "" {
+		// VCR mode: run tests, save cassettes, then exit.
+		// Cannot use resource.TestMain here because it calls os.Exit
+		// internally, which would skip the cassette save.
+		flag.Parse()
+		exitCode := m.Run()
+		connectivity.StopVCR()
+		os.Exit(exitCode)
+	}
+	// Default: sweeper support + standard test flow
 	resource.TestMain(m)
 }
 

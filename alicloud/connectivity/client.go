@@ -2424,7 +2424,18 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 		}
 	}
 	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
+
+	// VCR: redirect to local proxy, pass original host via query param
+	if vcrAddr := VCRLocalAddr(); vcrAddr != "" {
+		if query == nil {
+			query = make(map[string]interface{})
+		}
+		query["__vcr_host"] = endpoint
+		sdkConfig.SetEndpoint(vcrAddr)
+		sdkConfig.SetProtocol("HTTP")
+	} else {
+		sdkConfig.SetEndpoint(endpoint)
+	}
 	credential, err := client.config.Credential.GetCredential()
 	if err != nil || credential == nil {
 		return nil, fmt.Errorf("get credential failed. Error: %#v", err)

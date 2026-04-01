@@ -782,7 +782,7 @@ else
       echo -e "${BLUE}▶ Running integration tests for: ${resource}${NC}"
       echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-      if make -C "$PROJECT_ROOT" test-resource-debug RESOURCE="${resource}"; then
+      if make -C "$PROJECT_ROOT" acctest RESOURCE="${resource}"; then
         echo -e "${GREEN}✓ PASSED: Resource Integration Test (${resource})${NC}"
         PASSED_CHECKS+=("Resource Integration Test (${resource})")
       else
