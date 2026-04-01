@@ -15,7 +15,6 @@ import (
 	ossclient "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	gatewayclient "github.com/alibabacloud-go/alibabacloud-gateway-sls/client"
 	roaCS "github.com/alibabacloud-go/cs-20151215/v5/client"
-	roaCSV7 "github.com/alibabacloud-go/cs-20151215/v7/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
@@ -715,44 +714,6 @@ func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
 	param := &openapi.GlobalParameters{Headers: header}
 	// Initialize the CS client if necessary
 	roaCSConn, err := roaCS.NewClient(&openapi.Config{
-		AccessKeyId:      tea.String(accessKey),
-		AccessKeySecret:  tea.String(secretKey),
-		SecurityToken:    tea.String(stsToken),
-		RegionId:         tea.String(client.config.RegionId),
-		UserAgent:        tea.String(client.config.getUserAgent()),
-		Endpoint:         tea.String(endpoint),
-		ReadTimeout:      tea.Int(client.config.ClientReadTimeout),
-		ConnectTimeout:   tea.Int(client.config.ClientConnectTimeout),
-		GlobalParameters: param,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return roaCSConn, nil
-}
-
-// NewRoaCsV7Client returns a CS client using v7 SDK version for new resources that require v7 API features
-func (client *AliyunClient) NewRoaCsV7Client() (*roaCSV7.Client, error) {
-	product := "cs"
-	endpoint, err := client.loadApiEndpoint(product)
-	if err != nil {
-		return nil, err
-	}
-	accessKey, secretKey, stsToken := client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken
-	credential, err := client.config.Credential.GetCredential()
-	if err != nil || credential == nil {
-		log.Printf("[WARN] get credential failed. Error: %#v", err)
-	} else {
-		accessKey, secretKey, stsToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
-	}
-	header := map[string]*string{
-		"x-acs-source-ip":        tea.String(client.config.SourceIp),
-		"x-acs-secure-transport": tea.String(client.config.SecureTransport),
-	}
-	param := &openapi.GlobalParameters{Headers: header}
-	// Initialize the CS client if necessary
-	roaCSConn, err := roaCSV7.NewClient(&openapi.Config{
 		AccessKeyId:      tea.String(accessKey),
 		AccessKeySecret:  tea.String(secretKey),
 		SecurityToken:    tea.String(stsToken),
