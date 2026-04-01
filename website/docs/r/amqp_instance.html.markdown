@@ -60,13 +60,25 @@ variable "name" {
   default = "terraform-example"
 }
 
-provider "alicloud" {
-  region = "cn-shanghai"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_security_groups" "default" {
+  vpc_id     = data.alicloud_vpcs.default.ids.0
+  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_amqp_instance" "default" {
   instance_name          = var.name
   payment_type           = "PayAsYouGo"
+  vpc_id                 = data.alicloud_vswitches.default.vpc_id
+  vswitch_ids            = [data.alicloud_vswitches.default.ids.0, data.alicloud_vswitches.default.ids.1]
+  security_group_id      = data.alicloud_security_groups.default.ids.0
   serverless_charge_type = "onDemand"
 }
 ```
@@ -90,12 +102,13 @@ The following arguments are supported:
 -> **NOTE:**  Modifying the Edition parameter triggers instance cluster migration. Before making this change, submit a ticket to the cloud service team. [Submit a Ticket](https://smartservice.console.aliyun.com/service/create-ticket?entrance=100&product=rabbitmq)
     
 * `instance_name` - (Optional, Computed) The instance name.
-* `instance_type` - (Optional, Computed) Instance type. Valid values: 
+* `instance_type` - (Optional, Computed) Instance type. Valid values:
   - professional: professional Edition 
   - enterprise: enterprise Edition 
   - vip: Platinum Edition.
   - serverless: Serverless Edition.
   -> **NOTE:** There should not set the `instance_type` parameter when creating a serverless instance. Only need to set `payment_type = "PayAsYouGo"` and `serverless_charge_type = "onDemand"`.
+* `listener_mode` - (Optional, ForceNew, Available since v1.274.0) The Listener mode. Valid values: `tcp_and_ssl`, `ssl_only`.
 * `max_connections` - (Optional, Computed, Available since v1.129.0) The maximum number of connections, according to the value given on the purchase page of the cloud message queue RabbitMQ version console.
 * `max_eip_tps` - (Optional, Computed) Peak TPS traffic of the public network, which must be a multiple of 128, unit: times per second.
 * `max_tps` - (Optional, Computed) Configure the private network TPS traffic peak, please set the value according to the cloud message queue RabbitMQ version of the console purchase page given.
@@ -117,6 +130,9 @@ The following arguments are supported:
 * `support_eip` - (Optional) Whether to support public network.
 * `support_tracing` - (Optional, Computed) Whether to activate the message trace function. The values are as follows:  true: Enable message trace function false: message trace function is not enabled Description The Platinum Edition instance provides the 15-day message trace function free of charge. The trace function can only be enabled and the trace storage duration can only be set to 15 days. For instances of other specifications, you can enable or disable the trace function.
 * `tracing_storage_time` - (Optional, Computed) Configure the storage duration of message traces. Unit: Days. The value is as follows:  3:3 days 7:7 days 15:15 days This parameter is valid when SupportTracing is true.
+* `vpc_id` - (Optional, ForceNew, Available since v1.274.0) The ID of the VPC. **NOTE:** From version 1.274.0, `vpc_id` is required.
+* `vswitch_ids` - (Optional, ForceNew, List, Available since v1.274.0) The IDs of the vSwitches with which the instance is associated. `vswitch_ids` only supports setting two values. **NOTE:** From version 1.274.0, `vswitch_ids` is required.
+* `security_group_id` - (Optional, ForceNew, Available since v1.274.0) The ID of the security group. **NOTE:** From version 1.274.0, `security_group_id` is required.
 
 ## Attributes Reference
 

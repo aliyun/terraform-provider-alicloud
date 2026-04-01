@@ -787,11 +787,17 @@ func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":           "PayAsYouGo",
+					"vpc_id":                 "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id":      "${data.alicloud_security_groups.default.ids.0}",
 					"serverless_charge_type": "onDemand",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"payment_type": "PayAsYouGo",
+						"payment_type":      "PayAsYouGo",
+						"vpc_id":            CHECKSET,
+						"vswitch_ids.#":     "2",
+						"security_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -895,6 +901,9 @@ func TestAccAliCloudAmqpInstance_basic6128_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":           "PayAsYouGo",
+					"vpc_id":                 "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id":      "${data.alicloud_security_groups.default.ids.0}",
 					"serverless_charge_type": "provisioned",
 					"provisioned_capacity":   "20000",
 					"edition":                "dedicated",
@@ -905,6 +914,9 @@ func TestAccAliCloudAmqpInstance_basic6128_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":         "PayAsYouGo",
+						"vpc_id":               CHECKSET,
+						"vswitch_ids.#":        "2",
+						"security_group_id":    CHECKSET,
 						"provisioned_capacity": "20000",
 						"edition":              "dedicated",
 						"instance_name":        name,
@@ -931,11 +943,22 @@ var AliCloudAmqpInstanceMap6128 = map[string]string{
 
 func AliCloudAmqpInstanceBasicDependence6128(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
+	variable "name" {
+    	default = "%s"
+	}
 
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
 
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+	}
+
+	data "alicloud_security_groups" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "default-NODELETING"
+	}
 `, name)
 }
 
@@ -955,7 +978,7 @@ func TestAccAliCloudAmqpInstance_basic11166(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence11166)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -964,19 +987,25 @@ func TestAccAliCloudAmqpInstance_basic11166(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type":    "Subscription",
-					"instance_type":   "enterprise",
-					"max_tps":         "3000",
-					"max_connections": "2000",
-					"queue_capacity":  "200",
+					"payment_type":      "Subscription",
+					"vpc_id":            "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":       []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"instance_type":     "enterprise",
+					"max_tps":           "3000",
+					"max_connections":   "2000",
+					"queue_capacity":    "200",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"payment_type":    "Subscription",
-						"instance_type":   "enterprise",
-						"max_tps":         "3000",
-						"max_connections": "2000",
-						"queue_capacity":  "200",
+						"payment_type":      "Subscription",
+						"vpc_id":            CHECKSET,
+						"vswitch_ids.#":     "2",
+						"security_group_id": CHECKSET,
+						"instance_type":     "enterprise",
+						"max_tps":           "3000",
+						"max_connections":   "2000",
+						"queue_capacity":    "200",
 					}),
 				),
 			},
@@ -1124,7 +1153,7 @@ func TestAccAliCloudAmqpInstance_basic11166_twin(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpInstanceBasicDependence11166)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -1133,11 +1162,15 @@ func TestAccAliCloudAmqpInstance_basic11166_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"auto_renew":            "true",
 					"payment_type":          "Subscription",
+					"vpc_id":                "${data.alicloud_vswitches.default.vpc_id}",
+					"vswitch_ids":           []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
+					"security_group_id":     "${data.alicloud_security_groups.default.ids.0}",
+					"auto_renew":            "true",
 					"period":                "1",
 					"period_cycle":          "Year",
 					"instance_type":         "vip",
+					"listener_mode":         "ssl_only",
 					"max_tps":               "8000",
 					"max_connections":       "50000",
 					"queue_capacity":        "10000",
@@ -1154,7 +1187,11 @@ func TestAccAliCloudAmqpInstance_basic11166_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":          "Subscription",
+						"vpc_id":                CHECKSET,
+						"vswitch_ids.#":         "2",
+						"security_group_id":     CHECKSET,
 						"instance_type":         "vip",
+						"listener_mode":         "ssl_only",
 						"max_tps":               "8000",
 						"max_connections":       "50000",
 						"queue_capacity":        "10000",
@@ -1190,10 +1227,21 @@ var AliCloudAmqpInstanceMap11166 = map[string]string{
 
 func AliCloudAmqpInstanceBasicDependence11166(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
+	variable "name" {
+    	default = "%s"
+	}
 
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
 
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+	}
+
+	data "alicloud_security_groups" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "default-NODELETING"
+	}
 `, name)
 }
