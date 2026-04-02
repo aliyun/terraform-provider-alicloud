@@ -97,7 +97,7 @@ The following arguments will be discarded. Please use new fields as soon as poss
 The egress_acl_entries supports the following:
 * `description` - (Optional) The description of the outbound rule.
 The description must be 1 to 256 characters in length and cannot start with http:// or https.
-* `destination_cidr_ip` - (Optional) The destination CIDR block. 
+* `destination_cidr_ip` - (Optional) The destination CIDR block, or the prefix list instance ID. 
 * `entry_type` - (Optional, Computed, Available since v1.220.0) The route entry type. Value
 custom custom rule
 system system rules
@@ -142,7 +142,7 @@ When the Protocol type of the inbound rule is tcp or udp, the port range is 1 to
   - tcp: Transmission Control Protocol.
   - udp: User Datagram Protocol.
   - all: Supports all protocols.
-* `source_cidr_ip` - (Optional) The source CIDR block. 
+* `source_cidr_ip` - (Optional) The source CIDR block, or the prefix list instance ID. 
 
 ### `resources`
 
