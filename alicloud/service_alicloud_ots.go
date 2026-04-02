@@ -10,7 +10,6 @@ import (
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
@@ -384,20 +383,35 @@ func (s *OtsService) WaitForOtsInstance(id string, instanceInnerStatus string, t
 }
 
 func (s *OtsService) DescribeOtsInstanceTypes() (types []string, err error) {
-	request := ots.CreateListClusterTypeRequest()
-	request.Method = requests.GET
-	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.ListClusterType(request)
-	})
+	actionPath := "/v2/openapi/listclustertype"
+	request := make(map[string]*string)
+
+	resp, err := OtsRestApiGetWithRetry(s.client, "tablestore", "2020-12-09", actionPath, request)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance", actionPath, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	resp, _ := raw.(*ots.ListClusterTypeResponse)
-	if resp != nil {
-		return resp.ClusterTypeInfos.ClusterType, nil
+	addDebug(actionPath, resp, request)
+
+	respBody, ok := resp["body"].(map[string]interface{})
+	if !ok {
+		return nil, WrapErrorf(errors.New("parse resp body failed"), DefaultErrorMsg, "alicloud_ots_instance", actionPath, AlibabaCloudSdkGoERROR)
 	}
-	return
+
+	clusterTypes, ok := respBody["ClusterTypes"]
+	if !ok || clusterTypes == nil {
+		return nil, nil
+	}
+
+	clusterTypesJSON, err := json.Marshal(clusterTypes)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance", actionPath, AlibabaCloudSdkGoERROR)
+	}
+
+	if err := json.Unmarshal(clusterTypesJSON, &types); err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance", actionPath, AlibabaCloudSdkGoERROR)
+	}
+
+	return types, nil
 }
 
 func isOtsTunnelNotFound(err error) bool {
