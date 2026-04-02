@@ -51,7 +51,6 @@ func resourceAlicloudOssBucketReplication() *schema.Resource {
 							Type:     schema.TypeList,
 							Required: true,
 							ForceNew: true,
-							MaxItems: 10,
 							Elem:     &schema.Schema{Type: schema.TypeString, ValidateFunc: validation.StringLenBetween(0, 1023)},
 						},
 					},
