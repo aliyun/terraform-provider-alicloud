@@ -55,7 +55,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `health_check` - The configurations of health checks.
 		* `health_check_interval` - The interval between two consecutive health checks.
 		* `health_check_type` - The protocol that is used for health checks.
-		* `health_check_http_version` - The HTTP protocol version for health checks.
+		* `health_check_http_version` - (Available since v1.274.0) The HTTP protocol version for health checks.
 		* `healthy_threshold` - The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy.
 		* `unhealthy_threshold` - The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy.
 		* `health_check_http_code` - The HTTP status codes returned for health checks.
