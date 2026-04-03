@@ -1,33 +1,34 @@
-## 1.274.0 (Unreleased)
+## 1.275.0 (Unreleased)
+## 1.274.0 (April 03, 2026)
 
-- **New Data Source:** `alicloud_esa_waf_rulesets` [GH-9597]
+- **New Data Source:** `alicloud_esa_waf_rulesets` ([#9597](https://github.com/aliyun/terraform-provider-alicloud/issues/9597))
 
 ENHANCEMENTS:
 
-- resource/alicloud_nlb_server_group: support health_check_http_version. [GH-9542]
-- resource/alicloud_vpc_nat_ip: Refactored the resource alicloud_vpc_nat_ip; Removed the field nat_ip_cidr_id; Added retry strategy for error code IncorrectStatus.NatGateway. [GH-9564]
-- resource/alicloud_adb_lake_account: Added the field ram_user_list; Improved alicloud_adb_lake_account testcase. [GH-9578]
-- resource/alicloud_resource_manager_resource_share: Added the field resource_properties. [GH-9580]
-- resource/alicloud_resource_manager_shared_resource: Added the field properties_resource_arn, resource_property. [GH-9586]
-- resource/alicloud_instance: Supported data_disks.category set to cloud_regional_disk_auto, elastic_ephemeral_disk_standard, elastic_ephemeral_disk_premium. [GH-9588]
-- resource/alicloud_esa_cache_rule: Added the field post_body_cache_key, post_body_size_limit, post_cache. [GH-9590]
-- resource/alicloud_forward_entry: Refactored the resource alicloud_forward_entry; Added retry strategy for error code OperationUnsupported.EipInBinding, IncorrectStatus, TaskConflict, IncorretForwardEntryStatus, IncorrectStatus.NATGW. [GH-9592]
-- resource/alicloud_security_group_rule: refactor code and tests. [GH-9593]
-- resource/alicloud_cs_kubernetes_policy_instance: parameter action set to Computed. [GH-9595]
-- resource/alicloud_alikafka_instance: Added retry strategy for error code BIZ_INSTANCE_UPDATE_AUTO_CREATE_TOPIC_STATUS_ERROR. [GH-9596]
-- resource/alicloud_esa_rate_plan_instance: Refactored the resource alicloud_esa_rate_plan_instance; Improved alicloud_esa_rate_plan_instance testcase. [GH-9599]
-- resource/alicloud_amqp_instance: Added the field vpc_id, vswitch_ids, security_group_id, listener_mode. [GH-9607]
-- data-source/alicloud_nlb_server_groups: support health_check_http_version. [GH-9542]
-- doc: update the alicloud provider docs to indicate it already supports 25.3. [GH-9280]
-- docs: alicloud_nlb_server_group document update. [GH-9579]
-- docs: Improved the document vpc_route_entry. [GH-9600]
-- docs: Update network_acl document. [GH-9610]
+- resource/alicloud_nlb_server_group: support health_check_http_version. ([#9542](https://github.com/aliyun/terraform-provider-alicloud/issues/9542))
+- resource/alicloud_vpc_nat_ip: Refactored the resource alicloud_vpc_nat_ip; Removed the field nat_ip_cidr_id; Added retry strategy for error code IncorrectStatus.NatGateway. ([#9564](https://github.com/aliyun/terraform-provider-alicloud/issues/9564))
+- resource/alicloud_adb_lake_account: Added the field ram_user_list; Improved alicloud_adb_lake_account testcase. ([#9578](https://github.com/aliyun/terraform-provider-alicloud/issues/9578))
+- resource/alicloud_resource_manager_resource_share: Added the field resource_properties. ([#9580](https://github.com/aliyun/terraform-provider-alicloud/issues/9580))
+- resource/alicloud_resource_manager_shared_resource: Added the field properties_resource_arn, resource_property. ([#9586](https://github.com/aliyun/terraform-provider-alicloud/issues/9586))
+- resource/alicloud_instance: Supported data_disks.category set to cloud_regional_disk_auto, elastic_ephemeral_disk_standard, elastic_ephemeral_disk_premium. ([#9588](https://github.com/aliyun/terraform-provider-alicloud/issues/9588))
+- resource/alicloud_esa_cache_rule: Added the field post_body_cache_key, post_body_size_limit, post_cache. ([#9590](https://github.com/aliyun/terraform-provider-alicloud/issues/9590))
+- resource/alicloud_forward_entry: Refactored the resource alicloud_forward_entry; Added retry strategy for error code OperationUnsupported.EipInBinding, IncorrectStatus, TaskConflict, IncorretForwardEntryStatus, IncorrectStatus.NATGW. ([#9592](https://github.com/aliyun/terraform-provider-alicloud/issues/9592))
+- resource/alicloud_security_group_rule: refactor code and tests. ([#9593](https://github.com/aliyun/terraform-provider-alicloud/issues/9593))
+- resource/alicloud_cs_kubernetes_policy_instance: parameter action set to Computed. ([#9595](https://github.com/aliyun/terraform-provider-alicloud/issues/9595))
+- resource/alicloud_alikafka_instance: Added retry strategy for error code BIZ_INSTANCE_UPDATE_AUTO_CREATE_TOPIC_STATUS_ERROR. ([#9596](https://github.com/aliyun/terraform-provider-alicloud/issues/9596))
+- resource/alicloud_esa_rate_plan_instance: Refactored the resource alicloud_esa_rate_plan_instance; Improved alicloud_esa_rate_plan_instance testcase. ([#9599](https://github.com/aliyun/terraform-provider-alicloud/issues/9599))
+- resource/alicloud_amqp_instance: Added the field vpc_id, vswitch_ids, security_group_id, listener_mode. ([#9607](https://github.com/aliyun/terraform-provider-alicloud/issues/9607))
+- data-source/alicloud_nlb_server_groups: support health_check_http_version. ([#9542](https://github.com/aliyun/terraform-provider-alicloud/issues/9542))
+- doc: update the alicloud provider docs to indicate it already supports 25.3. ([#9280](https://github.com/aliyun/terraform-provider-alicloud/issues/9280))
+- docs: alicloud_nlb_server_group document update. ([#9579](https://github.com/aliyun/terraform-provider-alicloud/issues/9579))
+- docs: Improved the document vpc_route_entry. ([#9600](https://github.com/aliyun/terraform-provider-alicloud/issues/9600))
+- docs: Update network_acl document. ([#9610](https://github.com/aliyun/terraform-provider-alicloud/issues/9610))
 
 BUG FIXES:
 
-- resource/alicloud_ecs_key_pair_attachment: Fixed the import error. [GH-9589]
-- resource/alicloud_cloud_firewall_instance: Fix v1 instance issues update test case. [GH-9591]
-- data-source/alicloud_cs_kubernetes_addons: fix get next_version, add supported_actions attribute. [GH-9605]
+- resource/alicloud_ecs_key_pair_attachment: Fixed the import error. ([#9589](https://github.com/aliyun/terraform-provider-alicloud/issues/9589))
+- resource/alicloud_cloud_firewall_instance: Fix v1 instance issues update test case. ([#9591](https://github.com/aliyun/terraform-provider-alicloud/issues/9591))
+- data-source/alicloud_cs_kubernetes_addons: fix get next_version, add supported_actions attribute. ([#9605](https://github.com/aliyun/terraform-provider-alicloud/issues/9605))
 
 ## 1.273.0 (March 13, 2026)
 

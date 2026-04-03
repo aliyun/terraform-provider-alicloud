@@ -19,7 +19,7 @@ For information about Container Service for Kubernetes (ACK) Policy Instance and
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_policy_instance&exampleId=ddc22fa8-f24d-5735-a4e8-4238ce9f99e3efa68476&activeTab=example&spm=docs.r.cs_kubernetes_policy_instance.0.ddc22fa8f2&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cs_kubernetes_policy_instance&exampleId=f7586c37-a483-bb38-9ed8-f40c7cf24848943a61cb&activeTab=example&spm=docs.r.cs_kubernetes_policy_instance.0.f7586c37a4&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
