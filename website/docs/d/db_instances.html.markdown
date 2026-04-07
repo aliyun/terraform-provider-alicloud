@@ -150,3 +150,7 @@ The following attributes are exported in addition to the arguments listed above:
       * `data_sync_time` - The time when the secondary instance completed the synchronization of data from the primary instance. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
       * `node_id` - The ID of the instance.
       * `region_id` - The region ID of the instance.
+  * `private_key` -(Available in 1.274.0+) The private key of the certificate.
+  * `certificate` -(Available in 1.274.0+) The custom certificate.
+  * `pass_word` -(Available in 1.274.0+) The password of the certificate.
+  * `db_name` -(Available in 1.274.0+) The name of the database for which you want to enable TDE.
