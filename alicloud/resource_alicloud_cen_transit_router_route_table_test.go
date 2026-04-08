@@ -277,7 +277,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableCreate(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -294,7 +294,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableCreate(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -311,7 +311,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableCreate(dCreate, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -329,7 +329,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudCenTransitRouterRouteTableUpdate(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -364,7 +364,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableUpdate(resourceData1, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -399,7 +399,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableUpdate(resourceData1, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -414,7 +414,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -431,7 +431,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -451,7 +451,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 		patcheDescribeCenTransitRouterRouteTable := gomonkey.ApplyMethod(reflect.TypeOf(&CbnService{}), "DescribeCenTransitRouterRouteTable", func(*CbnService, string) (map[string]interface{}, error) {
 			return responseMock["NotFoundError"]("ResourceNotfound")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableDelete(d, rawClient)
 		patches.Reset()
 		patcheDescribeCenTransitRouterRouteTable.Reset()
 		assert.Nil(t, err)
@@ -469,7 +469,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -489,7 +489,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableDelete(resourceData1, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableDelete(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -506,7 +506,7 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableRead(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -522,8 +522,691 @@ func TestUnitAlicloudCenTransitRouterRouteTable(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterRouteTableRead(d, rawClient)
+		err := resourceAliCloudCenTransitRouterRouteTableRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Cen TransitRouterRouteTable. >>> Resource test cases, automatically generated.
+// Case create测试 3789
+func TestAccAliCloudCenTransitRouterRouteTable_basic3789(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_route_table.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableMap3789)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterRouteTable")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterRouteTableBasicDependence3789)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_id":                      "${alicloud_cen_transit_router.tr.transit_router_id}",
+					"transit_router_route_table_description": "test",
+					"transit_router_route_table_name":        name,
+					"route_table_options": []map[string]interface{}{
+						{
+							"multi_region_ecmp": "disable",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_id":                      CHECKSET,
+						"transit_router_route_table_description": "test",
+						"transit_router_route_table_name":        name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterRouteTableMap3789 = map[string]string{
+	"status":                          CHECKSET,
+	"transit_router_route_table_type": CHECKSET,
+	"create_time":                     CHECKSET,
+	"transit_router_route_table_id":   CHECKSET,
+	"region_id":                       CHECKSET,
+}
+
+func AlicloudCenTransitRouterRouteTableBasicDependence3789(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "cen" {
+  description       = "terraform test"
+  cen_instance_name = "Cen_Terraform_Test01"
+}
+
+resource "alicloud_cen_transit_router" "tr" {
+  support_multicast          = false
+  transit_router_name        = "CEN_TR_Terraform"
+  transit_router_description = "tr-created-by-terraform"
+  cen_id                     = alicloud_cen_instance.cen.id
+}
+
+
+`, name)
+}
+
+// Case EcrAttachment引起的TransitRouterRouteTable修改2_副本1730876031505 8701
+func TestAccAliCloudCenTransitRouterRouteTable_basic8701(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_route_table.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableMap8701)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterRouteTable")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterRouteTableBasicDependence8701)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_table_description": "ttt",
+					"transit_router_route_table_name":        name,
+					"route_table_options": []map[string]interface{}{
+						{
+							"multi_region_ecmp": "disable",
+						},
+					},
+					"transit_router_id": "${alicloud_cen_transit_router.defaultn2Og95.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_table_description": "ttt",
+						"transit_router_route_table_name":        name,
+						"transit_router_id":                      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_table_description": "ttt-update",
+					"transit_router_route_table_name":        name + "_update",
+					"route_table_options": []map[string]interface{}{
+						{
+							"multi_region_ecmp": "enable",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_table_description": "ttt-update",
+						"transit_router_route_table_name":        name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"route_table_options": []map[string]interface{}{
+						{
+							"multi_region_ecmp": "disable",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterRouteTableMap8701 = map[string]string{
+	"status":                          CHECKSET,
+	"transit_router_route_table_type": CHECKSET,
+	"create_time":                     CHECKSET,
+	"transit_router_route_table_id":   CHECKSET,
+	"region_id":                       CHECKSET,
+}
+
+func AlicloudCenTransitRouterRouteTableBasicDependence8701(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "defaultJaCsGR" {
+  cen_instance_name = "test"
+}
+
+resource "alicloud_cen_transit_router" "defaultn2Og95" {
+  cen_id = alicloud_cen_instance.defaultJaCsGR.id
+}
+
+
+`, name)
+}
+
+// Case TransitRouterRouteTable_20241108_线上 8811
+func TestAccAliCloudCenTransitRouterRouteTable_basic8811(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_route_table.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableMap8811)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterRouteTable")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterRouteTableBasicDependence8811)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_table_description": "ttt",
+					"transit_router_route_table_name":        name,
+					"route_table_options": []map[string]interface{}{
+						{
+							"multi_region_ecmp": "disable",
+						},
+					},
+					"transit_router_id": "${alicloud_cen_transit_router.defaultn2Og95.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_table_description": "ttt",
+						"transit_router_route_table_name":        name,
+						"transit_router_id":                      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_table_description": "ttt-update",
+					"transit_router_route_table_name":        name + "_update",
+					"route_table_options": []map[string]interface{}{
+						{
+							"multi_region_ecmp": "enable",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_table_description": "ttt-update",
+						"transit_router_route_table_name":        name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"route_table_options": []map[string]interface{}{
+						{
+							"multi_region_ecmp": "disable",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterRouteTableMap8811 = map[string]string{
+	"status":                          CHECKSET,
+	"transit_router_route_table_type": CHECKSET,
+	"create_time":                     CHECKSET,
+	"transit_router_route_table_id":   CHECKSET,
+	"region_id":                       CHECKSET,
+}
+
+func AlicloudCenTransitRouterRouteTableBasicDependence8811(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "defaultJaCsGR" {
+  cen_instance_name = "test"
+}
+
+resource "alicloud_cen_transit_router" "defaultn2Og95" {
+  cen_id = alicloud_cen_instance.defaultJaCsGR.id
+}
+
+
+`, name)
+}
+
+// Case EcrAttachment引起的TransitRouterRouteTable修改 8688
+func TestAccAliCloudCenTransitRouterRouteTable_basic8688(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_route_table.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableMap8688)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterRouteTable")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterRouteTableBasicDependence8688)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_table_description": "ttt",
+					"transit_router_route_table_name":        name,
+					"route_table_options": []map[string]interface{}{
+						{
+							"multi_region_ecmp": "disable",
+						},
+					},
+					"transit_router_id": "${alicloud_cen_transit_router.defaultn2Og95.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_table_description": "ttt",
+						"transit_router_route_table_name":        name,
+						"transit_router_id":                      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_table_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_table_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterRouteTableMap8688 = map[string]string{
+	"status":                          CHECKSET,
+	"transit_router_route_table_type": CHECKSET,
+	"create_time":                     CHECKSET,
+	"transit_router_route_table_id":   CHECKSET,
+	"region_id":                       CHECKSET,
+}
+
+func AlicloudCenTransitRouterRouteTableBasicDependence8688(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "defaultJaCsGR" {
+  cen_instance_name = "test"
+}
+
+resource "alicloud_cen_transit_router" "defaultn2Og95" {
+  cen_id = alicloud_cen_instance.defaultJaCsGR.id
+}
+
+
+`, name)
+}
+
+// Case EcrAttachment引起的TransitRouterRouteTable修改2 8691
+func TestAccAliCloudCenTransitRouterRouteTable_basic8691(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_route_table.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableMap8691)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterRouteTable")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccen%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterRouteTableBasicDependence8691)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_table_description": "ttt",
+					"transit_router_route_table_name":        name,
+					"route_table_options": []map[string]interface{}{
+						{
+							"multi_region_ecmp": "disable",
+						},
+					},
+					"transit_router_id": "${alicloud_cen_transit_router.defaultn2Og95.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_table_description": "ttt",
+						"transit_router_route_table_name":        name,
+						"transit_router_id":                      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_table_description": "ttt-update",
+					"transit_router_route_table_name":        name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_table_description": "ttt-update",
+						"transit_router_route_table_name":        name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterRouteTableMap8691 = map[string]string{
+	"status":                          CHECKSET,
+	"transit_router_route_table_type": CHECKSET,
+	"create_time":                     CHECKSET,
+	"transit_router_route_table_id":   CHECKSET,
+	"region_id":                       CHECKSET,
+}
+
+func AlicloudCenTransitRouterRouteTableBasicDependence8691(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "defaultJaCsGR" {
+  cen_instance_name = "test"
+}
+
+resource "alicloud_cen_transit_router" "defaultn2Og95" {
+  cen_id = alicloud_cen_instance.defaultJaCsGR.id
+}
+
+
+`, name)
+}
+
+// Test Cen TransitRouterRouteTable. <<< Resource test cases, automatically generated.
