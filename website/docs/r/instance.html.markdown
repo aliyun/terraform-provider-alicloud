@@ -111,7 +111,6 @@ The following arguments are supported:
 * `security_groups` - (Optional)  A list of security group ids to associate with. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
 * `availability_zone` - (Optional, ForceNew) The Zone to start the instance in. It is ignored and will be computed when set `vswitch_id`.
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://. **NOTE:** From version 1.243.0, the default value `ECS-Instance` will be removed.
-* `allocate_public_ip` - (Deprecated) It has been deprecated from version "1.7.0". Setting "internet_max_bandwidth_out" larger than 0 can allocate a public ip address for an instance.
 * `system_disk_category` - (Optional, ForceNew) Valid values are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`, `cloud_auto`, `cloud_essd_entry`. only is used to some none I/O optimized instance. Valid values `cloud_auto` Available since v1.184.0.
 * `system_disk_name` - (Optional, Available since v1.101.0) The name of the system disk. The name must be 2 to 128 characters in length and can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
 * `system_disk_description` - (Optional, Available since v1.101.0) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
@@ -130,7 +129,6 @@ The following arguments are supported:
   - `false`: Disables the performance burst feature for the system disk.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic". **NOTE:** From version 1.243.0, the default value `PayByTraffic` will be removed.
-* `internet_max_bandwidth_in` - (Optional, Deprecated since v1.121.2) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
 * `internet_max_bandwidth_out` - (Optional) Maximum outgoing bandwidth to the public network, measured in Mbps (Mega bit per second). Value range:  [0, 100]. **NOTE:** From version 1.243.0, the default value `0` will be removed.
 * `host_name` - (Optional) Host name of the ECS, which is a string of at least two characters. “hostname” cannot start or end with “.” or “-“. In addition, two or more consecutive “.” or “-“ symbols are not allowed. On Windows, the host name can contain a maximum of 15 characters, which can be a combination of uppercase/lowercase letters, numerals, and “-“. The host name cannot contain dots (“.”) or contain only numeric characters. When it is changed, the instance will reboot to make the change take effect.
   On other OSs such as Linux, the host name can contain a maximum of 64 characters, which can be segments separated by dots (“.”), where each segment can contain uppercase/lowercase letters, numerals, or “_“. When it is changed, the instance will reboot to make the change take effect.
@@ -175,7 +173,6 @@ The following arguments are supported:
   Note: Not all changes will take effect, and it depends on [cloud-init module type](https://cloudinit.readthedocs.io/en/latest/topics/modules.html).
 * `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid. **NOTE:** From version 1.268.0, `key_name` can be modified. If you want to use `key_name`, We recommend you to use the resource [alicloud_ecs_key_pair_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_key_pair_attachment).
 -> **NOTE:** When modifying `key_name`, if the instance status is `Running`, the ECS instance will be rebooted; If the instance status is `Stopped`, the ECS instance status will be changed to `Running`.
-* `role_name` - (Optional, ForceNew) The name of the Resource Access Management (RAM) role. **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment).
 * `include_data_disks` - (Optional) Whether to change instance disks charge type when changing instance charge type.
 * `dry_run` - (Optional) Specifies whether to send a dry-run request. Default to false.
   - true: Only a dry-run request is sent and no instance is created. The system checks whether the required parameters are set, and validates the request format, service permissions, and available ECS instances. If the validation fails, the corresponding error code is returned. If the validation succeeds, the `DryRunOperation` error code is returned.
@@ -222,6 +219,9 @@ The following arguments are supported:
   * `true` : sends an event notification.
   * `false` : does not send an event notification.
 * `spot_duration` - (Optional, Available since v1.188.0) The retention time of the preemptive instance in hours. Valid values: `0`, `1`, `2`, `3`, `4`, `5`, `6`. Retention duration 2~6 is under invitation test, please submit a work order if you need to open. If the value is `0`, the mode is no protection period. Default value is `1`.
+* `spot_interruption_behavior` - (Optional, ForceNew, Available since v1.275.0) The interruption mode of the spot instance. Default value: `Terminate`. Valid values:
+  - `Terminate`: The instance is released.
+  - `Stop`: The instance is stopped in economical mode.
 * `http_tokens` - (Optional, Available since v1.192.0) Specifies whether to forcefully use the security-enhanced mode (IMDSv2) to access instance metadata. Default value: optional. Valid values:
   - optional: does not forcefully use the security-enhanced mode (IMDSv2).
   - required: forcefully uses the security-enhanced mode (IMDSv2). After you set this parameter to required, you cannot access instance metadata in normal mode.
@@ -252,6 +252,9 @@ The following arguments are supported:
 
 * `image_options` - (Optional, Set, Available since v1.237.0) The options of images. See [`image_options`](#image_options) below.
 * `cpu_options` - (Optional, Set, Available since v1.267.0) The options of cpu. See [`cpu_options`](#cpu_options) below.
+* `allocate_public_ip` - (Optional, Bool Deprecated since v1.7.0) Field `allocate_public_ip` has been deprecated from provider version 1.7.0. Setting  `internet_max_bandwidth_out` larger than 0 will allocate public ip for instance.
+* `internet_max_bandwidth_in` - (Optional, Int, Deprecated since v1.121.2) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
+* `role_name` - (Optional, ForceNew, Deprecated since v1.275.0) The name of the Resource Access Management (RAM) role. **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment). Field `role_name` has been deprecated from provider version 1.275.0. New resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment) instead.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
