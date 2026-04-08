@@ -68,7 +68,7 @@ make ci-check-quick
 make ci-check
 
 # 3. If step 2 has test failures, debug with specific resource and test case:
-make test-resource-debug RESOURCE=alicloud_vpc TESTCASE=TestAccAliCloudVPC_enableIpv6 LOGLEVEL=TRACE LOGFILE=vpc-test.log
+make acctest RESOURCE=alicloud_vpc TESTCASE=TestAccAliCloudVPC_enableIpv6 LOGLEVEL=TRACE LOGFILE=vpc-test.log
 ```
 
 ## Step 5: Commit Code

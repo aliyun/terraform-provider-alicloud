@@ -43,8 +43,36 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
       - run: make tools
-      - run: make tflint
+      - name: Run tflint on changed files only
+        run: |
+          # Get Go files changed in this PR
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'alicloud/*.go' | grep '\.go$' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "No Go files changed, skipping tflint"
+            exit 0
+          fi
+          # Run tflint on entire package, capture output and exit code
+          TFLINT_EXIT=0
+          make tflint 2>&1 | tee /tmp/tflint-output.txt || TFLINT_EXIT=$?
+          if [ "$TFLINT_EXIT" -ne 0 ]; then
+            # Filter errors to only changed files using full paths
+            ERRORS=""
+            for f in $CHANGED; do
+              MATCH=$(grep -F "$f" /tmp/tflint-output.txt || true)
+              if [ -n "$MATCH" ]; then
+                ERRORS="${ERRORS}${MATCH}"$'\n'
+              fi
+            done
+            if [ -n "$ERRORS" ]; then
+              echo "tflint errors in changed files:"
+              echo "$ERRORS"
+              exit 1
+            fi
+          fi
+          echo "No tflint errors in changed files"

@@ -351,7 +351,7 @@ func outputSummary(result *MinimalTestSetResult) {
 	}
 
 	fmt.Printf("\nRun command:\n")
-	fmt.Printf("  make test-resource-debug RESOURCE=alicloud_%s TESTCASE=\"%s\"\n",
+	fmt.Printf("  make acctest RESOURCE=alicloud_%s TESTCASE=\"%s\"\n",
 		result.ResourceName, strings.Join(result.MinimalTestSet, "|"))
 	fmt.Println()
 }

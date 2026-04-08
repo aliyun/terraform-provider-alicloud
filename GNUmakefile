@@ -33,10 +33,19 @@ goimports: tools
 	@echo "Done. Processed with up to $(PARALLEL) parallel jobs."
 
 # Test a specific resource with debug logs
-# Usage: make test-resource-debug RESOURCE=alicloud_vpc TESTCASE=basic LOGLEVEL=TRACE LOGFILE=vpc-test.log
-test-resource-debug:
+# Usage:
+#   make acctest RESOURCE=alicloud_vpc TESTCASE=basic
+#   make acctest RESOURCE=alicloud_vpc TESTCASE=basic LOGLEVEL=TRACE LOGFILE=vpc-test.log
+#
+# VCR mode (record/replay API interactions):
+#   make acctest RESOURCE=alicloud_vpc TESTCASE=basic VCR=record   # Record to cassette (needs credentials)
+#   make acctest RESOURCE=alicloud_vpc TESTCASE=basic VCR=replay   # Replay from cassette (no credentials)
+#   make vcr-list                                                  # List available cassettes
+#   make vcr-clean                                                 # Remove all cassettes
+VCR_DIR ?= testdata/vcr
+acctest:
 	@if [ -z "$(RESOURCE)" ]; then \
-		echo "Error: RESOURCE is required. Usage: make test-resource-debug RESOURCE=alicloud_vpc"; \
+		echo "Error: RESOURCE is required. Usage: make acctest RESOURCE=alicloud_vpc"; \
 		exit 1; \
 	fi
 	@RESOURCE_NAME=$$(echo "$(RESOURCE)" | sed 's/^alicloud_//'); \
@@ -52,6 +61,7 @@ test-resource-debug:
 		fi; \
 	fi; \
 	echo "Found test file: $$TEST_FILE ($$TEST_TYPE)"; \
+	VCR_MODE_FLAG="$(VCR)"; \
 	LOGLEVEL=$${LOGLEVEL:-DEBUG}; \
 	LOGFILE_BASE="$(LOGFILE)"; \
 	PROJECT_ROOT=$$(pwd); \
@@ -95,13 +105,31 @@ test-resource-debug:
 	FAILED_TESTS=""; \
 	echo "$$SELECTED_TESTS" | while IFS= read -r TEST_NAME; do \
 		TEST_NUM=$$((TEST_NUM + 1)); \
+		VCR_ENV=""; \
+		if [ -n "$$VCR_MODE_FLAG" ]; then \
+			VCR_CASSETTE_NAME=$$(echo "$$TEST_NAME" | tr '[:upper:]' '[:lower:]'); \
+			VCR_CASSETTE="$(VCR_DIR)/$$VCR_CASSETTE_NAME"; \
+			if [ "$$VCR_MODE_FLAG" = "record" ]; then \
+				mkdir -p alicloud/$(VCR_DIR); \
+				VCR_ENV="VCR_MODE=record VCR_PATH=$$VCR_CASSETTE"; \
+			elif [ "$$VCR_MODE_FLAG" = "replay" ]; then \
+				if [ ! -f "alicloud/$${VCR_CASSETTE}.yaml" ]; then \
+					echo "Error: Cassette not found: alicloud/$${VCR_CASSETTE}.yaml"; \
+					echo "Run 'make acctest RESOURCE=$(RESOURCE) TESTCASE=... VCR=record' first."; \
+					FAILED_TESTS="$$FAILED_TESTS$$TEST_NAME\n"; \
+					continue; \
+				fi; \
+				VCR_ENV="VCR_MODE=replay VCR_PATH=$$VCR_CASSETTE"; \
+			fi; \
+		fi; \
 		echo "=================================================="; \
 		echo "[$$TEST_NUM/$$TEST_COUNT] Running: $$TEST_NAME"; \
+		if [ -n "$$VCR_ENV" ]; then echo "  VCR: $$VCR_MODE_FLAG → $$VCR_CASSETTE"; fi; \
 		echo "=================================================="; \
 		if [ -n "$$LOGFILE_BASE" ]; then \
 			TEST_API_LOG="$${PROJECT_ROOT}/$${LOGFILE_BASE}-$${TEST_NAME}-api.log"; \
 			TEST_CONSOLE_LOG="$${PROJECT_ROOT}/$${LOGFILE_BASE}-$${TEST_NAME}-console.log"; \
-			if TF_LOG=$$LOGLEVEL TF_LOG_PATH=$$TEST_API_LOG TF_ACC=1 go test -v ./alicloud -run="^$$TEST_NAME\$$" -timeout 360m 2>&1 | tee $$TEST_CONSOLE_LOG; then \
+			if env $$VCR_ENV TF_LOG=$$LOGLEVEL TF_LOG_PATH=$$TEST_API_LOG TF_ACC=1 go test -v ./alicloud -run="^$$TEST_NAME\$$" -timeout 360m 2>&1 | tee $$TEST_CONSOLE_LOG; then \
 				echo "✓ PASSED: $$TEST_NAME"; \
 				echo "  API logs: $$TEST_API_LOG"; \
 				echo "  Console logs: $$TEST_CONSOLE_LOG"; \
@@ -112,7 +140,7 @@ test-resource-debug:
 				FAILED_TESTS="$$FAILED_TESTS$$TEST_NAME\n"; \
 			fi; \
 		else \
-			if TF_LOG=$$LOGLEVEL TF_ACC=1 go test -v ./alicloud -run="^$$TEST_NAME\$$" -timeout 360m; then \
+			if env $$VCR_ENV TF_LOG=$$LOGLEVEL TF_ACC=1 go test -v ./alicloud -run="^$$TEST_NAME\$$" -timeout 360m; then \
 				echo "✓ PASSED: $$TEST_NAME"; \
 			else \
 				echo "✗ FAILED: $$TEST_NAME"; \
@@ -252,7 +280,17 @@ sweep:
 		TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	fi
 
-.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep
+# List available VCR cassette files
+vcr-list:
+	@echo "Available cassettes:"
+	@find alicloud/$(VCR_DIR) -name "*.yaml" 2>/dev/null | sed 's|alicloud/$(VCR_DIR)/||;s|\.yaml$$||' | sort | sed 's/^/  /' || echo "  (none)"
+
+# Clean all cassette files
+vcr-clean:
+	@echo "Removing all cassettes in alicloud/$(VCR_DIR)/"
+	@rm -f alicloud/$(VCR_DIR)/*.yaml
+
+.PHONY: build test testacc acctest vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep vcr-list vcr-clean
 
 all: mac windows linux
 
