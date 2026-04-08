@@ -43,3 +43,7 @@ coverage.out
 
 .qwenignore
 .terraflow/
+
+
+terraform-provider-alicloud*
+mise.toml

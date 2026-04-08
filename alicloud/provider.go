@@ -1644,6 +1644,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_load_balancer":                                     resourceAlicloudSlbLoadBalancer(),
 			"alicloud_ecs_network_interface":                                 resourceAliCloudEcsNetworkInterface(),
 			"alicloud_ecs_network_interface_attachment":                      resourceAliCloudEcsNetworkInterfaceAttachment(),
+			"alicloud_ecs_eni_sg_attachment":                                 resourceAliCloudEcsEniSgAttachment(),
 			"alicloud_config_aggregator":                                     resourceAliCloudConfigAggregator(),
 			"alicloud_config_aggregate_config_rule":                          resourceAliCloudConfigAggregateConfigRule(),
 			"alicloud_config_aggregate_compliance_pack":                      resourceAliCloudConfigAggregateCompliancePack(),
