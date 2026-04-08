@@ -3,7 +3,7 @@ package alicloud
 import (
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
+	ots "github.com/alibabacloud-go/tablestore-20201209/v3/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -89,11 +89,11 @@ func dataSourceAlicloudOtsInstanceAttachmentsRead(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 
-	var filteredVpcs []ots.VpcInfo
+	var filteredVpcs []*ots.ListVpcInfoByInstanceResponseBodyVpcInfos
 	if v, ok := d.GetOk("name_regex"); ok && v.(string) != "" {
 		r := regexp.MustCompile(v.(string))
 		for _, vpc := range allVpcs {
-			if r.MatchString(vpc.InstanceVpcName) {
+			if r.MatchString(*vpc.InstanceVpcName) {
 				filteredVpcs = append(filteredVpcs, vpc)
 			}
 		}
@@ -103,24 +103,26 @@ func dataSourceAlicloudOtsInstanceAttachmentsRead(d *schema.ResourceData, meta i
 	return otsAttachmentsDescriptionAttributes(d, filteredVpcs, meta)
 }
 
-func otsAttachmentsDescriptionAttributes(d *schema.ResourceData, vpcInfos []ots.VpcInfo, meta interface{}) error {
+func otsAttachmentsDescriptionAttributes(d *schema.ResourceData, vpcInfos []*ots.ListVpcInfoByInstanceResponseBodyVpcInfos, meta interface{}) error {
 	var ids []string
 	var names []string
 	var vpcIds []string
 	var s []map[string]interface{}
+
+	instanceName := d.Get("instance_name").(string)
 	for _, vpc := range vpcInfos {
 		mapping := map[string]interface{}{
-			"id":            vpc.InstanceName,
+			"id":            instanceName,
 			"domain":        vpc.Domain,
 			"endpoint":      vpc.Endpoint,
 			"region":        vpc.RegionNo,
-			"instance_name": vpc.InstanceName,
+			"instance_name": instanceName,
 			"vpc_name":      vpc.InstanceVpcName,
 			"vpc_id":        vpc.VpcId,
 		}
-		names = append(names, vpc.InstanceVpcName)
-		ids = append(ids, vpc.InstanceName)
-		vpcIds = append(vpcIds, vpc.VpcId)
+		names = append(names, *vpc.InstanceVpcName)
+		ids = append(ids, instanceName)
+		vpcIds = append(vpcIds, *vpc.VpcId)
 		s = append(s, mapping)
 	}
 

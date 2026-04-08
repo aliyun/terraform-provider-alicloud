@@ -6,12 +6,12 @@ import (
 	"regexp"
 	"time"
 
+	ots "github.com/alibabacloud-go/tablestore-20201209/v3/client"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -557,19 +557,10 @@ func essTagsToMap(tags []ess.Tag) map[string]string {
 	return result
 }
 
-func otsTagsToMap(tags []ots.TagInfo) map[string]string {
+func otsRestTagsToMap(tags []*ots.GetInstanceResponseBodyTags) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
-		result[t.TagKey] = t.TagValue
-	}
-
-	return result
-}
-
-func otsRestTagsToMap(tags []RestOtsTagInfo) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		result[t.Key] = t.Value
+		result[*t.Key] = *t.Value
 	}
 
 	return result

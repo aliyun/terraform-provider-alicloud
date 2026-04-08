@@ -66,10 +66,13 @@ The following arguments are supported:
   * `ConsoleOrVpc` - Allow web console or the attached VPC to access the instance.
 
   Default to "Any".
+* `policy` - (Optional, Available since v1.271.0) The instance access policy, json string.
+* `policy_version` - (Computed, Available since v1.271.0) The version of instance access policy. It's designed to be read-only.
 * `resource_group_id` - (Optional, Available since v1.221.0) The resource group the instance belongs to.
   Default to Alibaba Cloud default resource group.
 * `instance_type` - (Optional, ForceNew) The type of instance. Valid values are "Capacity" and "HighPerformance". Default to "HighPerformance".
-* `description` - (Optional, ForceNew) The description of the instance. Currently, it does not support modifying.
+* `description` - (Optional) The description of the instance.
+* `alias_name` - (Optional) The alias name of the instance.
 * `tags` - (Optional) A mapping of tags to assign to the instance.
 
 ## Attributes Reference

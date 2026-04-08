@@ -1,7 +1,7 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
+	ots "github.com/alibabacloud-go/tablestore-20201209/v3/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -42,27 +42,27 @@ func resourceAliyunOtsInstanceAttachmentCreate(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
-	request := ots.CreateBindInstance2VpcRequest()
-	request.RegionId = client.RegionId
-	request.InstanceName = d.Get("instance_name").(string)
-	request.InstanceVpcName = d.Get("vpc_name").(string)
-	request.VirtualSwitchId = d.Get("vswitch_id").(string)
+	request := new(ots.BindInstance2VpcRequest)
+	request.InstanceName = StringPointer(d.Get("instance_name").(string))
+	request.InstanceVpcName = StringPointer(d.Get("vpc_name").(string))
+	request.VirtualSwitchId = StringPointer(d.Get("vswitch_id").(string))
 
 	if vsw, err := vpcService.DescribeVSwitch(d.Get("vswitch_id").(string)); err != nil {
 		return WrapError(err)
 	} else {
-		request.VpcId = vsw.VpcId
+		request.VpcId = StringPointer(vsw.VpcId)
 	}
 
 	raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
 		return otsClient.BindInstance2Vpc(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance_attachment", "BindInstance2Vpc", AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	resp := raw.(*ots.BindInstance2VpcResponse)
+	addDebug("BindInstance2Vpc", resp, request)
 
-	d.SetId(request.InstanceName)
+	d.SetId(*request.InstanceName)
 	return resourceAliyunOtsInstanceAttachmentRead(d, meta)
 }
 
@@ -94,10 +94,9 @@ func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta inte
 		}
 		return WrapError(err)
 	}
-	request := ots.CreateUnbindInstance2VpcRequest()
-	request.RegionId = client.RegionId
-	request.InstanceName = d.Id()
-	request.InstanceVpcName = object.InstanceVpcName
+	request := new(ots.UnbindInstance2VpcRequest)
+	request.InstanceName = StringPointer(d.Id())
+	request.InstanceVpcName = object.GetInstanceVpcName()
 
 	raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
 		return otsClient.UnbindInstance2Vpc(request)
@@ -106,8 +105,9 @@ func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta inte
 		if NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UnbindInstance2Vpc", AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	resp := raw.(*ots.UnbindInstance2VpcResponse)
+	addDebug("UnbindInstance2Vpc", raw, resp, request)
 	return WrapError(otsService.WaitForOtsInstanceVpc(d.Id(), Deleted, DefaultTimeout))
 }
