@@ -67,11 +67,6 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional:     true,
 				AtLeastOneOf: []string{"security_groups", "launch_template_id", "launch_template_name"},
 			},
-			"allocate_public_ip": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				Deprecated: "Field 'allocate_public_ip' has been deprecated from provider version 1.6.1. Setting 'internet_max_bandwidth_out' larger than 0 will allocate public ip for instance.",
-			},
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -95,13 +90,6 @@ func resourceAliCloudInstance() *schema.Resource {
 				ValidateFunc:     StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 				Computed:         true,
-			},
-			"internet_max_bandwidth_in": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Computed:         true,
-				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
-				Deprecated:       "The attribute is invalid and no any affect for the instance. So it has been deprecated since version v1.121.2.",
 			},
 			"internet_max_bandwidth_out": {
 				Type:     schema.TypeInt,
@@ -134,13 +122,6 @@ func resourceAliCloudInstance() *schema.Resource {
 			"password_inherit": {
 				Type:     schema.TypeBool,
 				Optional: true,
-			},
-			"io_optimized": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "Attribute io_optimized has been deprecated on instance resource. All the launched alicloud instances will be IO optimized. Suggest to remove it from your template.",
-				Removed:    "Attribute 'io_optimized' has been removed from provider version 1.213.1.",
 			},
 			"is_outdated": {
 				Type:     schema.TypeBool,
@@ -454,13 +435,6 @@ func resourceAliCloudInstance() *schema.Resource {
 					return false
 				},
 			},
-			"role_name": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ForceNew:         true,
-				Computed:         true,
-				DiffSuppressFunc: vpcTypeResourceDiffSuppressFunc,
-			},
 			"key_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -599,6 +573,13 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: IntBetween(0, 6),
+			},
+			"spot_interruption_behavior": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Terminate", "Stop"}, false),
 			},
 			"http_tokens": {
 				Type:         schema.TypeString,
@@ -748,6 +729,32 @@ func resourceAliCloudInstance() *schema.Resource {
 						},
 					},
 				},
+			},
+			"allocate_public_ip": {
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field `allocate_public_ip` has been deprecated from provider version 1.7.0. Setting  `internet_max_bandwidth_out` larger than 0 will allocate public ip for instance.",
+			},
+			"internet_max_bandwidth_in": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
+				Deprecated:       "The attribute is invalid and no any affect for the instance. So it has been deprecated since version v1.121.2.",
+			},
+			"role_name": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				Computed:         true,
+				DiffSuppressFunc: vpcTypeResourceDiffSuppressFunc,
+				Deprecated:       "Field `role_name` has been deprecated from provider version 1.275.0. New resource `alicloud_ecs_ram_role_attachment` instead.",
+			},
+			"io_optimized": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				Removed:  "Field `io_optimized` has been removed from provider version 1.213.1.",
 			},
 		},
 	}
@@ -1174,6 +1181,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 	if v, ok := d.GetOkExists("spot_duration"); ok {
 		request["SpotDuration"] = v
+	}
+
+	if v, ok := d.GetOk("spot_interruption_behavior"); ok {
+		request["SpotInterruptionBehavior"] = v
 	}
 
 	if v, ok := d.GetOk("dedicated_host_id"); ok {
@@ -1613,6 +1624,8 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
+
+	d.Set("spot_interruption_behavior", ecsInstanceAttribute["SpotInterruptionBehavior"])
 
 	if cpuOptions, ok := ecsInstanceAttribute["CpuOptions"]; ok {
 		cpuOptionsArg := cpuOptions.(map[string]interface{})

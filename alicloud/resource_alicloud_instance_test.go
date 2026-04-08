@@ -1754,6 +1754,7 @@ func TestAccAliCloudECSInstanceSpotInstanceLimit(t *testing.T) {
 					"spot_strategy":              "SpotWithPriceLimit",
 					"spot_price_limit":           "1.002",
 					"spot_duration":              "1",
+					"spot_interruption_behavior": "Stop",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1764,6 +1765,7 @@ func TestAccAliCloudECSInstanceSpotInstanceLimit(t *testing.T) {
 						"public_ip":                  CHECKSET,
 						"user_data":                  REMOVEKEY,
 						"spot_duration":              "1",
+						"spot_interruption_behavior": "Stop",
 					}),
 				),
 			},
@@ -2584,17 +2586,17 @@ func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 
 func resourceInstanceIpv6Dependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  		most_recent = true
-  		owners      = "system"
-	}
-
 data "alicloud_instance_types" "default" {
-  image_id          = data.alicloud_images.default.images.0.id
   system_disk_category              = "cloud_efficiency"
   cpu_core_count                    = 4
   minimum_eni_ipv6_address_quantity = 2
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent = true
+  owners      = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -2625,16 +2627,17 @@ variable "name" {
 
 func resourceInstanceMetadataOptionsDependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  		most_recent = true
-  		owners      = "system"
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.g6"
 	}
 
-data "alicloud_instance_types" "default" {
-  image_id          = data.alicloud_images.default.images.0.id
-  instance_type_family = "ecs.g6"
-}
+	data "alicloud_images" "default" {
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent   = true
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+	}
+
 
 resource "alicloud_vpc" "default" {
   cidr_block = "192.168.0.0/16"
@@ -2666,14 +2669,15 @@ func resourceInstanceVpcDeploymentSetIDDependence(name string) string {
   		default = "%s"
 	}
 
-data "alicloud_instance_types" "default" {
-	instance_type_family = "ecs.sn1ne"
-}
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.sn1ne"
+	}
 
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  		most_recent = true
-  		owners      = "system"
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent   = true
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -2717,22 +2721,16 @@ func resourceInstanceVpcSecondaryIps(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_zones" "default" {
-		available_disk_category     = "cloud_essd"
-  		available_resource_creation = "VSwitch"
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.g8i"
+		system_disk_category = "cloud_essd"
 	}
 
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  		most_recent = true
-  		owners      = "system"
-	}
-
-	data "alicloud_instance_types" "default" {
-  		instance_type_family = "ecs.g8i"
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		image_id             = data.alicloud_images.default.images.0.id
-		system_disk_category = "cloud_essd"
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent   = true
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -2755,14 +2753,15 @@ func resourceInstanceVpcSecondaryIps(name string) string {
 
 func resourceInstanceVpcConfigDependence(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_instance_types" "default" {
-	instance_type_family = "ecs.sn1ne"
-}
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.sn1ne"
+	}
 
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  		most_recent = true
-  		owners      = "system"
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent   = true
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 resource "alicloud_vpc" "default" {
@@ -2899,12 +2898,6 @@ func resourceECSInstanceVpcDependence(name string) string {
   		key_pair_name = var.name
 	}
 
-	resource "alicloud_kms_key" "key" {
-  		description            = var.name
-  		pending_window_in_days = "7"
-  		key_state              = "Enabled"
-	}
-
 	resource "alicloud_ram_role" "default" {
   		name     = var.name
   		force    = "true"
@@ -2934,15 +2927,15 @@ func resourceInstancePrePaidConfigDependence(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  		most_recent = true
-  		owners      = "system"
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.sn1ne"
 	}
 
-	data "alicloud_instance_types" "default" {
-  		image_id             = data.alicloud_images.default.images.0.id
-  		instance_charge_type = "PrePaid"
+	data "alicloud_images" "default" {
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent   = true
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -3039,26 +3032,18 @@ func testAccCheckSpotInstanceDependence(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_instance_types" "special" {
-	  	spot_strategy = "SpotWithPriceLimit"
-		cpu_core_count       = 2
-  		memory_size          = 8
-  		instance_type_family = "ecs.g6"
-  		image_id             = data.alicloud_images.default.images.0.id
-	}
-
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  		most_recent = true
-  		owners      = "system"
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent   = true
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 	data "alicloud_instance_types" "default" {
-	  	spot_strategy = "SpotWithPriceLimit"
-		cpu_core_count       = 2
+  		spot_strategy        = "SpotWithPriceLimit"
+  		cpu_core_count       = 2
   		memory_size          = 8
   		instance_type_family = "ecs.g6"
-  		image_id             = data.alicloud_images.default.images.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -3686,8 +3671,8 @@ func TestAccAliCloudECSInstanceDedicatedHostId(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":                      "${data.alicloud_images.default.images.0.id}",
 					"security_groups":               []string{"${alicloud_security_group.default.id}"},
-					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"instance_type":                 "${data.alicloud_ecs_dedicated_hosts.default.hosts.0.supported_instance_types_list.0}",
+					"availability_zone":             "${data.alicloud_ecs_dedicated_hosts.default.hosts.0.zone_id}",
 					"system_disk_category":          "cloud_efficiency",
 					"instance_name":                 "${var.name}",
 					"key_name":                      "${alicloud_key_pair.default.key_name}",
@@ -3831,7 +3816,7 @@ func TestAccAliCloudECSInstanceNetworkInterface0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":                       "${data.alicloud_images.default.images.0.id}",
 					"instance_type":                  "ecs.c8i.48xlarge",
-					"availability_zone":              "cn-hangzhou-k",
+					"availability_zone":              "cn-hangzhou-b",
 					"internet_charge_type":           "PayByTraffic",
 					"vswitch_id":                     "${alicloud_vswitch.default.id}",
 					"internet_max_bandwidth_out":     "10",
@@ -3947,7 +3932,7 @@ func TestAccAliCloudECSInstanceNetworkInterface1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":                       "${data.alicloud_images.default.images.0.id}",
 					"instance_type":                  "ecs.c8i.48xlarge",
-					"availability_zone":              "cn-hangzhou-k",
+					"availability_zone":              "cn-hangzhou-b",
 					"internet_charge_type":           "PayByTraffic",
 					"vswitch_id":                     "${alicloud_vswitch.default.id}",
 					"internet_max_bandwidth_out":     "10",
@@ -4084,7 +4069,7 @@ func TestAccAliCloudECSInstanceNetworkInterface2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":                            "${data.alicloud_images.default.images.0.id}",
 					"instance_type":                       "ecs.c8i.48xlarge",
-					"availability_zone":                   "cn-hangzhou-k",
+					"availability_zone":                   "cn-hangzhou-b",
 					"internet_charge_type":                "PayByTraffic",
 					"vswitch_id":                          "${alicloud_vswitch.default.id}",
 					"internet_max_bandwidth_out":          "10",
@@ -4176,7 +4161,7 @@ func TestAccAliCloudECSInstanceNetworkInterface3(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":                       "${data.alicloud_images.default.images.0.id}",
 					"instance_type":                  "ecs.c8i.48xlarge",
-					"availability_zone":              "cn-hangzhou-k",
+					"availability_zone":              "cn-hangzhou-b",
 					"internet_charge_type":           "PayByTraffic",
 					"vswitch_id":                     "${alicloud_vswitch.default.id}",
 					"internet_max_bandwidth_out":     "10",
@@ -4372,16 +4357,10 @@ func resourceInstanceDedicatedHostIdConfigDependence(name string) string {
 	}
 
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  		most_recent = true
-  		owners      = "system"
-	}
-
-	data "alicloud_instance_types" "default" {
-  		instance_type_family = "ecs.c5"
-  		availability_zone    = data.alicloud_ecs_dedicated_hosts.default.hosts.0.zone_id
-  		image_id             = data.alicloud_images.default.images.0.id
-  		system_disk_category = "cloud_efficiency"
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent   = true
+  		owners        = "system"
+  		instance_type = data.alicloud_ecs_dedicated_hosts.default.hosts.0.supported_instance_types_list.0
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -4430,18 +4409,17 @@ func resourceInstanceDedicatedHostIdConfigDependence(name string) string {
 
 func resourceInstanceSystemDiskDependence(name string) string {
 	return fmt.Sprintf(`
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.g8i"
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		system_disk_category = "cloud_essd"
+	}
 
 	data "alicloud_images" "default" {
   		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
   		owners      = "system"
-	}
-
-	data "alicloud_instance_types" "default" {
-  		instance_type_family = "ecs.g8i"
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		image_id             = data.alicloud_images.default.images.0.id
-  		system_disk_category = "cloud_essd"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 data "alicloud_zones" "default" {
@@ -4505,17 +4483,17 @@ func resourceInstanceLaunchTemplateDependence(name string) string {
   		available_resource_creation = "VSwitch"
 	}
 
+	data "alicloud_instance_types" "default" {
+  		instance_type_family = "ecs.g8i"
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		system_disk_category = "cloud_essd"
+	}
+
 	data "alicloud_images" "default" {
   		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
   		owners      = "system"
-	}
-
-	data "alicloud_instance_types" "default" {
-  		instance_type_family = "ecs.g8i"
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		image_id             = data.alicloud_images.default.images.0.id
-  		system_disk_category = "cloud_essd"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -4576,7 +4554,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "172.16.0.0/16"
-  zone_id      = "cn-hangzhou-k"
+  zone_id      = "cn-hangzhou-b"
   vpc_id       = alicloud_vpc.default.id
   ipv6_cidr_block_mask = "22"
 }
@@ -4584,7 +4562,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_vswitch" "update" {
   vswitch_name = var.name
   cidr_block   = "172.18.0.0/16"
-  zone_id      = "cn-hangzhou-k"
+  zone_id      = "cn-hangzhou-b"
   vpc_id       = alicloud_vpc.default.id
   ipv6_cidr_block_mask = "23"
 }
@@ -4592,7 +4570,7 @@ resource "alicloud_vswitch" "update" {
 resource "alicloud_vswitch" "networkInterface" {
   vswitch_name = var.name
   cidr_block   = "172.19.0.0/16"
-  zone_id      = "cn-hangzhou-k"
+  zone_id      = "cn-hangzhou-b"
   vpc_id       = alicloud_vpc.default.id
   ipv6_cidr_block_mask = "25"
 }
