@@ -916,6 +916,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_alidns_cloud_gtm_address":                             resourceAliCloudAlidnsCloudGtmAddress(),
 			"alicloud_sls_logtail_pipeline_config":                          resourceAliCloudSlsLogtailPipelineConfig(),
 			"alicloud_simple_application_server_disk":                       resourceAliCloudSimpleApplicationServerDisk(),
 			"alicloud_nlb_hd_monitor_region_config":                         resourceAliCloudNlbHdMonitorRegionConfig(),
