@@ -1,4 +1,17 @@
 ## 1.275.0 (Unreleased)
+
+- **New Resource:** `alicloud_rds_custom_disk_attachment` [GH-9621]
+
+ENHANCEMENTS:
+
+- resource/alicloud_vpn_gateway_vpn_attachment: Support new attribute tunnel_options_specification.role. [GH-9615]
+- resource/alicloud_instance: Added the field spot_interruption_behavior; Deprecated the field role_name. [GH-9616]
+- resource/alicloud_security_group_rule: Add cidr constraint for cidr_ip and ipv6_cidr_ip. [GH-9617]
+
+BUG FIXES:
+
+- resource/alicloud_vpn_gateway_vpn_attachment: Support new attribute tunnel_options_specification.role. [GH-9622]
+
 ## 1.274.0 (April 03, 2026)
 
 - **New Data Source:** `alicloud_esa_waf_rulesets` ([#9597](https://github.com/aliyun/terraform-provider-alicloud/issues/9597))
