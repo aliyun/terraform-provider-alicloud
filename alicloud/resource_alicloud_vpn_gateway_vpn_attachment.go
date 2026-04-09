@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"hash/crc32"
 	"log"
 	"time"
 
@@ -10,6 +11,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
+
+func vpnTunnelOptionsSpecificationHash(v interface{}) int {
+	m := v.(map[string]interface{})
+	s := fmt.Sprintf("%d-%s", m["tunnel_index"].(int), m["customer_gateway_id"].(string))
+	h := int(crc32.ChecksumIEEE([]byte(s)))
+	if h < 0 {
+		return -h
+	}
+	return h
+}
 
 func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 	return &schema.Resource{
@@ -257,6 +268,7 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
+				Set:      vpnTunnelOptionsSpecificationHash,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"status": {
@@ -277,6 +289,7 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 						},
 						"role": {
 							Type:     schema.TypeString,
+							Optional: true,
 							Computed: true,
 						},
 						"tunnel_ike_config": {
@@ -586,6 +599,7 @@ func resourceAliCloudVpnGatewayVpnAttachmentCreate(d *schema.ResourceData, meta 
 			dataLoop1Map["CustomerGatewayId"] = dataLoop1Tmp["customer_gateway_id"]
 			dataLoop1Map["EnableDpd"] = dataLoop1Tmp["enable_dpd"]
 			dataLoop1Map["EnableNatTraversal"] = dataLoop1Tmp["enable_nat_traversal"]
+			dataLoop1Map["Role"] = dataLoop1Tmp["role"]
 			dataLoop1Map["TunnelIndex"] = dataLoop1Tmp["tunnel_index"]
 			localData2 := make(map[string]interface{})
 			localAsn3, _ := jsonpath.Get("$[0].local_asn", dataLoop1Tmp["tunnel_bgp_config"])
@@ -993,6 +1007,7 @@ func resourceAliCloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 				dataLoopMap["CustomerGatewayId"] = dataLoopTmp["customer_gateway_id"]
 				dataLoopMap["EnableDpd"] = dataLoopTmp["enable_dpd"]
 				dataLoopMap["EnableNatTraversal"] = dataLoopTmp["enable_nat_traversal"]
+				dataLoopMap["Role"] = dataLoopTmp["role"]
 				dataLoopMap["TunnelIndex"] = dataLoopTmp["tunnel_index"]
 				if !IsNil(dataLoopTmp["tunnel_bgp_config"]) {
 					localData1 := make(map[string]interface{})
