@@ -1,16 +1,17 @@
-## 1.275.0 (Unreleased)
+## 1.276.0 (Unreleased)
+## 1.275.0 (April 10, 2026)
 
-- **New Resource:** `alicloud_rds_custom_disk_attachment` [GH-9621]
+- **New Resource:** `alicloud_rds_custom_disk_attachment` ([#9621](https://github.com/aliyun/terraform-provider-alicloud/issues/9621))
 
 ENHANCEMENTS:
 
-- resource/alicloud_vpn_gateway_vpn_attachment: Support new attribute tunnel_options_specification.role. [GH-9615]
-- resource/alicloud_instance: Added the field spot_interruption_behavior; Deprecated the field role_name. [GH-9616]
-- resource/alicloud_security_group_rule: Add cidr constraint for cidr_ip and ipv6_cidr_ip. [GH-9617]
+- resource/alicloud_vpn_gateway_vpn_attachment: Support new attribute tunnel_options_specification.role. ([#9615](https://github.com/aliyun/terraform-provider-alicloud/issues/9615))
+- resource/alicloud_instance: Added the field spot_interruption_behavior; Deprecated the field role_name. ([#9616](https://github.com/aliyun/terraform-provider-alicloud/issues/9616))
+- resource/alicloud_security_group_rule: Add cidr constraint for cidr_ip and ipv6_cidr_ip. ([#9617](https://github.com/aliyun/terraform-provider-alicloud/issues/9617))
 
 BUG FIXES:
 
-- resource/alicloud_vpn_gateway_vpn_attachment: Support new attribute tunnel_options_specification.role. [GH-9622]
+- resource/alicloud_rds_custom: Fixed the diff error caused by field data_disk. ([#9622](https://github.com/aliyun/terraform-provider-alicloud/issues/9622))
 
 ## 1.274.0 (April 03, 2026)
 
