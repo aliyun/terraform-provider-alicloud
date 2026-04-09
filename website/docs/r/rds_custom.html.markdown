@@ -149,7 +149,10 @@ The following arguments are supported:
 * `create_mode` - (Optional) Whether to allow joining the ACK cluster. When this parameter is set to `1`, the created instance can be added to the ACK cluster through The `AttachRCInstances` API to efficiently manage container applications.
   - `1`: Yes.
   - `0` (default): No.
-* `data_disk` - (Optional, ForceNew, List) Data disk See [`data_disk`](#data_disk) below.
+* `data_disk` - (Optional, ForceNew, Computed, Set) Data disk See [`data_disk`](#data_disk) below.
+
+->**NOTE:** From version 1.275.0, If you want to use `data_disk`, We recommend you to use the resource [alicloud_rds_custom_disk_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/rds_custom_disk_attachment).
+
 * `deployment_set_id` - (Optional, ForceNew) The ID of the deployment set.
 * `description` - (Optional, ForceNew) Instance description. It must be 2 to 256 characters in length and cannot start with http:// or https.
 * `direction` - (Optional) Instance configuration type, value range:

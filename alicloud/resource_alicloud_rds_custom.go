@@ -52,6 +52,7 @@ func resourceAliCloudRdsCustom() *schema.Resource {
 			"data_disk": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
