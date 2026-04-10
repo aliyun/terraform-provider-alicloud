@@ -52,7 +52,7 @@ ACK cluster
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "tf-example-"
 }
 
 # leave it to empty would create a new one
@@ -105,6 +105,10 @@ variable "terway_vswitch_cidrs" {
 
 data "alicloud_enhanced_nat_available_zones" "enhanced" {}
 
+data "alicloud_kms_keys" "default" {
+  filters = "[{\"Key\":\"KeyState\",\"Values\":[\"Enabled\"]},{\"Key\":\"KeySpec\",\"Values\":[\"Aliyun_AES_256\"]},{\"Key\":\"KeyUsage\",\"Values\":[\"ENCRYPT/DECRYPT\"]},{\"Key\":\"CreatorType\",\"Values\":[\"User\"]}]"
+}
+
 # If there is not specifying vpc_id, the module will launch a new vpc
 resource "alicloud_vpc" "vpc" {
   count      = var.vpc_id == "" ? 1 : 0
@@ -128,7 +132,7 @@ resource "alicloud_vswitch" "terway_vswitches" {
 }
 
 resource "alicloud_cs_managed_kubernetes" "k8s" {
-  name         = var.name
+  name_prefix  = var.name
   cluster_spec = "ack.pro.small"
   # version can not be defined in variables.tf.
   # version                        = "1.26.3-aliyun.1"
@@ -138,6 +142,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   proxy_mode                     = var.proxy_mode
   service_cidr                   = var.service_cidr
   skip_set_certificate_authority = true
+  encryption_provider_key        = data.alicloud_kms_keys.default.keys[0].key_id
 
   addons {
     name = "terway-eniip"
@@ -352,21 +357,24 @@ The following arguments are supported:
 * `zone_ids` - (Optional, Available since v1.243.0) The IDs of the zone in which the cluster control plane is deployed. ACK automatically creates a VPC in the region and vSwitches in the specified zones. Only works for **Create** Operation. Do not specify this with `vswitch_ids` together.
 * `worker_vswitch_ids` - (Optional, Deprecated since v1.241.0) The vSwitches used by control plane. Modification after creation will not take effect. Please use `vswitch_ids` to managed control plane vSwitches, which supports modifying control plane vSwitches.
 * `vswitch_ids` - (Optional, Available since v1.241.0) The vSwitches of the control plane.
--> **NOTE:** Please take of note before updating the `vswitch_ids`:
+
+  -> **NOTE:** Please take of note before updating the `vswitch_ids`:
   * This parameter overwrites the existing configuration. You must specify all vSwitches of the control plane. 
   * The control plane restarts during the change process. Exercise caution when you perform this operation. 
   * Ensure that all security groups of the cluster, including the security groups of the control plane, all node pools, and container network, are allowed to access the CIDR blocks of the new vSwitches. This ensures that the nodes and containers can connect to the API server. 
   * If the new vSwitches of the control plane are configured with an ACL, ensure that the ACL allows communication between the new vSwitches and CIDR blocks such as those of the cluster nodes and the container network.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will use it to build the only cluster name. Default to "Terraform-Creation".
 * `timezone` - (Optional, Available since v1.103.2) Cluster timezone, works for control plane and Worker nodes.
-* -> **NOTE:** Please take of note before updating the `timezone`:
+
+  -> **NOTE:** Please take of note before updating the `timezone`:
   * After modifying the timezone, cluster inspection configurations will adopt the new timezone. 
   * During timezone updates, the cluster control plane and managed components (e.g., terway-controlplane) will restart briefly. Perform this operation during off-peak hours. 
   * After updating the timezone: Newly scaled-out nodes will automatically apply the new timezone. Existing nodes remain unaffected. Reset the node to apply changes to existing nodes.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK. Do not specify if cluster auto upgrade is enabled, see [cluster_auto_upgrade](#operation_policy-cluster_auto_upgrade) for more information. 
 * `security_group_id` - (Optional, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
-* -> **NOTE:** Please take of note before updating the `security_group_id`:
+
+  -> **NOTE:** Please take of note before updating the `security_group_id`:
   * If block rules are configured in the security group, ensure the security group rules allow traffic for protocols and ports required by the cluster. For recommended security group rules, see [Configure and manage security groups for an ACK cluster](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/user-guide/configure-security-group-rules-to-enforce-access-control-on-ack-clusters).
   * During security group updates, the cluster control plane and managed components (e.g., terway-controlplane) will restart briefly. Perform this operation during off-peak hours. 
   * After updating the control plane security group, the Elastic Network Interfaces (ENIs) used by the control plane and managed components will automatically join the new security group.
@@ -374,7 +382,8 @@ The following arguments are supported:
 * `proxy_mode` - (Optional, ForceNew) Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `cluster_domain` - (Optional, ForceNew, Available since v1.103.2) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
 * `custom_san` - (Optional, Available since v1.103.2) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
--> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
+
+  -> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
 * `user_ca` - (Optional) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
 * `deletion_protection` - (Optional, Available since v1.103.2)  Whether to enable cluster deletion protection.
 * `enable_rrsa` - (Optional, Available since v1.171.0) Whether to enable cluster to support RRSA for kubernetes version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
@@ -385,11 +394,16 @@ The following arguments are supported:
   * ack.standard : Basic managed clusters.
   * ack.pro.small : Professional managed clusters.
 * `profile` - (Optional, ForceNew, Available since v1.250.0) The profile of cluster. Valid values:
- * `Default`: ACK managed cluster. ACK managed clusters include ACK Basic clusters and ACK Pro clusters.
- * `Edge`: ACK Edge cluster. ACK Edge clusters include ACK Edge Basic clusters and ACK Edge Pro clusters.
- * `Serverless`: ACK Serverless cluster. ACK Serverless clusters include ACK Serverless Basic clusters and ACK Serverless Pro clusters.
- * `Acs`: ACS cluster.
-* `encryption_provider_key` - (Optional, ForceNew, Available since v1.103.2) The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.
+  * `Default`: ACK managed cluster. ACK managed clusters include ACK Basic clusters and ACK Pro clusters.
+  * `Edge`: ACK Edge cluster. ACK Edge clusters include ACK Edge Basic clusters and ACK Edge Pro clusters.
+  * `Serverless`: ACK Serverless cluster. ACK Serverless clusters include ACK Serverless Basic clusters and ACK Serverless Pro clusters.
+  * `Acs`: ACS cluster.
+* `encryption_provider_key` - (Optional, Available since v1.103.2) The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.
+
+  -> **Note:** To enable encryption, you must specify both `encryption_provider_key` and `disable_encryption = false`. When `disable_encryption` is set to `true`, changes to `encryption_provider_key` will be ignored.
+* `disable_encryption` - (Optional, Computed, Available since v1.275.0) Whether to disable encryption for Kubernetes Secrets. Default value is `false`. Set to `true` to disable encryption.
+
+  -> **Note:** When enabling encryption, you must explicitly set `disable_encryption = false` along with `encryption_provider_key`. When disabling encryption, you only need to set `disable_encryption = true`, and the `encryption_provider_key` will be ignored.
 * `maintenance_window` - (Optional, Available since v1.109.1) The cluster maintenance window. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
 * `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy, only works when `maintenance_window` is enabled. See [`operation_policy`](#operation_policy) below.
 * `load_balancer_spec` - (Optional, Deprecated since v1.232.0) The cluster api server load balancer instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. The spec will not take effect because the charge of the load balancer has been changed to PayByCLCU.
@@ -403,7 +417,8 @@ The following arguments are supported:
 * `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
 * `skip_set_certificate_authority` - (Optional) Configure whether to save certificate authority data for your cluster to attribute `certificate_authority`. For cluster security, recommended configuration as `true`. Will be removed with attribute certificate_authority removed.
 * `upgrade_policy` - (Optional, Set, Available since v1.269.0) Configuration block for cluster upgrade operations. See [`upgrade_policy`](#upgrade_policy) below.
--> **NOTE:** This parameter only applies during resource update.
+
+  -> **NOTE:** This parameter only applies during resource update.
 
 *Network params*
 
