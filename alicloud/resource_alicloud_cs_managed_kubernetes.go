@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
+	roacs "github.com/alibabacloud-go/cs-20151215/v7/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -488,10 +488,15 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"encryption_provider_key": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-				Description: "The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.",
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kmsEncryptionDiffSuppressFunc,
+				Description:      "The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.",
+			},
+			"disable_encryption": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 			// computed parameters
 			"kube_config": {
@@ -1229,11 +1234,18 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		}
 	}
 
+	capabilities := fetchClusterCapabilities(tea.StringValue(object.MetaData))
+	if v, ok := capabilities["DisableEncryption"]; ok {
+		d.Set("disable_encryption", Interface2Bool(v))
+	}
+	if kmsKeyId, ok := capabilities["EncryptionKMSKeyId"]; ok {
+		d.Set("encryption_provider_key", Interface2String(kmsKeyId))
+	}
+
 	if object.NodeCidrMask != nil {
 		d.Set("node_cidr_mask", formatInt(tea.StringValue(object.NodeCidrMask)))
 	} else {
 		// node_cidr_mask
-		capabilities := fetchClusterCapabilities(tea.StringValue(object.MetaData))
 		if v, ok := capabilities["NodeCIDRMask"]; ok {
 			d.Set("node_cidr_mask", formatInt(v))
 		}
@@ -1373,6 +1385,13 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 		err := migrateCluster(d, meta)
 		if err != nil {
 			return WrapError(err)
+		}
+	}
+
+	// update kms encryption
+	if d.HasChange("encryption_provider_key") || d.HasChange("disable_encryption") {
+		if err := updateClusterKMSEncryption(d, meta); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateKMSEncryption", AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -1781,4 +1800,62 @@ func getClusterAuditProject(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	return nil
+}
+
+func updateClusterKMSEncryption(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	csClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return err
+	}
+
+	clusterId := d.Id()
+
+	request := &roacs.UpdateKMSEncryptionRequest{}
+
+	if d.HasChange("disable_encryption") {
+		if v, ok := d.GetOkExists("disable_encryption"); ok {
+			request.DisableEncryption = tea.Bool(v.(bool))
+		}
+	}
+	if d.HasChange("encryption_provider_key") {
+		if v, ok := d.GetOk("encryption_provider_key"); ok {
+			log.Printf("[DEBUG] HasChange encryption_provider_key: %s", v.(string))
+			request.KmsKeyId = tea.String(v.(string))
+		}
+	}
+
+	csService := CsService{client}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err = csClient.UpdateKMSEncryption(tea.String(clusterId), request)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Wait for cluster to return to running state
+	stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(clusterId, []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func kmsEncryptionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("disable_encryption").(bool) {
+		return true
+	}
+	return false
 }

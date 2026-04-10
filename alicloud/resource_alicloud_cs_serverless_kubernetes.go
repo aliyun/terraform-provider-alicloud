@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
+	roacs "github.com/alibabacloud-go/cs-20151215/v7/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"

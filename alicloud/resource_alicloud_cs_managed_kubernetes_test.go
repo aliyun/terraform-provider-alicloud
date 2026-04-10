@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
@@ -214,6 +215,88 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 						"operation_policy.0.cluster_auto_upgrade.0.channel": "rapid",
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCSManagedKubernetes_encryption(t *testing.T) {
+	var v *cs.KubernetesClusterDetail
+
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, csManagedKubernetesBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccmanagedkubernetes-encryption-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSManagedKubernetesConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                 name,
+					"worker_vswitch_ids":   []string{"${local.vswitch_id}"},
+					"pod_cidr":             "10.93.0.0/16",
+					"service_cidr":         "172.21.0.0/16",
+					"slb_internet_enabled": "true",
+					"cluster_spec":         "ack.pro.small",
+					"deletion_protection":  "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"pod_cidr":             "10.93.0.0/16",
+						"service_cidr":         "172.21.0.0/16",
+						"slb_internet_enabled": "true",
+						"cluster_spec":         "ack.pro.small",
+						"deletion_protection":  "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encryption_provider_key": "${data.alicloud_kms_keys.default.keys[0].key_id}",
+					"disable_encryption":      "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encryption_provider_key": CHECKSET,
+						"disable_encryption":      "false",
+					}),
+				),
+			},
+			{
+				PreConfig: func() { time.Sleep(5 * time.Minute) },
+				Config: testAccConfig(map[string]interface{}{
+					"encryption_provider_key": "",
+					"disable_encryption":      "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disable_encryption": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "new_nat_gateway", "user_ca", "name_prefix", "slb_internet_enabled", "api_audiences", "service_account_issuer", "load_balancer_spec", "cluster_ca_cert", "client_key", "client_cert", "worker_vswitch_ids"},
 			},
 		},
 	})
@@ -547,6 +630,8 @@ func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
 						},
 					},
 					"skip_set_certificate_authority": "false",
+					"control_plane_log_ttl":          "30",
+					"control_plane_log_components":   []string{"apiserver", "kcm", "scheduler"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -567,6 +652,10 @@ func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
 						"maintenance_window.0.maintenance_time": "2024-10-15T12:31:00.000+08:00",
 						"maintenance_window.0.duration":         "3h",
 						"maintenance_window.0.weekly_period":    "Thursday",
+						"control_plane_log_ttl":                 "30",
+						"control_plane_log_components.0":        "apiserver",
+						"control_plane_log_components.1":        "kcm",
+						"control_plane_log_components.2":        "scheduler",
 					}),
 				),
 			},
@@ -794,6 +883,10 @@ locals {
 resource "alicloud_security_group" "default" {
   count  = 2
   vpc_id = alicloud_vpc.vpc.0.id
+}
+
+data "alicloud_kms_keys" "default" {
+  filters = "[{\"Key\":\"KeyState\",\"Values\":[\"Enabled\"]},{\"Key\":\"KeySpec\",\"Values\":[\"Aliyun_AES_256\"]},{\"Key\":\"KeyUsage\",\"Values\":[\"ENCRYPT/DECRYPT\"]},{\"Key\":\"CreatorType\",\"Values\":[\"User\"]}]"
 }
 `, name)
 }
