@@ -118,6 +118,30 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 				Computed:   true,
 				Deprecated: "Field 'secondary_cidr_blocks' has been deprecated from provider version 1.185.0. Field 'secondary_cidr_blocks' has been deprecated from provider version 1.185.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_ipv4_cidr_block'. `secondary_cidr_blocks` attributes and `alicloud_vpc_ipv4_cidr_block` resource cannot be used at the same time.",
 				Elem:       &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: func(k, old, new string, diff *schema.ResourceData) bool {
+					oldEntry, newEntry := diff.GetChange("secondary_cidr_blocks")
+					if oldEntry == nil || newEntry == nil {
+						return false
+					}
+					oList := oldEntry.([]interface{})
+					nList := newEntry.([]interface{})
+					if len(oList) == 0 || len(nList) == 0 {
+						return false
+					}
+					oldSet := schema.NewSet(schema.HashString, nil)
+					for _, v := range oList {
+						oldSet.Add(v)
+					}
+					nSet := schema.NewSet(schema.HashString, nil)
+					for _, v := range nList {
+						nSet.Add(v)
+					}
+
+					if oldSet.Equal(nSet) {
+						return true
+					}
+					return false
+				},
 			},
 			"secondary_cidr_mask": {
 				Type:       schema.TypeInt,
@@ -607,28 +631,28 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		oldList := oldEntry.([]interface{})
 		newList := newEntry.([]interface{})
 
-		// Calculate differences considering order
+		oldSet := schema.NewSet(schema.HashString, nil)
+		for _, v := range oldList {
+			oldSet.Add(v)
+		}
+		nSet := schema.NewSet(schema.HashString, nil)
+		for _, v := range newList {
+			nSet.Add(v)
+		}
+		intersectionSet := oldSet.Intersection(nSet)
+
 		var removed []interface{}
 		var added []interface{}
-
-		// Find the longest common prefix (items that match in order from the beginning)
-		commonPrefixLen := 0
-		for i := 0; i < len(oldList) && i < len(newList); i++ {
-			if oldList[i] == newList[i] {
-				commonPrefixLen++
-			} else {
-				break
+		for _, v := range oldList {
+			if !intersectionSet.Contains(v) {
+				removed = append(removed, v)
 			}
 		}
 
-		// Remove items from old list that are after the common prefix
-		for i := commonPrefixLen; i < len(oldList); i++ {
-			removed = append(removed, oldList[i])
-		}
-
-		// Add items from new list that are after the common prefix
-		for i := commonPrefixLen; i < len(newList); i++ {
-			added = append(added, newList[i])
+		for _, v := range newList {
+			if !intersectionSet.Contains(v) {
+				added = append(added, v)
+			}
 		}
 
 		if len(removed) > 0 {
