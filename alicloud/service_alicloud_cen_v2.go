@@ -279,6 +279,7 @@ func (s *CenServiceV2) DescribeCenTrafficMarkingPolicy(id string) (object map[st
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -314,30 +315,22 @@ func (s *CenServiceV2) DescribeCenTrafficMarkingPolicy(id string) (object map[st
 		return object, WrapErrorf(NotFoundErr("TrafficMarkingPolicy", id), NotFoundMsg, response)
 	}
 
-	result, _ := v.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		if fmt.Sprint(item["TrafficMarkingPolicyId"]) != parts[1] {
-			continue
-		}
-		if fmt.Sprint(item["TransitRouterId"]) != parts[0] {
-			continue
-		}
-		return item, nil
-	}
-	return object, WrapErrorf(NotFoundErr("TrafficMarkingPolicy", id), NotFoundMsg, response)
+	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
 func (s *CenServiceV2) CenTrafficMarkingPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CenTrafficMarkingPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeCenTrafficMarkingPolicy)
+}
+
+func (s *CenServiceV2) CenTrafficMarkingPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTrafficMarkingPolicy(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
