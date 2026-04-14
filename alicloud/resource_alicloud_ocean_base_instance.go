@@ -65,7 +65,7 @@ func resourceAliCloudOceanBaseInstance() *schema.Resource {
 			"disk_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: IntBetween(100, 10000),
+				ValidateFunc: IntBetween(50, 10000),
 			},
 			"disk_type": {
 				Type:         schema.TypeString,
