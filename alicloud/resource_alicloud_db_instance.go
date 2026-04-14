@@ -406,6 +406,15 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"force_encryption": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntInSlice([]int{0, 1}),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != "SQLServer"
+				},
+			},
 			"encryption_key": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -1272,7 +1281,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.HasChanges("ssl_action", "ssl_connection_string") {
+	if d.HasChanges("ssl_action", "ssl_connection_string", "force_encryption") {
 		action := "ModifyDBInstanceSSL"
 		request := map[string]interface{}{
 			"DBInstanceId": d.Id(),
@@ -1362,6 +1371,12 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
 					request["ServerKey"] = v.(string)
 				}
+			}
+		}
+
+		if d.Get("engine").(string) == "SQLServer" {
+			if v, ok := d.GetOkExists("force_encryption"); ok {
+				request["ForceEncryption"] = v.(int)
 			}
 		}
 
@@ -2059,7 +2074,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if v, ok := instance["Collation"]; ok && v != nil && v != "" {
 		d.Set("collation", v)
 	}
-	
+
 	if instance["PayType"] == string(Prepaid) {
 		action := "DescribeInstanceAutoRenewalAttribute"
 		request := map[string]interface{}{
@@ -2112,6 +2127,9 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("ssl_status", sslAction["RequireUpdate"])
 	d.Set("ssl_action", convertRdsInstanceSslActionResponse(sslAction["SSLEnabled"], d.Get("ssl_action")))
+	if v, ok := sslAction["ForceEncryption"]; ok && v != nil {
+		d.Set("force_encryption", v)
+	}
 	d.Set("client_ca_enabled", d.Get("client_ca_enabled"))
 	d.Set("client_crl_enabled", d.Get("client_crl_enabled"))
 	d.Set("ca_type", sslAction["CAType"])

@@ -1106,6 +1106,28 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ssl_action":       "Open",
+					"force_encryption": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action":       "Open",
+						"force_encryption": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force_encryption": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force_encryption": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "SQLServer",
 					"engine_version":           "2012_std_ha",
 					"instance_type":            "mssql.x4.large.s2",
@@ -1118,6 +1140,7 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 					"monitoring_period":        "300",
 					"category":                 "HighAvailability",
 					"connection_string_prefix": connectionStringPrefixSecond,
+					"force_encryption":         "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1136,6 +1159,7 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 						"security_group_ids.#":     "1",
 						"category":                 "HighAvailability",
 						"connection_string_prefix": connectionStringPrefixSecond,
+						"force_encryption":         "0",
 					}),
 				),
 			},
