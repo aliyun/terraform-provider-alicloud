@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver"
 	"github.com/alibabacloud-go/cs-20151215/v7/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -428,7 +429,15 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 		// DescribeAddon
 		addonInfoDetail, err := s.DescribeAddon(clusterId, name, addonInstance.Version)
 		if err != nil {
-			return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeAddon", err)
+			if IsExpectedErrors(err, []string{"AddonNotFound"}) {
+				// If the specified version is not found, retry without version
+				addonInfoDetail, err = s.DescribeAddon(clusterId, name, "")
+				if err != nil {
+					return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeAddon", err)
+				}
+			} else {
+				return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeAddon", err)
+			}
 		}
 
 		if addonInfoDetail == nil || addonInfoDetail.Body == nil {
@@ -436,6 +445,13 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 		}
 
 		addon.NextVersion = getNextVersion(addonInfoDetail)
+		// If retried without version, use the response version as next_version only if it's newer
+		if addon.NextVersion == "" && addonInfoDetail.Body.Version != nil {
+			targetVersion := tea.StringValue(addonInfoDetail.Body.Version)
+			if cmp, err := versionCompare(addonInstance.Version, targetVersion); err == nil && cmp == 1 {
+				addon.NextVersion = targetVersion
+			}
+		}
 
 		// Update if addon installed
 		addon.Version = addonInstance.Version
@@ -487,7 +503,15 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 
 	addonInfo, err := s.DescribeAddon(clusterId, addonName, addonInstance.Version)
 	if err != nil {
-		return nil, err
+		if IsExpectedErrors(err, []string{"AddonNotFound"}) {
+			// If the specified version is not found, retry without version
+			addonInfo, err = s.DescribeAddon(clusterId, addonName, "")
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	}
 
 	if addonInfo == nil || addonInfo.Body == nil {
@@ -499,6 +523,13 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 	addonInstance.NextVersion = addonInstance.Version
 	if nextVersion := getNextVersion(addonInfo); nextVersion != "" {
 		addonInstance.NextVersion = nextVersion
+	}
+	// If retried without version, use the response version as next_version only if it's newer
+	if addonInstance.NextVersion == addonInstance.Version && addonInfo.Body.Version != nil {
+		targetVersion := tea.StringValue(addonInfo.Body.Version)
+		if cmp, err := versionCompare(addonInstance.Version, targetVersion); err == nil && cmp == 1 {
+			addonInstance.NextVersion = targetVersion
+		}
 	}
 	addonInstance.CanUpgrade = addonInstance.Version != addonInstance.NextVersion
 	addonInstance.SupportedActions = tea.StringSliceValue(addonInfo.Body.SupportedActions)
@@ -515,6 +546,38 @@ func getNextVersion(addonInfo *client.DescribeAddonResponse) string {
 	}
 
 	return ""
+}
+
+// versionCompare compares two semantic versions using github.com/Masterminds/semver.
+// Supports formats: "1.2.3", "v1.2.3", "1.2.3-aliyun.1", "v1.31.0-apsara.6.11.6.ad796663", etc.
+// Returns:
+//
+//	 1  if newVersion > oldVersion
+//	 0  if newVersion == oldVersion
+//	-1  if newVersion < oldVersion
+//
+// Example: versionCompare("1.20.11-aliyun.1", "1.22.3-aliyun.1") returns 1
+func versionCompare(oldVersion, newVersion string) (int, error) {
+	if oldVersion == "" || newVersion == "" {
+		if oldVersion == "" && newVersion == "" {
+			return 0, nil
+		}
+		if oldVersion == "" {
+			return 1, nil
+		}
+		return -1, nil
+	}
+
+	oldSemver, err := semver.NewVersion(oldVersion)
+	if err != nil {
+		return -2, fmt.Errorf("failed to parse version %q: %v", oldVersion, err)
+	}
+	newSemver, err := semver.NewVersion(newVersion)
+	if err != nil {
+		return -2, fmt.Errorf("failed to parse version %q: %v", newVersion, err)
+	}
+
+	return newSemver.Compare(oldSemver), nil
 }
 
 func (s *CsClient) CsKubernetesAddonTaskRefreshFunc(clusterId string, addonName string, failStates []string) resource.StateRefreshFunc {
