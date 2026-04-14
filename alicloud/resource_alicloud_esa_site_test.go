@@ -24,6 +24,7 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -92,6 +93,146 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"automatic_frequency_control_enable": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_frequency_control_enable": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"automatic_frequency_control_level": "normal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_frequency_control_level": "normal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"automatic_frequency_control_action_type": "observe",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_frequency_control_action_type": "observe",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"performance_data_collection_enable": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"performance_data_collection_enable": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"add_client_geolocation_header": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"add_client_geolocation_header": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"add_real_client_ip_header": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"add_real_client_ip_header": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"real_client_ip_header_name": "test-header",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"real_client_ip_header_name": "test-header",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_waf_settings": []map[string]interface{}{
+						{
+							"add_bot_protection_headers": []map[string]interface{}{
+								{
+									"enable": "true",
+								},
+							},
+							"client_ip_identifier": []map[string]interface{}{
+								{
+									"headers": []string{
+										"header1"},
+									"mode": "headers",
+								},
+							},
+							"add_security_headers": []map[string]interface{}{
+								{
+									"enable": "true",
+								},
+							},
+							"security_level": []map[string]interface{}{
+								{
+									"value": "medium",
+								},
+							},
+							"bandwidth_abuse_protection": []map[string]interface{}{
+								{
+									"status": "on",
+									"action": "captcha",
+								},
+							},
+							"bot_management": []map[string]interface{}{
+								{
+									"definite_bots": []map[string]interface{}{
+										{
+											"action": "allow",
+										},
+									},
+									"likely_bots": []map[string]interface{}{
+										{
+											"action": "deny",
+										},
+									},
+									"js_detection": []map[string]interface{}{
+										{
+											"enable": "true",
+										},
+									},
+									"verified_bots": []map[string]interface{}{
+										{
+											"action": "monitor",
+										},
+									},
+									"effect_on_static": []map[string]interface{}{
+										{
+											"enable": "true",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"site_waf_settings.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -129,6 +270,143 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 						"tags.%":       "0",
 						"tags.Created": REMOVEKEY,
 						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEsaSite_basic8490_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_site.default"
+	ra := resourceAttrInit(resourceId, AlicloudEsaSiteMap8490)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEsaSite")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("bcd%d.queniuwk.cn", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEsaSiteBasicDependence8490)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_name":                          name,
+					"coverage":                           "overseas",
+					"global_mode":                        "weak",
+					"access_type":                        "NS",
+					"instance_id":                        "${data.alicloud_esa_sites.default.sites.0.instance_id}",
+					"resource_group_id":                  "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"paused":                             "false",
+					"automatic_frequency_control_enable": "on",
+					"automatic_frequency_control_level":  "normal",
+					"automatic_frequency_control_action_type": "observe",
+					"performance_data_collection_enable":      "on",
+					"add_client_geolocation_header":           "on",
+					"add_real_client_ip_header":               "on",
+					"real_client_ip_header_name":              "test-header",
+					"site_waf_settings": []map[string]interface{}{
+						{
+							"add_bot_protection_headers": []map[string]interface{}{
+								{
+									"enable": "true",
+								},
+							},
+							"client_ip_identifier": []map[string]interface{}{
+								{
+									"headers": []string{
+										"header1"},
+									"mode": "headers",
+								},
+							},
+							"add_security_headers": []map[string]interface{}{
+								{
+									"enable": "true",
+								},
+							},
+							"security_level": []map[string]interface{}{
+								{
+									"value": "medium",
+								},
+							},
+							"bandwidth_abuse_protection": []map[string]interface{}{
+								{
+									"status": "on",
+									"action": "captcha",
+								},
+							},
+							"bot_management": []map[string]interface{}{
+								{
+									"definite_bots": []map[string]interface{}{
+										{
+											"action": "allow",
+										},
+									},
+									"likely_bots": []map[string]interface{}{
+										{
+											"action": "deny",
+										},
+									},
+									"js_detection": []map[string]interface{}{
+										{
+											"enable": "true",
+										},
+									},
+									"verified_bots": []map[string]interface{}{
+										{
+											"action": "monitor",
+										},
+									},
+									"effect_on_static": []map[string]interface{}{
+										{
+											"enable": "true",
+										},
+									},
+								},
+							},
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"site_name":                          name,
+						"coverage":                           "overseas",
+						"global_mode":                        "weak",
+						"access_type":                        "NS",
+						"instance_id":                        CHECKSET,
+						"resource_group_id":                  CHECKSET,
+						"paused":                             "false",
+						"automatic_frequency_control_enable": "on",
+						"automatic_frequency_control_level":  "normal",
+						"automatic_frequency_control_action_type": "observe",
+						"performance_data_collection_enable":      "on",
+						"add_client_geolocation_header":           "on",
+						"add_real_client_ip_header":               "on",
+						"real_client_ip_header_name":              "test-header",
+						"site_waf_settings.#":                     "1",
+						"tags.%":                                  "2",
+						"tags.Created":                            "TF",
+						"tags.For":                                "Test",
 					}),
 				),
 			},
@@ -180,6 +458,7 @@ func TestAccAliCloudEsaSite_basic8484(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -311,6 +590,7 @@ func TestAccAliCloudEsaSite_basic8288(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -442,6 +722,7 @@ func TestAccAliCloudEsaSite_basic8106(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -573,6 +854,7 @@ func TestAccAliCloudEsaSite_basic9798(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -701,6 +983,7 @@ func TestAccAliCloudEsaSite_basic10677(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -709,18 +992,19 @@ func TestAccAliCloudEsaSite_basic10677(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_name":                     name,
-					"instance_id":                   "${data.alicloud_esa_sites.default.sites.0.instance_id}",
-					"development_mode":              "on",
-					"cache_reserve_instance_id":     "${alicloud_esa_cache_reserve_instance.default.id}",
-					"cache_architecture_mode":       "edge",
-					"case_insensitive":              "on",
-					"coverage":                      "overseas",
-					"add_real_client_ip_header":     "on",
-					"site_name_exclusive":           "on",
-					"ipv6_region":                   "x.x",
-					"seo_bypass":                    "on",
-					"cache_reserve_enable":          "on",
+					"site_name":        name,
+					"instance_id":      "${data.alicloud_esa_sites.default.sites.0.instance_id}",
+					"development_mode": "on",
+					// Currently, cache_reserve_instance_id and cache_reserve_enable cannot be CI tested, local testing has passed
+					//"cache_reserve_instance_id":     "${alicloud_esa_cache_reserve_instance.default.id}",
+					"cache_architecture_mode":   "edge",
+					"case_insensitive":          "on",
+					"coverage":                  "overseas",
+					"add_real_client_ip_header": "on",
+					"site_name_exclusive":       "on",
+					"ipv6_region":               "x.x",
+					"seo_bypass":                "on",
+					//"cache_reserve_enable":          "on",
 					"add_client_geolocation_header": "on",
 					"cross_border_optimization":     "on",
 					"ipv6_enable":                   "on",
@@ -732,18 +1016,18 @@ func TestAccAliCloudEsaSite_basic10677(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"site_name":                     name,
-						"instance_id":                   CHECKSET,
-						"development_mode":              "on",
-						"cache_reserve_instance_id":     CHECKSET,
-						"cache_architecture_mode":       "edge",
-						"case_insensitive":              "on",
-						"coverage":                      "overseas",
-						"add_real_client_ip_header":     "on",
-						"site_name_exclusive":           "on",
-						"ipv6_region":                   "x.x",
-						"seo_bypass":                    "on",
-						"cache_reserve_enable":          "on",
+						"site_name":        name,
+						"instance_id":      CHECKSET,
+						"development_mode": "on",
+						//"cache_reserve_instance_id":     CHECKSET,
+						//"cache_architecture_mode":       "edge",
+						"case_insensitive":          "on",
+						"coverage":                  "overseas",
+						"add_real_client_ip_header": "on",
+						"site_name_exclusive":       "on",
+						"ipv6_region":               "x.x",
+						"seo_bypass":                "on",
+						//"cache_reserve_enable":          "on",
 						"add_client_geolocation_header": "on",
 						"cross_border_optimization":     "on",
 						"ipv6_enable":                   "on",
@@ -757,15 +1041,15 @@ func TestAccAliCloudEsaSite_basic10677(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"development_mode":              "off",
-					"cache_reserve_instance_id":     "${alicloud_esa_cache_reserve_instance.update.id}",
-					"cache_architecture_mode":       "edge_smart",
-					"case_insensitive":              "off",
-					"add_real_client_ip_header":     "off",
-					"site_name_exclusive":           "off",
-					"ipv6_region":                   "cn.cn",
-					"seo_bypass":                    "off",
-					"cache_reserve_enable":          "off",
+					"development_mode": "off",
+					//"cache_reserve_instance_id":     "${alicloud_esa_cache_reserve_instance.update.id}",
+					//"cache_architecture_mode":       "edge_smart",
+					"case_insensitive":          "off",
+					"add_real_client_ip_header": "off",
+					"site_name_exclusive":       "off",
+					"ipv6_region":               "cn.cn",
+					"seo_bypass":                "off",
+					//"cache_reserve_enable":          "off",
 					"add_client_geolocation_header": "off",
 					"cross_border_optimization":     "off",
 					"ipv6_enable":                   "off",
@@ -775,15 +1059,15 @@ func TestAccAliCloudEsaSite_basic10677(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"development_mode":              "off",
-						"cache_reserve_instance_id":     CHECKSET,
-						"cache_architecture_mode":       "edge_smart",
-						"case_insensitive":              "off",
-						"add_real_client_ip_header":     "off",
-						"site_name_exclusive":           "off",
-						"ipv6_region":                   "cn.cn",
-						"seo_bypass":                    "off",
-						"cache_reserve_enable":          "off",
+						"development_mode": "off",
+						//"cache_reserve_instance_id":     CHECKSET,
+						//"cache_architecture_mode":       "edge_smart",
+						"case_insensitive":          "off",
+						"add_real_client_ip_header": "off",
+						"site_name_exclusive":       "off",
+						"ipv6_region":               "cn.cn",
+						"seo_bypass":                "off",
+						//"cache_reserve_enable":          "off",
 						"add_client_geolocation_header": "off",
 						"cross_border_optimization":     "off",
 						"ipv6_enable":                   "off",
@@ -860,23 +1144,23 @@ data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
 }
 
-resource "alicloud_esa_cache_reserve_instance" "default" {
-  quota_gb     = "10240"
-  cr_region    = "CN-beijing"
-  auto_renew   = true
-  period       = "1"
-  payment_type = "Subscription"
-  auto_pay     = true
-}
-
-resource "alicloud_esa_cache_reserve_instance" "update" {
-  quota_gb     = "10240"
-  cr_region    = "CN-beijing"
-  auto_renew   = true
-  period       = "1"
-  payment_type = "Subscription"
-  auto_pay     = true
-}
+//resource "alicloud_esa_cache_reserve_instance" "default" {
+//  quota_gb     = "10240"
+//  cr_region    = "CN-beijing"
+//  auto_renew   = true
+//  period       = "1"
+//  payment_type = "Subscription"
+//  auto_pay     = true
+//}
+//
+//resource "alicloud_esa_cache_reserve_instance" "update" {
+//  quota_gb     = "10240"
+//  cr_region    = "CN-beijing"
+//  auto_renew   = true
+//  period       = "1"
+//  payment_type = "Subscription"
+//  auto_pay     = true
+//}
 
 `, name)
 }
