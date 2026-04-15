@@ -14,7 +14,7 @@ NAT border firewall ACL priority.
 
 For information about Cloud Firewall Nat Firewall Control Policy Order and how to use it, see [What is Nat Firewall Control Policy Order](https://next.api.alibabacloud.com/document/Cloudfw/2017-12-07/ModifyNatFirewallControlPolicyPosition).
 
--> **NOTE:** Available since v1.274.0.
+-> **NOTE:** Available since v1.276.0.
 
 ~> **NOTE:** The resource can be used to manage the ordering of resource `alicloud_cloud_firewall_nat_firewall_control_policy.new_order`.
 
