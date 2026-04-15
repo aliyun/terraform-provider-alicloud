@@ -17,7 +17,7 @@ var AlicloudCloudFirewallNatFirewallControlPolicyMap6280 = map[string]string{
 func AlicloudCloudFirewallNatFirewallControlPolicyBasicDependence6280(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 variable "zone_id" {
@@ -62,24 +62,24 @@ resource "alicloud_vswitch" "defaultvlFKz1" {
 }
 
 resource "alicloud_cloud_firewall_address_book" "port" {
-  description      = "创建ALL的port类型地址簿"
-  group_name       = format("%%s%%s", var.name, "port")
-  group_type       = "port"
-  address_list     = ["22/22", "23/23", "24/24"]
+  description  = "创建ALL的port类型地址簿"
+  group_name   = format("%%s%%s", var.name, "port")
+  group_type   = "port"
+  address_list = ["22/22", "23/23", "24/24"]
 }
 
 resource "alicloud_cloud_firewall_address_book" "ip" {
-  description      = "创建ALL的ip类型地址簿"
-  group_name       = format("%%s%%s", var.name, "ip")
-  group_type       = "ip"
-  address_list     = ["1.1.1.1/32", "2.2.2.2/32"]
+  description  = "创建ALL的ip类型地址簿"
+  group_name   = format("%%s%%s", var.name, "ip")
+  group_type   = "ip"
+  address_list = ["1.1.1.1/32", "2.2.2.2/32"]
 }
 
 resource "alicloud_cloud_firewall_address_book" "ip2" {
-  description      = "创建ALL的ip类型地址簿2"
-  group_name       = format("%%s%%s", var.name, "ip2")
-  group_type       = "ip"
-  address_list     = ["1.1.1.1/32", "2.2.2.2/32"]
+  description  = "创建ALL的ip类型地址簿2"
+  group_name   = format("%%s%%s", var.name, "ip2")
+  group_type   = "ip"
+  address_list = ["1.1.1.1/32", "2.2.2.2/32"]
 }
 
 resource "alicloud_nat_gateway" "defaultjJYdg2" {
@@ -89,6 +89,7 @@ resource "alicloud_nat_gateway" "defaultjJYdg2" {
   vswitch_id       = alicloud_vswitch.defaultvlFKz1.id
   nat_type         = "Enhanced"
 }
+
 
 `, name)
 }
@@ -101,7 +102,7 @@ var AlicloudCloudFirewallNatFirewallControlPolicyMap5272 = map[string]string{
 func AlicloudCloudFirewallNatFirewallControlPolicyBasicDependence5272(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 variable "zone_id" {
@@ -146,24 +147,24 @@ resource "alicloud_vswitch" "defaultvlFKz1" {
 }
 
 resource "alicloud_cloud_firewall_address_book" "port" {
-  description      = "创建ALL的port类型地址簿"
-  group_name       = format("%%s%%s", var.name, "port")
-  group_type       = "port"
-  address_list     = ["22/22", "23/23", "24/24"]
+  description  = "创建ALL的port类型地址簿"
+  group_name   = format("%%s%%s", var.name, "port")
+  group_type   = "port"
+  address_list = ["22/22", "23/23", "24/24"]
 }
 
 resource "alicloud_cloud_firewall_address_book" "ip" {
-  description      = "创建ALL的ip类型地址簿"
-  group_name       = format("%%s%%s", var.name, "ip")
-  group_type       = "ip"
-  address_list     = ["1.1.1.1/32", "2.2.2.2/32"]
+  description  = "创建ALL的ip类型地址簿"
+  group_name   = format("%%s%%s", var.name, "ip")
+  group_type   = "ip"
+  address_list = ["1.1.1.1/32", "2.2.2.2/32"]
 }
 
 resource "alicloud_cloud_firewall_address_book" "ip2" {
-  description      = "创建ALL的ip类型地址簿2"
-  group_name       = format("%%s%%s", var.name, "ip2")
-  group_type       = "ip"
-  address_list     = ["1.1.1.1/32", "2.2.2.2/32"]
+  description  = "创建ALL的ip类型地址簿2"
+  group_name   = format("%%s%%s", var.name, "ip2")
+  group_type   = "ip"
+  address_list = ["1.1.1.1/32", "2.2.2.2/32"]
 }
 
 resource "alicloud_nat_gateway" "defaultjJYdg2" {
@@ -173,6 +174,8 @@ resource "alicloud_nat_gateway" "defaultjJYdg2" {
   vswitch_id       = alicloud_vswitch.defaultvlFKz1.id
   nat_type         = "Enhanced"
 }
+
+
 
 
 `, name)
@@ -186,7 +189,7 @@ var AlicloudCloudFirewallNatFirewallControlPolicyMap5307 = map[string]string{
 func AlicloudCloudFirewallNatFirewallControlPolicyBasicDependence5307(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 variable "direction" {
@@ -218,31 +221,31 @@ resource "alicloud_nat_gateway" "defaultMbS2Ts" {
 }
 
 resource "alicloud_cloud_firewall_address_book" "port" {
-  description      = "创建ALL的port类型地址簿"
-  group_name       = format("%%s%%s", var.name, "port")
-  group_type       = "port"
-  address_list     = ["22/22", "23/23", "24/24"]
+  description  = "创建ALL的port类型地址簿"
+  group_name   = format("%%s%%s", var.name, "port")
+  group_type   = "port"
+  address_list = ["22/22", "23/23", "24/24"]
 }
 
 resource "alicloud_cloud_firewall_address_book" "port-update" {
-  description      = "创建ALL的port类型地址簿-update"
-  group_name       = format("%%s%%s", var.name, "port-update")
-  group_type       = "port"
-  address_list     = ["22/22", "23/23", "24/24"]
+  description  = "创建ALL的port类型地址簿-update"
+  group_name   = format("%%s%%s", var.name, "port-update")
+  group_type   = "port"
+  address_list = ["22/22", "23/23", "24/24"]
 }
 
 resource "alicloud_cloud_firewall_address_book" "domain" {
-  description      = "创建ALL的port类型地址簿"
-  group_name       = format("%%s%%s", var.name, "domain")
-  group_type       = "domain"
-  address_list     = ["alibaba.com", "aliyun.com", "alicloud.com"]
+  description  = "创建ALL的port类型地址簿"
+  group_name   = format("%%s%%s", var.name, "domain")
+  group_type   = "domain"
+  address_list = ["alibaba.com", "aliyun.com", "alicloud.com"]
 }
 
 resource "alicloud_cloud_firewall_address_book" "ip" {
-  description      = "tf-destination-group"
-  group_name       = var.name
-  group_type       = "ip"
-  address_list     = ["1.1.1.1/32", "2.2.2.2/32"]
+  description  = "tf-destination-group"
+  group_name   = var.name
+  group_type   = "ip"
+  address_list = ["1.1.1.1/32", "2.2.2.2/32"]
 }
 
 resource "alicloud_cloud_firewall_nat_firewall_control_policy" "default0" {
@@ -278,9 +281,90 @@ resource "alicloud_cloud_firewall_nat_firewall_control_policy" "default0" {
   lifecycle {
     ignore_changes = [new_order]
   }
+}`, name)
 }
 
-`, name)
+func TestAccAliCloudCloudFirewallNatFirewallControlPolicy_basic_no_order(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_nat_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallNatFirewallControlPolicyMap6280)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallNatFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewallnatfirewallcontrolpolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, hclFirewallNatFirewallControlPolicyBasic)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination":         "1.1.1.1/32",
+					"description":         "测试nat防火墙规则",
+					"dest_port":           "22/22",
+					"acl_action":          "log",
+					"destination_type":    "net",
+					"direction":           "out",
+					"source":              "2.2.2.2/32",
+					"dest_port_type":      "port",
+					"proto":               "TCP",
+					"domain_resolve_type": "0",
+					"repeat_type":         "Weekly",
+					"nat_gateway_id":      "${alicloud_nat_gateway.test.id}",
+					"release":             "false",
+					"source_type":         "net",
+					"ip_version":          "4",
+					"application_name_list": []string{
+						"ANY"},
+					"end_time":        "1888545600",
+					"start_time":      "1699156800",
+					"repeat_end_time": "21:30",
+					"repeat_days": []string{
+						"1", "2", "3", "4"},
+					"repeat_start_time": "21:00",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination":             "1.1.1.1/32",
+						"description":             "测试nat防火墙规则",
+						"dest_port":               "22/22",
+						"acl_action":              "log",
+						"destination_type":        "net",
+						"direction":               "out",
+						"source":                  "2.2.2.2/32",
+						"dest_port_type":          "port",
+						"proto":                   "TCP",
+						"domain_resolve_type":     "0",
+						"repeat_type":             "Weekly",
+						"nat_gateway_id":          CHECKSET,
+						"new_order":               "1", // The default value should be `1` if gateway only have one policy
+						"release":                 "false",
+						"source_type":             "net",
+						"ip_version":              "4",
+						"application_name_list.#": "1",
+						"end_time":                "1888545600",
+						"start_time":              "1699156800",
+						"repeat_end_time":         "21:30",
+						"repeat_days.#":           "4",
+						"repeat_start_time":       "21:00",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ip_version"},
+			},
+		},
+	})
 }
 
 // Case 全生命周期_1.1 6280  twin
@@ -675,7 +759,7 @@ func TestAccAliCloudCloudFirewallNatFirewallControlPolicy_basic6280_raw(t *testi
 					"acl_action":          "drop",
 					"destination_type":    "domain",
 					"source":              "1.1.1.1/32",
-					"domain_resolve_type": "1",
+					"domain_resolve_type": "0",
 					"repeat_type":         "Permanent",
 					"release":             "true",
 					"application_name_list": []string{
@@ -694,7 +778,7 @@ func TestAccAliCloudCloudFirewallNatFirewallControlPolicy_basic6280_raw(t *testi
 						"acl_action":              "drop",
 						"destination_type":        "domain",
 						"source":                  "1.1.1.1/32",
-						"domain_resolve_type":     "1",
+						"domain_resolve_type":     "0",
 						"repeat_type":             "Permanent",
 						"release":                 "true",
 						"application_name_list.#": "5",
@@ -912,7 +996,7 @@ func TestAccAliCloudCloudFirewallNatFirewallControlPolicy_basic5272_raw(t *testi
 					"acl_action":          "drop",
 					"destination_type":    "domain",
 					"source":              "1.1.1.1/32",
-					"domain_resolve_type": "1",
+					"domain_resolve_type": "0",
 					"repeat_type":         "Permanent",
 					"release":             "true",
 					"application_name_list": []string{
@@ -927,7 +1011,7 @@ func TestAccAliCloudCloudFirewallNatFirewallControlPolicy_basic5272_raw(t *testi
 						"acl_action":              "drop",
 						"destination_type":        "domain",
 						"source":                  "1.1.1.1/32",
-						"domain_resolve_type":     "1",
+						"domain_resolve_type":     "0",
 						"repeat_type":             "Permanent",
 						"release":                 "true",
 						"application_name_list.#": "5",
@@ -1207,4 +1291,36 @@ func TestAccAliCloudCloudFirewallNatFirewallControlPolicy_basic5307_raw(t *testi
 			},
 		},
 	})
+}
+
+func hclFirewallNatFirewallControlPolicyBasic(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "test" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "test" {
+  description = "TF-test-vpc"
+  cidr_block  = "172.16.0.0/12"
+  vpc_name    = var.name
+}
+
+resource "alicloud_vswitch" "test" {
+  vpc_id       = alicloud_vpc.test.id
+  cidr_block   = "172.16.1.0/24"
+  vswitch_name = var.name
+  zone_id      = data.alicloud_zones.test.zones.0.id
+}
+
+resource "alicloud_nat_gateway" "test" {
+  vpc_id           = alicloud_vpc.test.id
+  nat_gateway_name = var.name
+  payment_type     = "PayAsYouGo"
+  vswitch_id       = alicloud_vswitch.test.id
+  nat_type         = "Enhanced"
+}`, name)
 }
