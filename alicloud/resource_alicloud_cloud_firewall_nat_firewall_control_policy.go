@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -112,7 +111,8 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicy() *schema.Resource {
 			},
 			"new_order": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true, // Default to -1. Change to `Computed` is to compromise the `order` in resource `alicloud_cloud_firewall_nat_firewall_control_policy_order`
 			},
 			"proto": {
 				Type:     schema.TypeString,
@@ -208,7 +208,12 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyCreate(d *schema.Resou
 	request["Proto"] = d.Get("proto")
 	request["Source"] = d.Get("source")
 	request["SourceType"] = d.Get("source_type")
-	request["NewOrder"] = d.Get("new_order")
+
+	if d.Get("new_order") == "" {
+		request["NewOrder"] = "-1"
+	} else {
+		request["NewOrder"] = d.Get("new_order")
+	}
 	if v, ok := d.GetOk("dest_port_type"); ok {
 		request["DestPortType"] = v
 	}
@@ -505,7 +510,12 @@ func resourceAliCloudCloudFirewallNatFirewallControlPolicyUpdate(d *schema.Resou
 	if d.HasChange("new_order") {
 		update = true
 	}
-	request["NewOrder"] = d.Get("new_order")
+
+	if d.Get("new_order") == "" {
+		request["NewOrder"] = "-1"
+	} else {
+		request["NewOrder"] = d.Get("new_order")
+	}
 	if update {
 		var err error
 		var endpoint string
