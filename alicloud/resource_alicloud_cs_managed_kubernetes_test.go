@@ -1154,4 +1154,73 @@ variable "cluster_type" {
 `, name)
 }
 
+func Test_versionCompare(t *testing.T) {
+	tests := []struct {
+		name           string
+		oldVersion     string
+		newVersion     string
+		expectedResult int
+		expectError    bool
+	}{
+		// basic semver
+		{name: "equal versions", oldVersion: "1.2.3", newVersion: "1.2.3", expectedResult: 0},
+		{name: "new version newer patch", oldVersion: "1.2.3", newVersion: "1.2.4", expectedResult: 1},
+		{name: "new version older patch", oldVersion: "1.2.4", newVersion: "1.2.3", expectedResult: -1},
+		{name: "new version newer minor", oldVersion: "1.2.3", newVersion: "1.3.0", expectedResult: 1},
+		{name: "new version older minor", oldVersion: "1.3.0", newVersion: "1.2.3", expectedResult: -1},
+		{name: "new version newer major", oldVersion: "1.2.3", newVersion: "2.0.0", expectedResult: 1},
+		{name: "new version older major", oldVersion: "2.0.0", newVersion: "1.2.3", expectedResult: -1},
+
+		// v prefix
+		{name: "v prefix both", oldVersion: "v1.2.3", newVersion: "v1.2.4", expectedResult: 1},
+		{name: "v prefix old only", oldVersion: "v1.2.3", newVersion: "1.2.4", expectedResult: 1},
+		{name: "v prefix new only", oldVersion: "1.2.3", newVersion: "v1.2.4", expectedResult: 1},
+		{name: "v prefix equal", oldVersion: "v1.2.3", newVersion: "v1.2.3", expectedResult: 0},
+
+		// pre-release suffix (per semver: release > pre-release, e.g. 1.2.3 > 1.2.3-alpha.1)
+		{name: "release vs pre-release", oldVersion: "1.2.3-alpha.1", newVersion: "1.2.3", expectedResult: 1},
+		{name: "pre-release vs release", oldVersion: "1.2.3", newVersion: "1.2.3-alpha.1", expectedResult: -1},
+		{name: "pre-release equal", oldVersion: "1.2.3-alpha.1", newVersion: "1.2.3-alpha.1", expectedResult: 0},
+		{name: "pre-release numeric diff", oldVersion: "1.2.3-alpha.1", newVersion: "1.2.3-alpha.2", expectedResult: 1},
+		{name: "pre-release string diff", oldVersion: "1.2.3-alpha.1", newVersion: "1.2.3-beta.1", expectedResult: 1},
+		{name: "pre-release with aliyun", oldVersion: "1.9.3-aliyun.1", newVersion: "1.9.7-aliyun.2", expectedResult: 1},
+		{name: "pre-release newer major version", oldVersion: "1.9.3-aliyun.1", newVersion: "2.0.0-aliyun.1", expectedResult: 1},
+
+		// apsara format
+		{name: "apsara same main version, suffix newer", oldVersion: "v1.31.0-apsara.6.11.6.ad796663", newVersion: "v1.31.0-apsara.6.11.7.17d202a9", expectedResult: 1},
+		{name: "apsara same main version, suffix older", oldVersion: "v1.31.0-apsara.6.11.7.17d202a9", newVersion: "v1.31.0-apsara.6.11.6.ad796663", expectedResult: -1},
+		{name: "apsara same numeric suffix, diff commit hash", oldVersion: "v1.31.0-apsara.6.11.6.ad796663", newVersion: "v1.31.0-apsara.6.11.6.bf123456", expectedResult: 1},
+		{name: "apsara different main version", oldVersion: "v1.30.0-apsara.6.11.6.ad796663", newVersion: "v1.31.0-apsara.6.11.6.ad796663", expectedResult: 1},
+
+		// empty versions
+		{name: "both empty", oldVersion: "", newVersion: "", expectedResult: 0},
+		{name: "old empty", oldVersion: "", newVersion: "1.2.3", expectedResult: 1},
+		{name: "new empty", oldVersion: "1.2.3", newVersion: "", expectedResult: -1},
+
+		// invalid format
+		{name: "invalid old version", oldVersion: "latest", newVersion: "1.2.3", expectError: true},
+		{name: "invalid new version", oldVersion: "1.2.3", newVersion: "latest", expectError: true},
+		{name: "both invalid", oldVersion: "abc", newVersion: "xyz", expectError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := versionCompare(tt.oldVersion, tt.newVersion)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error but got nil, result=%d", result)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+			if result != tt.expectedResult {
+				t.Errorf("versionCompare(%q, %q) = %d, want %d", tt.oldVersion, tt.newVersion, result, tt.expectedResult)
+			}
+		})
+	}
+}
+
 // Test Ack Cluster. <<< Resource test cases, automatically generated.
