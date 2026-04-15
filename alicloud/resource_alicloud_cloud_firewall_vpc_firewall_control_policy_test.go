@@ -329,6 +329,66 @@ func TestUnitAliCloudCloudFirewallVpcFirewallControlPolicy(t *testing.T) {
 	}
 }
 
+func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic_no_order(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap11929)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallVpcFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence11929)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action":       "accept",
+					"description":      name,
+					"destination":      "127.0.0.2/32",
+					"destination_type": "net",
+					"proto":            "TCP",
+					"source":           "127.0.0.1/32",
+					"source_type":      "net",
+					"vpc_firewall_id":  "${alicloud_cen_instance.default.id}",
+					"application_name": "ANY",
+					"dest_port":        "80/88",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action":       "accept",
+						"description":      name,
+						"destination":      "127.0.0.2/32",
+						"destination_type": "net",
+						"proto":            "TCP",
+						"order":            "1", // if only one policy and order not set, the default order should be 1
+						"source":           "127.0.0.1/32",
+						"source_type":      "net",
+						"vpc_firewall_id":  CHECKSET,
+						"application_name": "ANY",
+						"dest_port":        "80/88",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
 // Test CloudFirewall VpcFirewallControlPolicy. >>> Resource test cases, automatically generated.
 // Case VPC边界安全策略_ip修改为域名 11929
 func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic11929(t *testing.T) {
@@ -734,30 +794,30 @@ var AliCloudCloudFirewallVpcFirewallControlPolicyMap11929 = map[string]string{
 
 func AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence11929(name string) string {
 	return fmt.Sprintf(`
-	variable "name" {
-  		default = "%s"
-	}
+variable "name" {
+  default = "%s"
+}
 
-	data "alicloud_account" "current" {
-	}
+data "alicloud_account" "current" {
+}
 
-	resource "alicloud_cen_instance" "default" {
-  		cen_instance_name = var.name
-	}
+resource "alicloud_cen_instance" "default" {
+  cen_instance_name = var.name
+}
 
-	resource "alicloud_cloud_firewall_address_book" "port" {
-  		description  = "${var.name}-port"
-  		group_name   = "${var.name}-port"
-  		group_type   = "port"
-  		address_list = ["8081/8081"]
-	}
+resource "alicloud_cloud_firewall_address_book" "port" {
+  description  = "${var.name}-port"
+  group_name   = "${var.name}-port"
+  group_type   = "port"
+  address_list = ["8081/8081"]
+}
 
-	resource "alicloud_cloud_firewall_address_book" "ip" {
-  		description  = var.name
-  		group_name   = var.name
-  		group_type   = "ip"
-  		address_list = ["10.21.0.0/16", "10.168.0.0/16"]
-	}
+resource "alicloud_cloud_firewall_address_book" "ip" {
+  description  = var.name
+  group_name   = var.name
+  group_type   = "ip"
+  address_list = ["10.21.0.0/16", "10.168.0.0/16"]
+}
 `, name)
 }
 
@@ -1165,30 +1225,30 @@ var AliCloudCloudFirewallVpcFirewallControlPolicyMap12022 = map[string]string{
 
 func AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence12022(name string) string {
 	return fmt.Sprintf(`
-	variable "name" {
-  		default = "%s"
-	}
+variable "name" {
+  default = "%s"
+}
 
-	data "alicloud_account" "current" {
-	}
+data "alicloud_account" "current" {
+}
 
-	resource "alicloud_cen_instance" "default" {
-  		cen_instance_name = var.name
-	}
+resource "alicloud_cen_instance" "default" {
+  cen_instance_name = var.name
+}
 
-	resource "alicloud_cloud_firewall_address_book" "port" {
-  		description  = "${var.name}-port"
-  		group_name   = "${var.name}-port"
-  		group_type   = "port"
-  		address_list = ["8081/8081"]
-	}
+resource "alicloud_cloud_firewall_address_book" "port" {
+  description  = "${var.name}-port"
+  group_name   = "${var.name}-port"
+  group_type   = "port"
+  address_list = ["8081/8081"]
+}
 
-	resource "alicloud_cloud_firewall_address_book" "ip" {
-  		description  = var.name
-  		group_name   = var.name
-  		group_type   = "ip"
-  		address_list = ["10.21.0.0/16", "10.168.0.0/16"]
-	}
+resource "alicloud_cloud_firewall_address_book" "ip" {
+  description  = var.name
+  group_name   = var.name
+  group_type   = "ip"
+  address_list = ["10.21.0.0/16", "10.168.0.0/16"]
+}
 `, name)
 }
 
