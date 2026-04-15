@@ -216,7 +216,6 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("zone_id", data.ZoneId)
 	d.Set("description", data.Description)
 	d.Set("vpc_id", data.Vips.Vip[0].VpcId)
-	d.Set("vswitch_id", data.Vips.Vip[0].VswitchId)
 	var connectionString, port string
 	for _, vip := range data.Vips.Vip {
 		if vip.Type == "intranet" {
@@ -228,13 +227,6 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("connection_string", connectionString)
 	d.Set("port", port)
 	d.Set("mysql_version", data.MysqlVersion)
-	d.Set("specification", data.InstanceSpec)
-	d.Set("instance_series", data.InstanceSeries)
-	if data.CommodityCode == "drdsPost" {
-		d.Set("instance_charge_type", string(PostPaid))
-	} else if data.CommodityCode == "drdsPre" {
-		d.Set("instance_charge_type", string(PrePaid))
-	}
 	return nil
 }
 
