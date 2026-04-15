@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -118,8 +117,8 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicy() *schema.Resource {
 			},
 			"order": {
 				Type:     schema.TypeInt,
-				Required: true,
-				ForceNew: true,
+				Optional: true,
+				Computed: true, // Default to -1. Change to `Computed` is to compromise the `order` in resource `alicloud_cloud_firewall_vpc_firewall_control_policy_order`
 			},
 			"proto": {
 				Type:     schema.TypeString,
@@ -203,7 +202,13 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyCreate(d *schema.Resou
 	if v, ok := d.GetOkExists("start_time"); ok {
 		request["StartTime"] = v
 	}
-	request["NewOrder"] = d.Get("order")
+
+	if d.Get("order") == 0 {
+		request["NewOrder"] = -1
+	} else {
+		request["NewOrder"] = d.Get("order")
+	}
+
 	if v, ok := d.GetOk("repeat_start_time"); ok {
 		request["RepeatStartTime"] = v
 	}
@@ -484,6 +489,26 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyUpdate(d *schema.Resou
 	if d.HasChange("end_time") {
 		update = true
 		request["EndTime"] = d.Get("end_time")
+	}
+
+	if d.HasChange("order") {
+		orderReq := map[string]interface{}{
+			"VpcFirewallId": parts[0],
+			"AclUuid":       parts[1],
+			"NewOrder":      -1,
+		}
+
+		if d.Get("order") != 0 {
+			orderReq["NewOrder"] = d.Get("order")
+		}
+
+		response, err = client.RpcPostWithEndpoint(
+			"Cloudfw", "2017-12-07",
+			"ModifyVpcFirewallControlPolicyPosition", query, orderReq, true, endpoint)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyVpcFirewallControlPolicyPosition", AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 	}
 
 	if update {

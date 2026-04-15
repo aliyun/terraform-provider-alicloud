@@ -16,6 +16,10 @@ For information about Cloud Firewall Vpc Firewall Control Policy and how to use 
 
 -> **NOTE:** Available since v1.194.0.
 
+~> **NOTE** Since v1.276.0. Set `new_order = -1` or omit the argument to let the Cloud Backend manage policy ordering automatically. You can also use `alicloud_cloud_firewall_vpc_firewall_control_policy_order` to manage the policy ordering.<br>
+  If you want manged the policy order in parallel **do not** set the `new_order`, instead use `alicloud_cloud_firewall_vpc_firewall_control_policy_order` manage the policy order.
+
+
 ## Example Usage
 
 Basic Usage
@@ -71,8 +75,10 @@ The following arguments are supported:
   - When the VPC firewall protects traffic between two VPCs connected through the cloud enterprise network, the policy group ID uses the cloud enterprise network instance ID.
   - When the VPC firewall protects traffic between two VPCs connected through the express connection, the policy group ID uses the ID of the VPC firewall instance.
 * `application_name` - (Optional) The type of the applications that the access control policy supports. Valid values: `FTP`, `HTTP`, `HTTPS`, `MySQL`, `SMTP`, `SMTPS`, `RDP`, `VNC`, `SSH`, `Redis`, `MQTT`, `MongoDB`, `Memcache`, `SSL`, `ANY`.
-* `application_name_list` - (Optional, List, Available since v1.267.0) The list of application types that the access control policy supports. 
--> **NOTE:** If `proto` is set to `TCP`, you can set `application_name_list` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name_list` to `["ANY"]`. From version 1.267.0, You must specify at least one of the `application_name_list` and `application_name`. If you specify both `application_name_list` and `application_name`, only the `application_name_list` takes effect.
+* `application_name_list` - (Optional, List, Available since v1.267.0) The list of application types that the access control policy supports.
+
+  -> **NOTE:** If `proto` is set to `TCP`, you can set `application_name_list` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name_list` to `["ANY"]`. From version 1.267.0, You must specify at least one of the `application_name_list` and `application_name`. If you specify both `application_name_list` and `application_name`, only the `application_name_list` takes effect.
+
 * `description` - (Required) Access control over VPC firewalls description of the strategy information.
 * `acl_action` - (Required) The action that Cloud Firewall performs on the traffic. Valid values: `accept`, `drop`, `log`.
 * `source` - (Required) Access control over VPC firewalls strategy in the source address.
@@ -83,9 +89,15 @@ The following arguments are supported:
   - If `destination_type` is set to `domain`, the value of `destination` must be a domain name.
 * `destination_type` - (Required) The type of the destination address in the access control policy. Valid values: `net`, `group`, `domain`.
 * `proto` - (Required) The type of the protocol in the access control policy. Valid values: `ANY`, `TCP`, `UDP`, `ICMP`.
-* `order` - (Required, ForceNew, Int) The priority of the access control policy. The priority value starts from 1. A smaller priority value indicates a higher priority.
-* `dest_port` - (Optional) The destination port in the access control policy. **Note:** If `dest_port_type` is set to `port`, you must specify this parameter.
-* `dest_port_group` - (Optional) Access control policy in the access traffic of the destination port address book name. **Note:** If `dest_port_type` is set to `group`, you must specify this parameter.
+* `order` - (Optional, Computed, Int) The priority of the access control policy. The priority value starts from 1. A smaller priority value indicates a higher priority.
+* `dest_port` - (Optional) The destination port in the access control policy.
+
+  ->**Note:** If `dest_port_type` is set to `port`, `dest_port` is mandatory.
+
+* `dest_port_group` - (Optional) Access control policy in the access traffic of the destination port address book name.
+
+  ->**Note:** If `dest_port_type` is set to `group`, `dest_port_group` is mandatory.
+
 * `dest_port_type` - (Optional) The type of the destination port in the access control policy. Valid values: `port`, `group`.
 * `release` - (Optional) The enabled status of the access control policy. The policy is enabled by default after it is created.. Valid values:
   - `true`: Enable access control policies.
