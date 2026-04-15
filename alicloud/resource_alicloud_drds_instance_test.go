@@ -93,7 +93,7 @@ func testSweepDRDSInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
+func TestAccAliCloudDRDSInstance_Vpc(t *testing.T) {
 	var v *drds.DescribeDrdsInstanceResponse
 
 	resourceId := "alicloud_drds_instance.default"
@@ -166,7 +166,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
+func TestAccAliCloudDRDSInstance_Multi(t *testing.T) {
 	var v *drds.DescribeDrdsInstanceResponse
 
 	resourceId := "alicloud_drds_instance.default.2"
@@ -216,7 +216,7 @@ func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDRDSInstance_VpcId(t *testing.T) {
+func TestAccAliCloudDRDSInstance_VpcId(t *testing.T) {
 	var v *drds.DescribeDrdsInstanceResponse
 
 	resourceId := "alicloud_drds_instance.default"
@@ -271,7 +271,7 @@ func TestAccAlicloudDRDSInstance_VpcId(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDRDSInstance_MySQLVersion(t *testing.T) {
+func TestAccAliCloudDRDSInstance_MySQLVersion(t *testing.T) {
 	var v *drds.DescribeDrdsInstanceResponse
 
 	resourceId := "alicloud_drds_instance.default"
