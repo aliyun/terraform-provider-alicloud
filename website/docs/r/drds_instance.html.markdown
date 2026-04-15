@@ -84,15 +84,6 @@ The following arguments are supported:
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The id of the VPC.
 * `mysql_version` - (Optional, ForceNew, Available since v1.201.0) The MySQL version supported by the instance, with the following range of values. `5`: Fully compatible with MySQL 5.x (default) `8`: Fully compatible with MySQL 8.0. This parameter takes effect when the primary instance is created, and the read-only instance has the same MySQL version as the primary instance by default.
        
-## Attributes Reference
-
-The following attributes are exported:
-
-* `id` - The DRDS instance ID.
-* `connection_string` - (Available since v1.196.0) The connection string of the DRDS instance.
-* `port` - (Available since v1.196.0) The connection port of the DRDS instance.
-
-
 ## Timeouts
 
 -> **NOTE:** Available since v1.49.0.
@@ -101,6 +92,15 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 * `create` - (Defaults to 10 mins) Used when creating the drds instance (until it reaches running status). 
 * `delete` - (Defaults to 10 mins) Used when terminating the drds instance. 
+       
+       
+## Attributes Reference
+
+The following attributes are exported:
+
+* `id` - The DRDS instance ID.
+* `connection_string` - (Available since v1.196.0) The connection string of the DRDS instance.
+* `port` - (Available since v1.196.0) The connection port of the DRDS instance.
 
 
 ## Import
