@@ -745,7 +745,6 @@ func resourceAliCloudInstance() *schema.Resource {
 			"role_name": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ForceNew:         true,
 				Computed:         true,
 				DiffSuppressFunc: vpcTypeResourceDiffSuppressFunc,
 				Deprecated:       "Field `role_name` has been deprecated from provider version 1.275.0. New resource `alicloud_ecs_ram_role_attachment` instead.",
@@ -2515,6 +2514,77 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 
 		d.SetPartial("private_pool_options_match_criteria")
 		d.SetPartial("private_pool_options_id")
+	}
+
+	if !d.IsNewResource() && d.HasChange("role_name") {
+		var response map[string]interface{}
+
+		oldEntry, newEntry := d.GetChange("role_name")
+		oldRoleName := oldEntry.(string)
+		newRoleName := newEntry.(string)
+
+		if oldRoleName != "" {
+			action := "DetachInstanceRamRole"
+
+			detachInstanceRamRoleReq := map[string]interface{}{
+				"RegionId":    client.RegionId,
+				"InstanceIds": convertListToJsonString([]interface{}{d.Id()}),
+				"RamRoleName": oldRoleName,
+			}
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, detachInstanceRamRoleReq, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, detachInstanceRamRoleReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		if newRoleName != "" {
+			action := "AttachInstanceRamRole"
+
+			attachInstanceRamRoleReq := map[string]interface{}{
+				"RegionId":    client.RegionId,
+				"InstanceIds": convertListToJsonString([]interface{}{d.Id()}),
+				"RamRoleName": newRoleName,
+			}
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, attachInstanceRamRoleReq, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, attachInstanceRamRoleReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("role_name")
 	}
 
 	d.Partial(false)

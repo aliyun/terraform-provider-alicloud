@@ -4025,6 +4025,26 @@ func TestAccAliCloudECSInstanceNetworkInterface1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"role_name": "${alicloud_ram_role.default.role_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_name": "${alicloud_ram_role.update.role_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"user_data": "${base64encode(\"I am the user data\")}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -4081,6 +4101,7 @@ func TestAccAliCloudECSInstanceNetworkInterface2(t *testing.T) {
 					"ipv6_addresses":                      []string{"${cidrhost(alicloud_vswitch.default.ipv6_cidr_block, 64)}"},
 					"network_interface_traffic_mode":      "Standard",
 					"key_name":                            "${alicloud_ecs_key_pair.default.key_pair_name}",
+					"role_name":                           "${alicloud_ram_role.default.role_name}",
 					"network_interfaces": []map[string]interface{}{
 						{
 							"vswitch_id":                     "${alicloud_vswitch.networkInterface.id}",
@@ -4100,6 +4121,7 @@ func TestAccAliCloudECSInstanceNetworkInterface2(t *testing.T) {
 						"ipv6_addresses.#":                    "1",
 						"network_interface_traffic_mode":      "Standard",
 						"key_name":                            CHECKSET,
+						"role_name":                           CHECKSET,
 						"private_pool_options_match_criteria": "Open",
 						"network_interfaces.#":                "1",
 					}),
@@ -4112,6 +4134,16 @@ func TestAccAliCloudECSInstanceNetworkInterface2(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"key_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_name": "${alicloud_ram_role.update.role_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name": CHECKSET,
 					}),
 				),
 			},
@@ -4608,6 +4640,47 @@ resource "alicloud_ecs_key_pair" "update" {
   key_pair_name = "${var.name}_update"
 }
 
+	resource "alicloud_ram_role" "default" {
+  		role_name                   = var.name
+  		assume_role_policy_document = <<EOF
+		{
+			"Statement": [
+				{
+					"Action": "sts:AssumeRole",
+					"Effect": "Allow",
+					"Principal": {
+						"Service": [
+							"ecs.aliyuncs.com"
+						]
+					}
+				}
+		  	],
+			"Version": "1"
+		}
+	  	EOF
+		force    = true
+	}
+
+	resource "alicloud_ram_role" "update" {
+  		role_name                   = "${var.name}update"
+  		assume_role_policy_document = <<EOF
+		{
+			"Statement": [
+				{
+					"Action": "sts:AssumeRole",
+					"Effect": "Allow",
+					"Principal": {
+						"Service": [
+							"ecs.aliyuncs.com"
+						]
+					}
+				}
+		  	],
+			"Version": "1"
+		}
+	  	EOF
+		force    = true
+	}
 `, name)
 }
 
