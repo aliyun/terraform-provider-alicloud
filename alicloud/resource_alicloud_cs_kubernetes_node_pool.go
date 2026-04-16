@@ -2833,16 +2833,16 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 	if d.HasChange("user_data") {
 		update = true
-		if v, ok := d.GetOk("user_data"); ok {
-			kubernetes_config["user_data"] = v
-			if v := d.Get("user_data").(string); v != "" {
-				_, base64DecodeError := base64.StdEncoding.DecodeString(v)
-				if base64DecodeError == nil {
-					kubernetes_config["user_data"] = tea.String(v)
-				} else {
-					kubernetes_config["user_data"] = tea.String(base64.StdEncoding.EncodeToString([]byte(v)))
-				}
+		userData := d.Get("user_data").(string)
+		if userData != "" {
+			_, base64DecodeError := base64.StdEncoding.DecodeString(userData)
+			if base64DecodeError == nil {
+				kubernetes_config["user_data"] = tea.String(userData)
+			} else {
+				kubernetes_config["user_data"] = tea.String(base64.StdEncoding.EncodeToString([]byte(userData)))
 			}
+		} else {
+			kubernetes_config["user_data"] = tea.String("")
 		}
 	}
 
@@ -2893,9 +2893,8 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 	if d.HasChange("pre_user_data") {
 		update = true
-		if v, ok := d.GetOk("pre_user_data"); ok {
-			kubernetes_config["pre_user_data"] = v
-		}
+		preUserData := d.Get("pre_user_data").(string)
+		kubernetes_config["pre_user_data"] = tea.String(preUserData)
 	}
 
 	request["kubernetes_config"] = kubernetes_config
