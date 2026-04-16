@@ -12,6 +12,7 @@ import (
 
 // Test SimpleApplicationServer Disk. >>> Resource test cases, automatically generated.
 // Case testDisk 5761
+// lintignore: AT001
 func TestAccAliCloudSimpleApplicationServerDisk_basic5761(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_simple_application_server_disk.default"

@@ -29,6 +29,7 @@ func TestAccAliCloudCloudFirewallNatFirewallControlPolicyOrder_basic12703(t *tes
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: alicloudCloudFirewallNatFirewallControlPolicyOrderBasicDependence12703(name),
