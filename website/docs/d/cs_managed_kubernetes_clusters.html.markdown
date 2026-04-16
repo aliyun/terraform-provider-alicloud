@@ -7,7 +7,9 @@ description: |-
   Provides a list of Container Service Managed Kubernetes Clusters to be used by the alicloud_cs_managed_kubernetes_clusters resource.
 ---
 
-# alicloud\_cs\_managed\_kubernetes\_clusters
+# alicloud_cs_managed_kubernetes_clusters
+
+-> **DEPRECATION NOTICE:** This data source has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_clusters` instead.
 
 This data source provides a list Container Service Managed Kubernetes Clusters on Alibaba Cloud.
 

@@ -15,7 +15,8 @@ import (
 
 func dataSourceAlicloudCSEdgeKubernetesClusters() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCSEdgeKubernetesClustersRead,
+		Read:               dataSourceAlicloudCSEdgeKubernetesClustersRead,
+		DeprecationMessage: "This data source has been deprecated since v1.276.0 and will be removed in the future. Please use 'alicloud_cs_clusters' instead.",
 
 		Schema: map[string]*schema.Schema{
 			"ids": {

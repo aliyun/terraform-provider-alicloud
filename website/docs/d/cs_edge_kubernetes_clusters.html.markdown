@@ -7,7 +7,9 @@ description: |-
   Provides a list of Container Service Edge Kubernetes Clusters to be used by the alicloud_cs_edge_kubernetes_clusters resource.
 ---
 
-# alicloud\_cs\_edge\_kubernetes\_clusters
+# alicloud_cs_edge_kubernetes_clusters
+
+-> **DEPRECATION NOTICE:** This data source has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_clusters` instead.
 
 This data source provides a list Container Service Edge Kubernetes Clusters on Alibaba Cloud.
 
