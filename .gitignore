@@ -42,4 +42,5 @@ coverage.html
 coverage.out
 
 .qwenignore
+.qoder/
 .terraflow/

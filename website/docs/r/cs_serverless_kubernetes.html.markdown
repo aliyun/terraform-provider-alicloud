@@ -9,6 +9,8 @@ description: |-
 
 # alicloud_cs_serverless_kubernetes
 
+-> **DEPRECATION NOTICE:** This resource has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_managed_kubernetes` instead.
+
 This resource will help you to manager a Serverless Kubernetes Cluster, see [What is serverless kubernetes](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/create-a-dedicated-kubernetes-cluster-that-supports-sandboxed-containers). The cluster is same as container service created by web console.
 
 -> **NOTE:** Available since v1.58.0.

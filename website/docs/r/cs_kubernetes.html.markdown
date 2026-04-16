@@ -9,6 +9,8 @@ description: |-
 
 # alicloud_cs_kubernetes
 
+-> **DEPRECATION NOTICE:** This resource has been deprecated since v1.276.0 and will be removed in a future release.
+
 This resource will help you to manage a Kubernetes Cluster in Alibaba Cloud Kubernetes Service, see [What is kubernetes](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/create-an-ask-cluster-1).
 
 -> **NOTE:** From August 21, 2024, Container Service for Kubernetes (ACK) discontinues the creation of ACK dedicated clusters, see [Product announcement](https://www.alibabacloud.com/help/en/ack/product-overview/product-announcement-announcement-on-stopping-new-ack-dedicated-cluster) for more details.
