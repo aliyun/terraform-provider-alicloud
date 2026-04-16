@@ -9,6 +9,8 @@ description: |-
 
 # alicloud_cs_edge_kubernetes
 
+-> **DEPRECATION NOTICE:** This resource has been deprecated since v1.276.0 and will be removed in a future release. Please use `alicloud_cs_managed_kubernetes` instead.
+
 This resource will help you to manage a Edge Kubernetes Cluster in Alibaba Cloud Kubernetes Service, see [What is edge kubernetes](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/create-an-ack-edge-cluster).
 
 -> **NOTE:** Kubernetes cluster only supports VPC network and it can access internet while creating kubernetes cluster.
