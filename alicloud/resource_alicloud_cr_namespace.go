@@ -18,7 +18,7 @@ func resourceAlicloudCRNamespace() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		DeprecationMessage: "This resource has been deprecated since v1.276.0 and will be removed in the future. Please use 'alicloud_cr_ee_namespace' instead.",
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:         schema.TypeString,
