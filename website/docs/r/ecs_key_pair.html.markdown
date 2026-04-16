@@ -69,7 +69,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Key Pair.
 * `delete` - (Defaults to 5 mins) Used when delete the Key Pair.
-* `update` - (Defaults to 5 mins) Used when update the Key Pair.
+* `update` - (Defaults to 20 mins) Used when update the Key Pair.
 
 ## Import
 

@@ -44,3 +44,4 @@ coverage.out
 .qwenignore
 .qoder/
 .terraflow/
+.terraflow.jsonc
