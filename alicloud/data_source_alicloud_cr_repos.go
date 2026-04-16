@@ -13,8 +13,8 @@ import (
 
 func dataSourceAlicloudCRRepos() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCRReposRead,
-
+		Read:               dataSourceAlicloudCRReposRead,
+		DeprecationMessage: "Data source `alicloud_cr_repos` has been deprecated and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"namespace": {
 				Type:         schema.TypeString,

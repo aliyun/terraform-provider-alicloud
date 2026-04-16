@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_cr\_repos
 
+-> **DEPRECATION NOTICE:** This data source is deprecated and will be removed in a future release.
+
 This data source provides a list Container Registry repositories on Alibaba Cloud.
 
 -> **NOTE:** Available in v1.35.0+
