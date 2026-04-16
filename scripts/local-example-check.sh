@@ -244,54 +244,100 @@ if [ "$DRY_RUN" = false ]; then
     exit 1
   fi
 
-  # Check if .terraformrc exists and handle appropriately
-  if [ -f "$TERRAFORMRC" ]; then
-    # Check if the file already has the correct dev_overrides
-    if grep -q "\"registry.terraform.io/aliyun/alicloud\".*=.*\"$PROVIDER_DIR\"" "$TERRAFORMRC"; then
-      echo -e "${GREEN}✓ Provider override already configured in ~/.terraformrc${NC}"
-      echo -e "  Provider directory: ${PROVIDER_DIR}"
-      echo -e "  Provider binary: terraform-provider-alicloud"
-      # No backup needed, configuration is already correct
-      echo
-    else
-      # Need to update the file, create backup first
-      TERRAFORMRC_BACKUP="${TERRAFORMRC}.backup.$(date +%s)"
-      cp "$TERRAFORMRC" "$TERRAFORMRC_BACKUP"
-      echo -e "${YELLOW}  Backed up existing ~/.terraformrc to ${TERRAFORMRC_BACKUP}${NC}"
+  # Regex matching the exact dev_overrides entry we need. Escape the shell
+  # path for grep (PROVIDER_DIR contains `/` and may contain `.`). The
+  # delimiter used here must stay in sync with the writer below.
+  ESCAPED_PROVIDER_DIR=$(printf '%s' "$PROVIDER_DIR" | sed 's/[][\\.^$*/]/\\&/g')
+  OVERRIDE_REGEX='"registry\.terraform\.io/aliyun/alicloud"[[:space:]]*=[[:space:]]*"'"$ESCAPED_PROVIDER_DIR"'"'
 
-      # Update existing file - try to update the dev_overrides section
-      if grep -q "registry.terraform.io/aliyun/alicloud" "$TERRAFORMRC"; then
-        # Entry exists, update it
-        echo -e "${BLUE}  Updating existing dev_overrides entry...${NC}"
-        sed -i.tmp "s|\"registry.terraform.io/aliyun/alicloud\".*=.*\".*\"|\"registry.terraform.io/aliyun/alicloud\" = \"$PROVIDER_DIR\"|g" "$TERRAFORMRC"
-        rm -f "$TERRAFORMRC.tmp"
-      elif grep -q "dev_overrides" "$TERRAFORMRC"; then
-        # dev_overrides block exists, add our entry
-        echo -e "${BLUE}  Adding to existing dev_overrides block...${NC}"
-        sed -i.tmp "/dev_overrides {/a\\
-    \"registry.terraform.io/aliyun/alicloud\" = \"$PROVIDER_DIR\"
-" "$TERRAFORMRC"
-        rm -f "$TERRAFORMRC.tmp"
-      else
-        echo -e "${YELLOW}  Warning: Could not automatically update ~/.terraformrc${NC}"
-        echo -e "${YELLOW}  Please manually add the following to your dev_overrides:${NC}"
-        echo -e "${YELLOW}    \"registry.terraform.io/aliyun/alicloud\" = \"$PROVIDER_DIR\"${NC}"
-      fi
-      echo -e "${GREEN}✓ Provider override updated in ~/.terraformrc${NC}"
-      echo -e "  Provider directory: ${PROVIDER_DIR}"
-      echo
-    fi
-  else
-    # Create new .terraformrc file
-    TERRAFORMRC_BACKUP="CREATED"
-    cat > "$TERRAFORMRC" <<EOF
-provider_installation {
-  dev_overrides {
-    "registry.terraform.io/aliyun/alicloud" = "$PROVIDER_DIR"
+  # Helper: detect whether the current ~/.terraformrc already routes the
+  # alicloud provider through dev_overrides pointing at PROVIDER_DIR. Grep
+  # alone is too permissive — the previous version matched include = [...]
+  # list entries in network_mirror blocks — so we additionally require that
+  # the match lives *inside* a dev_overrides { ... } section.
+  terraformrc_has_active_override() {
+    local f="$1"
+    awk -v rx="$OVERRIDE_REGEX" '
+      /dev_overrides[[:space:]]*\{/ { depth = 1; next }
+      depth > 0 {
+        for (i = 1; i <= length($0); i++) {
+          ch = substr($0, i, 1)
+          if (ch == "{") depth++
+          else if (ch == "}") { depth--; if (depth == 0) next }
+        }
+        if ($0 ~ rx) found = 1
+      }
+      END { exit found ? 0 : 1 }
+    ' "$f"
   }
-  direct {}
-}
-EOF
+
+  # Preserve top-level lines we know are safe to carry over (plugin cache,
+  # checkpoint toggle, credentials helper). Anything that conflicts with
+  # dev_overrides (provider_installation, network_mirror, direct, etc.) is
+  # dropped from the regenerated file.
+  extract_safe_terraformrc_lines() {
+    local f="$1"
+    grep -E '^[[:space:]]*(plugin_cache_dir|disable_checkpoint|credentials|credentials_helper)[[:space:]]*' "$f" 2>/dev/null || true
+  }
+
+  # Write a fresh ~/.terraformrc whose ONLY provider_installation block is a
+  # dev_overrides entry for this repository's build output. Any existing
+  # provider_installation (including network_mirror) is intentionally
+  # dropped — otherwise terraform init may race it and pull v1.275.0 from
+  # the mirror instead of using the local binary.
+  write_terraformrc_with_override() {
+    local f="$1"
+    local preserved="$2"
+    {
+      echo "provider_installation {"
+      echo "  dev_overrides {"
+      echo "    \"registry.terraform.io/aliyun/alicloud\" = \"$PROVIDER_DIR\""
+      echo "  }"
+      echo "  direct {}"
+      echo "}"
+      if [ -n "$preserved" ]; then
+        echo ""
+        printf '%s\n' "$preserved"
+      fi
+    } > "$f"
+  }
+
+  if [ -f "$TERRAFORMRC" ] && terraformrc_has_active_override "$TERRAFORMRC"; then
+    echo -e "${GREEN}✓ Provider override already configured in ~/.terraformrc${NC}"
+    echo -e "  Provider directory: ${PROVIDER_DIR}"
+    echo -e "  Provider binary: terraform-provider-alicloud"
+    echo
+  elif [ -f "$TERRAFORMRC" ]; then
+    # Existing terraformrc without a matching dev_overrides — back it up and
+    # rewrite a minimal one. Rewriting (instead of sed'ing) avoids the
+    # previous silent-noop failure mode where terraformrc contained only an
+    # include = [...] network_mirror array that grep matched but sed could
+    # not touch.
+    TERRAFORMRC_BACKUP="${TERRAFORMRC}.backup.$(date +%s)"
+    cp "$TERRAFORMRC" "$TERRAFORMRC_BACKUP"
+    echo -e "${YELLOW}  Backed up existing ~/.terraformrc to ${TERRAFORMRC_BACKUP}${NC}"
+    PRESERVED=$(extract_safe_terraformrc_lines "$TERRAFORMRC")
+    write_terraformrc_with_override "$TERRAFORMRC" "$PRESERVED"
+    if ! terraformrc_has_active_override "$TERRAFORMRC"; then
+      echo -e "${RED}ERROR: Failed to inject dev_overrides into $TERRAFORMRC${NC}"
+      echo -e "${YELLOW}  Please manually add the following to ~/.terraformrc:${NC}"
+      echo -e "${YELLOW}    provider_installation {${NC}"
+      echo -e "${YELLOW}      dev_overrides { \"registry.terraform.io/aliyun/alicloud\" = \"$PROVIDER_DIR\" }${NC}"
+      echo -e "${YELLOW}      direct {}${NC}"
+      echo -e "${YELLOW}    }${NC}"
+      exit 1
+    fi
+    echo -e "${GREEN}✓ Provider override written to ~/.terraformrc (original backed up)${NC}"
+    echo -e "  Provider directory: ${PROVIDER_DIR}"
+    echo
+  else
+    # No terraformrc at all — mark CREATED so cleanup() can remove it.
+    TERRAFORMRC_BACKUP="CREATED"
+    write_terraformrc_with_override "$TERRAFORMRC" ""
+    if ! terraformrc_has_active_override "$TERRAFORMRC"; then
+      echo -e "${RED}ERROR: Failed to create $TERRAFORMRC with dev_overrides${NC}"
+      exit 1
+    fi
     echo -e "${GREEN}✓ Provider override configured in new ~/.terraformrc${NC}"
     echo -e "  Provider directory: ${PROVIDER_DIR}"
     echo -e "  Provider binary: terraform-provider-alicloud"

@@ -42,8 +42,9 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id": "${alicloud_cen_transit_router.default.cen_id}",
-					"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
+					"cen_id":       "${alicloud_cen_transit_router.default.cen_id}",
+					"vpc_id":       "${data.alicloud_vpcs.default.ids.0}",
+					"force_delete": "true",
 					"zone_mappings": []map[string]interface{}{
 						{
 							"vswitch_id": "${data.alicloud_vswitches.default_master.vswitches.0.id}",
@@ -56,12 +57,14 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic0(t *testing.T) {
 					},
 					"route_table_association_enabled": "false",
 					"route_table_propagation_enabled": "false",
+					"order_type":                      "PayByCenOwner",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cen_id":          CHECKSET,
 						"vpc_id":          CHECKSET,
 						"zone_mappings.#": "2",
+						"order_type":      "PayByCenOwner",
 					}),
 				),
 			},
@@ -144,7 +147,7 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"route_table_association_enabled", "route_table_propagation_enabled"},
+				ImportStateVerifyIgnore: []string{"route_table_association_enabled", "route_table_propagation_enabled", "force_delete"},
 			},
 		},
 	})
@@ -222,6 +225,124 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic0_twin(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccAliCloudCenTransitRouterVpcAttachment_crossAccountOrderType mirrors
+// the cross-account payer flow for VPC: account A (TerraformUT) owns the CEN
+// and creates the transit_router_vpc_attachment; account B (TerraformTest)
+// owns the VPC and the grant_attachment that authorizes A. order_type on the
+// attachment is expected to follow the grant, and updating it requires the
+// grant to be updated first (enforced here via depends_on).
+func TestAccAliCloudCenTransitRouterVpcAttachment_crossAccountOrderType(t *testing.T) {
+	testAccPreCheckCENCrossAccount(t)
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_vpc_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.CenTransitRouterVpcAttachmentSupportRegions)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterVpcAttachmentMap0)
+	providerFactories, factoryProviders := cenCrossAccountProviderFactories()
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		client := cenCrossAccountClientByAK(*factoryProviders, sharedCENCrossAccountCreds.utAK)
+		if client == nil {
+			return &CenServiceV2{}
+		}
+		return &CenServiceV2{client}
+	}, "DescribeCenTransitRouterVpcAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCenTrVpcAttX%d", rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() {},
+		IDRefreshName:     resourceId,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCENTransitRouterVpcAttachmentCrossAccountConfig(name, "PayByCenOwner"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order_type": "PayByCenOwner",
+					}),
+				),
+			},
+			{
+				Config: testAccCENTransitRouterVpcAttachmentCrossAccountConfig(name, "PayByResourceOwner"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order_type": "PayByResourceOwner",
+					}),
+				),
+			},
+			// ImportState intentionally omitted (see VPN cross-account test).
+		},
+	})
+}
+
+func testAccCENTransitRouterVpcAttachmentCrossAccountConfig(name, orderType string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+%s
+
+data "alicloud_account" "b" {}
+
+data "alicloud_account" "a" {
+  provider = alicloud.a
+}
+
+# --- Account B: VPC + VSwitch + Grant ---
+data "alicloud_zones" "b" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.b.ids.0
+}
+
+resource "alicloud_cen_transit_router_grant_attachment" "default" {
+  instance_type = "VPC"
+  instance_id   = alicloud_vpc.default.id
+  cen_owner_id  = data.alicloud_account.a.id
+  cen_id        = alicloud_cen_instance.default.id
+  order_type    = %q
+}
+
+# --- Account A: CEN + Transit Router + VPC attachment consuming B's grant ---
+resource "alicloud_cen_instance" "default" {
+  provider          = alicloud.a
+  cen_instance_name = var.name
+  protection_level  = "REDUCED"
+}
+
+resource "alicloud_cen_transit_router" "default" {
+  provider = alicloud.a
+  cen_id   = alicloud_cen_instance.default.id
+}
+
+resource "alicloud_cen_transit_router_vpc_attachment" "default" {
+  provider          = alicloud.a
+  cen_id            = alicloud_cen_instance.default.id
+  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+  vpc_id            = alicloud_vpc.default.id
+  vpc_owner_id      = data.alicloud_account.b.id
+  force_delete      = true
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default.id
+    zone_id    = data.alicloud_zones.b.ids.0
+  }
+  order_type = %q
+  depends_on = [alicloud_cen_transit_router_grant_attachment.default]
+}
+`, name, cenCrossAccountProviderBlocks(), orderType, orderType)
 }
 
 var AliCloudCenTransitRouterVpcAttachmentMap0 = map[string]string{

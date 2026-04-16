@@ -299,6 +299,7 @@ The tunnel_options_specification supports the following:
 * `enable_nat_traversal` - (Optional, Computed, Available since v1.246.0) Whether the NAT crossing function is enabled for the tunnel. Value:
   - `true` (default): Enables the NAT Traversal function. When enabled, the IKE negotiation process deletes the verification process of the UDP port number and realizes the discovery function of the NAT gateway device in the tunnel.
   - `false`: does not enable the NAT Traversal function.
+* `role` - (Optional, Computed, Available since v1.276.0) The role of the tunnel. Valid values: `master`, `slave`. The role is determined by the order in which the tunnel is added to the IPsec-VPN connection.
 * `tunnel_bgp_config` - (Optional, Computed, List, Available since v1.246.0) Add the BGP configuration for the tunnel.
 
 -> **NOTE:**  After you enable the BGP function for IPsec connections (that is, specify `EnableTunnelsBgp` as `true`), you must configure this parameter.
@@ -363,23 +364,22 @@ Values: `disabled`, `group1`, `group2`, `group5`, `group14`.
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `bgp_config` - Bgp configuration information.-tunnel mode.
-  * `status` - The negotiation status of Bgp.
+* `bgp_config` - Bgp configuration information.
+    * `status` - The negotiation status of Bgp.
 * `create_time` - The creation time of the resource
 * `health_check_config` - This parameter is supported if you create an vpn attachment in single-tunnel mode.
-  * `status` - health check status
+    * `status` - health check status
 * `status` - The status of the resource
-* `tunnel_options_specification` - Configure the tunnel._options_specification` array when you create a vpn attachment in dual-tunnel mode.-tunnel mode, you must add both tunnels for the vpn attachment to ensure that the vpn attachment has link redundancy. Only two tunnels can be added to a vpn attachment.
-  * `internet_ip` - The local internet IP in Tunnel.
-  * `role` - The role of Tunnel.
-  * `state` - The state of Tunnel.
-  * `status` - The negotiation status of Tunnel. 
-  * `tunnel_bgp_config` - Add the BGP configuration for the tunnel.
-    * `bgp_status` - BGP status.
-    * `peer_asn` - Peer asn.
-    * `peer_bgp_ip` - Peer bgp ip.
-  * `tunnel_id` - The tunnel ID of IPsec-VPN connection.
-  * `zone_no` - The zoneNo of tunnel.
+* `tunnel_options_specification` - Configure the tunnel. When creating a vpn attachment in dual-tunnel mode, you must add both tunnels for the vpn attachment to ensure that the vpn attachment has link redundancy. Only two tunnels can be added to a vpn attachment.
+    * `internet_ip` - The local internet IP in Tunnel.
+    * `state` - The state of Tunnel.
+    * `status` - The negotiation status of Tunnel.
+    * `tunnel_bgp_config` - Add the BGP configuration for the tunnel.
+        * `bgp_status` - BGP status.
+        * `peer_asn` - Peer asn.
+        * `peer_bgp_ip` - Peer bgp ip.
+    * `tunnel_id` - The tunnel ID of IPsec-VPN connection.
+    * `zone_no` - The zoneNo of tunnel.
 
 ## Timeouts
 

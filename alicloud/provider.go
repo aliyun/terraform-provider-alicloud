@@ -1944,7 +1944,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_security_policy":                                   resourceAliCloudNlbSecurityPolicy(),
 			"alicloud_vod_editing_project":                                   resourceAlicloudVodEditingProject(),
 			"alicloud_api_gateway_model":                                     resourceAlicloudApiGatewayModel(),
-			"alicloud_cen_transit_router_grant_attachment":                   resourceAlicloudCenTransitRouterGrantAttachment(),
+			"alicloud_cen_transit_router_grant_attachment":                   resourceAliCloudCenTransitRouterGrantAttachment(),
 			"alicloud_api_gateway_plugin":                                    resourceAliCloudApiGatewayPlugin(),
 			"alicloud_api_gateway_plugin_attachment":                         resourceAlicloudApiGatewayPluginAttachment(),
 			"alicloud_message_service_queue":                                 resourceAliCloudMessageServiceQueue(),

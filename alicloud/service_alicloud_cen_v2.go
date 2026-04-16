@@ -189,14 +189,12 @@ func (s *CenServiceV2) DescribeCenTransitRouterEcrAttachment(id string) (object 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListTransitRouterEcrAttachments"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["TransitRouterAttachmentId"] = id
 	request["RegionId"] = client.RegionId
+	action := "ListTransitRouterEcrAttachments"
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
@@ -239,15 +237,18 @@ func (s *CenServiceV2) DescribeCenTransitRouterEcrAttachment(id string) (object 
 }
 
 func (s *CenServiceV2) CenTransitRouterEcrAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CenTransitRouterEcrAttachmentStateRefreshFuncWithApi(id, field, failStates, s.DescribeCenTransitRouterEcrAttachment)
+}
+
+func (s *CenServiceV2) CenTransitRouterEcrAttachmentStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterEcrAttachment(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -359,12 +360,14 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	parts, err1 := ParseResourceId(id, 2)
-	if err1 != nil {
-		return nil, WrapError(err1)
-	}
+	request["CenId"] = parts[0]
 	request["TransitRouterAttachmentId"] = parts[1]
 	request["RegionId"] = client.RegionId
 	action := "ListTransitRouterVpcAttachments"
@@ -403,15 +406,19 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 }
 
 func (s *CenServiceV2) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CenTransitRouterVpcAttachmentStateRefreshFuncWithApi(id, field, failStates, s.DescribeCenTransitRouterVpcAttachment)
+}
+
+func (s *CenServiceV2) CenTransitRouterVpcAttachmentStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterVpcAttachment(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
+		object["ChargeType"] = convertCenTransitRouterVpcAttachmentTransitRouterAttachmentsChargeTypeResponse(object["ChargeType"])
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -942,15 +949,18 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpnAttachment(id string) (object 
 }
 
 func (s *CenServiceV2) CenTransitRouterVpnAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CenTransitRouterVpnAttachmentStateRefreshFuncWithApi(id, field, failStates, s.DescribeCenTransitRouterVpnAttachment)
+}
+
+func (s *CenServiceV2) CenTransitRouterVpnAttachmentStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterVpnAttachment(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -1211,3 +1221,180 @@ func (s *CenServiceV2) CenTransitRouterRouteTableAssociationStateRefreshFunc(id 
 }
 
 // DescribeCenTransitRouterRouteTableAssociation >>> Encapsulated.
+
+// DescribeCenTransitRouterGrantAttachment <<< Encapsulated get interface for Cen TransitRouterGrantAttachment.
+
+func (s *CenServiceV2) DescribeCenTransitRouterGrantAttachment(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 4 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 4, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId"] = parts[1]
+	request["ProductType"] = parts[0]
+	request["RegionId"] = client.RegionId
+	action := "DescribeGrantRulesToResource"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.GrantRules[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GrantRules[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("TransitRouterGrantAttachment", id), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["CenId"]) != parts[3] {
+			continue
+		}
+		if fmt.Sprint(item["CenOwnerId"]) != parts[2] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(NotFoundErr("TransitRouterGrantAttachment", id), NotFoundMsg, response)
+}
+
+func (s *CenServiceV2) CenTransitRouterGrantAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CenTransitRouterGrantAttachmentStateRefreshFuncWithApi(id, field, failStates, s.DescribeCenTransitRouterGrantAttachment)
+}
+
+func (s *CenServiceV2) CenTransitRouterGrantAttachmentStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCenTransitRouterGrantAttachment >>> Encapsulated.
+
+// DescribeCenTransitRouterVbrAttachment <<< Encapsulated get interface for Cen TransitRouterVbrAttachment.
+
+func (s *CenServiceV2) DescribeCenTransitRouterVbrAttachment(id string) (object map[string]interface{}, err error) {
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["CenId"] = parts[0]
+	request["TransitRouterAttachmentId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	action := "ListTransitRouterVbrAttachments"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.TransitRouterAttachments[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAttachments[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("TransitRouterVbrAttachment", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *CenServiceV2) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CenTransitRouterVbrAttachmentStateRefreshFuncWithApi(id, field, failStates, s.DescribeCenTransitRouterVbrAttachment)
+}
+
+func (s *CenServiceV2) CenTransitRouterVbrAttachmentStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCenTransitRouterVbrAttachment >>> Encapsulated.

@@ -3,28 +3,22 @@ subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_vpc_attachment"
 description: |-
-  Provides a Alicloud Cen Transit Router Vpc Attachment resource.
+  Provides a Alicloud Cloud Enterprise Network (CEN) Transit Router Vpc Attachment resource.
 ---
 
 # alicloud_cen_transit_router_vpc_attachment
 
-Provides a Cen Transit Router Vpc Attachment resource.
+Provides a Cloud Enterprise Network (CEN) Transit Router Vpc Attachment resource.
 
 
 
-For information about Cen Transit Router Vpc Attachment and how to use it, see [What is Transit Router Vpc Attachment](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutervpcattachment)
+For information about Cloud Enterprise Network (CEN) Transit Router Vpc Attachment and how to use it, see [What is Transit Router Vpc Attachment](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutervpcattachment).
 
 -> **NOTE:** Available since v1.126.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_transit_router_vpc_attachment&exampleId=509f440a-f327-0f3f-84dd-e67b0264a3307907872b&activeTab=example&spm=docs.r.cen_transit_router_vpc_attachment.0.509f440af3&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -80,47 +74,50 @@ resource "alicloud_cen_transit_router_vpc_attachment" "example" {
     zone_id    = local.slave_zone
     vswitch_id = alicloud_vswitch.example_slave.id
   }
-  transit_router_attachment_name        = var.name
+  transit_router_vpc_attachment_name    = var.name
   transit_router_attachment_description = var.name
 }
 ```
-
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_vpc_attachment&spm=docs.r.cen_transit_router_vpc_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
 * `auto_publish_route_enabled` - (Optional) Specifies whether to enable the Enterprise Edition transit router to automatically advertise routes to VPCs. Valid values:
+
   - **false:** (default)
   - `true`
-
 * `cen_id` - (Optional) The ID of the Cloud Enterprise Network (CEN) instance.
+
+-> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
 
 * `dry_run` - (Optional) Whether to perform PreCheck on this request, including permissions and instance status verification. Value:
   - `false` (default): A normal request is sent, and a VPC connection is directly created after the check is passed.
   - `true`: The check request is sent, only verification is performed, and no VPC connection is created. Check items include whether required parameters and request format are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
+
+-> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+
 * `force_delete` - (Optional, Available since v1.230.1) Whether to forcibly delete the VPC connection. The value is:
   - `false` (default): before deleting the VPC connection, check whether there are related resource dependencies, such as Association forwarding and route learning. If related dependencies exist, deletion is not allowed and the corresponding error is returned.
   - `true`: When you delete a VPC connection, all related dependencies are deleted by default.
-* `payment_type` - (Optional, ForceNew, Computed) The billing method. The default value is `PayAsYouGo`, which specifies the pay-as-you-go billing method.
 
+-> **NOTE:** This parameter configures deletion behavior and is only evaluated when Terraform attempts to destroy the resource. Changes to this parameter during updates are stored but have no immediate effect.
+
+* `order_type` - (Optional, Computed, Available since v1.276.0) The entity that pays the fees of the network instance. Valid values:
+
+  - `PayByCenOwner`: the Alibaba Cloud account that owns the CEN instance.
+  - `PayByResourceOwner`: the Alibaba Cloud account that owns the network instance.
+* `payment_type` - (Optional, ForceNew, Computed) The billing method. The default value is `PayAsYouGo`, which specifies the pay-as-you-go billing method.
 * `tags` - (Optional, Map) The tag of the resource
 * `transit_router_attachment_description` - (Optional) The description of the VPC connection.
-
-  The description must be 2 to 256 characters in length. The description must start with a letter but cannot start with `http://` or `https://`.
-
-* `transit_router_id` - (Optional, ForceNew) The ID of the Enterprise Edition transit router.
-
-* `transit_router_vpc_attachment_name` - (Optional, Available since v1.230.1) The name of the VPC connection.
-
-  The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (\_), and hyphens (-). It must start with a letter.
-
-* `transit_router_vpc_attachment_options` - (Optional, Map, Available since v1.230.1) TransitRouterVpcAttachmentOptions
+The description must be 2 to 256 characters in length. The description must start with a letter but cannot start with `http://` or `https://`.
+* `transit_router_id` - (Optional, ForceNew, Computed) The ID of the Enterprise Edition transit router.
+* `transit_router_vpc_attachment_name` - (Optional, Computed, Available since v1.230.1) The name of the VPC connection.
+The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (\_), and hyphens (-). It must start with a letter.
+* `transit_router_vpc_attachment_options` - (Optional, Computed, Map, Available since v1.230.1) TransitRouterVpcAttachmentOptions
 * `vpc_id` - (Required, ForceNew) The VPC ID.
-
-* `vpc_owner_id` - (Optional, ForceNew, Computed, Int) VpcOwnerId
+* `vpc_owner_id` - (Optional, ForceNew, Computed) VpcOwnerId
+* `zone_mappings` - (Required, List) ZoneMappingss See [`zone_mappings`](#zone_mappings) below.
 * `resource_type` - (Optional, ForceNew) The resource type of the transit router vpc attachment. Default value: `VPC`. Valid values: `VPC`.
-* `zone_mappings` - (Required, Set) ZoneMappingss See [`zone_mappings`](#zone_mappings) below.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `transit_router_attachment_name` - (Deprecated since v1.230.1) Field 'transit_router_attachment_name' has been deprecated from provider version 1.230.1. New field 'transit_router_vpc_attachment_name' instead.
@@ -130,18 +127,23 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ### `zone_mappings`
 
 The zone_mappings supports the following:
-* `vswitch_id` - (Required) The ID of the vSwitch that you want to add to the VPC connection.  You can specify at most 10 vSwitches in each call.
+* `vswitch_id` - (Required) The ID of the vSwitch that you want to add to the VPC connection.
+
+You can specify at most 10 vSwitches in each call.
+
   - If the VPC connection belongs to the current Alibaba Cloud account, you can call the [DescribeVSwitches](https://www.alibabacloud.com/help/en/doc-detail/35748.html) operation to query the IDs of the vSwitches and zones of the VPC.
   - If the VPC connection belongs to another Alibaba Cloud account, you can call the [ListGrantVSwitchesToCen](https://www.alibabacloud.com/help/en/doc-detail/427599.html) operation to query the IDs of the vSwitches and zones of the VPC.
-* `zone_id` - (Required) The ID of the zone that supports Enterprise Edition transit routers.  You can call the [DescribeZones](https://www.alibabacloud.com/help/en/doc-detail/36064.html) operation to query the most recent zone list.  You can specify at most 10 zones in each call.
+* `zone_id` - (Required) The ID of the zone that supports Enterprise Edition transit routers.
+You can call the [DescribeZones](https://www.alibabacloud.com/help/en/doc-detail/36064.html) operation to query the most recent zone list.
+You can specify at most 10 zones in each call.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.
-* `create_time` - The creation time of the resource
-* `region_id` - (Available since v1.260.0).The ID of the region where the VPC is deployed.
-* `status` - Status
+* `id` - The ID of the resource supplied above. 
+* `create_time` - The creation time of the resource.
+* `region_id` - The ID of the region where the VPC is deployed.
+* `status` - Status.
 * `transit_router_attachment_id` - The ID of the VPC connection.
 
 ## Timeouts
@@ -149,12 +151,12 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 42 mins) Used when create the Transit Router Vpc Attachment.
 * `delete` - (Defaults to 20 mins) Used when delete the Transit Router Vpc Attachment.
-* `update` - (Defaults to 5 mins) Used when update the Transit Router Vpc Attachment.
+* `update` - (Defaults to 8 mins) Used when update the Transit Router Vpc Attachment.
 
 ## Import
 
-Cen Transit Router Vpc Attachment can be imported using the id, e.g.
+Cloud Enterprise Network (CEN) Transit Router Vpc Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cen_transit_router_vpc_attachment.example <id>
+$ terraform import alicloud_cen_transit_router_vpc_attachment.example <transit_router_attachment_id>
 ```
