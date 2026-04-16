@@ -1846,34 +1846,34 @@ func TestUnitCommonCsNodepoolInstancePostPaidDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonMasterDiskPerformanceLevelDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name        string
+		name         string
 		diskCategory string
-		expected    bool
-		description string
+		expected     bool
+		description  string
 	}{
 		{
-			name:        "CloudESSD",
+			name:         "CloudESSD",
 			diskCategory: "cloud_essd",
-			expected:    false,
-			description: "cloud_essd category should not suppress diff",
+			expected:     false,
+			description:  "cloud_essd category should not suppress diff",
 		},
 		{
-			name:        "CloudSSD",
+			name:         "CloudSSD",
 			diskCategory: "cloud_ssd",
-			expected:    true,
-			description: "Non-cloud_essd category should suppress diff",
+			expected:     true,
+			description:  "Non-cloud_essd category should suppress diff",
 		},
 		{
-			name:        "Cloud",
+			name:         "Cloud",
 			diskCategory: "cloud",
-			expected:    true,
-			description: "Cloud category should suppress diff",
+			expected:     true,
+			description:  "Cloud category should suppress diff",
 		},
 		{
-			name:        "Empty",
+			name:         "Empty",
 			diskCategory: "",
-			expected:    false,
-			description: "Empty disk category (GetOk returns false) should not suppress diff",
+			expected:     false,
+			description:  "Empty disk category (GetOk returns false) should not suppress diff",
 		},
 	}
 
@@ -1892,28 +1892,28 @@ func TestUnitCommonMasterDiskPerformanceLevelDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonWorkerDiskPerformanceLevelDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name        string
+		name         string
 		diskCategory string
-		expected    bool
-		description string
+		expected     bool
+		description  string
 	}{
 		{
-			name:        "CloudESSD",
+			name:         "CloudESSD",
 			diskCategory: "cloud_essd",
-			expected:    false,
-			description: "cloud_essd category should not suppress diff",
+			expected:     false,
+			description:  "cloud_essd category should not suppress diff",
 		},
 		{
-			name:        "CloudSSD",
+			name:         "CloudSSD",
 			diskCategory: "cloud_ssd",
-			expected:    true,
-			description: "Non-cloud_essd category should suppress diff",
+			expected:     true,
+			description:  "Non-cloud_essd category should suppress diff",
 		},
 		{
-			name:        "Empty",
+			name:         "Empty",
 			diskCategory: "",
-			expected:    false,
-			description: "Empty disk category (GetOk returns false) should not suppress diff",
+			expected:     false,
+			description:  "Empty disk category (GetOk returns false) should not suppress diff",
 		},
 	}
 
@@ -1932,28 +1932,28 @@ func TestUnitCommonWorkerDiskPerformanceLevelDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonCsNodepoolDiskPerformanceLevelDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name        string
+		name         string
 		diskCategory string
-		expected    bool
-		description string
+		expected     bool
+		description  string
 	}{
 		{
-			name:        "CloudESSD",
+			name:         "CloudESSD",
 			diskCategory: "cloud_essd",
-			expected:    false,
-			description: "cloud_essd should not suppress diff",
+			expected:     false,
+			description:  "cloud_essd should not suppress diff",
 		},
 		{
-			name:        "CloudSSD",
+			name:         "CloudSSD",
 			diskCategory: "cloud_ssd",
-			expected:    true,
-			description: "cloud_ssd should suppress diff",
+			expected:     true,
+			description:  "cloud_ssd should suppress diff",
 		},
 		{
-			name:        "Empty",
+			name:         "Empty",
 			diskCategory: "",
-			expected:    false,
-			description: "Empty system_disk_category (GetOk returns false) should not suppress diff",
+			expected:     false,
+			description:  "Empty system_disk_category (GetOk returns false) should not suppress diff",
 		},
 	}
 
@@ -1972,34 +1972,34 @@ func TestUnitCommonCsNodepoolDiskPerformanceLevelDiffSuppressFunc(t *testing.T) 
 
 func TestUnitCommonCsNodepoolSpotInstanceSettingDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name        string
+		name         string
 		spotStrategy string
-		expected    bool
-		description string
+		expected     bool
+		description  string
 	}{
 		{
-			name:        "SpotWithPriceLimit",
+			name:         "SpotWithPriceLimit",
 			spotStrategy: "SpotWithPriceLimit",
-			expected:    false,
-			description: "SpotWithPriceLimit should not suppress diff",
+			expected:     false,
+			description:  "SpotWithPriceLimit should not suppress diff",
 		},
 		{
-			name:        "NoSpot",
+			name:         "NoSpot",
 			spotStrategy: "NoSpot",
-			expected:    true,
-			description: "NoSpot should suppress diff",
+			expected:     true,
+			description:  "NoSpot should suppress diff",
 		},
 		{
-			name:        "SpotAsPriceGo",
+			name:         "SpotAsPriceGo",
 			spotStrategy: "SpotAsPriceGo",
-			expected:    true,
-			description: "SpotAsPriceGo should suppress diff",
+			expected:     true,
+			description:  "SpotAsPriceGo should suppress diff",
 		},
 		{
-			name:        "Empty",
+			name:         "Empty",
 			spotStrategy: "",
-			expected:    true,
-			description: "Empty spot strategy should suppress diff",
+			expected:     true,
+			description:  "Empty spot strategy should suppress diff",
 		},
 	}
 
@@ -2265,13 +2265,13 @@ func TestUnitCommonPolardbStorageTypeDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonPolardbServrelessTypeDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name                  string
-		dbType                string
-		dbVersion             string
-		serverlessType        string
+		name                   string
+		dbType                 string
+		dbVersion              string
+		serverlessType         string
 		serverlessSteadySwitch string
-		expected              bool
-		description           string
+		expected               bool
+		description            string
 	}{
 		{
 			name:           "MySQL_80_AgileServerless",
@@ -2282,22 +2282,22 @@ func TestUnitCommonPolardbServrelessTypeDiffSuppressFunc(t *testing.T) {
 			description:    "MySQL 8.0 with AgileServerless should not suppress diff",
 		},
 		{
-			name:                  "MySQL_57_SteadyServerless_ON",
-			dbType:                "MySQL",
-			dbVersion:             "5.7",
-			serverlessType:        "SteadyServerless",
+			name:                   "MySQL_57_SteadyServerless_ON",
+			dbType:                 "MySQL",
+			dbVersion:              "5.7",
+			serverlessType:         "SteadyServerless",
 			serverlessSteadySwitch: "ON",
-			expected:              false,
-			description:           "MySQL 5.7 with SteadyServerless and ON switch should not suppress diff",
+			expected:               false,
+			description:            "MySQL 5.7 with SteadyServerless and ON switch should not suppress diff",
 		},
 		{
-			name:                  "MySQL_57_SteadyServerless_OFF",
-			dbType:                "MySQL",
-			dbVersion:             "5.7",
-			serverlessType:        "SteadyServerless",
+			name:                   "MySQL_57_SteadyServerless_OFF",
+			dbType:                 "MySQL",
+			dbVersion:              "5.7",
+			serverlessType:         "SteadyServerless",
 			serverlessSteadySwitch: "OFF",
-			expected:              true,
-			description:           "MySQL 5.7 with SteadyServerless and OFF switch should suppress diff",
+			expected:               true,
+			description:            "MySQL 5.7 with SteadyServerless and OFF switch should suppress diff",
 		},
 		{
 			name:           "PostgreSQL_14_AgileServerless",
@@ -2336,14 +2336,14 @@ func TestUnitCommonPolardbServrelessTypeDiffSuppressFunc(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"db_type":                 {Type: schema.TypeString},
-				"db_version":              {Type: schema.TypeString},
-				"serverless_type":         {Type: schema.TypeString},
+				"db_type":                  {Type: schema.TypeString},
+				"db_version":               {Type: schema.TypeString},
+				"serverless_type":          {Type: schema.TypeString},
 				"serverless_steady_switch": {Type: schema.TypeString},
 			}, map[string]interface{}{
-				"db_type":                 tc.dbType,
-				"db_version":              tc.dbVersion,
-				"serverless_type":         tc.serverlessType,
+				"db_type":                  tc.dbType,
+				"db_version":               tc.dbVersion,
+				"serverless_type":          tc.serverlessType,
 				"serverless_steady_switch": tc.serverlessSteadySwitch,
 			})
 			result := polardbServrelessTypeDiffSuppressFunc("key", "old", "new", d)
@@ -2689,13 +2689,13 @@ func TestUnitCommonPolardbCompressStorageDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonPolardbStandbyAzDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name            string
-		creationOption  string
-		hotStandby      string
-		old             string
-		new             string
-		expected        bool
-		description     string
+		name           string
+		creationOption string
+		hotStandby     string
+		old            string
+		new            string
+		expected       bool
+		description    string
 	}{
 		{
 			name:           "Normal_HotStandby_NotAuto",
@@ -2756,10 +2756,10 @@ func TestUnitCommonPolardbStandbyAzDiffSuppressFunc(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"creation_option":    {Type: schema.TypeString},
+				"creation_option":     {Type: schema.TypeString},
 				"hot_standby_cluster": {Type: schema.TypeString},
 			}, map[string]interface{}{
-				"creation_option":    tc.creationOption,
+				"creation_option":     tc.creationOption,
 				"hot_standby_cluster": tc.hotStandby,
 			})
 			result := polardbStandbyAzDiffSuppressFunc("key", tc.old, tc.new, d)
@@ -2816,10 +2816,10 @@ func TestUnitCommonEcsSystemDiskPerformanceLevelSuppressFunc(t *testing.T) {
 
 func TestUnitCommonEcsSecurityGroupRulePortRangeDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name       string
-		ipProtocol string
-		new        string
-		expected   bool
+		name        string
+		ipProtocol  string
+		new         string
+		expected    bool
 		description string
 	}{
 		{
@@ -2902,9 +2902,9 @@ func TestUnitCommonEcsSecurityGroupRulePreFixListIdDiffSuppressFunc(t *testing.T
 			description: "With cidr_ip should suppress diff",
 		},
 		{
-			name:       "With_Ipv6CidrIp",
-			ipv6CidrIp: "2001:db8::/32",
-			expected:   true,
+			name:        "With_Ipv6CidrIp",
+			ipv6CidrIp:  "2001:db8::/32",
+			expected:    true,
 			description: "With ipv6_cidr_ip should suppress diff",
 		},
 		{
@@ -3091,10 +3091,10 @@ func TestUnitCommonSlbRuleStickySessionTypeDiffSuppressFunc(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"listener_sync": {Type: schema.TypeString},
+				"listener_sync":  {Type: schema.TypeString},
 				"sticky_session": {Type: schema.TypeString},
 			}, map[string]interface{}{
-				"listener_sync": tc.listenerSync,
+				"listener_sync":  tc.listenerSync,
 				"sticky_session": tc.stickySession,
 			})
 			result := slbRuleStickySessionTypeDiffSuppressFunc("key", "old", "new", d)
@@ -3141,12 +3141,12 @@ func TestUnitCommonSlbRuleCookieTimeoutDiffSuppressFunc(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"listener_sync":      {Type: schema.TypeString},
-				"sticky_session":     {Type: schema.TypeString},
+				"listener_sync":       {Type: schema.TypeString},
+				"sticky_session":      {Type: schema.TypeString},
 				"sticky_session_type": {Type: schema.TypeString},
 			}, map[string]interface{}{
-				"listener_sync":      tc.listenerSync,
-				"sticky_session":     tc.stickySession,
+				"listener_sync":       tc.listenerSync,
+				"sticky_session":      tc.stickySession,
 				"sticky_session_type": tc.stickySessionType,
 			})
 			result := slbRuleCookieTimeoutDiffSuppressFunc("key", "old", "new", d)
@@ -3193,12 +3193,12 @@ func TestUnitCommonSlbRuleCookieDiffSuppressFunc(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"listener_sync":      {Type: schema.TypeString},
-				"sticky_session":     {Type: schema.TypeString},
+				"listener_sync":       {Type: schema.TypeString},
+				"sticky_session":      {Type: schema.TypeString},
 				"sticky_session_type": {Type: schema.TypeString},
 			}, map[string]interface{}{
-				"listener_sync":      tc.listenerSync,
-				"sticky_session":     tc.stickySession,
+				"listener_sync":       tc.listenerSync,
+				"sticky_session":      tc.stickySession,
 				"sticky_session_type": tc.stickySessionType,
 			})
 			result := slbRuleCookieDiffSuppressFunc("key", "old", "new", d)
@@ -3255,11 +3255,11 @@ func TestUnitCommonSlbRuleHealthCheckDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonHealthCheckDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name         string
-		protocol     string
-		healthCheck  string
-		expected     bool
-		description  string
+		name        string
+		protocol    string
+		healthCheck string
+		expected    bool
+		description string
 	}{
 		{
 			name:        "TCP_NoHealthCheck",
@@ -3304,8 +3304,8 @@ func TestUnitCommonHealthCheckDiffSuppressFunc(t *testing.T) {
 				data["health_check"] = tc.healthCheck
 			}
 			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"protocol":        {Type: schema.TypeString},
-				"health_check":    {Type: schema.TypeString},
+				"protocol":         {Type: schema.TypeString},
+				"health_check":     {Type: schema.TypeString},
 				"listener_forward": {Type: schema.TypeString},
 			}, data)
 			result := healthCheckDiffSuppressFunc("key", "old", "new", d)
@@ -3362,10 +3362,10 @@ func TestUnitCommonHealthCheckTypeDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonEcsInternetDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name        string
+		name         string
 		maxBandwidth int
-		expected    bool
-		description string
+		expected     bool
+		description  string
 	}{
 		{
 			name:         "Bandwidth_Positive",
@@ -3561,12 +3561,12 @@ func TestUnitCommonRouterInterfaceVBRTypeDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonWorkerDataDiskSizeSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name                    string
-		workerDataDiskCategory  string
-		resourceId              string
-		forceUpdate             bool
-		expected                bool
-		description             string
+		name                   string
+		workerDataDiskCategory string
+		resourceId             string
+		forceUpdate            bool
+		expected               bool
+		description            string
 	}{
 		{
 			name:        "No_DiskCategory",
@@ -4598,10 +4598,10 @@ func TestUnitCommonCmsAlarmDiffSuppressFunc(t *testing.T) {
 
 func TestUnitCommonEsDataNodeDiskPerformanceLevelDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
-		name         string
-		diskType     string
-		expected     bool
-		description  string
+		name        string
+		diskType    string
+		expected    bool
+		description string
 	}{
 		{
 			name:        "Cloud_ESSD",

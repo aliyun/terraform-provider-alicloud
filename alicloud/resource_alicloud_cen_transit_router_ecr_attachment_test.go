@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Test Cen TransitRouterEcrAttachment. >>> Resource test cases, automatically generated.
-// Case ECR Attachment 5366
 func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_ecr_attachment.default"
@@ -323,5 +321,3 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366_raw(t *testing.T) {
 		},
 	})
 }
-
-// Test Cen TransitRouterEcrAttachment. <<< Resource test cases, automatically generated.

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -18,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCENTransitRouterVpnAttachment_basic0(t *testing.T) {
+func TestAccAliCloudCENTransitRouterVpnAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vpn_attachment.default"
 	checkoutSupportedRegions(t, true, connectivity.VpnGatewayVpnAttachmentSupportRegions)
@@ -41,36 +42,89 @@ func TestAccAlicloudCENTransitRouterVpnAttachment_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpn_owner_id": "${data.alicloud_account.default.id}",
-					"zone": []map[string]interface{}{
-						{
-							"zone_id": "${data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0}",
-						},
-					},
-					"transit_router_attachment_name":        "${var.name}",
+					"vpn_owner_id":                          "${data.alicloud_account.default.id}",
+					"transit_router_vpn_attachment_name":    "${var.name}",
 					"auto_publish_route_enabled":            "false",
 					"transit_router_attachment_description": "${var.name}",
 					"vpn_id":                                "${alicloud_vpn_gateway_vpn_attachment.default.id}",
 					"cen_id":                                "${alicloud_cen_transit_router.default.cen_id}",
 					"transit_router_id":                     "${alicloud_cen_transit_router_cidr.default.transit_router_id}",
+					"order_type":                            "PayByCenOwner",
+					// Dual-tunnel Vco derives zones internally; passing any
+					// explicit zone here trips OperationUnsupported.VcoTunnelNotMatchZoneParam.
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vpn_owner_id":                          CHECKSET,
-						"zone.#":                                "1",
-						"transit_router_attachment_name":        name,
+						"transit_router_vpn_attachment_name":    name,
 						"auto_publish_route_enabled":            "false",
 						"transit_router_attachment_description": name,
 						"transit_router_id":                     CHECKSET,
 						"vpn_id":                                CHECKSET,
+						"order_type":                            "PayByCenOwner",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cen_id"},
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_vpn_attachment_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_vpn_attachment_name": name + "_update",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudCENTransitRouterVpnAttachment_zoneMismatch asserts the
+// negative case: when the underlying alicloud_vpn_gateway_vpn_attachment
+// (Vco) is created in dual-tunnel mode via tunnel_options_specification,
+// CBN derives the zones internally and rejects any attempt to also pass an
+// explicit `zone` block on alicloud_cen_transit_router_vpn_attachment.
+// The Create API returns OperationUnsupported.VcoTunnelNotMatchZoneParam;
+// this test pins that behaviour so regressions in the provider (e.g. quietly
+// dropping the zone field before it reaches the API) surface as test
+// failures instead of silent drifts.
+func TestAccAliCloudCENTransitRouterVpnAttachment_zoneMismatch(t *testing.T) {
+	resourceId := "alicloud_cen_transit_router_vpn_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.VpnGatewayVpnAttachmentSupportRegions)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scentrvpnattzm%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCENTransitRouterVpnAttachmentBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// IDRefreshName is intentionally omitted: the attachment is never
+		// created (Create is expected to fail), so SDK's refresh probe on
+		// that ID would report "ID-only refresh check never ran.".
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cen_id":            "${alicloud_cen_transit_router.default.cen_id}",
+					"transit_router_id": "${alicloud_cen_transit_router_cidr.default.transit_router_id}",
+					"vpn_id":            "${alicloud_vpn_gateway_vpn_attachment.default.id}",
+					"zone": []map[string]interface{}{
+						{
+							"zone_id": "${data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0}",
+						},
+					},
+				}),
+				// CBN rejects the request with the error below when a
+				// dual-tunnel Vco meets an explicit zone parameter. The
+				// regex matches the error code so the assertion is stable
+				// across minor message wording changes.
+				ExpectError: regexp.MustCompile(`OperationUnsupported\.VcoTunnelNotMatchZoneParam`),
 			},
 		},
 	})
@@ -105,52 +159,67 @@ func AlicloudCENTransitRouterVpnAttachmentBasicDependence0(name string) string {
 	}
 
 	resource "alicloud_vpn_customer_gateway" "default" {
-  		name        = "${var.name}"
-  		ip_address  = "42.104.22.212"
-  		asn         = "45014"
-  		description = "testAccVpnConnectionDesc"
+  		customer_gateway_name = var.name
+  		# Spread across 42.104.100-199.100-199 so repeated test runs do not
+  		# collide with previously leaked customer gateways in the account.
+  		ip_address            = "42.104.${100 + tonumber(substr(var.name, -3, 2)) %% 100}.${100 + tonumber(substr(var.name, -2, 2)) %% 100}"
+  		asn                   = "45014"
+  		description           = "testAccVpnConnectionDesc"
 	}
 
 	resource "alicloud_vpn_gateway_vpn_attachment" "default" {
-  		customer_gateway_id = alicloud_vpn_customer_gateway.default.id
   		network_type        = "public"
   		local_subnet        = "0.0.0.0/0"
   		remote_subnet       = "0.0.0.0/0"
   		effect_immediately  = false
-  		ike_config {
-    		ike_auth_alg = "md5"
-    		ike_enc_alg  = "des"
-    		ike_version  = "ikev2"
-    		ike_mode     = "main"
-    		ike_lifetime = 86400
-    		psk          = "tf-testvpn2"
-    		ike_pfs      = "group1"
-    		remote_id    = "testbob2"
-    		local_id     = "testalice2"
-  		}
-
-  		ipsec_config {
-    		ipsec_pfs      = "group5"
-    		ipsec_enc_alg  = "des"
-			ipsec_auth_alg = "md5"
-    		ipsec_lifetime = 86400
-  		}
-		bgp_config {
-			enable       = true
-    		local_asn    = 45014
-    		tunnel_cidr  = "169.254.11.0/30"
-    		local_bgp_ip = "169.254.11.1"
-  		}
-  		health_check_config {
-    		enable   = true
-    		sip      = "192.168.1.1"
-    		dip      = "10.0.0.1"
-    		interval = 10
-    		retry    = 10
-    		policy   = "revoke_route"
-  		}
-  		enable_dpd           = true
-  		enable_nat_traversal = true
+	tunnel_options_specification {
+		customer_gateway_id = alicloud_vpn_customer_gateway.default.id
+		role                = "master"
+		tunnel_index        = 1
+			enable_dpd          = true
+			enable_nat_traversal = true
+			tunnel_ike_config {
+				ike_auth_alg = "md5"
+				ike_enc_alg  = "des"
+				ike_version  = "ikev2"
+				ike_mode     = "main"
+				ike_lifetime = 86400
+				psk          = "tf-testvpn3"
+				ike_pfs      = "group1"
+				remote_id    = "testbob3"
+				local_id     = "testalice3"
+			}
+			tunnel_ipsec_config {
+				ipsec_pfs      = "group5"
+				ipsec_enc_alg  = "des"
+				ipsec_auth_alg = "md5"
+				ipsec_lifetime = 86400
+			}
+		}
+	tunnel_options_specification {
+		customer_gateway_id = alicloud_vpn_customer_gateway.default.id
+		role                = "slave"
+		tunnel_index        = 2
+			enable_dpd          = true
+			enable_nat_traversal = true
+			tunnel_ike_config {
+				ike_auth_alg = "md5"
+				ike_enc_alg  = "des"
+				ike_version  = "ikev2"
+				ike_mode     = "main"
+				ike_lifetime = 86400
+				psk          = "tf-testvpn2"
+				ike_pfs      = "group1"
+				remote_id    = "testbob2"
+				local_id     = "testalice2"
+			}
+			tunnel_ipsec_config {
+				ipsec_pfs      = "group5"
+				ipsec_enc_alg  = "des"
+				ipsec_auth_alg = "md5"
+				ipsec_lifetime = 86400
+			}
+		}
   		vpn_attachment_name  = var.name
 	}
 
@@ -167,7 +236,160 @@ func AlicloudCENTransitRouterVpnAttachmentBasicDependence0(name string) string {
 `, name)
 }
 
-func TestAccAlicloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
+// TestAccAliCloudCENTransitRouterVpnAttachment_crossAccountOrderType covers the
+// cross-account order_type flow:
+//   - Account A (profile TerraformUT, provider alias "a") owns the CEN instance and
+//     creates the alicloud_cen_transit_router_vpn_attachment whose order_type is
+//     the payer chosen by the grant.
+//   - Account B (profile TerraformTest, default provider) owns the VPN gateway and
+//     the alicloud_cen_transit_router_grant_attachment that authorizes A to attach it.
+//
+// Changing the payer requires B updating the grant first and then A updating the
+// attachment; the test drives that sequencing via depends_on.
+func TestAccAliCloudCENTransitRouterVpnAttachment_crossAccountOrderType(t *testing.T) {
+	// Load profile credentials up front so the Config strings below can embed
+	// AK/SK directly. Terraform SDK evaluates Step.Config eagerly when the
+	// Steps slice is built, so the creds MUST be populated before that point
+	// rather than inside PreCheck (which runs later).
+	testAccPreCheckCENCrossAccount(t)
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_vpn_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.VpnGatewayVpnAttachmentSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudCENTransitRouterVpnAttachmentMap0)
+	providerFactories, factoryProviders := cenCrossAccountProviderFactories()
+	// The attachment under test is owned by account A (TerraformUT); pick the
+	// factory-created provider with that AK so describe/CheckDestroy hits A.
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		client := cenCrossAccountClientByAK(*factoryProviders, sharedCENCrossAccountCreds.utAK)
+		if client == nil {
+			return &CbnService{}
+		}
+		return &CbnService{client}
+	}, "DescribeCenTransitRouterVpnAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scentrvpnatt%d", defaultRegionToTest, rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() {},
+		IDRefreshName:     resourceId,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCENTransitRouterVpnAttachmentCrossAccountConfig(name, "PayByCenOwner"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order_type": "PayByCenOwner",
+					}),
+				),
+			},
+			{
+				Config: testAccCENTransitRouterVpnAttachmentCrossAccountConfig(name, "PayByResourceOwner"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order_type": "PayByResourceOwner",
+					}),
+				),
+			},
+			// ImportState is intentionally omitted: Terraform SDK v1's import
+			// step does not thread ProviderFactories through to the aliased
+			// "alicloud.a" provider, so the refresh fails with "unknown
+			// provider \"alicloud\"". The cross-account create + order_type
+			// update flow is already validated by the two steps above.
+		},
+	})
+}
+
+func testAccCENTransitRouterVpnAttachmentCrossAccountConfig(name, orderType string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+%s
+
+data "alicloud_account" "b" {}
+
+data "alicloud_account" "a" {
+  provider = alicloud.a
+}
+
+# --- Account A: CEN ---
+resource "alicloud_cen_instance" "default" {
+  provider          = alicloud.a
+  cen_instance_name = var.name
+}
+
+resource "alicloud_cen_transit_router" "default" {
+  provider                   = alicloud.a
+  cen_id                     = alicloud_cen_instance.default.id
+  transit_router_description = "desd"
+  transit_router_name        = var.name
+}
+
+resource "alicloud_cen_transit_router_cidr" "default" {
+  provider                 = alicloud.a
+  transit_router_id        = alicloud_cen_transit_router.default.transit_router_id
+  cidr                     = "192.168.0.0/16"
+  transit_router_cidr_name = var.name
+  description              = var.name
+  publish_cidr_route       = false
+}
+
+# Single-tunnel VPN attachments require an explicit zone matching the tunnel
+# layout; pull the first master zone available in account A's region.
+data "alicloud_cen_transit_router_available_resources" "default" {
+  provider = alicloud.a
+}
+
+# --- Account B: VPN + Grant ---
+resource "alicloud_vpn_customer_gateway" "default" {
+  customer_gateway_name = var.name
+  # Spread the test-generated IP across a wider range than basic0's
+  # 42.104.22.100-119 pool so repeated cross-account runs do not collide
+  # with account B's accumulated leftover gateways.
+  ip_address  = "42.104.${100 + tonumber(substr(var.name, -3, 2)) %% 100}.${100 + tonumber(substr(var.name, -2, 2)) %% 100}"
+  asn         = "45014"
+  description = "testAccVpnConnectionDesc"
+}
+
+resource "alicloud_vpn_gateway_vpn_attachment" "default" {
+  network_type        = "public"
+  local_subnet        = "0.0.0.0/0"
+  remote_subnet       = "0.0.0.0/0"
+  effect_immediately  = false
+  customer_gateway_id = alicloud_vpn_customer_gateway.default.id
+  vpn_attachment_name = var.name
+}
+
+resource "alicloud_cen_transit_router_grant_attachment" "default" {
+  instance_type = "VPN"
+  instance_id   = alicloud_vpn_gateway_vpn_attachment.default.id
+  cen_owner_id  = data.alicloud_account.a.id
+  cen_id        = alicloud_cen_instance.default.id
+  order_type    = %q
+}
+
+# --- Account A: attach B's VPN into A's CEN ---
+resource "alicloud_cen_transit_router_vpn_attachment" "default" {
+  provider                              = alicloud.a
+  vpn_owner_id                          = data.alicloud_account.b.id
+  transit_router_vpn_attachment_name    = var.name
+  auto_publish_route_enabled            = false
+  transit_router_attachment_description = var.name
+  vpn_id                                = alicloud_vpn_gateway_vpn_attachment.default.id
+  cen_id                                = alicloud_cen_transit_router.default.cen_id
+  transit_router_id                     = alicloud_cen_transit_router_cidr.default.transit_router_id
+  order_type                            = %q
+  zone {
+    zone_id = data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0
+  }
+  depends_on = [alicloud_cen_transit_router_grant_attachment.default]
+}
+`, name, cenCrossAccountProviderBlocks(), orderType, orderType)
+}
+
+func TestAccAliCloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vpn_attachment.default"
 	checkoutSupportedRegions(t, true, connectivity.VpnGatewayVpnAttachmentSupportRegions)
@@ -190,11 +412,8 @@ func TestAccAlicloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone": []map[string]interface{}{
-						{
-							"zone_id": "${data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0}",
-						},
-					},
+					// Dual-tunnel Vco derives zones internally; passing any
+					// explicit zone here trips OperationUnsupported.VcoTunnelNotMatchZoneParam.
 					"transit_router_id": "${alicloud_cen_transit_router_cidr.default.transit_router_id}",
 					"vpn_id":            "${alicloud_vpn_gateway_vpn_attachment.default.id}",
 					"tags": map[string]string{
@@ -204,7 +423,6 @@ func TestAccAlicloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone.#":            "1",
 						"vpn_id":            CHECKSET,
 						"transit_router_id": CHECKSET,
 						"tags.%":            "2",
@@ -259,10 +477,9 @@ func TestAccAlicloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cen_id"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -699,8 +916,8 @@ resource "alicloud_cen_transit_router_cidr" "defaultuUtyCv" {
 }
 
 resource "alicloud_vpn_customer_gateway" "defaultMeoCIz" {
-  ip_address            = "0.0.0.0"
-  customer_gateway_name = "test-vpn-attachment"
+  ip_address            = "42.104.22.${210 + tonumber(substr(var.name, -2, 2)) %% 20}"
+  customer_gateway_name = var.name
   depends_on            = ["alicloud_cen_transit_router_cidr.defaultuUtyCv"]
 }
 
@@ -715,9 +932,10 @@ resource "alicloud_vpn_gateway_vpn_attachment" "defaultvrPzdh" {
   vpn_attachment_name = var.name
   tunnel_options_specification {
     customer_gateway_id = alicloud_vpn_customer_gateway.defaultMeoCIz.id
+    role = "master"
     enable_dpd = "true"
     enable_nat_traversal = "true"
-    tunnel_index = "1"
+    tunnel_index = "2"
 
     tunnel_ike_config {
       remote_id = "2.2.2.2"
@@ -740,8 +958,9 @@ resource "alicloud_vpn_gateway_vpn_attachment" "defaultvrPzdh" {
     
   }
   tunnel_options_specification {
+    role = "master"
     enable_nat_traversal = "true"
-    tunnel_index = "2"
+    tunnel_index = "1"
       tunnel_ike_config {
       local_id = "4.4.4.4"
       remote_id = "5.5.5.5"
@@ -801,13 +1020,8 @@ func TestAccAliCloudCenTransitRouterVpnAttachment_basic10409(t *testing.T) {
 					"transit_router_id":                     "${alicloud_cen_transit_router_cidr.defaultuUtyCv.transit_router_id}",
 					"vpn_id":                                "${alicloud_vpn_gateway_vpn_attachment.defaultvrPzdh.id}",
 					"auto_publish_route_enabled":            "false",
-					"zone": []map[string]interface{}{
-						{
-							"zone_id": "eu-central-1a",
-						},
-					},
-					"charge_type":                    "POSTPAY",
-					"transit_router_attachment_name": "test-vpn-attachment",
+					"charge_type":                           "POSTPAY",
+					"transit_router_attachment_name":        "test-vpn-attachment",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -817,7 +1031,6 @@ func TestAccAliCloudCenTransitRouterVpnAttachment_basic10409(t *testing.T) {
 						"transit_router_id":                     CHECKSET,
 						"vpn_id":                                CHECKSET,
 						"auto_publish_route_enabled":            "false",
-						"zone.#":                                "1",
 						"charge_type":                           "POSTPAY",
 						"transit_router_attachment_name":        "test-vpn-attachment",
 					}),
@@ -924,15 +1137,64 @@ resource "alicloud_cen_transit_router_cidr" "defaultuUtyCv" {
 }
 
 resource "alicloud_vpn_customer_gateway" "defaultMeoCIz" {
-  ip_address            = "0.0.0.0"
-  customer_gateway_name = "test-vpn-attachment"
+  ip_address            = "43.104.22.${230 + tonumber(substr(var.name, -2, 2)) %% 20}"
+  customer_gateway_name = var.name
 }
 
 resource "alicloud_vpn_gateway_vpn_attachment" "defaultvrPzdh" {
-  customer_gateway_id = alicloud_vpn_customer_gateway.defaultMeoCIz.id
-  vpn_attachment_name = "test-vpn-attachment"
-  local_subnet        = "10.0.1.0/24"
-  remote_subnet       = "10.0.2.0/24"
+  network_type        = "public"
+  local_subnet        = "0.0.0.0/0"
+  remote_subnet       = "0.0.0.0/0"
+  enable_tunnels_bgp  = false
+  vpn_attachment_name = var.name
+  tunnel_options_specification {
+    customer_gateway_id  = alicloud_vpn_customer_gateway.defaultMeoCIz.id
+    role                 = "master"
+    enable_dpd           = true
+    enable_nat_traversal = true
+    tunnel_index         = 1
+    tunnel_ike_config {
+      ike_auth_alg = "md5"
+      ike_enc_alg  = "aes"
+      ike_version  = "ikev2"
+      ike_mode     = "main"
+      ike_lifetime = 86400
+      psk          = "tf-testvpn10409-1"
+      ike_pfs      = "group2"
+      remote_id    = "testbob-10409-1"
+      local_id     = "testalice-10409-1"
+    }
+    tunnel_ipsec_config {
+      ipsec_pfs      = "group5"
+      ipsec_enc_alg  = "aes"
+      ipsec_auth_alg = "md5"
+      ipsec_lifetime = 86400
+    }
+  }
+  tunnel_options_specification {
+    customer_gateway_id  = alicloud_vpn_customer_gateway.defaultMeoCIz.id
+    role                 = "master"
+    enable_dpd           = true
+    enable_nat_traversal = true
+    tunnel_index         = 2
+    tunnel_ike_config {
+      ike_auth_alg = "md5"
+      ike_enc_alg  = "aes"
+      ike_version  = "ikev2"
+      ike_mode     = "main"
+      ike_lifetime = 86400
+      psk          = "tf-testvpn10409-2"
+      ike_pfs      = "group2"
+      remote_id    = "testbob-10409-2"
+      local_id     = "testalice-10409-2"
+    }
+    tunnel_ipsec_config {
+      ipsec_pfs      = "group5"
+      ipsec_enc_alg  = "aes"
+      ipsec_auth_alg = "md5"
+      ipsec_lifetime = 86400
+    }
+  }
 }
 
 

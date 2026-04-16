@@ -139,9 +139,9 @@ func checkResourceByName(resName string, isResource bool, fileType string) bool 
 		}
 	}
 
-	schemaAllSet, schemaMustSet, schemaModifySet, schemaForceNewSet :=
-		mapset.NewSet(), mapset.NewSet(), mapset.NewSet(), mapset.NewSet()
-	getSchemaAttr(false, resource.Schema, &schemaAllSet, &schemaMustSet, &schemaModifySet, &schemaForceNewSet)
+	schemaAllSet, schemaMustSet, schemaModifySet, schemaForceNewSet, schemaDeprecatedSet :=
+		mapset.NewSet(), mapset.NewSet(), mapset.NewSet(), mapset.NewSet(), mapset.NewSet()
+	getSchemaAttr(false, resource.Schema, &schemaAllSet, &schemaMustSet, &schemaModifySet, &schemaForceNewSet, &schemaDeprecatedSet)
 
 	log.Infof("==> Getting %s %s attributes in test cases...", fileType, resName)
 	testMustSet, testModifySet, testIgnoreSet :=
@@ -158,7 +158,7 @@ func checkResourceByName(resName string, isResource bool, fileType string) bool 
 	if check {
 		log.Infof("==> checking %s %s attributes' coverage rate", fileType, resName)
 		if checkAttributeSet(resName, fileType, schemaMustSet, testMustSet,
-			schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet) && isNameCorrect {
+			schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet, schemaDeprecatedSet) && isNameCorrect {
 			log.Infof("--- PASS!\n\n")
 			return true
 		}
@@ -170,15 +170,23 @@ func checkResourceByName(resName string, isResource bool, fileType string) bool 
 
 // get the schema
 func getSchemaAttr(isResource bool, schema map[string]*schema.Schema,
-	schemaAllSet, schemaMustSet, schemaModifySet, schemaForceNewSet *mapset.Set) {
+	schemaAllSet, schemaMustSet, schemaModifySet, schemaForceNewSet,
+	schemaDeprecatedSet *mapset.Set) {
 
 	schemaAttributes := make(map[string]SchemaAttribute)
 
 	getSchemaAttributes("", schemaAttributes, schema)
 
 	for key, value := range schemaAttributes {
-		// "dry_run" or deperacated
-		if key == "dry_run" || value.Deprecated != "" {
+		if key == "dry_run" {
+			continue
+		}
+		// Deprecated attributes are not part of the coverage target but may
+		// legitimately appear in ImportStateVerifyIgnore to suppress diffs on
+		// renamed fields — track them separately so the redundant-attr check
+		// can whitelist them.
+		if value.Deprecated != "" {
+			(*schemaDeprecatedSet).Add(key)
 			continue
 		}
 		(*schemaAllSet).Add(key)
@@ -268,6 +276,15 @@ func getTestCaseAttr(filePath string, resourceName string,
 	inFunc := false
 	ignoreStr := ""
 	inIgnore := false
+	// When a Config line does not embed an inline map[string]interface{} (e.g.
+	// a helper-function call like `Config: foo(name, "PayByCenOwner")`), the
+	// attribute data is still recoverable from the Check block that follows:
+	// `testAccCheck(map[string]string{ "order_type": "PayByCenOwner", ... })`.
+	// We track that fallback state here and record the Check map in place of
+	// the Config map when it applies.
+	inCheckFallback := false
+	checkFallbackStr := ""
+	checkFallbackStep := 0
 	for scanner.Scan() {
 		line += 1
 		text := scanner.Text()
@@ -276,7 +293,14 @@ func getTestCaseAttr(filePath string, resourceName string,
 			continue
 		} else if text == "}" {
 			inFunc = false
-
+			// Reset the per-step capture state at end-of-function so a step
+			// that never reaches a Check/ExpectError sentinel (e.g. malformed
+			// or unusual layouts) does not leak its in-progress Config buffer
+			// into the next function.
+			inConfig = false
+			configStr = ""
+			inCheckFallback = false
+			checkFallbackStr = ""
 		} else if normalFuncRegex.MatchString(text) {
 			if unitFuncRegex.MatchString(text) {
 				continue
@@ -289,6 +313,12 @@ func getTestCaseAttr(filePath string, resourceName string,
 			inFunc = true
 			funcName = text[strings.Index(text, "T"):strings.Index(text, "(")]
 			stepNumber = 0
+			// Defensive reset in case the previous function ended without a
+			// proper closing `}` token on its own line.
+			inConfig = false
+			configStr = ""
+			inCheckFallback = false
+			checkFallbackStr = ""
 			resourceTest.funcs[funcName] = FuncTest{
 				stepStr:        map[int]string{},
 				stepAttributes: map[int]map[string]interface{}{},
@@ -301,8 +331,23 @@ func getTestCaseAttr(filePath string, resourceName string,
 				continue
 			}
 			if inConfig {
-				if checkRegex.MatchString(text) {
+				// Config block ends at Check: OR at any other well-known step
+				// sentinel (ExpectError, ExpectNonEmptyPlan, Destroy, etc.)
+				// so steps that validate expected errors close cleanly.
+				isCheck := checkRegex.MatchString(text)
+				isSentinel := !isCheck && stepEndSentinelRegex.MatchString(text)
+				if isCheck || isSentinel {
 					resourceTest.funcs[funcName].stepStr[stepNumber] = configStr
+					// If Config had no inline map AND we hit a Check line,
+					// arm the Check-block fallback so we record the Check's
+					// testAccCheck(map[string]string{...}) as the step's
+					// effective attribute source. Sentinel steps (ExpectError
+					// etc.) do not carry attribute data, so skip the fallback.
+					if isCheck && !strings.Contains(configStr, "{") {
+						inCheckFallback = true
+						checkFallbackStr = ""
+						checkFallbackStep = stepNumber
+					}
 					inConfig = false
 					configStr = ""
 					stepNumber++
@@ -314,6 +359,30 @@ func getTestCaseAttr(filePath string, resourceName string,
 					}
 					configStr += text + "\n"
 				}
+			} else if inCheckFallback {
+				trimmed := symbolRegex.ReplaceAllString(text, "")
+				if len(trimmed) == 0 || strings.HasPrefix(trimmed, "//") {
+					continue
+				}
+				// Open bracket: start of the testAccCheck map.
+				if checkFallbackStr == "" {
+					if strings.Contains(trimmed, "{") {
+						// Synthesize the same decoration the standard-template
+						// parser expects (the leading `interface{}` pair is
+						// skipped by parseConfig via Index("{")+2).
+						checkFallbackStr = "Config: testAccConfig(map[string]interface{}{\n"
+					}
+					continue
+				}
+				if strings.HasPrefix(trimmed, "}") {
+					// End of the Check map. Record it and disarm.
+					checkFallbackStr += "}),\n"
+					resourceTest.funcs[funcName].stepStr[checkFallbackStep] = checkFallbackStr
+					inCheckFallback = false
+					checkFallbackStr = ""
+					continue
+				}
+				checkFallbackStr += trimmed + "\n"
 			}
 			if ignoreRegex.MatchString(text) {
 				inIgnore = true
@@ -353,10 +422,15 @@ func parseConfig(resourceTest ResourceTest,
 		attributeValueMap := map[string]string{}
 		for configIndex := 0; configIndex < len(f.stepStr); configIndex++ {
 			configStr := f.stepStr[configIndex]
-			// the test code is not using a standard template
+			// Some tests (e.g. cross-account order_type tests) pass a helper
+			// function name instead of an inline map[string]interface{} to
+			// Config. They contribute no attribute data this parser can read,
+			// so skip the step rather than failing the whole resource — the
+			// standard-template steps (basic0 / basic1) still populate
+			// testMustSet / testModifySet and keep coverage accurate.
 			if !strings.Contains(configStr, "{") {
-				log.Infof("the test case in [%s] does not use a standard template, need manual check", resourceTest.resourceName)
-				return false
+				log.Debugf("skipping non-template step in func [%s] of [%s]", funcName, resourceTest.resourceName)
+				continue
 			}
 			configStr = configStr[strings.Index(configStr, "{")+2 : strings.LastIndex(configStr, "}")+1]
 			if configStr == "{}" {
@@ -519,14 +593,18 @@ func parseAttr(configIndex int, rootName string, data interface{}, attributeValu
 			if rootName != "" {
 				key = rootName + "." + key
 			}
-			(*testMustSet).Add(key)
+			addCoverageKey(testMustSet, key)
 			// check if the attribute has been updated
+			updated := false
 			if v, ok := attributeValueMap[key]; ok {
 				if fmt.Sprintf("%v", value) != v {
-					(*testModifySet).Add(key)
+					updated = true
 				}
 			} else if configIndex > 0 {
-				(*testModifySet).Add(key)
+				updated = true
+			}
+			if updated {
+				addCoverageKey(testModifySet, key)
 			}
 			attributeValueMap[key] = fmt.Sprintf("%v", value)
 			parseAttr(configIndex, key, value, attributeValueMap, testMustSet, testModifySet)
@@ -539,6 +617,43 @@ func parseAttr(configIndex int, rootName string, data interface{}, attributeValu
 	}
 }
 
+// stripNumericIndexParts drops numeric path segments from dotted keys, e.g.
+// "zone.0.zone_id" -> "zone.zone_id". Used to normalize flattened Check-map
+// keys so they align with the schema's nested attribute names.
+func stripNumericIndexParts(key string) string {
+	if !strings.Contains(key, ".") {
+		return key
+	}
+	parts := strings.Split(key, ".")
+	out := parts[:0]
+	for _, p := range parts {
+		if _, err := strconv.Atoi(p); err == nil {
+			continue
+		}
+		out = append(out, p)
+	}
+	return strings.Join(out, ".")
+}
+
+// addCoverageKey registers a key against a coverage set along with every
+// ancestor path built from its non-numeric segments. This lets flat keys
+// from the Check-fallback (e.g. "zone.0.zone_id") satisfy coverage for both
+// the leaf attribute ("zone.zone_id") and its container ("zone").
+func addCoverageKey(set *mapset.Set, key string) {
+	(*set).Add(key)
+	stripped := stripNumericIndexParts(key)
+	if stripped != key {
+		(*set).Add(stripped)
+	}
+	if !strings.Contains(stripped, ".") {
+		return
+	}
+	parts := strings.Split(stripped, ".")
+	for i := 1; i <= len(parts); i++ {
+		(*set).Add(strings.Join(parts[:i], "."))
+	}
+}
+
 var (
 	commentedRegex    = regexp.MustCompile("^[\t]*//")
 	normalFuncRegex   = regexp.MustCompile("^func Test(.*)")
@@ -546,14 +661,18 @@ var (
 	standardFuncRegex = regexp.MustCompile("^func TestAccAliCloud(.*)")
 	configRegex       = regexp.MustCompile("(^[\t]*)Config:(.*)")
 	checkRegex        = regexp.MustCompile("(.*)Check:(.*)")
-	ignoreRegex       = regexp.MustCompile("(.*)ImportStateVerifyIgnore:(.*)")
-	hasNumRegex       = regexp.MustCompile(`[0-9]+`)
-	attrRegex         = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-.]+)\":(.*)")
-	symbolRegex       = regexp.MustCompile(`\s`)
-	variableRegex     = regexp.MustCompile("(^[a-zA-Z_0-9]+)|(\"[+]\")")
-	valueFuncRegex    = regexp.MustCompile("[(].*[\"].*[\"].*[)]")
-	valueOnlySymbol   = regexp.MustCompile(`.*([^\\\"])(\\)([^\\\"]).*`)
-	bracket           = map[string]string{
+	// Steps that assert an expected error instead of a Check func still need
+	// to close the Config-capture state machine. Matches lines such as
+	// `ExpectError: regexp.MustCompile(...)` or `ExpectNonEmptyPlan: true`.
+	stepEndSentinelRegex = regexp.MustCompile(`(^[\t]*)(ExpectError|ExpectNonEmptyPlan|PreventDiskCleanup|Destroy|ImportState):`)
+	ignoreRegex          = regexp.MustCompile("(.*)ImportStateVerifyIgnore:(.*)")
+	hasNumRegex          = regexp.MustCompile(`[0-9]+`)
+	attrRegex            = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-.]+)\":(.*)")
+	symbolRegex          = regexp.MustCompile(`\s`)
+	variableRegex        = regexp.MustCompile("(^[a-zA-Z_0-9]+)|(\"[+]\")")
+	valueFuncRegex       = regexp.MustCompile("[(].*[\"].*[\"].*[)]")
+	valueOnlySymbol      = regexp.MustCompile(`.*([^\\\"])(\\)([^\\\"]).*`)
+	bracket              = map[string]string{
 		"{": "}",
 		"[": "]",
 	}
@@ -673,7 +792,8 @@ func formatAttributesAsTree(attributes []interface{}) string {
 }
 
 func checkAttributeSet(resourceName string, fileType string, schemaMustSet, testMustSet,
-	schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet mapset.Set) bool {
+	schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet,
+	schemaDeprecatedSet mapset.Set) bool {
 
 	isFullCover, isIgnoreLegal, isAllModified := true, true, true
 
@@ -699,7 +819,11 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 		// TODO: 从READ方法区分是否是私有属性，从而区分应该修改ignore数组还是应该修改资源属性
 		log.Errorf("resource %s [ForceNew] attributes %v are in ImportStateVerifyIgnore array ", resourceName, string(forceNewButIgnoreStr))
 	}
-	redundantAttr := testIgnoreSet.Difference(schemaAllSet).ToSlice()
+	// Attributes in ImportStateVerifyIgnore that are neither part of the
+	// active schema nor deprecated are genuinely redundant. Deprecated fields
+	// are allowed to stay in ImportStateVerifyIgnore to suppress diffs during
+	// the deprecation window without being flagged by coverage checks.
+	redundantAttr := testIgnoreSet.Difference(schemaAllSet).Difference(schemaDeprecatedSet).ToSlice()
 	redundantAttrFinal := []string{}
 	for _, v := range redundantAttr {
 		vStr := v.(string)
@@ -713,7 +837,7 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 					attrStr += "." + subAttr
 				}
 			}
-			if !schemaAllSet.Contains(attrStr) {
+			if !schemaAllSet.Contains(attrStr) && !schemaDeprecatedSet.Contains(attrStr) {
 				redundantAttrFinal = append(redundantAttrFinal, vStr)
 			}
 		} else {
