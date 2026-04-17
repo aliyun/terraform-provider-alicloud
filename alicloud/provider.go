@@ -919,6 +919,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_workspace":                                        resourceAliCloudCmsWorkspace(),
 			"alicloud_cloud_firewall_vpc_firewall_control_policy_order":     resourceAliCloudCloudFirewallVpcFirewallControlPolicyOrder(),
 			"alicloud_cloud_firewall_nat_firewall_control_policy_order":     resourceAliCloudCloudFirewallNatFirewallControlPolicyOrder(),
+			"alicloud_esa_custom_response_code_rule":                        resourceAliCloudEsaCustomResponseCodeRule(),
 			"alicloud_rds_custom_disk_attachment":                           resourceAliCloudRdsCustomDiskAttachment(),
 			"alicloud_sls_logtail_pipeline_config":                          resourceAliCloudSlsLogtailPipelineConfig(),
 			"alicloud_simple_application_server_disk":                       resourceAliCloudSimpleApplicationServerDisk(),
