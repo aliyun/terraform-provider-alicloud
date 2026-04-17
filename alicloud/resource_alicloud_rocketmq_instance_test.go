@@ -23,7 +23,8 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRocketmqInstance")
 	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	//testAccCheck is not being used
+	//testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srocketmqinstancevalidation%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRocketmqInstanceBasicDependence4101)
