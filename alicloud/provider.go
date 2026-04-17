@@ -1411,6 +1411,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_ee_namespace":                                       resourceAliCloudCrEENamespace(),
 			"alicloud_cr_ee_repo":                                            resourceAliCloudCrEERepo(),
 			"alicloud_cr_ee_sync_rule":                                       resourceAliCloudCrRepoSyncRule(),
+			"alicloud_cdn_domain":                                            resourceAlicloudCdnDomain(),
 			"alicloud_cdn_domain_new":                                        resourceAliCloudCdnDomain(),
 			"alicloud_cdn_domain_config":                                     resourceAliCloudCdnDomainConfig(),
 			"alicloud_router_interface":                                      resourceAlicloudRouterInterface(),
