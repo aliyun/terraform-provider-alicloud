@@ -1639,6 +1639,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_db_cluster":                                        resourceAliCloudAdbDbCluster(),
 			"alicloud_ecs_disk":                                              resourceAliCloudEcsDisk(),
 			"alicloud_ecs_disk_attachment":                                   resourceAlicloudEcsDiskAttachment(),
+			"alicloud_ecs_disk_encryption_by_default":                        resourceAliCloudEcsDiskEncryptionByDefault(),
+			"alicloud_ecs_disk_default_kms_key_id":                           resourceAliCloudEcsDiskDefaultKmsKeyId(),
 			"alicloud_ecs_auto_snapshot_policy_attachment":                   resourceAliCloudEcsAutoSnapshotPolicyAttachment(),
 			"alicloud_ddoscoo_domain_resource":                               resourceAliCloudDdosCooDomainResource(),
 			"alicloud_ddoscoo_port":                                          resourceAliCloudDdosCooPort(),
