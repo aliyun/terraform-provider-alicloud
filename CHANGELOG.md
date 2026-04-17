@@ -1,35 +1,36 @@
-## 1.276.0 (Unreleased)
+## 1.277.0 (Unreleased)
+## 1.276.0 (April 17, 2026)
 
-- **New Resource:** `alicloud_cloud_firewall_nat_firewall_control_policy_order` [GH-9649]
-- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_control_policy_order` [GH-9650]
-- **New Resource:** `alicloud_cms_workspace` [GH-9658]
-- **New Resource:** `alicloud_esa_custom_response_code_rule` [GH-9659]
+- **New Resource:** `alicloud_cloud_firewall_nat_firewall_control_policy_order` ([#9649](https://github.com/aliyun/terraform-provider-alicloud/issues/9649))
+- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_control_policy_order` ([#9650](https://github.com/aliyun/terraform-provider-alicloud/issues/9650))
+- **New Resource:** `alicloud_cms_workspace` ([#9658](https://github.com/aliyun/terraform-provider-alicloud/issues/9658))
+- **New Resource:** `alicloud_esa_custom_response_code_rule` ([#9659](https://github.com/aliyun/terraform-provider-alicloud/issues/9659))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_managed_kubernetes: support modify encryption_provider_key. [GH-9606]
-- resource/alicloud_ots_instance: upgrade ListClusterType API. [GH-9613]
-- resource/alicloud_cen_traffic_marking_policy: Refactored the resource alicloud_cen_traffic_marking_policy; Improved alicloud_cen_traffic_marking_policy testcase. [GH-9626]
-- resource/alicloud_cen_transit_router_cidr: Marked publish_cidr_route as Computed; resource/alicloud_cen_transit_router_ecr_attachment: Support new attribute order_type; resource/alicloud_cen_transit_router_grant_attachment: Optimized docs; resource/alicloud_cen_transit_router_vbr_attachment: add retry codes; resource/alicloud_cen_transit_router_vpc_attachment: Support new attribute order_type; resource/alicloud_cen_transit_router_vpn_attachment: Support new attribute order_type. [GH-9627]
-- resource/alicloud_esa_site: Added the field automatic_frequency_control_action_type, automatic_frequency_control_enable, automatic_frequency_control_level, performance_data_collection_enable, real_client_ip_header_name, site_waf_settings. [GH-9640]
-- resource/alicloud_ocean_base_instance: update validation. [GH-9642]
-- resource/alicloud_lindorm_instance: update validation. [GH-9643]
-- resource/alicloud_instance: Removed the ForceNew for field role_name. [GH-9646]
-- resouce/alicloud_cloud_firewall_vpc_firewall_control_policy: change new_order to optional. [GH-9649]
-- resource/alicloud_cloud_firewall_vpc_firewall_control_policy: Change order to optional and support for update. [GH-9650]
-- resource/alicloud_cr_namespace: deprecated resource/alicloud_cr_repo: deprecated datasource/alicloud_cr_namespaces: deprecated datasource/alicloud_cr_repos: deprecated. [GH-9652]
-- resource/alicloud_cs_application: removed resource/alicloud_cs_swarm: removed resource/alicloud_cs_kubernetes_autoscaler: deprecated resource/alicloud_cs_kubernetes: deprecated resource/alicloud_cs_edge_kubernetes: deprecated resource/alicloud_cs_serverless_kubernetes: deprecated. [GH-9653]
-- data-source/alicloud_cs_kubernetes_clusters: deprecated data-source/alicloud_cs_managed_kubernetes_clusters:deprecated data-source/alicloud_cs_edge_kubernetes_clusters:deprecated data-source/alicloud_cs_serverless_kubernetes_clusters:deprecated. [GH-9656]
-- docs: Update ssl_certificates_service_pca_certificate document. [GH-9424]
-- docs: Update available version. [GH-9651]
+- resource/alicloud_cs_managed_kubernetes: support modify encryption_provider_key. ([#9606](https://github.com/aliyun/terraform-provider-alicloud/issues/9606))
+- resource/alicloud_ots_instance: upgrade ListClusterType API. ([#9613](https://github.com/aliyun/terraform-provider-alicloud/issues/9613))
+- resource/alicloud_cen_traffic_marking_policy: Refactored the resource alicloud_cen_traffic_marking_policy; Improved alicloud_cen_traffic_marking_policy testcase. ([#9626](https://github.com/aliyun/terraform-provider-alicloud/issues/9626))
+- resource/alicloud_cen_transit_router_cidr: Marked publish_cidr_route as Computed; resource/alicloud_cen_transit_router_ecr_attachment: Support new attribute order_type; resource/alicloud_cen_transit_router_grant_attachment: Optimized docs; resource/alicloud_cen_transit_router_vbr_attachment: add retry codes; resource/alicloud_cen_transit_router_vpc_attachment: Support new attribute order_type; resource/alicloud_cen_transit_router_vpn_attachment: Support new attribute order_type. ([#9627](https://github.com/aliyun/terraform-provider-alicloud/issues/9627))
+- resource/alicloud_esa_site: Added the field automatic_frequency_control_action_type, automatic_frequency_control_enable, automatic_frequency_control_level, performance_data_collection_enable, real_client_ip_header_name, site_waf_settings. ([#9640](https://github.com/aliyun/terraform-provider-alicloud/issues/9640))
+- resource/alicloud_ocean_base_instance: update validation. ([#9642](https://github.com/aliyun/terraform-provider-alicloud/issues/9642))
+- resource/alicloud_lindorm_instance: update validation. ([#9643](https://github.com/aliyun/terraform-provider-alicloud/issues/9643))
+- resource/alicloud_instance: Removed the ForceNew for field role_name. ([#9646](https://github.com/aliyun/terraform-provider-alicloud/issues/9646))
+- resouce/alicloud_cloud_firewall_vpc_firewall_control_policy: change new_order to optional. ([#9649](https://github.com/aliyun/terraform-provider-alicloud/issues/9649))
+- resource/alicloud_cloud_firewall_vpc_firewall_control_policy: Change order to optional and support for update. ([#9650](https://github.com/aliyun/terraform-provider-alicloud/issues/9650))
+- resource/alicloud_cr_namespace: deprecated resource/alicloud_cr_repo: deprecated datasource/alicloud_cr_namespaces: deprecated datasource/alicloud_cr_repos: deprecated. ([#9652](https://github.com/aliyun/terraform-provider-alicloud/issues/9652))
+- resource/alicloud_cs_application: removed resource/alicloud_cs_swarm: removed resource/alicloud_cs_kubernetes_autoscaler: deprecated resource/alicloud_cs_kubernetes: deprecated resource/alicloud_cs_edge_kubernetes: deprecated resource/alicloud_cs_serverless_kubernetes: deprecated. ([#9653](https://github.com/aliyun/terraform-provider-alicloud/issues/9653))
+- data-source/alicloud_cs_kubernetes_clusters: deprecated data-source/alicloud_cs_managed_kubernetes_clusters:deprecated data-source/alicloud_cs_edge_kubernetes_clusters:deprecated data-source/alicloud_cs_serverless_kubernetes_clusters:deprecated. ([#9656](https://github.com/aliyun/terraform-provider-alicloud/issues/9656))
+- docs: Update ssl_certificates_service_pca_certificate document. ([#9424](https://github.com/aliyun/terraform-provider-alicloud/issues/9424))
+- docs: Update available version. ([#9651](https://github.com/aliyun/terraform-provider-alicloud/issues/9651))
 
 BUG FIXES:
 
-- resource/alicloud_rocketmq_instance: Fix send_receive_ratio validation issue for rocketmq_instance. [GH-9407]
-- resource/alicloud_cs_kubernetes_node_pool: Fix user_data and pre_user_data cannot be cleared; resource/alicloud_ecs_key_pair: Adjust the timeout duration of the delete operation. [GH-9608]
-- resource/alicloud_vpc: Fix bug that CIDR in secondary_cidr_blocks will be removed then reattach. [GH-9629]
-- resource/alicloud_cs_kubernetes_addon: fix get next_version; data-source/alicloud_cs_kubernetes_addons: fix get next_version. [GH-9648]
-- testcase: Fixed TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation testcase. [GH-9661]
+- resource/alicloud_rocketmq_instance: Fix send_receive_ratio validation issue for rocketmq_instance. ([#9407](https://github.com/aliyun/terraform-provider-alicloud/issues/9407))
+- resource/alicloud_cs_kubernetes_node_pool: Fix user_data and pre_user_data cannot be cleared; resource/alicloud_ecs_key_pair: Adjust the timeout duration of the delete operation. ([#9608](https://github.com/aliyun/terraform-provider-alicloud/issues/9608))
+- resource/alicloud_vpc: Fix bug that CIDR in secondary_cidr_blocks will be removed then reattach. ([#9629](https://github.com/aliyun/terraform-provider-alicloud/issues/9629))
+- resource/alicloud_cs_kubernetes_addon: fix get next_version; data-source/alicloud_cs_kubernetes_addons: fix get next_version. ([#9648](https://github.com/aliyun/terraform-provider-alicloud/issues/9648))
+- testcase: Fixed TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation testcase. ([#9661](https://github.com/aliyun/terraform-provider-alicloud/issues/9661))
 
 ## 1.275.0 (April 10, 2026)
 

@@ -20,6 +20,12 @@ For information about Cloud Enterprise Network (CEN) Transit Router Grant Attach
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_cen_transit_router_grant_attachment&exampleId=d3da962c-17b8-e48b-28ad-cc619d02ca0d7a77d422&activeTab=example&spm=docs.r.cen_transit_router_grant_attachment.0.d3da962c17&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_account" "default" {}
 
@@ -41,6 +47,10 @@ resource "alicloud_cen_transit_router_grant_attachment" "example" {
   order_type    = "PayByCenOwner"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cen_transit_router_grant_attachment&spm=docs.r.cen_transit_router_grant_attachment.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
