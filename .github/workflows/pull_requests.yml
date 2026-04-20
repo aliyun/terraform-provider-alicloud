@@ -143,17 +143,36 @@ jobs:
 
   labeler:
     runs-on: ubuntu-latest
-    name: Label the PR size
+    name: Label the PR
     permissions:
       contents: read
+      pull-requests: write
     steps:
-      - uses: codelytv/pr-size-labeler@v1
+#     // TODO  filter by service
+#      - name: Apply Pull Request Service Labels
+#        if: github.event_name == 'pull_request_target'
+#        uses: actions/labeler@v6
+#        with:
+#          configuration-path: .github/labeler-pr-triage.yml
+#          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/labeler@v6
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: .github/labeler-pull-request-triage.yml
+
+      - name: Apply Pull Request Size Labels
+        uses: codelytv/pr-size-labeler@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xs_label: 'size/XS'
           xs_max_size: '30'
+          s_label: 'size/S'
           s_max_size: '60'
+          m_label: 'size/M'
           m_max_size: '150'
+          l_label: 'size/L'
           l_max_size: '1500'
+          xl_label: 'size/XL'
           fail_if_xl: 'false'
           message_if_xl: >
             'This PR exceeds the recommended size of 1500 lines.
