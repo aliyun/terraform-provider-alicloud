@@ -300,6 +300,29 @@ resource "alicloud_cs_kubernetes_node_pool" "customized_kubelet" {
     allowed_unsafe_sysctls  = ["net.ipv4.route.min_pmtu"]
   }
 
+  # containerd configuration parameters
+  containerd_config {
+    max_concurrent_downloads    = 10
+    ignore_image_defined_volume = true
+    limit_core                  = 10
+    limit_no_file               = 1024
+    limit_mem_lock              = 65536
+
+    registry_mirrors {
+      registry      = "docker.io"
+      mirror        = "https://registry.cn-hangzhou.aliyuncs.com"
+      override_path = false
+    }
+
+    registry_mirrors {
+      registry      = "gcr.io"
+      mirror        = "https://gcr-mirror.example.com"
+      override_path = true
+    }
+
+    insecure_registries = ["registry.example.com", "192.168.1.1:5000"]
+  }
+
   # rolling policy: works when updating
   rolling_policy {
     max_parallelism = 1
@@ -706,6 +729,9 @@ The following arguments are supported:
 * `internet_max_bandwidth_out` - (Optional, Int) The maximum bandwidth of the public IP address of the node. The unit is Mbps(Mega bit per second). The value range is:\[1,100\]
 * `key_name` - (Optional) The name of the key pair. When the node pool is a managed node pool, only `key_name` is supported.
 * `kubelet_configuration` - (Optional, Set) Kubelet configuration parameters for worker nodes. See [`kubelet_configuration`](#kubelet_configuration) below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/). See [`kubelet_configuration`](#kubelet_configuration) below.
+* `containerd_config` - (Optional, Set, Available since v1.277.0) Containerd configuration parameters for worker nodes.
+
+  -> **Note:** This parameter only takes effect during update operations. See [`containerd_config`](#containerd_config) below.
 * `labels` - (Optional, List) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument. Detailed below. More information in [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/). See [`labels`](#labels) below.
 * `login_as_non_root` - (Optional, ForceNew) Whether the ECS instance is logged on as a ecs-user user. Valid value: `true` and `false`.
 * `management` - (Optional, Computed, Set) Managed node pool configuration. See [`management`](#management) below.
@@ -957,6 +983,28 @@ The kubelet_configuration-reserved_memory supports the following:
 The kubelet_configuration-tracing supports the following:
 * `endpoint` - (Optional, Available since v1.242.0) The endpoint of the collector.
 * `sampling_rate_per_million` - (Optional) Number of samples to be collected per million span.
+
+### `containerd_config`
+
+-> **NOTE:** The `containerd_config` only takes effect during update operations. To use this feature, you need to create the node pool first, then update it with the `containerd_config` configuration.
+
+The containerd_config supports the following:
+* `max_concurrent_downloads` - (Optional, Int) The maximum number of concurrent downloads for container images. Valid values: `1` to `20`.
+* `ignore_image_defined_volume` - (Optional, Bool) Whether to ignore volumes defined in the image. Valid values: `true` or `false`.
+* `limit_core` - (Optional, Int) The coredump size limit. Valid values: `0` to `9007199254740991`.
+* `limit_no_file` - (Optional, Int) The maximum number of file handles. Valid values: `1024` to `9007199254740991`.
+* `limit_mem_lock` - (Optional, Int) The maximum locked memory limit. Valid values: `65536` to `9007199254740991`.
+* `registry_mirrors` - (Optional, List) Configure mirror sites for container image registries to accelerate image pulls. See [`registry_mirrors`](#containerd_config-registry_mirrors) below.
+* `insecure_registries` - (Optional, List) Allow the container runtime to skip TLS certificate verification when pulling images. Typically used in test environments with self-signed certificate registries. The format is domain name or IP address without protocol prefix (e.g., `registry.example.com`, `192.168.1.1:5000`).
+
+### `containerd_config-registry_mirrors`
+
+The containerd_config-registry_mirrors supports the following:
+* `registry` - (Optional, String) The registry address without protocol prefix (e.g., `docker.io`, `registry.example.com`, `192.168.1.1:5000`).
+* `mirror` - (Optional, String) The mirror URL with protocol prefix (e.g., `https://mirror.example.com`, `http://192.168.1.1:5000`).
+* `override_path` - (Optional, Bool) Whether to override the path. Default value: `false`.
+
+  -> **NOTE:** When configuring `registry_mirrors`, both `registry` and `mirror` must be specified together. If either field is empty, an error will be returned.
 
 ### `labels`
 
