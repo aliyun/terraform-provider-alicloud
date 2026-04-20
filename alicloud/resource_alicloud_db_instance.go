@@ -664,6 +664,60 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"collect_stat_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Before", "After"}, false),
+			},
+			"time_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+
+			"collation": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"force_encryption": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntInSlice([]int{0, 1}),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != "SQLServer"
+				},
+			},
+			"ssl_certificate": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"ssl_password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"tde_certificate": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"tde_private_key": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"tde_password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"tde_db_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -1012,6 +1066,81 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.Get("engine").(string) == string(PostgreSQL) && !d.IsNewResource() && d.HasChange("engine_version") {
+		action := "UpgradeDBInstanceMajorVersionPrecheck"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"SourceIp":     client.SourceIp,
+		}
+		if v, ok := d.GetOk("engine_version"); ok && v.(string) != "" {
+			request["TargetMajorVersion"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, rdsService.RdsUpgradeMajorVersionRefreshFunc(d.Id(), formatInt(response["TaskId"]), []string{"Failed"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		action = "UpgradeDBInstanceMajorVersion"
+		request = map[string]interface{}{
+			"RegionId":       client.RegionId,
+			"DBInstanceId":   d.Id(),
+			"SwitchOver":     "true",
+			"UpgradeMode":    "inPlaceUpgrade",
+			"SwitchTimeMode": "Immediate",
+			"SourceIp":       client.SourceIp,
+		}
+		if v, ok := d.GetOk("engine_version"); ok && v.(string) != "" {
+			request["TargetMajorVersion"] = v
+		}
+		if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
+			request["PayType"] = v
+		}
+		if v, ok := d.GetOk("collect_stat_mode"); ok && v.(string) != "" {
+			request["CollectStatMode"] = v
+		}
+		wait = incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_rds_upgrade_db_instance", action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	if d.HasChange("security_ip_mode") && d.Get("security_ip_mode").(string) == SafetyMode {
 		action := "MigrateSecurityIPMode"
 		request := map[string]interface{}{
@@ -1076,7 +1205,105 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("sql_collector_config_value")
 	}
 
-	if d.HasChange("tde_status") {
+	if string(SQLServer) == d.Get("engine").(string) && d.HasChange("tde_db_name") {
+		oldVal, newVal := d.GetChange("tde_db_name")
+		oldStr := strings.TrimSpace(oldVal.(string))
+		newStr := strings.TrimSpace(newVal.(string))
+
+		oldSet := make(map[string]bool)
+		if oldStr != "" {
+			for _, name := range strings.Split(oldStr, ",") {
+				name = strings.TrimSpace(name)
+				if name != "" {
+					oldSet[name] = true
+				}
+			}
+		}
+		newSet := make(map[string]bool)
+		if newStr != "" {
+			for _, name := range strings.Split(newStr, ",") {
+				name = strings.TrimSpace(name)
+				if name != "" {
+					newSet[name] = true
+				}
+			}
+		}
+		var toDisable []string
+		for name := range oldSet {
+			if !newSet[name] {
+				toDisable = append(toDisable, name)
+			}
+		}
+		var toEnable []string
+		for name := range newSet {
+			if !oldSet[name] {
+				toEnable = append(toEnable, name)
+			}
+		}
+
+		if oldStr == "" && newStr != "" {
+			if v, ok := d.GetOk("tde_certificate"); !ok || v.(string) == "" {
+				return WrapError(fmt.Errorf("tde_certificate is required when tde_db_name changes from empty to non-empty"))
+			}
+			if v, ok := d.GetOk("tde_private_key"); !ok || v.(string) == "" {
+				return WrapError(fmt.Errorf("tde_private_key is required when tde_db_name changes from empty to non-empty"))
+			}
+			if v, ok := d.GetOk("tde_password"); !ok || v.(string) == "" {
+				return WrapError(fmt.Errorf("tde_password is required when tde_db_name changes from empty to non-empty"))
+			}
+		}
+
+		for _, dbName := range toDisable {
+			action := "ModifyDBInstanceTDE"
+			request := map[string]interface{}{
+				"RegionId":     client.RegionId,
+				"DBInstanceId": d.Id(),
+				"TDEStatus":    "Disabled",
+				"DBName":       dbName,
+				"SourceIp":     client.SourceIp,
+			}
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+
+		for _, dbName := range toEnable {
+			action := "ModifyDBInstanceTDE"
+			request := map[string]interface{}{
+				"RegionId":     client.RegionId,
+				"DBInstanceId": d.Id(),
+				"TDEStatus":    "Enabled",
+				"DBName":       dbName,
+				"SourceIp":     client.SourceIp,
+			}
+			if v, ok := d.GetOk("tde_certificate"); ok && v.(string) != "" {
+				request["Certificate"] = v.(string)
+			}
+			if v, ok := d.GetOk("tde_private_key"); ok && v.(string) != "" {
+				request["PrivateKey"] = v.(string)
+			}
+			if v, ok := d.GetOk("tde_password"); ok && v.(string) != "" {
+				request["PassWord"] = v.(string)
+			}
+			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+	}
+
+	if d.HasChanges("tde_status") {
 		action := "ModifyDBInstanceTDE"
 		request := map[string]interface{}{
 			"RegionId":     client.RegionId,
@@ -1261,7 +1488,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.HasChanges("ssl_action", "ssl_connection_string") {
+	if d.HasChanges("ssl_action", "ssl_connection_string", "force_encryption") {
 		action := "ModifyDBInstanceSSL"
 		request := map[string]interface{}{
 			"DBInstanceId": d.Id(),
@@ -1350,6 +1577,22 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			if d.HasChange("server_key") {
 				if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
 					request["ServerKey"] = v.(string)
+				}
+			}
+		}
+
+		if d.Get("engine").(string) == "SQLServer" {
+			if v, ok := d.GetOkExists("force_encryption"); ok {
+				request["ForceEncryption"] = v.(int)
+			}
+			if d.HasChange("ssl_certificate") {
+				if v, ok := d.GetOk("ssl_certificate"); ok && v.(string) != "" {
+					request["Certificate"] = v.(string)
+				}
+			}
+			if d.HasChange("ssl_password") {
+				if v, ok := d.GetOk("ssl_password"); ok && v.(string) != "" {
+					request["PassWord"] = v.(string)
 				}
 			}
 		}
@@ -1748,6 +1991,51 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.HasChange("time_zone") || d.HasChange("collation") {
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		action := "ModifyCollationTimeZone"
+		request := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+			"RegionId":     client.RegionId,
+			"SourceIp":     client.SourceIp,
+		}
+
+		if v, ok := d.GetOk("time_zone"); ok && v.(string) != "" {
+			request["Timezone"] = v
+		}
+		if v, ok := d.GetOk("collation"); ok && v.(string) != "" {
+			request["Collation"] = v
+		}
+
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	if !d.IsNewResource() && (d.HasChange("target_minor_version") || d.HasChange("upgrade_db_instance_kernel_version")) {
 		action := "UpgradeDBInstanceKernelVersion"
 		request := map[string]interface{}{
@@ -1994,6 +2282,12 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err = rdsService.SetTimeZone(d); err != nil {
 		return WrapError(err)
 	}
+	if v, ok := instance["TimeZone"]; ok && v != nil && v != "" {
+		d.Set("time_zone", v)
+	}
+	if v, ok := instance["Collation"]; ok && v != nil && v != "" {
+		d.Set("collation", v)
+	}
 	if instance["PayType"] == string(Prepaid) {
 		action := "DescribeInstanceAutoRenewalAttribute"
 		request := map[string]interface{}{
@@ -2056,6 +2350,9 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("acl", sslAction["ACL"])
 	d.Set("replication_acl", sslAction["ReplicationACL"])
 	d.Set("ssl_connection_string", sslAction["ConnectionString"])
+	if v, ok := sslAction["ForceEncryption"]; ok && v != nil {
+		d.Set("force_encryption", v)
+	}
 
 	//When the instance schema is docker on ECS, TDE encryption is not supported, so the query is not executed.
 	if kindCode, ok := instance["kindCode"]; ok && kindCode != "3" {
@@ -2064,6 +2361,22 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 			return WrapError(err)
 		}
 		d.Set("tde_status", tdeInfo["TDEStatus"])
+		if databases, ok := tdeInfo["Databases"]; ok && databases != nil {
+			if dbMap, ok := databases.(map[string]interface{}); ok {
+				if dbList, ok := dbMap["Database"]; ok && dbList != nil {
+					var enabledDbNames []string
+					for _, db := range dbList.([]interface{}) {
+						dbItem := db.(map[string]interface{})
+						if dbItem["TDEStatus"] == "Enabled" {
+							if dbName, ok := dbItem["DBName"].(string); ok && dbName != "" {
+								enabledDbNames = append(enabledDbNames, dbName)
+							}
+						}
+					}
+					d.Set("tde_db_name", strings.Join(enabledDbNames, ","))
+				}
+			}
+		}
 	}
 	res, err := rdsService.DescribeHASwitchConfig(d.Id())
 	if err != nil {
@@ -2191,6 +2504,14 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOk("optimized_writes"); ok && v.(string) != "" {
 		request["OptimizedWrites"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		count := 1
+		for key, value := range v.(map[string]interface{}) {
+			request[fmt.Sprintf("Tag.%d.Key", count)] = key
+			request[fmt.Sprintf("Tag.%d.Value", count)] = value
+			count++
+		}
 	}
 
 	if request["Engine"] == "MySQL" || request["Engine"] == "PostgreSQL" || request["Engine"] == "SQLServer" {

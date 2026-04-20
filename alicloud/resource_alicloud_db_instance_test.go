@@ -25,7 +25,7 @@ func init() {
 
 /*
 "ssl_connection_string" There may be issues with circular dependencies, which cannot be tested in the case
-"server_key","server_cert"  These two parameters need to be generated offline and cannot be generated in online tests
+"server_key","server_cert","ssl_certificate","ssl_password","tde_certificate","tde_private_key","tde_password","tde_db_name" These two parameters need to be generated offline and cannot be generated in online tests
 */
 
 func testSweepDBInstances(region string) error {
@@ -987,6 +987,8 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
 					"category":                 "HighAvailability",
+					"time_zone":                "China Standard Time",
+					"collation":                "Chinese_PRC_CI_AS",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -996,6 +998,8 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 						"instance_storage":         CHECKSET,
 						"db_instance_storage_type": "cloud_essd",
 						"category":                 "HighAvailability",
+						"time_zone":                "China Standard Time",
+						"collation":                "Chinese_PRC_CI_AS",
 					}),
 				),
 			},
@@ -1021,7 +1025,7 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"instance_type": "mssql.x4.medium.s2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1085,6 +1089,42 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 					testAccCheck(map[string]string{
 						"security_group_id":    CHECKSET,
 						"security_group_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"collation": "SQL_Latin1_General_CP1_CI_AS",
+					"time_zone": "UTC",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"collation": "SQL_Latin1_General_CP1_CI_AS",
+						"time_zone": "UTC",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action":       "Open",
+					"force_encryption": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action":       "Open",
+						"force_encryption": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action":       "Close",
+					"force_encryption": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action":       "Close",
+						"force_encryption": "0",
 					}),
 				),
 			},
@@ -2033,7 +2073,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_15_0_Babelfish(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "fresh_white_list_readins", "released_keep_policy", "babelfish_config.#",
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "fresh_white_list_readins", "released_keep_policy",
 					"client_ca_enabled", "client_crl_enabled", "db_instance_ip_array_name", "encryption_key", "security_group_id", "modify_mode", "security_ip_type",
 					"whitelist_network_type", "babelfish_config.2289427611.babelfish_enabled", "babelfish_config.2289427611.master_user_password", "babelfish_config.2289427611.master_username",
 					"babelfish_config.2289427611.migration_mode"},
@@ -2534,7 +2574,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_Cluster(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "Postpaid", "encryption_key", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "encryption_key", "db_is_ignore_case"},
 			},
 		},
 	})
@@ -3110,6 +3150,8 @@ resource "alicloud_security_group" "default" {
 }
 
 func TestAccAliCloudRdsDBInstance_SQLServer_2019_ServerlessHA(t *testing.T) {
+	t.Skipf("Skipping test: ssl_certificate, ssl_password, tde_certificate, tde_private_key, tde_password, tde_db_name require customer-generated certificates offline")
+
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -3242,7 +3284,9 @@ func TestAccAliCloudRdsDBInstance_SQLServer_2019_ServerlessHA(t *testing.T) {
 			// ssl_action is ignored for SQLServer
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ssl_action": "Open",
+					"ssl_action":      "Open",
+					"ssl_certificate": "oss-cn-beijing.aliyuncs.com:sjcbeijing:rdsTest.pfx",
+					"ssl_password":    "123456",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -3255,6 +3299,38 @@ func TestAccAliCloudRdsDBInstance_SQLServer_2019_ServerlessHA(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ssl_action": "Close",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_db_name":     "test01",
+					"tde_password":    "cMr2O6BnU3XFMlHu86/DHbOlbGFgo5prUrGCbcARI/E=",
+					"tde_private_key": "oss-cn-beijing.aliyuncs.com:sjcbeijing:rdsTest.pvk",
+					"tde_certificate": "oss-cn-beijing.aliyuncs.com:sjcbeijing:rdsTest.cer",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_db_name":     "test01",
+						"tde_password":    "cMr2O6BnU3XFMlHu86/DHbOlbGFgo5prUrGCbcARI/E=",
+						"tde_private_key": "oss-cn-beijing.aliyuncs.com:sjcbeijing:rdsTest.pvk",
+						"tde_certificate": "oss-cn-beijing.aliyuncs.com:sjcbeijing:rdsTest.cer",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_db_name":     "test02",
+					"tde_password":    "cMr2O6BnU3XFMlHu86/DHbOlbGFgo5prUrGCbcARI/E=",
+					"tde_private_key": "oss-cn-beijing.aliyuncs.com:sjcbeijing:rdsTest.pvk",
+					"tde_certificate": "oss-cn-beijing.aliyuncs.com:sjcbeijing:rdsTest.cer",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_db_name":     "test02",
+						"tde_password":    "cMr2O6BnU3XFMlHu86/DHbOlbGFgo5prUrGCbcARI/E=",
+						"tde_private_key": "oss-cn-beijing.aliyuncs.com:sjcbeijing:rdsTest.pvk",
+						"tde_certificate": "oss-cn-beijing.aliyuncs.com:sjcbeijing:rdsTest.cer",
 					}),
 				),
 			},
@@ -4071,10 +4147,21 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":    "18.0",
+					"collect_stat_mode": "Before",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "18.0",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "tde_encryption_key"},
+				ImportStateVerifyIgnore: []string{"force_restart", "tde_encryption_key", "collect_stat_mode"},
 			},
 		},
 	})
