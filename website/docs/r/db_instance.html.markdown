@@ -703,6 +703,45 @@ The following arguments are supported:
 * `ca_type` - (Optional, Available since v1.124.1) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the SSLEnabled parameter to 1, the default value of this parameter is aliyun. **NOTE:** From version 1.231.0, `ca_type` start  support `MySQL` engine. Value range:
   - aliyun: a cloud certificate
   - custom: a custom certificate
+* `collect_stat_mode` - (Optional, Available since v1.277.0) Specify the point in time at which the system collects the statistics of the instance.
+  - Before: The system collects the statistics of the instance before the switchover to ensure service stability. If the instance contains a large amount of data, the upgrade may require a long period of time.
+  - After: The system collects the statistics of the instance after the switchover to accelerate the upgrade. After the upgrade, if you access tables for which no statistics are generated, the query plans may be inaccurate, and your database service may be unavailable during peak hours.
+
+    -> **NOTE:** If you set the SwitchOver parameter to false, the value Before specifies that the system collects the statistics of the instance before the instance starts to process read and write requests, and the value After specifies that the system collects the statistics of the instance after the instance starts to process read and write requests.
+
+* `collation` - (Optional, Available since v1.277.0) The character set collation of the instance. By default, the system does not modify the character set collation of the instance. Valid values:
+  - `Chinese_PRC_CI_AS`
+  - `Chinese_PRC_CS_AS`
+  - `Chinese_PRC_BIN`
+  - `Latin1_General_CI_AS`
+  - `Latin1_General_CS_AS`
+  - `SQL_Latin1_General_CP1_CI_AS`
+  - `SQL_Latin1_General_CP1_CS_AS`
+  - `Japanese_CI_AS`
+  - `Japanese_CS_AS`
+  - `Chinese_Taiwan_Stroke_CI_AS`
+  - `Chinese_Taiwan_Stroke_CS_AS`
+
+  -> **NOTE:** The default character set collation of the instance is Chinese_PRC_CI_AS. You must specify one of the Collation and Timezone parameters.
+
+* `time_zone` - (Optional, Available since v1.277.0) The time zone of the instance. By default, the system does not modify the time zone.
+
+  -> **NOTE:** The default time zone of the instance is China Standard Time. You must specify one of the Collation and Timezone parameters.
+
+* `force_encryption` - (Optional, Available since v1.277.0) Specifies whether to enable the forceful SSL encryption feature. This parameter is supported only for ApsaraDB RDS for SQL Server instances.Valid values:
+  - 1: enables the feature.
+  - 0: disables the feature.
+* `ssl_certificate` -(Optional, Available in 1.277.0) The custom certificate.
+  - Public endpoint: oss-<The ID of the region>.aliyuncs.com:<The name of the bucket>:<The name of the certificate file (The file name contains the extension.)>.
+  - Internal endpoint: oss-<The ID of the region>-internal.aliyuncs.com:<The name of the bucket>:<The name of the certificate file (The file name contains the extension.)>.
+* `ssl_password` -(Optional, Available in 1.277.0) The password of the certificate.
+* `tde_private_key` -(Optional, Available in 1.277.0) The file that contains the private key of the certificate.<a class="workbench-show-detail toggle-down">.
+* `tde_certificate` -(Optional, Available in 1.277.0) The file that contains the certificate.<a class="workbench-show-detail toggle-down">.
+* `tde_password` -(Optional, Available in 1.277.0) The password of the certificate.
+* `tde_db_name` -(Optional, Available in 1.277.0) The name of the database for which you want to enable TDE. You can specify up to 50 database names in a single request. If you specify multiple database names, separate the database names with commas (,).
+
+  -> **NOTE:** This parameter is available and must be specified only when the instance runs SQL Server 2019 SE or an Enterprise Edition of SQL Server.
+
 * `server_cert` - (Optional, Available since v1.124.1) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter. **NOTE:** From version 1.231.0, `server_cert` start  support `MySQL` engine.
 * `server_key` - (Optional, Available since v1.124.1) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter. **NOTE:** From version 1.231.0, `server_key` start support `MySQL` engine.
 * `client_ca_enabled` - (Optional, Available since v1.124.1) Specifies whether to enable the public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
