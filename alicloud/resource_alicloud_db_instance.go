@@ -394,6 +394,26 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"certificate": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"private_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"pass_word": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"db_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"encryption_key": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -1101,6 +1121,21 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 
+		if "SQLServer" == d.Get("engine").(string) {
+			if v, ok := d.GetOk("certificate"); ok && v.(string) != "" {
+				request["Certificate"] = v.(string)
+			}
+			if v, ok := d.GetOk("private_key"); ok && v.(string) != "" {
+				request["PrivateKey"] = v.(string)
+			}
+			if v, ok := d.GetOk("pass_word"); ok && v.(string) != "" {
+				request["PassWord"] = v.(string)
+			}
+			if v, ok := d.GetOk("db_name"); ok && v.(string) != "" {
+				request["DBName"] = v.(string)
+			}
+		}
+
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -1350,6 +1385,19 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			if d.HasChange("server_key") {
 				if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
 					request["ServerKey"] = v.(string)
+				}
+			}
+		}
+
+		if d.Get("engine").(string) == "SQLServer" {
+			if d.HasChange("certificate") {
+				if v, ok := d.GetOk("certificate"); ok && v.(string) != "" {
+					request["Certificate"] = v.(string)
+				}
+			}
+			if d.HasChange("pass_word") {
+				if v, ok := d.GetOk("pass_word"); ok && v.(string) != "" {
+					request["PassWord"] = v.(string)
 				}
 			}
 		}
