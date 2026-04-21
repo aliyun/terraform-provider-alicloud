@@ -2198,7 +2198,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 				}
 			}
 			if config.RamRoleSessionExpiration == 0 {
-				config.RamRoleSessionExpiration = 3600
+				config.RamRoleSessionExpiration = 43200
 			}
 		} else {
 			config.RamRoleSessionExpiration = assumeRole["session_expiration"].(int)
@@ -2469,7 +2469,7 @@ func init() {
 
 		"assume_role_policy": "The permissions applied when assuming a role. You cannot use, this policy to grant further permissions that are in excess to those of the, role that is being assumed.",
 
-		"assume_role_session_expiration": "The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 0 (in this case Alicloud use own default value).",
+		"assume_role_session_expiration": "The time after which the established session for assuming role expires. Valid value range: [900-43200] seconds, and must not exceed the MaxSessionDuration of the RAM role. Default to 0 (in this case Alicloud uses its own default value of 3600).",
 
 		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).",
 
