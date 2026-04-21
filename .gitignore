@@ -45,3 +45,4 @@ coverage.out
 .qoder/
 .terraflow/
 .terraflow.jsonc
+.opencode/package-lock.json

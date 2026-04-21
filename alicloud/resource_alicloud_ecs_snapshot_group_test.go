@@ -123,6 +123,7 @@ func TestAccAliCloudECSSnapshotGroup_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -214,6 +215,7 @@ func TestAccAliCloudECSSnapshotGroup_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -269,14 +271,13 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 data "alicloud_zones" default {
   available_resource_creation = "Instance"
-  available_disk_category     = "cloud_essd"
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
-  cpu_core_count       = 2
-  memory_size          = 4
-  system_disk_category = "cloud_essd"
+   image_id              = data.alicloud_images.default.images.0.id
+   system_disk_category  = "cloud_essd"
+   cpu_core_count        = 2
+   memory_size           = 4
 }
 
 data "alicloud_vpcs" "default" {
@@ -285,7 +286,7 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
 
 resource "alicloud_security_group" "default" {
@@ -307,13 +308,14 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_instance" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  instance_name     = "${var.name}"
-  host_name         = "tf-testAcc"
-  image_id          = data.alicloud_images.default.images.0.id
-  instance_type     = data.alicloud_instance_types.default.instance_types.0.id
-  security_groups   = [alicloud_security_group.default.id]
-  vswitch_id        = data.alicloud_vswitches.default.ids.0
+  availability_zone   = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  instance_name       = "${var.name}"
+  host_name           = "tf-testAcc"
+  image_id            = data.alicloud_images.default.images.0.id
+  instance_type       = data.alicloud_instance_types.default.instance_types.0.id
+  security_groups     = [alicloud_security_group.default.id]
+  vswitch_id          = data.alicloud_vswitches.default.ids.0
+  system_disk_category = "cloud_essd"
 }
 
 resource "alicloud_disk_attachment" "default" {
