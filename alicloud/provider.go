@@ -917,6 +917,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_ecs_disk_encryption_by_default":                       resourceAliCloudEcsDiskEncryptionByDefault(),
+			"alicloud_cms_integration_policy":                               resourceAliCloudCmsIntegrationPolicy(),
 			"alicloud_cms_workspace":                                        resourceAliCloudCmsWorkspace(),
 			"alicloud_cloud_firewall_vpc_firewall_control_policy_order":     resourceAliCloudCloudFirewallVpcFirewallControlPolicyOrder(),
 			"alicloud_cloud_firewall_nat_firewall_control_policy_order":     resourceAliCloudCloudFirewallNatFirewallControlPolicyOrder(),
