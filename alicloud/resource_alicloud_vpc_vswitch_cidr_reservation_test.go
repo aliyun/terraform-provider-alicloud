@@ -11,7 +11,7 @@ import (
 
 // Test Vpc VswitchCidrReservation. >>> Resource test cases, automatically generated.
 // Case 3117
-func TestAccAlicloudVpcVswitchCidrReservation_basic3117(t *testing.T) {
+func TestAccAliCloudVPCVswitchCidrReservation_basic3117(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_vswitch_cidr_reservation.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcVswitchCidrReservationMap3117)
@@ -34,14 +34,14 @@ func TestAccAlicloudVpcVswitchCidrReservation_basic3117(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":                    "${alicloud_vswitch.defaultVSwitch.id}",
-					"cidr_reservation_cidr":         "10.0.10.0/24",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
+					"cidr_reservation_cidr":         "172.16.10.0/24",
 					"vswitch_cidr_reservation_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vswitch_id":                    CHECKSET,
-						"cidr_reservation_cidr":         "10.0.10.0/24",
+						"cidr_reservation_cidr":         "172.16.10.0/24",
 						"vswitch_cidr_reservation_name": name,
 					}),
 				),
@@ -109,9 +109,9 @@ func TestAccAlicloudVpcVswitchCidrReservation_basic3117(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ip_version":                    "IPv4",
-					"vswitch_id":                    "${alicloud_vswitch.defaultVSwitch.id}",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
 					"cidr_reservation_description":  "test",
-					"cidr_reservation_cidr":         "10.0.10.0/24",
+					"cidr_reservation_cidr":         "172.16.10.0/24",
 					"vswitch_cidr_reservation_name": name + "_update",
 					"cidr_reservation_type":         "Prefix",
 				}),
@@ -120,7 +120,7 @@ func TestAccAlicloudVpcVswitchCidrReservation_basic3117(t *testing.T) {
 						"ip_version":                    "IPv4",
 						"vswitch_id":                    CHECKSET,
 						"cidr_reservation_description":  "test",
-						"cidr_reservation_cidr":         "10.0.10.0/24",
+						"cidr_reservation_cidr":         "172.16.10.0/24",
 						"vswitch_cidr_reservation_name": name + "_update",
 						"cidr_reservation_type":         "Prefix",
 					}),
@@ -145,27 +145,26 @@ variable "name" {
 }
 
 data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+  available_instance_type = "ecs.g6.large"
 }
 
-resource "alicloud_vpc" "defaultVpc" {
+resource "alicloud_vpc" "test" {
   vpc_name   = var.name
-  cidr_block = "10.0.0.0/8"
+  cidr_block = "172.16.0.0/12"
 }
 
-resource "alicloud_vswitch" "defaultVSwitch" {
-  vpc_id       = alicloud_vpc.defaultVpc.id
-  cidr_block   = "10.0.0.0/20"
-  vswitch_name = "${var.name}1"
+resource "alicloud_vswitch" "test" {
+  vpc_id       = alicloud_vpc.test.id
+  cidr_block   = "172.16.0.0/20"
   zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
-
 
 `, name)
 }
 
 // Case 3138
-func TestAccAlicloudVpcVswitchCidrReservation_basic3138(t *testing.T) {
+func TestAccAliCloudVPCVswitchCidrReservation_basic3138(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_vswitch_cidr_reservation.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcVswitchCidrReservationMap3138)
@@ -188,7 +187,7 @@ func TestAccAlicloudVpcVswitchCidrReservation_basic3138(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":                    "${alicloud_vswitch.defaultVSwitch.id}",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
 					"cidr_reservation_mask":         "24",
 					"vswitch_cidr_reservation_name": name,
 				}),
@@ -263,7 +262,7 @@ func TestAccAlicloudVpcVswitchCidrReservation_basic3138(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ip_version":                    "IPv4",
-					"vswitch_id":                    "${alicloud_vswitch.defaultVSwitch.id}",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
 					"cidr_reservation_description":  "test",
 					"vswitch_cidr_reservation_name": name + "_update",
 					"cidr_reservation_mask":         "24",
@@ -299,27 +298,26 @@ variable "name" {
 }
 
 data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+  available_instance_type = "ecs.g6.large"
 }
 
-resource "alicloud_vpc" "defaultVpc" {
+resource "alicloud_vpc" "test" {
   vpc_name   = var.name
-  cidr_block = "10.0.0.0/8"
+  cidr_block = "172.16.0.0/12"
 }
 
-resource "alicloud_vswitch" "defaultVSwitch" {
-  vpc_id       = alicloud_vpc.defaultVpc.id
-  cidr_block   = "10.0.0.0/20"
-  vswitch_name = "${var.name}1"
+resource "alicloud_vswitch" "test" {
+  vpc_id       = alicloud_vpc.test.id
+  cidr_block   = "172.16.0.0/20"
   zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
-
 
 `, name)
 }
 
 // Case 3117  twin
-func TestAccAlicloudVpcVswitchCidrReservation_basic3117_twin(t *testing.T) {
+func TestAccAliCloudVPCVswitchCidrReservation_basic3117_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_vswitch_cidr_reservation.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcVswitchCidrReservationMap3117)
@@ -343,9 +341,9 @@ func TestAccAlicloudVpcVswitchCidrReservation_basic3117_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ip_version":                    "IPv4",
-					"vswitch_id":                    "${alicloud_vswitch.defaultVSwitch.id}",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
 					"cidr_reservation_description":  "test",
-					"cidr_reservation_cidr":         "10.0.10.0/24",
+					"cidr_reservation_cidr":         "172.16.10.0/24",
 					"vswitch_cidr_reservation_name": name,
 					"cidr_reservation_type":         "Prefix",
 				}),
@@ -354,7 +352,7 @@ func TestAccAlicloudVpcVswitchCidrReservation_basic3117_twin(t *testing.T) {
 						"ip_version":                    "IPv4",
 						"vswitch_id":                    CHECKSET,
 						"cidr_reservation_description":  "test",
-						"cidr_reservation_cidr":         "10.0.10.0/24",
+						"cidr_reservation_cidr":         "172.16.10.0/24",
 						"vswitch_cidr_reservation_name": name,
 						"cidr_reservation_type":         "Prefix",
 					}),
@@ -371,7 +369,7 @@ func TestAccAlicloudVpcVswitchCidrReservation_basic3117_twin(t *testing.T) {
 }
 
 // Case 3138  twin
-func TestAccAlicloudVpcVswitchCidrReservation_basic3138_twin(t *testing.T) {
+func TestAccAliCloudVPCVswitchCidrReservation_basic3138_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_vswitch_cidr_reservation.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcVswitchCidrReservationMap3138)
@@ -395,7 +393,7 @@ func TestAccAlicloudVpcVswitchCidrReservation_basic3138_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ip_version":                    "IPv4",
-					"vswitch_id":                    "${alicloud_vswitch.defaultVSwitch.id}",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
 					"cidr_reservation_description":  "test",
 					"vswitch_cidr_reservation_name": name,
 					"cidr_reservation_mask":         "24",

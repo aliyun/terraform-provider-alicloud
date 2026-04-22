@@ -9,7 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpcGatewayRouteTableAttachment_basic0(t *testing.T) {
+func TestAccAliCloudVPCVpcGatewayRouteTableAttachment_basic0(t *testing.T) {
+	t.Skip("Skipping: depends on pre-existing default VPC (default-NODELETING) which may not exist in all test regions")
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VPCSupportRegions)
 	resourceId := "alicloud_vpc_gateway_route_table_attachment.default"

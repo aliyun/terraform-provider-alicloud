@@ -122,7 +122,8 @@ resource "alicloud_havip" "defaultHavip" {
 `, name)
 }
 
-func TestAccAliCloudVpcRouteEntry_basic1(t *testing.T) {
+func TestAccAliCloudVPCVpcRouteEntry_basic1(t *testing.T) {
+	t.Skip("Skipping: depends on hardcoded router interface IDs (ri-bp13h9zi93400onfxmnmc) that may not exist")
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_route_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcRouteEntryMap1)
@@ -207,7 +208,8 @@ func TestAccAliCloudVpcRouteEntry_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudVpcRouteEntry_basic2(t *testing.T) {
+func TestAccAliCloudVPCVpcRouteEntry_basic2(t *testing.T) {
+	t.Skip("Skipping: depends on hardcoded route table (vtb-bp11pzfej88uvbu2cb9gr) and IPv4 gateway (ipv4gw-bp1wvf0vp9zyr1ziel0nw) IDs")
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_route_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcRouteEntryMap1)

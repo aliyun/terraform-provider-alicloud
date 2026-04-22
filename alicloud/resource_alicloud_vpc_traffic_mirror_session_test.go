@@ -101,7 +101,7 @@ func testSweepVpcTrafficMirrorSession(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCTrafficMirrorSession_basic0(t *testing.T) {
+func TestAccAliCloudVPCVpcTrafficMirrorSession_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
 	resourceId := "alicloud_vpc_traffic_mirror_session.default"
@@ -332,7 +332,7 @@ func TestAccAlicloudVPCTrafficMirrorSession_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCTrafficMirrorSession_basic1(t *testing.T) {
+func TestAccAliCloudVPCVpcTrafficMirrorSession_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
 	resourceId := "alicloud_vpc_traffic_mirror_session.default"
@@ -411,7 +411,7 @@ resource "alicloud_vpc_traffic_mirror_filter" "default" {
 
 
 data "alicloud_instance_types" "default" {
-  instance_type_family = "ecs.g7"
+  instance_type_family = "ecs.g8i"
 }
 
 data "alicloud_zones" "default" {

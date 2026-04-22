@@ -45,3 +45,14 @@ coverage.out
 .qoder/
 .terraflow/
 .terraflow.jsonc
+
+# Agent skill directories (personal/local only)
+.agents/
+.opencode/
+.claude/
+.qwen/
+.roo/
+.trae/
+.mux/
+.pi/
+skills-lock.json
