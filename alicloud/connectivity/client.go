@@ -63,6 +63,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
+	slsutil "github.com/aliyun/aliyun-log-go-sdk/util"
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
@@ -1062,6 +1063,22 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 		SecurityToken:   securityToken,
 		UserAgent:       client.getUserAgent(),
 	}
+	// SLS v4 signing puts the region string into the credential scope, and
+	// that string must match the SLS service region corresponding to the
+	// endpoint — not the provider's configured RegionId, which is the
+	// account-level region and can differ (an acdr-ut endpoint such as
+	// cn-hangzhou-acdr-ut-3.log.aliyuncs.com maps to credential-scope region
+	// "cn-hangzhou-acdr-ut-3", while the provider is configured with
+	// "cn-hangzhou"). This mirrors both the SDK's own setSignV4IfInAcdr and
+	// the SDK-v2 path's gateway-sls GetRegion, which both derive the region
+	// from the endpoint. Parsing a non-standard endpoint may fail; when it
+	// does we leave Region empty and let the SDK's v4 signer return its
+	// explicit "sign version v4 require a valid region" error rather than
+	// emitting an invalid signature.
+	if region, err := slsutil.ParseRegion(endpoint); err == nil {
+		client.logconn.Region = region
+	}
+	applyLogClientSignVersion(client.logconn, client.config.SignVersion, "sls")
 
 	return do(client.logconn)
 }
@@ -2674,6 +2691,8 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 			return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
 		}
 		openapiClient.Protocol = tea.String(client.config.Protocol)
+		// SignVersion
+		applyOpenapiSignVersion(openapiClient, client.config.SignVersion, "sls")
 	}
 	var response map[string]interface{}
 	runtime := &utilV2.RuntimeOptions{}
@@ -2690,6 +2709,51 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 	}
 	return response, formatError(response, err)
 }
+
+// applyOpenapiSignVersion writes the configured signature version (if any)
+// for the given apiProductCode into openapiClient.SignatureVersion. It is a
+// no-op when the map does not contain the key, so it is safe to call
+// unconditionally from any product branch.
+func applyOpenapiSignVersion(openapiClient *openapi.Client, signVersion *sync.Map, apiProductCode string) {
+	if openapiClient == nil || signVersion == nil {
+		return
+	}
+	v, ok := signVersion.Load(apiProductCode)
+	if !ok {
+		return
+	}
+	s, ok := v.(string)
+	if !ok {
+		return
+	}
+	openapiClient.SignatureVersion = tea.String(s)
+}
+
+// applyLogClientSignVersion is the legacy-SDK counterpart of
+// applyOpenapiSignVersion: it writes the configured signature version (if
+// any) for the given apiProductCode into c.AuthVersion, and does nothing
+// else. It is a no-op when the map does not contain the key.
+//
+// Region is intentionally left alone here. v4 signing requires a region,
+// but region is a property of the client's deployment (which the provider
+// already carries as client.config.RegionId), not of the signature-version
+// decision — WithLogClient seeds c.Region from that config before calling
+// this helper, matching how the SDK v2 path sets sdkConfig.SetRegionId.
+func applyLogClientSignVersion(c *sls.Client, signVersion *sync.Map, apiProductCode string) {
+	if c == nil || signVersion == nil {
+		return
+	}
+	v, ok := signVersion.Load(apiProductCode)
+	if !ok {
+		return
+	}
+	s, ok := v.(string)
+	if !ok {
+		return
+	}
+	c.AuthVersion = sls.AuthVersionType(s)
+}
+
 func formatError(response map[string]interface{}, err error) error {
 	if err != nil {
 		return err
