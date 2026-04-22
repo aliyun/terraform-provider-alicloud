@@ -1,9 +1,13 @@
 name: Pull Request Checks
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - master
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   title:
@@ -144,9 +148,6 @@ jobs:
   labeler:
     runs-on: ubuntu-latest
     name: Label the PR
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
 #     // TODO  filter by service
 #      - name: Apply Pull Request Service Labels
