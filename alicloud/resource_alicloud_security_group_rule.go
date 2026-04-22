@@ -62,7 +62,6 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				AtLeastOneOf: []string{"cidr_ip", "ipv6_cidr_ip", "source_security_group_id", "prefix_list_id"},
-				ValidateFunc: validation.IsCIDR,
 			},
 			"ipv6_cidr_ip": {
 				Type:          schema.TypeString,
@@ -73,7 +72,6 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 					v, _ := compressIPv6OrCIDR(new)
 					return v == old
 				},
-				ValidateFunc: validation.IsCIDR,
 			},
 			"source_security_group_id": {
 				Type:          schema.TypeString,
