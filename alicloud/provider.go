@@ -1808,6 +1808,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_application":                                       resourceAlicloudOosApplication(),
 			"alicloud_eci_virtual_node":                                      resourceAlicloudEciVirtualNode(),
 			"alicloud_ros_stack_instance":                                    resourceAlicloudRosStackInstance(),
+			"alicloud_ros_stack_instances":                                   resourceAlicloudRosStackInstances(),
 			"alicloud_ecs_dedicated_host_cluster":                            resourceAlicloudEcsDedicatedHostCluster(),
 			"alicloud_oos_application_group":                                 resourceAlicloudOosApplicationGroup(),
 			"alicloud_dts_consumer_channel":                                  resourceAlicloudDtsConsumerChannel(),
