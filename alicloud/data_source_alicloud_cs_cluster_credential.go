@@ -39,7 +39,7 @@ func dataSourceAlicloudCSClusterCredential() *schema.Resource {
 				Sensitive: true,
 			},
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -124,7 +124,7 @@ func csClusterAuthDescriptionAttributes(d *schema.ResourceData, meta interface{}
 	d.Set("cluster_name", tea.StringValue(cluster.Name))
 	d.Set("kube_config", tea.StringValue(credential.Config))
 	d.Set("expiration", tea.StringValue(credential.Expiration))
-	d.Set("certificate_authority", flattenAlicloudCSCertificate(credential))
+	d.Set("certificate_authority", []interface{}{flattenAlicloudCSCertificate(credential)})
 	d.SetId(dataResourceIdHash([]string{clusterId}))
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

@@ -1009,25 +1009,6 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				ConflictsWith: []string{"instances", "desired_size"},
 				Deprecated:    "Field 'node_count' has been deprecated from provider version 1.158.0. New field 'desired_size' instead.",
 			},
-			"rollout_policy": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"max_unavailable": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-					},
-				},
-				Removed: "Field 'rollout_policy' has been removed from provider version 1.184.0. Please use new field 'rolling_policy' instead it to ensure the config takes effect",
-			},
-			"vpc_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Removed:  "Field 'vpc_id' has been removed from provider version 1.218.0.",
-			},
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
 				Optional: true,

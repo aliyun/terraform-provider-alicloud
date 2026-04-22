@@ -62,7 +62,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `id` - ID of the node.
     * `name` - Node name.
     * `private_ip` - The private IP address of node.
-  * `connections` - Map of kubernetes cluster connection information.
+  * `connections` - A list of kubernetes cluster connection information.
     * `api_server_internet` - API Server Internet endpoint.
     * `api_server_intranet` - API Server Intranet endpoint.
     * `master_public_ip` - Master node SSH IP address.

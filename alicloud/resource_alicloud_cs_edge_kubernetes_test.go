@@ -23,7 +23,7 @@ data "alicloud_db_zones" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_charge_type     = "PostPaid"
-  category                 = "Basic"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
 }
 
@@ -31,7 +31,7 @@ data "alicloud_db_instance_classes" "example" {
   zone_id                  = data.alicloud_db_zones.default.zones.0.id
   engine                   = "MySQL"
   engine_version           = "8.0"
-  category                 = "Basic"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
   instance_charge_type     = "PostPaid"
 }
@@ -66,7 +66,7 @@ resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = var.name
   vswitch_id               = alicloud_vswitch.vswitches.0.id
@@ -89,7 +89,7 @@ var edgeCheckMap = map[string]string{
 	"install_cloud_monitor": "true",
 }
 
-func TestAccAliCloudEdgeKubernetes(t *testing.T) {
+func TestAccAliCloudEdgeKubernetes_basic(t *testing.T) {
 	var cluster *cs.KubernetesClusterDetail
 	resourceId := "alicloud_cs_edge_kubernetes.default"
 	resourceAttr := resourceAttrInit(resourceId, edgeCheckMap)
@@ -167,7 +167,7 @@ func TestAccAliCloudEdgeKubernetes(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number", "worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "install_cloud_monitor", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number", "worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -252,7 +252,7 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 					"worker_instance_charge_type":    "PostPaid",
 					"worker_disk_category":           "cloud_essd",
 					"worker_disk_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
-					"worker_disk_size":               "100",
+					"worker_disk_size":               "120",
 					"worker_disk_performance_level":  "PL0",
 					"worker_data_disks": []map[string]string{
 						{
@@ -281,7 +281,7 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 						"password": "Test12345",
 						//"worker_number":                  "1",
 						"worker_disk_snapshot_policy_id": CHECKSET,
-						"worker_disk_size":               "100",
+						"worker_disk_size":               "120",
 						"worker_disk_performance_level":  "PL0",
 						"worker_data_disks.#":            "1",
 						"tags.%":                         "1",
@@ -294,7 +294,7 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "worker_number", "install_cloud_monitor", "force_update", "node_cidr_mask", "worker_number", "slb_internet_enabled", "tags", "worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_disk_snapshot_policy_id", "worker_instance_types", "log_config", "worker_vswitch_ids", "proxy_mode", "worker_disk_performance_level", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "worker_number", "install_cloud_monitor", "node_cidr_mask", "slb_internet_enabled", "tags", "worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_disk_snapshot_policy_id", "worker_instance_types", "log_config", "worker_vswitch_ids", "proxy_mode", "worker_disk_performance_level", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -406,9 +406,11 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 							"encrypted": "false",
 						},
 					},
-					"runtime": map[string]interface{}{
-						"name":    "containerd",
-						"version": "1.6.28",
+					"runtime": []map[string]interface{}{
+						{
+							"name":    "containerd",
+							"version": "1.6.28",
+						},
 					},
 					"load_balancer_spec":             "slb.s2.small",
 					"is_enterprise_security_group":   "true",
@@ -432,8 +434,8 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 						"worker_data_disks.0.category":   "cloud_ssd",
 						"worker_data_disks.0.size":       "200",
 						"worker_data_disks.0.encrypted":  "false",
-						"runtime.name":                   "containerd",
-						"runtime.version":                "1.6.28",
+						"runtime.0.name":                 "containerd",
+						"runtime.0.version":              "1.6.28",
 						"load_balancer_spec":             "slb.s2.small",
 						"skip_set_certificate_authority": "false",
 					}),
@@ -443,7 +445,7 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number", "worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks", "load_balancer_spec", "runtime"},
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "install_cloud_monitor", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number", "worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks", "load_balancer_spec", "runtime"},
 			},
 		},
 	})

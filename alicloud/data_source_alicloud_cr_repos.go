@@ -72,7 +72,7 @@ func dataSourceAlicloudCRRepos() *schema.Resource {
 							Computed: true,
 						},
 						"domain_list": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -215,7 +215,7 @@ func dataSourceAlicloudCRReposRead(d *schema.ResourceData, meta interface{}) err
 		domainList["internal"] = repo.RepoDomainList.Internal
 		domainList["vpc"] = repo.RepoDomainList.Vpc
 
-		mapping["domain_list"] = domainList
+		mapping["domain_list"] = []interface{}{domainList}
 
 		var tags []crTag
 

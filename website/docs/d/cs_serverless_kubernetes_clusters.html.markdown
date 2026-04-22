@@ -55,7 +55,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `security_group_id` - The ID of security group where the current cluster  is located.
   * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
   * `deletion_protection` - Whether the cluster support delete protection.  
-  * `connections` - Map of serverless cluster connection information. It contains several attributes to `Block Connections`.
+  * `connections` - A list of serverless cluster connection information.
     * `api_server_internet` - API Server Internet endpoint.
     * `api_server_intranet` - API Server Intranet endpoint.
     * `master_public_ip` - Master node SSH IP address.

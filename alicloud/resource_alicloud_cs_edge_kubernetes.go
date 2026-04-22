@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -23,9 +25,9 @@ const (
 func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSEdgeKubernetesCreate,
-		Read:   resourceAlicloudCSKubernetesRead,
+		Read:   resourceAlicloudCSKubernetesRead, // TODO Refactor read from k8s resources
 		Update: resourceAlicloudCSEdgeKubernetesUpdate,
-		Delete: resourceAlicloudCSKubernetesDelete,
+		Delete: resourceAlicloudCSKubernetesDelete, // TODO Refactor delete from k8s resources
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -67,11 +69,6 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
 				MinItems: 1,
-			},
-			"force_update": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Removed:  "Field 'force_update' has been removed from provider version 1.248.0.",
 			},
 			"worker_instance_types": {
 				Type:     schema.TypeList,
@@ -182,7 +179,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"runtime": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -308,7 +305,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 			},
 			// computed parameters start
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -333,7 +330,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"connections": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -450,7 +447,7 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
 	csService := CsService{client}
-	args, err := buildKubernetesArgs(d, meta)
+	args, err := buildEdgeKubernetesArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -685,4 +682,308 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 	}
 	d.Partial(false)
 	return resourceAlicloudCSKubernetesRead(d, meta)
+}
+
+func buildEdgeKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.DelicatedKubernetesClusterCreationRequest, error) {
+	client := meta.(*connectivity.AliyunClient)
+
+	vpcService := VpcService{client}
+
+	var vswitchID string
+	list := make([]string, 0)
+	if v, ok := d.GetOk("master_vswitch_ids"); ok {
+		list = append(list, expandStringList(v.([]interface{}))...)
+	}
+	if v, ok := d.GetOk("worker_vswitch_ids"); ok {
+		list = append(list, expandStringList(v.([]interface{}))...)
+	}
+	if len(list) > 0 {
+		vswitchID = list[0]
+	} else {
+		vswitchID = ""
+	}
+
+	var vpcId string
+	if vswitchID != "" {
+		vsw, err := vpcService.DescribeVSwitch(vswitchID)
+		if err != nil {
+			return nil, err
+		}
+		vpcId = vsw.VpcId
+	}
+
+	var clusterName string
+	if v, ok := d.GetOk("name"); ok {
+		clusterName = v.(string)
+	} else {
+		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
+	}
+
+	addons := make([]cs.Addon, 0)
+	if v, ok := d.GetOk("addons"); ok {
+		all, ok := v.([]interface{})
+		if ok {
+			for _, a := range all {
+				addon, ok := a.(map[string]interface{})
+				if ok {
+					addons = append(addons, cs.Addon{
+						Name:     addon["name"].(string),
+						Config:   addon["config"].(string),
+						Version:  addon["version"].(string),
+						Disabled: addon["disabled"].(bool),
+					})
+				}
+			}
+		}
+	}
+
+	var apiAudiences string
+	if d.Get("api_audiences") != nil {
+		if list := expandStringList(d.Get("api_audiences").([]interface{})); len(list) > 0 {
+			apiAudiences = strings.Join(list, ",")
+		}
+	}
+
+	creationArgs := &cs.DelicatedKubernetesClusterCreationRequest{
+		ClusterArgs: cs.ClusterArgs{
+			DisableRollback:    true,
+			Name:               clusterName,
+			DeletionProtection: d.Get("deletion_protection").(bool),
+			VpcId:              vpcId,
+			// the params below is ok to be empty
+			KubernetesVersion:         d.Get("version").(string),
+			NodeCidrMask:              strconv.Itoa(d.Get("node_cidr_mask").(int)),
+			KeyPair:                   d.Get("key_name").(string),
+			ServiceCidr:               d.Get("service_cidr").(string),
+			CloudMonitorFlags:         d.Get("install_cloud_monitor").(bool),
+			SecurityGroupId:           d.Get("security_group_id").(string),
+			IsEnterpriseSecurityGroup: d.Get("is_enterprise_security_group").(bool),
+			EndpointPublicAccess:      d.Get("slb_internet_enabled").(bool),
+			SnatEntry:                 d.Get("new_nat_gateway").(bool),
+			Addons:                    addons,
+			ApiAudiences:              apiAudiences,
+		},
+	}
+
+	if enableRRSA, ok := d.GetOk("enable_rrsa"); ok {
+		creationArgs.EnableRRSA = enableRRSA.(bool)
+	}
+
+	if lbSpec, ok := d.GetOk("load_balancer_spec"); ok {
+		creationArgs.LoadBalancerSpec = lbSpec.(string)
+	}
+
+	if osType, ok := d.GetOk("os_type"); ok {
+		creationArgs.OsType = osType.(string)
+	}
+
+	if platform, ok := d.GetOk("platform"); ok {
+		creationArgs.Platform = platform.(string)
+	}
+
+	if timezone, ok := d.GetOk("timezone"); ok {
+		creationArgs.Timezone = timezone.(string)
+	}
+
+	if clusterDomain, ok := d.GetOk("cluster_domain"); ok {
+		creationArgs.ClusterDomain = clusterDomain.(string)
+	}
+
+	if customSan, ok := d.GetOk("custom_san"); ok {
+		creationArgs.CustomSAN = customSan.(string)
+	}
+
+	if imageId, ok := d.GetOk("image_id"); ok {
+		creationArgs.ClusterArgs.ImageId = imageId.(string)
+	}
+	if nodeNameMode, ok := d.GetOk("node_name_mode"); ok {
+		creationArgs.ClusterArgs.NodeNameMode = nodeNameMode.(string)
+	}
+	if saIssuer, ok := d.GetOk("service_account_issuer"); ok {
+		creationArgs.ClusterArgs.ServiceAccountIssuer = saIssuer.(string)
+	}
+	if resourceGroupId, ok := d.GetOk("resource_group_id"); ok {
+		creationArgs.ClusterArgs.ResourceGroupId = resourceGroupId.(string)
+	}
+
+	if v := d.Get("user_data").(string); v != "" {
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+		if base64DecodeError == nil {
+			creationArgs.UserData = v
+		} else {
+			creationArgs.UserData = base64.StdEncoding.EncodeToString([]byte(v))
+		}
+	}
+
+	if _, ok := d.GetOk("pod_vswitch_ids"); ok {
+		creationArgs.PodVswitchIds = expandStringList(d.Get("pod_vswitch_ids").([]interface{}))
+	} else {
+		creationArgs.ContainerCidr = d.Get("pod_cidr").(string)
+	}
+
+	if password := d.Get("password").(string); password == "" {
+		if v, ok := d.GetOk("kms_encrypted_password"); ok && v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v.(string), d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			password = decryptResp
+		}
+		creationArgs.LoginPassword = password
+	} else {
+		creationArgs.LoginPassword = password
+	}
+
+	if tags, err := ConvertCsTags(d); err == nil {
+		creationArgs.Tags = tags
+	}
+	// CA default is empty
+	if userCa, ok := d.GetOk("user_ca"); ok {
+		userCaContent, err := loadFileContent(userCa.(string))
+		if err != nil {
+			return nil, fmt.Errorf("reading user_ca file failed %s", err)
+		}
+		creationArgs.UserCa = string(userCaContent)
+	}
+
+	// set proxy mode and default is ipvs
+	if proxyMode := d.Get("proxy_mode").(string); proxyMode != "" {
+		creationArgs.ProxyMode = cs.ProxyMode(proxyMode)
+	} else {
+		creationArgs.ProxyMode = cs.ProxyMode(cs.IPVS)
+	}
+
+	// dedicated kubernetes must provide master_vswitch_ids
+	if _, ok := d.GetOk("master_vswitch_ids"); ok {
+		creationArgs.MasterArgs = cs.MasterArgs{
+			MasterCount:              len(d.Get("master_vswitch_ids").([]interface{})),
+			MasterVSwitchIds:         expandStringList(d.Get("master_vswitch_ids").([]interface{})),
+			MasterInstanceTypes:      expandStringList(d.Get("master_instance_types").([]interface{})),
+			MasterSystemDiskCategory: aliyungoecs.DiskCategory(d.Get("master_disk_category").(string)),
+			MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
+			// TODO support other params
+		}
+	}
+
+	if v, ok := d.GetOk("master_disk_snapshot_policy_id"); ok && v != "" {
+		creationArgs.MasterArgs.MasterSnapshotPolicyId = v.(string)
+	}
+
+	if v, ok := d.GetOk("master_disk_performance_level"); ok && v != "" {
+		creationArgs.MasterArgs.MasterSystemDiskPerformanceLevel = v.(string)
+	}
+
+	if v, ok := d.GetOk("master_instance_charge_type"); ok {
+		creationArgs.MasterInstanceChargeType = v.(string)
+		if creationArgs.MasterInstanceChargeType == string(PrePaid) {
+			creationArgs.MasterAutoRenew = d.Get("master_auto_renew").(bool)
+			creationArgs.MasterAutoRenewPeriod = d.Get("master_auto_renew_period").(int)
+			creationArgs.MasterPeriod = d.Get("master_period").(int)
+			creationArgs.MasterPeriodUnit = d.Get("master_period_unit").(string)
+		}
+	}
+
+	var workerDiskSize int64
+	if d.Get("worker_disk_size") != nil {
+		workerDiskSize = int64(d.Get("worker_disk_size").(int))
+	}
+
+	if v, ok := d.GetOk("worker_vswitch_ids"); ok {
+		creationArgs.WorkerArgs.WorkerVSwitchIds = expandStringList(v.([]interface{}))
+	}
+	if v, ok := d.GetOk("worker_instance_types"); ok {
+		creationArgs.WorkerArgs.WorkerInstanceTypes = expandStringList(v.([]interface{}))
+	}
+	if v, ok := d.GetOk("worker_number"); ok {
+		creationArgs.WorkerArgs.NumOfNodes = int64(v.(int))
+	}
+	if v, ok := d.GetOk("worker_disk_category"); ok {
+		creationArgs.WorkerArgs.WorkerSystemDiskCategory = aliyungoecs.DiskCategory(v.(string))
+	}
+	if v, ok := d.GetOk("worker_disk_snapshot_policy_id"); ok && v != "" {
+		creationArgs.WorkerArgs.WorkerSnapshotPolicyId = v.(string)
+	}
+	if v, ok := d.GetOk("worker_disk_performance_level"); ok && v != "" {
+		creationArgs.WorkerArgs.WorkerSystemDiskPerformanceLevel = v.(string)
+	}
+
+	if dds, ok := d.GetOk("worker_data_disks"); ok {
+		disks := dds.([]interface{})
+		createDataDisks := make([]cs.DataDisk, 0, len(disks))
+		for _, e := range disks {
+			pack := e.(map[string]interface{})
+			dataDisk := cs.DataDisk{
+				Size:                 pack["size"].(string),
+				DiskName:             pack["name"].(string),
+				Category:             pack["category"].(string),
+				Device:               pack["device"].(string),
+				AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
+				KMSKeyId:             pack["kms_key_id"].(string),
+				Encrypted:            pack["encrypted"].(string),
+				PerformanceLevel:     pack["performance_level"].(string),
+			}
+			createDataDisks = append(createDataDisks, dataDisk)
+		}
+		creationArgs.WorkerDataDisks = createDataDisks
+	}
+	if workerDiskSize != 0 {
+		creationArgs.WorkerArgs.WorkerSystemDiskSize = workerDiskSize
+	}
+
+	if v, ok := d.GetOk("worker_instance_charge_type"); ok {
+		creationArgs.WorkerInstanceChargeType = v.(string)
+		if creationArgs.WorkerInstanceChargeType == string(PrePaid) {
+			creationArgs.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
+			creationArgs.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
+			creationArgs.WorkerPeriod = d.Get("worker_period").(int)
+			creationArgs.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
+		}
+	}
+
+	if v, ok := d.GetOk("cluster_spec"); ok {
+		creationArgs.ClusterSpec = v.(string)
+	}
+
+	if rdsInstances, ok := d.GetOk("rds_instances"); ok {
+		creationArgs.RdsInstances = expandStringList(rdsInstances.([]interface{}))
+	}
+
+	if nodePortRange, ok := d.GetOk("node_port_range"); ok {
+		creationArgs.NodePortRange = nodePortRange.(string)
+	}
+
+	if runtime, ok := d.GetOk("runtime"); ok {
+		if raw := runtime.([]interface{}); len(raw) > 0 {
+			if v := raw[0].(map[string]interface{}); len(v) > 0 {
+				creationArgs.Runtime = expandKubernetesRuntimeConfig(v)
+			}
+		}
+	}
+
+	if taints, ok := d.GetOk("taints"); ok {
+		if v := taints.([]interface{}); len(v) > 0 {
+			creationArgs.Taints = expandKubernetesTaintsConfig(v)
+		}
+	}
+
+	// Cluster maintenance window. Effective only in the professional managed cluster
+	if v, ok := d.GetOk("maintenance_window"); ok {
+		creationArgs.MaintenanceWindow = expandMaintenanceWindowConfig(v.([]interface{}))
+	}
+
+	// Configure control plane log. Effective only in the professional managed cluster
+	if v, ok := d.GetOk("control_plane_log_components"); ok {
+		creationArgs.ControlplaneComponents = expandStringList(v.([]interface{}))
+		// ttl default is 30 days
+		creationArgs.ControlplaneLogTTL = "30"
+	}
+	if v, ok := d.GetOk("control_plane_log_ttl"); ok {
+		creationArgs.ControlplaneLogTTL = v.(string)
+	}
+	if v, ok := d.GetOk("control_plane_log_project"); ok {
+		creationArgs.ControlplaneLogProject = v.(string)
+	}
+
+	return creationArgs, nil
 }

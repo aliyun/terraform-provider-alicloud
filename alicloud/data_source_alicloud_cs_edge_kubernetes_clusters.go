@@ -99,7 +99,7 @@ func dataSourceAlicloudCSEdgeKubernetesClusters() *schema.Resource {
 							},
 						},
 						"connections": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -335,7 +335,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 		if endpoints, ok := response.(cs.ClusterEndpoints); ok && endpoints.IntranetApiServerEndpoint != "" {
 			connection["api_server_intranet"] = endpoints.IntranetApiServerEndpoint
 		}
-		mapping["connections"] = connection
+		mapping["connections"] = []interface{}{connection}
 
 		request := vpc.CreateDescribeNatGatewaysRequest()
 		request.VpcId = ct.VPCID

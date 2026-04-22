@@ -860,11 +860,11 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 							"kms_key_id": "${data.alicloud_kms_keys.default.ids.0}",
 							"encrypted":  "true",
 							"size":       "100",
-							"category":   "cloud_ssd",
+							"category":   "cloud_essd",
 						},
 						{
 							"size":        "100",
-							"category":    "cloud_ssd",
+							"category":    "cloud_essd",
 							"device":      "/dev/xvdb",
 							"snapshot_id": "${alicloud_ecs_snapshot.default.0.id}",
 						},
@@ -889,7 +889,7 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 						"system_disk_size":      "40",
 						"data_disks.#":          "2",
 						"data_disks.0.size":     "100",
-						"data_disks.0.category": "cloud_ssd",
+						"data_disks.0.category": "cloud_essd",
 						"tags.%":                "2",
 						"tags.Created":          "TF",
 						"tags.Foo":              "Bar",
@@ -909,7 +909,7 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 					"data_disks": []map[string]string{
 						{
 							"size":        "100",
-							"category":    "cloud_ssd",
+							"category":    "cloud_essd",
 							"device":      "/dev/xvdc",
 							"snapshot_id": "${alicloud_ecs_snapshot.default.1.id}",
 						},

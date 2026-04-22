@@ -30,25 +30,25 @@ func TestAccAliCloudCSClusterCredentialDataSource(t *testing.T) {
 
 	var existCSClusterCredentialMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"cluster_id":                         CHECKSET,
-			"cluster_name":                       REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
-			"kube_config":                        CHECKSET,
-			"certificate_authority.cluster_cert": CHECKSET,
-			"certificate_authority.client_cert":  CHECKSET,
-			"certificate_authority.client_key":   CHECKSET,
-			"expiration":                         CHECKSET,
+			"cluster_id":                           CHECKSET,
+			"cluster_name":                         REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
+			"kube_config":                          CHECKSET,
+			"certificate_authority.0.cluster_cert": CHECKSET,
+			"certificate_authority.0.client_cert":  CHECKSET,
+			"certificate_authority.0.client_key":   CHECKSET,
+			"expiration":                           CHECKSET,
 		}
 	}
 
 	var fakeCSClusterCredentialMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"cluster_id":                         CHECKSET,
-			"cluster_name":                       REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
-			"kube_config":                        CHECKSET,
-			"certificate_authority.cluster_cert": CHECKSET,
-			"certificate_authority.client_cert":  CHECKSET,
-			"certificate_authority.client_key":   CHECKSET,
-			"expiration":                         CHECKSET,
+			"cluster_id":                           CHECKSET,
+			"cluster_name":                         REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
+			"kube_config":                          CHECKSET,
+			"certificate_authority.0.cluster_cert": CHECKSET,
+			"certificate_authority.0.client_cert":  CHECKSET,
+			"certificate_authority.0.client_key":   CHECKSET,
+			"expiration":                           CHECKSET,
 		}
 	}
 
@@ -100,7 +100,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_vswitch_ids   = [local.vswitch_id]
   new_nat_gateway      = false
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
-  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+  service_cidr         = cidrsubnet("172.18.0.0/16", 4, 7)
   slb_internet_enabled = true
 }
 `, name)

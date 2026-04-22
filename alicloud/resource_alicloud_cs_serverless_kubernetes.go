@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -49,12 +50,6 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Computed:      true,
 				ForceNew:      true,
 				ConflictsWith: []string{"zone_id"},
-			},
-			"vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				Removed:  "Field 'vswitch_id' has been removed from provider version 1.229.1. New field 'vswitch_ids' replace it.",
 			},
 			"vswitch_ids": {
 				Type:     schema.TypeList,
@@ -105,7 +100,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 			"zone_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ConflictsWith: []string{"vpc_id", "vswitch_ids", "vswitch_id"},
+				ConflictsWith: []string{"vpc_id", "vswitch_ids"},
 			},
 			"endpoint_public_access_enabled": {
 				Type:     schema.TypeBool,
@@ -137,11 +132,6 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
-			},
-			"force_update": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Removed:  "Field 'force_update' has been removed from provider version 1.229.1.",
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -220,12 +210,6 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
-			},
-			"create_v2_cluster": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
-				Removed:  "Field 'create_v2_cluster' has been removed from provider version 1.229.1.",
 			},
 			"rrsa_metadata": {
 				Type:     schema.TypeList,
@@ -641,7 +625,7 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 	invoker := NewInvoker()
 	// modifyCluster
 	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "operation_policy", "enable_rrsa") {
-		if err := modifyCluster(d, meta, &invoker); err != nil {
+		if err := modifyServerlessCluster(d, meta, &invoker); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 		}
 	}
@@ -672,4 +656,139 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 
 func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta interface{}) error {
 	return resourceAlicloudCSKubernetesDelete(d, meta)
+}
+
+func modifyServerlessCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) error {
+	updated := false
+	request := &roacs.ModifyClusterRequest{}
+	client := meta.(*connectivity.AliyunClient)
+	csClient, err := client.NewRoaCsClient()
+	csService := CsService{client}
+
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		request.SetResourceGroupId(d.Get("resource_group_id").(string))
+		updated = true
+	}
+
+	if !d.IsNewResource() && d.HasChange("name") {
+		var clusterName string
+		if v, ok := d.GetOk("name"); ok {
+			clusterName = v.(string)
+			request.SetClusterName(clusterName)
+			updated = true
+		}
+	}
+
+	// modify cluster deletion protection
+	if !d.IsNewResource() && d.HasChange("deletion_protection") {
+		v := d.Get("deletion_protection")
+		request.SetDeletionProtection(v.(bool))
+		updated = true
+	}
+
+	// modify cluster maintenance window
+	if !d.IsNewResource() && d.HasChange("maintenance_window") {
+		if v := d.Get("maintenance_window").([]interface{}); len(v) > 0 {
+			request.MaintenanceWindow = expandMaintenanceWindowConfigRoa(v)
+			updated = true
+		}
+		d.SetPartial("maintenance_window")
+	}
+
+	// modify cluster maintenance window
+	if !d.IsNewResource() && d.HasChange("operation_policy") {
+		if v := d.Get("operation_policy").([]interface{}); len(v) > 0 {
+			request.OperationPolicy = &roacs.ModifyClusterRequestOperationPolicy{}
+			if vv := d.Get("operation_policy.0.cluster_auto_upgrade").([]interface{}); len(vv) > 0 {
+				policy := vv[0].(map[string]interface{})
+				request.OperationPolicy.ClusterAutoUpgrade = &roacs.ModifyClusterRequestOperationPolicyClusterAutoUpgrade{
+					Enabled: tea.Bool(policy["enabled"].(bool)),
+					Channel: tea.String(policy["channel"].(string)),
+				}
+			}
+			updated = true
+		}
+	}
+
+	// modify cluster rrsa policy
+	if d.HasChange("enable_rrsa") {
+		enableRRSA := false
+		if v, ok := d.GetOk("enable_rrsa"); ok {
+			enableRRSA = v.(bool)
+		}
+		// it's not allowed to disable rrsa
+		if !enableRRSA {
+			return fmt.Errorf("It's not supported to disable RRSA! " +
+				"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file.")
+		}
+
+		// version check
+		clusterVersion := d.Get("version").(string)
+		if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, clusterVersion); res < 0 || err != nil {
+			return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
+		}
+		request.SetEnableRrsa(enableRRSA)
+		updated = true
+		d.SetPartial("enable_rrsa")
+	}
+
+	if d.HasChange("custom_san") {
+		customSan := d.Get("custom_san").(string)
+		request.SetApiServerCustomCertSans(
+			&roacs.ModifyClusterRequestApiServerCustomCertSans{
+				SubjectAlternativeNames: tea.StringSlice(strings.Split(customSan, ",")),
+				Action:                  tea.String("overwrite"),
+			},
+		)
+		updated = true
+	}
+
+	if d.HasChange("vswitch_ids") {
+		vSwitchIds := expandStringList(d.Get("vswitch_ids").([]interface{}))
+		request.SetVswitchIds(tea.StringSlice(vSwitchIds))
+		updated = true
+	}
+
+	if d.HasChange("timezone") {
+		request.SetTimezone(d.Get("timezone").(string))
+		updated = true
+	}
+
+	if d.HasChange("security_group_id") {
+		request.SetSecurityGroupId(d.Get("security_group_id").(string))
+		updated = true
+	}
+
+	if updated == false {
+		return nil
+	}
+
+	var resp *roacs.ModifyClusterResponse
+	if err := invoker.Run(func() error {
+		resp, err = csClient.ModifyCluster(tea.String(d.Id()), request)
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
+	}
+
+	if resp == nil || resp.Body == nil {
+		return nil
+	}
+	taskId := tea.StringValue(resp.Body.TaskId)
+	c := CsClient{client: csClient}
+	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, c.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyCluster", jobDetail)
+	}
+
+	stateConf = BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
