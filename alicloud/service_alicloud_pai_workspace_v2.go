@@ -47,21 +47,32 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceWorkspace(id string) (object
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	return response, nil
 }
 
 func (s *PaiWorkspaceServiceV2) PaiWorkspaceWorkspaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.PaiWorkspaceWorkspaceStateRefreshFuncWithApi(id, field, failStates, s.DescribePaiWorkspaceWorkspace)
+}
+
+func (s *PaiWorkspaceServiceV2) PaiWorkspaceWorkspaceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribePaiWorkspaceWorkspace(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {

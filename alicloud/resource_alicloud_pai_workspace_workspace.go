@@ -21,7 +21,7 @@ func resourceAliCloudPaiWorkspaceWorkspace() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(6 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
@@ -37,12 +37,18 @@ func resourceAliCloudPaiWorkspaceWorkspace() *schema.Resource {
 			"display_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"env_types": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -75,12 +81,17 @@ func resourceAliCloudPaiWorkspaceWorkspaceCreate(d *schema.ResourceData, meta in
 		request["DisplayName"] = v
 	}
 	if v, ok := d.GetOk("env_types"); ok {
-		envTypesMaps := v.([]interface{})
-		request["EnvTypes"] = envTypesMaps
+		envTypesMapsArray := convertToInterfaceArray(v)
+
+		request["EnvTypes"] = envTypesMapsArray
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 0*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 		if err != nil {
@@ -123,28 +134,19 @@ func resourceAliCloudPaiWorkspaceWorkspaceRead(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 
-	if objectRaw["GmtCreateTime"] != nil {
-		d.Set("create_time", objectRaw["GmtCreateTime"])
-	}
-	if objectRaw["Description"] != nil {
-		d.Set("description", objectRaw["Description"])
-	}
-	if objectRaw["DisplayName"] != nil {
-		d.Set("display_name", objectRaw["DisplayName"])
-	}
-	if objectRaw["Status"] != nil {
-		d.Set("status", objectRaw["Status"])
-	}
-	if objectRaw["WorkspaceName"] != nil {
-		d.Set("workspace_name", objectRaw["WorkspaceName"])
-	}
+	d.Set("create_time", objectRaw["GmtCreateTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("display_name", objectRaw["DisplayName"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("workspace_name", objectRaw["WorkspaceName"])
 
-	envTypes1Raw := make([]interface{}, 0)
+	envTypesRaw := make([]interface{}, 0)
 	if objectRaw["EnvTypes"] != nil {
-		envTypes1Raw = objectRaw["EnvTypes"].([]interface{})
+		envTypesRaw = convertToInterfaceArray(objectRaw["EnvTypes"])
 	}
 
-	d.Set("env_types", envTypes1Raw)
+	d.Set("env_types", envTypesRaw)
 
 	return nil
 }
@@ -156,9 +158,11 @@ func resourceAliCloudPaiWorkspaceWorkspaceUpdate(d *schema.ResourceData, meta in
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
+	d.Partial(true)
+
+	var err error
 	WorkspaceId := d.Id()
 	action := fmt.Sprintf("/api/v1/workspaces/%s", WorkspaceId)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
@@ -176,7 +180,7 @@ func resourceAliCloudPaiWorkspaceWorkspaceUpdate(d *schema.ResourceData, meta in
 	request["Description"] = d.Get("description")
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 0*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 			if err != nil {
@@ -193,6 +197,41 @@ func resourceAliCloudPaiWorkspaceWorkspaceUpdate(d *schema.ResourceData, meta in
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
+	update = false
+	action = fmt.Sprintf("/resourcegroups/action/changeresourcegroup")
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok || d.HasChange("resource_group_id") {
+		request["NewResourceGroupId"] = v
+	}
+	request["ResourceType"] = "workspace"
+	body = request
+	if update {
+		wait := incrementalWait(3*time.Second, 0*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	d.Partial(false)
 
 	return resourceAliCloudPaiWorkspaceWorkspaceRead(d, meta)
 }
@@ -232,7 +271,7 @@ func resourceAliCloudPaiWorkspaceWorkspaceDelete(d *schema.ResourceData, meta in
 	}
 
 	paiWorkspaceServiceV2 := PaiWorkspaceServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, paiWorkspaceServiceV2.PaiWorkspaceWorkspaceStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, paiWorkspaceServiceV2.PaiWorkspaceWorkspaceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

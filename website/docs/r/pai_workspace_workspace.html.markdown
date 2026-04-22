@@ -54,6 +54,7 @@ The following arguments are supported:
 * `env_types` - (Required, ForceNew, List) Environments contained in the workspace:
   - Simple mode only production environment (prod).
   - Standard mode includes development environment (dev) and production environment (prod).
+* `resource_group_id` - (Optional, Computed, Available since v1.277.0) The ID of the resource group.
 * `workspace_name` - (Required, ForceNew) The workspace name. The format is as follows:
   - 3 to 23 characters in length and can contain letters, underscores, or numbers.
   - Must start with a large or small letter.
