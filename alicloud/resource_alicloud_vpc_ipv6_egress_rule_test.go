@@ -33,6 +33,7 @@ func TestAccAliCloudVPCIpv6EgressRule_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithEnvVariable(t, "ECS_WITH_IPV6_ADDRESS")
+			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6EgressRuleSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -80,6 +81,7 @@ func TestAccAliCloudVPCIpv6EgressRule_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6EgressRuleSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -142,20 +144,28 @@ variable "name" {
   default = "%s"
 }
 
+data "alicloud_instance_types" "default" {
+  instance_type_family = "ecs.g8i"
+  system_disk_category = "cloud_essd"
+  cpu_core_count       = 4
+}
+
 data "alicloud_zones" "default" {
+  available_resource_creation = "Instance"
+  available_instance_type     = data.alicloud_instance_types.default.instance_types.0.id
 }
 
 resource "alicloud_vpc" "default" {
   vpc_name    = var.name
   enable_ipv6 = "true"
-  cidr_block = "172.16.0.0/12"
+  cidr_block  = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "vsw" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = var.name
+  vpc_id               = alicloud_vpc.default.id
+  cidr_block           = "172.16.0.0/21"
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  name                 = var.name
   ipv6_cidr_block_mask = "22"
 }
 
@@ -165,24 +175,18 @@ resource "alicloud_security_group" "group" {
   vpc_id      = alicloud_vpc.default.id
 }
 
-data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
-  system_disk_category = "cloud_efficiency"
-  cpu_core_count = 4
-  minimum_eni_ipv6_address_quantity = 1
-}
-
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
-  most_recent = true
-  owners      = "system"
+  name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent   = true
+  owners        = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
 }
 
 resource "alicloud_instance" "vpc_instance" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   ipv6_address_count = 1
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  system_disk_category = "cloud_efficiency"
+  system_disk_category = "cloud_essd"
   image_id = "${data.alicloud_images.default.images.0.id}"
   instance_name = var.name
   vswitch_id = "${alicloud_vswitch.vsw.id}"
