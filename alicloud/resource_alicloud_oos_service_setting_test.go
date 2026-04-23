@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudOOSServiceSetting_basic0(t *testing.T) {
+func TestAccAliCloudOOSServiceSetting_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_service_setting.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
@@ -148,7 +148,7 @@ variable "name" {
 resource "alicloud_oss_bucket" "default" {
   count  = 2
   bucket = join("", [var.name, count.index])
-  acl    = "public-read-write"
+  acl    = "private"
 }
 
 resource "alicloud_log_project" "default" {
@@ -159,7 +159,7 @@ resource "alicloud_log_project" "default" {
 }
 
 // lintignore: R001
-func TestUnitAlicloudOOSServiceSetting(t *testing.T) {
+func TestUnitAliCloudOOSServiceSetting(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_oos_service_setting"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_oos_service_setting"].Schema).Data(nil, nil)
