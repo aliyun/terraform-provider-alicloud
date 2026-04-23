@@ -1,0 +1,39 @@
+name: Pull Request Labeler
+
+on:
+  pull_request_target:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  labeler:
+    runs-on: ubuntu-latest
+    name: Label the PR
+    steps:
+      - uses: actions/labeler@v6
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: .github/labeler-pull-request-triage.yml
+
+      - name: Apply Pull Request Size Labels
+        uses: codelytv/pr-size-labeler@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xs_label: 'size/XS'
+          xs_max_size: '30'
+          s_label: 'size/S'
+          s_max_size: '60'
+          m_label: 'size/M'
+          m_max_size: '150'
+          l_label: 'size/L'
+          l_max_size: '1500'
+          xl_label: 'size/XL'
+          fail_if_xl: 'false'
+          message_if_xl: >
+            'This PR exceeds the recommended size of 1500 lines.
+            Please make sure you are NOT addressing multiple issues with one PR.
+            Note this PR might be rejected due to its size.'
