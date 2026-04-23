@@ -444,17 +444,18 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name":   name,
-					"vpc_num":         "7",
-					"key_num":         "2000",
-					"secret_num":      "1000",
-					"spec":            "2000",
-					"renew_status":    "ManualRenewal",
-					"product_version": "3",
-					"log":             "1",
-					"log_storage":     "1000",
-					"period":          "2",
-					"vpc_id":          "${alicloud_vpc.default.id}",
+					"instance_name":       name,
+					"vpc_num":             "7",
+					"key_num":             "2000",
+					"secret_num":          "1000",
+					"spec":                "2000",
+					"renew_status":        "ManualRenewal",
+					"product_version":     "3",
+					"log":                 "1",
+					"log_storage":         "1000",
+					"period":              "2",
+					"vpc_id":              "${alicloud_vpc.default.id}",
+					"deletion_protection": "true",
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
@@ -480,20 +481,21 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name":   name,
-						"vpc_num":         "7",
-						"key_num":         "2000",
-						"secret_num":      "1000",
-						"spec":            "2000",
-						"renew_status":    "ManualRenewal",
-						"product_version": "3",
-						"vpc_id":          CHECKSET,
-						"zone_ids.#":      "2",
-						"vswitch_ids.#":   "1",
-						"bind_vpcs.#":     "2",
-						"tags.%":          "2",
-						"tags.Created":    "TF",
-						"tags.For":        "Test",
+						"instance_name":       name,
+						"vpc_num":             "7",
+						"key_num":             "2000",
+						"secret_num":          "1000",
+						"spec":                "2000",
+						"renew_status":        "ManualRenewal",
+						"product_version":     "3",
+						"vpc_id":              CHECKSET,
+						"deletion_protection": "true",
+						"zone_ids.#":          "2",
+						"vswitch_ids.#":       "1",
+						"bind_vpcs.#":         "2",
+						"tags.%":              "2",
+						"tags.Created":        "TF",
+						"tags.For":            "Test",
 					}),
 				),
 			},
@@ -514,6 +516,16 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
 					}),
 				),
 			},
@@ -630,6 +642,26 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -715,6 +747,26 @@ func TestAccAliCloudKmsInstance_basic4048_postpaid_intl(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -748,13 +800,14 @@ func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_num":         "2",
-					"key_num":         "1000",
-					"secret_num":      "1000",
-					"spec":            "1000",
-					"renew_status":    "ManualRenewal",
-					"product_version": "3",
-					"vpc_id":          "${alicloud_vpc.default.id}",
+					"vpc_num":             "2",
+					"key_num":             "1000",
+					"secret_num":          "1000",
+					"spec":                "1000",
+					"renew_status":        "ManualRenewal",
+					"product_version":     "3",
+					"vpc_id":              "${alicloud_vpc.default.id}",
+					"deletion_protection": "true",
 					"zone_ids": []string{
 						"ap-southeast-1a", "ap-southeast-1b"},
 					"vswitch_ids": []string{
@@ -762,15 +815,16 @@ func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_num":         "2",
-						"key_num":         "1000",
-						"secret_num":      "1000",
-						"spec":            "1000",
-						"renew_status":    "ManualRenewal",
-						"product_version": "3",
-						"vpc_id":          CHECKSET,
-						"zone_ids.#":      "2",
-						"vswitch_ids.#":   "1",
+						"vpc_num":             "2",
+						"key_num":             "1000",
+						"secret_num":          "1000",
+						"spec":                "1000",
+						"renew_status":        "ManualRenewal",
+						"product_version":     "3",
+						"vpc_id":              CHECKSET,
+						"deletion_protection": "true",
+						"zone_ids.#":          "2",
+						"vswitch_ids.#":       "1",
 					}),
 				),
 			},
@@ -811,6 +865,16 @@ func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"secret_num": "2000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
 					}),
 				),
 			},

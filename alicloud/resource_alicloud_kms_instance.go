@@ -60,6 +60,10 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"end_date": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -282,7 +286,7 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	}
 	request["SubscriptionType"] = "Subscription"
 	if v, ok := d.GetOk("payment_type"); ok {
-		request["SubscriptionType"] = convertKmsInstanceSubscriptionTypeRequest(v.(string))
+		request["SubscriptionType"] = v.(string)
 	}
 	var endpoint string
 	request["ProductCode"] = "kms"
@@ -299,7 +303,7 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 			request["ProductType"] = "kms_ppi_public_intl"
 		}
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
@@ -360,7 +364,7 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 		request["VSwitchIds"] = convertListToCommaSeparate(convertToInterfaceArray(vswitchIdsJsonPath))
 	}
 
-	wait = incrementalWait(3*time.Second, 5*time.Second)
+	wait = incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
 		if err != nil {
@@ -405,6 +409,7 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 
 	d.Set("ca_certificate_chain_pem", objectRaw["CaCertificateChainPem"])
 	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("deletion_protection", objectRaw["DeletionProtection"])
 	d.Set("end_date", objectRaw["EndDate"])
 	d.Set("instance_name", objectRaw["InstanceName"])
 	d.Set("key_num", objectRaw["KeyNum"])
@@ -438,18 +443,18 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
-	vswitchIds := make([]interface{}, 0)
+	vswitchIdsRaw := make([]interface{}, 0)
 	if objectRaw["VswitchIds"] != nil {
-		vswitchIds = objectRaw["VswitchIds"].([]interface{})
+		vswitchIdsRaw = convertToInterfaceArray(objectRaw["VswitchIds"])
 	}
 
-	d.Set("vswitch_ids", vswitchIds)
-
-	zoneIds := make([]interface{}, 0)
+	d.Set("vswitch_ids", vswitchIdsRaw)
+	zoneIdsRaw := make([]interface{}, 0)
 	if objectRaw["ZoneIds"] != nil {
-		zoneIds = objectRaw["ZoneIds"].([]interface{})
+		zoneIdsRaw = convertToInterfaceArray(objectRaw["ZoneIds"])
 	}
-	d.Set("zone_ids", zoneIds)
+
+	d.Set("zone_ids", zoneIdsRaw)
 
 	objectRaw, err = kmsServiceV2.DescribeInstanceQueryAvailableInstances(d)
 	if err != nil && !NotFoundError(err) {
@@ -487,34 +492,68 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	request["InstanceId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
-	if !d.IsNewResource() && d.HasChanges("vpc_num", "spec", "secret_num", "key_num", "log", "log_storage", "product_version") {
+
+	parameterMapList := make([]map[string]interface{}, 0)
+
+	if !d.IsNewResource() && d.HasChange("vpc_num") {
+		update = true
+
+		if v, ok := d.GetOk("vpc_num"); ok {
+			parameterMapList = append(parameterMapList, map[string]interface{}{
+				"Code":  "VpcNum",
+				"Value": fmt.Sprint(v),
+			})
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("spec") {
+		update = true
+
+		if v, ok := d.GetOk("spec"); ok {
+			parameterMapList = append(parameterMapList, map[string]interface{}{
+				"Code":  "Spec",
+				"Value": fmt.Sprint(v),
+			})
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("secret_num") {
+		update = true
+
+		if v, ok := d.GetOk("secret_num"); ok {
+			parameterMapList = append(parameterMapList, map[string]interface{}{
+				"Code":  "SecretNum",
+				"Value": fmt.Sprint(v),
+			})
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("key_num") {
+		update = true
+
+		if v, ok := d.GetOk("key_num"); ok {
+			parameterMapList = append(parameterMapList, map[string]interface{}{
+				"Code":  "KeyNum",
+				"Value": fmt.Sprint(v),
+			})
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("product_version") {
+		update = true
+
+		if v, ok := d.GetOk("product_version"); ok {
+			parameterMapList = append(parameterMapList, map[string]interface{}{
+				"Code":  "ProductVersion",
+				"Value": v,
+			})
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChanges("log", "log_storage") {
 		update = true
 	}
-	parameterMapList := make([]map[string]interface{}, 0)
-	if v, ok := d.GetOk("vpc_num"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "VpcNum",
-			"Value": fmt.Sprint(v),
-		})
-	}
-	if v, ok := d.GetOk("spec"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "Spec",
-			"Value": fmt.Sprint(v),
-		})
-	}
-	if v, ok := d.GetOk("secret_num"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "SecretNum",
-			"Value": fmt.Sprint(v),
-		})
-	}
-	if v, ok := d.GetOk("key_num"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "KeyNum",
-			"Value": fmt.Sprint(v),
-		})
-	}
+
 	if v, ok := d.GetOk("log"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "Log",
@@ -525,12 +564,6 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "LogStorage",
 			"Value": fmt.Sprint(v),
-		})
-	}
-	if v, ok := d.GetOk("product_version"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "ProductVersion",
-			"Value": v,
 		})
 	}
 	request["Parameter"] = parameterMapList
@@ -556,7 +589,7 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(5*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
@@ -625,7 +658,7 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcGet("Kms", "2016-01-20", action, query, request)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Forbidden.KMSInstanceInUpgrade"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -721,6 +754,37 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 						request["ProductType"] = "kms_ppi_public_intl"
 					}
 					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "SetDeletionProtection"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["KmsInstanceId"] = d.Id()
+
+	if d.HasChange("deletion_protection") {
+		update = true
+
+		if v, ok := d.GetOkExists("deletion_protection"); ok {
+			request["EnableDeletionProtection"] = v
+		}
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Kms", "2016-01-20", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -868,12 +932,6 @@ func convertKmsInstanceKmsInstanceChargeTypeResponse(source interface{}) interfa
 		return "Subscription"
 	case "POSTPAY":
 		return "PayAsYouGo"
-	}
-	return source
-}
-func convertKmsInstanceSubscriptionTypeRequest(source interface{}) interface{} {
-	source = fmt.Sprint(source)
-	switch source {
 	}
 	return source
 }
