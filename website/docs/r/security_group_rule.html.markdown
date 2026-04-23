@@ -73,6 +73,7 @@ The following arguments are supported:
 * `nic_type` - (Optional, ForceNew) Network type, can be either `internet` or `intranet`, the default value is `internet`.
 * `description` - (Optional) The description of the security group rule. The description can be up to 1 to 512 characters in length. Defaults to null.
 
+# test
 -> **NOTE:**  You must specify one of the following field: `cidr_ip`,`source_security_group_id`,`prefix_list_id`,`ipv6_cidr_ip`. 
 
 ## Attributes Reference
