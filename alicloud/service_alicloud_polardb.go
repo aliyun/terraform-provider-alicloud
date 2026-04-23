@@ -123,6 +123,142 @@ func (s *PolarDBService) DescribeDBClusterAttribute(id string) (object map[strin
 	return object, nil
 }
 
+func (s *PolarDBService) DescribePolarDBApplicationAttribute(id string) (object map[string]interface{}, err error) {
+	action := "DescribeApplicationAttribute"
+	request := map[string]interface{}{
+		"ApplicationId": id,
+	}
+	var response map[string]interface{}
+	client := s.client
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *PolarDBService) DescribePolarDBBatchTaskAttribute(id string) (object map[string]interface{}, err error) {
+	action := "DescribeBatchTask"
+	request := map[string]interface{}{
+		"BatchId": id,
+	}
+	var response map[string]interface{}
+	client := s.client
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *PolarDBService) DescribePolarDBApplications(id string) (object map[string]interface{}, err error) {
+	action := "DescribeApplications"
+	request := map[string]interface{}{
+		"RegionId": id,
+	}
+	var response map[string]interface{}
+	client := s.client
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *PolarDBService) DeletePolarDBApplication(id string) (object map[string]interface{}, err error) {
+	action := "DeleteApplication"
+	request := map[string]interface{}{
+		"ApplicationId": id,
+	}
+	var response map[string]interface{}
+	client := s.client
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
+}
+
 func (s *PolarDBService) DescribePolarDBAutoRenewAttribute(id string) (instance *polardb.AutoRenewAttribute, err error) {
 	request := polardb.CreateDescribeAutoRenewAttributeRequest()
 	request.RegionId = s.client.RegionId
@@ -1385,6 +1521,50 @@ func (s *PolarDBService) PolarDBClusterStateRefreshFunc(id string, failStates []
 			}
 		}
 		return object, object.DBClusterStatus, nil
+	}
+}
+
+func (s *PolarDBService) PolarDBApplicationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribePolarDBApplicationAttribute(id)
+		if err != nil {
+			// 当资源被删除后，API 可能返回各种错误，我们应该将这些错误都视为 "资源不存在" 的情况
+			// 包括 NotFoundError 和其他可能的错误类型
+			if NotFoundError(err) || strings.Contains(err.Error(), "InvalidParameter") || strings.Contains(err.Error(), "ResourceNotFound") {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["Status"] == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, object["Status"].(string), nil
+	}
+}
+
+func (s *PolarDBService) PolarDBBatchTaskStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribePolarDBBatchTaskAttribute(id)
+		if err != nil {
+			// 当资源被删除后，API 可能返回各种错误，我们应该将这些错误都视为 "资源不存在" 的情况
+			// 包括 NotFoundError 和其他可能的错误类型
+			if NotFoundError(err) || strings.Contains(err.Error(), "InvalidParameter") || strings.Contains(err.Error(), "ResourceNotFound") {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["Status"] == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, object["Status"].(string), nil
 	}
 }
 
