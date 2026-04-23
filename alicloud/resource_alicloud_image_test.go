@@ -29,6 +29,7 @@ func TestAccAliCloudECSImageBasic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -131,6 +132,7 @@ func TestAccAliCloudECSImageBasic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -180,6 +182,7 @@ func TestAccAliCloudECSImageBasic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -226,7 +229,8 @@ variable "name" {
 }
 
 data "alicloud_instance_types" "default" {
-  instance_type_family = "ecs.sn1ne"
+  instance_type_family  = "ecs.g6"
+  system_disk_category   = "cloud_essd"
 }
 
 data "alicloud_images" "default" {
@@ -279,8 +283,8 @@ data "alicloud_zones" default {
 
 
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  instance_type_family = "ecs.sn1ne"
+  instance_type_family  = "ecs.g6"
+  system_disk_category   = "cloud_essd"
 }
 
 data "alicloud_images" "default" {
@@ -323,7 +327,7 @@ resource "alicloud_disk" "default" {
   count = "2"
   disk_name = "${var.name}"
   availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-  category          = "cloud_efficiency"
+  category          = "cloud_essd"
   size              = "20"
 }
 
@@ -363,6 +367,7 @@ func TestAccAliCloudECSImageBasic7009(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -620,7 +625,8 @@ variable "name" {
 }
 
 data "alicloud_instance_types" "default" {
-  instance_type_family = "ecs.sn1ne"
+  instance_type_family  = "ecs.g6"
+  system_disk_category   = "cloud_essd"
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}
