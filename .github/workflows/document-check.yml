@@ -4,13 +4,12 @@ on:
     branches:
       - master
   pull_request:
-    pull_request_target:
-      types:
-        - opened
-      paths:
-        - .github/workflows/document-check.yml
-        - .go-version
-        - website/docs/**
+    types:
+      - opened
+    paths:
+      - .github/workflows/document-check.yml
+      - .go-version
+      - website/docs/**
 
 jobs:
   markdown-link:
@@ -18,7 +17,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
           use-quiet-mode: 'yes'
@@ -32,7 +31,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - uses: avto-dev/markdown-lint@v1
 
   misspell:
@@ -41,7 +40,7 @@ jobs:
       contents: read
     steps:
       - name: Check out code.
-        uses: actions/checkout@v1
+        uses: actions/checkout@v6
       - name: misspell
         uses: reviewdog/action-misspell@v1.11.1
         with:
@@ -56,9 +55,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - run: echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: terrafmt
@@ -72,10 +71,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
         with:
           fetch-depth: '3'
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v5
         with:
           go-version-file: .go-version
       - run: bash scripts/basic-check.sh
@@ -85,9 +84,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
       - uses: jitterbit/get-changed-files@v1
@@ -109,14 +108,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.24.x'
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 2
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
       - name: Integration Test Check
         run: |
           git diff HEAD^ HEAD > diff.out
@@ -125,7 +123,7 @@ jobs:
 #  terraform-validate:
 #    runs-on: ubuntu-latest
 #    steps:
-#      - uses: actions/checkout@v2
+#      - uses: actions/checkout@v6
 #      - name: import
 #        run: |
 #          echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
