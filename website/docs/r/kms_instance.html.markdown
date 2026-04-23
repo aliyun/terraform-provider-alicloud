@@ -225,6 +225,9 @@ resource "alicloud_kms_instance" "default" {
 
 The following arguments are supported:
 * `bind_vpcs` - (Optional, Set) Aucillary VPCs used to access this KMS instance See [`bind_vpcs`](#bind_vpcs) below.
+* `deletion_protection` - (Optional, Bool, Available since v1.277.0) Specifies whether to enable deletion protection. Default value: `false`. Valid values:
+  - `true`: enables deletion protection.
+  - `false`: disables deletion protection.
 * `force_delete_without_backup` - (Optional, Available since v1.223.2) Whether to force deletion even without backup.
 
 -> **NOTE:** This parameter only takes effect when deletion is triggered.
