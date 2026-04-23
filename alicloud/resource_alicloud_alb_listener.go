@@ -181,7 +181,7 @@ func resourceAliCloudAlbListener() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(0, 180),
+				ValidateFunc: IntBetween(0, 600),
 			},
 			"security_policy_id": {
 				Type:     schema.TypeString,
