@@ -173,13 +173,13 @@ The following arguments are supported:
   - `false` (default): Sends a normal request, returns the 'HTTP 2xx' status code after passing the check, and performs the operation directly.
 * `gzip_enabled` - (Optional, Computed) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid Values: True Or False. Default Value: TRUE.
 * `http2_enabled` - (Optional, Computed) Whether to Enable HTTP/2 Features. Valid Values: True Or False. Default Value: TRUE.
-* `idle_timeout` - (Optional, Computed, Int) Specify the Connection Idle Timeout Value: 1 to 60 seconds.
+* `idle_timeout` - (Optional, Computed, Int) Specify the Connection Idle Timeout Value: 0~600 Seconds.
 * `listener_description` - (Optional) Set the IP Address of the Listened Description. Length Is from 2 to 256 Characters.
 * `listener_port` - (Required, ForceNew, Int) The SLB Instance Front-End, and Those of the Ports Used. Value: 1~65535.
 * `listener_protocol` - (Required, ForceNew) Snooping Protocols. Valid Values: HTTP, HTTPS Or QuIC.
 * `load_balancer_id` - (Required, ForceNew) The SLB Instance Id.
 * `quic_config` - (Optional, Computed, List) Configuration Associated with the QuIC Listening See [`quic_config`](#quic_config) below.
-* `request_timeout` - (Optional, Computed, Int) The Specified Request Timeout Time. Value: 1~180 Seconds. Default Value: 60 seconds. If the Timeout Time Within the Back-End Server Has Not Answered the SLB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
+* `request_timeout` - (Optional, Computed, Int) The Specified Request Timeout Time. Value: 0~600 Seconds. Default Value: 60 seconds. If the Timeout Time Within the Back-End Server Has Not Answered the SLB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
 * `security_policy_id` - (Optional, Computed) Security Policy
 * `status` - (Optional, Computed) The Current IP Address of the Listened State
 * `tags` - (Optional, Map, Available since v1.215.0) The tag of the resource
