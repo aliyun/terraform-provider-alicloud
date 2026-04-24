@@ -1032,3 +1032,46 @@ func (s *EcsServiceV2) EcsDiskEncryptionByDefaultStateRefreshFuncWithApi(id stri
 }
 
 // DescribeEcsDiskEncryptionByDefault >>> Encapsulated.
+
+// DescribeEcsDataDisksByNodeId queries data disks attached to an ECS instance via node ID.
+func (s *EcsServiceV2) DescribeEcsDataDisksByNodeId(nodeId string) (objects []map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeDisks"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = nodeId
+	request["DiskType"] = "data"
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, nodeId, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Disks.Disk[*]", response)
+	if err != nil {
+		return nil, nil
+	}
+
+	for _, disk := range v.([]interface{}) {
+		objects = append(objects, disk.(map[string]interface{}))
+	}
+
+	return objects, nil
+}

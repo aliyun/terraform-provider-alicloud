@@ -33,7 +33,7 @@ func (s *EfloServiceV2) DescribeEfloNode(id string) (object map[string]interface
 		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -51,6 +51,7 @@ func (s *EfloServiceV2) DescribeEfloNode(id string) (object map[string]interface
 
 	return response, nil
 }
+
 func (s *EfloServiceV2) DescribeNodeListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -83,6 +84,7 @@ func (s *EfloServiceV2) DescribeNodeListTagResources(id string) (object map[stri
 
 	return response, nil
 }
+
 func (s *EfloServiceV2) DescribeNodeQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
 
 	installPai := false
@@ -175,6 +177,7 @@ func (s *EfloServiceV2) DescribeNodeQueryAvailableInstances(d *schema.ResourceDa
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+
 func (s *EfloServiceV2) DescribeNodeListClusterNodes(d *schema.ResourceData) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -644,6 +647,51 @@ func (s *EfloServiceV2) DescribeAsyncDescribeTask(d *schema.ResourceData, res ma
 }
 
 // DescribeAsyncDescribeTask >>> Encapsulated.
+
+// DescribeNodeIdByTaskId polls DescribeTask until NodeIds is available and returns the first NodeId.
+func (s *EfloServiceV2) DescribeNodeIdByTaskId(taskId string, timeout time.Duration) (nodeId string, err error) {
+	client := s.client
+	action := "DescribeTask"
+	var response map[string]interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(timeout, func() *resource.RetryError {
+		request := map[string]interface{}{
+			"RegionId": client.RegionId,
+		}
+		query := map[string]interface{}{
+			"TaskId": taskId,
+		}
+		var e error
+		response, e = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+		if e != nil {
+			if IsExpectedErrors(e, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(e) {
+				wait()
+				return resource.RetryableError(e)
+			}
+			return resource.NonRetryableError(e)
+		}
+		nodeIdsRaw, _ := jsonpath.Get("$.NodeIds", response)
+		if nodeIds, ok := nodeIdsRaw.([]interface{}); ok && len(nodeIds) > 0 {
+			return nil
+		}
+		wait()
+		return resource.RetryableError(fmt.Errorf("task %s: waiting for NodeIds", taskId))
+	})
+	addDebug(action, response, nil)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	nodeIdsRaw, e := jsonpath.Get("$.NodeIds", response)
+	if e != nil || nodeIdsRaw == nil {
+		return "", WrapError(fmt.Errorf("DescribeTask %s: NodeIds not found in response", taskId))
+	}
+	nodeIds, ok := nodeIdsRaw.([]interface{})
+	if !ok || len(nodeIds) == 0 {
+		return "", WrapError(fmt.Errorf("DescribeTask %s: NodeIds is empty", taskId))
+	}
+	return fmt.Sprint(nodeIds[0]), nil
+}
 
 // DescribeEfloInvocation <<< Encapsulated get interface for Eflo Invocation.
 
