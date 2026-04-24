@@ -24,7 +24,7 @@ func resourceAliCloudEfloNode() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(30 * time.Minute),
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
@@ -309,7 +309,11 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	if v, ok := d.GetOk("payment_type"); ok && InArray(fmt.Sprint(v), []string{"Subscription"}) {
+	paymentType := "Subscription"
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) != "" {
+		paymentType = fmt.Sprint(v)
+	}
+	if InArray(paymentType, []string{"Subscription"}) {
 		action := "CreateInstance"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -319,7 +323,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 
 		request["ClientToken"] = buildClientToken(action)
 
-		request["SubscriptionType"] = d.Get("payment_type")
+		request["SubscriptionType"] = paymentType
 		parameterMapList := make([]map[string]interface{}, 0)
 		if v, ok := d.GetOk("server_arch"); ok {
 			parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -420,7 +424,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 			request["ProductCode"] = "learn"
 			request["ProductType"] = "learn_eflocomputing_public_cn"
 		}
-		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		if paymentType == "PayAsYouGo" {
 			request["ProductCode"] = "bccluster"
 			request["ProductType"] = "bccluster_computinginstance_public_cn"
 			if installPai {
@@ -434,7 +438,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 				request["ProductCode"] = "learn"
 				request["ProductType"] = "learn_eflocomputing_public_intl"
 			}
-			if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+			if paymentType == "PayAsYouGo" {
 				request["ProductCode"] = "bccluster"
 				request["ProductType"] = "bccluster_computinginstance_public_intl"
 				if installPai {
@@ -460,7 +464,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 						request["ProductCode"] = "learn"
 						request["ProductType"] = "learn_eflocomputing_public_intl"
 					}
-					if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+					if paymentType == "PayAsYouGo" {
 						request["ProductCode"] = "bccluster"
 						request["ProductType"] = "bccluster_computinginstance_public_intl"
 						if installPai {
@@ -490,7 +494,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	if v, ok := d.GetOk("payment_type"); ok && InArray(fmt.Sprint(v), []string{"PayAsYouGo"}) {
+	if InArray(paymentType, []string{"PayAsYouGo"}) {
 		action := "ExtendCluster"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -581,9 +585,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 
 		nodeGroupsDataList := make(map[string]interface{})
 
-		if v, ok := d.GetOk("payment_type"); ok {
-			nodeGroupsDataList["ChargeType"] = convertEfloNodeNodeGroupsArrayChargeTypeRequest(v)
-		}
+		nodeGroupsDataList["ChargeType"] = convertEfloNodeNodeGroupsArrayChargeTypeRequest(paymentType)
 
 		if v, ok := d.GetOk("hostname"); ok {
 			nodeGroupsDataList["Hostnames"] = []interface{}{v}
@@ -612,9 +614,11 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 			nodeGroupsDataList["VpcId"] = v
 		}
 
-		if v, ok := d.GetOk("zone"); ok {
-			nodeGroupsDataList["ZoneId"] = v
-		}
+		// ZoneId is intentionally omitted here: the specified NodeGroup already
+		// contains the zone information, so passing it again is unnecessary.
+		//if v, ok := d.GetOk("zone"); ok {
+		//	nodeGroupsDataList["ZoneId"] = v
+		//}
 
 		NodeGroupsMap := make([]interface{}, 0)
 		NodeGroupsMap = append(NodeGroupsMap, nodeGroupsDataList)
@@ -632,7 +636,7 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 			response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -646,7 +650,14 @@ func resourceAliCloudEfloNodeCreate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_eflo_node", action, AlibabaCloudSdkGoERROR)
 		}
 
+		taskId, _ := jsonpath.Get("$.TaskId", response)
 		efloServiceV2 := EfloServiceV2{client}
+		nodeId, err := efloServiceV2.DescribeNodeIdByTaskId(fmt.Sprint(taskId), d.Timeout(schema.TimeoutCreate))
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_eflo_node", "DescribeTask", AlibabaCloudSdkGoERROR)
+		}
+		d.SetId(nodeId)
+
 		stateConf := BuildStateConf([]string{}, []string{"Using"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, efloServiceV2.EfloNodeStateRefreshFunc(d.Id(), "OperatingState", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -682,19 +693,70 @@ func resourceAliCloudEfloNodeRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("status", objectRaw["OperatingState"])
 	d.Set("user_data", objectRaw["UserData"])
 	d.Set("zone", objectRaw["ZoneId"])
-	if objectRaw["Disks"] != nil {
-		disksMaps := make([]interface{}, 0)
-		for _, v := range objectRaw["Disks"].([]interface{}) {
-			disksMap := make(map[string]interface{})
-			if fmt.Sprint(v.(map[string]interface{})["DiskType"]) == "system" {
-				continue
-			}
-			disksMap["category"] = v.(map[string]interface{})["Category"]
-			disksMap["performance_level"] = v.(map[string]interface{})["PerformanceLevel"]
-			disksMap["size"] = v.(map[string]interface{})["Size"]
-			disksMaps = append(disksMaps, disksMap)
+
+	ecsServiceV2 := EcsServiceV2{client}
+	disks, err := ecsServiceV2.DescribeEcsDataDisksByNodeId(d.Id())
+
+	if err != nil {
+		log.Printf("[WARN] Failed to describe data disks for instance %s: %s", d.Id(), err)
+		disks = nil
+	}
+	if len(disks) > 0 {
+		// Build a multiset (spec -> count) from API response for equivalence check.
+		apiSpecCount := make(map[string]int, len(disks))
+		for _, disk := range disks {
+			specKey := fmt.Sprintf("%v|%v|%v", disk["Category"], disk["Size"], disk["PerformanceLevel"])
+			apiSpecCount[specKey]++
 		}
-		d.Set("data_disk", disksMaps)
+
+		if existing, ok := d.GetOk("data_disk"); ok {
+			existingList := existing.([]interface{})
+
+			// Check if state set == API set (same specs and counts).
+			// If so, write back existing state unchanged to preserve user-defined order.
+			stateSpecCount := make(map[string]int, len(existingList))
+			for _, item := range existingList {
+				m := item.(map[string]interface{})
+				specKey := fmt.Sprintf("%v|%v|%v", m["category"], m["size"], m["performance_level"])
+				stateSpecCount[specKey]++
+			}
+			equivalent := len(stateSpecCount) == len(apiSpecCount)
+			if equivalent {
+				for k, v := range stateSpecCount {
+					if apiSpecCount[k] != v {
+						equivalent = false
+						break
+					}
+				}
+			}
+
+			if equivalent {
+				// Sets are the same: write back existing state unchanged to avoid ordering diffs.
+				d.Set("data_disk", existingList)
+			} else {
+				// Sets differ (disks added/removed externally): write API data directly.
+				disksMaps := make([]interface{}, 0, len(disks))
+				for _, disk := range disks {
+					disksMap := make(map[string]interface{})
+					disksMap["category"] = disk["Category"]
+					disksMap["performance_level"] = disk["PerformanceLevel"]
+					disksMap["size"] = disk["Size"]
+					disksMaps = append(disksMaps, disksMap)
+				}
+				d.Set("data_disk", disksMaps)
+			}
+		} else {
+			// No existing state: write API data directly (first read after creation/import).
+			disksMaps := make([]interface{}, 0, len(disks))
+			for _, disk := range disks {
+				disksMap := make(map[string]interface{})
+				disksMap["category"] = disk["Category"]
+				disksMap["performance_level"] = disk["PerformanceLevel"]
+				disksMap["size"] = disk["Size"]
+				disksMaps = append(disksMaps, disksMap)
+			}
+			d.Set("data_disk", disksMaps)
+		}
 	}
 
 	objectRaw, err = efloServiceV2.DescribeNodeListTagResources(d.Id())
@@ -960,7 +1022,7 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -1077,7 +1139,7 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 			jsonString := convertObjectToJsonString(request)
 			jsonString, _ = sjson.Set(jsonString, "NodeGroups.0.Nodes.0.NodeId", d.Id())
 			if v, ok := d.GetOk("hostname"); ok && v != "" {
-				jsonString, _ = sjson.Set(jsonString, "NodeGroups.0.Nodes.0.Hostname", d.Id())
+				jsonString, _ = sjson.Set(jsonString, "NodeGroups.0.Nodes.0.Hostname", v)
 			}
 			if v, ok := d.GetOk("login_password"); ok && v != "" {
 				jsonString, _ = sjson.Set(jsonString, "NodeGroups.0.Nodes.0.LoginPassword", v)
@@ -1113,7 +1175,7 @@ func resourceAliCloudEfloNodeUpdate(d *schema.ResourceData, meta interface{}) er
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"InternalDependencyError.RequestLimitExceeded"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
