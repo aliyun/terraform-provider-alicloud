@@ -1,4 +1,27 @@
 ## 1.277.0 (Unreleased)
+
+- **New Resource:** `alicloud_alidns_cloud_gtm_address` [GH-9645]
+- **New Resource:** `alicloud_alidns_cloud_gtm_address_pool` [GH-9664]
+- **New Resource:** `alicloud_ecs_disk_encryption_by_default` [GH-9670]
+- **New Resource:** `alicloud_cms_integration_policy` [GH-9676]
+- **New Resource:** `alicloud_alidns_cloud_gtm_instance_config` [GH-9680]
+- **New Resource:** `alicloud_alidns_cloud_gtm_monitor_template` [GH-9690]
+- **New Resource:** `alicloud_cms_prometheus_instance` [GH-9694]
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_instance: Added the field collect_stat_mode, time_zone, collation, force_encryption, ssl_certificate, ssl_password, tde_certificate, tde_private_key, tde_password, tde_db_name. [GH-9628]
+- resource/alicloud_pai_workspace_workspace: Added the field resource_group_id; Improved alicloud_pai_workspace_workspace testcase. [GH-9667]
+- resource/alicloud_log_project: Support v4 sign; resource/alicloud_log_machine_group: add testcase to verify if v4 sign is correct. [GH-9671]
+- resource/alicloud_security_group_rule: Remove the cidr_ip and ipv6_cidr_ip constraint. [GH-9673]
+- resource/alicloud_kms_instance: Added the field deletion_protection. [GH-9687]
+- resource/alicloud_alb_listener: update idle_time and request_timeout range to 0~600. [GH-9689]
+- resource/alicloud_eflo_node: reset payment_type default to Subscription and fixes the extending error when happening the internal throlling error. [GH-9693]
+
+BUG FIXES:
+
+- testcase: fix regression test cases for vpc. [GH-9692]
+
 ## 1.276.0 (April 17, 2026)
 
 - **New Resource:** `alicloud_cloud_firewall_nat_firewall_control_policy_order` ([#9649](https://github.com/aliyun/terraform-provider-alicloud/issues/9649))
