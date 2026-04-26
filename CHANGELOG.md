@@ -1,26 +1,27 @@
-## 1.277.0 (Unreleased)
+## 1.278.0 (Unreleased)
+## 1.2767.0 (April 27, 2026)
 
-- **New Resource:** `alicloud_alidns_cloud_gtm_address` [GH-9645]
-- **New Resource:** `alicloud_alidns_cloud_gtm_address_pool` [GH-9664]
-- **New Resource:** `alicloud_ecs_disk_encryption_by_default` [GH-9670]
-- **New Resource:** `alicloud_cms_integration_policy` [GH-9676]
-- **New Resource:** `alicloud_alidns_cloud_gtm_instance_config` [GH-9680]
-- **New Resource:** `alicloud_alidns_cloud_gtm_monitor_template` [GH-9690]
-- **New Resource:** `alicloud_cms_prometheus_instance` [GH-9694]
+- **New Resource:** `alicloud_alidns_cloud_gtm_address` ([#9645](https://github.com/aliyun/terraform-provider-alicloud/issues/9645))
+- **New Resource:** `alicloud_alidns_cloud_gtm_address_pool` ([#9664](https://github.com/aliyun/terraform-provider-alicloud/issues/9664))
+- **New Resource:** `alicloud_ecs_disk_encryption_by_default` ([#9670](https://github.com/aliyun/terraform-provider-alicloud/issues/9670))
+- **New Resource:** `alicloud_cms_integration_policy` ([#9676](https://github.com/aliyun/terraform-provider-alicloud/issues/9676))
+- **New Resource:** `alicloud_alidns_cloud_gtm_instance_config` ([#9680](https://github.com/aliyun/terraform-provider-alicloud/issues/9680))
+- **New Resource:** `alicloud_alidns_cloud_gtm_monitor_template` ([#9690](https://github.com/aliyun/terraform-provider-alicloud/issues/9690))
+- **New Resource:** `alicloud_cms_prometheus_instance` ([#9694](https://github.com/aliyun/terraform-provider-alicloud/issues/9694))
 
 ENHANCEMENTS:
 
-- resource/alicloud_db_instance: Added the field collect_stat_mode, time_zone, collation, force_encryption, ssl_certificate, ssl_password, tde_certificate, tde_private_key, tde_password, tde_db_name. [GH-9628]
-- resource/alicloud_pai_workspace_workspace: Added the field resource_group_id; Improved alicloud_pai_workspace_workspace testcase. [GH-9667]
-- resource/alicloud_log_project: Support v4 sign; resource/alicloud_log_machine_group: add testcase to verify if v4 sign is correct. [GH-9671]
-- resource/alicloud_security_group_rule: Remove the cidr_ip and ipv6_cidr_ip constraint. [GH-9673]
-- resource/alicloud_kms_instance: Added the field deletion_protection. [GH-9687]
-- resource/alicloud_alb_listener: update idle_time and request_timeout range to 0~600. [GH-9689]
-- resource/alicloud_eflo_node: reset payment_type default to Subscription and fixes the extending error when happening the internal throlling error. [GH-9693]
+- resource/alicloud_db_instance: Added the field collect_stat_mode, time_zone, collation, force_encryption, ssl_certificate, ssl_password, tde_certificate, tde_private_key, tde_password, tde_db_name. ([#9628](https://github.com/aliyun/terraform-provider-alicloud/issues/9628))
+- resource/alicloud_pai_workspace_workspace: Added the field resource_group_id; Improved alicloud_pai_workspace_workspace testcase. ([#9667](https://github.com/aliyun/terraform-provider-alicloud/issues/9667))
+- resource/alicloud_log_project: Support v4 sign; resource/alicloud_log_machine_group: add testcase to verify if v4 sign is correct. ([#9671](https://github.com/aliyun/terraform-provider-alicloud/issues/9671))
+- resource/alicloud_security_group_rule: Remove the cidr_ip and ipv6_cidr_ip constraint. ([#9673](https://github.com/aliyun/terraform-provider-alicloud/issues/9673))
+- resource/alicloud_kms_instance: Added the field deletion_protection. ([#9687](https://github.com/aliyun/terraform-provider-alicloud/issues/9687))
+- resource/alicloud_alb_listener: update idle_time and request_timeout range to 0~600. ([#9689](https://github.com/aliyun/terraform-provider-alicloud/issues/9689))
+- resource/alicloud_eflo_node: reset payment_type default to Subscription and fixes the extending error when happening the internal throlling error. ([#9693](https://github.com/aliyun/terraform-provider-alicloud/issues/9693))
 
 BUG FIXES:
 
-- testcase: fix regression test cases for vpc. [GH-9692]
+- testcase: fix regression test cases for vpc. ([#9692](https://github.com/aliyun/terraform-provider-alicloud/issues/9692))
 
 ## 1.276.0 (April 17, 2026)
 

@@ -20,6 +20,12 @@ For information about Alidns Cloud Gtm Address and how to use it, see [What is C
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_alidns_cloud_gtm_address&exampleId=5c12b780-a358-0c52-e4a5-d2966796fc194999ddb9&activeTab=example&spm=docs.r.alidns_cloud_gtm_address.0.5c12b780a3&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -122,6 +128,10 @@ resource "alicloud_alidns_cloud_gtm_address" "default" {
   }
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_alidns_cloud_gtm_address&spm=docs.r.alidns_cloud_gtm_address.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
