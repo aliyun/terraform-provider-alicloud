@@ -473,6 +473,67 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 					},
 				},
 			},
+			"containerd_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"max_concurrent_downloads": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(1, 20),
+						},
+						"ignore_image_defined_volume": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"limit_core": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(0, 9007199254740991),
+						},
+						"limit_no_file": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(1024, 9007199254740991),
+						},
+						"limit_mem_lock": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(65536, 9007199254740991),
+						},
+						"registry_mirrors": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"registry": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"mirror": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"override_path": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Default:  false,
+									},
+								},
+							},
+						},
+						"insecure_registries": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+			},
 			"labels": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -2157,6 +2218,85 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	if err := d.Set("kubelet_configuration", kubeletConfigurationMaps); err != nil {
 		return err
 	}
+	containerdConfigMaps := make([]map[string]interface{}, 0)
+	containerd_configRawObj, _ := jsonpath.Get("$.node_config.containerd_config", objectRaw)
+	containerd_configRaw := make(map[string]interface{})
+	if containerd_configRawObj != nil {
+		containerd_configRaw = containerd_configRawObj.(map[string]interface{})
+	}
+	if len(containerd_configRaw) > 0 {
+		containerdConfigMap := make(map[string]interface{})
+		if v, ok := containerd_configRaw["maxConcurrentDownloads"].(json.Number); ok {
+			val, _ := strconv.Atoi(v.String())
+			if val > 0 {
+				containerdConfigMap["max_concurrent_downloads"] = val
+			}
+		}
+		if v, ok := containerd_configRaw["ignoreImageDefinedVolume"].(bool); ok && v {
+			containerdConfigMap["ignore_image_defined_volume"] = v
+		}
+		if v, ok := containerd_configRaw["limitCore"].(json.Number); ok {
+			val, _ := strconv.Atoi(v.String())
+			if val > 0 {
+				containerdConfigMap["limit_core"] = val
+			}
+		}
+		if v, ok := containerd_configRaw["limitNoFile"].(json.Number); ok {
+			val, _ := strconv.Atoi(v.String())
+			if val > 0 {
+				containerdConfigMap["limit_no_file"] = val
+			}
+		}
+		if v, ok := containerd_configRaw["limitMemLock"].(json.Number); ok {
+			val, _ := strconv.Atoi(v.String())
+			if val > 0 {
+				containerdConfigMap["limit_mem_lock"] = val
+			}
+		}
+		registryMirrorsRaw, _ := jsonpath.Get("$.node_config.containerd_config.registryMirrors", objectRaw)
+		if registryMirrorsRaw != nil {
+			registryMirrorsArray := convertToInterfaceArray(registryMirrorsRaw)
+			if len(registryMirrorsArray) > 0 {
+				registryMirrorsMaps := make([]map[string]interface{}, 0)
+				for _, mirrorRaw := range registryMirrorsArray {
+					if mirrorRaw != nil {
+						mirrorStr := mirrorRaw.(string)
+						// 解析格式: registry=mirror 或 registry=mirror&override_path
+						mirrorMap := make(map[string]interface{})
+						overridePath := false
+						if strings.Contains(mirrorStr, "&override_path") {
+							overridePath = true
+							mirrorStr = strings.Replace(mirrorStr, "&override_path", "", 1)
+						}
+						parts := strings.SplitN(mirrorStr, "=", 2)
+						if len(parts) == 2 {
+							mirrorMap["registry"] = parts[0]
+							mirrorMap["mirror"] = parts[1]
+							mirrorMap["override_path"] = overridePath
+							registryMirrorsMaps = append(registryMirrorsMaps, mirrorMap)
+						}
+					}
+				}
+				if len(registryMirrorsMaps) > 0 {
+					containerdConfigMap["registry_mirrors"] = registryMirrorsMaps
+				}
+			}
+		}
+		insecureRegistriesRaw, _ := jsonpath.Get("$.node_config.containerd_config.insecureRegistries", objectRaw)
+		if insecureRegistriesRaw != nil {
+			insecureRegistriesArray := convertToInterfaceArray(insecureRegistriesRaw)
+			if len(insecureRegistriesArray) > 0 {
+				containerdConfigMap["insecure_registries"] = insecureRegistriesArray
+			}
+		}
+
+		if len(containerdConfigMap) > 0 {
+			containerdConfigMaps = append(containerdConfigMaps, containerdConfigMap)
+		}
+	}
+	if err := d.Set("containerd_config", containerdConfigMaps); err != nil {
+		return err
+	}
 	labelsRaw, _ := jsonpath.Get("$.kubernetes_config.labels", objectRaw)
 	labelsMaps := make([]map[string]interface{}, 0)
 	if labelsRaw != nil {
@@ -3223,6 +3363,87 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 			request["kubelet_config"] = kubelet_config
 		}
+	}
+
+	if d.HasChange("containerd_config") {
+		update = true
+		containerd_config := make(map[string]interface{})
+
+		if v := d.Get("containerd_config"); v != nil && len(v.([]interface{})) > 0 {
+			maxConcurrentDownloadsRaw, _ := jsonpath.Get("$[0].max_concurrent_downloads", v)
+			if maxConcurrentDownloadsRaw != nil && maxConcurrentDownloadsRaw != "" {
+				maxConcurrentDownloads, _ := strconv.ParseInt(fmt.Sprint(maxConcurrentDownloadsRaw), 10, 64)
+				if maxConcurrentDownloads > 0 {
+					containerd_config["maxConcurrentDownloads"] = maxConcurrentDownloads
+				}
+			}
+			ignoreImageDefinedVolumeRaw, _ := jsonpath.Get("$[0].ignore_image_defined_volume", v)
+			if ignoreImageDefinedVolumeRaw != nil {
+				containerd_config["ignoreImageDefinedVolume"] = ignoreImageDefinedVolumeRaw.(bool)
+			}
+			limitCoreRaw, _ := jsonpath.Get("$[0].limit_core", v)
+			if limitCoreRaw != nil && limitCoreRaw != "" {
+				limitCore, _ := strconv.ParseInt(fmt.Sprint(limitCoreRaw), 10, 64)
+				if limitCore > 0 {
+					containerd_config["limitCore"] = limitCore
+				}
+			}
+			limitNoFileRaw, _ := jsonpath.Get("$[0].limit_no_file", v)
+			if limitNoFileRaw != nil && limitNoFileRaw != "" {
+				limitNoFile, _ := strconv.ParseInt(fmt.Sprint(limitNoFileRaw), 10, 64)
+				if limitNoFile > 0 {
+					containerd_config["limitNoFile"] = limitNoFile
+				}
+			}
+			limitMemLockRaw, _ := jsonpath.Get("$[0].limit_mem_lock", v)
+			if limitMemLockRaw != nil && limitMemLockRaw != "" {
+				limitMemLock, _ := strconv.ParseInt(fmt.Sprint(limitMemLockRaw), 10, 64)
+				if limitMemLock > 0 {
+					containerd_config["limitMemLock"] = limitMemLock
+				}
+			}
+			registryMirrorsRaw, _ := jsonpath.Get("$[0].registry_mirrors", v)
+			if registryMirrorsRaw != nil {
+				registryMirrorsArray := convertToInterfaceArray(registryMirrorsRaw)
+				if len(registryMirrorsArray) > 0 {
+					registryMirrorsList := make([]string, 0)
+					for _, mirrorRaw := range registryMirrorsArray {
+						if mirrorRaw != nil {
+							mirrorTmp := mirrorRaw.(map[string]interface{})
+							registryRaw, ok1 := mirrorTmp["registry"]
+							mirrorRaw, ok2 := mirrorTmp["mirror"]
+							if !ok1 || registryRaw == nil || registryRaw == "" || !ok2 || mirrorRaw == nil || mirrorRaw == "" {
+								return fmt.Errorf("when configuring 'registry_mirrors', both 'registry' and 'mirror' must be specified together. If either field is empty, the configuration is invalid")
+							}
+							registry := registryRaw.(string)
+							mirror := mirrorRaw.(string)
+							overridePath := false
+							if op, ok := mirrorTmp["override_path"]; ok && op != nil {
+								overridePath = op.(bool)
+							}
+							// registry=mirror or registry=mirror&override_path
+							mirrorStr := fmt.Sprintf("%s=%s", registry, mirror)
+							if overridePath {
+								mirrorStr = mirrorStr + "&override_path"
+							}
+							registryMirrorsList = append(registryMirrorsList, mirrorStr)
+						}
+					}
+					if len(registryMirrorsList) > 0 {
+						containerd_config["registryMirrors"] = registryMirrorsList
+					}
+				}
+			}
+			insecureRegistriesRaw, _ := jsonpath.Get("$[0].insecure_registries", v)
+			if insecureRegistriesRaw != nil {
+				insecureRegistriesArray := convertToInterfaceArray(insecureRegistriesRaw)
+				if len(insecureRegistriesArray) > 0 {
+					containerd_config["insecureRegistries"] = insecureRegistriesArray
+				}
+			}
+		}
+
+		request["containerd_config"] = containerd_config
 	}
 
 	rolling_policy := make(map[string]interface{})
