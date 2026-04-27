@@ -755,6 +755,21 @@ func resourceAliCloudInstance() *schema.Resource {
 				Computed: true,
 				Removed:  "Field `io_optimized` has been removed from provider version 1.213.1.",
 			},
+			"security_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"confidential_computing_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: StringInSlice([]string{"TDX", "Enclave"}, false),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1217,6 +1232,18 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 	if topologyType, ok := d.GetOk("cpu_options.0.topology_type"); ok {
 		request["CpuOptions.TopologyType"] = topologyType
+	}
+
+	if v, ok := d.GetOk("security_options"); ok {
+		if securityOptionsList, ok := v.([]interface{}); ok {
+			for _, raw := range securityOptionsList {
+				if securityOptionsArg, ok := raw.(map[string]interface{}); ok {
+					if v, ok := securityOptionsArg["confidential_computing_mode"]; ok {
+						request["SecurityOptions.ConfidentialComputingMode"] = v
+					}
+				}
+			}
+		}
 	}
 
 	wait := incrementalWait(1*time.Second, 1*time.Second)

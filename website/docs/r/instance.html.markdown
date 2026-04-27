@@ -252,6 +252,7 @@ The following arguments are supported:
 
 * `image_options` - (Optional, Set, Available since v1.237.0) The options of images. See [`image_options`](#image_options) below.
 * `cpu_options` - (Optional, Set, Available since v1.267.0) The options of cpu. See [`cpu_options`](#cpu_options) below.
+* `security_options` - (Optional) The security options of the instance. See [`security_options`](#security_options) below.
 * `allocate_public_ip` - (Optional, Bool, Deprecated since v1.7.0) Field `allocate_public_ip` has been deprecated from provider version 1.7.0. Setting  `internet_max_bandwidth_out` larger than 0 will allocate public ip for instance.
 * `internet_max_bandwidth_in` - (Optional, Int, Deprecated since v1.121.2) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
 * `role_name` - (Optional, Deprecated since v1.275.0) The name of the Resource Access Management (RAM) role. **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment). Field `role_name` has been deprecated from provider version 1.275.0. New resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment) instead. From version 1.276.0, `role_name` can be modified.
@@ -343,6 +344,14 @@ The cpu_options supports the following:
 * `core_count` - (Optional, Int) The maximum number of partitions in the storage set.
 * `threads_per_core` - (Optional, Int) The number of threads per CPU core.
 * `topology_type` - (Optional) The CPU topology type of the instance. Valid values: `ContinuousCoreToHTMapping`, `DiscreteCoreToHTMapping`.
+
+### `security_options`
+
+The security_options supports the following:
+
+* `confidential_computing_mode` - (Optional, ForceNew) The confidential computing mode of the instance. Valid values: `TDX`, `Enclave`.
+  - `TDX`: Enable Intel TDX confidential computing mode.
+  - `Enclave`: Use Enclave to build confidential computing environment.
 
 ## Attributes Reference
 
