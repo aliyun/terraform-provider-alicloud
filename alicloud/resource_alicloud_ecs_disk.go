@@ -488,7 +488,7 @@ func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"LastTokenProcessing", "InternalError"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
