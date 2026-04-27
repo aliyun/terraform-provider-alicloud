@@ -10,7 +10,7 @@ description: |-
 
 Provides a Cloud Firewall Vpc Cen Tr Firewall resource.
 
-VPC firewall Cloud Enterprise Network Enterprise Edition.
+VPC Firewall for Cloud Enterprise Network Enterprise Edition.
 
 For information about Cloud Firewall Vpc Cen Tr Firewall and how to use it, see [What is Vpc Cen Tr Firewall](https://www.alibabacloud.com/help/en/cloud-firewall/cloudfirewall/developer-reference/api-cloudfw-2017-12-07-createtrfirewallv2).
 
@@ -19,12 +19,6 @@ For information about Cloud Firewall Vpc Cen Tr Firewall and how to use it, see 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cloud_firewall_vpc_cen_tr_firewall&exampleId=37a1e48f-5e2b-3aa6-5c58-4d9edb62f71ef8f83c50&activeTab=example&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.0.37a1e48f5e&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -156,34 +150,32 @@ resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cloud_firewall_vpc_cen_tr_firewall&spm=docs.r.cloud_firewall_vpc_cen_tr_firewall.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
 * `cen_id` - (Required, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
 * `firewall_description` - (Optional, ForceNew) The description of the firewall.
-* `firewall_name` - (Required) The name of the Cloud Firewall.
-* `firewall_subnet_cidr` - (Required, ForceNew) The CIDR block of the subnet in the firewall VPC that hosts the firewall ENI in automatic mode.
+* `firewall_name` - (Required) The name of the Cloud Firewall instance.
+* `firewall_subnet_cidr` - (Optional, ForceNew) The CIDR block of the subnet in the firewall VPC that hosts the firewall ENI in automatic mode.
 * `firewall_vpc_cidr` - (Required, ForceNew) The CIDR block of the firewall VPC in automatic mode.
-* `region_no` - (Required, ForceNew) The region ID of the transit router instance.
+* `region_no` - (Required, ForceNew) The region ID of transit router instance I.
 * `route_mode` - (Required, ForceNew) The routing mode. Valid values:
   - `managed`: indicates automatic mode.
   - `manual`: indicates manual mode.
 
- ~> **NOTE:**  If this parameter is not specified, VPC border firewalls in all routing modes are queried.
+ -> **NOTE:**  If this parameter is not specified, VPC border firewalls in all routing modes are queried.
 
-* `tr_attachment_master_cidr` - (Required, ForceNew) The primary CIDR block of the subnet in the firewall VPC used to connect to the transit router (TR) in automatic mode.
+* `tr_attachment_master_cidr` - (Optional, ForceNew) The primary CIDR block of the subnet in the firewall VPC used to connect to the transit router (TR) in automatic mode.
 * `tr_attachment_master_zone` - (Optional) The primary zone of the vSwitch.
- 
- ~> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-* `tr_attachment_slave_cidr` - (Required, ForceNew) The secondary CIDR block of the subnet in the firewall VPC used to connect to TR in automatic mode.
+ -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+
+* `tr_attachment_slave_cidr` - (Optional, ForceNew) The secondary CIDR block of the subnet in the firewall VPC used to connect to the transit router (TR) in automatic mode.
 * `tr_attachment_slave_zone` - (Optional) The secondary zone of the vSwitch.
 
- ~> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+ -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
-* `transit_router_id` - (Required, ForceNew) The ID of the Transit Router instance.
+* `transit_router_id` - (Required, ForceNew) The ID of the transit router instance.
 
 ## Attributes Reference
 
@@ -191,7 +183,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above. 
 * `firewall_eni_id` - The ID of the firewall ENI.
 * `firewall_eni_vpc_id` - The ID of the VPC where the firewall ENI resides.
-* `firewall_vpc_attachment_id` - The ID of the firewall VPC connection.
+* `firewall_vpc_attachment_id` - The attachment ID used in the firewall VPC to connect to the transit router (TR) in automatic mode.
 * `status` - The status of the firewall.
 
 ## Timeouts
