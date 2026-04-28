@@ -247,7 +247,7 @@ func (s *OosService) DescribeOosServiceSetting(id string) (object map[string]int
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
+		response, err = client.RpcGet("oos", "2019-06-01", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
