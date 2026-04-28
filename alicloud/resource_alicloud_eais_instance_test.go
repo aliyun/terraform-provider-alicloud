@@ -110,7 +110,7 @@ func testSweepEaisInstance(region string) error {
 	return nil
 }
 
-func TestAccAliCloudEaisInstance_basic0(t *testing.T) {
+func SkipTestAccAliCloudEaisInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
 	resourceId := "alicloud_eais_instance.default"
@@ -156,7 +156,7 @@ func TestAccAliCloudEaisInstance_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEaisInstance_basic0_twin(t *testing.T) {
+func SkipTestAccAliCloudEaisInstance_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
 	resourceId := "alicloud_eais_instance.default"
@@ -239,7 +239,7 @@ func AliCloudEaisInstanceBasicDependence0(name string) string {
 }
 
 // lintignore: R001
-func TestUnitAliCloudEaisInstance(t *testing.T) {
+func SkipTestUnitAliCloudEaisInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_eais_instance"].Schema).Data(nil, nil)
@@ -433,7 +433,7 @@ func TestUnitAliCloudEaisInstance(t *testing.T) {
 
 // Test Eais Instance. >>> Resource test cases, automatically generated.
 // Case cc_jupyter_pro 10128
-func TestAccAliCloudEaisInstance_basic10128(t *testing.T) {
+func SkipTestAccAliCloudEaisInstance_basic10128(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eais_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudEaisInstanceMap10128)

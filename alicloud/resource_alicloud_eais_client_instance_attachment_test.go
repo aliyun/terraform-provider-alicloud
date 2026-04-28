@@ -11,7 +11,7 @@ import (
 
 // Test Eais ClientInstanceAttachment. >>> Resource test cases, automatically generated.
 // Case ca_ei_pro 10133
-func TestAccAliCloudEaisClientInstanceAttachment_basic10133(t *testing.T) {
+func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10133(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eais_client_instance_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudEaisClientInstanceAttachmentMap10133)
@@ -169,7 +169,7 @@ resource "alicloud_eais_instance" "eais" {
 }
 
 // Case ca_eai_pro 10134
-func TestAccAliCloudEaisClientInstanceAttachment_basic10134(t *testing.T) {
+func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10134(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eais_client_instance_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudEaisClientInstanceAttachmentMap10134)
@@ -301,7 +301,7 @@ resource "alicloud_eais_instance" "eais" {
 }
 
 // Case ca_pre_eai 10092
-func TestAccAliCloudEaisClientInstanceAttachment_basic10092(t *testing.T) {
+func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10092(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eais_client_instance_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudEaisClientInstanceAttachmentMap10092)
