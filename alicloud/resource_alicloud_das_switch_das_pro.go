@@ -22,6 +22,7 @@ func resourceAlicloudDasSwitchDasPro() *schema.Resource {
 			Create: schema.DefaultTimeout(3 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.249.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,

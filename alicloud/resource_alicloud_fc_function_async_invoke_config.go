@@ -23,6 +23,7 @@ func resourceAlicloudFCFunctionAsyncInvokeConfig() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.272.0 and will be removed in the future. Please use 'alicloud_fcv3_async_invoke_config' instead.",
 		Schema: map[string]*schema.Schema{
 			"service_name": {
 				Type:         schema.TypeString,

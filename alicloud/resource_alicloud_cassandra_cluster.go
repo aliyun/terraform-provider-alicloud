@@ -27,6 +27,7 @@ func resourceAlicloudCassandraCluster() *schema.Resource {
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.220.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"auto_renew": {
 				Type:     schema.TypeBool,

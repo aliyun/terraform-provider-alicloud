@@ -14,7 +14,8 @@ import (
 
 func dataSourceAlicloudServiceCatalogProductAsEndUsers() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudServiceCatalogProductAsEndUsersRead,
+		Read:               dataSourceAlicloudServiceCatalogProductAsEndUsersRead,
+		DeprecationMessage: "This data source has been deprecated since v1.197.0 and will be removed in the future. Please use 'alicloud_service_catalog_end_user_products' instead.",
 		Schema: map[string]*schema.Schema{
 			"sort_by": {
 				Optional: true,

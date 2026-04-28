@@ -8,7 +8,8 @@ import (
 
 func dataSourceAlicloudMNSTopicSubscriptions() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudMNSTopicSubscriptionRead,
+		Read:               dataSourceAlicloudMNSTopicSubscriptionRead,
+		DeprecationMessage: "This data source has been deprecated since v1.188.0 and will be removed in the future. Please use 'alicloud_message_service_subscriptions' instead.",
 		Schema: map[string]*schema.Schema{
 			"topic_name": {
 				Type:     schema.TypeString,

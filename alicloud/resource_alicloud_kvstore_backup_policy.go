@@ -22,6 +22,7 @@ func resourceAliCloudKvStoreBackupPolicy() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Update: schema.DefaultTimeout(40 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.104.0 and will be removed in the future. Please use 'alicloud_kvstore_instance' instead.",
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,

@@ -24,6 +24,7 @@ func resourceAlicloudTsdbInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(31 * time.Minute),
 			Update: schema.DefaultTimeout(31 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.223.1 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"app_key": {
 				Type:     schema.TypeString,

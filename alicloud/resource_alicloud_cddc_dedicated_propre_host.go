@@ -28,6 +28,7 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.225.1 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"auto_pay": {
 				Type:     schema.TypeBool,

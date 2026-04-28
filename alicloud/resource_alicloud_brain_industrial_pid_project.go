@@ -19,6 +19,7 @@ func resourceAlicloudBrainIndustrialPidProject() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.222.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"pid_organization_id": {
 				Type:     schema.TypeString,

@@ -20,6 +20,7 @@ func resourceAlicloudWafDomain() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.211.0 and will be removed in the future. Please use 'alicloud_wafv3_domain' instead.",
 		Schema: map[string]*schema.Schema{
 			"cluster_type": {
 				Type:         schema.TypeString,

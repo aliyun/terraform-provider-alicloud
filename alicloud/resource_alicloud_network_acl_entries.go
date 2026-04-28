@@ -19,6 +19,7 @@ func resourceAliyunNetworkAclEntries() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.122.0 and will be removed in the future. Please use 'ingress_acl_entries' and 'egress_acl_entries' in 'alicloud_network_acl' instead.",
 		Schema: map[string]*schema.Schema{
 
 			"network_acl_id": {

@@ -26,6 +26,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.272.0 and will be removed in the future. Please use 'alicloud_ehpc_cluster_v2' instead.",
 		Schema: map[string]*schema.Schema{
 			"account_type": {
 				Type:         schema.TypeString,

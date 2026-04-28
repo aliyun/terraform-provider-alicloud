@@ -12,7 +12,8 @@ import (
 
 func dataSourceAlicloudBrainIndustrialPidLoops() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudBrainIndustrialPidLoopsRead,
+		Read:               dataSourceAlicloudBrainIndustrialPidLoopsRead,
+		DeprecationMessage: "This data source has been deprecated since v1.229.1 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,

@@ -18,6 +18,7 @@ func resourceAlicloudMNSSubscription() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.188.0 and will be removed in the future. Please use 'alicloud_message_service_subscription' instead.",
 		Schema: map[string]*schema.Schema{
 			"topic_name": {
 				Type:         schema.TypeString,

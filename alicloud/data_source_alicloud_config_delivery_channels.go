@@ -12,7 +12,8 @@ import (
 
 func dataSourceAlicloudConfigDeliveryChannels() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudConfigDeliveryChannelsRead,
+		Read:               dataSourceAlicloudConfigDeliveryChannelsRead,
+		DeprecationMessage: "This data source has been deprecated since v1.173.0 and will be removed in the future. Please use 'alicloud_config_deliveries' instead.",
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,

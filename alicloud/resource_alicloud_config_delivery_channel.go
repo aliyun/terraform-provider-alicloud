@@ -24,6 +24,7 @@ func resourceAlicloudConfigDeliveryChannel() *schema.Resource {
 			Create: schema.DefaultTimeout(3 * time.Minute),
 			Update: schema.DefaultTimeout(3 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.171.0 and will be removed in the future. Please use 'alicloud_config_delivery' instead.",
 		Schema: map[string]*schema.Schema{
 			"delivery_channel_assume_role_arn": {
 				Type:     schema.TypeString,

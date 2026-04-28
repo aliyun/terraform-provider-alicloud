@@ -14,6 +14,8 @@ func dataSourceAlicloudMnsService() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudMnsServiceRead,
 
+		DeprecationMessage: "This data source has been deprecated since v1.252.0 and will be removed in the future. Please use 'alicloud_message_service_service' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"enable": {
 				Type:         schema.TypeString,

@@ -19,6 +19,8 @@ func resourceAlicloudRamGroupMembership() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		DeprecationMessage: "This resource has been deprecated since v1.267.0 and will be removed in the future. Please use 'alicloud_ram_user_group_attachment' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"group_name": {
 				Type:     schema.TypeString,

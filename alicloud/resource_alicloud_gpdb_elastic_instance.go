@@ -26,6 +26,7 @@ func resourceAlicloudGpdbElasticInstance() *schema.Resource {
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.147.0 and will be removed in the future. Please use 'alicloud_gpdb_instance' instead.",
 		Schema: map[string]*schema.Schema{
 			"engine": {
 				Type:         schema.TypeString,

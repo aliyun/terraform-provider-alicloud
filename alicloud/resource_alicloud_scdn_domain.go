@@ -25,6 +25,7 @@ func resourceAlicloudScdnDomain() *schema.Resource {
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 			Update: schema.DefaultTimeout(11 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.219.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"biz_name": {
 				Type:         schema.TypeString,

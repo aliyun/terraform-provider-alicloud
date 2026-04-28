@@ -14,7 +14,8 @@ import (
 
 func dataSourceAlicloudEmrClusters() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEmrClustersRead,
+		Read:               dataSourceAlicloudEmrClustersRead,
+		DeprecationMessage: "This data source has been deprecated since v1.204.0 and will be removed in the future. Please use 'alicloud_emrv2_clusters' instead.",
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,

@@ -26,6 +26,7 @@ func resourceAlicloudCddcDedicatedHost() *schema.Resource {
 			Update: schema.DefaultTimeout(20 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.225.1 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"allocation_status": {
 				Type:         schema.TypeString,

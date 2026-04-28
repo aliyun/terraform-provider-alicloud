@@ -26,6 +26,7 @@ func resourceAliCloudArmsRemoteWrite() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.228.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"cluster_id": {
 				Type:     schema.TypeString,

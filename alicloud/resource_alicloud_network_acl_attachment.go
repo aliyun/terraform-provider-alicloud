@@ -20,6 +20,7 @@ func resourceAliyunNetworkAclAttachment() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.124.0 and will be removed in the future. Please use 'resources' in 'alicloud_network_acl' instead.",
 		Schema: map[string]*schema.Schema{
 			"network_acl_id": {
 				Type:     schema.TypeString,

@@ -22,6 +22,8 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		DeprecationMessage: "This resource has been deprecated since v1.272.0 and will be removed in the future. Please use 'alicloud_fcv3_trigger' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"service": {
 				Type:     schema.TypeString,

@@ -21,6 +21,7 @@ func resourceAlicloudCddcDedicatedHostAccount() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.225.1 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"account_name": {
 				Type:         schema.TypeString,

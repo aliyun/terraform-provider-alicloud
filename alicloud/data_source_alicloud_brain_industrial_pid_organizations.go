@@ -12,7 +12,8 @@ import (
 
 func dataSourceAlicloudBrainIndustrialPidOrganizations() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudBrainIndustrialPidOrganizationsRead,
+		Read:               dataSourceAlicloudBrainIndustrialPidOrganizationsRead,
+		DeprecationMessage: "This data source has been deprecated since v1.229.1 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"parent_organization_id": {
 				Type:     schema.TypeString,
