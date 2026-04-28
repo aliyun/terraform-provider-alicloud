@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEaisInstancesDataSource(t *testing.T) {
+func SkipTestAccAlicloudEaisInstancesDataSource(t *testing.T) {
 
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_eais_instances.default"

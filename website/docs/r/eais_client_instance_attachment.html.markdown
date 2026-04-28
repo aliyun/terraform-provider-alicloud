@@ -16,6 +16,8 @@ For information about EAIS Client Instance Attachment and how to use it, see [Wh
 
 -> **NOTE:** Available since v1.246.0.
 
+-> **DEPRECATED:** This resource has been deprecated since v1.278.0.
+
 ## Example Usage
 
 Basic Usage

@@ -18,6 +18,7 @@ func resourceAliCloudEaisInstance() *schema.Resource {
 		Read:   resourceAliCloudEaisInstanceRead,
 		Update: resourceAliCloudEaisInstanceUpdate,
 		Delete: resourceAliCloudEaisInstanceDelete,
+		DeprecationMessage: "This resource has been deprecated since v1.278.0.",
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
