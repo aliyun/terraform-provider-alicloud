@@ -17,7 +17,7 @@ For information about CR Instance and how to use it, see [What is Instance](http
 
 -> **NOTE:** Available since v1.124.0.
 
--> **NOTE:** Internation site only support `Basic` and `Advance` instance types.
+-> **NOTE:** International site only support `Basic` and `Advance` instance types.
 
 ## Example Usage
 
