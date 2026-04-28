@@ -221,7 +221,11 @@ resource "alicloud_cs_kubernetes" "default" {
 * `rds_instances` - (Optional, Available since v1.103.2) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm). Only works for **Create** Operation. 
-* `proxy_mode` - (Optional, ForceNew) Proxy mode is option of kube-proxy. options: iptables | ipvs. default: ipvs.
+* `proxy_mode` - (Optional, ForceNew) kube-proxy proxy mode. Default: `ipvs`. Options: `iptables`, `ipvs`, `nftables`. 
+  * `iptables`: A mature and stable kube-proxy mode. Kubernetes Service discovery and load balancing use iptables rules. Performance is moderate and scales poorly with large numbers of Services. Suitable for clusters with few Services. 
+  * `ipvs`: A high-performance kube-proxy mode. Kubernetes Service discovery and load balancing use the Linux IPVS module. Suitable for clusters with many Services requiring high-performance load balancing. 
+  * `nftables`: A next-generation kube-proxy mode based on Linux nftables for Service discovery and load balancing. It is a modern replacement for iptables, offering better network performance, rule update efficiency, and scalability for large Service counts.
+Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes community deprecated IPVS starting in version 1.35. We recommend using nftables for new clusters to ensure long-term community support.
 * `image_id` - (Optional, ForceNew) Custom Image support. Must be based on AliyunLinux or AliyunLinux3.
 * `cluster_domain` - (Optional, ForceNew, Available since v1.103.2) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
 * `custom_san` - (Optional, ForceNew, Available since v1.103.2) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).

@@ -319,7 +319,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "ipvs",
-				ValidateFunc: StringInSlice([]string{"iptables", "ipvs"}, false),
+				ValidateFunc: StringInSlice([]string{"iptables", "ipvs", "nftables"}, false),
 			},
 			"ip_stack": {
 				Type:         schema.TypeString,
