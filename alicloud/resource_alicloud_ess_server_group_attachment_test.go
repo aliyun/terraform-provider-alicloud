@@ -168,6 +168,55 @@ func TestAccAliCloudEssServerGroupAttachment_basic_nlb(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudEssServerGroupAttachment_basic_gwlb(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_server_group_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+
+	basicMap := map[string]string{
+		"scaling_group_id": CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroupServerGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssScalingGroupServerGroupForGwlb)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssServerGroupsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"depends_on":       []string{"alicloud_ess_scaling_configuration.default"},
+					"force_attach":     true,
+					"type":             "GWLB",
+					"server_group_id":  "${alicloud_gwlb_server_group.default.id}",
+					"scaling_group_id": "${alicloud_ess_scaling_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"id":               CHECKSET,
+						"type":             "GWLB",
+						"server_group_id":  CHECKSET,
+						"scaling_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_attach"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_nlb(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_server_group_attachment.default"
@@ -521,6 +570,56 @@ func testAccEssScalingGroupServerGroup(name string) string {
 		  cookie                 = "tf-testAcc"
 		  sticky_session_type    = "Server"
 	  }
+	}
+	`, EcsInstanceCommonTestCase, name)
+}
+
+func testAccEssScalingGroupServerGroupForGwlb(name string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "%s"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "0"
+	  max_size = "2"
+      default_cooldown = 200
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	data "alicloud_images" "default2" {
+		name_regex  = "^win"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_instance_types" "c6" {
+      instance_type_family = "ecs.n4"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+	data "alicloud_resource_manager_resource_groups" "default" {}
+	
+	resource "alicloud_ess_scaling_configuration" "default" {
+		scaling_group_id = alicloud_ess_scaling_group.default.id
+		image_id = data.alicloud_images.default2.images[0].id
+		instance_type = data.alicloud_instance_types.c6.instance_types[0].id
+		security_group_id = alicloud_security_group.default.id
+		force_delete = true
+		active = true
+		enable = true
+	}
+	resource "alicloud_gwlb_server_group" "default" {
+	  scheduler = "5TCH"
+	  protocol          = "GENEVE"
+	  server_group_type = "Instance"
+	  connection_drain_config {
+		connection_drain_enabled = true
+		connection_drain_timeout = "1"
+	  }
+	  vpc_id = alicloud_vpc.default.id
+	  server_group_name = format("%%s4", var.name)
 	}
 	`, EcsInstanceCommonTestCase, name)
 }

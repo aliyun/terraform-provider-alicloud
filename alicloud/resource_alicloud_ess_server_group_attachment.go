@@ -40,18 +40,18 @@ func resourceAliCloudEssServerGroupAttachment() *schema.Resource {
 			"port": {
 				Type:     schema.TypeInt,
 				ForceNew: true,
-				Required: true,
+				Optional: true,
 			},
 			"type": {
 				Type:         schema.TypeString,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ALB", "NLB"}, false),
+				ValidateFunc: StringInSlice([]string{"ALB", "NLB", "GWLB"}, false),
 				Required:     true,
 			},
 			"weight": {
 				Type:     schema.TypeInt,
 				ForceNew: true,
-				Required: true,
+				Optional: true,
 			},
 			"force_attach": {
 				Type:     schema.TypeBool,
@@ -67,18 +67,35 @@ func resourceAliyunEssServerGroupAttachmentCreate(d *schema.ResourceData, meta i
 	typeAttribute := d.Get("type").(string)
 	port := strconv.Itoa(formatInt(d.Get("port")))
 
+	if typeAttribute == "GWLB" {
+		if _, ok := d.GetOkExists("weight"); ok {
+			return WrapError(Error("When the type is set to GWLB, both weight and port are prohibited. Please remove the configurations for weight and port!"))
+		}
+		if _, ok := d.GetOkExists("port"); ok {
+			return WrapError(Error("When the type is set to GWLB, both weight and port are prohibited. Please remove the configurations for weight and port!"))
+		}
+	}
+
 	client := meta.(*connectivity.AliyunClient)
 	request := ess.CreateAttachServerGroupsRequest()
 	request.RegionId = client.RegionId
 	request.ScalingGroupId = scalingGroupId
 	request.ForceAttach = requests.NewBoolean(d.Get("force_attach").(bool))
 	attachScalingGroupServerGroups := make([]ess.AttachServerGroupsServerGroup, 0)
-	attachScalingGroupServerGroups = append(attachScalingGroupServerGroups, ess.AttachServerGroupsServerGroup{
-		ServerGroupId: serverGroupId,
-		Port:          port,
-		Weight:        strconv.Itoa(formatInt(d.Get("weight"))),
-		Type:          typeAttribute,
-	})
+	if typeAttribute == "GWLB" {
+		attachScalingGroupServerGroups = append(attachScalingGroupServerGroups, ess.AttachServerGroupsServerGroup{
+			ServerGroupId: serverGroupId,
+			Type:          typeAttribute,
+		})
+	} else {
+		attachScalingGroupServerGroups = append(attachScalingGroupServerGroups, ess.AttachServerGroupsServerGroup{
+			ServerGroupId: serverGroupId,
+			Port:          port,
+			Weight:        strconv.Itoa(formatInt(d.Get("weight"))),
+			Type:          typeAttribute,
+		})
+	}
+
 	request.ServerGroup = &attachScalingGroupServerGroups
 	wait := incrementalWait(1*time.Second, 2*time.Second)
 
@@ -133,14 +150,24 @@ func resourceAliyunEssServerGroupAttachmentRead(d *schema.ResourceData, meta int
 	}
 
 	for _, v := range object.ServerGroups.ServerGroup {
-		if v.ServerGroupId == serverGroupId && v.Port == formatInt(port) && v.Type == typeAttribute {
-			d.Set("scaling_group_id", object.ScalingGroupId)
-			d.Set("type", v.Type)
-			d.Set("server_group_id", v.ServerGroupId)
-			d.Set("weight", v.Weight)
-			d.Set("port", v.Port)
-			return nil
+		if v.Type == "GWLB" {
+			if v.ServerGroupId == serverGroupId && v.Type == typeAttribute {
+				d.Set("scaling_group_id", object.ScalingGroupId)
+				d.Set("type", v.Type)
+				d.Set("server_group_id", v.ServerGroupId)
+				return nil
+			}
+		} else {
+			if v.ServerGroupId == serverGroupId && v.Port == formatInt(port) && v.Type == typeAttribute {
+				d.Set("scaling_group_id", object.ScalingGroupId)
+				d.Set("type", v.Type)
+				d.Set("server_group_id", v.ServerGroupId)
+				d.Set("weight", v.Weight)
+				d.Set("port", v.Port)
+				return nil
+			}
 		}
+
 	}
 	return WrapErrorf(NotFoundErr("ServerGroup", d.Id()), NotFoundMsg, ProviderERROR)
 }
@@ -155,11 +182,18 @@ func resourceAliyunEssServerGroupAttachmentDelete(d *schema.ResourceData, meta i
 	request.ScalingGroupId = scalingGroupId
 	request.ForceDetach = requests.NewBoolean(d.Get("force_attach").(bool))
 	detachScalingGroupServerGroups := make([]ess.DetachServerGroupsServerGroup, 0)
-	detachScalingGroupServerGroups = append(detachScalingGroupServerGroups, ess.DetachServerGroupsServerGroup{
-		ServerGroupId: serverGroupId,
-		Port:          port,
-		Type:          typeAttribute,
-	})
+	if typeAttribute == "GWLB" {
+		detachScalingGroupServerGroups = append(detachScalingGroupServerGroups, ess.DetachServerGroupsServerGroup{
+			ServerGroupId: serverGroupId,
+			Type:          typeAttribute,
+		})
+	} else {
+		detachScalingGroupServerGroups = append(detachScalingGroupServerGroups, ess.DetachServerGroupsServerGroup{
+			ServerGroupId: serverGroupId,
+			Port:          port,
+			Type:          typeAttribute,
+		})
+	}
 	request.ServerGroup = &detachScalingGroupServerGroups
 
 	activityId := ""
