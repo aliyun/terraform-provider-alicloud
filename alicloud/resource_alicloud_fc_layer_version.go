@@ -24,6 +24,7 @@ func resourceAlicloudFcLayerVersion() *schema.Resource {
 			Create: schema.DefaultTimeout(1 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.272.0 and will be removed in the future. Please use FCV3 layer resources instead.",
 		Schema: map[string]*schema.Schema{
 			"acl": {
 				Computed: true,

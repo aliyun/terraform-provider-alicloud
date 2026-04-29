@@ -16,6 +16,8 @@ func resourceAlicloudDnsGroup() *schema.Resource {
 		Update: resourceAlicloudDnsGroupUpdate,
 		Delete: resourceAlicloudDnsGroupDelete,
 
+		DeprecationMessage: "This resource has been deprecated since v1.84.0 and will be removed in the future. Please use 'alicloud_alidns_domain_group' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,

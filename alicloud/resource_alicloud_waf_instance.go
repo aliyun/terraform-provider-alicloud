@@ -19,6 +19,7 @@ func resourceAlicloudWafInstance() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.211.0 and will be removed in the future. Please use 'alicloud_wafv3_instance' instead.",
 		Schema: map[string]*schema.Schema{
 			"big_screen": {
 				Type:     schema.TypeString,

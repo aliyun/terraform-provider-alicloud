@@ -11,7 +11,8 @@ import (
 
 func dataSourceAlicloudBrainIndustrialService() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudBrainIndustrialServiceRead,
+		Read:               dataSourceAlicloudBrainIndustrialServiceRead,
+		DeprecationMessage: "This data source has been deprecated since v1.229.1 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"enable": {
 				Type:         schema.TypeString,

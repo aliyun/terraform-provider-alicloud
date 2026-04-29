@@ -20,6 +20,8 @@ func resourceAlicloudRouterInterfaceConnection() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		DeprecationMessage: "This resource has been deprecated since v1.199.0 and will be removed in the future. Please use 'alicloud_express_connect_router_interface' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"interface_id": {
 				Type:     schema.TypeString,

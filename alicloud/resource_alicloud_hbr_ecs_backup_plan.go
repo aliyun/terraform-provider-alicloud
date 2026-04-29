@@ -21,6 +21,7 @@ func resourceAlicloudHbrEcsBackupPlan() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.249.0 and will be removed in the future. Please use 'alicloud_hbr_policy' and 'alicloud_hbr_policy_binding' instead.",
 		Schema: map[string]*schema.Schema{
 			"ecs_backup_plan_name": {
 				Type:     schema.TypeString,

@@ -29,6 +29,8 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
+		DeprecationMessage: "This resource has been deprecated since v1.204.0 and will be removed in the future. Please use 'alicloud_emrv2_cluster' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,

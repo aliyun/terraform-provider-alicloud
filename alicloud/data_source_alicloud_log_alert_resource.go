@@ -15,7 +15,8 @@ import (
 
 func dataSourceAlicloudLogAlertResource() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudLogAlertResourceRead,
+		Read:               dataSourceAlicloudLogAlertResourceRead,
+		DeprecationMessage: "This data source has been deprecated since v1.219.0 and will be removed in the future. Please use 'alicloud_log_alert_resource' resource instead.",
 		Schema: map[string]*schema.Schema{
 			"type": {
 				Type:         schema.TypeString,

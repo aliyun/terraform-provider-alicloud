@@ -14,7 +14,8 @@ import (
 
 func dataSourceAlicloudArmsRemoteWrites() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudArmsRemoteWritesRead,
+		Read:               dataSourceAlicloudArmsRemoteWritesRead,
+		DeprecationMessage: "This data source has been deprecated since v1.228.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,

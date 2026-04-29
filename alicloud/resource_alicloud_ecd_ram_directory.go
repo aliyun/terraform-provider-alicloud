@@ -24,6 +24,7 @@ func resourceAlicloudEcdRamDirectory() *schema.Resource {
 			Create: schema.DefaultTimeout(1 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.239.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"desktop_access_type": {
 				Type:         schema.TypeString,

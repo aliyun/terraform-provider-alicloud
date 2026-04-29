@@ -19,6 +19,7 @@ func resourceAliCloudEventBridgeEventSource() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.269.0 and will be removed in the future. Please use 'alicloud_event_bridge_event_source_v2' instead.",
 		Schema: map[string]*schema.Schema{
 			"event_bus_name": {
 				Type:     schema.TypeString,

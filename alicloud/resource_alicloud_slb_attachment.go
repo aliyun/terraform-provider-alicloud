@@ -22,6 +22,8 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		DeprecationMessage: "This resource has been deprecated since v1.153.0 and will be removed in the future. Please use 'alicloud_slb_backend_server' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"load_balancer_id": {
 				Type:     schema.TypeString,

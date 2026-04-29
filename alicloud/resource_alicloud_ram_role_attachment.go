@@ -15,6 +15,8 @@ func resourceAlicloudRamRoleAttachment() *schema.Resource {
 		Read:   resourceAlicloudInstanceRoleAttachmentRead,
 		Delete: resourceAlicloudInstanceRoleAttachmentDelete,
 
+		DeprecationMessage: "This resource has been deprecated since v1.250.0 and will be removed in the future. Please use 'alicloud_ecs_ram_role_attachment' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"role_name": {
 				Type:     schema.TypeString,

@@ -22,6 +22,8 @@ func resourceAlicloudDnsRecord() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		DeprecationMessage: "This resource has been deprecated since v1.85.0 and will be removed in the future. Please use 'alicloud_alidns_record' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,

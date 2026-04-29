@@ -12,7 +12,8 @@ import (
 
 func dataSourceAlicloudCassandraBackupPlans() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCassandraBackupPlansRead,
+		Read:               dataSourceAlicloudCassandraBackupPlansRead,
+		DeprecationMessage: "This data source has been deprecated since v1.220.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"cluster_id": {
 				Type:     schema.TypeString,

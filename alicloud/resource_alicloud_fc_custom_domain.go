@@ -20,6 +20,7 @@ func resourceAlicloudFCCustomDomain() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.272.0 and will be removed in the future. Please use 'alicloud_fcv3_custom_domain' instead.",
 		Schema: map[string]*schema.Schema{
 			"domain_name": {
 				Type:     schema.TypeString,

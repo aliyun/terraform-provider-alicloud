@@ -20,6 +20,7 @@ func resourceAlicloudScdnDomainConfig() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.219.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"config_id": {
 				Type:     schema.TypeString,

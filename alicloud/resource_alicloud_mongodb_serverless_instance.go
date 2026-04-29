@@ -25,6 +25,7 @@ func resourceAlicloudMongodbServerlessInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
 		},
+		DeprecationMessage: "This resource has been deprecated since v1.214.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"account_password": {
 				Type:         schema.TypeString,

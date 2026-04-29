@@ -14,6 +14,8 @@ func dataSourceAlicloudRouterInterfaces() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudRouterInterfacesRead,
 
+		DeprecationMessage: "This data source has been deprecated since v1.199.0 and will be removed in the future. Please use 'alicloud_express_connect_router_interfaces' instead.",
+
 		Schema: map[string]*schema.Schema{
 			"status": {
 				Type:         schema.TypeString,

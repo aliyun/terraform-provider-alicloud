@@ -14,7 +14,8 @@ import (
 
 func dataSourceAlicloudRdcOrganizations() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudRdcOrganizationsRead,
+		Read:               dataSourceAlicloudRdcOrganizationsRead,
+		DeprecationMessage: "This data source has been deprecated since v1.238.0 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
