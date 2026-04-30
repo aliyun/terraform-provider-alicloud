@@ -133,8 +133,8 @@ The following arguments are supported:
 * `scaling_group_id` - (Required, ForceNew) ID of the scaling group.
 * `server_group_id` - (Required, ForceNew) ID of Server Group.
 * `type` - (Required, ForceNew) The type of server group N. Valid values: ALB, NLB.
-* `port` - (Required, ForceNew) - The port will be used for Server Group backend server.
-* `weight` - (Required, ForceNew) The weight of an ECS instance attached to the Server Group.
+* `port` - (Required, Optional, ForceNew) - The port will be used for Server Group backend server.
+* `weight` - (Required, Optional, ForceNew) The weight of an ECS instance attached to the Server Group.
 * `force_attach` - (Optional) If instances of scaling group are attached/removed from backend server when
   server group from scaling group. Default to false.
 
