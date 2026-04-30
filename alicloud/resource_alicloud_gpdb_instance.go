@@ -65,7 +65,7 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 			"instance_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"2C16G", "4C32G", "16C128G", "2C8G", "4C16G", "8C32G", "16C64G"}, false),
+				ValidateFunc: StringInSlice([]string{"2C16G", "4C32G", "16C128G", "2C8G", "4C16G", "8C32G", "8C64G", "16C64G", "32C256G", "64C512G", "96C768G", "128C1024G"}, false),
 			},
 			"storage_size": {
 				Type:     schema.TypeInt,
