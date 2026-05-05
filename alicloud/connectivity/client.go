@@ -1,6 +1,7 @@
 package connectivity
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -65,6 +66,8 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	slsutil "github.com/aliyun/aliyun-log-go-sdk/util"
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
+	ossv2 "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
+	ossv2cred "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
@@ -98,6 +101,7 @@ type AliyunClient struct {
 	slbconn                      *slb.Client
 	alikafkaconn                 *alikafka.Client
 	ossconn                      *oss.Client
+	ossconnV2                    *ossv2.Client
 	dnsconn                      *alidns.Client
 	ramconn                      *ram.Client
 	csconn                       *cs.Client
@@ -582,6 +586,48 @@ func (client *AliyunClient) WithOssBucketByName(bucketName string, do func(*oss.
 		}
 		return do(bucket)
 	})
+}
+
+func (client *AliyunClient) WithOssClientV2(do func(*ossv2.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	if client.ossconnV2 != nil && !client.config.needRefreshCredential() {
+		return do(client.ossconnV2)
+	}
+	product := "oss"
+	endpoint, err := client.loadApiEndpoint(product)
+	if err != nil {
+		return nil, err
+	}
+	schma := strings.ToLower(client.config.Protocol)
+	if !strings.HasPrefix(endpoint, "http") {
+		endpoint = fmt.Sprintf("%s://%s", schma, endpoint)
+	}
+
+	cfg := ossv2.LoadDefaultConfig().
+		WithRegion(client.config.RegionId).
+		WithEndpoint(endpoint).
+		WithCredentialsProvider(&ossV2CredentialsProvider{client: client}).
+		WithUserAgent(client.config.getUserAgent())
+
+	if proxy, perr := client.getHttpProxy(); perr == nil && proxy != nil {
+		if skip, _ := client.skipProxy(endpoint); !skip {
+			cfg = cfg.WithProxyHost(proxy.String())
+		}
+	}
+
+	if ossV, ok := client.config.SignVersion.Load("oss"); ok {
+		switch fmt.Sprintf("%v", ossV) {
+		case "v4":
+			cfg = cfg.WithSignatureVersion(ossv2.SignatureVersionV4)
+		case "v1":
+			cfg = cfg.WithSignatureVersion(ossv2.SignatureVersionV1)
+		}
+	}
+
+	client.ossconnV2 = ossv2.NewClient(cfg)
+	return do(client.ossconnV2)
 }
 
 func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
@@ -2850,6 +2896,19 @@ type ossCredentialsProvider struct {
 
 func (defBuild *ossCredentialsProvider) GetCredentials() oss.Credentials {
 	return &ossCredentials{client: defBuild.client}
+}
+
+type ossV2CredentialsProvider struct {
+	client *AliyunClient
+}
+
+func (p *ossV2CredentialsProvider) GetCredentials(_ context.Context) (ossv2cred.Credentials, error) {
+	ak, sk, token := p.client.config.GetRefreshCredential()
+	return ossv2cred.Credentials{
+		AccessKeyID:     ak,
+		AccessKeySecret: sk,
+		SecurityToken:   token,
+	}, nil
 }
 
 func (client *AliyunClient) GetRetryTimeout(defaultTimeout time.Duration) time.Duration {
