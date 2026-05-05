@@ -95,6 +95,8 @@ The following arguments are supported:
 * `expires` - (Optional) Specifies expire date for the the request/response. Read [RFC2616 Expires](https://www.ietf.org/rfc/rfc2616.txt) for further details.
 * `server_side_encryption` - (Optional) Specifies server-side encryption of the object in OSS. Valid values are `AES256`, `KMS`. Default value is `AES256`.
 * `kms_key_id` - (Optional, Available in 1.62.1+) Specifies the primary key managed by KMS. This parameter is valid when the value of `server_side_encryption` is set to KMS.
+* `object_worm_mode` - (Optional, Available in 1.278.0+) The retention mode of the object worm policy. Valid value: `COMPLIANCE`. Must be set together with `object_worm_retain_until_date`. The bucket must have object worm enabled. Updating only this attribute (or `object_worm_retain_until_date`) calls `PutObjectRetention` and does not re-upload the object.
+* `object_worm_retain_until_date` - (Optional, Available in 1.278.0+) The UTC time at which the object retention expires, in ISO8601 format with millisecond precision (for example `2026-09-30T00:00:00.000Z`). Must be set together with `object_worm_mode`.
 
 Either `source` or `content` must be provided to specify the bucket content.
 These two arguments are mutually-exclusive.

@@ -2,12 +2,14 @@ package alicloud
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"strings"
 	"time"
 
+	ossv2 "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -17,9 +19,9 @@ import (
 
 func resourceAlicloudOssBucketObject() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudOssBucketObjectPut,
+		Create: resourceAlicloudOssBucketObjectCreate,
 		Read:   resourceAlicloudOssBucketObjectRead,
-		Update: resourceAlicloudOssBucketObjectPut,
+		Update: resourceAlicloudOssBucketObjectUpdate,
 		Delete: resourceAlicloudOssBucketObjectDelete,
 
 		Schema: map[string]*schema.Schema{
@@ -107,6 +109,40 @@ func resourceAlicloudOssBucketObject() *schema.Resource {
 				},
 			},
 
+			"object_worm_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"COMPLIANCE"}, false),
+				RequiredWith: []string{"object_worm_retain_until_date"},
+			},
+
+			"object_worm_retain_until_date": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				RequiredWith: []string{"object_worm_mode"},
+				// OSS expects ISO8601 with millisecond precision, e.g.
+				// "2026-09-30T00:00:00.000Z". The second-precision form
+				// is also accepted by the server, which normalizes it to
+				// millisecond precision on read; suppress diff when both
+				// values represent the same instant either way.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if old == "" || new == "" {
+						return false
+					}
+					oldT, err := time.Parse(time.RFC3339, old)
+					if err != nil {
+						return false
+					}
+					newT, err := time.Parse(time.RFC3339, new)
+					if err != nil {
+						return false
+					}
+					return oldT.Equal(newT)
+				},
+			},
+
 			"etag": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -120,7 +156,54 @@ func resourceAlicloudOssBucketObject() *schema.Resource {
 	}
 }
 
-func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudOssBucketObjectCreate(d *schema.ResourceData, meta interface{}) error {
+	return resourceAlicloudOssBucketObjectUpload(d, meta)
+}
+
+func resourceAlicloudOssBucketObjectUpdate(d *schema.ResourceData, meta interface{}) error {
+	if hasObjectContentChanges(d) {
+		return resourceAlicloudOssBucketObjectUpload(d, meta)
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+	bucket := d.Get("bucket").(string)
+	key := d.Get("key").(string)
+
+	if d.HasChange("acl") {
+		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			b, err := ossClient.Bucket(bucket)
+			if err != nil {
+				return nil, err
+			}
+			return nil, b.SetObjectACL(key, oss.ACLType(d.Get("acl").(string)))
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetObjectACL", AliyunOssGoSdk)
+		}
+	}
+
+	if d.HasChange("object_worm_mode") || d.HasChange("object_worm_retain_until_date") {
+		mode := d.Get("object_worm_mode").(string)
+		until := d.Get("object_worm_retain_until_date").(string)
+		_, err := client.WithOssClientV2(func(c *ossv2.Client) (interface{}, error) {
+			return c.PutObjectRetention(context.Background(), &ossv2.PutObjectRetentionRequest{
+				Bucket: ossv2.Ptr(bucket),
+				Key:    ossv2.Ptr(key),
+				Retention: &ossv2.ObjectWormRetention{
+					Mode:            ossv2.Ptr(mode),
+					RetainUntilDate: ossv2.Ptr(until),
+				},
+			})
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PutObjectRetention", AliyunOssGoSdk)
+		}
+	}
+
+	return resourceAlicloudOssBucketObjectRead(d, meta)
+}
+
+func resourceAlicloudOssBucketObjectUpload(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var requestInfo *oss.Client
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
@@ -152,6 +235,8 @@ func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}
 
 	key := d.Get("key").(string)
 	options, err := buildObjectHeaderOptions(d)
+
+	options = append(options, buildObjectWormOptions(d)...)
 
 	if v, ok := d.GetOk("server_side_encryption"); ok {
 		options = append(options, oss.ServerSideEncryption(v.(string)))
@@ -218,6 +303,8 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 	d.Set("expires", object.Get("Expires"))
 	d.Set("etag", strings.Trim(object.Get("ETag"), `"`))
 	d.Set("version_id", object.Get("x-oss-version-id"))
+	d.Set("object_worm_mode", object.Get("x-oss-object-worm-mode"))
+	d.Set("object_worm_retain_until_date", object.Get("x-oss-object-worm-retain-until-date"))
 
 	return nil
 }
@@ -246,6 +333,26 @@ func resourceAlicloudOssBucketObjectDelete(d *schema.ResourceData, meta interfac
 
 	return WrapError(ossService.WaitForOssBucketObject(bucket, d.Id(), Deleted, DefaultTimeoutMedium))
 
+}
+
+func hasObjectContentChanges(d *schema.ResourceData) bool {
+	for _, k := range []string{
+		"source",
+		"content",
+		"content_type",
+		"cache_control",
+		"content_disposition",
+		"content_encoding",
+		"content_md5",
+		"expires",
+		"server_side_encryption",
+		"kms_key_id",
+	} {
+		if d.HasChange(k) {
+			return true
+		}
+	}
+	return false
 }
 
 func buildObjectHeaderOptions(d *schema.ResourceData) (options []oss.Option, err error) {
@@ -287,4 +394,21 @@ func buildObjectHeaderOptions(d *schema.ResourceData) (options []oss.Option, err
 		log.Printf("[WARN] Object header options is nil.")
 	}
 	return options, nil
+}
+
+// buildObjectWormOptions returns the worm-related headers for a PutObject
+// call. These MUST NOT be sent on HEAD/GET (e.g. GetObjectDetailedMeta in
+// Read), because OSS validates "x-oss-object-worm-retain-until-date" must
+// be in the future on every request that carries it — and Read is naturally
+// invoked long after the original retention has expired, which would then
+// fail with InvalidArgument and break refresh forever.
+func buildObjectWormOptions(d *schema.ResourceData) []oss.Option {
+	var options []oss.Option
+	if v, ok := d.GetOk("object_worm_mode"); ok {
+		options = append(options, oss.SetHeader("x-oss-object-worm-mode", v.(string)))
+	}
+	if v, ok := d.GetOk("object_worm_retain_until_date"); ok {
+		options = append(options, oss.SetHeader("x-oss-object-worm-retain-until-date", v.(string)))
+	}
+	return options
 }

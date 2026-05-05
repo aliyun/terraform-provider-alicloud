@@ -42,6 +42,7 @@ require (
 	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
 	github.com/alibabacloud-go/sts-20150401/v2 v2.0.2
 	github.com/alibabacloud-go/tea-utils/v2 v2.0.7
+	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.5.0
 	github.com/blues/jsonata-go v1.5.4
 	github.com/hashicorp/errwrap v1.1.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
