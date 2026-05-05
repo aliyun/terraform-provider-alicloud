@@ -190,7 +190,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "AliyunLinux Qboot", "ContainerOS", "AliyunLinuxSecurity", "Ubuntu", "AliyunLinux3ContainerOptimized", "Custom", "AliyunLinux4ContainerOptimized"}, false),
+				ValidateFunc: StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "AliyunLinux Qboot", "ContainerOS", "AliyunLinuxSecurity", "Ubuntu", "AliyunLinux3ContainerOptimized", "Custom", "AliyunLinux4ContainerOptimized", "AliyunLinux4", "AliyunLinux4Arm64", "AliyunLinux4Security"}, false),
 			},
 			"install_cloud_monitor": {
 				Type:     schema.TypeBool,

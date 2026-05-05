@@ -690,11 +690,16 @@ The following arguments are supported:
   - `CentOS` : CentOS image.
   - `Windows` : Windows image.
   - `WindowsCore` : WindowsCore image.
+  - `AliyunLinux Qboot` : AliyunLinux Qboot fast-boot image.
   - `ContainerOS` : container-optimized image.
+  - `AliyunLinuxSecurity` : Alinux security-hardened image.
   - `Ubuntu`: Ubuntu image.
   - `AliyunLinux3ContainerOptimized`: Alinux3 container-optimized image.
   - `Custom`：Custom image.
   - `AliyunLinux4ContainerOptimized`：Alinux4 container-optimized image.
+  - `AliyunLinux4`: Alinux4 image.
+  - `AliyunLinux4Arm64`: Alinux4 mirror ARM version.
+  - `AliyunLinux4Security`: Alinux4 security-hardened image.
 * `install_cloud_monitor` - (Optional) Whether to install cloud monitoring on the ECS node. After installation, you can view the monitoring information of the created ECS instance in the cloud monitoring console and recommend enable it. Default value: `false`. Valid values:
   - `true` : install cloud monitoring on the ECS node.
   - `false` : does not install cloud monitoring on the ECS node.
