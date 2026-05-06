@@ -97,7 +97,7 @@ func testSweepSasGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSASGroup_basic0(t *testing.T) {
+func TestAccAliCloudSASGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_security_center_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudSASGroupMap0)

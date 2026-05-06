@@ -1311,7 +1311,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("tags", ecsService.tagsToMap(instance.Tags.Tag))
 	d.Set("hpc_cluster_id", instance.HpcClusterId)
 	d.Set("deployment_set_id", instance.DeploymentSetId)
-	d.Set("deployment_set_group_no", instance.DeploymentSetGroupNo)
+	d.Set("deployment_set_group_no", fmt.Sprintf("%v", instance.DeploymentSetGroupNo))
 	d.Set("stopped_mode", instance.StoppedMode)
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])

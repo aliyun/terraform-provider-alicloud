@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudDdosBasicDefenseThreshold_basic0(t *testing.T) {
+func TestAccAliCloudDdosBasicDefenseThreshold_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_basic_defense_threshold.default"
 	checkoutSupportedRegions(t, true, connectivity.DdosBasicSupportRegions)

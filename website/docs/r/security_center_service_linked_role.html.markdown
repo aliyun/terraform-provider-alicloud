@@ -40,15 +40,15 @@ resource "alicloud_security_center_service_linked_role" "service_linked_role" {
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the DataSource. The value is same as `product_name`. Valid Value: `AliyunServiceRolePolicyForSas`.
+* `id` - The ID of the DataSource. Valid Value: `AliyunServiceRolePolicyForSas`.
 * `status` - The status of the service Associated role. Valid Values: `true`: Created. `false`: not created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when create the Slr.
-* `delete` - (Defaults to 1 mins, Available since v1.163.0) Used when delete the Slr.
+* `create` - (Defaults to 1 min) Used when create the Slr.
+* `delete` - (Defaults to 1 min, Available since v1.163.0) Used when delete the Slr.
 
 ## Import
 
