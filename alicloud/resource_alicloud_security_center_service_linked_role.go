@@ -74,7 +74,6 @@ func resourceAlicloudSecurityCenterServiceLinkedRoleRead(d *schema.ResourceData,
 		}
 		return WrapError(err)
 	}
-	d.Set("product_name", d.Id())
 	d.Set("status", object["Status"])
 	return nil
 }

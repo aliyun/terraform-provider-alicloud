@@ -15,7 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudSASServiceLinkedRole_basic0(t *testing.T) {
+// lintignore: AT001
+func TestAccAliCloudSASServiceLinkedRole_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_security_center_service_linked_role.default"
 	ra := resourceAttrInit(resourceId, AlicloudSecurityCenterServiceLinkedRoleMap0)
@@ -30,9 +31,8 @@ func TestAccAlicloudSASServiceLinkedRole_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{}),

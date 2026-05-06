@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudCloudauthFaceConfig_basic0(t *testing.T) {
+func TestAccAliCloudCloudauthFaceConfig_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloudauth_face_config.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudauthFaceConfigMap0)

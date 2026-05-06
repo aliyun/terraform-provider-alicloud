@@ -112,7 +112,7 @@ func testSweepDbauditInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
+func TestAccAliCloudYundunDbauditInstance_basic(t *testing.T) {
 	var v yundun_dbaudit.Instance
 	resourceId := "alicloud_yundun_dbaudit_instance.default"
 	ra := resourceAttrInit(resourceId, dbauditInstanceBasicMap)

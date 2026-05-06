@@ -151,7 +151,6 @@ func resourceAlicloudDbauditInstanceRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("description", instance["Description"])
 	d.Set("plan_code", instance["LicenseCode"])
-	d.Set("region_id", client.RegionId)
 	d.Set("vswitch_id", instance["VswitchId"])
 
 	tags, err := dbauditService.DescribeTags(d.Id(), "INSTANCE")
@@ -165,8 +164,6 @@ func resourceAlicloudDbauditInstanceRead(d *schema.ResourceData, meta interface{
 func resourceAlicloudDbauditInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dbauditService := DbauditService{client}
-
-	d.Partial(true)
 
 	if d.HasChange("tags") {
 		if err := dbauditService.setInstanceTags(d, "INSTANCE"); err != nil {
@@ -187,7 +184,6 @@ func resourceAlicloudDbauditInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.IsNewResource() {
-		d.Partial(false)
 		return resourceAlicloudDbauditInstanceRead(d, meta)
 	}
 
@@ -201,7 +197,6 @@ func resourceAlicloudDbauditInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	d.Partial(false)
 	// wait for order complete
 	return resourceAlicloudDbauditInstanceRead(d, meta)
 }
