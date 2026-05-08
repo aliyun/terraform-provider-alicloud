@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -47,7 +48,7 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bucket":       "${alicloud_oss_bucket.default.bucket}",
+					"bucket":       "${alicloud_oss_bucket_public_access_block.default.bucket}",
 					"key":          "test-object-source-key",
 					"source":       tmpFile.Name(),
 					"content_type": "binary/octet-stream",
@@ -96,7 +97,7 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bucket":                 "${alicloud_oss_bucket.default.bucket}",
+					"bucket":                 "${alicloud_oss_bucket_public_access_block.default.bucket}",
 					"server_side_encryption": "AES256",
 					"kms_key_id":             REMOVEKEY,
 					"key":                    "test-object-source-key",
@@ -122,11 +123,140 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketObject_worm(t *testing.T) {
+	tmpFile, err := ioutil.TempFile("", "tf-oss-object-worm-source")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if err := ioutil.WriteFile(tmpFile.Name(), []byte("worm content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var v http.Header
+	resourceId := "alicloud_oss_bucket_object.default"
+	ra := resourceAttrInit(resourceId, ossBucketObjectBasicMap)
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-object-worm-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketObjectVersioningDependence)
+
+	// Retention windows are computed at test start. They must satisfy two
+	// conflicting constraints:
+	//   1. They must still be in the future when the corresponding Apply
+	//      reaches the OSS API — otherwise OSS rejects with
+	//      "The retain until date must be in the future."
+	//   2. They must have expired by the time the test framework destroys
+	//      the object — otherwise DeleteObject is blocked by COMPLIANCE.
+	// 60s/90s gives Step 0 (bucket + worm config + object create) and
+	// Step 1 (extend) ample time, and the final Check below sleeps past
+	// extendedUntil so destroy can succeed without retries.
+	//
+	// The OSS retain-until-date parameter is ISO8601 with millisecond
+	// precision (e.g. 2026-09-30T00:00:00.000Z). Use the same layout so
+	// testCheck's literal string compare matches what OSS echoes back.
+	const iso8601Ms = "2006-01-02T15:04:05.000Z"
+	initialUntil := time.Now().UTC().Add(60 * time.Second).Format(iso8601Ms)
+	extendedUntilTime := time.Now().UTC().Add(90 * time.Second)
+	extendedUntil := extendedUntilTime.Format(iso8601Ms)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:      func() { testAccPreCheck(t) },
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckAlicloudOssBucketObjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				// The bucket field references
+				// alicloud_oss_bucket_object_worm_configuration so that the
+				// object is created only after object-level worm has been
+				// enabled on the bucket — without this, PutObject would be
+				// rejected because the worm header is not yet accepted.
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":                        "${alicloud_oss_bucket_object_worm_configuration.default.bucket_name}",
+					"key":                           "test-object-worm-key",
+					"source":                        tmpFile.Name(),
+					"content_type":                  "binary/octet-stream",
+					"object_worm_mode":              "COMPLIANCE",
+					"object_worm_retain_until_date": initialUntil,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudOssBucketObjectExists(resourceId, name, v),
+					testAccCheck(map[string]string{
+						"bucket":                        name,
+						"key":                           "test-object-worm-key",
+						"object_worm_mode":              "COMPLIANCE",
+						"object_worm_retain_until_date": initialUntil,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":                        "${alicloud_oss_bucket_object_worm_configuration.default.bucket_name}",
+					"key":                           "test-object-worm-key",
+					"source":                        tmpFile.Name(),
+					"content_type":                  "binary/octet-stream",
+					"object_worm_mode":              "COMPLIANCE",
+					"object_worm_retain_until_date": extendedUntil,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudOssBucketObjectExists(resourceId, name, v),
+					testAccCheck(map[string]string{
+						"object_worm_retain_until_date": extendedUntil,
+					}),
+					// Block until the retention has expired so the framework
+					// can DeleteObject during destroy without hitting the
+					// COMPLIANCE-mode worm.
+					func(s *terraform.State) error {
+						wait := time.Until(extendedUntilTime) + 10*time.Second
+						if wait > 0 {
+							t.Logf("waiting %v for object worm retention to expire before destroy", wait)
+							time.Sleep(wait)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func resourceOssBucketObjectConfigDependence(name string) string {
 
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "default" {
 	bucket = "%s"
+}
+resource "alicloud_oss_bucket_public_access_block" "default" {
+	bucket              = alicloud_oss_bucket.default.bucket
+	block_public_access = false
+}
+data "alicloud_kms_keys" "enabled" {
+	status = "Enabled"
+}
+`, name)
+}
+
+// resourceOssBucketObjectVersioningDependence is like
+// resourceOssBucketObjectConfigDependence but tailored for the worm test:
+// bucket versioning is enabled (a prerequisite for object-level worm),
+// force_destroy = true so DeleteBucket can clean up the original versions
+// (DeleteObject on a versioned bucket only writes a delete marker), and an
+// alicloud_oss_bucket_object_worm_configuration resource turns on
+// object-level worm so PutObject accepts x-oss-object-worm-* headers.
+func resourceOssBucketObjectVersioningDependence(name string) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "default" {
+	bucket = "%s"
+	force_destroy = true
+	versioning {
+		status = "Enabled"
+	}
+}
+resource "alicloud_oss_bucket_object_worm_configuration" "default" {
+	bucket_name         = alicloud_oss_bucket.default.bucket
+	object_worm_enabled = "Enabled"
 }
 data "alicloud_kms_keys" "enabled" {
 	status = "Enabled"

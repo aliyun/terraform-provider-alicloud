@@ -38,7 +38,7 @@ func TestAccAliCloudESACacheRuleresource_cacherule_test(t *testing.T) {
 					"edge_cache_ttl":              "300",
 					"site_id":                     "${data.alicloud_esa_sites.default.sites.0.id}",
 					"edge_cache_mode":             "follow_origin",
-					"edge_status_code_cache_ttl":  "300",
+					"edge_status_code_cache_ttl":  "4xx=30",
 					"browser_cache_mode":          "no_cache",
 					"user_geo":                    "off",
 					"browser_cache_ttl":           "300",
@@ -53,7 +53,6 @@ func TestAccAliCloudESACacheRuleresource_cacherule_test(t *testing.T) {
 					"check_presence_cookie":       "cookiename",
 					"user_device_type":            "off",
 					"cache_reserve_eligibility":   "bypass_cache_reserve",
-					"additional_cacheable_ports":  "2053",
 					"rule":                        "http.host eq \\\"video.example.com\\\"",
 					"user_language":               "off",
 					"serve_stale":                 "off",
@@ -66,7 +65,7 @@ func TestAccAliCloudESACacheRuleresource_cacherule_test(t *testing.T) {
 						"edge_cache_ttl":              "300",
 						"site_id":                     CHECKSET,
 						"edge_cache_mode":             "follow_origin",
-						"edge_status_code_cache_ttl":  "300",
+						"edge_status_code_cache_ttl":  "4xx=30",
 						"browser_cache_mode":          "no_cache",
 						"user_geo":                    "off",
 						"browser_cache_ttl":           "300",
@@ -81,7 +80,6 @@ func TestAccAliCloudESACacheRuleresource_cacherule_test(t *testing.T) {
 						"check_presence_cookie":       "cookiename",
 						"user_device_type":            "off",
 						"cache_reserve_eligibility":   "bypass_cache_reserve",
-						"additional_cacheable_ports":  "2053",
 						"rule":                        CHECKSET,
 						"user_language":               "off",
 						"serve_stale":                 "off",
@@ -153,11 +151,11 @@ func TestAccAliCloudESACacheRuleresource_cacherule_test(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"edge_status_code_cache_ttl": "400",
+					"edge_status_code_cache_ttl": "500=30",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"edge_status_code_cache_ttl": "400",
+						"edge_status_code_cache_ttl": "500=30",
 					}),
 				),
 			},
@@ -253,11 +251,21 @@ func TestAccAliCloudESACacheRuleresource_cacherule_test(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"additional_cacheable_ports": "2052",
+					"additional_cacheable_ports": "8880,2052,2082,2086,2095,2053,2083,2087,2096,8443",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"additional_cacheable_ports": "2052",
+						"additional_cacheable_ports": "8880,2052,2082,2086,2095,2053,2083,2087,2096,8443",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_cacheable_ports": "8880",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_cacheable_ports": CHECKSET,
 					}),
 				),
 			},
@@ -407,7 +415,7 @@ func TestAccAliCloudEsaCacheRule_basic12002(t *testing.T) {
 					"edge_cache_ttl":              "300",
 					"site_id":                     "${data.alicloud_esa_sites.default.sites.0.id}",
 					"edge_cache_mode":             "follow_origin",
-					"edge_status_code_cache_ttl":  "300",
+					"edge_status_code_cache_ttl":  "500=30",
 					"browser_cache_mode":          "no_cache",
 					"user_geo":                    "off",
 					"browser_cache_ttl":           "300",
@@ -422,7 +430,6 @@ func TestAccAliCloudEsaCacheRule_basic12002(t *testing.T) {
 					"check_presence_cookie":       "cookiename",
 					"user_device_type":            "off",
 					"cache_reserve_eligibility":   "bypass_cache_reserve",
-					"additional_cacheable_ports":  "2053",
 					"rule":                        "http.host eq \\\"video.example.com\\\"",
 					"user_language":               "off",
 					"serve_stale":                 "off",
@@ -438,7 +445,7 @@ func TestAccAliCloudEsaCacheRule_basic12002(t *testing.T) {
 						"edge_cache_ttl":              CHECKSET,
 						"site_id":                     CHECKSET,
 						"edge_cache_mode":             "follow_origin",
-						"edge_status_code_cache_ttl":  CHECKSET,
+						"edge_status_code_cache_ttl":  "500=30",
 						"browser_cache_mode":          "no_cache",
 						"user_geo":                    "off",
 						"browser_cache_ttl":           CHECKSET,
@@ -453,7 +460,6 @@ func TestAccAliCloudEsaCacheRule_basic12002(t *testing.T) {
 						"check_presence_cookie":       "cookiename",
 						"user_device_type":            "off",
 						"cache_reserve_eligibility":   "bypass_cache_reserve",
-						"additional_cacheable_ports":  CHECKSET,
 						"rule":                        "http.host eq \"video.example.com\"",
 						"user_language":               "off",
 						"serve_stale":                 "off",
@@ -470,7 +476,7 @@ func TestAccAliCloudEsaCacheRule_basic12002(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"edge_cache_ttl":              "400",
 					"edge_cache_mode":             "no_cache",
-					"edge_status_code_cache_ttl":  "400",
+					"edge_status_code_cache_ttl":  "4xx=30",
 					"browser_cache_mode":          "follow_origin",
 					"user_geo":                    "on",
 					"browser_cache_ttl":           "400",
@@ -485,7 +491,7 @@ func TestAccAliCloudEsaCacheRule_basic12002(t *testing.T) {
 					"check_presence_cookie":       "cookienamee",
 					"user_device_type":            "on",
 					"cache_reserve_eligibility":   "eligible_for_cache_reserve",
-					"additional_cacheable_ports":  "2052",
+					"additional_cacheable_ports":  "8880,2052,2082,2086,2095,2053,2083,2087,2096,8443",
 					"rule":                        "http.host eq \\\"videoo.example.com\\\"",
 					"user_language":               "on",
 					"serve_stale":                 "on",
@@ -496,7 +502,7 @@ func TestAccAliCloudEsaCacheRule_basic12002(t *testing.T) {
 					testAccCheck(map[string]string{
 						"edge_cache_ttl":              CHECKSET,
 						"edge_cache_mode":             "no_cache",
-						"edge_status_code_cache_ttl":  CHECKSET,
+						"edge_status_code_cache_ttl":  "4xx=30",
 						"browser_cache_mode":          "follow_origin",
 						"user_geo":                    "on",
 						"browser_cache_ttl":           CHECKSET,
@@ -511,7 +517,7 @@ func TestAccAliCloudEsaCacheRule_basic12002(t *testing.T) {
 						"check_presence_cookie":       "cookienamee",
 						"user_device_type":            "on",
 						"cache_reserve_eligibility":   "eligible_for_cache_reserve",
-						"additional_cacheable_ports":  CHECKSET,
+						"additional_cacheable_ports":  "8880,2052,2082,2086,2095,2053,2083,2087,2096,8443",
 						"rule":                        "http.host eq \"videoo.example.com\"",
 						"user_language":               "on",
 						"serve_stale":                 "on",

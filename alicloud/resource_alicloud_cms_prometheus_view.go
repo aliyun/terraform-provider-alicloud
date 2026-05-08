@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudCmsPrometheusInstance() *schema.Resource {
+func resourceAliCloudCmsPrometheusView() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudCmsPrometheusInstanceCreate,
-		Read:   resourceAliCloudCmsPrometheusInstanceRead,
-		Update: resourceAliCloudCmsPrometheusInstanceUpdate,
-		Delete: resourceAliCloudCmsPrometheusInstanceDelete,
+		Create: resourceAliCloudCmsPrometheusViewCreate,
+		Read:   resourceAliCloudCmsPrometheusViewRead,
+		Update: resourceAliCloudCmsPrometheusViewUpdate,
+		Delete: resourceAliCloudCmsPrometheusViewDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -26,16 +26,7 @@ func resourceAliCloudCmsPrometheusInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"archive_duration": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: IntBetween(0, 3650),
-			},
 			"auth_free_read_policy": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"auth_free_write_policy": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -47,15 +38,27 @@ func resourceAliCloudCmsPrometheusInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"enable_auth_free_write": {
-				Type:     schema.TypeBool,
-				Optional: true,
+			"prometheus_instances": {
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"user_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"prometheus_instance_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
 			},
-			"payment_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"prometheus_instance_name": {
+			"prometheus_view_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -63,11 +66,10 @@ func resourceAliCloudCmsPrometheusInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"storage_duration": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: IntBetween(15, 3650),
+			"version": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"workspace": {
 				Type:     schema.TypeString,
@@ -78,11 +80,11 @@ func resourceAliCloudCmsPrometheusInstance() *schema.Resource {
 	}
 }
 
-func resourceAliCloudCmsPrometheusInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsPrometheusViewCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := fmt.Sprintf("/prometheus-instances")
+	action := fmt.Sprintf("/prometheus-views")
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
@@ -90,32 +92,34 @@ func resourceAliCloudCmsPrometheusInstanceCreate(d *schema.ResourceData, meta in
 	var err error
 	request = make(map[string]interface{})
 
-	request["prometheusInstanceName"] = d.Get("prometheus_instance_name")
-	if v, ok := d.GetOkExists("enable_auth_free_write"); ok {
-		request["enableAuthFreeWrite"] = v
+	if v, ok := d.GetOk("prometheus_instances"); ok {
+		prometheusInstancesMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(v) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["userId"] = dataLoopTmp["user_id"]
+			dataLoopMap["prometheusInstanceId"] = dataLoopTmp["prometheus_instance_id"]
+			dataLoopMap["regionId"] = dataLoopTmp["region_id"]
+			prometheusInstancesMapsArray = append(prometheusInstancesMapsArray, dataLoopMap)
+		}
+		request["prometheusInstances"] = prometheusInstancesMapsArray
 	}
-	if v, ok := d.GetOkExists("archive_duration"); ok {
-		request["archiveDuration"] = v
-	}
+
 	if v, ok := d.GetOkExists("enable_auth_free_read"); ok {
 		request["enableAuthFreeRead"] = v
 	}
 	if v, ok := d.GetOk("auth_free_read_policy"); ok {
 		request["authFreeReadPolicy"] = v
 	}
-	if v, ok := d.GetOk("auth_free_write_policy"); ok {
-		request["authFreeWritePolicy"] = v
-	}
+	request["prometheusViewName"] = d.Get("prometheus_view_name")
+	request["version"] = d.Get("version")
 	request["workspace"] = d.Get("workspace")
-	if v, ok := d.GetOkExists("storage_duration"); ok && v.(int) > 0 {
-		request["storageDuration"] = v
-	}
 	body = request
-	wait := incrementalWait(5*time.Second, 5*time.Second)
+	wait := incrementalWait(10*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RoaPost("Cms", "2024-03-30", action, query, nil, body, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"400", "500"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -126,44 +130,57 @@ func resourceAliCloudCmsPrometheusInstanceCreate(d *schema.ResourceData, meta in
 	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_prometheus_instance", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_prometheus_view", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["prometheusInstanceId"]))
+	d.SetId(fmt.Sprint(response["prometheusViewId"]))
 
-	return resourceAliCloudCmsPrometheusInstanceRead(d, meta)
+	return resourceAliCloudCmsPrometheusViewRead(d, meta)
 }
 
-func resourceAliCloudCmsPrometheusInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsPrometheusViewRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsServiceV2 := CmsServiceV2{client}
 
-	objectRaw, err := cmsServiceV2.DescribeCmsPrometheusInstance(d.Id())
+	objectRaw, err := cmsServiceV2.DescribeCmsPrometheusView(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cms_prometheus_instance DescribeCmsPrometheusInstance Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_cms_prometheus_view DescribeCmsPrometheusView Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("archive_duration", objectRaw["archiveDuration"])
 	d.Set("auth_free_read_policy", objectRaw["authFreeReadPolicy"])
-	d.Set("auth_free_write_policy", objectRaw["authFreeWritePolicy"])
 	d.Set("create_time", objectRaw["createTime"])
 	d.Set("enable_auth_free_read", objectRaw["enableAuthFreeRead"])
-	d.Set("enable_auth_free_write", objectRaw["enableAuthFreeWrite"])
-	d.Set("payment_type", objectRaw["paymentType"])
-	d.Set("prometheus_instance_name", objectRaw["prometheusInstanceName"])
+	d.Set("prometheus_view_name", objectRaw["prometheusViewName"])
 	d.Set("region_id", objectRaw["regionId"])
-	d.Set("storage_duration", objectRaw["storageDuration"])
+	d.Set("version", objectRaw["version"])
 	d.Set("workspace", objectRaw["workspace"])
+
+	prometheusInstancesRaw := objectRaw["prometheusInstances"]
+	prometheusInstancesMaps := make([]map[string]interface{}, 0)
+	if prometheusInstancesRaw != nil {
+		for _, prometheusInstancesChildRaw := range convertToInterfaceArray(prometheusInstancesRaw) {
+			prometheusInstancesMap := make(map[string]interface{})
+			prometheusInstancesChildRaw := prometheusInstancesChildRaw.(map[string]interface{})
+			prometheusInstancesMap["prometheus_instance_id"] = prometheusInstancesChildRaw["prometheusInstanceId"]
+			prometheusInstancesMap["region_id"] = prometheusInstancesChildRaw["regionId"]
+			prometheusInstancesMap["user_id"] = prometheusInstancesChildRaw["userId"]
+
+			prometheusInstancesMaps = append(prometheusInstancesMaps, prometheusInstancesMap)
+		}
+	}
+	if err := d.Set("prometheus_instances", prometheusInstancesMaps); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func resourceAliCloudCmsPrometheusInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsPrometheusViewUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -172,28 +189,28 @@ func resourceAliCloudCmsPrometheusInstanceUpdate(d *schema.ResourceData, meta in
 	update := false
 
 	var err error
-	prometheusInstanceId := d.Id()
-	action := fmt.Sprintf("/prometheus-instances/%s", prometheusInstanceId)
+	prometheusViewId := d.Id()
+	action := fmt.Sprintf("/prometheus-views/%s", prometheusViewId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 
-	if d.HasChange("prometheus_instance_name") {
+	if d.HasChange("prometheus_instances") {
 		update = true
 	}
-	request["prometheusInstanceName"] = d.Get("prometheus_instance_name")
-	if d.HasChange("enable_auth_free_write") {
-		update = true
+	if v, ok := d.GetOk("prometheus_instances"); ok || d.HasChange("prometheus_instances") {
+		prometheusInstancesMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(v) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["userId"] = dataLoopTmp["user_id"]
+			dataLoopMap["prometheusInstanceId"] = dataLoopTmp["prometheus_instance_id"]
+			dataLoopMap["regionId"] = dataLoopTmp["region_id"]
+			prometheusInstancesMapsArray = append(prometheusInstancesMapsArray, dataLoopMap)
+		}
+		request["prometheusInstances"] = prometheusInstancesMapsArray
 	}
-	if v, ok := d.GetOkExists("enable_auth_free_write"); ok || d.HasChange("enable_auth_free_write") {
-		request["enableAuthFreeWrite"] = v
-	}
-	if d.HasChange("archive_duration") {
-		update = true
-	}
-	if v, ok := d.GetOkExists("archive_duration"); ok || d.HasChange("archive_duration") {
-		request["archiveDuration"] = v
-	}
+
 	if d.HasChange("enable_auth_free_read") {
 		update = true
 	}
@@ -206,18 +223,10 @@ func resourceAliCloudCmsPrometheusInstanceUpdate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("auth_free_read_policy"); ok || d.HasChange("auth_free_read_policy") {
 		request["authFreeReadPolicy"] = v
 	}
-	if d.HasChange("auth_free_write_policy") {
+	if d.HasChange("prometheus_view_name") {
 		update = true
 	}
-	if v, ok := d.GetOk("auth_free_write_policy"); ok || d.HasChange("auth_free_write_policy") {
-		request["authFreeWritePolicy"] = v
-	}
-	if d.HasChange("storage_duration") {
-		update = true
-	}
-	if v, ok := d.GetOkExists("storage_duration"); (ok || d.HasChange("storage_duration")) && v.(int) > 0 {
-		request["storageDuration"] = v
-	}
+	request["prometheusViewName"] = d.Get("prometheus_view_name")
 	body = request
 	if update {
 		wait := incrementalWait(10*time.Second, 10*time.Second)
@@ -238,14 +247,14 @@ func resourceAliCloudCmsPrometheusInstanceUpdate(d *schema.ResourceData, meta in
 		}
 	}
 
-	return resourceAliCloudCmsPrometheusInstanceRead(d, meta)
+	return resourceAliCloudCmsPrometheusViewRead(d, meta)
 }
 
-func resourceAliCloudCmsPrometheusInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsPrometheusViewDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	prometheusInstanceId := d.Id()
-	action := fmt.Sprintf("/prometheus-instances/%s", prometheusInstanceId)
+	prometheusViewId := d.Id()
+	action := fmt.Sprintf("/prometheus-views/%s", prometheusViewId)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)

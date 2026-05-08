@@ -186,8 +186,13 @@ resource "alicloud_oss_bucket" "default" {
 	acl = "private"
 }
 
+resource "alicloud_oss_bucket_public_access_block" "default" {
+	bucket              = alicloud_oss_bucket.default.bucket
+	block_public_access = false
+}
+
 resource "alicloud_oss_bucket_object" "default" {
-	bucket = "${alicloud_oss_bucket.default.bucket}"
+	bucket = "${alicloud_oss_bucket_public_access_block.default.bucket}"
 	key = "tf-sample/${var.name}-object"
 	content = "sample content"
 	content_type = "text/plain"
