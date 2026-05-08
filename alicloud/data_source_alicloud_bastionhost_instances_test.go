@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudBastionhostInstancesDataSource(t *testing.T) {
+func TestAccAliCloudBastionhostInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_bastionhost_instances.default"
 

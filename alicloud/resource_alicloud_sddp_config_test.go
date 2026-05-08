@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudSDDPConfig_basic0(t *testing.T) {
+func TestAccAliCloudSDDPConfig_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_sddp_config.default"
 	ra := resourceAttrInit(resourceId, AlicloudSDDPConfigMap0)
@@ -35,9 +35,9 @@ func TestAccAlicloudSDDPConfig_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -82,7 +82,7 @@ func TestAccAlicloudSDDPConfig_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSDDPConfig_basic1(t *testing.T) {
+func TestAccAliCloudSDDPConfig_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_sddp_config.default"
 	ra := resourceAttrInit(resourceId, AlicloudSDDPConfigMap0)
@@ -98,9 +98,9 @@ func TestAccAlicloudSDDPConfig_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -145,7 +145,7 @@ func TestAccAlicloudSDDPConfig_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSDDPConfig_basic2(t *testing.T) {
+func TestAccAliCloudSDDPConfig_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_sddp_config.default"
 	ra := resourceAttrInit(resourceId, AlicloudSDDPConfigMap0)
@@ -161,9 +161,9 @@ func TestAccAlicloudSDDPConfig_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

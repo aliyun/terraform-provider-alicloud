@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudDdosbgpInstanceDataSource_basic(t *testing.T) {
+func TestAccAliCloudDdosbgpInstanceDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_ddosbgp_instances.default"
 

@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudSDDPInstance_basic0(t *testing.T) {
+func TestAccAliCloudSDDPInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_sddp_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudSDDPInstanceMap0)
@@ -35,9 +35,9 @@ func TestAccAlicloudSDDPInstance_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{30})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

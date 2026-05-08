@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudBastionhostHostShareKeysDataSource(t *testing.T) {
+func TestAccAliCloudBastionhostHostShareKeysDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.BastionhostSupportRegions)
 	idsConf := dataSourceTestAccConfig{

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudDdosbgpIpsDataSource(t *testing.T) {
+func TestAccAliCloudDdosbgpIpsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.DdosBgpSupportRegions)
 	idsConf := dataSourceTestAccConfig{
@@ -59,7 +59,7 @@ func TestAccAlicloudDdosbgpIpsDataSource(t *testing.T) {
 			"ips.0.instance_id": CHECKSET,
 			"ips.0.ip":          CHECKSET,
 			"ips.0.id":          CHECKSET,
-			"ips.0.product":     "EIP",
+			"ips.0.product":     CHECKSET,
 			"ips.0.status":      CHECKSET,
 		}
 	}

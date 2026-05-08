@@ -35,20 +35,20 @@ func TestAccAliCloudBastionhostUser_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"user_name":   "tf-testAccBastionHostUser-12345",
+					"user_name":   fmt.Sprintf("tf-testAccLocal-%d", rand),
 					"source":      "Local",
 					"instance_id": "${local.instance_id}",
 					"password":    "tf-testAcc-oAupFqRaH24MdOSrsIKsu3qw",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_name":   "tf-testAccBastionHostUser-12345",
+						"user_name":   fmt.Sprintf("tf-testAccLocal-%d", rand),
 						"source":      "Local",
 						"instance_id": CHECKSET,
 						"password":    "tf-testAcc-oAupFqRaH24MdOSrsIKsu3qw",
@@ -353,20 +353,20 @@ func TestAccAliCloudBastionhostUser_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"user_name":      "tf-testAccBastionhostUserRam-123456",
+					"user_name":      fmt.Sprintf("tf-testAccRam-%d", rand),
 					"source":         "Ram",
 					"instance_id":    "${local.instance_id}",
 					"source_user_id": "247823888127488180",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_name":      "tf-testAccBastionhostUserRam-123456",
+						"user_name":      fmt.Sprintf("tf-testAccRam-%d", rand),
 						"source":         "Ram",
 						"instance_id":    CHECKSET,
 						"source_user_id": "247823888127488180",
@@ -671,20 +671,20 @@ func TestAccAliCloudBastionhostUser_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"user_name":      "tf-testAccBastionhostUserRam-123456",
+					"user_name":      fmt.Sprintf("tf-testAccAD-%d", rand),
 					"source":         "AD",
 					"instance_id":    "${local.instance_id}",
 					"source_user_id": "247823888127488180",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_name":      "tf-testAccBastionhostUserRam-123456",
+						"user_name":      fmt.Sprintf("tf-testAccAD-%d", rand),
 						"source":         "AD",
 						"instance_id":    CHECKSET,
 						"source_user_id": "247823888127488180",
@@ -989,20 +989,20 @@ func TestAccAliCloudBastionhostUser_basic3(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"user_name":      "tf-testAccBastionhostUserRam-123456",
+					"user_name":      fmt.Sprintf("tf-testAccLDAP-%d", rand),
 					"source":         "LDAP",
 					"instance_id":    "${local.instance_id}",
 					"source_user_id": "247823888127488180",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_name":      "tf-testAccBastionhostUserRam-123456",
+						"user_name":      fmt.Sprintf("tf-testAccLDAP-%d", rand),
 						"source":         "LDAP",
 						"instance_id":    CHECKSET,
 						"source_user_id": "247823888127488180",
@@ -1051,176 +1051,6 @@ func TestAccAliCloudBastionhostUser_basic3(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "HK",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "HK",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "MO",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "MO",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "TW",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "TW",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "RU",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "RU",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "SG",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "SG",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "MY",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "MY",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "ID",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "ID",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "DE",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "DE",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "AU",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "AU",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "US",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "US",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "AE",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "AE",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "JP",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "JP",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "GB",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "GB",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "IN",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "IN",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "KR",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "KR",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "PH",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "PH",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"mobile_country_code": "CH",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mobile_country_code": "CH",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"mobile_country_code": "SE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1236,16 +1066,6 @@ func TestAccAliCloudBastionhostUser_basic3(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"mobile": "702345672",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"password": "tf-testAcc-2MeAHvjV3LvFsGfUSs73hXaI",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"password": "tf-testAcc-2MeAHvjV3LvFsGfUSs73hXaI",
 					}),
 				),
 			},

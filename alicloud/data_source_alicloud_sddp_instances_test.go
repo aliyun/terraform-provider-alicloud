@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudSddpInstancesDataSource(t *testing.T) {
+func TestAccAliCloudSddpInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSddpInstanceDataSourceConfig(rand, map[string]string{}),

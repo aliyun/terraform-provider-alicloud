@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudSDDPDataLimit_basic0(t *testing.T) {
+func TestAccAliCloudSDDPDataLimit_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_sddp_data_limit.default"
 	checkoutSupportedRegions(t, true, connectivity.SddpSupportRegions)
@@ -35,9 +35,9 @@ func TestAccAlicloudSDDPDataLimit_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
