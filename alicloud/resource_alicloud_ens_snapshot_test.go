@@ -33,13 +33,13 @@ func TestAccAliCloudEnsSnapshot_basic5162(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ens_region_id": "ch-zurich-1",
+					"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 					"disk_id":       "${alicloud_ens_disk.disk.id}",
 					"snapshot_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ens_region_id": "ch-zurich-1",
+						"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 						"disk_id":       CHECKSET,
 						"snapshot_name": name,
 					}),
@@ -88,14 +88,14 @@ func TestAccAliCloudEnsSnapshot_basic5162(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":   "SnapShotDescription_autotest",
-					"ens_region_id": "ch-zurich-1",
+					"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 					"snapshot_name": name + "_update",
 					"disk_id":       "${alicloud_ens_disk.disk.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":   "SnapShotDescription_autotest",
-						"ens_region_id": "ch-zurich-1",
+						"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 						"snapshot_name": name + "_update",
 						"disk_id":       CHECKSET,
 					}),
@@ -126,7 +126,7 @@ resource "alicloud_ens_disk" "disk" {
   category      = "cloud_efficiency"
   size          = "20"
   payment_type  = "PayAsYouGo"
-  ens_region_id = "ch-zurich-1"
+  ens_region_id = "cn-chenzhou-telecom_unicom_cmcc"
 }
 
 
@@ -157,14 +157,14 @@ func TestAccAliCloudEnsSnapshot_basic5162_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":   "SnapShotDescription_UPDATE_autotest",
-					"ens_region_id": "ch-zurich-1",
+					"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 					"snapshot_name": name,
 					"disk_id":       "${alicloud_ens_disk.disk.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":   "SnapShotDescription_UPDATE_autotest",
-						"ens_region_id": "ch-zurich-1",
+						"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 						"snapshot_name": name,
 						"disk_id":       CHECKSET,
 					}),
