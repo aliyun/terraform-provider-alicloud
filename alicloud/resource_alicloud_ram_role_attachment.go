@@ -49,7 +49,7 @@ func resourceAlicloudInstanceRoleAttachmentCreate(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.AttachInstanceRamRole(request)
 		})
@@ -60,9 +60,13 @@ func resourceAlicloudInstanceRoleAttachmentCreate(d *schema.ResourceData, meta i
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "ram_role_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetId(d.Get("role_name").(string) + COLON_SEPARATED + instanceIds)
-		return resource.NonRetryableError(WrapError(resourceAlicloudInstanceRoleAttachmentRead(d, meta)))
+		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "ram_role_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	d.SetId(d.Get("role_name").(string) + COLON_SEPARATED + instanceIds)
+	return resourceAlicloudInstanceRoleAttachmentRead(d, meta)
 }
 
 func resourceAlicloudInstanceRoleAttachmentRead(d *schema.ResourceData, meta interface{}) error {

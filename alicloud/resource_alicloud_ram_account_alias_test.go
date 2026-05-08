@@ -92,7 +92,7 @@ func TestAccAliCloudRAMAccountAlias_basic(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckRamAccountAliasDestroy,
+		CheckDestroy:      testAccCheckRamAccountAliasDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRamAccountAliasConfig(randInt),
@@ -154,18 +154,20 @@ func TestAccAliCloudRamAccountAlias_basic9000(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccram%d", rand)
+	aliasCreate := fmt.Sprintf("tf-testacccreate%d", rand)
+	aliasUpdate := fmt.Sprintf("tf-testaccupdate%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRamAccountAliasBasicDependence9000)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_alias": "1511928242963727forcreate",
+					"account_alias": aliasCreate,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -175,7 +177,7 @@ func TestAccAliCloudRamAccountAlias_basic9000(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_alias": "1511928242963727forupdate",
+					"account_alias": aliasUpdate,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -185,7 +187,7 @@ func TestAccAliCloudRamAccountAlias_basic9000(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_alias": "1511928242963727forcreate",
+					"account_alias": aliasCreate,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -195,7 +197,7 @@ func TestAccAliCloudRamAccountAlias_basic9000(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_alias": "1511928242963727forupdate",
+					"account_alias": aliasUpdate,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -205,7 +207,7 @@ func TestAccAliCloudRamAccountAlias_basic9000(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_alias": "1511928242963727forcreate",
+					"account_alias": aliasCreate,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -221,7 +223,7 @@ func TestAccAliCloudRamAccountAlias_basic9000(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_alias": "1511928242963727forupdate",
+					"account_alias": aliasUpdate,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

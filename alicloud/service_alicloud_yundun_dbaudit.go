@@ -416,7 +416,7 @@ func (s *DbauditService) UpdateResourceGroup(resourceId, resourceGroupId string)
 		"RegionId":        s.client.RegionId,
 		"ResourceId":      resourceId,
 		"ResourceGroupId": resourceGroupId,
-		"ResourceType":    "INSTANCE",
+		"ResourceType":    "ALIYUN::DBAUDIT::INSTANCE",
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {

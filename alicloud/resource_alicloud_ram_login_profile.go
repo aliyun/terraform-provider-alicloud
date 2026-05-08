@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -145,17 +147,20 @@ func resourceAliCloudRamLoginProfileUpdate(d *schema.ResourceData, meta interfac
 		request["MFABindRequired"] = d.Get("mfa_bind_required")
 	}
 
-	request["Password"] = d.Get("password")
+	if d.HasChange("password") {
+		update = true
+		request["Password"] = d.Get("password")
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
