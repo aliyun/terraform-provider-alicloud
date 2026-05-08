@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRamRolePolicyAttachmentDataSource(t *testing.T) {
+func TestAccAliCloudRamRolePolicyAttachmentDataSource(t *testing.T) {
 	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	rand := acctest.RandIntRange(1000000, 9999999)
 

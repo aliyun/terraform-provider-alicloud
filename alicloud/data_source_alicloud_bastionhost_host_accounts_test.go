@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudBastionhostHostAccountsDataSource(t *testing.T) {
+func TestAccAliCloudBastionhostHostAccountsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_bastionhost_host_accounts.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccBastionhostHostAccountsTest%d", rand)

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudSddpDataLimitsDataSource(t *testing.T) {
+func TestAccAliCloudSddpDataLimitsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100, 999)
 	checkoutSupportedRegions(t, true, connectivity.SddpSupportRegions)
 	idsConf := dataSourceTestAccConfig{

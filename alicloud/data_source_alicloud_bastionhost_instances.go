@@ -217,10 +217,10 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 		if v, err := strconv.ParseInt(getResp["Storage"].(json.Number).String(), 10, 64); err != nil {
 			return WrapError(err)
 		} else {
-			d.Set("storage", fmt.Sprint(bytesToTB(v)-1))
+			mapping["storage"] = fmt.Sprint(bytesToTB(v) - 1)
 		}
 
-		d.Set("bandwidth", getResp["BandwidthPackage"])
+		mapping["bandwidth"] = getResp["BandwidthPackage"]
 
 		getResp2, err := bastionhostService.ListTagResources(id, "INSTANCE")
 		if err != nil {

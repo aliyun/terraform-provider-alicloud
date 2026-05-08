@@ -446,7 +446,6 @@ func resourceAliCloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		"port":           formatInt(adAuthServer["Port"]),
 		"server":         adAuthServer["Server"],
 		"standby_server": adAuthServer["StandbyServer"],
-		"has_password":   adAuthServer["HasPassword"],
 	}
 	d.Set("ad_auth_server", []map[string]interface{}{adAuthServerMap})
 
@@ -466,7 +465,6 @@ func resourceAliCloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		"port":               ldapAuthServer["Port"],
 		"server":             ldapAuthServer["Server"],
 		"standby_server":     ldapAuthServer["StandbyServer"],
-		"has_password":       adAuthServer["HasPassword"],
 	}
 	d.Set("ldap_auth_server", []map[string]interface{}{ldapAuthServerMap})
 
