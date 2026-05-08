@@ -38,9 +38,9 @@ resource "alicloud_esa_cache_rule" "default" {
   check_presence_header       = "headername"
   include_cookie              = "cookie_exapmle"
   edge_cache_mode             = "follow_origin"
-  additional_cacheable_ports  = "2053"
+  additional_cacheable_ports  = "8880,2052"
   rule_name                   = "rule_example"
-  edge_status_code_cache_ttl  = "300"
+  edge_status_code_cache_ttl  = "4xx=30"
   browser_cache_ttl           = "300"
   query_string                = "example"
   user_geo                    = "off"
@@ -66,7 +66,7 @@ resource "alicloud_esa_cache_rule" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `additional_cacheable_ports` - (Optional) Enable caching on specified ports. Value range: 8880, 2052, 2082, 2086, 2095, 2053, 2083, 2087, 2096
+* `additional_cacheable_ports` - (Optional) Specifies additional ports on which caching is enabled. You can specify multiple ports, separated by commas (,). Value range: 8880, 2052, 2082, 2086, 2095, 2053, 2083, 2087, 2096.
 * `browser_cache_mode` - (Optional) Browser cache mode. Possible values:
   - `no_cache`no_cache: Do not cache.
   - `follow_origin`: Follow the origin server's cache policy.
@@ -90,7 +90,10 @@ The following arguments are supported:
   - `follow_origin_bypass`: Follow the origin server's cache policy (if it exists), otherwise do not cache.
   - `follow_origin_override `: Follow the origin server's cache policy (if it exists), otherwise use custom cache TTL.
 * `edge_cache_ttl` - (Optional) Edge cache expiration time in seconds.
-* `edge_status_code_cache_ttl` - (Optional) Status code cache expiration time in seconds.
+* `edge_status_code_cache_ttl` - (Optional) The status code cache TTL, in seconds.
+  - You can set the cache TTL for a specific status code. For example, 404=10 caches responses with a 404 status code for 10 seconds.
+  - You can set the cache TTL for a series of status codes, such as 4xx or 5xx. For example, 4xx=10 caches all responses that have a status code in the 4xx series for 10 seconds.
+  - You can specify multiple status code TTLs, separated by commas (,).
 * `include_cookie` - (Optional) When generating the cache key, add the specified cookie names and their values. Multiple values are supported, separated by spaces.
 * `include_header` - (Optional) When generating the cache key, add the specified header names and their values. Multiple values are supported, separated by spaces.
 * `post_body_cache_key` - (Optional, Available since v1.274.0) Processing pattern for the cache key.

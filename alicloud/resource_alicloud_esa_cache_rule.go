@@ -27,9 +27,8 @@ func resourceAliCloudEsaCacheRule() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"additional_cacheable_ports": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"8880", "2052", "2082", "2086", "2095", "2053", "2083", "2087", "2096"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"browser_cache_mode": {
 				Type:         schema.TypeString,

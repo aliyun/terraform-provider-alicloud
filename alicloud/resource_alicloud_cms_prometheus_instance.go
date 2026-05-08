@@ -111,11 +111,11 @@ func resourceAliCloudCmsPrometheusInstanceCreate(d *schema.ResourceData, meta in
 		request["storageDuration"] = v
 	}
 	body = request
-	wait := incrementalWait(10*time.Second, 10*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RoaPost("Cms", "2024-03-30", action, query, nil, body, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"400", "500"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

@@ -917,6 +917,7 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_oss_bucket_object_worm_configuration":                 resourceAliCloudOssBucketObjectWormConfiguration(),
 			"alicloud_alidns_cloud_gtm_instance_config":                     resourceAliCloudAlidnsCloudGtmInstanceConfig(),
 			"alicloud_alidns_cloud_gtm_monitor_template":                    resourceAliCloudAlidnsCloudGtmMonitorTemplate(),
 			"alicloud_alidns_cloud_gtm_address":                             resourceAliCloudAlidnsCloudGtmAddress(),
@@ -1953,6 +1954,7 @@ func Provider() *schema.Provider {
 			"alicloud_api_gateway_model":                                     resourceAlicloudApiGatewayModel(),
 			"alicloud_cen_transit_router_grant_attachment":                   resourceAliCloudCenTransitRouterGrantAttachment(),
 			"alicloud_api_gateway_plugin":                                    resourceAliCloudApiGatewayPlugin(),
+			"alicloud_api_gateway_group_plugin_attachment":                   resourceAlicloudApiGatewayGroupPluginAttachment(),
 			"alicloud_api_gateway_plugin_attachment":                         resourceAlicloudApiGatewayPluginAttachment(),
 			"alicloud_message_service_queue":                                 resourceAliCloudMessageServiceQueue(),
 			"alicloud_message_service_topic":                                 resourceAliCloudMessageServiceTopic(),
