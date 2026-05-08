@@ -922,6 +922,7 @@ func Provider() *schema.Provider {
 			"alicloud_alidns_cloud_gtm_monitor_template":                    resourceAliCloudAlidnsCloudGtmMonitorTemplate(),
 			"alicloud_alidns_cloud_gtm_address":                             resourceAliCloudAlidnsCloudGtmAddress(),
 			"alicloud_ecs_disk_encryption_by_default":                       resourceAliCloudEcsDiskEncryptionByDefault(),
+			"alicloud_cms_prometheus_view":                                  resourceAliCloudCmsPrometheusView(),
 			"alicloud_cms_prometheus_instance":                              resourceAliCloudCmsPrometheusInstance(),
 			"alicloud_cms_integration_policy":                               resourceAliCloudCmsIntegrationPolicy(),
 			"alicloud_cms_workspace":                                        resourceAliCloudCmsWorkspace(),
