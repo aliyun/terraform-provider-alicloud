@@ -110,7 +110,7 @@ func testSweepCmsHybridMonitorSlsTask(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCloudMonitorServiceHybridMonitorSlsTask_basic0(t *testing.T) {
+func TestAccAliCloudCloudMonitorServiceHybridMonitorSlsTask_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_hybrid_monitor_sls_task.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudMonitorServiceSupportRegions)
@@ -229,13 +229,13 @@ resource "alicloud_cms_sls_group" "default" {
 
 resource "alicloud_cms_namespace" "default" {
 	description = var.name
-	namespace = "tf-testacc-cloudmonitorservicenamespace"
+	namespace = replace(var.name, "_", "-")
 	specification = "cms.s1.large"
 }
 `, name)
 }
 
-func TestAccAlicloudCloudMonitorServiceHybridMonitorSlsTask_basic1(t *testing.T) {
+func TestAccAliCloudCloudMonitorServiceHybridMonitorSlsTask_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_hybrid_monitor_sls_task.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudMonitorServiceSupportRegions)
