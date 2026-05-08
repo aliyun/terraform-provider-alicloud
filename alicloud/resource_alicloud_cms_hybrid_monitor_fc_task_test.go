@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic0(t *testing.T) {
+func TestAccAliCloudCloudMonitorServiceHybridMonitorFcTask_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_hybrid_monitor_fc_task.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudMonitorServiceSupportRegions)
@@ -75,13 +75,13 @@ variable "name" {
 data "alicloud_account" "this" {}
 resource "alicloud_cms_namespace" "default" {
 	description = var.name
-	namespace = "tf-testacc-cloudmonitorservicenamespace"
+	namespace = replace(var.name, "_", "-")
 	specification = "cms.s1.large"
 }
 `, name)
 }
 
-func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic1(t *testing.T) {
+func TestAccAliCloudCloudMonitorServiceHybridMonitorFcTask_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_hybrid_monitor_fc_task.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudMonitorServiceSupportRegions)
@@ -92,7 +92,7 @@ func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic1(t *testing.T) 
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scloudmonitorservicehybridmonitorfctask%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacccmshybridmonitorfctask%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudMonitorServiceHybridMonitorFcTaskBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

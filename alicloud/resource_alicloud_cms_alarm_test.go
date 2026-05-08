@@ -1346,14 +1346,17 @@ func AliCloudCmsAlarmBasicDependence0(name string) string {
   		available_resource_creation = "VSwitch"
 	}
 
-	data "alicloud_images" "default" {
-  		most_recent = true
-  		owners      = "system"
-	}
-
 	data "alicloud_instance_types" "default" {
   		availability_zone = data.alicloud_zones.default.zones.0.id
-  		image_id          = data.alicloud_images.default.images.0.id
+  		cpu_core_count    = 1
+  		memory_size       = 2
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent   = true
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
 	resource "alicloud_cms_alarm_contact_group" "default" {
