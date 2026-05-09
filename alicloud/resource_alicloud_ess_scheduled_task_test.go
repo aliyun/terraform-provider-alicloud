@@ -624,6 +624,7 @@ func testAccEssScheduleConfig(common string) string {
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
+		system_disk_category = "cloud_essd"
 	}
 	
 	resource "alicloud_ess_scaling_rule" "default" {
@@ -633,7 +634,7 @@ func testAccEssScheduleConfig(common string) string {
 		cooldown = 60
 	}
 
-	`, EcsInstanceCommonTestCase, common)
+	`, EssInstanceCommonTestCase, common)
 }
 
 func testAccEssScheduleConfig1(common string) string {
@@ -658,6 +659,7 @@ func testAccEssScheduleConfig1(common string) string {
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
+		system_disk_category = "cloud_essd"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default1" {
@@ -675,6 +677,7 @@ func testAccEssScheduleConfig1(common string) string {
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
+		system_disk_category = "cloud_essd"
 	}
 	resource "alicloud_ess_scaling_rule" "default" {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
@@ -690,5 +693,5 @@ func testAccEssScheduleConfig1(common string) string {
 		cooldown = 60
 	}
 
-	`, EcsInstanceCommonTestCase, common)
+	`, EssInstanceCommonTestCase, common)
 }

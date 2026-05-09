@@ -10,7 +10,7 @@ import (
 )
 
 // package_type = Image
-func TestAccAlicloudSAESlbInternet_basic0(t *testing.T) {
+func TestAccAliCloudSAESlbInternet_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_load_balancer_internet.default"
