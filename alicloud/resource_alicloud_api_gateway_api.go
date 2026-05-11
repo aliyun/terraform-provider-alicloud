@@ -352,6 +352,14 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"backend_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"backend_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -456,6 +464,15 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 
 	d.Set("system_parameters", convertApiGatewayApiSystemParamsResponse(objectRaw["SystemParameters"]))
 
+	if backendConfig, ok := objectRaw["BackendConfig"].(map[string]interface{}); ok {
+		if v, ok := backendConfig["BackendId"].(string); ok && v != "" {
+			d.Set("backend_id", v)
+		}
+	}
+	if v, ok := objectRaw["BackendEnable"]; ok {
+		d.Set("backend_enabled", v)
+	}
+
 	return nil
 }
 
@@ -497,7 +514,7 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request.RequestConfig = paramConfig
 
-	if d.HasChanges("service_type", "http_service_config", "http_vpc_service_config", "mock_service_config", "fc_service_config") {
+	if d.HasChanges("service_type", "http_service_config", "http_vpc_service_config", "mock_service_config", "fc_service_config", "backend_id", "backend_enabled") {
 		update = true
 	}
 	serviceConfig, err := serviceConfigToJsonStr(d)
@@ -523,6 +540,14 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 		request.Visibility = Visibility
 		request.AllowSignatureMethod = AllowSignatureMethod
 		request.WebSocketApiType = WebSocketApiType
+
+		backendEnabled := d.Get("backend_enabled").(bool)
+		request.QueryParams["BackendEnable"] = strconv.FormatBool(backendEnabled)
+		if backendEnabled {
+			if v, ok := d.GetOk("backend_id"); ok && v.(string) != "" {
+				request.QueryParams["BackendId"] = v.(string)
+			}
+		}
 
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 			return cloudApiClient.ModifyApi(request)
@@ -632,6 +657,14 @@ func buildAliyunApiArgs(d *schema.ResourceData, meta interface{}) (*cloudapi.Cre
 	request.Visibility = Visibility
 	request.AllowSignatureMethod = AllowSignatureMethod
 	request.WebSocketApiType = WebSocketApiType
+
+	backendEnabled := d.Get("backend_enabled").(bool)
+	request.QueryParams["BackendEnable"] = strconv.FormatBool(backendEnabled)
+	if backendEnabled {
+		if v, ok := d.GetOk("backend_id"); ok && v.(string) != "" {
+			request.QueryParams["BackendId"] = v.(string)
+		}
+	}
 
 	return request, WrapError(err)
 }

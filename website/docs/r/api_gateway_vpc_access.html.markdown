@@ -107,6 +107,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Vpc Access. It formats as `<name>:<vpc_id>:<instance_id>:<port>`.
+* `vpc_access_id` - The ID of the Vpc Access.
 
 ## Import
 

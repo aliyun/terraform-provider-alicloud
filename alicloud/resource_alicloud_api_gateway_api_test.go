@@ -1371,6 +1371,32 @@ func resourceApigatewayApiConfigDependence_vpc(name string) string {
 	`, name, ApigatewayVpcAccessConfigDependence)
 }
 
+func resourceapigatewayapiconfigdependenceBackend(name string) string {
+	return fmt.Sprintf(`
+
+	variable "name" {
+	  default = "%s"
+	}
+
+	resource "alicloud_api_gateway_group" "default" {
+	  name = "${var.name}"
+	  description = "tf_testAcc_api group description"
+	}
+
+	resource "alicloud_api_gateway_backend" "default" {
+	  backend_name = "${var.name}_backend"
+	  backend_type = "HTTP"
+	  description  = var.name
+	}
+
+	resource "alicloud_api_gateway_backend" "update" {
+	  backend_name = "${var.name}_backend_update"
+	  backend_type = "HTTP"
+	  description  = var.name
+	}
+	`, name)
+}
+
 var apiGatewayApiMap = map[string]string{
 	"name":                      CHECKSET,
 	"group_id":                  CHECKSET,
@@ -1382,4 +1408,96 @@ var apiGatewayApiMap = map[string]string{
 	"request_config.0.mode":     "MAPPING",
 	"service_type":              CHECKSET,
 	"api_id":                    CHECKSET,
+}
+
+func TestAccAliCloudApigatewayApi_backend(t *testing.T) {
+	var api *cloudapi.DescribeApiResponse
+	resourceId := "alicloud_api_gateway_api.default"
+	ra := resourceAttrInit(resourceId, apiGatewayApiMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &api, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApiGatewayApi_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceapigatewayapiconfigdependenceBackend)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${alicloud_api_gateway_group.default.name}",
+					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"description": "tf_testAcc_api backend_id",
+					"auth_type":   "ANONYMOUS",
+					"request_config": []map[string]string{{
+						"protocol": "HTTP",
+						"method":   "GET",
+						"path":     "/test/path",
+						"mode":     "MAPPING",
+					}},
+					"service_type": "HTTP",
+					"http_service_config": []map[string]string{{
+						"address": "",
+						"method":  "GET",
+						"path":    "/web/cloudapi",
+						"timeout": "20",
+					}},
+					"backend_id":     "${alicloud_api_gateway_backend.default.id}",
+					"backend_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":           name,
+						"description":    "tf_testAcc_api backend_id",
+						"auth_type":      "ANONYMOUS",
+						"service_type":   "HTTP",
+						"backend_id":     CHECKSET,
+						"backend_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backend_id": "${alicloud_api_gateway_backend.update.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backend_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backend_enabled": "false",
+					"http_service_config": []map[string]string{{
+						"address": "http://apigateway-backend.alicloudapi.com",
+						"method":  "GET",
+						"path":    "/web/cloudapi",
+						"timeout": "20",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backend_enabled":               "false",
+						"http_service_config.0.address": "http://apigateway-backend.alicloudapi.com",
+					}),
+				),
+			},
+		},
+	})
 }

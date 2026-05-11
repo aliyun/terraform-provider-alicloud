@@ -79,6 +79,49 @@ resource "alicloud_api_gateway_api" "example" {
 
 ```
 
+Backend Usage
+
+```terraform
+resource "alicloud_api_gateway_group" "example" {
+  name        = "tf-example"
+  description = "tf-example"
+  base_path   = "/"
+}
+
+resource "alicloud_api_gateway_backend" "example" {
+  backend_name = "tf-example-backend"
+  backend_type = "HTTP"
+  description  = "tf-example"
+}
+
+resource "alicloud_api_gateway_api" "example" {
+  group_id          = alicloud_api_gateway_group.example.id
+  name              = "tf-example"
+  description       = "tf-example"
+  auth_type         = "APP"
+  force_nonce_check = false
+
+  request_config {
+    protocol = "HTTP"
+    method   = "GET"
+    path     = "/example/path"
+    mode     = "MAPPING"
+  }
+
+  service_type = "HTTP"
+
+  http_service_config {
+    address = ""
+    method  = "GET"
+    path    = "/web/cloudapi"
+    timeout = 12
+  }
+
+  backend_id      = alicloud_api_gateway_backend.example.id
+  backend_enabled = true
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_api_gateway_api&spm=docs.r.api_gateway_api.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -100,6 +143,8 @@ The following arguments are supported:
 * `system_parameters` - (Optional, List) system_parameters defines the system parameters of the api. See [`system_parameters`](#system_parameters) below.
 * `stage_names` - (Optional, Type: list) Stages that the api need to be deployed. Valid value: `RELEASE`,`PRE`,`TEST`.
 * `force_nonce_check` - (Optional, Type: bool, Available in v1.140+) Whether to prevent API replay attack. Default value: `false`.
+* `backend_id` - (Optional, Available since v1.279.0) The ID of the API Gateway Backend. When specified, the API references an existing backend created by `alicloud_api_gateway_backend`.
+* `backend_enabled` - (Optional, Available since v1.279.0) Specifies whether to enable the backend service. When set to `true`, the `backend_id` will be sent to the API.
 
 ### `request_config`
 
