@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -99,9 +98,6 @@ func resourceAliCloudEnsInstanceSecurityGroupAttachmentRead(d *schema.ResourceDa
 	}
 
 	d.Set("instance_id", objectRaw["InstanceId"])
-
-	securityGroupIds1Raw, _ := jsonpath.Get("$.SecurityGroupIds.SecurityGroupId", objectRaw)
-	d.Set("security_group_id", securityGroupIds1Raw)
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("instance_id", parts[0])
