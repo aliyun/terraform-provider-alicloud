@@ -228,7 +228,7 @@ func testAccEssNotification(common string) string {
 		default = "%s"
 	}
 	variable "newname" {
-		default = "newnameN"
+		default = "%s-new"
 	}
     resource "alicloud_mns_queue" "default1"{
 		name="${var.newname}"
@@ -261,5 +261,5 @@ func testAccEssNotification(common string) string {
 	resource "alicloud_mns_queue" "default"{
 		name="${var.name}"
 	}
-	`, EcsInstanceCommonTestCase, common)
+	`, EssInstanceCommonTestCase, common, common)
 }

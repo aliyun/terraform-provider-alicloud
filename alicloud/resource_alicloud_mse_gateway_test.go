@@ -112,7 +112,7 @@ func testSweepMseGateway(region string) error {
 	return nil
 }
 
-func TestAccAlicloudMSEGateway_basic0(t *testing.T) {
+func TestAccAliCloudMSEGateway_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.MSEGatewaySupportRegions)
 	resourceId := "alicloud_mse_gateway.default"
@@ -170,7 +170,7 @@ func TestAccAlicloudMSEGateway_basic0(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudMSEGateway_basic1(t *testing.T) {
+func TestAccAliCloudMSEGateway_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.MSEGatewaySupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_gateway.default"
@@ -230,19 +230,15 @@ var AlicloudMSEGatewayMap0 = map[string]string{
 }
 
 func AlicloudMSEGatewayBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
-}
-data "alicloud_zones" "default" {
-    available_resource_creation = "VSwitch"
 }
 data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
 	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 `, name)

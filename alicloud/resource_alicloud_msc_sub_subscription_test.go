@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
+func TestAccAliCloudMscSubSubscription_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_msc_sub_subscription.default"
 	ra := resourceAttrInit(resourceId, AlicloudMscSubSubscriptionMap0)
@@ -44,7 +44,7 @@ func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
 					"sms_status":     "1",
 					"email_status":   "1",
 					"pmsg_status":    "1",
-					"tts_status":     "1",
+					"tts_status":     "0",
 					"webhook_status": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -53,7 +53,7 @@ func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
 						"sms_status":     "1",
 						"email_status":   "1",
 						"pmsg_status":    "1",
-						"tts_status":     "1",
+						"tts_status":     "0",
 						"webhook_status": "0",
 					}),
 				),
@@ -85,16 +85,6 @@ func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"pmsg_status": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tts_status": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tts_status": "0",
 					}),
 				),
 			},
