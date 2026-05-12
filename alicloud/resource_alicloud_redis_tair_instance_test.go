@@ -2052,6 +2052,18 @@ func TestAccAliCloudRedisTairInstance_basic8729(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips":           "127.0.0.5,127.0.0.1,127.0.0.3",
+					"security_ip_group_name": "default",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips":           CHECKSET,
+						"security_ip_group_name": "default",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,

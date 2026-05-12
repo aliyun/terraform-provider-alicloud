@@ -3,6 +3,9 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"reflect"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -211,6 +214,16 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if old != "" && new != "" && old != new {
+						oldParts := strings.Split(old, ",")
+						sort.Strings(oldParts)
+						newParts := strings.Split(new, ",")
+						sort.Strings(newParts)
+						return reflect.DeepEqual(newParts, oldParts)
+					}
+					return false
+				},
 			},
 			"shard_count": {
 				Type:     schema.TypeInt,
