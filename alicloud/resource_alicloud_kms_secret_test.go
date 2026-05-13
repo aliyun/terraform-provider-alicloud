@@ -118,9 +118,9 @@ func TestAccAliCloudKmsSecret_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -225,9 +225,9 @@ func TestAccAliCloudKmsSecret_basic0_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -286,9 +286,9 @@ func TestAccAliCloudKmsSecret_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -398,9 +398,9 @@ func TestAccAliCloudKmsSecret_basic1_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -468,9 +468,9 @@ func TestAccAliCloudKmsSecret_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -580,9 +580,9 @@ func TestAccAliCloudKmsSecret_basic2_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -666,12 +666,13 @@ func AliCloudKmsSecretBasicDependence1(name string) string {
 	}
 
 	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
   		owners      = "system"
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone = data.alicloud_zones.default.zones.0.id
+  		availability_zone = data.alicloud_zones.default.zones.2.id
   		image_id          = data.alicloud_images.default.images.0.id
 	}
 
@@ -681,7 +682,7 @@ func AliCloudKmsSecretBasicDependence1(name string) string {
 
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_zones.default.zones.0.id
+  		zone_id = data.alicloud_zones.default.zones.2.id
 	}
 
 	resource "alicloud_security_group" "default" {
@@ -696,11 +697,12 @@ func AliCloudKmsSecretBasicDependence1(name string) string {
   		secret_num      = "1000"
   		spec            = "1000"
   		vpc_id          = data.alicloud_vpcs.default.ids.0
+		payment_type    = "PayAsYouGo"
   		vswitch_ids = [
     		data.alicloud_vswitches.default.ids.0
   		]
   		zone_ids = [
-    		data.alicloud_zones.default.zones.0.id,
+    		data.alicloud_zones.default.zones.2.id,
     		data.alicloud_zones.default.zones.1.id
   		]
 	}
@@ -712,7 +714,7 @@ func AliCloudKmsSecretBasicDependence1(name string) string {
 
 	resource "alicloud_db_instance" "default" {
   		engine           = "MySQL"
-  		engine_version   = "5.6"
+  		engine_version   = "8.0"
   		instance_type    = "rds.mysql.s1.small"
   		instance_storage = "10"
   		vswitch_id       = data.alicloud_vswitches.default.ids.0
@@ -726,7 +728,7 @@ func AliCloudKmsSecretBasicDependence1(name string) string {
   		security_groups            = alicloud_security_group.default.*.id
   		internet_charge_type       = "PayByTraffic"
   		internet_max_bandwidth_out = "10"
-  		availability_zone          = data.alicloud_zones.default.zones.0.id
+  		availability_zone          = data.alicloud_zones.default.zones.2.id
   		instance_charge_type       = "PostPaid"
   		password                   = "YourPassword12345!"
   		system_disk_category       = "cloud_efficiency"

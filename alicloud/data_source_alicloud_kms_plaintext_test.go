@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestAccAlicloudKMSPlaintextDataSource(t *testing.T) {
+func TestAccAliCloudKmsPlaintextDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kms_plaintext.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceKmsPlaintextDependence)

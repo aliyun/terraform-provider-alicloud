@@ -129,9 +129,9 @@ func TestAccAliCloudKmsKey_basic8855(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -287,9 +287,9 @@ func TestAccAliCloudKmsKey_basic8855_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -365,10 +365,11 @@ func TestAccAliCloudKmsKey_basic8856(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"}) // fixed to cn-hangzhou region
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -545,10 +546,11 @@ func TestAccAliCloudKmsKey_basic8856_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"}) // fixed to cn-hangzhou region
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -629,9 +631,9 @@ func TestAccAliCloudKmsKey_basic8857(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -797,9 +799,9 @@ func TestAccAliCloudKmsKey_basic8857_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -876,9 +878,9 @@ func TestAccAliCloudKmsKey_basic8858(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1044,9 +1046,9 @@ func TestAccAliCloudKmsKey_basic8858_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1150,16 +1152,13 @@ func AliCloudKmsKeyBasicDependence8856(name string) string {
 	data "alicloud_account" "default" {
 	}
 
-	data "alicloud_zones" "default" {
-	}
-
 	data "alicloud_vpcs" "default" {
   		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_zones.default.zones.0.id
+  		zone_id = "cn-hangzhou-k"
 	}
 
 	resource "alicloud_kms_instance" "default" {
@@ -1169,12 +1168,13 @@ func AliCloudKmsKeyBasicDependence8856(name string) string {
   		secret_num      = "0"
   		spec            = "1000"
   		vpc_id          = data.alicloud_vpcs.default.ids.0
+		payment_type    = "PayAsYouGo"
   		vswitch_ids = [
     		data.alicloud_vswitches.default.ids.0
   		]
   		zone_ids = [
-    		data.alicloud_zones.default.zones.0.id,
-    		data.alicloud_zones.default.zones.1.id
+    		"cn-hangzhou-k",
+    		"cn-hangzhou-j"
   		]
   		timeouts {
     		delete = "60m"

@@ -347,10 +347,6 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	}
 	action = "ConnectKmsInstance"
 	request = make(map[string]interface{})
-	if v, ok := d.GetOk("instance_id"); ok {
-		request["KmsInstanceId"] = v
-	}
-
 	request["VpcId"] = d.Get("vpc_id")
 	request["KmsInstanceId"] = d.Id()
 	request["KMProvider"] = "Aliyun"
@@ -471,9 +467,6 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 
 	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
-
-	d.Set("instance_id", d.Id())
-
 	return nil
 }
 

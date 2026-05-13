@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAliCloudKvStoreBackupPolicy_basic0(t *testing.T) {
+func TestAccAliCloudKvstoreBackupPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.KvStoreSupportRegions)
 	resourceId := "alicloud_kvstore_backup_policy.default"
@@ -71,7 +71,7 @@ func TestAccAliCloudKvStoreBackupPolicy_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudKvStoreBackupPolicy_basic0_twin(t *testing.T) {
+func TestAccAliCloudKvstoreBackupPolicy_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.KvStoreSupportRegions)
 	resourceId := "alicloud_kvstore_backup_policy.default"

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudDfsAccsessGroupsDataSource(t *testing.T) {
+func TestAccAliCloudDfsAccessGroupsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
