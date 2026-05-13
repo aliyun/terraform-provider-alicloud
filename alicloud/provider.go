@@ -172,6 +172,7 @@ func Provider() *schema.Provider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_cdn_domain_configs":                         dataSourceAliCloudCdnDomainConfigs(),
 			"alicloud_esa_waf_rulesets":                           dataSourceAliCloudEsaWafRuleSets(),
 			"alicloud_cs_clusters":                                dataSourceAliCloudAckClusters(),
 			"alicloud_threat_detection_check_item_configs":        dataSourceAliCloudThreatDetectionCheckItemConfigs(),
@@ -921,6 +922,7 @@ func Provider() *schema.Provider {
 			"alicloud_alidns_cloud_gtm_instance_config":                     resourceAliCloudAlidnsCloudGtmInstanceConfig(),
 			"alicloud_alidns_cloud_gtm_monitor_template":                    resourceAliCloudAlidnsCloudGtmMonitorTemplate(),
 			"alicloud_alidns_cloud_gtm_address":                             resourceAliCloudAlidnsCloudGtmAddress(),
+			"alicloud_ecs_disk_default_kms_key":                             resourceAliCloudEcsDiskDefaultKmsKey(),
 			"alicloud_ecs_disk_encryption_by_default":                       resourceAliCloudEcsDiskEncryptionByDefault(),
 			"alicloud_cms_prometheus_view":                                  resourceAliCloudCmsPrometheusView(),
 			"alicloud_cms_prometheus_instance":                              resourceAliCloudCmsPrometheusInstance(),

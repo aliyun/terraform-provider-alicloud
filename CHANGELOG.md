@@ -1,5 +1,33 @@
-## 1.278.0 (Unreleased)
-## 1.2767.0 (April 27, 2026)
+## 1.279.0 (Unreleased)
+## 1.278.0 (May 09, 2026)
+
+- **New Resource:** `alicloud_api_gateway_group_plugin_attachment` ([#9714](https://github.com/aliyun/terraform-provider-alicloud/issues/9714))
+- **New Resource:** `alicloud_oss_bucket_object_worm_configuration` ([#9716](https://github.com/aliyun/terraform-provider-alicloud/issues/9716))
+- **New Resource:** `alicloud_cms_prometheus_view` ([#9718](https://github.com/aliyun/terraform-provider-alicloud/issues/9718))
+- **New Resource:** `alicloud_ecs_disk_default_kms_key` ([#9720](https://github.com/aliyun/terraform-provider-alicloud/issues/9720))
+
+ENHANCEMENTS:
+
+- resource/alicloud_oss_bucket_replication: Remove the maximum items validation for prefix_set. ([#9609](https://github.com/aliyun/terraform-provider-alicloud/issues/9609))
+- docs: update alicloud_instance attribute network_interfaces. ([#9696](https://github.com/aliyun/terraform-provider-alicloud/issues/9696))
+- resource/alicloud_cloud_firewall_vpc_cen_tr_firewall: Change firewall_subnet_cidr, tr_attachment_master_cidr, tr_attachmen_slave_cide from required to optional. ([#9699](https://github.com/aliyun/terraform-provider-alicloud/issues/9699))
+- resource/alicloud_ecs_disk: Added retry strategy for error code LastTokenProcessing. ([#9700](https://github.com/aliyun/terraform-provider-alicloud/issues/9700))
+- docs: product eais has been offline, mark resources as deprecated. ([#9702](https://github.com/aliyun/terraform-provider-alicloud/issues/9702))
+- docs: update alicloud_cr_ee_instance doc for international site. ([#9703](https://github.com/aliyun/terraform-provider-alicloud/issues/9703))
+- docs: update cr ee doc for international site. ([#9704](https://github.com/aliyun/terraform-provider-alicloud/issues/9704))
+- resource/alicloud_cs_kubernetes: support nftables proxy_mode; resource/alicloud_cs_managed_kubernetes: support nftables proxy_mode. ([#9705](https://github.com/aliyun/terraform-provider-alicloud/issues/9705))
+- improvement: sync resource/data source deprecation notice from docs to code. ([#9706](https://github.com/aliyun/terraform-provider-alicloud/issues/9706))
+- resource/alicloud_gpdb_instance: Add more supported instance_pec. ([#9709](https://github.com/aliyun/terraform-provider-alicloud/issues/9709))
+- resource/alicloud_esa_cache_rule: Removed the additional_cacheable_ports enums limitation. ([#9713](https://github.com/aliyun/terraform-provider-alicloud/issues/9713))
+- resource/alicloud_cms_prometheus_instance: Added retry strategy for error code 400. ([#9715](https://github.com/aliyun/terraform-provider-alicloud/issues/9715))
+- resource/alicloud_oss_bucket_object: support object_worm_mode, object_worm_retain_until_date. resource/alicloud_oss_bucket_object_worm_configuration: mark rule as Optional+Computed. ([#9717](https://github.com/aliyun/terraform-provider-alicloud/issues/9717))
+- provider: default OSS SDK client to v4 signature. ([#9721](https://github.com/aliyun/terraform-provider-alicloud/issues/9721))
+
+BUG FIXES:
+
+- testcase: fix oos testcase. ([#9688](https://github.com/aliyun/terraform-provider-alicloud/issues/9688))
+
+## 1.277.0 (April 27, 2026)
 
 - **New Resource:** `alicloud_alidns_cloud_gtm_address` ([#9645](https://github.com/aliyun/terraform-provider-alicloud/issues/9645))
 - **New Resource:** `alicloud_alidns_cloud_gtm_address_pool` ([#9664](https://github.com/aliyun/terraform-provider-alicloud/issues/9664))

@@ -2103,72 +2103,69 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
-	{
-		update = false
-		objectRaw, _ = elasticsearchServiceV2.DescribeElasticsearchInstance(d.Id())
-		enableSetRenewal1 := false
-		checkValue00 = convertElasticsearchInstanceResultpaymentTypeResponse(objectRaw["paymentType"])
-		if checkValue00 == "Subscription" {
-			enableSetRenewal1 = true
-		}
-		action = "SetRenewal"
-		request = make(map[string]interface{})
-		query := make(map[string]interface{})
-		query["InstanceIDs"] = d.Id()
 
-		if d.HasChange("auto_renew_duration") {
-			update = true
-		}
-		if v, ok := d.GetOkExists("auto_renew_duration"); ok {
-			query["RenewalPeriod"] = strconv.Itoa(v.(int))
-		}
+	update = false
+	enableSetRenewal1 := false
+	objectRaw, _ = elasticsearchServiceV2.DescribeElasticsearchInstance(d.Id())
+	checkValue00 = convertElasticsearchInstanceResultpaymentTypeResponse(objectRaw["paymentType"])
+	if checkValue00 == "Subscription" {
+		enableSetRenewal1 = true
+	}
+	action = "SetRenewal"
+	request = make(map[string]interface{})
+	request["InstanceIDs"] = d.Id()
 
-		query["ProductType"] = "elasticsearchpre"
-		if d.HasChange("renewal_duration_unit") {
-			update = true
-		}
-		if v, ok := d.GetOk("renewal_duration_unit"); ok {
-			query["RenewalPeriodUnit"] = v.(string)
-		}
+	request["ProductCode"] = "elasticsearch"
+	request["ProductType"] = "elasticsearchpre"
 
-		if d.HasChange("renew_status") {
-			update = true
-		}
-		if v, ok := d.GetOk("renew_status"); ok {
-			query["RenewalStatus"] = v.(string)
-		}
+	if d.HasChange("auto_renew_duration") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("auto_renew_duration"); ok {
+		request["RenewalPeriod"] = v
+	}
 
-		query["ProductCode"] = "elasticsearch"
-		var endpoint string
-		request["ProductCode"] = "elasticsearch"
-		request["ProductType"] = "elasticsearchpre"
-		if client.IsInternationalAccount() {
-			request["ProductType"] = "elasticsearchpre_intl"
-		}
+	if d.HasChange("renewal_duration_unit") {
+		update = true
+	}
+	if v, ok := d.GetOk("renewal_duration_unit"); ok {
+		request["RenewalPeriodUnit"] = v
+	}
 
-		if update && enableSetRenewal1 {
-			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
-						request["ProductCode"] = "elasticsearch"
-						request["ProductType"] = "elasticsearchpre_intl"
-						endpoint = connectivity.BssOpenAPIEndpointInternational
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, request)
+	if d.HasChange("renew_status") {
+		update = true
+	}
+	if v, ok := d.GetOk("renew_status"); ok {
+		request["RenewalStatus"] = v
+	}
+
+	var endpoint string
+
+	if client.IsInternationalAccount() {
+		request["ProductType"] = "elasticsearchpre_intl"
+	}
+
+	if update && enableSetRenewal1 {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					request["ProductType"] = "elasticsearchpre_intl"
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
