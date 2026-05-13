@@ -2310,7 +2310,15 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("replication_acl", sslAction["ReplicationACL"])
 	d.Set("ssl_connection_string", sslAction["ConnectionString"])
 	if v, ok := sslAction["ForceEncryption"]; ok && v != nil {
-		d.Set("force_encryption", v)
+		forceEncryptionEnabled, err := strconv.ParseBool(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		if forceEncryptionEnabled {
+			d.Set("force_encryption", 1)
+		} else {
+			d.Set("force_encryption", 0)
+		}
 	}
 
 	//When the instance schema is docker on ECS, TDE encryption is not supported, so the query is not executed.

@@ -4275,6 +4275,7 @@ func TestAccAliCloudElasticsearchInstance_basic11529(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11529)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
@@ -4315,6 +4316,149 @@ func TestAccAliCloudElasticsearchInstance_basic11529(t *testing.T) {
 						"description":       "预付费转自动续费",
 						"renew_status":      "ManualRenewal",
 						"version":           "7.10.0_with_X-Pack",
+						"payment_type":      "Subscription",
+						"password":          "Admain@123",
+						"instance_category": "x-pack",
+						"zone_count":        "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renew_status":          "AutoRenewal",
+					"auto_renew_duration":   "1",
+					"order_action_type":     "UPGRADE",
+					"renewal_duration_unit": "M",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renew_status":          "AutoRenewal",
+						"auto_renew_duration":   "1",
+						"order_action_type":     "UPGRADE",
+						"renewal_duration_unit": "M",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":          "PayAsYouGo",
+						"renew_status":          REMOVEKEY,
+						"auto_renew_duration":   REMOVEKEY,
+						"renewal_duration_unit": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "period", "renew_status", "auto_renew_duration", "renewal_duration_unit"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudElasticsearchInstance_basic11529_intl(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11529)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeElasticsearchInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11529)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":  "预付费转自动续费",
+					"renew_status": "ManualRenewal",
+					"version":      "8.13.4_with_X-Pack",
+					"kibana_configuration": []map[string]interface{}{
+						{
+							"amount": "1",
+							"spec":   "elasticsearch.sn1ne.large",
+							"disk":   "0",
+						},
+					},
+					"payment_type": "Subscription",
+					"data_node_configuration": []map[string]interface{}{
+						{
+							"disk_type":       "cloud_essd",
+							"disk_encryption": "false",
+							"spec":            "elasticsearch.sn1ne.large",
+							"disk":            "20",
+							"amount":          "2",
+						},
+					},
+					"password":          "Admain@123",
+					"period":            "1",
+					"vswitch_id":        "${alicloud_vswitch.defaultmJ42pm.id}",
+					"instance_category": "x-pack",
+					"zone_count":        "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":       "预付费转自动续费",
+						"renew_status":      "ManualRenewal",
+						"version":           "8.13.4_with_X-Pack",
 						"payment_type":      "Subscription",
 						"password":          "Admain@123",
 						"instance_category": "x-pack",

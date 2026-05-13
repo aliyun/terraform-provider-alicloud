@@ -129,7 +129,7 @@ The following arguments are supported:
 * `security_group_id` - (Optional) ID of the security group used to create new instance. It is conflict with `security_group_ids`.
 * `security_group_ids` - (Optional, Available since v1.43.0) List IDs of the security group used to create new instances. It is conflict with `security_group_id`.
 * `scaling_configuration_name` - (Optional) Name shown for the scheduled task. which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain number, underscores `_`, hypens `-`, and decimal point `.`. If this parameter value is not specified, the default value is ScalingConfigurationId.
-* `internet_charge_type` - (Optional) Network billing type, Values: PayByBandwidth or PayByTraffic. Default to `PayByBandwidth`.
+* `internet_charge_type` - (Optional) Network billing type, Values: PayByBandwidth or PayByTraffic.
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). 
 * `internet_max_bandwidth_out` - (Optional, Available since v1.214.0) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [0,1024].
 * `credit_specification` - (Optional, Available since v1.98.0) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.

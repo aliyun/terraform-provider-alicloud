@@ -156,5 +156,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 VPC Vswitch can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_vpc_vswitch.example <id>
+$ terraform import alicloud_vswitch.example <id>
 ```

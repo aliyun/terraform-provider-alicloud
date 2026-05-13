@@ -175,7 +175,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      PayByBandwidth,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 			},
 			"internet_max_bandwidth_in": {

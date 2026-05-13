@@ -272,6 +272,23 @@ or
 $ export TF_APPEND_USER_AGENT="ArgoAgent/argo-12345678 NodeID/1234 (Optional Extra Information)"
 ```
 
+### Custom Product Sign Version
+
+Some Alibaba Cloud products support more than one API signature version. The provider lets you override the signature version per product through the [`sign_version`](#sign_version) block. Currently `oss` and `sls` are supported. Note that the OSS SDK client defaults to signature `v4` since v1.278.0 (it was `v1` in earlier versions); set `oss = "v1"` explicitly if you still need the legacy signature.
+
+Usage:
+
+```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+
+  sign_version {
+    oss = "v4"
+    sls = "v4"
+  }
+}
+```
+
 ## Argument Reference
 
 In addition to [generic `provider` arguments](https://www.terraform.io/docs/configuration/providers.html)
@@ -330,6 +347,8 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `endpoints` - (Optional) An [`endpoints`](#endpoints) block to support custom endpoints.
 
+* `sign_version` - (Optional, Available since v1.215.0) A [`sign_version`](#sign_version) block to specify the signature version used for the API requests of certain cloud products (currently `oss` and `sls`). Only one `sign_version` block may be in the configuration.
+
 * `skip_region_validation` - (Optional, Available since v1.52.0) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
 
 * `configuration_source` - (Optional, Available since v1.56.0) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
@@ -363,7 +382,7 @@ The length should not more than 128(Before 1.207.2, it should not more than 64).
   This parameter is provided by an external party and is used to prevent the confused deputy problem. 
   The value must be 2 to 1,224 characters in length and can contain letters, digits, and the following special characters:`= , . @ : / - _`.
 
-### assume_role_with_oidc Configuration Block
+### `assume_role_with_oidc` Configuration Block
 
 The `assume_role_with_oidc` configuration block supports the following arguments:
 
@@ -377,7 +396,17 @@ The `assume_role_with_oidc` configuration block supports the following arguments
   Can also be set with the `ALIBABA_CLOUD_ROLE_SESSION_NAME` environment variable.
 * `session_expiration` - (Optional) The validity period of the STS token. Unit: seconds. Default value: 3600. Minimum value: 900. Maximum value: the value of the MaxSessionDuration parameter when creating a ram role.
 * `policy` - (Optional) The policy that specifies the permissions of the returned STS token. You can use this parameter to grant the STS token fewer permissions than the permissions granted to the RAM role.
- 
+
+### `sign_version` Configuration Block
+
+The `sign_version` configuration block overrides the signature version used by the SDK client of specific cloud products. See [Custom Product Sign Version](#custom-product-sign-version) for an example. The following arguments are supported:
+
+* `oss` - (Optional) The signature version used by the OSS SDK client. Valid values: `v1`, `v4`. Starting from v1.278.0, the default value is changed from `v1` to `v4`; in earlier versions the default was `v1`. Set this field to `v1` explicitly if you need to keep using the legacy signature. 
+
+ ->**NOTE:** `v2` is no longer accepted starting from v1.278.0; the value will be treated as the default and the client will fall back to `v4`.
+
+* `sls` - (Optional) The signature version used by the SLS (Log Service) SDK client. Valid values: `v1`, `v4`. Defaults to `v1`. Full v4 signature support across all `alicloud_sls_*` / `alicloud_log_*` resources is available since v1.276.0.
+
 ### `endpoints`
 
 **NOTE:** Due to certain API restrictions, the endpoints pointing to the area should be consistent with the `region_id`.
