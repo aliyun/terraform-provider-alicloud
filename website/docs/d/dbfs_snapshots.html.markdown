@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_dbfs\_snapshots
 
+~> **NOTE:** This data source has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://help.aliyun.com/en/dbfs/).
+
 This data source provides the Dbfs Snapshots of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.156.0+.

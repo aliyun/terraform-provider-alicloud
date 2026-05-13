@@ -113,6 +113,7 @@ func testSweepDbfsSnapshot(region string) error {
 
 func TestAccAliCloudDbfsSnapshot_basic0(t *testing.T) {
 	var v map[string]interface{}
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
 	resourceId := "alicloud_dbfs_snapshot.default"
 	ra := resourceAttrInit(resourceId, AliCloudDbfsSnapshotMap0)
@@ -174,6 +175,7 @@ func TestAccAliCloudDbfsSnapshot_basic0(t *testing.T) {
 
 func TestAccAliCloudDbfsSnapshot_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
 	resourceId := "alicloud_dbfs_snapshot.default"
 	ra := resourceAttrInit(resourceId, AliCloudDbfsSnapshotMap0)

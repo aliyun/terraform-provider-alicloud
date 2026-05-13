@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_dbfs\_instances
 
+~> **NOTE:** This data source has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://help.aliyun.com/en/dbfs/).
+
 This data source provides the DBFS Instances of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.136.0+.

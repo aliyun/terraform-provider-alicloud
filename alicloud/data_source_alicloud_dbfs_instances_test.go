@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccAlicloudDBFSInstancesDataSource(t *testing.T) {
-
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_dbfs_instances.default"
 	name := fmt.Sprintf("tf-testacc-dbfsInstance%v", rand)

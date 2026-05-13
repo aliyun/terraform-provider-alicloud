@@ -19,6 +19,7 @@ import (
 
 func TestAccAliCloudDbfsInstanceAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
 	resourceId := "alicloud_dbfs_instance_attachment.default"
 	ra := resourceAttrInit(resourceId, AliCloudDbfsInstanceAttachmentMap0)

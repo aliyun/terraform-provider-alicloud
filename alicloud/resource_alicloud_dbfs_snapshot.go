@@ -14,10 +14,11 @@ import (
 
 func resourceAliCloudDbfsSnapshot() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDbfsSnapshotCreate,
-		Read:   resourceAliCloudDbfsSnapshotRead,
-		Update: resourceAliCloudDbfsSnapshotUpdate,
-		Delete: resourceAliCloudDbfsSnapshotDelete,
+		Create:             resourceAliCloudDbfsSnapshotCreate,
+		Read:               resourceAliCloudDbfsSnapshotRead,
+		Update:             resourceAliCloudDbfsSnapshotUpdate,
+		Delete:             resourceAliCloudDbfsSnapshotDelete,
+		DeprecationMessage: "This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/",
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},

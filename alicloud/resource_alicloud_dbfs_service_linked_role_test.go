@@ -17,6 +17,7 @@ import (
 
 func TestAccAlicloudDBFSServiceLinkedRole_basic0(t *testing.T) {
 	var v map[string]interface{}
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	resourceId := "alicloud_dbfs_service_linked_role.default"
 	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudDbfsEventServiceLinkedRoleMap0)

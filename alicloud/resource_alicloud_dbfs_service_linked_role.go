@@ -12,9 +12,10 @@ import (
 
 func resourceAlicloudDbfsServiceLinkedRole() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDbfsServiceLinkedRoleCreate,
-		Read:   resourceAlicloudDbfsServiceLinkedRoleRead,
-		Delete: resourceAlicloudDbfsServiceLinkedRoleDelete,
+		Create:             resourceAlicloudDbfsServiceLinkedRoleCreate,
+		Read:               resourceAlicloudDbfsServiceLinkedRoleRead,
+		Delete:             resourceAlicloudDbfsServiceLinkedRoleDelete,
+		DeprecationMessage: "This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/",
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},

@@ -14,7 +14,8 @@ import (
 
 func dataSourceAlicloudDbfsInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDbfsInstancesRead,
+		Read:               dataSourceAlicloudDbfsInstancesRead,
+		DeprecationMessage: "This data source has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/",
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,

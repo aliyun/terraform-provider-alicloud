@@ -105,6 +105,7 @@ func testSweepDBFSInstance(region string) error {
 
 func TestAccAliCloudDBFSInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	resourceId := "alicloud_dbfs_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudDBFSInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -286,6 +287,7 @@ resource "alicloud_instance" "default" {
 // Case 5069
 func TestAccAliCloudDbfsDbfsInstance_basic5069(t *testing.T) {
 	var v map[string]interface{}
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	resourceId := "alicloud_dbfs_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudDbfsDbfsInstanceMap5069)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -502,6 +504,7 @@ variable "name" {
 // Case 5069  twin
 func TestAccAliCloudDbfsDbfsInstance_basic5069_twin(t *testing.T) {
 	var v map[string]interface{}
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	resourceId := "alicloud_dbfs_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudDbfsDbfsInstanceMap5069)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

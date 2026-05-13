@@ -9,6 +9,8 @@ description: |-
 
 # alicloud_dbfs_instance_attachment
 
+~> **NOTE:** This resource has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://help.aliyun.com/en/dbfs/).
+
 Provides a Database File System (DBFS) Instance Attachment resource.
 
 For information about Database File System (DBFS) Instance Attachment and how to use it, see [What is Snapshot](https://help.aliyun.com/zh/dbfs/developer-reference/api-dbfs-2020-04-18-attachdbfs).

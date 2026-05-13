@@ -10,6 +10,7 @@ import (
 )
 
 func TestAccAlicloudDbfsAutoSnapShotPolicyDataSource(t *testing.T) {
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	rand := acctest.RandIntRange(1000000, 9999999)
 	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
 	idsConf := dataSourceTestAccConfig{

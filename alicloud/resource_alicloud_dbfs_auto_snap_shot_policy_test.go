@@ -12,6 +12,7 @@ import (
 // Case 1
 func TestAccAlicloudDbfsAutoSnapShotPolicy_basic2601(t *testing.T) {
 	var v map[string]interface{}
+	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
 	resourceId := "alicloud_dbfs_auto_snap_shot_policy.default"
 	ra := resourceAttrInit(resourceId, AlicloudDbfsAutoSnapShotPolicyMap2601)
