@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudDfsFileSystemsDataSource(t *testing.T) {
+func TestAccAliCloudDfsFileSystemsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
 	idsConf := dataSourceTestAccConfig{

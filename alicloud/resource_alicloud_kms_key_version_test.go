@@ -16,7 +16,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudKMSKeyVersion_basic(t *testing.T) {
+func TestAccAliCloudKmsKeyVersion_basic(t *testing.T) {
+	if os.Getenv("ALICLOUD_KMS_KEY_ID") == "" {
+		t.Skip("Skipping as ALICLOUD_KMS_KEY_ID not set")
+	}
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_key_version.default"
 	ra := resourceAttrInit(resourceId, KmsKeyVersionMap)
@@ -33,9 +36,9 @@ func TestAccAlicloudKMSKeyVersion_basic(t *testing.T) {
 			testAccPreCheckKMSForKeyIdImport(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

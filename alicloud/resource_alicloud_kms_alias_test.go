@@ -99,7 +99,7 @@ func testSweepKmsAlias(region string) error {
 	return nil
 }
 
-func TestAccAlicloudKMSAlias_basic(t *testing.T) {
+func TestAccAliCloudKmsAlias_basic(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_kms_alias.default"
@@ -121,9 +121,9 @@ func TestAccAlicloudKMSAlias_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

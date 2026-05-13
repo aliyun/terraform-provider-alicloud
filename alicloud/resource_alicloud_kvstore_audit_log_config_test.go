@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudKVStoreAuditLogConfig_basic(t *testing.T) {
+func TestAccAliCloudKvstoreAuditLogConfig_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kvstore_audit_log_config.default"
 	ra := resourceAttrInit(resourceId, KvstoreAuditLogConfigMap)

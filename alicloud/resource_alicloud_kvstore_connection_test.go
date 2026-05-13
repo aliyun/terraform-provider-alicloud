@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAliCloudKVStoreConnection_basic(t *testing.T) {
+func TestAccAliCloudKvstoreConnection_basic(t *testing.T) {
 	var v r_kvstore.InstanceNetInfo
 	resourceId := "alicloud_kvstore_connection.default"
 	ra := resourceAttrInit(resourceId, RedisConnectionMap)

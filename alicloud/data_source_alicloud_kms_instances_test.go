@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudKmsInstanceDataSource(t *testing.T) {
+func TestAccAliCloudKmsInstanceDataSource(t *testing.T) {
 	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	rand := acctest.RandIntRange(1000000, 9999999)
 

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudDfsZonesDataSource(t *testing.T) {
+func TestAccAliCloudDfsZonesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100, 999)
 	checkoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
 	regionIdConf := dataSourceTestAccConfig{
