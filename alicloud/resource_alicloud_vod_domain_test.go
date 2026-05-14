@@ -20,6 +20,7 @@ func TestAccAlicloudVODDomain_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%svoddomain%d", defaultRegionToTest, rand)
+	domain := "aliterraform.com"
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVODDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -32,7 +33,7 @@ func TestAccAlicloudVODDomain_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name": "136.chat",
+					"domain_name": domain,
 					"sources": []map[string]interface{}{
 						{
 							"source_type":    "oss",
@@ -40,12 +41,12 @@ func TestAccAlicloudVODDomain_basic0(t *testing.T) {
 							"source_port":    "80",
 						},
 					},
-					"scope": "domestic",
+					"scope": "overseas",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name": "136.chat",
-						"scope":       "domestic",
+						"domain_name": domain,
+						"scope":       "overseas",
 						"sources.#":   "1",
 					}),
 				),
@@ -77,8 +78,8 @@ func TestAccAlicloudVODDomain_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name": "136.chat",
-						"scope":       "domestic",
+						"domain_name": domain,
+						"scope":       "overseas",
 						"sources.#":   "1",
 					}),
 				),
