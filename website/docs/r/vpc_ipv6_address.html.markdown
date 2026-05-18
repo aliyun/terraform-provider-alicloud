@@ -77,7 +77,7 @@ The following arguments are supported:
   - `IPv6Address` (default): indicates that the current instance is a single IPv6 address.
   - `IPv6Prefix`: indicates that the current instance is a contiguous block of IPv6 addresses.
 * `ipv6_address` - (Optional, ForceNew, Computed) IPv6 address
-* `ipv6_address_description` - (Optional, Computed) The description of the IPv6 Address. The description must be 2 to 256 characters in length. It cannot start with http:// or https://.
+* `ipv6_address_description` - (Optional) The description of the IPv6 Address. The description must be 2 to 256 characters in length. It cannot start with http:// or https://.
 * `ipv6_address_name` - (Optional) The name of the IPv6 Address. The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter but cannot start with http:// or https://.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which the instance belongs.
 * `tags` - (Optional, Map) The tags for the resource.
