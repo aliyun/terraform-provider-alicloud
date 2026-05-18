@@ -45,7 +45,12 @@ func TestAccAlicloudChatbotPublishTask_basic2099(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"agent_key", "data_id_list"},
+				// Chatbot PublishTask is asynchronous on the server side: after Create
+				// the task moves through FE_RUNNING -> FE_SUCCESS and modify_time
+				// updates accordingly. ImportStateVerify reads twice with a small
+				// gap, so the snapshot can land on different state/time values.
+				// Skip those two attributes for the equality compare.
+				ImportStateVerifyIgnore: []string{"agent_key", "data_id_list", "status", "modify_time"},
 			},
 		},
 	})
