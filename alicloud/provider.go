@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"alicloud_cdn_domain_configs":                         dataSourceAliCloudCdnDomainConfigs(),
+			"alicloud_esa_network_optimizations":                  dataSourceAliCloudEsaNetworkOptimizations(),
 			"alicloud_esa_https_basic_configurations":             dataSourceAliCloudEsaHttpsBasicConfigurations(),
 			"alicloud_esa_waf_rulesets":                           dataSourceAliCloudEsaWafRuleSets(),
 			"alicloud_cs_clusters":                                dataSourceAliCloudAckClusters(),
