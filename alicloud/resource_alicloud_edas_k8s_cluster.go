@@ -20,7 +20,7 @@ func resourceAlicloudEdasK8sCluster() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(60 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cs_cluster_id": {
@@ -198,6 +198,12 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 		if response.Code == 200 {
+			// ClusterImportStatus 4 indicates the cluster registration has been marked
+			// for deletion by EDAS. The record may linger in GetCluster responses while
+			// the underlying ACK cluster tears down, but the EDAS-side deletion is done.
+			if response.Cluster.ClusterImportStatus == 4 {
+				return nil
+			}
 			return resource.RetryableError(Error("cluster deleting"))
 		} else if response.Code == 601 && strings.Contains(response.Message, "does not exist") {
 			return nil

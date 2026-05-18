@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -116,7 +115,7 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-edask8sclusterbasic%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEdasK8sClusterConfigDependence)
-	region := os.Getenv("ALICLOUD_REGION")
+	region := "cn-beijing"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
@@ -134,7 +133,7 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_name":  name,
+						"cluster_name":  CHECKSET,
 						"cluster_type":  "5",
 						"cs_cluster_id": CHECKSET,
 						"namespace_id":  region,
@@ -186,7 +185,9 @@ func testAccCheckEdasK8sClusterDestroy(s *terraform.State) error {
 		}
 
 		rsp := raw.(*edas.GetClusterResponse)
-		if rsp.Cluster.ClusterId != "" {
+		// ClusterImportStatus 4 indicates the EDAS-side registration has been marked
+		// for deletion (record may linger in GetCluster while ACK tears down).
+		if rsp.Cluster.ClusterId != "" && rsp.Cluster.ClusterImportStatus != 4 {
 			return fmt.Errorf("cluster %s still exist", rsp.Cluster.ClusterId)
 		}
 	}
@@ -203,53 +204,70 @@ func resourceEdasK8sClusterConfigDependence(name string) string {
 		data "alicloud_zones" default {
 		  available_resource_creation = "VSwitch"
 		}
-		
+
 		data "alicloud_instance_types" "default" {
-		  availability_zone = data.alicloud_zones.default.zones.0.id
-		  cpu_core_count = 2
-		  memory_size = 4
+		  availability_zone    = data.alicloud_zones.default.zones.0.id
+		  cpu_core_count       = 2
+		  memory_size          = 4
 		  kubernetes_node_role = "Worker"
 		}
 
+		data "alicloud_cs_kubernetes_version" "default" {
+		  cluster_type       = "ManagedKubernetes"
+		  profile            = "Default"
+		  kubernetes_version = "1.34"
+		}
+
 		data "alicloud_vpcs" "default" {
-			name_regex = "^default-NODELETING$"
+		  name_regex = "^default-NODELETING$"
 		}
+
 		data "alicloud_vswitches" "default" {
-			vpc_id = data.alicloud_vpcs.default.ids.0
-			zone_id      = data.alicloud_zones.default.zones.0.id
+		  vpc_id  = data.alicloud_vpcs.default.ids.0
+		  zone_id = data.alicloud_zones.default.zones.0.id
 		}
-		
+
 		resource "alicloud_vswitch" "vswitch" {
-		  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-		  vpc_id            = data.alicloud_vpcs.default.ids.0
-		  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-		  zone_id           = data.alicloud_zones.default.zones.0.id
-		  vswitch_name      = var.name
+		  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+		  vpc_id       = data.alicloud_vpcs.default.ids.0
+		  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+		  zone_id      = data.alicloud_zones.default.zones.0.id
+		  vswitch_name = var.name
 		}
-		
+
 		locals {
 		  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 		}
-		
-		resource "alicloud_log_project" "log" {
-		  name        = var.name
-		  description = "created by terraform for managedkubernetes cluster"
-		}
-		
+
 		resource "alicloud_cs_managed_kubernetes" "default" {
-		  worker_instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
-		  name = var.name
-		  worker_vswitch_ids = [local.vswitch_id]
-		  worker_number = "2"
-		  password =                    "Test12345"
-		  pod_cidr =                   "172.20.0.0/16"
-		  service_cidr =               "172.21.0.0/20"
-		  worker_disk_size =            "50"
-		  worker_disk_category =         "cloud_ssd"
-		  worker_data_disk_size =       "20"
-		  worker_data_disk_category =   "cloud_ssd"
-		  worker_instance_charge_type = "PostPaid"
-		  slb_internet_enabled =        "true"
+		  name_prefix          = var.name
+		  cluster_spec         = "ack.pro.small"
+		  version              = data.alicloud_cs_kubernetes_version.default.metadata.0.version
+		  vswitch_ids          = [local.vswitch_id]
+		  new_nat_gateway      = false
+		  pod_cidr             = "10.123.0.0/16"
+		  service_cidr         = "192.168.0.0/20"
+		  slb_internet_enabled = true
+		  addons {
+		    name = "storage-operator"
+		  }
+		  addons {
+		    name = "csi-plugin"
+		  }
+		  addons {
+		    name = "csi-provisioner"
+		  }
+		}
+
+		resource "alicloud_cs_kubernetes_node_pool" "default" {
+		  name                 = "desired_size"
+		  cluster_id           = alicloud_cs_managed_kubernetes.default.id
+		  vswitch_ids          = [local.vswitch_id]
+		  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+		  system_disk_category = "cloud_efficiency"
+		  system_disk_size     = 40
+		  password             = "Test12345"
+		  desired_size         = 2
 		}
 
 		`, name)
