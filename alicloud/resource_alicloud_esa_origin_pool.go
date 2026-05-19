@@ -33,9 +33,10 @@ func resourceAliCloudEsaOriginPool() *schema.Resource {
 			"enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"origin_pool_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"origin_pool_name": {
@@ -69,7 +70,7 @@ func resourceAliCloudEsaOriginPool() *schema.Resource {
 							Optional: true,
 						},
 						"origin_id": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"auth_conf": {
@@ -141,7 +142,9 @@ func resourceAliCloudEsaOriginPoolCreate(d *schema.ResourceData, meta interface{
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["Address"] = dataLoopTmp["address"]
-			dataLoopMap["Header"] = parseHeader(dataLoopTmp["header"].(string))
+			if header, ok := dataLoopTmp["header"]; ok && fmt.Sprint(header) != "" {
+				dataLoopMap["Header"] = parseHeader(header.(string))
+			}
 			dataLoopMap["Type"] = dataLoopTmp["type"]
 			localData1 := make(map[string]interface{})
 			version1, _ := jsonpath.Get("$[0].version", dataLoopTmp["auth_conf"])
@@ -166,7 +169,9 @@ func resourceAliCloudEsaOriginPoolCreate(d *schema.ResourceData, meta interface{
 			}
 			dataLoopMap["AuthConf"] = localData1
 			dataLoopMap["Weight"] = dataLoopTmp["weight"]
-			dataLoopMap["Enabled"] = dataLoopTmp["enabled"]
+			if enabled, ok := dataLoopTmp["enabled"]; ok {
+				dataLoopMap["Enabled"] = enabled
+			}
 			dataLoopMap["Name"] = dataLoopTmp["name"]
 			originsMapsArray = append(originsMapsArray, dataLoopMap)
 		}
@@ -220,9 +225,13 @@ func resourceAliCloudEsaOriginPoolRead(d *schema.ResourceData, meta interface{})
 
 	d.Set("enabled", objectRaw["Enabled"])
 	d.Set("origin_pool_name", objectRaw["Name"])
-	d.Set("origin_pool_id", objectRaw["Id"])
+
+	if v, ok := objectRaw["Id"]; ok {
+		d.Set("origin_pool_id", fmt.Sprint(v))
+	}
+
 	if v, ok := objectRaw["SiteId"]; ok {
-		d.Set("site_id", v)
+		d.Set("site_id", fmt.Sprint(v))
 	}
 
 	secretKeyMap := make(map[string]interface{})
@@ -246,9 +255,11 @@ func resourceAliCloudEsaOriginPoolRead(d *schema.ResourceData, meta interface{})
 			originsChildRaw := originsChildRaw.(map[string]interface{})
 			originsMap["address"] = originsChildRaw["Address"]
 			originsMap["enabled"] = originsChildRaw["Enabled"]
-			originsMap["header"] = convertObjectToJsonString(originsChildRaw["Header"])
+			if header, ok := originsChildRaw["Header"]; ok {
+				originsMap["header"] = convertObjectToJsonString(header)
+			}
 			originsMap["name"] = originsChildRaw["Name"]
-			originsMap["origin_id"] = originsChildRaw["Id"]
+			originsMap["origin_id"] = fmt.Sprint(originsChildRaw["Id"])
 			originsMap["type"] = originsChildRaw["Type"]
 			originsMap["weight"] = originsChildRaw["Weight"]
 
@@ -305,7 +316,9 @@ func resourceAliCloudEsaOriginPoolUpdate(d *schema.ResourceData, meta interface{
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["Address"] = dataLoopTmp["address"]
-				dataLoopMap["Header"] = parseHeader(dataLoopTmp["header"].(string))
+				if header, ok := dataLoopTmp["header"]; ok && fmt.Sprint(header) != "" {
+					dataLoopMap["Header"] = parseHeader(header.(string))
+				}
 				dataLoopMap["Type"] = dataLoopTmp["type"]
 				if !IsNil(dataLoopTmp["auth_conf"]) {
 					localData1 := make(map[string]interface{})
@@ -332,7 +345,9 @@ func resourceAliCloudEsaOriginPoolUpdate(d *schema.ResourceData, meta interface{
 					dataLoopMap["AuthConf"] = localData1
 				}
 				dataLoopMap["Weight"] = dataLoopTmp["weight"]
-				dataLoopMap["Enabled"] = dataLoopTmp["enabled"]
+				if enabled, ok := dataLoopTmp["enabled"]; ok {
+					dataLoopMap["Enabled"] = enabled
+				}
 				dataLoopMap["Name"] = dataLoopTmp["name"]
 				originsMapsArray = append(originsMapsArray, dataLoopMap)
 			}
