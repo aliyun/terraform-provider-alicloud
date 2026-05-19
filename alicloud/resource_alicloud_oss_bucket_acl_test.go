@@ -28,7 +28,7 @@ func TestAccAliCloudOssBucketAcl_basic6192(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -43,36 +43,17 @@ func TestAccAliCloudOssBucketAcl_basic6192(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl": "public-read",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl": "public-read",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl": "public-read-write",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl": "public-read-write",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl": "private",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl": "private",
-					}),
-				),
-			},
+			// public acl is not allowed
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"acl": "public-read-write",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"acl": "public-read-write",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket": "${alicloud_oss_bucket.CreateBucket.bucket}",
@@ -130,7 +111,7 @@ func TestAccAliCloudOssBucketAcl_basic6192_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

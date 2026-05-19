@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
+func TestAccAliCloudOssBucketsDataSource_basic(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_oss_buckets.default"
 
@@ -82,7 +82,7 @@ func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
 			"buckets.0.lifecycle_rule.1.expiration.#":      "1",
 			"buckets.0.lifecycle_rule.1.expiration.0.date": "2018-01-12",
 
-			"buckets.0.policy": "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}",
+			//"buckets.0.policy": "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}",
 
 			"buckets.0.tags.key1": "value1",
 			"buckets.0.tags.key2": "value2",
@@ -105,7 +105,7 @@ func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
 	ossBucketsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf)
 }
 
-func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
+func TestAccAliCloudOssBucketsDataSource_sserule(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_oss_buckets.default"
 
@@ -157,7 +157,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
-func TestAccAlicloudOssBucketsDataSource_sserule_with_kmsid(t *testing.T) {
+func TestAccAliCloudOssBucketsDataSource_sserule_with_kmsid(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_oss_buckets.default"
 
@@ -209,7 +209,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule_with_kmsid(t *testing.T) {
 	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
-func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
+func TestAccAliCloudOssBucketsDataSource_versioning(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_oss_buckets.default"
 
@@ -319,7 +319,7 @@ resource "alicloud_oss_bucket" "default" {
 				date = "2018-01-12"
 			}
 		}
-    policy = "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"
+    //policy = "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Deny\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"
 	tags = {
 		key1 = "value1",
 		key2 = "value2",

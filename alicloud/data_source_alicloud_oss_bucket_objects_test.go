@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudOssBucketObjectsDataSource_basic(t *testing.T) {
+func TestAccAliCloudOssBucketObjectsDataSource_basic(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_oss_bucket_objects.default"
 
@@ -89,7 +89,7 @@ func TestAccAlicloudOssBucketObjectsDataSource_basic(t *testing.T) {
 	ossBucketObjectsCheckInfo.dataSourceTestCheck(t, rand, bucketNameConf, keyRegexConf, keyPrefixConf, allConf)
 }
 
-func TestAccAlicloudOssBucketObjectsDataSource_versioning(t *testing.T) {
+func TestAccAliCloudOssBucketObjectsDataSource_versioning(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_oss_bucket_objects.default"
 
