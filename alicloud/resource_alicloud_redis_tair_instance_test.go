@@ -129,7 +129,7 @@ func TestAccAliCloudRedisTairInstance_basic3314(t *testing.T) {
 					"instance_class":     "tair.rdb.2g",
 					"tair_instance_name": name + "_update",
 					"shard_count":        "2",
-					"secondary_zone_id":  "${local.zone_id}",
+					"secondary_zone_id":  "${data.alicloud_kvstore_zones.default.zones.1.id}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"vswitch_id":         "${local.vswitch_id}",
 					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
@@ -388,7 +388,7 @@ func TestAccAliCloudRedisTairInstance_basic3340(t *testing.T) {
 					"instance_class":     "tair.rdb.1g",
 					"tair_instance_name": name + "_update",
 					"shard_count":        "2",
-					"secondary_zone_id":  "${local.zone_id}",
+					"secondary_zone_id":  "${data.alicloud_kvstore_zones.default.zones.1.id}",
 					"vswitch_id":         "${local.vswitch_id}",
 					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
@@ -624,7 +624,7 @@ func TestAccAliCloudRedisTairInstance_basic3549(t *testing.T) {
 					"zone_id":            "${local.zone_id}",
 					"instance_class":     "tair.rdb.2g",
 					"tair_instance_name": name + "_update",
-					"secondary_zone_id":  "${local.zone_id}",
+					"secondary_zone_id":  "${data.alicloud_kvstore_zones.default.zones.1.id}",
 					"vswitch_id":         "${local.vswitch_id}",
 					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
@@ -738,7 +738,7 @@ func TestAccAliCloudRedisTairInstance_basic3314_twin(t *testing.T) {
 					"instance_class":     "tair.rdb.2g",
 					"tair_instance_name": name,
 					"shard_count":        "2",
-					"secondary_zone_id":  "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"secondary_zone_id":  "${data.alicloud_kvstore_zones.default.zones.1.id}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"vswitch_id":         "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"vpc_id":             "${data.alicloud_vswitches.default.vswitches.0.vpc_id}",
@@ -822,7 +822,7 @@ func TestAccAliCloudRedisTairInstance_basic3340_twin(t *testing.T) {
 					"instance_class":     "tair.rdb.1g",
 					"tair_instance_name": name,
 					"shard_count":        "2",
-					"secondary_zone_id":  "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"secondary_zone_id":  "${data.alicloud_kvstore_zones.default.zones.1.id}",
 					"vswitch_id":         "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"vpc_id":             "${data.alicloud_vswitches.default.vswitches.0.vpc_id}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
@@ -890,7 +890,7 @@ func TestAccAliCloudRedisTairInstance_basic3549_twin(t *testing.T) {
 					"zone_id":            "${local.zone_id}",
 					"instance_class":     "tair.rdb.2g",
 					"tair_instance_name": name,
-					"secondary_zone_id":  "${local.zone_id}",
+					"secondary_zone_id":  "${data.alicloud_kvstore_zones.default.zones.1.id}",
 					"vswitch_id":         "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"vpc_id":             "${data.alicloud_vswitches.default.vswitches.0.vpc_id}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
@@ -1112,6 +1112,10 @@ variable "zone_id" {
   default = "cn-beijing-h"
 }
 
+variable "secondary_zone_id" {
+  default = "cn-beijing-i"
+}
+
 variable "region_id" {
   default = "cn-beijing"
 }
@@ -1328,11 +1332,7 @@ func TestAccAliCloudRedisTairInstance_basic6639_raw(t *testing.T) {
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"password":           "123456Tf",
 					"engine_version":     "5.0",
-					"period":             "12",
-					"auto_renew_period":  "12",
 					"port":               "6379",
-					"cluster_backup_id":  "cb-hyxdof5x9kqb333",
-					"secondary_zone_id":  "${var.zone_id}",
 					"node_type":          "STAND_ALONE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1347,11 +1347,7 @@ func TestAccAliCloudRedisTairInstance_basic6639_raw(t *testing.T) {
 						"resource_group_id":  CHECKSET,
 						"password":           "123456Tf",
 						"engine_version":     "5.0",
-						"period":             "12",
-						"auto_renew_period":  "12",
 						"port":               "6379",
-						"cluster_backup_id":  "cb-hyxdof5x9kqb333",
-						"secondary_zone_id":  CHECKSET,
 						"node_type":          "STAND_ALONE",
 					}),
 				),
@@ -1510,6 +1506,10 @@ variable "zone_id" {
   default = "cn-beijing-h"
 }
 
+variable "secondary_zone_id" {
+  default = "cn-beijing-i"
+}
+
 variable "region_id" {
   default = "cn-beijing"
 }
@@ -1591,10 +1591,8 @@ func TestAccAliCloudRedisTairInstance_basic6823_raw(t *testing.T) {
 					"resource_group_id":  "${alicloud_resource_manager_resource_group.defaultRg.id}",
 					"password":           "123456Tf",
 					"engine_version":     "1.0",
-					"period":             "12",
 					"port":               "6379",
-					"secondary_zone_id":  "${var.zone_id}",
-					"auto_renew":         "false",
+					"secondary_zone_id":  "${var.secondary_zone_id}",
 					"security_group_id":  "${alicloud_security_group.defaultEcsSg.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1609,10 +1607,8 @@ func TestAccAliCloudRedisTairInstance_basic6823_raw(t *testing.T) {
 						"resource_group_id":  CHECKSET,
 						"password":           "123456Tf",
 						"engine_version":     "1.0",
-						"period":             "12",
 						"port":               "6379",
 						"secondary_zone_id":  CHECKSET,
-						"auto_renew":         "false",
 						"security_group_id":  CHECKSET,
 					}),
 				),
@@ -2047,6 +2043,18 @@ func TestAccAliCloudRedisTairInstance_basic8729(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ips":           "127.0.0.2",
+						"security_ip_group_name": "default",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips":           "127.0.0.5,127.0.0.1,127.0.0.3",
+					"security_ip_group_name": "default",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips":           CHECKSET,
 						"security_ip_group_name": "default",
 					}),
 				),
