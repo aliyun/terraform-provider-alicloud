@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -140,7 +141,14 @@ func resourceAliCloudOssAccessPointCreate(d *schema.ResourceData, meta interface
 	}
 
 	CreateAccessPointConfigurationAccessPointNameVar, _ := jsonpath.Get("CreateAccessPointConfiguration.AccessPointName", request)
-	d.SetId(fmt.Sprintf("%v:%v", *hostMap["bucket"], CreateAccessPointConfigurationAccessPointNameVar))
+	id := fmt.Sprintf("%s:%s", *hostMap["bucket"], CreateAccessPointConfigurationAccessPointNameVar)
+	ossServiceV2 := OssServiceV2{client}
+	stateConf := BuildStateConf([]string{"creating"}, []string{"enable"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssAccessPointStateRefreshFunc(id, "Status", []string{}))
+	if _, err := stateConf.WaitForStateContext(context.Background()); err != nil {
+		return WrapErrorf(err, IdMsg, id)
+	}
+
+	d.SetId(id)
 
 	return resourceAliCloudOssAccessPointUpdate(d, meta)
 }

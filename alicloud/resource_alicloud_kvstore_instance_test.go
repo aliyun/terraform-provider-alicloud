@@ -122,7 +122,7 @@ func testSweepKVStoreInstances(region string) error {
 	return nil
 }
 
-func TestAccAliCloudKvstoreRedisInstance_6_0(t *testing.T) {
+func TestAccAliCloudKvstoreInstance_redis_6_0(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
@@ -138,9 +138,9 @@ func TestAccAliCloudKvstoreRedisInstance_6_0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -458,7 +458,7 @@ func TestAccAliCloudKvstoreRedisInstance_6_0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudKvstoreRedisInstance_7_0(t *testing.T) {
+func TestAccAliCloudKvstoreInstance_redis_7_0(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
@@ -474,9 +474,9 @@ func TestAccAliCloudKvstoreRedisInstance_7_0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -756,7 +756,7 @@ func TestAccAliCloudKvstoreRedisInstance_7_0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudKvstoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
+func TestAccAliCloudKvstoreInstance_redis_7_0_with_proxy_class(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
@@ -772,9 +772,9 @@ func TestAccAliCloudKvstoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1087,7 +1087,7 @@ func TestAccAliCloudKvstoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudKvstoreRedisInstance_5_0_memory_classic_standard(t *testing.T) {
+func TestAccAliCloudKvstoreInstance_redis_5_0_memory_classic_standard(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	// en-central-1 has no enough quota for this class
 	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
@@ -1105,9 +1105,9 @@ func TestAccAliCloudKvstoreRedisInstance_5_0_memory_classic_standard(t *testing.
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1451,7 +1451,7 @@ func TestAccAliCloudKvstoreRedisInstance_5_0_memory_classic_standard(t *testing.
 	})
 }
 
-func TestAccAliCloudKvstoreRedisInstance_5_0_memory_classic_cluster(t *testing.T) {
+func TestAccAliCloudKvstoreInstance_redis_5_0_memory_classic_cluster(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	// en-central-1 has no enough quota for this class
 	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
@@ -1469,9 +1469,9 @@ func TestAccAliCloudKvstoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1763,7 +1763,7 @@ func TestAccAliCloudKvstoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 	})
 }
 
-func TestAccAliCloudKvstoreMemcacheInstance_vpctest(t *testing.T) {
+func TestAccAliCloudKvstoreInstance_memcache_vpctest(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
@@ -1780,9 +1780,9 @@ func TestAccAliCloudKvstoreMemcacheInstance_vpctest(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

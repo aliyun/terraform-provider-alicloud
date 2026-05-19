@@ -28,9 +28,9 @@ func TestAccAliCloudWafv3Instance_basic2294(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckForCleanUpInstances(t, string(connectivity.Hangzhou), "waf", "waf", "waf", "waf")
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{}),
@@ -41,10 +41,9 @@ func TestAccAliCloudWafv3Instance_basic2294(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -55,9 +54,6 @@ var AlicloudWafV3InstanceMap2294 = map[string]string{}
 func AlicloudWafV3InstanceBasicDependence2294(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
-}
-
-
-`, name)
+  default = "%s"
+}`, name)
 }

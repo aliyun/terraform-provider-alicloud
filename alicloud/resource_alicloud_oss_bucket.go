@@ -990,9 +990,6 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 
 func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	d.Partial(true)
-
 	if d.HasChange("acl") && !d.IsNewResource() {
 		request := map[string]string{"bucketName": d.Id(), "bucketACL": d.Get("acl").(string)}
 		var requestInfo *oss.Client
@@ -1098,7 +1095,7 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		addDebug("PutBucketResourceGroup", raw, requestInfo, request)
 	}
 
-	d.Partial(false)
+	// TODO refresh oss bucket status before read
 	return resourceAlicloudOssBucketRead(d, meta)
 }
 

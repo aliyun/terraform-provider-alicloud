@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
+func TestAccAliCloudOssBucketObject_basic(t *testing.T) {
 	tmpFile, err := ioutil.TempFile("", "tf-oss-object-test-acc-source")
 	if err != nil {
 		t.Fatal(err)
@@ -42,9 +42,9 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckAlicloudOssBucketObjectDestroy,
+		CheckDestroy:      testAccCheckAlicloudOssBucketObjectDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -123,7 +123,7 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOssBucketObject_worm(t *testing.T) {
+func TestAccAliCloudOssBucketObject_worm(t *testing.T) {
 	tmpFile, err := ioutil.TempFile("", "tf-oss-object-worm-source")
 	if err != nil {
 		t.Fatal(err)
