@@ -187,7 +187,8 @@ resource "alicloud_vpc_ipam_ipam_pool_cidr" "defaultIpamPoolCidr" {
 }
 
 resource "alicloud_vpc_ipam_ipam_pool" "subIpamPool" {
-  depends_on = ["alicloud_vpc_ipam_ipam_pool_cidr.defaultIpamPoolCidr"]
+  depends_on = [alicloud_vpc_ipam_ipam_pool_cidr.defaultIpamPoolCidr]
+
   ipam_scope_id       = alicloud_vpc_ipam_ipam.defaultIpam.private_default_scope_id
   pool_region_id      = alicloud_vpc_ipam_ipam.defaultIpam.region_id
   ip_version          = "IPv4"
@@ -257,6 +258,7 @@ resource "alicloud_vpc_ipam_ipam" "defaultIpam" {
 }
 
 resource "alicloud_vpc_ipam_ipam_pool" "defaultIpamPool" {
+  ipv6_isp       = "BGP"
   ip_version     = "IPv6"
   ipam_scope_id  = alicloud_vpc_ipam_ipam.defaultIpam.public_default_scope_id
   pool_region_id = alicloud_vpc_ipam_ipam.defaultIpam.region_id
