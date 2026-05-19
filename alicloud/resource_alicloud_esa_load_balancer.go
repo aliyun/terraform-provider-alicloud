@@ -46,7 +46,7 @@ func resourceAliCloudEsaLoadBalancer() *schema.Resource {
 			"default_pools": {
 				Type:     schema.TypeList,
 				Required: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -57,11 +57,11 @@ func resourceAliCloudEsaLoadBalancer() *schema.Resource {
 				Optional: true,
 			},
 			"fallback_pool": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 			},
 			"load_balancer_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"load_balancer_name": {
@@ -458,7 +458,7 @@ func resourceAliCloudEsaLoadBalancerRead(d *schema.ResourceData, meta interface{
 
 	d.Set("description", objectRaw["Description"])
 	d.Set("enabled", objectRaw["Enabled"])
-	d.Set("fallback_pool", objectRaw["FallbackPool"])
+	d.Set("fallback_pool", fmt.Sprint(objectRaw["FallbackPool"]))
 	d.Set("load_balancer_name", objectRaw["Name"])
 	if objectRaw["RegionPools"] != nil {
 		d.Set("region_pools", convertObjectToJsonString(objectRaw["RegionPools"]))
@@ -470,9 +470,12 @@ func resourceAliCloudEsaLoadBalancerRead(d *schema.ResourceData, meta interface{
 		d.Set("sub_region_pools", convertObjectToJsonString(objectRaw["SubRegionPools"]))
 	}
 	d.Set("ttl", objectRaw["Ttl"])
-	d.Set("load_balancer_id", objectRaw["Id"])
+	if v, ok := objectRaw["Id"]; ok {
+		d.Set("load_balancer_id", fmt.Sprint(v))
+	}
+
 	if v, ok := objectRaw["SiteId"]; ok {
-		d.Set("site_id", v)
+		d.Set("site_id", fmt.Sprint(v))
 	}
 
 	adaptiveRoutingMaps := make([]map[string]interface{}, 0)

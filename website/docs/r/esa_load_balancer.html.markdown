@@ -94,7 +94,7 @@ The following arguments are supported:
 * `enabled` - (Optional) Whether the load balancer is enabled.
   - `true`: Enabled.
   - `false`: Not enabled.
-* `fallback_pool` - (Required, Int) The fallback pool ID, to which traffic will be redirected if all other pools are unavailable.
+* `fallback_pool` - (Required) The fallback pool ID, to which traffic will be redirected if all other pools are unavailable.
 * `load_balancer_name` - (Required, ForceNew) The name of the load balancer must meet the domain name format verification and be a subdomain name under the site.
 * `monitor` - (Required, List) Monitor configuration for health check. See [`monitor`](#monitor) below.
 * `random_steering` - (Optional, List) Weighted round-robin configuration, used to control the traffic distribution weights among different pools. See [`random_steering`](#random_steering) below.
@@ -104,7 +104,7 @@ The following arguments are supported:
   - `off`: Not enabled.
   - `ip`: Session persistence by IP.
   - `cookie`: Session persistence by Cookie.
-* `site_id` - (Required, ForceNew, Int) The site ID.
+* `site_id` - (Required, ForceNew) The site ID.
 * `steering_policy` - (Required) Load balancing policy.
 * `sub_region_pools` - (Optional) Address pools corresponding to secondary regions. When multiple secondary regions share a set of address pools, the keys can be concatenated with commas.
 * `ttl` - (Optional, Int) TTL value, the time-to-live for DNS records. The default value is 30. The value range is 10-600.
