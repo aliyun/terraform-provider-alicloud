@@ -46,7 +46,6 @@ func resourceAliCloudVpcIpv6Address() *schema.Resource {
 			"ipv6_address_description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"ipv6_address_name": {
 				Type:     schema.TypeString,
@@ -84,28 +83,28 @@ func resourceAliCloudVpcIpv6AddressCreate(d *schema.ResourceData, meta interface
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["ResourceGroupId"] = v
-	}
 	if v, ok := d.GetOk("ipv6_address_name"); ok {
 		request["Ipv6AddressName"] = v
 	}
-	if v, ok := d.GetOk("ipv6_address_description"); ok {
-		request["Ipv6AddressDescription"] = v
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
 		request = expandTagsToMap(request, tagsMap)
 	}
 
+	request["VSwitchId"] = d.Get("vswitch_id")
 	if v, ok := d.GetOk("ipv6_address"); ok {
 		request["Ipv6Address"] = v
 	}
-	request["VSwitchId"] = d.Get("vswitch_id")
 	if v, ok := d.GetOk("address_type"); ok {
 		request["AddressType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	if v, ok := d.GetOk("ipv6_address_description"); ok {
+		request["Ipv6AddressDescription"] = v
+	}
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
@@ -262,10 +261,8 @@ func resourceAliCloudVpcIpv6AddressDelete(d *schema.ResourceData, meta interface
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.Ipv6Instance"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -283,7 +280,7 @@ func resourceAliCloudVpcIpv6AddressDelete(d *schema.ResourceData, meta interface
 	}
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcServiceV2.VpcIpv6AddressStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcServiceV2.VpcIpv6AddressStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
