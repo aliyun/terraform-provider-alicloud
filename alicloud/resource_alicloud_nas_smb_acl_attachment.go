@@ -185,9 +185,17 @@ func resourceAlicloudNasSmbAclAttachmentRead(d *schema.ResourceData, meta interf
 	}
 	d.Set("file_system_id", d.Id())
 	d.Set("auth_method", fmt.Sprint(object["AuthMethod"]))
-	d.Set("enable_anonymous_access", fmt.Sprint(object["EnableAnonymousAccess"]))
-	d.Set("encrypt_data", fmt.Sprint(object["EncryptData"]))
-	d.Set("reject_unencrypted_access", fmt.Sprint(object["RejectUnencryptedAccess"]))
+
+	if v, ok := object["EnableAnonymousAccess"]; ok {
+		d.Set("enable_anonymous_access", v.(bool))
+	}
+	if v, ok := object["EncryptData"]; ok {
+		d.Set("encrypt_data", v.(bool))
+	}
+	if v, ok := object["RejectUnencryptedAccess"]; ok {
+		d.Set("reject_unencrypted_access", v.(bool))
+	}
+
 	d.Set("super_admin_sid", fmt.Sprint(object["SuperAdminSid"]))
 	d.Set("home_dir_path", fmt.Sprint(object["HomeDirPath"]))
 	d.Set("enabled", fmt.Sprint(object["Enabled"]))

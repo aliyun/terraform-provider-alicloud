@@ -36,9 +36,9 @@ func TestAccAlicloudNASSmbAclAttachment_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -58,7 +58,7 @@ func TestAccAlicloudNASSmbAclAttachment_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"enable_anonymous_access": "true",
+					"enable_anonymous_access": true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
