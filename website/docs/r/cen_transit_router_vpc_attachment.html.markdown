@@ -112,6 +112,7 @@ The following arguments are supported:
 
 -> **NOTE:** This parameter configures deletion behavior and is only evaluated when Terraform attempts to destroy the resource. Changes to this parameter during updates are stored but have no immediate effect.
 
+* `options` - (Optional, Computed, List, Available since v1.279.0) A collection of feature attributes. See [`options`](#options) below.
 * `order_type` - (Optional, Computed, Available since v1.276.0) The entity that pays the fees of the network instance. Valid values:
 
   - `PayByCenOwner`: the Alibaba Cloud account that owns the CEN instance.
@@ -133,6 +134,12 @@ The following arguments will be discarded. Please use new fields as soon as poss
 * `transit_router_attachment_name` - (Deprecated since v1.230.1) Field 'transit_router_attachment_name' has been deprecated from provider version 1.230.1. New field 'transit_router_vpc_attachment_name' instead.
 * `route_table_association_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table association. **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
 * `route_table_propagation_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table propagation. **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
+
+### `options`
+
+The options supports the following:
+* `appliance_mode_support` - (Optional, Computed, Available since v1.279.0) Indicates whether appliance mode is enabled.
+* `ipv6_support` - (Optional, Computed, Available since v1.279.0) Indicates whether IPv6 is supported.
 
 ### `zone_mappings`
 
