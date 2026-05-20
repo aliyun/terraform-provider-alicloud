@@ -102,6 +102,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `payment_type` - The payment type of the resource.
   * `vpc_owner_id` - The Owner ID of the VPC.
   * `auto_publish_route_enabled` - (Available since v1.224.0) Whether the transit router is automatically published to the VPC instance.
+  * `options` - (Available since v1.279.0) A collection of feature attributes.
+    * `appliance_mode_support` - Indicates whether appliance mode is enabled.
+    * `ipv6_support` - Indicates whether IPv6 is supported.
   * `transit_router_attachment_name` - The name of the Transit Router VPC Attachment.
   * `transit_router_attachment_description` - The description of the Transit Router VPC Attachment.
   * `status` - The status of the Transit Router VPC Attachment.

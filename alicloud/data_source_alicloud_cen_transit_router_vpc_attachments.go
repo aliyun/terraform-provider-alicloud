@@ -98,6 +98,22 @@ func dataSourceAliCloudCenTransitRouterVpcAttachments() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
+						"options": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"appliance_mode_support": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"ipv6_support": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 						"transit_router_attachment_name": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -246,6 +262,15 @@ func dataSourceAliCloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 			"transit_router_attachment_description": object["TransitRouterAttachmentDescription"],
 			"status":                                object["Status"],
 		}
+
+		optionsMaps := make([]map[string]interface{}, 0)
+		if optionsRaw, ok := object["Options"].(map[string]interface{}); ok && len(optionsRaw) > 0 {
+			optionsMap := make(map[string]interface{})
+			optionsMap["appliance_mode_support"] = optionsRaw["ApplianceModeSupport"]
+			optionsMap["ipv6_support"] = optionsRaw["Ipv6Support"]
+			optionsMaps = append(optionsMaps, optionsMap)
+		}
+		mapping["options"] = optionsMaps
 
 		if zoneMappings, ok := object["ZoneMappings"]; ok {
 			zoneMappingsMaps := make([]map[string]interface{}, 0)
