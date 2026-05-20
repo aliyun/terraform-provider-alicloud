@@ -190,7 +190,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "ContainerOS", "AliyunLinuxSecurity", "Ubuntu", "AliyunLinux3ContainerOptimized", "Custom", "AliyunLinux4ContainerOptimized", "AliyunLinux4", "AliyunLinux4Arm64", "AliyunLinux4Security"}, false),
+				ValidateFunc: StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "ContainerOS", "AliyunLinuxSecurity", "Ubuntu", "AliyunLinux3ContainerOptimized", "Custom", "AliyunLinux4ContainerOptimized", "AliyunLinux4", "AliyunLinux4Arm64", "AliyunLinux4Security", "AliyunLinux4ContainerOptimizedArm64"}, false),
 			},
 			"install_cloud_monitor": {
 				Type:     schema.TypeBool,
@@ -3637,9 +3637,9 @@ func attachExistingInstance(d *schema.ResourceData, meta interface{}, attachInst
 }
 
 func diffInstances(old []string, new []string) (attach []string, remove []string) {
-	for i, _ := range new {
+	for i := range new {
 		found := false
-		for j, _ := range old {
+		for j := range old {
 			if new[i] == old[j] {
 				found = true
 			}
@@ -3649,9 +3649,9 @@ func diffInstances(old []string, new []string) (attach []string, remove []string
 		}
 	}
 
-	for i, _ := range old {
+	for i := range old {
 		found := false
-		for j, _ := range new {
+		for j := range new {
 			if old[i] == new[j] {
 				found = true
 			}
