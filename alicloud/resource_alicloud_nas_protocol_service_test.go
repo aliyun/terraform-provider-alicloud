@@ -29,9 +29,9 @@ func TestAccAliCloudNasProtocolService_basic12170(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -129,9 +129,9 @@ func TestAccAliCloudNasProtocolService_basic12172(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -182,6 +182,10 @@ variable "name" {
     default = "%s"
 }
 
+variable "zone_id" {
+	default = "cn-beijing-f"
+}
+
 resource "alicloud_vpc" "createEVpc_Cpfs1" {
   is_default  = false
   cidr_block  = "192.168.0.0/16"
@@ -192,7 +196,7 @@ resource "alicloud_vpc" "createEVpc_Cpfs1" {
 resource "alicloud_vswitch" "CreateVswitch1" {
   is_default   = false
   vpc_id       = alicloud_vpc.createEVpc_Cpfs1.id
-  zone_id      = "cn-beijing-i"
+  zone_id      = var.zone_id
   cidr_block   = "192.168.2.0/24"
   vswitch_name = "nas-teste1031-vsw1sdw-F"
 }
@@ -200,7 +204,7 @@ resource "alicloud_vswitch" "CreateVswitch1" {
 resource "alicloud_nas_file_system" "create_cpfs_file_system_CL2" {
   description      = "cpfs-文件系统本地冗余-protocol_service测试"
   storage_type     = "advance_100"
-  zone_id          = "cn-beijing-i"
+  zone_id          = var.zone_id
   encrypt_type     = "0"
   vpc_id           = alicloud_vpc.createEVpc_Cpfs1.id
   capacity         = "3600"
@@ -231,9 +235,9 @@ func TestAccAliCloudNasProtocolService_basic12174(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -296,6 +300,10 @@ variable "name" {
     default = "%s"
 }
 
+variable "zone_id" {
+  default = "cn-beijing-f"
+}
+
 resource "alicloud_vpc" "createEVpc_Cpfs1" {
   is_default  = false
   cidr_block  = "192.168.0.0/16"
@@ -306,7 +314,7 @@ resource "alicloud_vpc" "createEVpc_Cpfs1" {
 resource "alicloud_vswitch" "CreateVswitch1" {
   is_default   = false
   vpc_id       = alicloud_vpc.createEVpc_Cpfs1.id
-  zone_id      = "cn-beijing-i"
+  zone_id      = var.zone_id
   cidr_block   = "192.168.2.0/24"
   vswitch_name = "nas-teste1031-vsw1sdw-F"
 }
@@ -314,7 +322,7 @@ resource "alicloud_vswitch" "CreateVswitch1" {
 resource "alicloud_nas_file_system" "create_cpfs_file_system_CL1" {
   description      = "cpfs-文件系统本地冗余-protocol_service测试"
   storage_type     = "advance_100"
-  zone_id          = "cn-beijing-i"
+  zone_id          = var.zone_id
   encrypt_type     = "0"
   vpc_id           = alicloud_vpc.createEVpc_Cpfs1.id
   capacity         = "3600"
@@ -345,9 +353,9 @@ func TestAccAliCloudNasProtocolService_basic12186(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

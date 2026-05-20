@@ -36,9 +36,9 @@ func TestAccAlicloudNASDataFlow_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -122,9 +122,9 @@ func TestAccAlicloudNASDataFlow_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -191,7 +191,7 @@ data "alicloud_vswitches" "default" {
 
 resource "alicloud_nas_file_system" "default" {
   protocol_type    = "cpfs"
-  storage_type     = "advance_200"
+  storage_type     = "advance_100"
   file_system_type = "cpfs"
   capacity         = 3600
   description      = "tf-testacc"
