@@ -1,39 +1,40 @@
-## 1.279.0 (Unreleased)
+## 1.280.0 (Unreleased)
+## 1.279.0 (May 22, 2026)
 
-- **New Resource:** `alicloud_ros_stack_instances` [GH-9684]
-- **New Resource:** `alicloud_polardb_application` [GH-9691]
-- **New Resource:** `alicloud_polardb_application_endpoint` [GH-9691]
-- **New Resource:** `alicloud_polardb_batch_task` [GH-9691]
-- **New Data Source:** `alicloud_polardb_batch_task` [GH-9723]
-- **New Data Source:** `alicloud_esa_https_basic_configurations` [GH-9736]
-- **New Data Source:** `alicloud_esa_network_optimizations` [GH-9738]
-- **New Data Source:** `alicloud_esa_origin_rules` [GH-9739]
+- **New Resource:** `alicloud_ros_stack_instances` ([#9684](https://github.com/aliyun/terraform-provider-alicloud/issues/9684))
+- **New Resource:** `alicloud_polardb_application` ([#9691](https://github.com/aliyun/terraform-provider-alicloud/issues/9691))
+- **New Resource:** `alicloud_polardb_application_endpoint` ([#9691](https://github.com/aliyun/terraform-provider-alicloud/issues/9691))
+- **New Resource:** `alicloud_polardb_batch_task` ([#9691](https://github.com/aliyun/terraform-provider-alicloud/issues/9691))
+- **New Data Source:** `alicloud_polardb_batch_task` ([#9723](https://github.com/aliyun/terraform-provider-alicloud/issues/9723))
+- **New Data Source:** `alicloud_esa_https_basic_configurations` ([#9736](https://github.com/aliyun/terraform-provider-alicloud/issues/9736))
+- **New Data Source:** `alicloud_esa_network_optimizations` ([#9738](https://github.com/aliyun/terraform-provider-alicloud/issues/9738))
+- **New Data Source:** `alicloud_esa_origin_rules` ([#9739](https://github.com/aliyun/terraform-provider-alicloud/issues/9739))
 
 ENHANCEMENTS:
 
-- resource/alicloud_ess_server_group_attachment: support GWLB. [GH-9707]
-- resource/alicloud_ess_scaling_configuration: internet_charge_type default value remove. [GH-9708]
-- resource/alicloud_cs_kubernetes_node_pools: Allow AliyunLinux4 images as image_type on k8s nodepools. [GH-9711]
-- resource/alicloud_db_instance: Add force_encryption read support for SQLServer DB instance. [GH-9725]
-- resource/alicloud_api_gateway_vpc_access: Add vpc_access_id. [GH-9726]
-- resource/alicloud_vpc_ipv6_address: Added retry strategy for error code IncorrectStatus.Ipv6Instance. [GH-9740]
-- resource/alicloud_esa_origin_pool: Changed the field origin_pool_id, origins.origin_id from TypeInt to TypeString; Improved alicloud_esa_origin_pool testcase. [GH-9741]
-- resource/alicloud_esa_load_balancer: Changed the field fallback_pool, load_balancer_id, default_pools.elem from TypeInt to TypeString. [GH-9743]
-- resource/alicloud_cs_kubernetes_node_pool: add image_type AliyunLinux4ContainerOptimizedArm64. [GH-9745]
-- resource/alicloud_cen_transit_router_vpc_attachment: add options support; data-source/alicloud_cen_transit_router_vpc_attachments: add options output. [GH-9746]
-- resource/alicloud_rds_custom: update generated implementation and tests. [GH-9747]
-- docs: Fixed resource alicloud_vswitch document error. [GH-9722]
-- docs: fix version note from v1.117.0 to v1.5.1. [GH-9727]
-- docs: type support GWLB. [GH-9750]
-- deprecate: mark all DBFS resources and data sources as deprecated. [GH-9732]
+- resource/alicloud_ess_server_group_attachment: support GWLB. ([#9707](https://github.com/aliyun/terraform-provider-alicloud/issues/9707))
+- resource/alicloud_ess_scaling_configuration: internet_charge_type default value remove. ([#9708](https://github.com/aliyun/terraform-provider-alicloud/issues/9708))
+- resource/alicloud_cs_kubernetes_node_pools: Allow AliyunLinux4 images as image_type on k8s nodepools. ([#9711](https://github.com/aliyun/terraform-provider-alicloud/issues/9711))
+- resource/alicloud_db_instance: Add force_encryption read support for SQLServer DB instance. ([#9725](https://github.com/aliyun/terraform-provider-alicloud/issues/9725))
+- resource/alicloud_api_gateway_vpc_access: Add vpc_access_id. ([#9726](https://github.com/aliyun/terraform-provider-alicloud/issues/9726))
+- resource/alicloud_vpc_ipv6_address: Added retry strategy for error code IncorrectStatus.Ipv6Instance. ([#9740](https://github.com/aliyun/terraform-provider-alicloud/issues/9740))
+- resource/alicloud_esa_origin_pool: Changed the field origin_pool_id, origins.origin_id from TypeInt to TypeString; Improved alicloud_esa_origin_pool testcase. ([#9741](https://github.com/aliyun/terraform-provider-alicloud/issues/9741))
+- resource/alicloud_esa_load_balancer: Changed the field fallback_pool, load_balancer_id, default_pools.elem from TypeInt to TypeString. ([#9743](https://github.com/aliyun/terraform-provider-alicloud/issues/9743))
+- resource/alicloud_cs_kubernetes_node_pool: add image_type AliyunLinux4ContainerOptimizedArm64. ([#9745](https://github.com/aliyun/terraform-provider-alicloud/issues/9745))
+- resource/alicloud_cen_transit_router_vpc_attachment: add options support; data-source/alicloud_cen_transit_router_vpc_attachments: add options output. ([#9746](https://github.com/aliyun/terraform-provider-alicloud/issues/9746))
+- resource/alicloud_rds_custom: update generated implementation and tests. ([#9747](https://github.com/aliyun/terraform-provider-alicloud/issues/9747))
+- docs: Fixed resource alicloud_vswitch document error. ([#9722](https://github.com/aliyun/terraform-provider-alicloud/issues/9722))
+- docs: fix version note from v1.117.0 to v1.5.1. ([#9727](https://github.com/aliyun/terraform-provider-alicloud/issues/9727))
+- docs: type support GWLB. ([#9750](https://github.com/aliyun/terraform-provider-alicloud/issues/9750))
+- deprecate: mark all DBFS resources and data sources as deprecated. ([#9732](https://github.com/aliyun/terraform-provider-alicloud/issues/9732))
 
 BUG FIXES:
 
-- resource/alicloud_api_gateway_api: Fix backend_id read issue. [GH-9726]
-- resource/alicloud_redis_tair_instance: Fixed the bug of security_ips perpetual diff. [GH-9730]
-- resource/alicloud_elasticsearch_instance: Fixed the action SetRenewal invalid error when using an international account. [GH-9731]
-- resource/alicloud_vpc_ipam_ipam_pool: fix error code checks; resource/alicloud_vpc_ipam_ipam_pool_cidr: fix error code checks. [GH-9744]
-- resource/alicloud_slb_listener: Fixed the import error caused by field health_check_type. [GH-9748]
+- resource/alicloud_api_gateway_api: Fix backend_id read issue. ([#9726](https://github.com/aliyun/terraform-provider-alicloud/issues/9726))
+- resource/alicloud_redis_tair_instance: Fixed the bug of security_ips perpetual diff. ([#9730](https://github.com/aliyun/terraform-provider-alicloud/issues/9730))
+- resource/alicloud_elasticsearch_instance: Fixed the action SetRenewal invalid error when using an international account. ([#9731](https://github.com/aliyun/terraform-provider-alicloud/issues/9731))
+- resource/alicloud_vpc_ipam_ipam_pool: fix error code checks; resource/alicloud_vpc_ipam_ipam_pool_cidr: fix error code checks. ([#9744](https://github.com/aliyun/terraform-provider-alicloud/issues/9744))
+- resource/alicloud_slb_listener: Fixed the import error caused by field health_check_type. ([#9748](https://github.com/aliyun/terraform-provider-alicloud/issues/9748))
 
 ## 1.278.0 (May 09, 2026)
 
