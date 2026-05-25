@@ -83,6 +83,13 @@ func resourceAliCloudVpcPublicIpAddressPool() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"zones": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }

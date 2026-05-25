@@ -55,6 +55,7 @@ The following arguments are supported:
   - If the configuration is empty, the default value is DDoS protection (Basic edition).
   - `AntiDDoS_Enhanced` indicates DDoS protection (enhanced version).
 * `tags` - (Optional, Map) The tags of PrefixList.
+* `zones` - (Optional, ForceNew, Computed, List) The available zones of the VPC Public IP address pool. Required when `biz_type` is `CloudBox`.
 
 ## Attributes Reference
 
