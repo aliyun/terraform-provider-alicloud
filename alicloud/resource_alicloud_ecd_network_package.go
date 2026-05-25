@@ -128,7 +128,7 @@ func resourceAlicloudEcdNetworkPackageUpdate(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{"Creating"}, []string{"InUse"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ecdService.EcdNetworkPackageRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{"Creating", "Updating"}, []string{"InUse"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ecdService.EcdNetworkPackageRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

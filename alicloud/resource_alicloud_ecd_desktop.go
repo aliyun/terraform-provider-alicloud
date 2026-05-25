@@ -218,7 +218,7 @@ func resourceAlicloudEcdDesktopCreate(d *schema.ResourceData, meta interface{}) 
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"INTERNAL_ERROR"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
