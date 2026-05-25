@@ -18,7 +18,7 @@ func TestAccAliCloudCloudFirewallVpcFirewallIpsConfig_basic7786(t *testing.T) {
 	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallVpcFirewallIpsConfigMap7786)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudFirewallVpcFirewallIpsConfig")
+	}, "DescribeCloudFirewallVpcFirewallIpsConfig", "member_uid")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
