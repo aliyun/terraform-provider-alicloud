@@ -183,7 +183,6 @@ func resourceAlicloudMseNacosConfigRead(d *schema.ResourceData, meta interface{}
 	d.Set("tags", object["Tags"])
 	d.Set("content", object["Content"])
 	d.Set("desc", object["Desc"])
-	d.Set("id", object["Id"])
 
 	return nil
 }

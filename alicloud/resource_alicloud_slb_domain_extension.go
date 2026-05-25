@@ -97,7 +97,6 @@ func resourceAliyunSlbDomainExtensionRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	d.Set("id", domainExtension.DomainExtensionId)
 	d.Set("load_balancer_id", domainExtension.LoadBalancerId)
 	d.Set("domain", domainExtension.Domain)
 	d.Set("server_certificate_id", domainExtension.ServerCertificateId)

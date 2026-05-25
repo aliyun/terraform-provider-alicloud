@@ -192,7 +192,6 @@ func resourceAlicloudCassandraDataCenterRead(d *schema.ResourceData, meta interf
 		}
 		return WrapError(err)
 	}
-	d.Set("id", fmt.Sprintf("%v:%v", object.DataCenterId, object.ClusterId))
 	d.Set("cluster_id", object.ClusterId)
 	d.Set("data_center_id", object.DataCenterId)
 	d.Set("data_center_name", object.DataCenterName)
