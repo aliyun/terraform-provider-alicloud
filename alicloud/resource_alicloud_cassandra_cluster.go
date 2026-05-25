@@ -222,7 +222,6 @@ func resourceAlicloudCassandraClusterRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	d.Set("id", object.ClusterId)
 	d.Set("cluster_name", object.ClusterName)
 	d.Set("maintain_end_time", object.MaintainEndTime)
 	d.Set("maintain_start_time", object.MaintainStartTime)

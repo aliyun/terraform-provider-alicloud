@@ -1663,7 +1663,6 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 
 	d.Set("vswitch_id", clusterAttribute.VSwitchId)
 	d.Set("pay_type", getChargeType(clusterAttribute.PayType))
-	d.Set("id", clusterAttribute.DBClusterId)
 	d.Set("description", clusterAttribute.DBClusterDescription)
 	d.Set("db_type", clusterAttribute.DBType)
 	d.Set("db_version", clusterAttribute.DBVersion)
