@@ -26,7 +26,7 @@ func TestAccAlicloudCloudFirewallTlsInspectCaCertificateDataSource(t *testing.T)
 
 var existCloudFirewallTlsInspectCaCertificateMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"certificates.#":            "2",
+		"certificates.#":            "5",
 		"certificates.0.ca_cert_id": CHECKSET,
 	}
 }
