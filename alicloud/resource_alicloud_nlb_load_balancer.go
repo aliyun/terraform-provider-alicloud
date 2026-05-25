@@ -930,7 +930,7 @@ func resourceAliCloudNlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ResourceInConfiguring.loadbalancer"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
