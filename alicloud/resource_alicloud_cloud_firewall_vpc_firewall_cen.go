@@ -286,7 +286,6 @@ func resourceAliCloudCloudFirewallVpcFirewallCenRead(d *schema.ResourceData, met
 	}
 	d.Set("vpc_region", vpcRegion)
 	d.Set("connect_type", object["ConnectType"])
-	d.Set("id", object["VpcFirewallId"])
 	localVpcMaps := make([]map[string]interface{}, 0)
 	localVpcMap := make(map[string]interface{})
 	localVpcRaw := object["LocalVpc"].(map[string]interface{})

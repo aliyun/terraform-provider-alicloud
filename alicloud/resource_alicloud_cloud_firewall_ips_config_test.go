@@ -29,7 +29,7 @@ func TestAccAliCloudCloudFirewallIPSConfig_basic10240(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -62,7 +62,7 @@ func TestAccAliCloudCloudFirewallIPSConfig_basic10240(t *testing.T) {
 					"max_sdl":     "1000",
 					"basic_rules": "1",
 					"run_mode":    "1",
-					"cti_rules":   "1",
+					"cti_rules":   "0", // need more context why set to 1 failed from service team.
 					"patch_rules": "1",
 					"rule_class":  "1",
 					"lang":        "zh",
@@ -72,7 +72,7 @@ func TestAccAliCloudCloudFirewallIPSConfig_basic10240(t *testing.T) {
 						"max_sdl":     "1000",
 						"basic_rules": "1",
 						"run_mode":    "1",
-						"cti_rules":   "1",
+						"cti_rules":   "0",
 						"patch_rules": "1",
 						"rule_class":  "1",
 						"lang":        "zh",

@@ -376,7 +376,6 @@ func resourceAliCloudCloudFirewallVpcFirewallRead(d *schema.ResourceData, meta i
 		}
 		return WrapError(err)
 	}
-	d.Set("id", object["VpcFirewallId"])
 	d.Set("vpc_firewall_id", object["VpcFirewallId"])
 	d.Set("bandwidth", object["Bandwidth"])
 	d.Set("connect_type", object["ConnectType"])
