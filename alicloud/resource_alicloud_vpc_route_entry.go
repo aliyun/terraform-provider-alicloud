@@ -163,10 +163,6 @@ func resourceAliCloudVpcRouteEntryCreate(d *schema.ResourceData, meta interface{
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	if v, ok := d.GetOk("name"); ok || d.HasChange("name") {
-		request["RouteEntryName"] = v
-	}
-
 	if v, ok := d.GetOk("route_entry_name"); ok {
 		request["RouteEntryName"] = v
 	}
@@ -302,7 +298,6 @@ func resourceAliCloudVpcRouteEntryRead(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
-	d.Set("name", d.Get("route_entry_name"))
 	return nil
 }
 
@@ -321,11 +316,6 @@ func resourceAliCloudVpcRouteEntryUpdate(d *schema.ResourceData, meta interface{
 	request["DestinationCidrBlock"] = parts[1]
 	request["RouteTableId"] = parts[0]
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("name") {
-		update = true
-		request["RouteEntryName"] = d.Get("name")
-	}
-
 	if !d.IsNewResource() && d.HasChange("route_entry_name") {
 		update = true
 		request["RouteEntryName"] = d.Get("route_entry_name")
