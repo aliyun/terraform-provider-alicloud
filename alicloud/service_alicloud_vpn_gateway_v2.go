@@ -386,7 +386,6 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-
 		}
 
 		if len(added) > 0 {
@@ -419,7 +418,6 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-
 		}
 	}
 
@@ -427,3 +425,172 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeVpnGatewayEnhancedVpnGateway <<< Encapsulated get interface for VpnGateway EnhancedVpnGateway.
+
+func (s *VPNGatewayServiceV2) DescribeVpnGatewayEnhancedVpnGateway(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["VpnGatewayId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeVpnGateway"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidVpnGatewayInstanceId.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("EnhancedVpnGateway", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *VPNGatewayServiceV2) DescribeEnhancedVpnGatewayListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId.1"] = id
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "VpnGateWay"
+	action := "ListTagResources"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *VPNGatewayServiceV2) VpnGatewayEnhancedVpnGatewayStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.VpnGatewayEnhancedVpnGatewayStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpnGatewayEnhancedVpnGateway)
+}
+
+func (s *VPNGatewayServiceV2) VpnGatewayEnhancedVpnGatewayStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+func (s *VPNGatewayServiceV2) DescribeAsyncVpnGatewayEnhancedVpnGatewayStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAsyncDescribeVpnGateways(d, res)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpnGatewayEnhancedVpnGateway >>> Encapsulated.
+
+// DescribeAsyncDescribeVpnGateways <<< Encapsulated for VpnGateway.
+func (s *VPNGatewayServiceV2) DescribeAsyncDescribeVpnGateways(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+	client := s.client
+	id := d.Id()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["VpnGatewayId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	action := "DescribeVpnGateways"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeAsyncDescribeVpnGateways >>> Encapsulated.
