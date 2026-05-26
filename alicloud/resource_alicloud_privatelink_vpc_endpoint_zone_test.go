@@ -446,7 +446,6 @@ resource "alicloud_security_group" "default1FTFrP" {
 
 resource "alicloud_privatelink_vpc_endpoint_service" "defaultr0WBYX" {
   service_description   = "test-zejun-service"
-  connect_bandwidth     = "3072"
   service_resource_type = "nlb"
 }
 
