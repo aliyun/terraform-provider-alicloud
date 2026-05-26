@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -120,10 +119,6 @@ func resourceAliCloudVpcPublicIpAddressPoolCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("biz_type"); ok {
 		request["BizType"] = v
 	}
-	if v, ok := d.GetOk("zones"); ok {
-		zonesMaps := v.([]interface{})
-		request["Zones"] = zonesMaps
-	}
 
 	if v, ok := d.GetOk("security_protection_types"); ok {
 		securityProtectionTypesMaps := v.([]interface{})
@@ -215,12 +210,6 @@ func resourceAliCloudVpcPublicIpAddressPoolRead(d *schema.ResourceData, meta int
 	d.Set("security_protection_types", securityProtectionTypes1Raw)
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
-	zones1Raw := make([]interface{}, 0)
-	if objectRaw["Zones"] != nil {
-		zones1Raw = objectRaw["Zones"].([]interface{})
-	}
-
-	d.Set("zones", zones1Raw)
 
 	return nil
 }
