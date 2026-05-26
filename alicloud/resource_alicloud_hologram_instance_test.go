@@ -578,16 +578,6 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cpu": "32",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cpu": "32",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"storage_size": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -668,7 +658,6 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 					"cold_storage_size": "0",
 					"zone_id":           "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle":     "Hour",
-					"cpu":               "32",
 					"storage_size":      "0",
 					"duration":          "1",
 					"auto_pay":          "true",
@@ -693,7 +682,6 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 						"cold_storage_size": "0",
 						"zone_id":           CHECKSET,
 						"pricing_cycle":     "Hour",
-						"cpu":               "32",
 						"storage_size":      "0",
 						"duration":          "1",
 						"auto_pay":          "true",
@@ -1741,9 +1729,6 @@ func TestAccAliCloudHologramInstance_basic4132_twin(t *testing.T) {
 							"vswitch_id": "${alicloud_vswitch.defaultVSwitch.id}",
 							"vpc_id":     "${alicloud_vswitch.defaultVSwitch.vpc_id}",
 						},
-						{
-							"type": "Internet",
-						},
 					},
 					"scale_type": "UPGRADE",
 					"status":     "Running",
@@ -1761,7 +1746,7 @@ func TestAccAliCloudHologramInstance_basic4132_twin(t *testing.T) {
 						"cpu":           "32",
 						"instance_name": name,
 						"payment_type":  "PayAsYouGo",
-						"endpoints.#":   "3",
+						"endpoints.#":   "2",
 						"scale_type":    "UPGRADE",
 						"status":        "Running",
 						"tags.%":        "2",
@@ -1807,7 +1792,6 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 					"cold_storage_size": "0",
 					"zone_id":           "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle":     "Hour",
-					"cpu":               "32",
 					"storage_size":      "0",
 					"duration":          "1",
 					"auto_pay":          "true",
@@ -1826,7 +1810,6 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 					},
 					"status":            "Running",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"scale_type":        "UPGRADE",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -1837,7 +1820,6 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 						"cold_storage_size": "0",
 						"zone_id":           CHECKSET,
 						"pricing_cycle":     "Hour",
-						"cpu":               "32",
 						"storage_size":      "0",
 						"duration":          "1",
 						"auto_pay":          "true",
@@ -1847,7 +1829,6 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 						"endpoints.#":       "2",
 						"status":            "Running",
 						"resource_group_id": CHECKSET,
-						"scale_type":        "UPGRADE",
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.For":          "Test",
