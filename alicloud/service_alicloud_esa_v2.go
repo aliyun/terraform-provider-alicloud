@@ -4308,6 +4308,9 @@ func (s *EsaServiceV2) DescribeEsaTransportLayerApplication(id string) (object m
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"TransportLayerApplicationNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("TransportLayerApplication", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
