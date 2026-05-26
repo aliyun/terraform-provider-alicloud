@@ -171,6 +171,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_vpn_gateway_enhanced_vpn_gateways":          dataSourceAliCloudVpnGatewayEnhancedVpnGateways(),
 			"alicloud_cdn_domain_configs":                         dataSourceAliCloudCdnDomainConfigs(),
 			"alicloud_esa_network_optimizations":                  dataSourceAliCloudEsaNetworkOptimizations(),
 			"alicloud_esa_origin_rules":                           dataSourceAliCloudEsaOriginRules(),
@@ -920,6 +921,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_vpn_gateway_enhanced_vpn_gateway":                     resourceAliCloudVpnGatewayEnhancedVpnGateway(),
 			"alicloud_oss_bucket_object_worm_configuration":                 resourceAliCloudOssBucketObjectWormConfiguration(),
 			"alicloud_alidns_cloud_gtm_instance_config":                     resourceAliCloudAlidnsCloudGtmInstanceConfig(),
 			"alicloud_alidns_cloud_gtm_monitor_template":                    resourceAliCloudAlidnsCloudGtmMonitorTemplate(),
