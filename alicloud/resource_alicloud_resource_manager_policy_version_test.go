@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudResourceManagerPolicyVersion_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerPolicyVersion_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_policy_version.example"
 	ra := resourceAttrInit(resourceId, ResourceManagerPolicyVersionMap)
