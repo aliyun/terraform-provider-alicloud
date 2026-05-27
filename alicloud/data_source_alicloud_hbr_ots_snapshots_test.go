@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudHBROtsSnapshotsDataSource(t *testing.T) {
+func TestAccAliCloudHbrOtsSnapshotsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 99999)
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrOtsSnapshotsSourceConfig(rand, map[string]string{}),

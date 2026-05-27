@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudHBRNasBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudHbrNasBackupPlan_basic0(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}

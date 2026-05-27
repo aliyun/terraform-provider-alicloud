@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudHBRHanaBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudHbrHanaBackupPlan_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_hana_backup_plan.default"
 	checkoutSupportedRegions(t, true, connectivity.HBRSupportRegions)
@@ -107,7 +107,7 @@ resource "alicloud_hbr_hana_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudHBRHanaBackupPlan_basic1(t *testing.T) {
+func TestAccAliCloudHbrHanaBackupPlan_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_hana_backup_plan.default"
 	checkoutSupportedRegions(t, true, connectivity.HBRSupportRegions)

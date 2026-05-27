@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -9,7 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudHBREcsBackupClientsDataSource(t *testing.T) {
+func TestAccAliCloudHbrEcsBackupClientsDataSource(t *testing.T) {
+	if os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE") == "" || os.Getenv("ALICLOUD_SECRET_KEY_SLAVE") == "" {
+		t.Skip("Skipping as ALICLOUD_ACCESS_KEY_SLAVE or ALICLOUD_SECRET_KEY_SLAVE not set")
+	}
 	defer checkoutAccount(t, false)
 	checkoutAccount(t, true)
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
@@ -76,7 +80,7 @@ data "alicloud_zones" default {
 }
 
 data "alicloud_instance_types" "default" {
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
   	cpu_core_count    = 1
 	memory_size       = 2
 }
@@ -98,14 +102,14 @@ resource "alicloud_security_group" "default" {
 
 data "alicloud_images" "default" {
   owners      = "system"
-  name_regex  = "^centos_8"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   most_recent = true
 }
 
 resource "alicloud_instance" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  instance_name   = "${var.name}"
-  host_name       = "tf-testAcc"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  instance_name   = var.name
+  host_name       = var.name
   image_id        = data.alicloud_images.default.images.0.id
   instance_type   = data.alicloud_instance_types.default.instance_types.0.id
   security_groups = [alicloud_security_group.default.id]
@@ -121,22 +125,18 @@ data "alicloud_hbr_ecs_backup_clients" "default" {
 	return config
 }
 
-var existHbrEcsBackupClientMapFunc = func(rand int) map[string]string {
-	return map[string]string{
-		"clients.#":             "1",
-		"clients.0.id":          CHECKSET,
-		"clients.0.instance_id": CHECKSET,
-	}
-}
-
-var fakeHbrEcsBackupClientMapFunc = func(rand int) map[string]string {
-	return map[string]string{
-		"clients.#": "0",
-	}
-}
-
 var HbrEcsBackupClientCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_hbr_ecs_backup_clients.default",
-	existMapFunc: existHbrEcsBackupClientMapFunc,
-	fakeMapFunc:  fakeHbrEcsBackupClientMapFunc,
+	resourceId: "data.alicloud_hbr_ecs_backup_clients.default",
+	existMapFunc: func(rand int) map[string]string {
+		return map[string]string{
+			"clients.#":             "1",
+			"clients.0.id":          CHECKSET,
+			"clients.0.instance_id": CHECKSET,
+		}
+	},
+	fakeMapFunc: func(rand int) map[string]string {
+		return map[string]string{
+			"clients.#": "0",
+		}
+	},
 }

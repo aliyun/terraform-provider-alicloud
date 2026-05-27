@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudHBRSnapshotsDataSource(t *testing.T) {
+func TestAccAliCloudHbrSnapshotsDataSource(t *testing.T) {
 	defer checkoutAccount(t, false)
 	checkoutAccount(t, true)
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
@@ -126,17 +126,11 @@ variable "name" {
 	default = "tf-testAcc%d"
 }
 
-data "alicloud_hbr_ecs_backup_plans" "default" {
-    name_regex = "plan-tf-used-dont-delete"
-}
+data "alicloud_hbr_ecs_backup_plans" "default" {}
 
-data "alicloud_hbr_oss_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
-}
+data "alicloud_hbr_oss_backup_plans" "default" {}
 
-data "alicloud_hbr_nas_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
-}
+data "alicloud_hbr_nas_backup_plans" "default" {}
 
 data "alicloud_hbr_snapshots" "default" {
 %s

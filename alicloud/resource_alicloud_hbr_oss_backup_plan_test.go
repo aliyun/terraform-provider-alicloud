@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudHBROssBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudHbrOssBackupPlan_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_oss_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBROssBackupPlanMap0)

@@ -124,7 +124,7 @@ func testSweepHbrServerBackupPlan(region string) error {
 	return nil
 }
 
-func TestAccAlicloudHBRServerBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudHbrServerBackupPlan_basic0(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}

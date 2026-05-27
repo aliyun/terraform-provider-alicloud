@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudHBREcsBackupPlansDataSource(t *testing.T) {
+func TestAccAliCloudHbrEcsBackupPlansDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	ecsBackupIdsconf := dataSourceTestAccConfig{
@@ -105,7 +105,7 @@ resource "alicloud_security_group" "default" {
 }
 data "alicloud_images" "default" {
   owners      = "system"
-  name_regex  = "^centos_8"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   most_recent = true
 }
 resource "alicloud_instance" "default" {

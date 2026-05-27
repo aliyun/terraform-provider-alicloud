@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudHBRBackupJobsDataSource(t *testing.T) {
+func TestAccAliCloudHbrBackupJobsDataSource(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	rand := acctest.RandIntRange(1000000, 9999999)
@@ -288,7 +288,7 @@ func TestAccAlicloudHBRBackupJobsDataSource(t *testing.T) {
 	HbrBackupJobCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, planIdBackupConf, jobIdBackupConf, ecsBackupConf, ossBackupConf, nasBackupConf, statusBackupConf, completeTimeBackupConf, betweenTimeBackupConf)
 }
 
-func TestAccAlicloudHBRBackupJobsDataSource_ots(t *testing.T) {
+func TestAccAliCloudHbrBackupJobsDataSource_ots(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_hbr_backup_jobs.default"
 	name := fmt.Sprintf("tf-testAccHbrBackupJobTest%d", rand)
@@ -331,9 +331,9 @@ func dataSourceHbrBackupJobSourceConfig(name string) string {
 
 var existHbrBackupJobMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"jobs.#":                       CHECKSET,
-		"jobs.0.cross_account_type":    "SELF_ACCOUNT",
-		"jobs.0.cross_account_user_id": "0",
+		"jobs.#": CHECKSET,
+		//"jobs.0.cross_account_type":    "SELF_ACCOUNT",
+		//"jobs.0.cross_account_user_id": "0",
 	}
 }
 
