@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccAlicloudCenInstanceGrant_basic(t *testing.T) {
+func TestAccAliCloudCenInstanceGrant_basic(t *testing.T) {
 	var rule vpc.CbnGrantRule
 	rand := acctest.RandIntRange(1000000, 9999999)
 	// multi provideris

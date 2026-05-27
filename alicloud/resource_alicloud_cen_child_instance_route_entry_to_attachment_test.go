@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudCenChildInstanceRouteEntryToAttachment_basic1977(t *testing.T) {
+func TestAccAliCloudCenChildInstanceRouteEntryToAttachment_basic1977(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_child_instance_route_entry_to_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenChildInstanceRouteEntryToAttachmentMap1977)

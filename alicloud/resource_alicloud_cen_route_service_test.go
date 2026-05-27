@@ -110,7 +110,7 @@ func testSweepCenRouteService(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCenRouteService_basic(t *testing.T) {
+func TestAccAliCloudCenRouteService_basic(t *testing.T) {
 	var v cbn.RouteServiceEntry
 	resourceId := "alicloud_cen_route_service.default"
 	ra := resourceAttrInit(resourceId, CenRouteServiceMap)
@@ -158,7 +158,7 @@ func TestAccAlicloudCenRouteService_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenRouteService_basic1(t *testing.T) {
+func TestAccAliCloudCenRouteService_basic1(t *testing.T) {
 	var v cbn.RouteServiceEntry
 	resourceId := "alicloud_cen_route_service.default"
 	ra := resourceAttrInit(resourceId, CenRouteServiceMap)

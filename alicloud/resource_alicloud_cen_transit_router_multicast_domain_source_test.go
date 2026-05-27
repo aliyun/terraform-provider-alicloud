@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudCenTransitRouterMulticastDomainSource_basic1903(t *testing.T) {
+func TestAccAliCloudCenTransitRouterMulticastDomainSource_basic1903(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_multicast_domain_source.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMulticastDomainSourceMap1903)
@@ -157,7 +157,7 @@ resource "alicloud_cen_transit_router_multicast_domain_association" "default" {
 }
 
 // Case 2
-func TestAccAlicloudCenTransitRouterMulticastDomainSource_basic0(t *testing.T) {
+func TestAccAliCloudCenTransitRouterMulticastDomainSource_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_multicast_domain_source.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMulticastDomainSourceMap0)

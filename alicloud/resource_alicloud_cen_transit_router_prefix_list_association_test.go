@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCenTransitRouterPrefixListAssociation_basic0(t *testing.T) {
+func TestAccAliCloudCenTransitRouterPrefixListAssociation_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_prefix_list_association.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudCenTransitRouterPrefixListAssociationMap)

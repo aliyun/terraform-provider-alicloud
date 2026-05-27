@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
+func TestAccAliCloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 	var routeMap cbn.RouteMap
 	resourceId := "alicloud_cen_route_map.default"
 	ra := resourceAttrInit(resourceId, cenRouteMapBasicMap)
@@ -146,7 +146,7 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 
 }
 
-func TestAccAlicloudCenRouteMap_basic_transit_router_route_table_id(t *testing.T) {
+func TestAccAliCloudCenRouteMap_basic_transit_router_route_table_id(t *testing.T) {
 	var routeMap cbn.RouteMap
 	resourceId := "alicloud_cen_route_map.default"
 	ra := resourceAttrInit(resourceId, cenRouteMapBasicMap)
@@ -200,7 +200,7 @@ func TestAccAlicloudCenRouteMap_basic_transit_router_route_table_id(t *testing.T
 
 }
 
-func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing.T) {
+func TestAccAliCloudCenRouteMap_basic_child_instance_different_region(t *testing.T) {
 	resourceId := "alicloud_cen_route_map.default"
 	var providers []*schema.Provider
 	providerFactories := map[string]func() (*schema.Provider, error){
@@ -372,7 +372,7 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing
 
 }
 
-func TestAccAlicloudCenRouteMap_multi(t *testing.T) {
+func TestAccAliCloudCenRouteMap_multi(t *testing.T) {
 	var routeMap cbn.RouteMap
 	resourceId := "alicloud_cen_route_map.default.4"
 	ra := resourceAttrInit(resourceId, cenRouteMapBasicMap)

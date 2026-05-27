@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCenTransitRouterRouteTable_basic(t *testing.T) {
+func TestAccAliCloudCenTransitRouterRouteTable_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableMap)
@@ -97,7 +97,7 @@ func TestAccAlicloudCenTransitRouterRouteTable_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenTransitRouterRouteTable_basic1(t *testing.T) {
+func TestAccAliCloudCenTransitRouterRouteTable_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableMap)

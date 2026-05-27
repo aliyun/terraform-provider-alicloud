@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCenTransitRouterRouteTablePropagation_basic(t *testing.T) {
+func TestAccAliCloudCenTransitRouterRouteTablePropagation_basic(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table_propagation.default"
@@ -61,7 +61,7 @@ func TestAccAlicloudCenTransitRouterRouteTablePropagation_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenTransitRouterRouteTablePropagation_basic1(t *testing.T) {
+func TestAccAliCloudCenTransitRouterRouteTablePropagation_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table_propagation.default"

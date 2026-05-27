@@ -116,7 +116,7 @@ func testSweepCenInstanceAttachment(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCenInstanceAttachment_basic(t *testing.T) {
+func TestAccAliCloudCenInstanceAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_instance_attachment.default"
 	ra := resourceAttrInit(resourceId, CenInstanceAttachmentBasicMap)
@@ -166,7 +166,7 @@ func TestAccAlicloudCenInstanceAttachment_basic(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudCenInstanceAttachment_multi_same_region(t *testing.T) {
+func TestAccAliCloudCenInstanceAttachment_multi_same_region(t *testing.T) {
 	var v *cbn.DescribeCenAttachedChildInstanceAttributeResponse
 	resourceId := "alicloud_cen_instance_attachment.default"
 	var providers []*schema.Provider
@@ -203,7 +203,7 @@ func TestAccAlicloudCenInstanceAttachment_multi_same_region(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenInstanceAttachment_multi_different_region(t *testing.T) {
+func TestAccAliCloudCenInstanceAttachment_multi_different_region(t *testing.T) {
 	var v *cbn.DescribeCenAttachedChildInstanceAttributeResponse
 	resourceId := "alicloud_cen_instance_attachment.default"
 	var providers []*schema.Provider
