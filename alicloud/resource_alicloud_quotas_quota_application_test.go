@@ -21,7 +21,7 @@ import (
 
 // The quota product does not support deletion, so skip the test.
 // lintignore: AT001
-func SkipTestAccAlicloudQuotasQuotaApplication_basic(t *testing.T) {
+func SkipTestAccAliCloudQuotasQuotaApplication_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_application.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap)
@@ -256,7 +256,7 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 // Test Quotas QuotaApplication. >>> Resource test cases, automatically generated.
 // Case 3294
 // lintignore: AT001
-func SkipTestAccAlicloudQuotasQuotaApplication_basic3294(t *testing.T) {
+func SkipTestAccAliCloudQuotasQuotaApplication_basic3294(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_application.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3294)
@@ -335,7 +335,7 @@ variable "name" {
 
 // Case 3289
 // lintignore: AT001
-func TestAccAlicloudQuotasQuotaApplication_basic3289(t *testing.T) {
+func TestAccAliCloudQuotasQuotaApplication_basic3289(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_application.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3289)
