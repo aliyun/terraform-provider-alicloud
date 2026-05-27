@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudROSChangeSet_basic(t *testing.T) {
+func TestAccAliCloudROSChangeSet_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_change_set.default"
 	ra := resourceAttrInit(resourceId, AlicloudRosChangeSetMap)
