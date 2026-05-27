@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudResourceManagerRole_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerRole_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_role.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerRoleMap)
