@@ -11,7 +11,7 @@ import (
 
 // Test Vpc HaVip. >>> Resource test cases, automatically generated.
 // Case 2535
-func TestAccAlicloudVpcHaVip_basic2535(t *testing.T) {
+func TestAccAliCloudVpcHaVip_basic2535(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ha_vip.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcHaVipMap2535)
@@ -208,7 +208,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 // Case 2535  twin
-func TestAccAlicloudVpcHaVip_basic2535_twin(t *testing.T) {
+func TestAccAliCloudVpcHaVip_basic2535_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ha_vip.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcHaVipMap2535)
