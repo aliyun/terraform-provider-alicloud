@@ -11,7 +11,7 @@ import (
 
 // Test Vpc GatewayEndpointRouteTableAttachment. >>> Resource test cases, automatically generated.
 // Case 3634
-func TestAccAlicloudVpcGatewayEndpointRouteTableAttachment_basic3634(t *testing.T) {
+func TestAccAliCloudVpcGatewayEndpointRouteTableAttachment_basic3634(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_gateway_endpoint_route_table_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcGatewayEndpointRouteTableAttachmentMap3634)
