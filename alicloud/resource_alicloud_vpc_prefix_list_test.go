@@ -107,7 +107,7 @@ func testSweepVpcPrefixList(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCPrefixList_basic0(t *testing.T) {
+func TestAccAliCloudVPCPrefixList_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap0)
@@ -174,7 +174,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudVPCPrefixList_basic1(t *testing.T) {
+func TestAccAliCloudVPCPrefixList_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap1)
@@ -267,7 +267,7 @@ func TestAccAlicloudVPCPrefixList_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCPrefixList_basic2(t *testing.T) {
+func TestAccAliCloudVPCPrefixList_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap1)
@@ -631,7 +631,7 @@ func TestUnitAccAlicloudVpcPrefixList(t *testing.T) {
 
 // Test Vpc PrefixList. >>> Resource test cases, automatically generated.
 // Case 3120
-func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
+func TestAccAliCloudVpcPrefixList_basic3120(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcPrefixListMap3120)
@@ -871,7 +871,7 @@ resource "alicloud_resource_manager_resource_group" "changeRg" {
 }
 
 // Case 3120  twin
-func TestAccAlicloudVpcPrefixList_basic3120_twin(t *testing.T) {
+func TestAccAliCloudVpcPrefixList_basic3120_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcPrefixListMap3120)
