@@ -102,7 +102,7 @@ func testSweepRosTemplateScratch(region string) error {
 	return nil
 }
 
-func TestAccAlicloudROSTemplateScratch_basic0(t *testing.T) {
+func TestAccAliCloudROSTemplateScratch_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template_scratch.default"
 	checkoutSupportedRegions(t, true, connectivity.ROSSupportRegions)
@@ -198,7 +198,7 @@ func TestAccAlicloudROSTemplateScratch_basic0(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudROSTemplateScratch_basic1(t *testing.T) {
+func TestAccAliCloudROSTemplateScratch_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template_scratch.default"
 	checkoutSupportedRegions(t, true, connectivity.ROSSupportRegions)
@@ -294,7 +294,7 @@ func TestAccAlicloudROSTemplateScratch_basic1(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudROSTemplateScratch_basic2(t *testing.T) {
+func TestAccAliCloudROSTemplateScratch_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template_scratch.default"
 	checkoutSupportedRegions(t, true, connectivity.ROSSupportRegions)
@@ -415,7 +415,7 @@ func TestAccAlicloudROSTemplateScratch_basic2(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudROSTemplateScratch_basic3(t *testing.T) {
+func TestAccAliCloudROSTemplateScratch_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template_scratch.default"
 	checkoutSupportedRegions(t, true, connectivity.ROSSupportRegions)
