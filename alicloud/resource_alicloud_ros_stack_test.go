@@ -98,7 +98,7 @@ func testSweepRosStack(region string) error {
 	return nil
 }
 
-func TestAccAlicloudROSStack_basic(t *testing.T) {
+func TestAccAliCloudROSStack_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_stack.default"
 	ra := resourceAttrInit(resourceId, AlicloudRosStackMap)
