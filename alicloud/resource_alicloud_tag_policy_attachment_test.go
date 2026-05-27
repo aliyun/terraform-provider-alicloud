@@ -106,7 +106,7 @@ func testSweepTagPolicyAttachment(region string) error {
 	return nil
 }
 
-func TestAccAlicloudTagPolicyAttachment_basic(t *testing.T) {
+func TestAccAliCloudTagPolicyAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_tag_policy_attachment.default"
 	checkoutSupportedRegions(t, true, connectivity.TagPolicySupportRegions)
