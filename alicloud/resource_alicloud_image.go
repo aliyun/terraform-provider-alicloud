@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -348,7 +347,11 @@ func resourceAliCloudEcsImageRead(d *schema.ResourceData, meta interface{}) erro
 			diskDeviceMappingMap["import_oss_bucket"] = diskDeviceMappingChild1Raw["ImportOSSBucket"]
 			diskDeviceMappingMap["progress"] = diskDeviceMappingChild1Raw["Progress"]
 			diskDeviceMappingMap["remain_time"] = diskDeviceMappingChild1Raw["RemainTime"]
-			diskDeviceMappingMap["size"] = diskDeviceMappingChild1Raw["Size"]
+			if sizeVal := diskDeviceMappingChild1Raw["Size"]; sizeVal != nil {
+				if size, err := strconv.Atoi(fmt.Sprint(sizeVal)); err == nil {
+					diskDeviceMappingMap["size"] = size
+				}
+			}
 			diskDeviceMappingMap["snapshot_id"] = diskDeviceMappingChild1Raw["SnapshotId"]
 
 			diskDeviceMappingMaps = append(diskDeviceMappingMaps, diskDeviceMappingMap)
