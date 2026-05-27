@@ -431,3 +431,95 @@ func (s *AmqpServiceV2) AmqpOpenSourcePermissionStateRefreshFuncWithApi(id strin
 }
 
 // DescribeAmqpOpenSourcePermission >>> Encapsulated.
+// DescribeAmqpOpenSourceAccount <<< Encapsulated get interface for Amqp OpenSourceAccount.
+
+func (s *AmqpServiceV2) DescribeAmqpOpenSourceAccount(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	action := "ListOpenSourceAccounts"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InstanceNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("OpenSourceAccount", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("OpenSourceAccount", id), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["Name"]) != parts[0] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(NotFoundErr("OpenSourceAccount", id), NotFoundMsg, response)
+}
+
+func (s *AmqpServiceV2) AmqpOpenSourceAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.AmqpOpenSourceAccountStateRefreshFuncWithApi(id, field, failStates, s.DescribeAmqpOpenSourceAccount)
+}
+
+func (s *AmqpServiceV2) AmqpOpenSourceAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeAmqpOpenSourceAccount >>> Encapsulated.
