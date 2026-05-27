@@ -10,7 +10,7 @@ import (
 )
 
 // Case 3
-func TestAccAlicloudService_catalogProvisionedProduct_basic1956(t *testing.T) {
+func TestAccAliCloudServiceCatalogProvisionedProduct_basic1956(t *testing.T) {
 	// This resource depends on other unconnected resources, so skip the tests temporarily.
 	t.Skip()
 	var v map[string]interface{}
