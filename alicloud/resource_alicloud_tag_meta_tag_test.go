@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudTagMetaTag_basic(t *testing.T) {
+func TestAccAliCloudTagMetaTag_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_tag_meta_tag.default"
 	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
