@@ -62,12 +62,12 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
+	ossv2 "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
+	ossv2cred "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	slsutil "github.com/aliyun/aliyun-log-go-sdk/util"
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
-	ossv2 "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
-	ossv2cred "github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
@@ -185,7 +185,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.278.0"
+var providerVersion = "1.279.0"
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
 var EndpointMap = map[string]string{

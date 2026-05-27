@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -157,11 +158,11 @@ func resourceAliCloudVpcIpamIpamPoolCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("ipam_pool_name"); ok {
 		request["IpamPoolName"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -222,7 +223,6 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	d.Partial(true)
 
 	var err error
 	action := "UpdateIpamPool"
@@ -265,11 +265,11 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(5*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -318,7 +318,6 @@ func resourceAliCloudVpcIpamIpamPoolUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 	}
-	d.Partial(false)
 	return resourceAliCloudVpcIpamIpamPoolRead(d, meta)
 }
 
@@ -335,11 +334,11 @@ func resourceAliCloudVpcIpamIpamPoolDelete(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

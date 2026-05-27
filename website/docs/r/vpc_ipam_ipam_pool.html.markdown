@@ -58,6 +58,7 @@ resource "alicloud_vpc_ipam_ipam_pool" "default" {
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_ipam_ipam_pool&spm=docs.r.vpc_ipam_ipam_pool.example&intl_lang=EN_US)
 
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -79,7 +80,7 @@ IPv4 network mask value range: 0 to 32 bits, and the IPv6 network mask value ran
 It must be 2 to 256 characters in length and must start with an English letter or a Chinese character, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.
 * `ipam_pool_name` - (Optional, Computed) The name of the resource.
 * `ipam_scope_id` - (Required, ForceNew) The ID of the IPAM scope.
-* `ipv6_isp` - (Optional, ForceNew, Available since v1.272.0) The type of the IPv6 CIDR block of the VPC.
+* `ipv6_isp` - (Optional, ForceNew, Computed, Available since v1.272.0) The type of the IPv6 CIDR block of the VPC.
 * `pool_region_id` - (Optional, ForceNew) The effective region of the IPAM address pool.
 * `resource_group_id` - (Optional, Computed, Available since v1.242.0) The ID of the resource group.
 * `source_ipam_pool_id` - (Optional, ForceNew, Computed) The instance ID of the source IPAM address pool.

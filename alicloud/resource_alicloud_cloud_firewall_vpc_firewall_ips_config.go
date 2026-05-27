@@ -113,7 +113,7 @@ func resourceAliCloudCloudFirewallVpcFirewallIpsConfigRead(d *schema.ResourceDat
 	client := meta.(*connectivity.AliyunClient)
 	cloudFirewallServiceV2 := CloudFirewallServiceV2{client}
 
-	objectRaw, err := cloudFirewallServiceV2.DescribeCloudFirewallVpcFirewallIpsConfig(d.Id())
+	objectRaw, err := cloudFirewallServiceV2.DescribeCloudFirewallVpcFirewallIpsConfig(d.Id(), d.Get("member_uid").(string))
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cloud_firewall_vpc_firewall_ips_config DescribeCloudFirewallVpcFirewallIpsConfig Failed!!! %s", err)

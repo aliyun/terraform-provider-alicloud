@@ -83,17 +83,64 @@ func (s *RdsServiceV2) DescribeCustomListTagResources(id string) (object map[str
 
 	return response, nil
 }
+func (s *RdsServiceV2) DescribeCustomDescribeRCDisks(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["InstanceId"] = id
+	query["RegionId"] = client.RegionId
+	query["DiskType"] = "system"
+	action := "DescribeRCDisks"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("Rds", "2014-08-15", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidParameter.InstanceId"}) {
+			return object, WrapErrorf(NotFoundErr("Custom", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Disks[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Disks[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("Custom", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
 
 func (s *RdsServiceV2) RdsCustomStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.RdsCustomStateRefreshFuncWithApi(id, field, failStates, s.DescribeRdsCustom)
+}
+
+func (s *RdsServiceV2) RdsCustomStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeRdsCustom(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

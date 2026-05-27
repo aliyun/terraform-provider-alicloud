@@ -55,6 +55,7 @@ resource "alicloud_vpc_ipam_ipam_pool_cidr" "default" {
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpc_ipam_ipam_pool_cidr&spm=docs.r.vpc_ipam_ipam_pool_cidr.example&intl_lang=EN_US)
 
+
 ## Argument Reference
 
 The following arguments are supported:

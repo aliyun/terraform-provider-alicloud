@@ -941,7 +941,7 @@ func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallAclEngineModeStateRefre
 
 // DescribeCloudFirewallVpcFirewallIpsConfig <<< Encapsulated get interface for CloudFirewall VpcFirewallIpsConfig.
 
-func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallIpsConfig(id string) (object map[string]interface{}, err error) {
+func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallIpsConfig(id string, memberUid string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -949,6 +949,9 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallIpsConfig(id st
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["VpcFirewallId"] = id
+	if memberUid != "" {
+		request["MemberUid"] = memberUid
+	}
 
 	action := "DescribeVpcFirewallDefaultIPSConfig"
 
@@ -974,7 +977,9 @@ func (s *CloudFirewallServiceV2) DescribeCloudFirewallVpcFirewallIpsConfig(id st
 }
 
 func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallIpsConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
-	return s.CloudFirewallVpcFirewallIpsConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallVpcFirewallIpsConfig)
+	return s.CloudFirewallVpcFirewallIpsConfigStateRefreshFuncWithApi(id, field, failStates, func(id string) (map[string]interface{}, error) {
+		return s.DescribeCloudFirewallVpcFirewallIpsConfig(id, "")
+	})
 }
 
 func (s *CloudFirewallServiceV2) CloudFirewallVpcFirewallIpsConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {

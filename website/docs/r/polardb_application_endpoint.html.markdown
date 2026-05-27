@@ -18,7 +18,7 @@ Provides a PolarDB Application Endpoint resource. This resource is used to manag
 Create a PolarDB Application Endpoint
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_application_endpoint&exampleId=example-endpoint-01&activeTab=example&spm=docs.r.polardb_application_endpoint.0.example&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_application_endpoint&exampleId=d60fa825-9674-997b-7617-9a6565a72eba497f4d7f&activeTab=example&spm=docs.r.polardb_application_endpoint.0.d60fa82596&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

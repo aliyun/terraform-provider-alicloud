@@ -2100,6 +2100,7 @@ func (s *EsaServiceV2) DescribeEsaOriginPool(id string) (object map[string]inter
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -2123,6 +2124,9 @@ func (s *EsaServiceV2) DescribeEsaOriginPool(id string) (object map[string]inter
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"OriginPoolNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("OriginPool", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -2130,15 +2134,18 @@ func (s *EsaServiceV2) DescribeEsaOriginPool(id string) (object map[string]inter
 }
 
 func (s *EsaServiceV2) EsaOriginPoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaOriginPoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaOriginPool)
+}
+
+func (s *EsaServiceV2) EsaOriginPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaOriginPool(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

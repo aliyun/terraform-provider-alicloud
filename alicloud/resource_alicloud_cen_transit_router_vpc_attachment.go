@@ -1,10 +1,12 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -44,6 +46,26 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 			"force_delete": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"ipv6_support": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"appliance_mode_support": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"order_type": {
 				Type:         schema.TypeString,
@@ -196,6 +218,26 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("transit_router_vpc_attachment_name"); ok {
 		request["TransitRouterAttachmentName"] = v
 	}
+	if v, ok := d.GetOk("options"); ok {
+		options := make(map[string]interface{})
+		applianceModeSupport1, _ := jsonpath.Get("$[0].appliance_mode_support", v)
+		if applianceModeSupport1 != nil && applianceModeSupport1 != "" {
+			options["ApplianceModeSupport"] = applianceModeSupport1
+		}
+		ipv6Support1, _ := jsonpath.Get("$[0].ipv6_support", v)
+		if ipv6Support1 != nil && ipv6Support1 != "" {
+			options["Ipv6Support"] = ipv6Support1
+		}
+
+		if len(options) > 0 {
+			optionsJson, err := json.Marshal(options)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["Options"] = string(optionsJson)
+		}
+	}
+
 	if v, ok := d.GetOkExists("vpc_owner_id"); ok {
 		request["VpcOwnerId"] = v
 	}
@@ -282,6 +324,16 @@ func resourceAliCloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, m
 	d.Set("resource_type", objectRaw["ResourceType"])
 	d.Set("cen_id", objectRaw["CenId"])
 
+	optionsMaps := make([]map[string]interface{}, 0)
+	if optionsRaw, ok := objectRaw["Options"].(map[string]interface{}); ok && len(optionsRaw) > 0 {
+		optionsMap := make(map[string]interface{})
+		optionsMap["appliance_mode_support"] = optionsRaw["ApplianceModeSupport"]
+		optionsMap["ipv6_support"] = optionsRaw["Ipv6Support"]
+		optionsMaps = append(optionsMaps, optionsMap)
+	}
+	if err := d.Set("options", optionsMaps); err != nil {
+		return err
+	}
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 	zoneMappingsRaw := objectRaw["ZoneMappings"]
@@ -346,6 +398,29 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 	if !d.IsNewResource() && d.HasChange("transit_router_vpc_attachment_name") {
 		update = true
 		request["TransitRouterAttachmentName"] = d.Get("transit_router_vpc_attachment_name")
+	}
+
+	if !d.IsNewResource() && d.HasChange("options") {
+		if v, ok := d.GetOk("options"); ok {
+			options := make(map[string]interface{})
+			applianceModeSupport1, _ := jsonpath.Get("$[0].appliance_mode_support", v)
+			if applianceModeSupport1 != nil && applianceModeSupport1 != "" {
+				options["ApplianceModeSupport"] = applianceModeSupport1
+			}
+			ipv6Support1, _ := jsonpath.Get("$[0].ipv6_support", v)
+			if ipv6Support1 != nil && ipv6Support1 != "" {
+				options["Ipv6Support"] = ipv6Support1
+			}
+
+			if len(options) > 0 {
+				update = true
+				optionsJson, err := json.Marshal(options)
+				if err != nil {
+					return WrapError(err)
+				}
+				request["Options"] = string(optionsJson)
+			}
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("transit_router_attachment_description") {

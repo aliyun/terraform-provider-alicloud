@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
@@ -119,6 +120,7 @@ func TestAccAliCloudCenTransitRouterVpcAttachmentsDataSource(t *testing.T) {
 	}
 
 	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		testAccPreCheck(t)
 	}
 
@@ -132,56 +134,177 @@ func testAccCheckAliCloudCenTransitRouterVpcAttachmentsDataSourceName(rand int, 
 	}
 
 	config := fmt.Sprintf(`
-	variable "name" {
-  		default = "tf-testAcc-CenTransitRouterVpcAttachment-%d"
-	}
+variable "name" {
+  default = "tf-testAcc-CenTransitRouterVpcAttachment-%d"
+}
 
-	data "alicloud_zones" "default" {
-	}
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
-	}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
 
-	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_zones.default.ids.0
-	}
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = "cn-hangzhou-h"
+  vswitch_name = var.name
+}
 
-	data "alicloud_vswitches" "default_master" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_zones.default.ids.1
-	}
+resource "alicloud_vswitch" "default_master" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.2.0/24"
+  zone_id      = "cn-hangzhou-i"
+  vswitch_name = "${var.name}-master"
+}
 
-	resource "alicloud_cen_instance" "default" {
-  		cen_instance_name = var.name
-  		protection_level  = "REDUCED"
-	}
+resource "alicloud_cen_instance" "default" {
+  cen_instance_name = var.name
+  protection_level  = "REDUCED"
+}
 
-	resource "alicloud_cen_transit_router" "default" {
-  		cen_id = alicloud_cen_instance.default.id
-	}
+resource "alicloud_cen_transit_router" "default" {
+  cen_id = alicloud_cen_instance.default.id
+}
 
-	resource "alicloud_cen_transit_router_vpc_attachment" "default" {
-  		cen_id                                = alicloud_cen_instance.default.id
-  		vpc_id                                = data.alicloud_vpcs.default.ids.0
-  		transit_router_id                     = alicloud_cen_transit_router.default.transit_router_id
-  		transit_router_attachment_name        = var.name
-  		transit_router_attachment_description = var.name
-  		zone_mappings {
-    		vswitch_id = data.alicloud_vswitches.default_master.vswitches.0.id
-    		zone_id    = data.alicloud_vswitches.default_master.vswitches.0.zone_id
-  		}
-  		zone_mappings {
-    		vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
-    		zone_id    = data.alicloud_vswitches.default.vswitches.0.zone_id
-  		}
-	}
+resource "alicloud_cen_transit_router_vpc_attachment" "default" {
+  cen_id                                = alicloud_cen_instance.default.id
+  vpc_id                                = alicloud_vpc.default.id
+  transit_router_id                     = alicloud_cen_transit_router.default.transit_router_id
+  transit_router_attachment_name        = var.name
+  transit_router_attachment_description = var.name
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default_master.id
+    zone_id    = alicloud_vswitch.default_master.zone_id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default.id
+    zone_id    = alicloud_vswitch.default.zone_id
+  }
+}
 
-	data "alicloud_cen_transit_router_vpc_attachments" "default" {
-  		cen_id = alicloud_cen_instance.default.id
- 		%s
-	}
+data "alicloud_cen_transit_router_vpc_attachments" "default" {
+  cen_id = alicloud_cen_instance.default.id
+  %s
+}
 `, rand, strings.Join(pairs, " \n "))
 	return config
+}
+
+func TestAccAliCloudCenTransitRouterVpcAttachmentsDataSource_options(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 99999)
+
+	optionsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAliCloudCenTransitRouterVpcAttachmentsDataSourceOptions(rand),
+	}
+
+	existMapFunc := func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                                "1",
+			"names.#":                              "1",
+			"attachments.#":                        "1",
+			"attachments.0.options.#":              "1",
+			"attachments.0.options.0.ipv6_support": "enable",
+			"attachments.0.options.0.appliance_mode_support":      "enable",
+			"attachments.0.transit_router_attachment_id":          CHECKSET,
+			"attachments.0.transit_router_attachment_name":        CHECKSET,
+			"attachments.0.transit_router_attachment_description": CHECKSET,
+		}
+	}
+
+	fakeMapFunc := func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":         "0",
+			"names.#":       "0",
+			"attachments.#": "0",
+		}
+	}
+
+	checkInfo := dataSourceAttr{
+		resourceId:   "data.alicloud_cen_transit_router_vpc_attachments.default",
+		existMapFunc: existMapFunc,
+		fakeMapFunc:  fakeMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+		testAccPreCheck(t)
+	}
+
+	checkInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, optionsConf)
+}
+
+func testAccCheckAliCloudCenTransitRouterVpcAttachmentsDataSourceOptions(rand int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testacc-cen-tr-vpc-attachment-options-%d"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block  = "192.168.0.0/16"
+  enable_ipv6 = true
+  ipv6_isp    = "BGP"
+  vpc_name    = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id               = alicloud_vpc.default.id
+  cidr_block           = "192.168.3.0/24"
+  zone_id              = "cn-hangzhou-h"
+  vswitch_name         = var.name
+  ipv6_cidr_block_mask = "3"
+}
+
+resource "alicloud_vswitch" "default_master" {
+  vpc_id               = alicloud_vpc.default.id
+  cidr_block           = "192.168.4.0/24"
+  zone_id              = "cn-hangzhou-i"
+  vswitch_name         = "${var.name}-master"
+  ipv6_cidr_block_mask = "4"
+}
+
+resource "alicloud_cen_instance" "default" {
+  cen_instance_name = var.name
+}
+
+resource "alicloud_cen_transit_router" "default" {
+  cen_id = alicloud_cen_instance.default.id
+}
+
+resource "alicloud_cen_transit_router_vpc_attachment" "default" {
+  cen_id                                = alicloud_cen_instance.default.id
+  vpc_id                                = alicloud_vpc.default.id
+  transit_router_id                     = alicloud_cen_transit_router.default.transit_router_id
+  transit_router_attachment_name        = var.name
+  transit_router_attachment_description = var.name
+  payment_type                          = "PayAsYouGo"
+
+  options {
+    ipv6_support           = "enable"
+    appliance_mode_support = "enable"
+  }
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default.id
+    zone_id    = alicloud_vswitch.default.zone_id
+  }
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.default_master.id
+    zone_id    = alicloud_vswitch.default_master.zone_id
+  }
+}
+
+data "alicloud_cen_transit_router_vpc_attachments" "default" {
+  cen_id = alicloud_cen_instance.default.id
+  ids    = [alicloud_cen_transit_router_vpc_attachment.default.id]
+}
+`, rand)
 }

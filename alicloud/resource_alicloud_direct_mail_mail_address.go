@@ -3,13 +3,11 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudDirectMailMailAddress() *schema.Resource {
@@ -23,15 +21,14 @@ func resourceAlicloudDirectMailMailAddress() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"account_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z0-9_-]+@[a-z0-9_-]+(\.[a-z0-9_-]+)+$`), "The email address must be filled in the format of account@domain, and only lowercase letters or numbers can be used."),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"password": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[0-9A-Za-z]{10,20}$`), "The password must be length 10-20 string, contains numbers, uppercase letters, lowercase letters at the same time."),
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
 			},
 			"reply_address": {
 				Type:     schema.TypeString,
@@ -41,7 +38,7 @@ func resourceAlicloudDirectMailMailAddress() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"batch", "trigger"}, false),
+				ValidateFunc: StringInSlice([]string{"batch", "trigger"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,

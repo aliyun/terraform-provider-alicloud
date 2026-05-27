@@ -2300,15 +2300,18 @@ func (s *VpcServiceV2) DescribeVpcIpv6Address(id string) (object map[string]inte
 }
 
 func (s *VpcServiceV2) VpcIpv6AddressStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.VpcIpv6AddressStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpcIpv6Address)
+}
+
+func (s *VpcServiceV2) VpcIpv6AddressStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeVpcIpv6Address(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 

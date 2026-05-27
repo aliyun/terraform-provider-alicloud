@@ -482,7 +482,7 @@ func resourceAliCloudSlbListenerRead(d *schema.ResourceData, meta interface{}) e
 		}
 
 		if port, ok := object["ListenerPort"]; ok && port.(float64) > 0 {
-			readListener(d, object)
+			readListener(d, protocol, object)
 		} else {
 			d.SetId("")
 		}
@@ -998,7 +998,7 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 	return "", "", 0, GetNotFoundErrorFromString(GetNotFoundMessage("Listener", d.Id()))
 }
 
-func readListener(d *schema.ResourceData, listener map[string]interface{}) {
+func readListener(d *schema.ResourceData, protocol string, listener map[string]interface{}) {
 	if val, ok := listener["BackendServerPort"]; ok {
 		d.Set("backend_port", val.(float64))
 	}
@@ -1051,7 +1051,8 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	if val, ok := listener["PersistenceTimeout"]; ok {
 		d.Set("persistence_timeout", val.(float64))
 	}
-	if val, ok := listener["HealthCheckType"]; ok {
+	// Since only the tcp slb listener can explicitly set the field health_check_type, field health_check_type takes effect only if field protocol is set to tcp.
+	if val, ok := listener["HealthCheckType"]; ok && protocol == "tcp" {
 		d.Set("health_check_type", val.(string))
 	}
 	if val, ok := listener["EstablishedTimeout"]; ok {

@@ -14,7 +14,7 @@ import (
 func TestAccAliCloudVpcIpv6Address_basic4694(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipv6_address.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcIpv6AddressMap4694)
+	ra := resourceAttrInit(resourceId, AliCloudVpcIpv6AddressMap4694)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcIpv6Address")
@@ -22,59 +22,53 @@ func TestAccAliCloudVpcIpv6Address_basic4694(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpv6AddressBasicDependence4694)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVpcIpv6AddressBasicDependence4694)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"vswitch_id":               "${alicloud_vswitch.vswich.id}",
-					"ipv6_address_description": "create_description",
-					"ipv6_address_name":        name,
-					"address_type":             "Ipv6Address",
-					"ipv6_address":             "${cidrhost(alicloud_vswitch.vswich.ipv6_cidr_block, 128)}",
+					"vswitch_id": "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id":        CHECKSET,
-						"vswitch_id":               CHECKSET,
-						"ipv6_address":             CHECKSET,
-						"ipv6_address_description": "create_description",
-						"ipv6_address_name":        name,
-						"address_type":             "Ipv6Address",
+						"vswitch_id": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"ipv6_address_description": "modify_description",
-					"ipv6_address_name":        name + "_update",
+					"ipv6_address_description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id":        CHECKSET,
-						"ipv6_address_description": "modify_description",
-						"ipv6_address_name":        name + "_update",
+						"ipv6_address_description": name,
 					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{}),
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_address_name": name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"ipv6_address_name": name,
+					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{}),
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
 				),
 			},
 			{
@@ -129,41 +123,97 @@ func TestAccAliCloudVpcIpv6Address_basic4694(t *testing.T) {
 	})
 }
 
-var AlicloudVpcIpv6AddressMap4694 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+func TestAccAliCloudVpcIpv6Address_basic4694_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_ipv6_address.default"
+	ra := resourceAttrInit(resourceId, AliCloudVpcIpv6AddressMap4694)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcIpv6Address")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVpcIpv6AddressBasicDependence4694)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"address_type":             "Ipv6Address",
+					"ipv6_address":             "${cidrhost(alicloud_vswitch.default.ipv6_cidr_block, 128)}",
+					"vswitch_id":               "${alicloud_vswitch.default.id}",
+					"ipv6_address_description": name,
+					"ipv6_address_name":        name,
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_type":             "Ipv6Address",
+						"ipv6_address":             CHECKSET,
+						"vswitch_id":               CHECKSET,
+						"ipv6_address_description": name,
+						"ipv6_address_name":        name,
+						"resource_group_id":        CHECKSET,
+						"tags.%":                   "2",
+						"tags.Created":             "TF",
+						"tags.For":                 "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
 }
 
-func AlicloudVpcIpv6AddressBasicDependence4694(name string) string {
+var AliCloudVpcIpv6AddressMap4694 = map[string]string{
+	"address_type":      CHECKSET,
+	"ipv6_address":      CHECKSET,
+	"resource_group_id": CHECKSET,
+	"create_time":       CHECKSET,
+	"status":            CHECKSET,
+}
+
+func AliCloudVpcIpv6AddressBasicDependence4694(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
 }
 
-variable "zone_id" {
-  default = "cn-beijing-g"
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
-
-data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
 }
 
-resource "alicloud_vpc" "vpc" {
-  cidr_block  = "172.16.0.0/12"
+resource "alicloud_vpc" "default" {
+  vpc_name    = var.name
+  cidr_block  = "192.168.0.0/16"
   enable_ipv6 = true
 }
 
-resource "alicloud_vswitch" "vswich" {
-  vpc_id               = alicloud_vpc.vpc.id
-  cidr_block           = "172.16.0.0/24"
+resource "alicloud_vswitch" "default" {
+  vswitch_name         = var.name
+  vpc_id               = alicloud_vpc.default.id
+  cidr_block           = "192.168.192.0/24"
   zone_id              = data.alicloud_zones.default.zones.0.id
-  vswitch_name         = "tf-testacc"
   ipv6_cidr_block_mask = "1"
 }
-
-
 `, name)
 }
 

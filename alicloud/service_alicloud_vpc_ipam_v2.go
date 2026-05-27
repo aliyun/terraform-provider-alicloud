@@ -308,15 +308,18 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPool(id string) (object map[string
 }
 
 func (s *VpcIpamServiceV2) VpcIpamIpamPoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.VpcIpamIpamPoolStateRefreshFuncWithApi(id, field, failStates, s.DescribeVpcIpamIpamPool)
+}
+
+func (s *VpcIpamServiceV2) VpcIpamIpamPoolStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeVpcIpamIpamPool(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -345,7 +348,6 @@ func (s *VpcIpamServiceV2) DescribeVpcIpamIpamPoolCidr(id string) (object map[st
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-
 	parts, err := splitIpamPoolCidrId(id)
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
