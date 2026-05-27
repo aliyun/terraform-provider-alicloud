@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudHBREcsBackupClient_basic0(t *testing.T) {
+func TestAccAliCloudHbrEcsBackupClient_basic0(t *testing.T) {
 	checkoutAccount(t, true)
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	defer checkoutAccount(t, false)

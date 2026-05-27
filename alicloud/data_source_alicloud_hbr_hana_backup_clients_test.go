@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudHbrHanaBackupClientsDataSource(t *testing.T) {
+func TestAccAliCloudHbrHanaBackupClientsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	idsConf := dataSourceTestAccConfig{

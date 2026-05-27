@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudHBREcsBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudHbrEcsBackupPlan_basic0(t *testing.T) {
 	checkoutAccount(t, true)
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	defer checkoutAccount(t, false)

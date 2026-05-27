@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudHBRHanaInstance_basic0(t *testing.T) {
+func TestAccAliCloudHbrHanaInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_hana_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.HBRSupportRegions)
@@ -102,7 +102,7 @@ data "alicloud_instances" "default" {
 `, name)
 }
 
-func TestAccAlicloudHBRHanaInstance_basic1(t *testing.T) {
+func TestAccAliCloudHbrHanaInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_hana_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.HBRSupportRegions)

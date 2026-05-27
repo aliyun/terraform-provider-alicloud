@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudHBRRestoreJobsDataSource(t *testing.T) {
+func TestAccAliCloudHbrRestoreJobsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	ecsBackupConf := dataSourceTestAccConfig{
@@ -94,15 +94,12 @@ variable "name" {
 }
 
 data "alicloud_hbr_ecs_backup_plans" "default" {
-    name_regex = "plan-tf-used-dont-delete"
 }
 
 data "alicloud_hbr_oss_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
 }
 
 data "alicloud_hbr_nas_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
 }
 
 data "alicloud_hbr_snapshots" "nas_snapshots" {

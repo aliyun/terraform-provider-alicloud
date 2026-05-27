@@ -107,7 +107,7 @@ func testSweepHBROtsBackupPlan(region string) error {
 	return nil
 }
 
-func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudHbrOtsBackupPlan_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_ots_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBROtsBackupPlanMap0)
@@ -235,7 +235,7 @@ func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudHBROtsBackupPlan_basic1(t *testing.T) {
+func TestAccAliCloudHbrOtsBackupPlan_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_ots_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBROtsBackupPlanMap0)

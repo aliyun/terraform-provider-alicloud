@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -88,14 +89,26 @@ func TestAccAliCloudOssBucketReplicationCrossRegionReplication(t *testing.T) {
 	resourceId := "alicloud_oss_bucket_replication.test"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc-bucket-replication-%d", rand)
+	var providers []*schema.Provider
+	providerFactories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			p := Provider()
+			providers = append(providers, p)
+			return p, nil
+		},
+		"alicloudshanghai": func() (*schema.Provider, error) {
+			p := Provider()
+			providers = append(providers, p)
+			return p, nil
+		},
+	}
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		// module name
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      ossBucketReplicationCheckDestroy,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      ossBucketReplicationCheckDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
 				Config: hclOssBucketReplicationCrossRegionReplication(name, true),
@@ -153,6 +166,37 @@ func TestAccAliCloudOssBucketReplicationCrossRegionReplication(t *testing.T) {
 			},
 		},
 	})
+}
+
+func ossBucketReplicationCheckDestroyWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, p := range *providers {
+			if p.Meta() == nil {
+				continue
+			}
+			if err := ossBucketReplicationCheckDestroyWithProvider(s, p); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func ossBucketReplicationCheckDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
+	ossClient := OssService{provider.Meta().(*connectivity.AliyunClient)}
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_oss_bucket_replication" {
+			continue
+		}
+		_, err := ossClient.DescribeOssBucketReplication(rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return WrapError(err)
+		}
+	}
+	return nil
 }
 
 func ossBucketReplicationCheckDestroy(s *terraform.State) error {
@@ -322,7 +366,7 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-provider "alicloud" {
+provider "alicloudshanghai" {
   alias  = "sh"
   region = "cn-shanghai"
 }
@@ -333,7 +377,7 @@ resource "alicloud_oss_bucket" "bucket_src" {
 }
 
 resource "alicloud_oss_bucket" "bucket_dest" {
-  provider = alicloud.sh
+  provider = alicloudshanghai.sh
   bucket   = "%[1]s-2"
 }
 
