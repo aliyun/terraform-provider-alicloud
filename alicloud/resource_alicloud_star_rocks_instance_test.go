@@ -58,7 +58,7 @@ func TestAccAliCloudStarRocksInstance_basic11073(t *testing.T) {
 					"backend_node_groups": []map[string]interface{}{
 						{
 							"cu":                          "8",
-							"storage_size":                "100",
+							"storage_size":                "200",
 							"resident_node_number":        "3",
 							"disk_number":                 "1",
 							"storage_performance_level":   "pl1",
@@ -285,7 +285,7 @@ func TestAccAliCloudStarRocksInstance_basic11101(t *testing.T) {
 					"backend_node_groups": []map[string]interface{}{
 						{
 							"cu":                          "8",
-							"storage_size":                "100",
+							"storage_size":                "200",
 							"resident_node_number":        "3",
 							"disk_number":                 "1",
 							"storage_performance_level":   "pl1",
@@ -512,7 +512,7 @@ func TestAccAliCloudStarRocksInstance_basic11093(t *testing.T) {
 					"backend_node_groups": []map[string]interface{}{
 						{
 							"cu":                          "8",
-							"storage_size":                "100",
+							"storage_size":                "200",
 							"resident_node_number":        "3",
 							"disk_number":                 "1",
 							"storage_performance_level":   "pl1",
