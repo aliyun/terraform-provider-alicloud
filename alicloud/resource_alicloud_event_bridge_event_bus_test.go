@@ -150,7 +150,7 @@ func testSweepEventBridgeEventBus(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEventBridgeEventBus_basic(t *testing.T) {
+func TestAccAliCloudEventBridgeEventBus_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_event_bridge_event_bus.default"
 	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventBusMap0)
