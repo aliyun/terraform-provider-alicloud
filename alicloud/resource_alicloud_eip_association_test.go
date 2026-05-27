@@ -221,6 +221,7 @@ func TestAccAliCloudEipAssociation_basic2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"depends_on":    []string{"alicloud_vpc_gateway_route_table_attachment.default"},
 					"allocation_id": "${alicloud_eip_address.default.id}",
 					"instance_id":   "192.168.0.1",
 					"instance_type": "IpAddress",
@@ -267,6 +268,7 @@ func TestAccAliCloudEipAssociation_basic2_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"depends_on":    []string{"alicloud_vpc_gateway_route_table_attachment.default"},
 					"allocation_id": "${alicloud_eip_address.default.id}",
 					"instance_id":   "192.168.0.1",
 					"instance_type": "IpAddress",
@@ -413,6 +415,17 @@ func AliCloudEipAssociationBasicDependence2(name string) string {
   		ipv4_gateway_name        = var.name
   		ipv4_gateway_description = var.name
         enabled                  = true
+	}
+
+	resource "alicloud_route_table" "default" {
+		vpc_id           = alicloud_vpc.default.id
+		route_table_name = var.name
+		associate_type   = "Gateway"
+	}
+
+	resource "alicloud_vpc_gateway_route_table_attachment" "default" {
+		ipv4_gateway_id = alicloud_vpc_ipv4_gateway.default.id
+		route_table_id  = alicloud_route_table.default.id
 	}
 `, name)
 }
