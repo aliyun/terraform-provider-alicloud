@@ -110,7 +110,7 @@ func testSweepSmartagFlowLog(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSmartagFlowLog_basic_netflow(t *testing.T) {
+func TestAccAliCloudSmartagFlowLog_basic_netflow(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_smartag_flow_log.default"
 	checkoutSupportedRegions(t, true, connectivity.SmartagSupportedRegions)
@@ -156,7 +156,7 @@ func TestAccAlicloudSmartagFlowLog_basic_netflow(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSmartagFlowLog_basic_sls(t *testing.T) {
+func TestAccAliCloudSmartagFlowLog_basic_sls(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_smartag_flow_log.default"
 	checkoutSupportedRegions(t, true, connectivity.SmartagSupportedRegions)
@@ -202,7 +202,7 @@ func TestAccAlicloudSmartagFlowLog_basic_sls(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSmartagFlowLog_basic_all(t *testing.T) {
+func TestAccAliCloudSmartagFlowLog_basic_all(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_smartag_flow_log.default"
 	checkoutSupportedRegions(t, true, connectivity.SmartagSupportedRegions)
