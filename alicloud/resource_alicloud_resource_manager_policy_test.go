@@ -155,7 +155,7 @@ func testSweepResourceManagerPolicy(region string) error {
 	return nil
 }
 
-func TestAccAlicloudResourceManagerPolicy_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerPolicy_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_policy.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerPolicyMap)
