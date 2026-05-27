@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudROSStackInstance_basic0(t *testing.T) {
+func TestAccAliCloudROSStackInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_stack_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudROSStackInstanceMap0)
@@ -97,7 +97,7 @@ func TestAccAlicloudROSStackInstance_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudROSStackInstance_basic1(t *testing.T) {
+func TestAccAliCloudROSStackInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_stack_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudROSStackInstanceMap0)
