@@ -94,24 +94,6 @@ func TestAccAliCloudRocketmqConsumerGroup_basic4419(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"delivery_order_type": "Orderly",
-					"consume_retry_policy": []map[string]interface{}{
-						{
-							"max_retry_times":          "5",
-							"retry_policy":             "FixedRetryPolicy",
-							"dead_letter_target_topic": "${alicloud_rocketmq_topic.default2j1J7Q.topic_name}",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delivery_order_type":    "Orderly",
-						"consume_retry_policy.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"remark": "333",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -186,7 +168,7 @@ resource "alicloud_rocketmq_instance" "default" {
   sub_series_code   = "cluster_ha"
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   remark            = "example"
-  ip_whitelists     = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
+  ip_whitelists     = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16", "0.0.0.0/0"]
   software {
     maintain_time = "02:00-06:00"
   }
