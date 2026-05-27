@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -382,7 +381,9 @@ func resourceAliCloudExpressConnectRouterInterfaceRead(d *schema.ResourceData, m
 	d.Set("create_time", objectRaw["CreationTime"])
 	d.Set("cross_border", objectRaw["CrossBorder"])
 	d.Set("end_time", objectRaw["EndTime"])
-	d.Set("has_reservation_data", objectRaw["HasReservationData"])
+	if v, ok := objectRaw["HasReservationData"].(bool); ok {
+		d.Set("has_reservation_data", fmt.Sprint(v))
+	}
 	d.Set("reservation_active_time", objectRaw["ReservationActiveTime"])
 	d.Set("reservation_bandwidth", objectRaw["ReservationBandwidth"])
 	d.Set("reservation_internet_charge_type", objectRaw["ReservationInternetChargeType"])
