@@ -338,9 +338,7 @@ func resourceAlicloudConfigRuleRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("source_detail_message_type", d.Get("config_rule_trigger_types"))
 	d.Set("source_maximum_execution_frequency", d.Get("maximum_execution_frequency"))
-	if rts, ok := d.Get("resource_types_scope").([]interface{}); ok {
-		d.Set("scope_compliance_resource_types", convertListToCommaSeparate(rts))
-	}
+	d.Set("scope_compliance_resource_types", convertListToCommaSeparate(d.Get("resource_types_scope").([]interface{})))
 	return nil
 }
 
