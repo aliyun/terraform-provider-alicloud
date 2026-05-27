@@ -115,7 +115,7 @@ func testSweepResourceManagerPolicyAttachment(region string) error {
 	return nil
 }
 
-func TestAccAlicloudResourceManagerPolicyAttachment_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerPolicyAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_policy_attachment.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerPolicyAttachmentMap)
