@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -284,7 +285,16 @@ func resourceAlicloudRosStackRead(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("stack_policy_body", getStackPolicyObject["StackPolicyBody"])
+	if policyBody := getStackPolicyObject["StackPolicyBody"]; policyBody != nil {
+		switch v := policyBody.(type) {
+		case string:
+			d.Set("stack_policy_body", v)
+		default:
+			if marshaled, err := json.Marshal(v); err == nil {
+				d.Set("stack_policy_body", string(marshaled))
+			}
+		}
+	}
 	return nil
 }
 
