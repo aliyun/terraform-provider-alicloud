@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudVPCDhcpOptionsSetAttachment_basic0(t *testing.T) {
+func TestAccAliCloudVPCDhcpOptionsSetAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_dhcp_options_set_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCDhcpOptionsSetMap0)
