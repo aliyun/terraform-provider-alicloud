@@ -308,3 +308,85 @@ func (s *CmsServiceV2) CmsPrometheusViewStateRefreshFuncWithApi(id string, field
 }
 
 // DescribeCmsPrometheusView >>> Encapsulated.
+
+// DescribeCmsAddonRelease <<< Encapsulated get interface for Cms AddonRelease.
+
+func (s *CmsServiceV2) DescribeCmsAddonRelease(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	releaseName := parts[1]
+	policyId := parts[0]
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/integration-policies/%s/addon-releases/%s", policyId, releaseName)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"404", "12002"}) {
+			return object, WrapErrorf(NotFoundErr("AddonRelease", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.release", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.release", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CmsServiceV2) CmsAddonReleaseStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CmsAddonReleaseStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsAddonRelease)
+}
+
+func (s *CmsServiceV2) CmsAddonReleaseStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsAddonRelease >>> Encapsulated.
