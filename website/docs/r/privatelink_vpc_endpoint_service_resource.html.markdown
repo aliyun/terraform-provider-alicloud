@@ -90,6 +90,7 @@ The following arguments are supported:
   - `slb`: indicates that the service resource type is Classic Load Balancer (CLB).
   - `alb`: indicates that the service resource type is Application Load Balancer (ALB).
   - `nlb`: indicates that the service resource type is Network Load Balancer (NLB).
+  - `gwlb`: indicates that the service resource type is Gateway Load Balancer (GWLB).
 * `service_id` - (Required, ForceNew) The endpoint service ID.
 * `zone_id` - (Optional, ForceNew, Computed, Available since v1.212.0) The ID of the zone to which the service resource belongs. (valid when the resource type is nlb/alb).
 
