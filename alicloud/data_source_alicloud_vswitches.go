@@ -101,6 +101,10 @@ func dataSourceAlicloudVswitches() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
+						"enable_ipv6": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 						"resource_group_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -258,12 +262,17 @@ func dataSourceAlicloudVswitchesRead(d *schema.ResourceData, meta interface{}) e
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+		ipv6CidrBlock := fmt.Sprint(object["Ipv6CidrBlock"])
+		if object["Ipv6CidrBlock"] == nil {
+			ipv6CidrBlock = ""
+		}
 		mapping := map[string]interface{}{
 			"creation_time":              object["CreationTime"],
 			"available_ip_address_count": object["AvailableIpAddressCount"],
 			"cidr_block":                 object["CidrBlock"],
 			"description":                object["Description"],
 			"is_default":                 object["IsDefault"],
+			"enable_ipv6":                ipv6CidrBlock != "",
 			"resource_group_id":          object["ResourceGroupId"],
 			"route_table_id":             object["RouteTable"].(map[string]interface{})["RouteTableId"],
 			"status":                     object["Status"],
@@ -273,7 +282,7 @@ func dataSourceAlicloudVswitchesRead(d *schema.ResourceData, meta interface{}) e
 			"name":                       object["VSwitchName"],
 			"vpc_id":                     object["VpcId"],
 			"zone_id":                    object["ZoneId"],
-			"ipv6_cidr_block":            object["Ipv6CidrBlock"],
+			"ipv6_cidr_block":            ipv6CidrBlock,
 		}
 
 		tags := make(map[string]interface{})
