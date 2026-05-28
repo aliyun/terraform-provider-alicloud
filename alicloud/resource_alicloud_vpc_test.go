@@ -628,7 +628,7 @@ func TestAccAliCloudVPC_isNotDefault(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6", "is_default"},
+				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6"},
 			},
 		},
 	})
@@ -685,7 +685,7 @@ func TestAccAliCloudVPC_isDefault(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6", "is_default"},
+				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6"},
 			},
 		},
 	})
