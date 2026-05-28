@@ -56,6 +56,8 @@ The following arguments are supported:
   - `true`
   - `false`(default)
 
+-> **NOTE:** When `is_default` is `true`, a region can contain only one default VPC and concurrent default VPC creation in the same region is not supported. After a default VPC is created, its CIDR block cannot be modified, but secondary IPv4 CIDR blocks can be added. A default VPC provides 300,000 private IP addresses for cloud resources and this quota cannot be increased. A router and route table are automatically created with the default VPC. Each default VPC supports up to three user CIDR blocks; if multiple user CIDR blocks overlap, the CIDR block with the shorter mask takes effect.
+
 * `cidr_block` - (Optional, Computed) The CIDR block of the VPC.
 
   - You can specify one of the following CIDR blocks or their subsets as the primary IPv4 CIDR block of the VPC: 192.168.0.0/16, 172.16.0.0/12, and 10.0.0.0/8. These CIDR blocks are standard private CIDR blocks as defined by Request for Comments (RFC) documents. The subnet mask must be 8 to 28 bits in length.
@@ -115,8 +117,8 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the VPC.
 * `ipv6_cidr_blocks` - The IPv6 CIDR block information of the VPC.
-  * `ipv6_cidr_block` - The IPv6 CIDR block of the VPC.
-  * `ipv6_isp` - Valid values: **BGP** (default): Alibaba Cloud BGP IPv6.
+    * `ipv6_cidr_block` - The IPv6 CIDR block of the VPC.
+    * `ipv6_isp` - Valid values: **BGP** (default): Alibaba Cloud BGP IPv6.
 * `is_default` - Specifies whether to create the default VPC in the specified region.
 * `region_id` - The ID of the region where the VPC is located.
 * `route_table_id` - The ID of the system route table.

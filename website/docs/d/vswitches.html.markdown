@@ -11,6 +11,8 @@ description: |-
 
 This data source provides a list of VSwitches owned by an Alibaba Cloud account.
 
+-> **NOTE:** Available since v1.7.2.
+
 ## Example Usage
 
 ```terraform
@@ -67,9 +69,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `vpc_id` - ID of the VPC that owns the vSwitch.
   * `name` - Name of the vSwitch.
   * `cidr_block` - CIDR block of the vSwitch.
-  * `instance_ids` - (Deprecated in v1.119.0+) List of ECS instance IDs in the specified vSwitch.
   * `description` - Description of the vSwitch.
   * `is_default` - Whether the vSwitch is the default one in the region.
+  * `enable_ipv6` - Whether the IPv6 function is enabled in the vSwitch.
   * `creation_time` - Time of creation.
   * `available_ip_address_count` - The available ip address count of the vSwitch.
   * `resource_group_id` - The resource group ID of the vSwitch.
