@@ -1950,6 +1950,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_global_database_network":                       resourceAlicloudPolarDBGlobalDatabaseNetwork(),
 			"alicloud_vpc_ipv4_gateway":                                      resourceAliCloudVpcIpv4Gateway(),
 			"alicloud_api_gateway_backend":                                   resourceAlicloudApiGatewayBackend(),
+			"alicloud_api_gateway_stage_model":                               resourceAlicloudApiGatewayStageModel(),
 			"alicloud_vpc_prefix_list":                                       resourceAliCloudVpcPrefixList(),
 			"alicloud_cms_event_rule":                                        resourceAliCloudCloudMonitorServiceEventRule(),
 			"alicloud_ddos_basic_threshold":                                  resourceAliCloudDdosBasicThreshold(),

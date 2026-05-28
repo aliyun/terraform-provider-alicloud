@@ -688,3 +688,49 @@ func (s *CloudApiService) DescribeApiGatewayModel(id string) (object map[string]
 
 	return object, nil
 }
+
+func (s *CloudApiService) DescribeApiGatewayStageModel(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeStageModels"
+	client := s.client
+
+	request := map[string]interface{}{
+		"PageNumber": 1,
+		"PageSize":   PageSizeXLarge,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.StageModelInfoList", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.StageModelInfoList", response)
+	}
+
+	if v == nil {
+		return object, WrapErrorf(NotFoundErr("ApiGateway", id), NotFoundWithResponse, response)
+	}
+
+	for _, item := range v.([]interface{}) {
+		itemMap := item.(map[string]interface{})
+		if fmt.Sprint(itemMap["StageModelId"]) == id {
+			return itemMap, nil
+		}
+	}
+
+	return object, WrapErrorf(NotFoundErr("ApiGateway", id), NotFoundWithResponse, response)
+}
