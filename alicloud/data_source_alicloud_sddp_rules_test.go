@@ -155,7 +155,7 @@ func TestAccAliCloudSddpRuleDataSource(t *testing.T) {
 			"rules.0.status":        "1",
 			"rules.0.warn_level":    "3",
 			"rules.0.name":          fmt.Sprintf("tf-testAccSddpRule-%d", rand),
-			"rules.0.category":      "0",
+			"rules.0.category":      "5",
 			"rules.0.product_id":    "5",
 		}
 	}
@@ -183,22 +183,22 @@ func testAccCheckAlicloudSddpRuleDataSourceName(rand int, attrMap map[string]str
 	}
 	config := fmt.Sprintf(`
 
-variable "name" {	
-	default = "tf-testAccSddpRule-%d"
+
+variable "name" {
+  default = "tf-testAccSddpRule-%d"
 }
 
 resource "alicloud_sddp_rule" "default" {
-  category=  "0"
-  content=   var.name
-  rule_name= var.name
+  category      = "0"
+  content       = "[{\"rule\":[{\"operator\":\"contains\",\"target\":\"content\",\"value\":\"${var.name}\"}],\"ruleRelation\":\"AND\"}]"
+  rule_name     = var.name
   risk_level_id = "4"
-  warn_level = "3"
-  product_code = "RDS"
-  product_id = "5"
-  
+  warn_level    = "3"
+  product_code  = "RDS"
+  product_id    = "5"
 }
 
-data "alicloud_sddp_rules" "default" {	
+data "alicloud_sddp_rules" "default" {
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))
