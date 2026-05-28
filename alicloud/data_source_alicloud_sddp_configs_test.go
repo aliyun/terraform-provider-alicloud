@@ -50,7 +50,7 @@ func TestAccAliCloudSddpConfigDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAlicloudSddpConfigDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.SddpSupportRegions)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-zhangjiakou"})
 	}
 	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, allConf)
 
@@ -60,16 +60,15 @@ func testAccCheckAlicloudSddpConfigDataSourceName(rand int, attrMap map[string]s
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
-	config := fmt.Sprintf(`
+	return fmt.Sprintf(`
 resource "alicloud_sddp_config" "default" {
-  code = "access_failed_cnt"
-  description = "tf-testacc"
-  value = 50
+  code        = "access_failed_cnt"
+  description = "非授权资源多次访问尝试：目前的阈值定义为50次"
+  value       = 50
 }
 
-data "alicloud_sddp_configs" "default" {	
+data "alicloud_sddp_configs" "default" {
 	%s
 }
 `, strings.Join(pairs, " \n "))
-	return config
 }
