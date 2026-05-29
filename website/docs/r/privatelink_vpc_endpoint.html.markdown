@@ -83,9 +83,9 @@ The following arguments are supported:
   - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
 * `endpoint_description` - (Optional) The description of the endpoint.
-* `endpoint_type` - (Optional, ForceNew, Computed, Available since v1.212.0) The endpoint type.
-
-  Only the value: Interface, indicating the Interface endpoint. You can add the service resource types of Application Load Balancer (ALB), Classic Load Balancer (CLB), and Network Load Balancer (NLB).
+* `endpoint_type` - (Optional, ForceNew, Computed, Available since v1.212.0) The type of the endpoint. Valid values:
+  - `Interface`: an interface endpoint. You can add Application Load Balancer (ALB), Classic Load Balancer (CLB), and Network Load Balancer (NLB) instances as service resources.
+  - `GatewayLoadBalancer`: a Gateway Load Balancer endpoint. You can add a Gateway Load Balancer (GWLB) as a service resource.
 * `policy_document` - (Optional, Available since v1.223.2) RAM access policies. For more information about policy definitions, see Alibaba Cloud-access control (RAM) official guidance.
 * `protected_enabled` - (Optional, Available since v1.212.0) Specifies whether to enable user authentication. This parameter is available in Security Token Service (STS) mode. Valid values:
   - `true`: enables user authentication. After user authentication is enabled, only the user who creates the endpoint can modify or delete the endpoint in STS mode.
