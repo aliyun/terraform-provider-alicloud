@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 // Test Ebs SolutionInstance. >>> Resource test cases, automatically generated.
@@ -26,88 +27,90 @@ func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Shanghai})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		CheckDestroy:      testAccCheckEbsSolutionInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": "description",
-					"solution_id": "mysql",
+					"solution_id": "mysql_compare",
 					"parameters": []map[string]interface{}{
 						{
-							"parameter_key":   "zoneId",
-							"parameter_value": "${var.zone_id}",
+							"parameter_key":   "dataDiskType",
+							"parameter_value": "cloud_essd",
 						},
 						{
-							"parameter_key":   "ecsType",
-							"parameter_value": "ecs.c6.large",
+							"parameter_key":   "mysqlPort",
+							"parameter_value": "3306",
 						},
 						{
-							"parameter_key":   "ecsImageId",
-							"parameter_value": "CentOS_7",
-						},
-						{
-							"parameter_key":   "internetMaxBandwidthOut",
-							"parameter_value": "100",
-						},
-						{
-							"parameter_key":   "internetChargeType",
-							"parameter_value": "PayByTraffic",
+							"parameter_key":   "dataDiskPerformance",
+							"parameter_value": "PL1",
 						},
 						{
 							"parameter_key":   "ecsPassword",
-							"parameter_value": "Ebs12345",
+							"parameter_value": "DHJfuebf123",
+						},
+						{
+							"parameter_key":   "zoneId",
+							"parameter_value": "cn-hangzhou-b",
+						},
+						{
+							"parameter_key":   "ecsType",
+							"parameter_value": "ecs.c7.xlarge",
 						},
 						{
 							"parameter_key":   "sysDiskType",
 							"parameter_value": "cloud_essd",
 						},
 						{
-							"parameter_key":   "sysDiskPerformance",
-							"parameter_value": "PL0",
-						},
-						{
 							"parameter_key":   "sysDiskSize",
 							"parameter_value": "40",
 						},
 						{
-							"parameter_key":   "dataDiskType",
-							"parameter_value": "cloud_essd",
-						},
-						{
-							"parameter_key":   "dataDiskPerformance",
-							"parameter_value": "PL0",
-						},
-						{
 							"parameter_key":   "dataDiskSize",
-							"parameter_value": "40",
-						},
-						{
-							"parameter_key":   "mysqlVersion",
-							"parameter_value": "MySQL80",
-						},
-						{
-							"parameter_key":   "mysqlUser",
-							"parameter_value": "root",
+							"parameter_value": "500",
 						},
 						{
 							"parameter_key":   "mysqlPassword",
-							"parameter_value": "Ebs12345",
+							"parameter_value": "DHJfuebf123",
 						},
 					},
 					"solution_instance_name": name,
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":            "description",
-						"solution_id":            "mysql",
-						"parameters.#":           "15",
+						"solution_id":            "mysql_compare",
+						"parameters.#":           "10",
 						"solution_instance_name": name,
 						"resource_group_id":      CHECKSET,
+						"tags.%":                 "2",
+						"tags.Created":           "TF",
+						"tags.For":               "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
 					}),
 				),
 			},
@@ -194,67 +197,47 @@ func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": "description",
-					"solution_id": "mysql",
+					"solution_id": "mysql_compare",
 					"parameters": []map[string]interface{}{
 						{
-							"parameter_key":   "zoneId",
-							"parameter_value": "${var.zone_id}",
+							"parameter_key":   "dataDiskType",
+							"parameter_value": "cloud_essd",
 						},
 						{
-							"parameter_key":   "ecsType",
-							"parameter_value": "ecs.c6.large",
+							"parameter_key":   "mysqlPort",
+							"parameter_value": "3306",
 						},
 						{
-							"parameter_key":   "ecsImageId",
-							"parameter_value": "CentOS_7",
-						},
-						{
-							"parameter_key":   "internetMaxBandwidthOut",
-							"parameter_value": "100",
-						},
-						{
-							"parameter_key":   "internetChargeType",
-							"parameter_value": "PayByTraffic",
+							"parameter_key":   "dataDiskPerformance",
+							"parameter_value": "PL1",
 						},
 						{
 							"parameter_key":   "ecsPassword",
-							"parameter_value": "Ebs12345",
+							"parameter_value": "DHJfuebf123",
+						},
+						{
+							"parameter_key":   "zoneId",
+							"parameter_value": "cn-hangzhou-b",
+						},
+						{
+							"parameter_key":   "ecsType",
+							"parameter_value": "ecs.c7.xlarge",
 						},
 						{
 							"parameter_key":   "sysDiskType",
 							"parameter_value": "cloud_essd",
 						},
 						{
-							"parameter_key":   "sysDiskPerformance",
-							"parameter_value": "PL0",
-						},
-						{
 							"parameter_key":   "sysDiskSize",
 							"parameter_value": "40",
 						},
 						{
-							"parameter_key":   "dataDiskType",
-							"parameter_value": "cloud_essd",
-						},
-						{
-							"parameter_key":   "dataDiskPerformance",
-							"parameter_value": "PL0",
-						},
-						{
 							"parameter_key":   "dataDiskSize",
-							"parameter_value": "40",
-						},
-						{
-							"parameter_key":   "mysqlVersion",
-							"parameter_value": "MySQL80",
-						},
-						{
-							"parameter_key":   "mysqlUser",
-							"parameter_value": "root",
+							"parameter_value": "500",
 						},
 						{
 							"parameter_key":   "mysqlPassword",
-							"parameter_value": "Ebs12345",
+							"parameter_value": "DHJfuebf123",
 						},
 					},
 					"solution_instance_name": name + "_update",
@@ -263,8 +246,8 @@ func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":            "description",
-						"solution_id":            "mysql",
-						"parameters.#":           "15",
+						"solution_id":            "mysql_compare",
+						"parameters.#":           "10",
 						"solution_instance_name": name + "_update",
 						"resource_group_id":      CHECKSET,
 					}),
@@ -289,20 +272,10 @@ var AlicloudEbsSolutionInstanceMap5796 = map[string]string{
 func AlicloudEbsSolutionInstanceBasicDependence5796(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
-}
-
-variable "zone_id" {
-  default = "cn-shanghai-l"
-}
-
-variable "region_id" {
-  default = "cn-shanghai"
+  default = "%s"
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}
-
-
 `, name)
 }
 
@@ -322,76 +295,56 @@ func TestAccAliCloudEbsSolutionInstance_basic5796_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Shanghai})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		CheckDestroy:      testAccCheckEbsSolutionInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": "description",
-					"solution_id": "mysql",
+					"solution_id": "mysql_compare",
 					"parameters": []map[string]interface{}{
 						{
-							"parameter_key":   "zoneId",
-							"parameter_value": "${var.zone_id}",
+							"parameter_key":   "dataDiskType",
+							"parameter_value": "cloud_essd",
 						},
 						{
-							"parameter_key":   "ecsType",
-							"parameter_value": "ecs.c6.large",
+							"parameter_key":   "mysqlPort",
+							"parameter_value": "3306",
 						},
 						{
-							"parameter_key":   "ecsImageId",
-							"parameter_value": "CentOS_7",
-						},
-						{
-							"parameter_key":   "internetMaxBandwidthOut",
-							"parameter_value": "100",
-						},
-						{
-							"parameter_key":   "internetChargeType",
-							"parameter_value": "PayByTraffic",
+							"parameter_key":   "dataDiskPerformance",
+							"parameter_value": "PL1",
 						},
 						{
 							"parameter_key":   "ecsPassword",
-							"parameter_value": "Ebs12345",
+							"parameter_value": "DHJfuebf123",
+						},
+						{
+							"parameter_key":   "zoneId",
+							"parameter_value": "cn-hangzhou-b",
+						},
+						{
+							"parameter_key":   "ecsType",
+							"parameter_value": "ecs.c7.xlarge",
 						},
 						{
 							"parameter_key":   "sysDiskType",
 							"parameter_value": "cloud_essd",
 						},
 						{
-							"parameter_key":   "sysDiskPerformance",
-							"parameter_value": "PL0",
-						},
-						{
 							"parameter_key":   "sysDiskSize",
 							"parameter_value": "40",
 						},
 						{
-							"parameter_key":   "dataDiskType",
-							"parameter_value": "cloud_essd",
-						},
-						{
-							"parameter_key":   "dataDiskPerformance",
-							"parameter_value": "PL0",
-						},
-						{
 							"parameter_key":   "dataDiskSize",
-							"parameter_value": "40",
-						},
-						{
-							"parameter_key":   "mysqlVersion",
-							"parameter_value": "MySQL80",
-						},
-						{
-							"parameter_key":   "mysqlUser",
-							"parameter_value": "root",
+							"parameter_value": "500",
 						},
 						{
 							"parameter_key":   "mysqlPassword",
-							"parameter_value": "Ebs12345",
+							"parameter_value": "DHJfuebf123",
 						},
 					},
 					"solution_instance_name": name,
@@ -400,8 +353,8 @@ func TestAccAliCloudEbsSolutionInstance_basic5796_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":            "description",
-						"solution_id":            "mysql",
-						"parameters.#":           "15",
+						"solution_id":            "mysql_compare",
+						"parameters.#":           "10",
 						"solution_instance_name": name,
 						"resource_group_id":      CHECKSET,
 					}),
@@ -415,6 +368,29 @@ func TestAccAliCloudEbsSolutionInstance_basic5796_twin(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testAccCheckEbsSolutionInstanceDestroy(s *terraform.State) error {
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	ebsService := EbsServiceV2{client}
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_ebs_solution_instance" {
+			continue
+		}
+		if resp, err := ebsService.DescribeEbsSolutionInstance(rs.Primary.ID); err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return WrapError(err)
+		} else {
+			// check ID and status
+			if rs.Primary.ID == fmt.Sprint(resp["SolutionInstanceId"]) && resp["Status"] == "DELETE_COMPLETE" {
+				continue
+			}
+		}
+		return fmt.Errorf("EBS Solution Instance %s still exists", rs.Primary.ID)
+	}
+	return nil
 }
 
 // Test Ebs SolutionInstance. <<< Resource test cases, automatically generated.
