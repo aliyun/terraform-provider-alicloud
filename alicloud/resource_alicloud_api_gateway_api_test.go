@@ -173,6 +173,16 @@ func TestAccAliCloudApigatewayApi_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stage_names": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stage_names.#": "0",
+					}),
+				),
+			},
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"request_config": []map[string]string{{
@@ -1451,16 +1461,16 @@ func TestAccAliCloudApigatewayApi_backend(t *testing.T) {
 						"path":    "/web/cloudapi",
 						"timeout": "20",
 					}},
-					"backend_id":     "${alicloud_api_gateway_backend.default.id}",
+					"backend_id":      "${alicloud_api_gateway_backend.default.id}",
 					"backend_enabled": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":           name,
-						"description":    "tf_testAcc_api backend_id",
-						"auth_type":      "ANONYMOUS",
-						"service_type":   "HTTP",
-						"backend_id":     CHECKSET,
+						"name":            name,
+						"description":     "tf_testAcc_api backend_id",
+						"auth_type":       "ANONYMOUS",
+						"service_type":    "HTTP",
+						"backend_id":      CHECKSET,
 						"backend_enabled": "true",
 					}),
 				),

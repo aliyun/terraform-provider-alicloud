@@ -147,7 +147,7 @@ The following arguments are supported:
 * `request_parameters` - (Optional, List) request_parameters defines the request parameters of the api. See [`request_parameters`](#request_parameters) below.
 * `constant_parameters` - (Optional, List) constant_parameters defines the constant parameters of the api. See [`constant_parameters`](#constant_parameters) below.
 * `system_parameters` - (Optional, List) system_parameters defines the system parameters of the api. See [`system_parameters`](#system_parameters) below.
-* `stage_names` - (Optional, Type: list) Stages that the api need to be deployed. Valid value: `RELEASE`,`PRE`,`TEST`.
+* `stage_names` - (Optional, Type: list) Stages that the api need to be deployed. Valid values: `RELEASE`, `PRE`, `TEST`, or any custom stage name created via `alicloud_api_gateway_stage_model`.
 * `force_nonce_check` - (Optional, Type: bool, Available in v1.140+) Whether to prevent API replay attack. Default value: `false`.
 * `backend_id` - (Optional, Available since v1.279.0) The ID of the API Gateway Backend. When specified, the API references an existing backend created by `alicloud_api_gateway_backend`.
 * `backend_enabled` - (Optional, Available since v1.279.0) Specifies whether to enable the backend service. When set to `true`, the `backend_id` will be sent to the API.
