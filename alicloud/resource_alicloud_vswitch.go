@@ -55,6 +55,7 @@ func resourceAliCloudVpcVswitch() *schema.Resource {
 			"ipv6_cidr_block_mask": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"is_default": {
 				Type:     schema.TypeBool,
