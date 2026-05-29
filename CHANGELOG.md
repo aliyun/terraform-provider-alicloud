@@ -1,4 +1,24 @@
 ## 1.280.0 (Unreleased)
+
+- **New Resource:** `alicloud_api_gateway_stage_model` [GH-9752]
+- **New Resource:** `alicloud_vpn_gateway_enhanced_vpn_gateway` [GH-9794]
+- **New Resource:** `alicloud_amqp_open_source_permission` [GH-9795]
+- **New Resource:** `alicloud_amqp_open_source_account` [GH-9797]
+- **New Resource:** `alicloud_cms_addon_release` [GH-9798]
+- **New Resource:** `alicloud_vpc_ipv6_cidr_block` [GH-9801]
+- **New Data Source:** `alicloud_vpn_gateway_enhanced_vpn_gateways` [GH-9794]
+- **New Data Source:** `alicloud_amqp_open_source_permissions` [GH-9795]
+- **New Data Source:** `alicloud_amqp_open_source_accounts` [GH-9797]
+- **New Data Source:** `alicloud_vpc_ipv6_cidr_blocks` [GH-9801]
+
+ENHANCEMENTS:
+
+- resource/alicloud_cloud_firewall_vpc_firewall_ips_config: Add member_uid for get operation. [GH-9755]
+- resource/alicloud_direct_mail_mail_address: Removed the account_name, password enums limitation. [GH-9757]
+- resource/alicloud_vswitch: support IPv6 attributes; data-source/alicloud_vswitches: add enable_ipv6. [GH-9802]
+- resource/alicloud_vpc: update IPv6 attribute schema. [GH-9803]
+- docs: Improved the document privatelink_vpc_endpoint, privatelink_vpc_endpoint_service_resource. [GH-9804]
+
 ## 1.279.0 (May 22, 2026)
 
 - **New Resource:** `alicloud_ros_stack_instances` ([#9684](https://github.com/aliyun/terraform-provider-alicloud/issues/9684))

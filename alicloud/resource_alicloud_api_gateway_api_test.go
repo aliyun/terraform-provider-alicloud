@@ -103,9 +103,9 @@ func TestAccAliCloudApigatewayApi_basic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -170,6 +170,16 @@ func TestAccAliCloudApigatewayApi_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"stage_names.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stage_names": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stage_names.#": "0",
 					}),
 				),
 			},
@@ -286,9 +296,9 @@ func TestAccAliCloudApigatewayApi_param(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -439,9 +449,9 @@ func TestAccAliCloudApigatewayApi_post(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -548,9 +558,9 @@ func TestAccAliCloudApigatewayApi_convertBackend(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -657,9 +667,9 @@ func TestAccAliCloudApigatewayApi_vpc(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -760,9 +770,9 @@ func TestAccAliCloudApigatewayApi_fc(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -866,9 +876,9 @@ func TestAccAliCloudApigatewayApi_fc2(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -976,9 +986,9 @@ func TestAccAliCloudApigatewayApi_fc3(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1086,9 +1096,9 @@ func TestAccAliCloudApigatewayApi_convertFc(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 
 			{
@@ -1190,9 +1200,9 @@ func TestAccAliCloudApigatewayApi_multi(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1251,9 +1261,9 @@ func TestAccAliCloudApigatewayApi_mock(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1451,16 +1461,16 @@ func TestAccAliCloudApigatewayApi_backend(t *testing.T) {
 						"path":    "/web/cloudapi",
 						"timeout": "20",
 					}},
-					"backend_id":     "${alicloud_api_gateway_backend.default.id}",
+					"backend_id":      "${alicloud_api_gateway_backend.default.id}",
 					"backend_enabled": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":           name,
-						"description":    "tf_testAcc_api backend_id",
-						"auth_type":      "ANONYMOUS",
-						"service_type":   "HTTP",
-						"backend_id":     CHECKSET,
+						"name":            name,
+						"description":     "tf_testAcc_api backend_id",
+						"auth_type":       "ANONYMOUS",
+						"service_type":    "HTTP",
+						"backend_id":      CHECKSET,
 						"backend_enabled": "true",
 					}),
 				),

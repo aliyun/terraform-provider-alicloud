@@ -120,16 +120,19 @@ The following arguments are supported:
 * `cidr_block` - (Optional, ForceNew) The IPv4 CIDR block of the VSwitch. **NOTE:** From version 1.233.0, if you do not set `is_default`, or set `is_default` to `false`, `cidr_block` is required.
 * `description` - (Optional) The description of VSwitch.
 * `zone_id` - (Optional, ForceNew, Available since v1.119.0) The AZ for the VSwitch. **Note:** Required for a VPC VSwitch.
-* `enable_ipv6` - (Optional, Available since v1.201.0) Whether the IPv6 function is enabled in the switch. Value:
+* `enable_ipv6` - (Optional, Computed, Available since v1.201.0) Whether the IPv6 function is enabled in the switch. Value:
   - `true`: enables IPv6.
   - `false` (default): IPv6 is not enabled.
-* `ipv6_cidr_block_mask` - (Optional, Available since v1.201.0) The IPv6 CIDR block of the VSwitch.
+* `ipv6_cidr_block_mask` - (Optional, Available since v1.201.0) The IPv6 CIDR block of the VSwitch. This parameter is used only for create and update operations.
 * `tags` - (Optional, Map, Available since v1.55.3) The tags of VSwitch.
 * `vswitch_name` - (Optional, Available since v1.119.0) The name of the VSwitch.
 * `vpc_id` - (Optional, ForceNew) The VPC ID. **NOTE:** From version 1.233.0, if you do not set `is_default`, or set `is_default` to `false`, `vpc_id` is required.
-* `is_default` - (Optional, Bool, Available since v1.233.0) Specifies whether to create the default VSwitch. Default value: `false`. Valid values:
+* `is_default` - (Optional, Computed, ForceNew, Bool, Available since v1.233.0) Specifies whether to create the default VSwitch. Default value: `false`. Valid values:
   - `true`: Creates a default vSwitch.
   - `false`: Creates a vSwitch.
+
+-> **NOTE:** When `is_default` is `true`, a default VPC must already exist in the region. A zone can contain only one default vSwitch, and creating another one in the same zone fails. After a default vSwitch is created, its CIDR block cannot be modified. The first and last three IP addresses in each default vSwitch CIDR block are reserved by the system, default vSwitches do not support multicast or broadcast, and the number of cloud product instances in a default vSwitch cannot exceed the remaining available instance quota of the VPC.
+* `vpc_ipv6_cidr_block` - (Optional, Available since v1.280.0) The IPv6 CIDR block of the VPC. If the VPC has multiple IPv6 CIDR blocks, you can use this parameter to specify the IPv6 CIDR block range to which the VSwitch belongs. This parameter is used only for create and update operations.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated since v1.119.0) Field `name` has been deprecated from provider version 1.119.0. New field `vswitch_name` instead.

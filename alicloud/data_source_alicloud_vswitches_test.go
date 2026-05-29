@@ -7,9 +7,10 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudVPCVSwitchesDataSourceBasic(t *testing.T) {
+func TestAccAliCloudVPCVSwitchesDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVSwitchesDataSourceConfig(rand, map[string]string{
@@ -137,6 +138,125 @@ func TestAccAlicloudVPCVSwitchesDataSourceBasic(t *testing.T) {
 
 }
 
+func TestAccAliCloudVPCVSwitchesDataSourceCoverage(t *testing.T) {
+	rand := acctest.RandInt()
+	testAccCheckExist, testAccCheckEmpty := vswitchesCheckInfo.checkDataSourceAttr(rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudVSwitchesDataSourceCoverageConfig(rand, map[string]interface{}{
+					"name_regex":        "${alicloud_vswitch.default.vswitch_name}",
+					"ids":               []string{"${alicloud_vswitch.default.id}"},
+					"cidr_block":        "172.16.0.0/24",
+					"is_default":        false,
+					"vpc_id":            "${alicloud_vpc.default.id}",
+					"zone_id":           "${data.alicloud_zones.default.zones.0.id}",
+					"resource_group_id": "",
+					"route_table_id":    "${alicloud_vpc.default.route_table_id}",
+					"status":            "Available",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+					"vswitch_name":     "${alicloud_vswitch.default.vswitch_name}",
+					"vswitch_owner_id": 0,
+					"output_file":      "./test_output_file",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckExist(nil),
+				),
+			},
+			{
+				Config: testAccCheckAlicloudVSwitchesDataSourceCoverageConfig(rand, map[string]interface{}{
+					"name_regex":        "${alicloud_vswitch.default.vswitch_name}_fake",
+					"ids":               []string{"${alicloud_vswitch.default.id}_fake"},
+					"cidr_block":        "172.16.0.0/23",
+					"is_default":        true,
+					"vpc_id":            "${alicloud_vpc.default.id}_fake",
+					"zone_id":           "${data.alicloud_zones.default.zones.0.id}_fake",
+					"resource_group_id": "rg-fake",
+					"route_table_id":    "",
+					"status":            "Pending",
+					"tags": map[string]string{
+						"Created": "TF-fake",
+						"For":     "acceptance test",
+					},
+					"vswitch_name":     "${alicloud_vswitch.default.vswitch_name}_fake",
+					"vswitch_owner_id": 1,
+					"output_file":      "./test_output_file_fake",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEmpty(nil),
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckAlicloudVSwitchesDataSourceCoverageConfig(rand int, attrMap map[string]interface{}) string {
+	pairs := make([]string, 0, len(attrMap))
+	for k, v := range attrMap {
+		pairs = append(pairs, fmt.Sprintf("%s = %s", k, hclValue(v)))
+	}
+
+	config := fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccVSwitchDatasource%d"
+}
+data "alicloud_zones" "default" {}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "172.16.0.0/16"
+  vpc_name = "${var.name}"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = "${var.name}"
+  cidr_block = "172.16.0.0/24"
+  vpc_id = "${alicloud_vpc.default.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  tags 		= {
+		Created = "TF"
+		For 	= "acceptance test"
+  }
+}
+
+data "alicloud_vswitches" "default" {
+	%s
+}`, rand, strings.Join(pairs, "\n  "))
+	return config
+}
+
+func hclValue(v interface{}) string {
+	switch value := v.(type) {
+	case string:
+		return fmt.Sprintf("%q", value)
+	case bool:
+		return fmt.Sprintf("%t", value)
+	case int:
+		return fmt.Sprintf("%d", value)
+	case []string:
+		values := make([]string, 0, len(value))
+		for _, item := range value {
+			values = append(values, fmt.Sprintf("%q", item))
+		}
+		return fmt.Sprintf("[%s]", strings.Join(values, ", "))
+	case map[string]string:
+		values := make([]string, 0, len(value))
+		for k, item := range value {
+			values = append(values, fmt.Sprintf("%s = %q", k, item))
+		}
+		return fmt.Sprintf("{\n%s\n  }", strings.Join(values, "\n"))
+	default:
+		return fmt.Sprint(value)
+	}
+}
+
 func testAccCheckAlicloudVSwitchesDataSourceConfig(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
@@ -148,6 +268,7 @@ variable "name" {
   default = "tf-testAccVSwitchDatasource%d"
 }
 data "alicloud_zones" "default" {}
+data "alicloud_account" "current" {}
 
 resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/16"
@@ -185,6 +306,7 @@ var existVSwitchesMapFunc = func(rand int) map[string]string {
 		"vswitches.0.cidr_block":                 "172.16.0.0/24",
 		"vswitches.0.description":                "",
 		"vswitches.0.is_default":                 "false",
+		"vswitches.0.enable_ipv6":                "false",
 		"vswitches.0.creation_time":              CHECKSET,
 		"vswitches.0.tags.%":                     "2",
 		"vswitches.0.tags.Created":               "TF",
