@@ -24,6 +24,16 @@ func String(v string) *string {
 	return &v
 }
 
+func tagsSchemaWithElements() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		Elem: &schema.Schema{
+			Type: schema.TypeString,
+		},
+	}
+}
+
 // lintignore: S006
 func tagsSchema() *schema.Schema {
 	return &schema.Schema{

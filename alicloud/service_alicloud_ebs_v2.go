@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -238,6 +240,55 @@ func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyStateRefreshFunc(id string, fi
 }
 
 // DescribeEbsEnterpriseSnapshotPolicy >>> Encapsulated.
+
+// TagResources <<< Encapsulated TagResources call for Ebs.
+func (s *EbsServiceV2) TagResources(d *schema.ResourceData, resourceType string, tags map[string]interface{}) error {
+	if len(tags) == 0 {
+		return nil
+	}
+	client := s.client
+	action := "TagResources"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"ClientToken":  buildClientToken(action),
+		"ResourceType": resourceType,
+		"ResourceId.1": d.Id(),
+	}
+	count := 1
+	for key, value := range tags {
+		if ignoredTags(key, fmt.Sprint(value)) {
+			continue
+		}
+		request[fmt.Sprintf("Tag.%d.Key", count)] = key
+		request[fmt.Sprintf("Tag.%d.Value", count)] = value
+		count++
+	}
+	if count == 1 {
+		return nil
+	}
+
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		var err error
+		response, err = client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+// TagResources >>> Encapsulated TagResources call for Ebs.
 
 // SetResourceTags <<< Encapsulated tag function for Ebs.
 func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {

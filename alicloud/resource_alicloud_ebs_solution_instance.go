@@ -1,13 +1,13 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -69,66 +69,58 @@ func resourceAliCloudEbsSolutionInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchemaWithElements(),
 		},
 	}
 }
 
 func resourceAliCloudEbsSolutionInstanceCreate(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "CreateSolutionInstance"
-	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	var err error
-	request = make(map[string]interface{})
-	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request := map[string]interface{}{
+		"RegionId":    client.RegionId,
+		"ClientToken": buildClientToken(action),
+		"SolutionId":  d.Get("solution_id"),
+	}
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["SolutionId"] = d.Get("solution_id")
 	if v, ok := d.GetOk("solution_instance_name"); ok {
 		request["Name"] = v
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request["Tags"] = tagsMap
-	}
-
 	if v, ok := d.GetOk("parameters"); ok {
 		parametersMaps := make([]map[string]interface{}, 0)
 		for _, dataLoop1 := range v.([]interface{}) {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
-			dataLoop1Map := make(map[string]interface{})
-			dataLoop1Map["ParameterKey"] = dataLoop1Tmp["parameter_key"]
-			dataLoop1Map["ParameterValue"] = dataLoop1Tmp["parameter_value"]
-			parametersMaps = append(parametersMaps, dataLoop1Map)
+			parametersMaps = append(parametersMaps, map[string]interface{}{
+				"ParameterKey":   dataLoop1Tmp["parameter_key"],
+				"ParameterValue": dataLoop1Tmp["parameter_value"],
+			})
 		}
 		request["Parameters"], _ = convertListMapToJsonString(parametersMaps)
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		var err error
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ebs_solution_instance", action, AlibabaCloudSdkGoERROR)
 	}
@@ -139,6 +131,11 @@ func resourceAliCloudEbsSolutionInstanceCreate(d *schema.ResourceData, meta inte
 	stateConf := BuildStateConf([]string{}, []string{"CREATE_COMPLETE"}, d.Timeout(schema.TimeoutCreate), 20*time.Second, ebsServiceV2.EbsSolutionInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	tags, _ := d.Get("tags").(map[string]interface{})
+	if err := ebsServiceV2.TagResources(d, "solutioninstance", tags); err != nil {
+		return WrapError(err)
 	}
 
 	return resourceAliCloudEbsSolutionInstanceRead(d, meta)
@@ -197,16 +194,16 @@ func resourceAliCloudEbsSolutionInstanceUpdate(d *schema.ResourceData, meta inte
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -230,16 +227,16 @@ func resourceAliCloudEbsSolutionInstanceUpdate(d *schema.ResourceData, meta inte
 	request["ResourceType"] = "solutioninstance"
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -274,16 +271,16 @@ func resourceAliCloudEbsSolutionInstanceDelete(d *schema.ResourceData, meta inte
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -294,8 +291,15 @@ func resourceAliCloudEbsSolutionInstanceDelete(d *schema.ResourceData, meta inte
 	}
 
 	ebsServiceV2 := EbsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 20*time.Second, ebsServiceV2.EbsSolutionInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
+	stateConf := retry.StateChangeConf{
+		Delay:                     5 * time.Second,
+		Pending:                   []string{},
+		Refresh:                   ebsServiceV2.EbsSolutionInstanceStateRefreshFunc(d.Id(), "Status", []string{}),
+		Target:                    []string{"DELETE_COMPLETE"},
+		Timeout:                   d.Timeout(schema.TimeoutDelete),
+		ContinuousTargetOccurence: 1,
+	}
+	if _, err := stateConf.WaitForStateContext(context.Background()); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
