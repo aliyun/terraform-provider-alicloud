@@ -42,7 +42,7 @@ func TestAccAliCloudDdosCooDomainResource_https_ext(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain":       name,
+					"domain":       "testcert.qq.com",
 					"instance_ids": []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
 					"real_servers": []string{"177.167.32.11", "177.167.32.12", "177.167.32.13"},
 					"rs_type":      `0`,
@@ -60,7 +60,7 @@ func TestAccAliCloudDdosCooDomainResource_https_ext(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain":         name,
+						"domain":         "testcert.qq.com",
 						"instance_ids.#": "1",
 						"real_servers.#": "3",
 						"rs_type":        "0",
@@ -255,9 +255,116 @@ func TestAccAliCloudDdosCooDomainResource_https_ext(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"cert_name":   name,
+					"cert":        "${var.cert}",
+					"key":         "${var.key}",
+					"cert_region": "cn-hangzhou",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cert_name":   CHECKSET,
+						"cert":        CHECKSET,
+						"key":         CHECKSET,
+						"cert_region": "cn-hangzhou",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"custom_ciphers": []string{"ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384", "ECDHE-ECDSA-AES128-SHA256"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_ciphers.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"custom_ciphers": []string{"ECDHE-RSA-AES128-SHA256"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_ciphers.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"custom_ciphers": []string{"ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384", "ECDHE-ECDSA-AES128-SHA256"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_ciphers.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl13_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl13_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_ciphers": "all",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_ciphers": "all",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_protocols": "tls1.2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_protocols": "tls1.2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tls13_custom_ciphers": []string{"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256", "TLS_AES_128_GCM_SHA256"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tls13_custom_ciphers.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tls13_custom_ciphers": []string{"TLS_AES_128_CCM_8_SHA256"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tls13_custom_ciphers.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tls13_custom_ciphers": []string{"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256", "TLS_AES_128_GCM_SHA256"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tls13_custom_ciphers.#": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cert", "cert_identifier", "cert_region", "key"},
 			},
 		},
 	})
@@ -286,18 +393,27 @@ func TestAccAliCloudDdosCooDomainResource_none_https_ext(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain":           name,
-					"instance_ids":     []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
-					"real_servers":     []string{"177.167.32.11", "177.167.32.12", "177.167.32.13"},
-					"rs_type":          `0`,
-					"ocsp_enabled":     "true",
-					"custom_headers":   "{\\\"22\\\":\\\"$ReqClientIP\\\",\\\"77\\\":\\\"88\\\",\\\"99\\\":\\\"$ReqClientPort\\\"}",
-					"ai_mode":          "watch",
-					"ai_template":      "level30",
-					"bw_list_enable":   "0",
-					"cc_global_switch": "close",
-					"black_list":       []string{"3.3.3.3", "6.6.6.6", "5.5.5.5"},
-					"white_list":       []string{"3.3.3.3", "1.1.1.1", "2.2.2.2"},
+					"domain":               "testcert.qq.com",
+					"instance_ids":         []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
+					"real_servers":         []string{"177.167.32.11", "177.167.32.12", "177.167.32.13"},
+					"rs_type":              `0`,
+					"cert_name":            name,
+					"cert":                 "${var.cert}",
+					"key":                  "${var.key}",
+					"cert_region":          "cn-hangzhou",
+					"ocsp_enabled":         "true",
+					"custom_headers":       "{\\\"22\\\":\\\"$ReqClientIP\\\",\\\"77\\\":\\\"88\\\",\\\"99\\\":\\\"$ReqClientPort\\\"}",
+					"ai_mode":              "watch",
+					"ai_template":          "level30",
+					"bw_list_enable":       "0",
+					"cc_global_switch":     "close",
+					"ssl13_enabled":        "true",
+					"ssl_ciphers":          "all",
+					"ssl_protocols":        "tls1.2",
+					"custom_ciphers":       []string{"ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384", "ECDHE-ECDSA-AES128-SHA256"},
+					"tls13_custom_ciphers": []string{"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256", "TLS_AES_128_GCM_SHA256"},
+					"black_list":           []string{"3.3.3.3", "6.6.6.6", "5.5.5.5"},
+					"white_list":           []string{"3.3.3.3", "1.1.1.1", "2.2.2.2"},
 					"proxy_types": []map[string]interface{}{
 						{
 							"proxy_ports": []string{"80", "8080"},
@@ -311,26 +427,32 @@ func TestAccAliCloudDdosCooDomainResource_none_https_ext(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain":           name,
-						"instance_ids.#":   "1",
-						"real_servers.#":   "3",
-						"rs_type":          "0",
-						"ocsp_enabled":     "true",
-						"custom_headers":   CHECKSET,
-						"ai_mode":          "watch",
-						"ai_template":      "level30",
-						"bw_list_enable":   "0",
-						"cc_global_switch": "close",
-						"black_list.#":     "3",
-						"white_list.#":     "3",
-						"proxy_types.#":    "2",
+						"domain":                 "testcert.qq.com",
+						"instance_ids.#":         "1",
+						"real_servers.#":         "3",
+						"rs_type":                "0",
+						"ocsp_enabled":           "true",
+						"custom_headers":         CHECKSET,
+						"ai_mode":                "watch",
+						"ai_template":            "level30",
+						"bw_list_enable":         "0",
+						"cc_global_switch":       "close",
+						"ssl13_enabled":          "true",
+						"ssl_ciphers":            "all",
+						"ssl_protocols":          "tls1.2",
+						"custom_ciphers.#":       "3",
+						"tls13_custom_ciphers.#": "3",
+						"black_list.#":           "3",
+						"white_list.#":           "3",
+						"proxy_types.#":          "2",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cert", "cert_identifier", "cert_region", "key"},
 			},
 		},
 	})
@@ -347,8 +469,67 @@ var AliCloudDdoscooDomainResourceMap0 = map[string]string{
 
 func AliCloudDdoscooDomainResourceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_ddoscoo_instances" "default" {
-	}
+variable "cert" {
+  default = <<EOF
+-----BEGIN CERTIFICATE-----
+MIID5DCCAsygAwIBAgIQL+BHedSOQ9OaO6KUb8CxSjANBgkqhkiG9w0BAQsFADBe
+MQswCQYDVQQGEwJDTjEOMAwGA1UEChMFTXlTU0wxKzApBgNVBAsTIk15U1NMIFRl
+c3QgUlNBIC0gRm9yIHRlc3QgdXNlIG9ubHkxEjAQBgNVBAMTCU15U1NMLmNvbTAe
+Fw0yNTEwMTYwOTUxNDRaFw0zMDEwMTUwOTUxNDRaMCcxCzAJBgNVBAYTAkNOMRgw
+FgYDVQQDEw90ZXN0Y2VydC5xcS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
+ggEKAoIBAQCe+TPJ8P4huN4akgJow9yiw+hMYa7cE4ocB3ibFLIqK0FGTkNWKK7j
+gxUU7PxmBCG2auIwMEYw8CbLBZdoptQXkJMlaJp5eY2bNZYbBK4i8/c4OUbrw1vD
+f/iHwJD2kJ7CXSWABM29vw1KvKb07GVgQtESdUNynNd+x+BvSZg48MwPvVni+jV3
+GBRX1WBm1700/Yvx+rgKPOz0ptZWnXaDLZ2brswNrSic2EgcHvpkd3YQzMmF3Hj7
+lF9GBFSBqsRLymitMDM2BWdn0afspIxRxSlNmUkHku170NUTxJTyQQIVW7CGR4po
+PSMwc/j7+fX41Q0bEVcs2YNrtOhvc+R/AgMBAAGjgdQwgdEwDgYDVR0PAQH/BAQD
+AgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAfBgNVHSMEGDAWgBQo
+gSYF0TQaP8FzD7uTzxUcPwO/fzBjBggrBgEFBQcBAQRXMFUwIQYIKwYBBQUHMAGG
+FWh0dHA6Ly9vY3NwLm15c3NsLmNvbTAwBggrBgEFBQcwAoYkaHR0cDovL2NhLm15
+c3NsLmNvbS9teXNzbHRlc3Ryc2EuY3J0MBoGA1UdEQQTMBGCD3Rlc3RjZXJ0LnFx
+LmNvbTANBgkqhkiG9w0BAQsFAAOCAQEALW7I3aulCKCZYhpDYObKjWxf0vA34A8c
+CcNWlBqsBsbEFrYc3AvBt9esTj7ifWMYPn/o/z1GmhxVJNZhYXhm/bMsfzYVpDZF
+mP5J8kCgahO6kM3qY1l0mIklRxp7QKQheDYnUezD+EsHxLWReHVCdtWEa7MGP+BD
+XsnKLkjPPmcZ71oQM5vw/Zt+3RNuUWUyQEoc99Ioy8OeANqL1akQsZZWErs6bahf
+0ZyY+bTsSgFBMGsuMgTfS3AY6VH3n1TLuxUbz+Mzc03i2hURxLCh91MYBp57H/cl
+sXiuIjHumMV4zIuAgeCPVtC99FS+A7kX+aljdedSDDKkD1Qhf2RfmQ==
+-----END CERTIFICATE-----
+EOF
+}
+
+variable "key" {
+  default = <<EOF
+-----BEGIN PRIVATE KEY-----
+MIIEpAIBAAKCAQEAnvkzyfD+IbjeGpICaMPcosPoTGGu3BOKHAd4mxSyKitBRk5D
+Viiu44MVFOz8ZgQhtmriMDBGMPAmywWXaKbUF5CTJWiaeXmNmzWWGwSuIvP3ODlG
+68Nbw3/4h8CQ9pCewl0lgATNvb8NSrym9OxlYELREnVDcpzXfsfgb0mYOPDMD71Z
+4vo1dxgUV9VgZte9NP2L8fq4Cjzs9KbWVp12gy2dm67MDa0onNhIHB76ZHd2EMzJ
+hdx4+5RfRgRUgarES8porTAzNgVnZ9Gn7KSMUcUpTZlJB5Lte9DVE8SU8kECFVuw
+hkeKaD0jMHP4+/n1+NUNGxFXLNmDa7Tob3PkfwIDAQABAoIBABBFBSGsiiMDC6lg
+z7dPculY2bwrc8euhkAXxvuUHXxxqyoEq3aKDlqsGSsS6pfkN1u3H56lP3cVtNqq
+n/7ECB5rRkFErdPdy/oaUgTs2zIqPAm4hENvsxipzv0nCORQaQxk7QgSNcjZYIUJ
+aUrVVgteezguNnC95X4M+wauBlKur4nhDV1XwsJiaurK5afK8p8em8gWqdfK4zCB
+YGk2M6KlmwOBcoF3o/i+jfWju1lG2UPWKm4yDcCRptev0l/HxZ5oHdG/5eZGZ7Ay
+Ke0J552LpSV/Lq/bIvg4fH7qbvyUTiXUwkICIWUaj2/461Hn6WIQM4hrPGFSD8Qs
+YqkIIVUCgYEAzUaa4ozJitqhV9wOLi1m6IqdPXpRJo2B7mDFd7UakwY/5GFHdbwP
+8RyTCili2Rm1mANEF8GJCNZgFp1z8acAhSoPfxTx+61lj/jGD6F2u7wMLEeMXkqj
+YmhWuVRxv7++gQQotbXbM8LQXHliG6ItmxSQY5Lq2AnZVynkujOpgpUCgYEAxkGW
++/Fwx1Vhs1JNhKdn0eiTOgB1hBXljxe3hyFZ46CbSxibdjFEdYqYDXyAdgMglHur
+tbdbETxP9Ycvokxk5IHnowvISnIc1lKyySXC9q21K6wiBFQLMKRj7KhxyNYyBJvC
+ZkKM16H/cst9JOQQ8eLAQNnlcLuCkIqOTWnpecMCgYEAszQJMPARXkvhAG+WXY+7
+QBUKkkn/IDX3ESCgIxISgfm5u2mFVe34yNfWMc/RgI/mLS/kuQx20iU8O2H3fyX4
+2UfPwXSKj9lfSaG3XpvpqJjQ07Mego6MNfO6ig6DQw9kgwMbew6or3ZKKgC5ukAJ
+qlH4f0UaCcIHYAWtrTQ+rkUCgYEAm3BbZ2dSTAbmVgkmW+ZA4PPfUq9/c7MTS9CF
+hT4h0vVeLE+7u7w+94VVV+WQdnZXOfOImi2LCgVmj5ORRkdtJzeunEglnjC/6U3n
+fQvNQ0jIbdhEx235ZAbPjYI3zAYcKz7P+QsekAYkWSWwFZd2rZ9hqrbsTCnH4Xmw
+voNWma8CgYBfl1MZWLhgSwqz2yjtfy9JcXXOFKDEnbVQasDC6F+CKnUTtAUyLpWW
++xGQ8qMzA4CH1dR8ZBlwlfVj9EzZrw9zV3FYZW1w+XbSKW49FM4gmQ7V3eOza5oy
+bMBBiK28dmU0fQRR7mXeiR2vuridlK1R01c6p9WFtZvXtVPy633BkQ==
+-----END PRIVATE KEY-----
+EOF
+}
+data "alicloud_ddoscoo_instances" "default" {
+}
 `)
 }
 
