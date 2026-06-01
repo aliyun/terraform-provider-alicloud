@@ -300,16 +300,22 @@ func resourceAliCloudVpcVswitchUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		if v, ok := d.GetOkExists("ipv6_cidr_block_mask"); ok {
+		if !d.HasChange("enable_ipv6") || d.Get("enable_ipv6").(bool) {
 			update = true
 			request["EnableIPv6"] = true
-			request["Ipv6CidrBlock"] = v
+			request["Ipv6CidrBlock"] = d.Get("ipv6_cidr_block_mask")
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("enable_ipv6") {
 		update = true
-		request["EnableIPv6"] = d.Get("enable_ipv6")
+		enableIpv6 := d.Get("enable_ipv6").(bool)
+		request["EnableIPv6"] = enableIpv6
+		if enableIpv6 {
+			request["Ipv6CidrBlock"] = d.Get("ipv6_cidr_block_mask")
+		} else {
+			delete(request, "Ipv6CidrBlock")
+		}
 	}
 
 	if update {
