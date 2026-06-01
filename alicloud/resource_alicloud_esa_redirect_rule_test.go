@@ -151,7 +151,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_RedirectRule_test" {
 }
 
 resource "alicloud_esa_site" "resource_Site_RedirectRule_test" {
-  site_name   = "gositecdn1.cn"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_RedirectRule_test.id
   coverage    = "overseas"
   access_type = "NS"

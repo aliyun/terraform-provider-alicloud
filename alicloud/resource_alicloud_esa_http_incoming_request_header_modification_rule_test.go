@@ -169,7 +169,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_HttpIncomingRequestHeaderMo
 }
 
 resource "alicloud_esa_site" "resource_Site_HttpIncomingRequestHeaderModificationRule_test" {
-  site_name   = "${var.name}.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_HttpIncomingRequestHeaderModificationRule_test.id
   coverage    = "overseas"
   access_type = "NS"

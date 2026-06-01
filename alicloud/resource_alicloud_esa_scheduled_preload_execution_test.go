@@ -108,7 +108,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "default" {
-  site_name   = "terraform.cn"
+  site_name   = "${lower(var.name)}.com"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"

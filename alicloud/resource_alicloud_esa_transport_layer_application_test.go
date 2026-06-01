@@ -148,7 +148,7 @@ variable "name" {
 
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
-  site_name = "gositecdn.cn"
+  site_name           = "gositecdn.cn"
 }
 `, name)
 }

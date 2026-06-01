@@ -131,7 +131,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "default" {
-  site_name   = "imagetransform.alicdn-test.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "domestic"
   access_type = "NS"

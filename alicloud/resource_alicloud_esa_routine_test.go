@@ -35,8 +35,8 @@ func TestAccAliCloudESARoutineresource_Routine_new_test(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "test-routine2",
-					"name":        "test-routine2",
+					"description": "${substr(lower(var.name), 0, 20)}",
+					"name":        "${substr(lower(var.name), 0, 20)}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),

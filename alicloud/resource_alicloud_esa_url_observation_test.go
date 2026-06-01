@@ -37,7 +37,7 @@ func TestAccAliCloudESAUrlObservationresource_UrlObservation_test(t *testing.T) 
 				Config: testAccConfig(map[string]interface{}{
 					"sdk_type": "automatic",
 					"site_id":  "${alicloud_esa_site.resource_Site_ScheduledPreloadJob_test_2.id}",
-					"url":      "terraform.cn/a.html",
+					"url":      "${lower(var.name)}.com/a.html",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -82,7 +82,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "resource_Site_ScheduledPreloadJob_test_2" {
-  site_name   = "terraform.cn"
+  site_name   = "${lower(var.name)}.com"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"
