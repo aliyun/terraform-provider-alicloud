@@ -218,7 +218,9 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("period_cycle"); ok {
 		request["PeriodCycle"] = v
 	}
-	request["SecurityGroupId"] = d.Get("security_group_id")
+	if v, ok := d.GetOk("security_group_id"); ok {
+		request["SecurityGroupId"] = v
+	}
 	if v, ok := d.GetOk("max_eip_tps"); ok {
 		request["MaxEipTps"] = v
 	}
@@ -263,7 +265,6 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	}
 	if v, ok := d.GetOk("vswitch_ids"); ok {
 		vswitchIdsMapsArray := convertListToJsonString(convertToInterfaceArray(v))
-
 		request["VswitchIds"] = vswitchIdsMapsArray
 	}
 
@@ -273,7 +274,9 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("queue_capacity"); ok {
 		request["QueueCapacity"] = v
 	}
-	request["VpcId"] = d.Get("vpc_id")
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v
+	}
 	if v, ok := d.GetOkExists("provisioned_capacity"); ok {
 		request["ProvisionedCapacity"] = v
 	}
@@ -361,7 +364,11 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreateTime"])
+	if v, ok := objectRaw["CreateTime"].(string); ok {
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			d.Set("create_time", t.UnixMilli())
+		}
+	}
 	d.Set("payment_type", objectRaw["SubscriptionType"])
 	d.Set("renewal_duration", objectRaw["RenewalDuration"])
 	d.Set("renewal_duration_unit", convertAmqpInstanceDataInstanceListRenewalDurationUnitResponse(objectRaw["RenewalDurationUnit"]))

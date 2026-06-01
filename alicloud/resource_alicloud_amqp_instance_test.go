@@ -948,7 +948,7 @@ func AliCloudAmqpInstanceBasicDependence6128(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING"
+  		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
@@ -957,7 +957,7 @@ func AliCloudAmqpInstanceBasicDependence6128(name string) string {
 
 	data "alicloud_security_groups" "default" {
   		vpc_id     = data.alicloud_vpcs.default.ids.0
-  		name_regex = "default-NODELETING"
+  		name_regex = "^default-NODELETING$"
 	}
 `, name)
 }
@@ -1232,7 +1232,7 @@ func AliCloudAmqpInstanceBasicDependence11166(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING"
+  		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
@@ -1241,7 +1241,7 @@ func AliCloudAmqpInstanceBasicDependence11166(name string) string {
 
 	data "alicloud_security_groups" "default" {
   		vpc_id     = data.alicloud_vpcs.default.ids.0
-  		name_regex = "default-NODELETING"
+  		name_regex = "^default-NODELETING$"
 	}
 `, name)
 }
