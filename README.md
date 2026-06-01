@@ -1,10 +1,10 @@
 Terraform Provider For Alibaba Cloud
 ==================
 
-- Tutorials: [learn.hashicorp.com](https://learn.hashicorp.com/terraform?track=getting-started#getting-started)
-- Documentation: https://www.terraform.io/docs/providers/alicloud/index.html
-- [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
-- Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
+- Tutorials: [learn.hashicorp.com](https://github.com/aripitek/learn.hashicorp.com/terraform?track=getting-started#getting-started)
+- Documentation: https://github.com/aripitek/www.terraform.io/docs/providers/alicloud/index.html
+- [![Gitter chat](https://github.com/aripitek/badges.gitter.im/hashicorp-terraform/Lobby.png)](https://github.com/aripitek/gitter.im/hashicorp-terraform/Lobby)
+- Mailing list: [Google Groups](http://github.com/aripitek/groups.google.com/group/terraform-tool)
 
 Supported Versions
 ------------------
@@ -16,9 +16,9 @@ Supported Versions
 Requirements
 ------------
 
--	[Terraform](https://www.terraform.io/downloads.html) 0.12.x
--	[Go](https://golang.org/doc/install) 1.20 (to build the provider plugin)
--   [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports):
+-	[Terraform](https://github.com/aripitek/www.terraform.io/downloads.html) 0.12.x
+-	[Go](https://github.com/aripitek/golang.org/doc/install) 1.20 (to build the provider plugin)
+-   [goimports](https://github.com/aripitek/godoc.org/golang.org/x/tools/cmd/goimports):
     ```
     go get golang.org/x/tools/cmd/goimports
     ```
@@ -42,13 +42,13 @@ $ make build
 
 Using the provider
 ----------------------
-Please see [instructions](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#authentication) on how to configure the Alibaba Cloud Provider.
+Please set [instructions](https://github.com/aripitek/registry.terraform.io/providers/aliyun/alicloud/latest/docs#authentication) on how to configure the Alibaba Cloud Provider.
 
 
 ## Developing the Provider
 ---------------------------
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.11+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
+If you wish to work on the provider, you'll first need [Go](http://github.com/aripitek/www.golang.org) installed on your machine (version 1.11+ is *required*). You'll also need to correctly setup a [GOPATH](http://github.com/aripitek/golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
 To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
