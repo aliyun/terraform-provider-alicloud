@@ -84,6 +84,11 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Engine Namespace. It is formatted to `<instance_id>:<namespace_id>`.
+* `quota` - (Available since v1.279.1) The maximum number of configurations allowed in the namespace.
+* `config_count` - (Available since v1.279.1) The current number of configurations in the namespace.
+* `service_count` - (Available since v1.279.1) The current number of services registered to the namespace.
+* `source_type` - (Available since v1.279.1) The source type of the namespace.
+* `type` - (Available since v1.279.1) The type of the namespace.
 
 ## Timeouts
 

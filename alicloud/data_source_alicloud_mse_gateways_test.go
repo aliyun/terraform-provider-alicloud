@@ -139,14 +139,21 @@ data "alicloud_vswitches" "default" {
 	vpc_id  = data.alicloud_vpcs.default.ids.0
 	zone_id = data.alicloud_zones.default.zones.0.id
 }
+data "alicloud_vswitches" "backup" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_zones.default.zones.1.id
+}
 
 resource "alicloud_mse_gateway" "default" {
 	gateway_name = var.name
 	replica = 2
 	spec = "MSE_GTW_2_4_200_c"
 	vswitch_id = data.alicloud_vswitches.default.ids.0
-	backup_vswitch_id = data.alicloud_vswitches.default.ids.1
+	backup_vswitch_id = data.alicloud_vswitches.backup.ids.0
 	vpc_id = data.alicloud_vpcs.default.ids.0
+	enterprise_security_group = true
+	slb_spec = "slb.s2.small"
+	delete_slb = true
 }
 
 data "alicloud_mse_gateways" "default" {	
