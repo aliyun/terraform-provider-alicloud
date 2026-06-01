@@ -29,7 +29,16 @@ import (
 var testAccProviders map[string]*schema.Provider
 var testAccProviderFactory map[string]func() (*schema.Provider, error)
 var testAccProvider *schema.Provider
-var defaultRegionToTest = os.Getenv("ALICLOUD_REGION")
+var defaultRegionToTest = func() string {
+	if v := os.Getenv("ALICLOUD_REGION"); v != "" {
+		return v
+	}
+	// Fallback to cn-beijing when ALICLOUD_REGION is unset so test fixtures
+	// that read defaultRegionToTest at test-function-entry time (before
+	// testAccPreCheck runs) don't produce malformed strings like
+	// "oss--internal.aliyuncs.com" or "...fcv3.<acct>..fc.devsapp.net".
+	return "cn-beijing"
+}()
 
 func init() {
 	testAccProvider = Provider()
@@ -65,6 +74,7 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_REGION"); v == "" {
 		log.Println("[INFO] Test: Using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
+		defaultRegionToTest = "cn-beijing"
 	} else {
 		defaultRegionToTest = v
 	}
