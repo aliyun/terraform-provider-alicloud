@@ -408,7 +408,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "resource_Site_OriginPool_test" {
-  site_name   = "${var.name}.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"

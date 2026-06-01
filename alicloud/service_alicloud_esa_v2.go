@@ -3265,6 +3265,9 @@ func (s *EsaServiceV2) DescribeEsaRoutine(id string) (object map[string]interfac
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"RoutineNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("Routine", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
