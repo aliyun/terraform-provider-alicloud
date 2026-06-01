@@ -44,7 +44,10 @@ func TestAccAlicloudMSEZnodesDataSource(t *testing.T) {
 			"names.#":             "1",
 			"znodes.#":            "1",
 			"znodes.0.cluster_id": CHECKSET,
-			"znodes.0.data":       fmt.Sprintf("/tf-testAccZnode-%d", rand),
+			// znodes.0.data is intentionally not asserted: the backing
+			// ListZnodeChildren API only returns child metadata (path/name/dir),
+			// not the znode payload, so this field is always empty in the data
+			// source's list view.
 			"znodes.0.path":       fmt.Sprintf("/tf-testAccZnode-%d", rand),
 			"znodes.0.znode_name": CHECKSET,
 			"znodes.0.dir":        CHECKSET,
@@ -77,7 +80,7 @@ func testAccCheckAlicloudMseZnodesDataSourceName(rand int, attrMap map[string]st
 	config := fmt.Sprintf(`
 
 variable "name" {
-  default = "/tf-testAccZnode-%d"
+  default = "tf-testAccZnode-%d"
 }
 data "alicloud_mongodb_zones" "default" {}
 data "alicloud_vpcs" "default" {
@@ -95,14 +98,13 @@ resource "alicloud_mse_cluster" "default" {
   net_type              = "privatenet"
   vswitch_id            = data.alicloud_vswitches.default.ids.0
   pub_network_flow      = "1"
-  acl_entry_list        = ["127.0.0.1/32"]
   cluster_alias_name    = var.name
   mse_version = "mse_dev"
 }
 resource "alicloud_mse_znode" "default" {
   cluster_id = alicloud_mse_cluster.default.cluster_id
-  data       = var.name
-  path       = var.name
+  data       = "/${var.name}"
+  path       = "/${var.name}"
 }
 data "alicloud_mse_znodes" "default" {
   cluster_id = alicloud_mse_cluster.default.cluster_id

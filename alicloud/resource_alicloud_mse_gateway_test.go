@@ -197,7 +197,7 @@ func TestAccAliCloudMSEGateway_basic1(t *testing.T) {
 					"replica":                   "2",
 					"vpc_id":                    "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
-					"backup_vswitch_id":         "${data.alicloud_vswitches.default.ids.1}",
+					"backup_vswitch_id":         "${data.alicloud_vswitches.backup.ids.0}",
 					"gateway_name":              "${var.name}",
 					"enterprise_security_group": "true",
 					"slb_spec":                  "slb.s2.small",
@@ -234,11 +234,19 @@ func AlicloudMSEGatewayBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
+data "alicloud_zones" "default" {
+	available_resource_creation = "VSwitch"
+}
 data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
 	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_zones.default.zones.0.id
+}
+data "alicloud_vswitches" "backup" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_zones.default.zones.1.id
 }
 
 `, name)

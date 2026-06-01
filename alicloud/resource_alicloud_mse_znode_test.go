@@ -101,7 +101,6 @@ resource "alicloud_mse_cluster" "default" {
   net_type = "privatenet"
   vswitch_id = data.alicloud_vswitches.default.ids.0
   pub_network_flow = "1"
-  acl_entry_list= ["127.0.0.1/32"]
   cluster_alias_name= "tf-testaccmseznode"
   mse_version = "mse_dev"
 }
