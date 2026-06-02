@@ -79,6 +79,11 @@ func resourceAliCloudDdosCooDomainResource() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"custom_ciphers": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"custom_headers": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -143,6 +148,27 @@ func resourceAliCloudDdosCooDomainResource() *schema.Resource {
 			"rs_type": {
 				Type:     schema.TypeInt,
 				Required: true,
+			},
+			"ssl13_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"ssl_ciphers": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"default", "all", "strong"}, false),
+			},
+			"ssl_protocols": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"tls1.0", "tls1.1", "tls1.2"}, false),
+			},
+			"tls13_custom_ciphers": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"white_list": {
 				Type:     schema.TypeSet,
@@ -236,6 +262,9 @@ func resourceAliCloudDdosCooDomainResourceRead(d *schema.ResourceData, meta inte
 	d.Set("https_ext", objectRaw["HttpsExt"])
 	d.Set("ocsp_enabled", formatBool(convertDdosCooDomainResourceWebRulesOcspEnabledResponse(objectRaw["OcspEnabled"])))
 	d.Set("rs_type", objectRaw["RsType"])
+	d.Set("ssl13_enabled", objectRaw["Ssl13Enabled"])
+	d.Set("ssl_ciphers", objectRaw["SslCiphers"])
+	d.Set("ssl_protocols", objectRaw["SslProtocols"])
 	d.Set("domain", objectRaw["Domain"])
 
 	blackListRaw := make([]interface{}, 0)
@@ -244,6 +273,12 @@ func resourceAliCloudDdosCooDomainResourceRead(d *schema.ResourceData, meta inte
 	}
 
 	d.Set("black_list", blackListRaw)
+	customCiphersRaw := make([]interface{}, 0)
+	if objectRaw["CustomCiphers"] != nil {
+		customCiphersRaw = convertToInterfaceArray(objectRaw["CustomCiphers"])
+	}
+
+	d.Set("custom_ciphers", customCiphersRaw)
 	instanceIdsRaw := make([]interface{}, 0)
 	if objectRaw["InstanceIds"] != nil {
 		instanceIdsRaw = convertToInterfaceArray(objectRaw["InstanceIds"])
@@ -290,6 +325,13 @@ func resourceAliCloudDdosCooDomainResourceRead(d *schema.ResourceData, meta inte
 
 	d.Set("cert_name", objectRaw["UserCertName"])
 	d.Set("domain", objectRaw["Domain"])
+
+	tls13CustomCiphersRaw := make([]interface{}, 0)
+	if objectRaw["Tls13CustomCiphers"] != nil {
+		tls13CustomCiphersRaw = convertToInterfaceArray(objectRaw["Tls13CustomCiphers"])
+	}
+
+	d.Set("tls13_custom_ciphers", tls13CustomCiphersRaw)
 
 	objectRaw, err = ddosCooServiceV2.DescribeDomainResourceDescribeDomainCcProtectSwitch(d.Id())
 	if err != nil && !NotFoundError(err) {
@@ -622,6 +664,69 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	request["CcGlobalSwitch"] = d.Get("cc_global_switch")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "ModifyTlsConfig"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Domain"] = d.Id()
+	request["RegionId"] = client.RegionId
+	config = make(map[string]interface{})
+
+	if d.HasChange("custom_ciphers") {
+		update = true
+	}
+	if v, ok := d.GetOk("custom_ciphers"); ok {
+		config["custom_ciphers"] = convertToInterfaceArray(v)
+	}
+
+	if d.HasChange("ssl13_enabled") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("ssl13_enabled"); ok {
+		config["ssl_13_enabled"] = v
+	}
+
+	if d.HasChange("tls13_custom_ciphers") {
+		update = true
+	}
+	if v, ok := d.GetOk("tls13_custom_ciphers"); ok {
+		config["tls_13_custom_ciphers"] = convertToInterfaceArray(v)
+	}
+
+	if d.HasChange("ssl_protocols") {
+		update = true
+	}
+	if v, ok := d.GetOk("ssl_protocols"); ok {
+		config["ssl_protocols"] = v
+	}
+
+	if d.HasChange("ssl_ciphers") {
+		update = true
+	}
+	if v, ok := d.GetOk("ssl_ciphers"); ok {
+		config["ssl_ciphers"] = v
+	}
+
+	request["Config"] = convertObjectToJsonString(config)
+
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
