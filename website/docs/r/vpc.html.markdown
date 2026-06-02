@@ -28,7 +28,7 @@ For information about VPC VPC and how to use it, see [What is VPC](https://www.a
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc&exampleId=d5070149-7922-e5bb-2494-de31dd34464d70a607da&activeTab=example&spm=docs.r.vpc.0.d507014979&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc&exampleId=247e539a-c7d6-e6c1-1df2-d0d46196e457950e5da4&activeTab=example&spm=docs.r.vpc.0.247e539ac7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

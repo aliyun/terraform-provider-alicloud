@@ -1,23 +1,28 @@
-## 1.280.0 (Unreleased)
+## 1.281.0 (Unreleased)
+## 1.281.0 (June 01, 2026)
 
-- **New Resource:** `alicloud_api_gateway_stage_model` [GH-9752]
-- **New Resource:** `alicloud_vpn_gateway_enhanced_vpn_gateway` [GH-9794]
-- **New Resource:** `alicloud_amqp_open_source_permission` [GH-9795]
-- **New Resource:** `alicloud_amqp_open_source_account` [GH-9797]
-- **New Resource:** `alicloud_cms_addon_release` [GH-9798]
-- **New Resource:** `alicloud_vpc_ipv6_cidr_block` [GH-9801]
-- **New Data Source:** `alicloud_vpn_gateway_enhanced_vpn_gateways` [GH-9794]
-- **New Data Source:** `alicloud_amqp_open_source_permissions` [GH-9795]
-- **New Data Source:** `alicloud_amqp_open_source_accounts` [GH-9797]
-- **New Data Source:** `alicloud_vpc_ipv6_cidr_blocks` [GH-9801]
+- **New Resource:** `alicloud_polardb_aicluster` ([#9749](https://github.com/aliyun/terraform-provider-alicloud/issues/9749))
+- **New Resource:** `alicloud_api_gateway_backend_model` ([#9792](https://github.com/aliyun/terraform-provider-alicloud/issues/9792))
+- **New Resource:** `alicloud_api_gateway_stage_model` ([#9752](https://github.com/aliyun/terraform-provider-alicloud/issues/9752))
+- **New Resource:** `alicloud_vpn_gateway_enhanced_vpn_gateway` ([#9794](https://github.com/aliyun/terraform-provider-alicloud/issues/9794))
+- **New Resource:** `alicloud_amqp_open_source_permission` ([#9795](https://github.com/aliyun/terraform-provider-alicloud/issues/9795))
+- **New Resource:** `alicloud_amqp_open_source_account` ([#9797](https://github.com/aliyun/terraform-provider-alicloud/issues/9797))
+- **New Resource:** `alicloud_cms_addon_release` ([#9798](https://github.com/aliyun/terraform-provider-alicloud/issues/9798))
+- **New Resource:** `alicloud_vpc_ipv6_cidr_block` ([#9801](https://github.com/aliyun/terraform-provider-alicloud/issues/9801))
+- **New Data Source:** `alicloud_vpn_gateway_enhanced_vpn_gateways` ([#9794](https://github.com/aliyun/terraform-provider-alicloud/issues/9794))
+- **New Data Source:** `alicloud_amqp_open_source_permissions` ([#9795](https://github.com/aliyun/terraform-provider-alicloud/issues/9795))
+- **New Data Source:** `alicloud_amqp_open_source_accounts` ([#9797](https://github.com/aliyun/terraform-provider-alicloud/issues/9797))
+- **New Data Source:** `alicloud_vpc_ipv6_cidr_blocks` ([#9801](https://github.com/aliyun/terraform-provider-alicloud/issues/9801))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cloud_firewall_vpc_firewall_ips_config: Add member_uid for get operation. [GH-9755]
-- resource/alicloud_direct_mail_mail_address: Removed the account_name, password enums limitation. [GH-9757]
-- resource/alicloud_vswitch: support IPv6 attributes; data-source/alicloud_vswitches: add enable_ipv6. [GH-9802]
-- resource/alicloud_vpc: update IPv6 attribute schema. [GH-9803]
-- docs: Improved the document privatelink_vpc_endpoint, privatelink_vpc_endpoint_service_resource. [GH-9804]
+- resource/alicloud_api_gateway_api: remove stage_names restriction to support custom stages. ([#9753](https://github.com/aliyun/terraform-provider-alicloud/issues/9753))
+- resource/alicloud_cloud_firewall_vpc_firewall_ips_config: Add member_uid for get operation. ([#9755](https://github.com/aliyun/terraform-provider-alicloud/issues/9755))
+- resource/alicloud_direct_mail_mail_address: Removed the account_name, password enums limitation. ([#9757](https://github.com/aliyun/terraform-provider-alicloud/issues/9757))
+- resource/alicloud_vswitch: support IPv6 attributes; data-source/alicloud_vswitches: add enable_ipv6. ([#9802](https://github.com/aliyun/terraform-provider-alicloud/issues/9802))
+- resource/alicloud_vpc: update IPv6 attribute schema. ([#9803](https://github.com/aliyun/terraform-provider-alicloud/issues/9803))
+- resource/alicloud_vswitch: fix ipv6_cidr_block_mask sending Ipv6CidrBlock=0 on removal. ([#9806](https://github.com/aliyun/terraform-provider-alicloud/issues/9806))
+- docs: Improved the document privatelink_vpc_endpoint, privatelink_vpc_endpoint_service_resource. ([#9804](https://github.com/aliyun/terraform-provider-alicloud/issues/9804))
 
 ## 1.279.0 (May 22, 2026)
 
