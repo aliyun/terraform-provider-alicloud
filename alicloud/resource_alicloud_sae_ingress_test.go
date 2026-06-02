@@ -501,6 +501,12 @@ func AlicloudSAEIngressBasicDependence1(name string) string {
     		vswitch_id = data.alicloud_vswitches.default_2.ids[0]
     		zone_id    = data.alicloud_alb_zones.default.zones.1.id
   		}
+  		// SAE Ingress attaches via the k8s ALB ingress controller, which adds
+  		// "ack.aliyun.com" and "ingress.k8s.alibaba/*" tags at runtime.
+  		// Ignore tag drift so subsequent plans stay empty.
+  		lifecycle {
+  			ignore_changes = [tags]
+  		}
 	}
 
 	resource "alicloud_sae_namespace" "default" {
