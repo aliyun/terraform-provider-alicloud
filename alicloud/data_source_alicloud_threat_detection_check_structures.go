@@ -1,16 +1,43 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
+
+type checkStructureResponse struct {
+	CheckStructureResponse []checkStructureItem `json:"CheckStructureResponse"`
+}
+
+type checkStructureItem struct {
+	StandardType string              `json:"StandardType"`
+	Standards    []checkStructureStd `json:"Standards"`
+}
+
+type checkStructureStd struct {
+	Id           int                 `json:"Id"`
+	ShowName     string              `json:"ShowName"`
+	Type         string              `json:"Type"`
+	Requirements []checkStructureReq `json:"Requirements"`
+}
+
+type checkStructureReq struct {
+	Id              int                 `json:"Id"`
+	ShowName        string              `json:"ShowName"`
+	TotalCheckCount int                 `json:"TotalCheckCount"`
+	Sections        []checkStructureSec `json:"Sections"`
+}
+
+type checkStructureSec struct {
+	Id       int    `json:"Id"`
+	ShowName string `json:"ShowName"`
+}
 
 func dataSourceAliCloudThreatDetectionCheckStructures() *schema.Resource {
 	return &schema.Resource{
@@ -23,8 +50,14 @@ func dataSourceAliCloudThreatDetectionCheckStructures() *schema.Resource {
 				Computed: true,
 			},
 			"current_page": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntAtLeast(1),
+			},
+			"page_size": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntAtLeast(1),
 			},
 			"lang": {
 				Type:     schema.TypeString,
@@ -114,8 +147,6 @@ func dataSourceAliCloudThreatDetectionCheckStructures() *schema.Resource {
 func dataSourceAliCloudThreatDetectionCheckStructureRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	var objects []map[string]interface{}
-
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -126,24 +157,25 @@ func dataSourceAliCloudThreatDetectionCheckStructureRead(d *schema.ResourceData,
 		}
 	}
 
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
 	action := "GetCheckStructure"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+	}
+	query := map[string]interface{}{}
+	var response map[string]interface{}
 	var err error
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOkExists("current_page"); ok {
+
+	if v := d.Get("current_page").(int); v > 0 {
 		request["CurrentPage"] = v
+	}
+	if v := d.Get("page_size").(int); v > 0 {
+		request["PageSize"] = v
 	}
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
 	if v, ok := d.GetOk("task_sources"); ok {
-		taskSourcesMapsArray := convertToInterfaceArray(v)
-
-		request["TaskSources"] = taskSourcesMapsArray
+		request["TaskSources"] = convertToInterfaceArray(v)
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -166,72 +198,69 @@ func dataSourceAliCloudThreatDetectionCheckStructureRead(d *schema.ResourceData,
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	resp, _ := jsonpath.Get("$.CheckStructureResponse[*]", response)
+	respBytes, err := json.Marshal(response)
+	if err != nil {
+		return WrapError(err)
+	}
+	var parsed checkStructureResponse
+	if err := json.Unmarshal(respBytes, &parsed); err != nil {
+		return WrapError(err)
+	}
 
-	result, _ := resp.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		if len(idsMap) > 0 {
-			if _, ok := idsMap[fmt.Sprint()]; !ok {
-				continue
+	objects := make([]checkStructureItem, 0, len(parsed.CheckStructureResponse))
+	for _, item := range parsed.CheckStructureResponse {
+		matched := make([]checkStructureStd, 0, len(item.Standards))
+		for _, std := range item.Standards {
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(std.Id)]; !ok {
+					continue
+				}
 			}
+			matched = append(matched, std)
 		}
-		objects = append(objects, item)
+		if len(matched) == 0 {
+			continue
+		}
+		objects = append(objects, checkStructureItem{
+			StandardType: item.StandardType,
+			Standards:    matched,
+		})
 	}
 
 	ids := make([]string, 0)
-	names := make([]interface{}, 0)
-	s := make([]map[string]interface{}, 0)
-	for _, objectRaw := range objects {
-		mapping := map[string]interface{}{}
-
-		mapping["standard_type"] = objectRaw["StandardType"]
-
-		standardsRaw := objectRaw["Standards"]
-		standardsMaps := make([]map[string]interface{}, 0)
-		if standardsRaw != nil {
-			for _, standardsChildRaw := range convertToInterfaceArray(standardsRaw) {
-				standardsMap := make(map[string]interface{})
-				standardsChildRaw := standardsChildRaw.(map[string]interface{})
-				standardsMap["id"] = standardsChildRaw["Id"]
-				standardsMap["show_name"] = standardsChildRaw["ShowName"]
-				standardsMap["type"] = standardsChildRaw["Type"]
-
-				requirementsRaw := standardsChildRaw["Requirements"]
-				requirementsMaps := make([]map[string]interface{}, 0)
-				if requirementsRaw != nil {
-					for _, requirementsChildRaw := range convertToInterfaceArray(requirementsRaw) {
-						requirementsMap := make(map[string]interface{})
-						requirementsChildRaw := requirementsChildRaw.(map[string]interface{})
-						requirementsMap["id"] = requirementsChildRaw["Id"]
-						requirementsMap["show_name"] = requirementsChildRaw["ShowName"]
-						requirementsMap["total_check_count"] = requirementsChildRaw["TotalCheckCount"]
-
-						sectionsRaw := requirementsChildRaw["Sections"]
-						sectionsMaps := make([]map[string]interface{}, 0)
-						if sectionsRaw != nil {
-							for _, sectionsChildRaw := range convertToInterfaceArray(sectionsRaw) {
-								sectionsMap := make(map[string]interface{})
-								sectionsChildRaw := sectionsChildRaw.(map[string]interface{})
-								sectionsMap["id"] = sectionsChildRaw["Id"]
-								sectionsMap["show_name"] = sectionsChildRaw["ShowName"]
-
-								sectionsMaps = append(sectionsMaps, sectionsMap)
-							}
-						}
-						requirementsMap["sections"] = sectionsMaps
-						requirementsMaps = append(requirementsMaps, requirementsMap)
-					}
+	s := make([]map[string]interface{}, 0, len(objects))
+	for _, object := range objects {
+		standardsMaps := make([]map[string]interface{}, 0, len(object.Standards))
+		for _, std := range object.Standards {
+			requirementsMaps := make([]map[string]interface{}, 0, len(std.Requirements))
+			for _, req := range std.Requirements {
+				sectionsMaps := make([]map[string]interface{}, 0, len(req.Sections))
+				for _, sec := range req.Sections {
+					sectionsMaps = append(sectionsMaps, map[string]interface{}{
+						"id":        sec.Id,
+						"show_name": sec.ShowName,
+					})
 				}
-				standardsMap["requirements"] = requirementsMaps
-				standardsMaps = append(standardsMaps, standardsMap)
+				requirementsMaps = append(requirementsMaps, map[string]interface{}{
+					"id":                req.Id,
+					"show_name":         req.ShowName,
+					"total_check_count": req.TotalCheckCount,
+					"sections":          sectionsMaps,
+				})
 			}
+			standardsMaps = append(standardsMaps, map[string]interface{}{
+				"id":           std.Id,
+				"show_name":    std.ShowName,
+				"type":         std.Type,
+				"requirements": requirementsMaps,
+			})
+			ids = append(ids, fmt.Sprint(std.Id))
 		}
-		mapping["standards"] = standardsMaps
 
-		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, objectRaw[""])
-		s = append(s, mapping)
+		s = append(s, map[string]interface{}{
+			"standard_type": object.StandardType,
+			"standards":     standardsMaps,
+		})
 	}
 
 	d.SetId(dataResourceIdHash(ids))
