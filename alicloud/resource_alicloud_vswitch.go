@@ -312,6 +312,14 @@ func resourceAliCloudVpcVswitchUpdate(d *schema.ResourceData, meta interface{}) 
 		enableIpv6 := d.Get("enable_ipv6").(bool)
 		request["EnableIPv6"] = enableIpv6
 		if enableIpv6 {
+			// The ModifyVSwitchAttribute API requires Ipv6CidrBlock whenever EnableIPv6 is
+			// set to true (otherwise the backend returns MissingParam.Ipv6CidrBlock). Require
+			// ipv6_cidr_block_mask here so the user gets a clear, early error instead of the
+			// opaque backend one — and so we never silently fall back to subnet 0. This only
+			// applies to enabling IPv6 on an existing vswitch (the create path is untouched).
+			if _, ok := d.GetOkExists("ipv6_cidr_block_mask"); !ok {
+				return WrapError(fmt.Errorf("`ipv6_cidr_block_mask` is required when enabling `enable_ipv6` for an existing vswitch"))
+			}
 			request["Ipv6CidrBlock"] = d.Get("ipv6_cidr_block_mask")
 		} else {
 			delete(request, "Ipv6CidrBlock")
