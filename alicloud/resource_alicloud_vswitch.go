@@ -295,35 +295,35 @@ func resourceAliCloudVpcVswitchUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 	}
 
-	if !d.IsNewResource() && d.HasChange("ipv6_cidr_block_mask") {
-		err := CancelIpv6(d, meta)
-		if err != nil {
-			return WrapError(err)
-		}
-		if !d.HasChange("enable_ipv6") || d.Get("enable_ipv6").(bool) {
-			update = true
-			request["EnableIPv6"] = true
-			request["Ipv6CidrBlock"] = d.Get("ipv6_cidr_block_mask")
-		}
-	}
-
-	if !d.IsNewResource() && d.HasChange("enable_ipv6") {
-		update = true
-		enableIpv6 := d.Get("enable_ipv6").(bool)
-		request["EnableIPv6"] = enableIpv6
-		if enableIpv6 {
-			// The ModifyVSwitchAttribute API requires Ipv6CidrBlock whenever EnableIPv6 is
-			// set to true (otherwise the backend returns MissingParam.Ipv6CidrBlock). Require
-			// ipv6_cidr_block_mask here so the user gets a clear, early error instead of the
-			// opaque backend one — and so we never silently fall back to subnet 0. This only
-			// applies to enabling IPv6 on an existing vswitch (the create path is untouched).
+	// enable_ipv6 and ipv6_cidr_block_mask are handled together: the mask only takes effect
+	// when IPv6 is enabled, so the desired enable_ipv6 state drives the whole request.
+	if !d.IsNewResource() && (d.HasChange("enable_ipv6") || d.HasChange("ipv6_cidr_block_mask")) {
+		if d.Get("enable_ipv6").(bool) {
+			// Enabling IPv6 (or re-assigning its subnet) requires ipv6_cidr_block_mask: the
+			// ModifyVSwitchAttribute API rejects EnableIPv6=true without Ipv6CidrBlock. Require it
+			// here so the user gets a clear, early error instead of the opaque backend one, and so
+			// we never silently fall back to subnet 0.
 			if _, ok := d.GetOkExists("ipv6_cidr_block_mask"); !ok {
 				return WrapError(fmt.Errorf("`ipv6_cidr_block_mask` is required when enabling `enable_ipv6` for an existing vswitch"))
 			}
+			// When only the subnet changes while IPv6 is already enabled, the existing block must
+			// be released first (it cannot be re-assigned in place), so disable then re-enable.
+			if !d.HasChange("enable_ipv6") {
+				if err := CancelIpv6(d, meta); err != nil {
+					return WrapError(err)
+				}
+			}
+			update = true
+			request["EnableIPv6"] = true
 			request["Ipv6CidrBlock"] = d.Get("ipv6_cidr_block_mask")
-		} else {
-			delete(request, "Ipv6CidrBlock")
+		} else if d.HasChange("enable_ipv6") {
+			// Disabling IPv6. Ipv6CidrBlock is only written in the branch above, which is mutually
+			// exclusive with this one, so there is nothing to delete here (the API also forbids
+			// sending Ipv6CidrBlock when disabling).
+			update = true
+			request["EnableIPv6"] = false
 		}
+		// enable_ipv6 is false and unchanged (only the mask changed) -> no IPv6 change needed.
 	}
 
 	if update {
