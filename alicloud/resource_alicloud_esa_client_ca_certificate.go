@@ -17,12 +17,14 @@ func resourceAliCloudEsaClientCaCertificate() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudEsaClientCaCertificateCreate,
 		Read:   resourceAliCloudEsaClientCaCertificateRead,
+		Update: resourceAliCloudEsaClientCaCertificateUpdate,
 		Delete: resourceAliCloudEsaClientCaCertificateDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -39,6 +41,11 @@ func resourceAliCloudEsaClientCaCertificate() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+			},
+			"client_ca_certificate_hostnames": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -95,7 +102,7 @@ func resourceAliCloudEsaClientCaCertificateCreate(d *schema.ResourceData, meta i
 
 	d.SetId(fmt.Sprintf("%v:%v", request["SiteId"], response["Id"]))
 
-	return resourceAliCloudEsaClientCaCertificateRead(d, meta)
+	return resourceAliCloudEsaClientCaCertificateUpdate(d, meta)
 }
 
 func resourceAliCloudEsaClientCaCertificateRead(d *schema.ResourceData, meta interface{}) error {
@@ -127,7 +134,65 @@ func resourceAliCloudEsaClientCaCertificateRead(d *schema.ResourceData, meta int
 	d.Set("status", resultRaw["Status"])
 	d.Set("client_ca_cert_id", resultRaw["Id"])
 
+	objectRaw, err = esaServiceV2.DescribeClientCaCertificateGetClientCaCertificateHostnames(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	hostnamesRaw := make([]interface{}, 0)
+	if objectRaw["Hostnames"] != nil {
+		hostnamesRaw = convertToInterfaceArray(objectRaw["Hostnames"])
+	}
+
+	d.Set("client_ca_certificate_hostnames", hostnamesRaw)
+
 	return nil
+}
+
+func resourceAliCloudEsaClientCaCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "SetClientCaCertificateHostnames"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SiteId"] = parts[0]
+	request["Id"] = parts[1]
+
+	if d.HasChange("client_ca_certificate_hostnames") {
+		update = true
+	}
+	if v, ok := d.GetOk("client_ca_certificate_hostnames"); ok || d.HasChange("client_ca_certificate_hostnames") {
+		hostnamesMapsArray := convertToInterfaceArray(v)
+
+		request["Hostnames"] = convertListToJsonString(hostnamesMapsArray)
+	}
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudEsaClientCaCertificateRead(d, meta)
 }
 
 func resourceAliCloudEsaClientCaCertificateDelete(d *schema.ResourceData, meta interface{}) error {

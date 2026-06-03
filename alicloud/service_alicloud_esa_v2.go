@@ -2523,6 +2523,47 @@ func (s *EsaServiceV2) DescribeEsaClientCaCertificate(id string) (object map[str
 	return response, nil
 }
 
+func (s *EsaServiceV2) DescribeClientCaCertificateGetClientCaCertificateHostnames(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Id"] = parts[1]
+	request["SiteId"] = parts[0]
+
+	action := "GetClientCaCertificateHostnames"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "Certificate.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("ClientCaCertificate", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
 func (s *EsaServiceV2) EsaClientCaCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.EsaClientCaCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaClientCaCertificate)
 }
