@@ -83,7 +83,7 @@ func TestAccAliCloudCREENamespace_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+					"instance_id": "${alicloud_cr_ee_instance.default.id}",
 					"name":        name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -144,7 +144,7 @@ func TestAccAliCloudCREENamespace_basic0_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":        "${data.alicloud_cr_ee_instances.default.ids.0}",
+					"instance_id":        "${alicloud_cr_ee_instance.default.id}",
 					"name":               name,
 					"auto_create":        "true",
 					"default_visibility": "PUBLIC",
@@ -190,7 +190,7 @@ func TestAccAliCloudCREENamespace_Multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":              "6",
-					"instance_id":        "${data.alicloud_cr_ee_instances.default.ids.0}",
+					"instance_id":        "${alicloud_cr_ee_instance.default.id}",
 					"name":               name + "-${count.index}",
 					"auto_create":        "false",
 					"default_visibility": "PRIVATE",
@@ -213,12 +213,29 @@ var AliCloudCREENamespaceMap0 = map[string]string{
 }
 
 func AliCloudCREENamespaceBasicDependence0(name string) string {
+	// instance_name has stricter constraints than other CR names (length cap
+	// observed at 30 chars), so derive a sanitized name from `name`.
+	instanceName := name
+	if len(instanceName) > 30 {
+		instanceName = instanceName[:30]
+	}
 	return fmt.Sprintf(`
 	variable "name" {
 		default = "%s"
 	}
 
-	data "alicloud_cr_ee_instances" "default" {
+	# Provision a dedicated EE instance instead of relying on
+	# data.alicloud_cr_ee_instances {} — that data source returns an empty list
+	# in regions where no instance happens to exist at test time (frequent in
+	# cn-beijing when concurrent ACC runs delete each other's instances).
+	# Creating one inline keeps the test self-contained and deterministic.
+	resource "alicloud_cr_ee_instance" "default" {
+		payment_type   = "Subscription"
+		period         = 1
+		renew_period   = 1
+		renewal_status = "AutoRenewal"
+		instance_type  = "Advanced"
+		instance_name  = "%s"
 	}
-`, name)
+`, name, instanceName)
 }

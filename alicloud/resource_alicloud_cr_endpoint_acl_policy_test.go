@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -41,7 +42,7 @@ func TestAccAlicloudCREndpointAclPolicy_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":   name,
 					"entry":         "192.168.1.0/24",
-					"instance_id":   "${data.alicloud_cr_ee_instances.default.ids.0}",
+					"instance_id":   "${alicloud_cr_ee_instance.default.id}",
 					"module_name":   "Registry",
 					"endpoint_type": "internet",
 				}),
@@ -68,19 +69,38 @@ func TestAccAlicloudCREndpointAclPolicy_basic0(t *testing.T) {
 var AlicloudCREndpointAclPolicyMap0 = map[string]string{}
 
 func AlicloudCREndpointAclPolicyBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	// instance_name has stricter constraints than other CR names: lowercase
+	// only, length ≤ 30. Derive a sanitized name from `name`.
+	instanceName := strings.ToLower(name)
+	if len(instanceName) > 30 {
+		instanceName = instanceName[:30]
+	}
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
-data "alicloud_cr_ee_instances" "default" {}
+
+# Provision a dedicated EE instance instead of relying on
+# data.alicloud_cr_ee_instances {} — that data source returns an empty list in
+# regions where no instance happens to exist at test time (frequent in cn-beijing
+# when concurrent ACC runs delete each other's instances). Creating one inline
+# keeps the test self-contained and deterministic.
+resource "alicloud_cr_ee_instance" "default" {
+  payment_type   = "Subscription"
+  period         = 1
+  renew_period   = 1
+  renewal_status = "AutoRenewal"
+  instance_type  = "Advanced"
+  instance_name  = "%s"
+}
 
 data "alicloud_cr_endpoint_acl_service" "default" {
   endpoint_type = "internet"
   enable        = true
-  instance_id   = data.alicloud_cr_ee_instances.default.ids.0
+  instance_id   = alicloud_cr_ee_instance.default.id
   module_name   = "Registry"
 }
-`, name)
+`, name, instanceName)
 }
 
 // lintignore: R001
