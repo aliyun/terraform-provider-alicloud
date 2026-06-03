@@ -88,13 +88,25 @@ func dataSourceCrEENamespacesConfigDependence(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-	
-	data "alicloud_cr_ee_instances" "default"{}
-	
+
+	# Provision a dedicated EE instance instead of relying on
+	# data.alicloud_cr_ee_instances {} — that data source returns an empty list
+	# when no instance exists at test time (frequent in cn-beijing under
+	# concurrent ACC runs). Creating one inline makes this datasource test
+	# self-contained.
+	resource "alicloud_cr_ee_instance" "default" {
+		payment_type   = "Subscription"
+		period         = 1
+		renew_period   = 1
+		renewal_status = "AutoRenewal"
+		instance_type  = "Advanced"
+		instance_name  = var.name
+	}
+
 	resource "alicloud_cr_ee_namespace" "default" {
-		instance_id = data.alicloud_cr_ee_instances.default.ids.0
-		name = "${var.name}"
-		auto_create	= true
+		instance_id        = alicloud_cr_ee_instance.default.id
+		name               = "${var.name}"
+		auto_create        = true
 		default_visibility = "PRIVATE"
 	}
 	`, name)

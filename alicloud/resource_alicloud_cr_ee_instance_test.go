@@ -340,145 +340,18 @@ variable "name" {
     default = "%s"
 }
 
-resource "alicloud_ram_role" "defaultRole" {
-  name = "AliyunContainerRegistryCustomizedOSSBucketRole"
-
-  description = var.name
-  document = <<EOF
-{
-    "Statement": [
-        {
-            "Action": "sts:AssumeRole",
-            "Effect": "Allow",
-            "Principal": {
-                "Service": [
-                    "cr.aliyuncs.com"
-                ]
-            }
-        }
-    ],
-    "Version": "1"
-}
-  EOF
-}
-
-resource "alicloud_ram_policy" "defaultLPolicy" {
-  policy_name = "AliyunContainerRegistryCustomizedOSSBucketRolePolicy"
-  description = var.name
-
-  document = <<EOF
-
-{
-    "Version": "1",
-    "Statement": [
-        {
-            "Action": [
-                "oss:GetObject",
-                "oss:PutObject",
-                "oss:DeleteObject",
-                "oss:ListParts",
-                "oss:AbortMultipartUpload",
-                "oss:InitiateMultipartUpload",
-                "oss:CompleteMultipartUpload",
-                "oss:DeleteMultipleObjects",
-                "oss:ListMultipartUploads",
-                "oss:ListObjects",
-                "oss:DeleteObjectVersion",
-                "oss:GetObjectVersion",
-                "oss:ListObjectVersions",
-                "oss:PutObjectTagging",
-                "oss:GetObjectTagging",
-                "oss:DeleteObjectTagging"
-            ],
-            "Resource": [
-                "acs:oss:*:*:cri-*",
-                "acs:oss:*:*:cri-*/*",
-                "acs:oss:*:*:${var.name}",
-                "acs:oss:*:*:${var.name}/*"
-            ],
-            "Effect": "Allow",
-            "Condition": {
-
-            }
-        },
-        {
-            "Action": [
-                "oss:PutBucket",
-                "oss:GetBucket",
-                "oss:GetBucketLocation",
-                "oss:PutBucketEncryption",
-                "oss:GetBucketEncryption",
-                "oss:PutBucketAcl",
-                "oss:GetBucketAcl",
-                "oss:PutBucketLogging",
-                "oss:GetBucketReferer",
-                "oss:PutBucketReferer",
-                "oss:GetBucketLogging",
-                "oss:PutBucketVersioning",
-                "oss:GetBucketVersioning",
-                "oss:GetBucketLifecycle",
-                "oss:PutBucketLifecycle",
-                "oss:DeleteBucketLifecycle",
-                "oss:GetBucketTransferAcceleration"
-            ],
-            "Resource": [
-                "acs:oss:*:*:cri-*",
-                "acs:oss:*:*:cri-*/*",
-                "acs:oss:*:*:${var.name}",
-                "acs:oss:*:*:${var.name}/*"
-            ],
-            "Effect": "Allow",
-            "Condition": {
-
-            }
-        },
-        {
-            "Effect": "Allow",
-            "Action": "oss:ListBuckets",
-            "Resource": [
-                "acs:oss:*:*:*",
-                "acs:oss:*:*:*/*"
-            ],
-            "Condition": {
-
-            }
-        },
-        {
-            "Action": [
-                "vpc:DescribeVpcs"
-            ],
-            "Resource": "acs:vpc:*:*:vpc/*",
-            "Effect": "Allow",
-            "Condition": {
-
-            }
-        },
-        {
-            "Action": [
-                "cms:QueryMetricLast",
-                "cms:QueryMetricList"
-            ],
-            "Resource": "*",
-            "Effect": "Allow"
-        }
-    ]
-}
-  EOF
-}
-
-resource "alicloud_ram_role_policy_attachment" "RolePolicyAttachment" {
-  policy_type = "Custom"
-  role_name   = alicloud_ram_role.defaultRole.name
-  policy_name = alicloud_ram_policy.defaultLPolicy.policy_name
-}
+# NOTE: The RAM role "AliyunContainerRegistryCustomizedOSSBucketRole" is a
+# reserved, account-singleton role that Container Registry auto-creates the
+# first time custom OSS storage is used. CR assumes this fixed-name role to
+# access the custom bucket, so it cannot be renamed. Re-creating it here would
+# fail with EntityAlreadyExists.Role (409) on any account that has already used
+# CR. We therefore rely on the existing role instead of declaring it.
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_oss_bucket" "defaultkcvHCP" {
-	depends_on = [
-			alicloud_ram_role_policy_attachment.RolePolicyAttachment]
   storage_class = "Standard"
-  bucket = var.name
+  bucket        = var.name
 }
 
 
