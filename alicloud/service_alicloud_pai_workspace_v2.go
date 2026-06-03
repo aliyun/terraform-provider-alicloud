@@ -248,7 +248,7 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDatasetversion(id string) (o
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"201300003"}) {
+		if IsExpectedErrors(err, []string{"201300002", "201300003"}) {
 			return object, WrapErrorf(NotFoundErr("Datasetversion", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
