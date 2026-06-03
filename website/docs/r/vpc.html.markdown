@@ -72,6 +72,9 @@ The description must be 1 to 256 characters in length, and cannot start with `ht
 * `enable_ipv6` - (Optional, Computed, Available since v1.119.0) Whether to enable the IPv6 network segment. Value:
   - `false` (default): Not enabled.
   - `true`: enabled.
+
+-> **NOTE:** If you use the `alicloud_vpc_ipv6_cidr_block` resource to add an IPv6 CIDR block to the VPC, you do not need to set `enable_ipv6`.
+
 * `force_delete` - (Optional, Available since v1.248.0) Force delete vpc or not.
 * `ipv4_cidr_mask` - (Optional, Int, Available since v1.240.0) Allocate VPC from The IPAM address pool by entering a mask.
 

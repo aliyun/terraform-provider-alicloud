@@ -123,7 +123,15 @@ The following arguments are supported:
 * `enable_ipv6` - (Optional, Computed, Available since v1.201.0) Whether the IPv6 function is enabled in the switch. Value:
   - `true`: enables IPv6.
   - `false` (default): IPv6 is not enabled.
-* `ipv6_cidr_block_mask` - (Optional, Available since v1.201.0) The IPv6 CIDR block of the VSwitch. This parameter is used only for create and update operations.
+
+-> **NOTE:** Since v1.281.0, `ipv6_cidr_block_mask` only takes effect when `enable_ipv6` is `true`, and it is required when `enable_ipv6` is `true`.
+
+-> **NOTE:** When `enable_ipv6` is `true`, modifying `ipv6_cidr_block_mask` will disable IPv6 and then re-enable it to assign the new subnet. This re-assignment may interrupt the IPv6 service of the VSwitch, so plan such changes with care.
+
+* `ipv6_cidr_block_mask` - (Optional, Available since v1.201.0) The last 4, 8, or 12 bits of the IPv6 CIDR block of the VSwitch, corresponding to a VPC IPv6 address mask of `60`, `56`, or `52` respectively. It only takes effect and is required when `enable_ipv6` is `true`, and is used only for create and update operations. The valid values are determined by the IPv6 address mask of the VPC:
+  - When the VPC IPv6 address mask is `52`: `0` to `4095`.
+  - When the VPC IPv6 address mask is `56`: `0` to `255`.
+  - When the VPC IPv6 address mask is `60`: `0` to `15`.
 * `tags` - (Optional, Map, Available since v1.55.3) The tags of VSwitch.
 * `vswitch_name` - (Optional, Available since v1.119.0) The name of the VSwitch.
 * `vpc_id` - (Optional, ForceNew) The VPC ID. **NOTE:** From version 1.233.0, if you do not set `is_default`, or set `is_default` to `false`, `vpc_id` is required.
