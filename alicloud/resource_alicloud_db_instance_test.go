@@ -4228,6 +4228,100 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudRdsDBInstance_PG_MajorVersionUpgrade_Prepaid(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap7)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceConfig%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstancePGMajorVersionUpgradePrepaidDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "PostgreSQL",
+					"engine_version":           "17.0",
+					"instance_type":            "pg.n4.2c.2m",
+					"instance_storage":         "30",
+					"instance_charge_type":     "Prepaid",
+					"period":                   "1",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":               "PostgreSQL",
+						"engine_version":       "17.0",
+						"instance_charge_type": "Prepaid",
+						"instance_name":        name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":    "18.0",
+					"collect_stat_mode": "Before",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "18.0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "Postpaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "Postpaid",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "collect_stat_mode", "auto_renew", "auto_renew_period"},
+			},
+		},
+	})
+}
+
+func resourceDBInstancePGMajorVersionUpgradePrepaidDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_db_zones" "default" {
+	engine         = "PostgreSQL"
+	engine_version = "17.0"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+`, name)
+}
+
 func resourceDBInstanceConfigGeneralEssdPgSql(name string) string {
 	templateName1 := fmt.Sprintf("tf-test%d", rand.Intn(1000))
 	templateName2 := fmt.Sprintf("tf-test%d", rand.Intn(1000))

@@ -1119,6 +1119,15 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("collect_stat_mode"); ok && v.(string) != "" {
 			request["CollectStatMode"] = v
 		}
+		if PayType(request["PayType"].(string)) == Prepaid {
+			period := d.Get("period").(int)
+			request["UsedTime"] = strconv.Itoa(period)
+			request["Period"] = Month
+			if period > 9 {
+				request["UsedTime"] = strconv.Itoa(period / 12)
+				request["Period"] = Year
+			}
+		}
 		wait = incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
