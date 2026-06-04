@@ -31,6 +31,56 @@ var testAccProviderFactory map[string]func() (*schema.Provider, error)
 var testAccProvider *schema.Provider
 var defaultRegionToTest = os.Getenv("ALICLOUD_REGION")
 
+const (
+	ProviderNameAlicloudAlt  = "alicloudalt"
+	ProviderNameAlicloudAlt2 = "alicloudalt2"
+	ProviderNameAlicloudAlt3 = "alicloudalt3"
+)
+
+func testAccProviderFactoriesAlternate() map[string]func() (*schema.Provider, error) {
+	altProvider := Provider()
+	return map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return testAccProvider, nil
+		},
+		ProviderNameAlicloudAlt: func() (*schema.Provider, error) {
+			return altProvider, nil
+		},
+	}
+}
+
+func testAccProviderFactoriesMultiRegion(n int) map[string]func() (*schema.Provider, error) {
+	factories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return testAccProvider, nil
+		},
+	}
+	altNames := []string{ProviderNameAlicloudAlt, ProviderNameAlicloudAlt2, ProviderNameAlicloudAlt3}
+	for i := 0; i < n-1 && i < len(altNames); i++ {
+		p := Provider()
+		factories[altNames[i]] = func() (*schema.Provider, error) {
+			return p, nil
+		}
+	}
+	return factories
+}
+
+func configAlternateRegionProvider(region string) string {
+	return fmt.Sprintf(`
+provider "alicloudalt" {
+  region = "%s"
+}
+`, region)
+}
+
+func configNamedRegionalProvider(providerName string, region string) string {
+	return fmt.Sprintf(`
+provider "%s" {
+  region = "%s"
+}
+`, providerName, region)
+}
+
 func init() {
 	testAccProvider = Provider()
 	testAccProviders = map[string]*schema.Provider{
