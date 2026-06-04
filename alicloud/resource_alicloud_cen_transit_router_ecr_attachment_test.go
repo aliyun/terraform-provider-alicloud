@@ -154,6 +154,10 @@ var AlicloudCenTransitRouterEcrAttachmentMap5366 = map[string]string{
 }
 
 func AlicloudCenTransitRouterEcrAttachmentBasicDependence5366(name string) string {
+	region := defaultRegionToTest
+	if region == "" {
+		region = "cn-hangzhou"
+	}
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -193,7 +197,7 @@ resource "alicloud_express_connect_router_tr_association" "defaultedPu6c" {
 }
 
 
-`, name, defaultRegionToTest)
+`, name, region)
 }
 
 // Case ECR Attachment 5366  twin
