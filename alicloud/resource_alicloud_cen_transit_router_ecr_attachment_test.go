@@ -24,6 +24,7 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -211,6 +212,7 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -269,6 +271,7 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366_raw(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
