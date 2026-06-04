@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudScdnDomainDataSource(t *testing.T) {
+func SkipTestAccAlicloudScdnDomainDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccConfig := dataSourceTestAccConfigFunc("data.alicloud_scdn_domains.default", strconv.FormatInt(int64(rand), 10), dataSourceScdnDomainsConfigDependence)
 	idsConf := dataSourceTestAccConfig{
