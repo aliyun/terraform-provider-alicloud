@@ -394,9 +394,14 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
 * `service_account_issuer` - (Optional, ForceNew, Available since v1.92.0) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"https://kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well). From cluster version 1.22, Service Account Token Volume Projection will be enabled by default.
 * `api_audiences` - (Optional, ForceNew, Available since v1.92.0) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["https://kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well. From cluster version 1.22, Service Account Token Volume Projection will be enabled by default.
 * `tags` - (Optional, Available since v1.97.0) Default nil, A map of tags assigned to the kubernetes cluster and work nodes. See [`tags`](#tags) below.
-* `cluster_spec` - (Optional, Available since v1.101.0) The cluster specifications of kubernetes cluster,which can be empty. Valid values:
+* `cluster_spec` - (Optional, Available since v1.101.0) The cluster specifications of kubernetes cluster, which can be empty. Valid values:
   * ack.standard : Basic managed clusters.
   * ack.pro.small : Professional managed clusters.
+  * ack.pro.xlarge : ACK Pro Provisioned Control Plane (Pro XL).
+  * ack.pro.2xlarge : ACK Pro Provisioned Control Plane (Pro 2XL).
+  * ack.pro.4xlarge : ACK Pro Provisioned Control Plane (Pro 4XL). Requires whitelist access from customer service.
+
+  ACK Pro Provisioned Control Plane (Pro XL/2XL/4XL) tiers pre-allocate and dedicate control plane resources to ensure consistently high API concurrency and pod scheduling performance, making them suitable for AI training/inference, ultra-large-scale clusters, and mission-critical workloads. For details, see [Cluster management fees](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/product-overview/cluster-management-fee) and [ACK Pro Provisioned Control Plane](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/user-guide/ack-pro-provisioned-control-plane).
 * `profile` - (Optional, ForceNew, Available since v1.250.0) The profile of cluster. Valid values:
   * `Default`: ACK managed cluster. ACK managed clusters include ACK Basic clusters and ACK Pro clusters.
   * `Edge`: ACK Edge cluster. ACK Edge clusters include ACK Edge Basic clusters and ACK Edge Pro clusters.

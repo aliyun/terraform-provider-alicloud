@@ -95,8 +95,13 @@ The following arguments are supported:
 * `cluster_id` - (ForceNew, Optional) The cluster ID.
 * `cluster_name` - (ForceNew, Optional) Custom cluster name.
 * `cluster_spec` - (ForceNew, Optional) The specification of the clusters to query. Valid values:
-  - `ack.pro.small`: ACK Pro clusters.
   - `ack.standard`: ACK Basic clusters.
+  - `ack.pro.small`: ACK Pro clusters.
+  - `ack.pro.xlarge`: ACK Pro Provisioned Control Plane (Pro XL).
+  - `ack.pro.2xlarge`: ACK Pro Provisioned Control Plane (Pro 2XL).
+  - `ack.pro.4xlarge`: ACK Pro Provisioned Control Plane (Pro 4XL).
+
+  ACK Pro Provisioned Control Plane (Pro XL/2XL/4XL) tiers pre-allocate and dedicate control plane resources to ensure consistently high API concurrency and pod scheduling performance, making them suitable for AI training/inference, ultra-large-scale clusters, and mission-critical workloads. For details, see [Cluster management fees](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/product-overview/cluster-management-fee) and [ACK Pro Provisioned Control Plane](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/user-guide/ack-pro-provisioned-control-plane).
 * `cluster_type` - (ForceNew, Optional) The type of the clusters to query. Valid values:
   - `Kubernetes`: ACK dedicated clusters.
   - `ManagedKubernetes`: ACK managed clusters. ACK managed clusters include ACK Basic clusters, ACK Pro clusters, ACK Serverless Basic clusters, ACK Serverless Pro clusters, ACK Edge Basic clusters, ACK Edge Pro clusters, and ACK Lingjun Pro clusters.
@@ -123,7 +128,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `cluster_domain` - The local domain name of the cluster.
     * `cluster_id` - The cluster ID.
     * `cluster_name` - Custom cluster name.
-    * `cluster_spec` - After you set `cluster_type` to `ManagedKubernetes` and configure `profile`, you can further specify the cluster specification.
+    * `cluster_spec` - The cluster specification.
     * `cluster_type` - The cluster type.
     * `current_version` - The current version of the cluster.
     * `deletion_protection` - Cluster deletion protection prevents accidental deletion of the cluster through the console or API.
