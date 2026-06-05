@@ -42,6 +42,7 @@ func TestAccAliCloudECSImageCopyBasic(t *testing.T) {
 					"provider":         "alicloud.sh",
 					"source_image_id":  "${alicloud_image.default.id}",
 					"source_region_id": os.Getenv("ALICLOUD_REGION"),
+					"encrypted":        "true",
 					"description":      fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
 					"image_name":       name,
 					"tags": map[string]string{
@@ -200,9 +201,15 @@ func testAccCheckECSImageCopyExistsWithProviders(n string, image *ecs.Image, pro
 var testAccCopyImageCheckMap = map[string]string{}
 
 func resourceImageCopyBasicConfigDependence(name string) string {
+	region := os.Getenv("ALICLOUD_REGION")
 	return fmt.Sprintf(`
 	variable "name" {
-  		default = "%s"
+  		default = "%[1]s"
+	}
+
+	provider "alicloud" {
+  		alias  = "src"
+  		region = "%[2]s"
 	}
 
 	provider "alicloud" {
@@ -210,33 +217,34 @@ func resourceImageCopyBasicConfigDependence(name string) string {
   		region = "cn-shanghai"
 	}
 
-	provider "alicloud" {
-  		alias  = "hz"
-  		region = "cn-hangzhou"
-	}
-
 	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_efficiency"
+  		provider                    = "alicloud.src"
+  		available_disk_category     = "cloud_essd"
   		available_resource_creation = "VSwitch"
 	}
 
 	data "alicloud_images" "default" {
+  		provider     = "alicloud.src"
   		most_recent  = true
   		owners       = "system"
   		architecture = "x86_64"
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone = data.alicloud_zones.default.zones.0.id
-  		image_id          = data.alicloud_images.default.images.0.id
+  		provider             = "alicloud.src"
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		image_id             = data.alicloud_images.default.images.0.id
+  		system_disk_category = "cloud_essd"
 	}
 
 	resource "alicloud_vpc" "default" {
+  		provider   = "alicloud.src"
   		vpc_name   = var.name
   		cidr_block = "192.168.0.0/16"
 	}
 
 	resource "alicloud_vswitch" "default" {
+  		provider     = "alicloud.src"
   		vswitch_name = var.name
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = "192.168.192.0/24"
@@ -244,11 +252,13 @@ func resourceImageCopyBasicConfigDependence(name string) string {
 	}
 
 	resource "alicloud_security_group" "default" {
-  		name   = var.name
-  		vpc_id = alicloud_vpc.default.id
+  		provider = "alicloud.src"
+  		name     = var.name
+  		vpc_id   = alicloud_vpc.default.id
 	}
 
 	resource "alicloud_instance" "default" {
+  		provider                   = "alicloud.src"
   		image_id                   = data.alicloud_images.default.images.0.id
   		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
   		security_groups            = alicloud_security_group.default.*.id
@@ -256,14 +266,15 @@ func resourceImageCopyBasicConfigDependence(name string) string {
   		internet_max_bandwidth_out = "10"
   		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   		instance_charge_type       = "PostPaid"
-  		system_disk_category       = "cloud_efficiency"
+  		system_disk_category       = "cloud_essd"
   		vswitch_id                 = alicloud_vswitch.default.id
   		instance_name              = var.name
 	}
 
 	resource "alicloud_image" "default" {
+  		provider    = "alicloud.src"
   		instance_id = alicloud_instance.default.id
   		image_name  = var.name
 	}
-`, name)
+`, name, region)
 }
