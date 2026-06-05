@@ -26,6 +26,10 @@ Basic Usage
   </a>
 </div></div>
 
+## Example Usage
+
+Basic Usage
+
 ```terraform
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
@@ -44,22 +48,27 @@ resource "alicloud_esa_client_ca_certificate" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `certificate` - (Required, ForceNew) Certificate content.
 * `client_ca_cert_name` - (Optional, ForceNew) The certificate name.
+* `client_ca_certificate_hostnames` - (Optional, List, Available since v1.281.0) Client Ca certificate bound domain list.
 * `site_id` - (Required, ForceNew) Site Id
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<client_ca_cert_id>`.
-* `client_ca_cert_id` - ClientCaCertificate Id
+
+* `id` - The resource ID in terraform of Client Ca Certificate. It formats as `<site_id>:<client_ca_cert_id>`.
+* `client_ca_cert_id` - ClientCaCertificate Id.
 * `create_time` - Creation time.
 * `status` - Certificate status.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Client Ca Certificate.
+* `update` - (Defaults to 5 mins) Used when update the Client Ca Certificate.
 * `delete` - (Defaults to 5 mins) Used when delete the Client Ca Certificate.
 
 ## Import
