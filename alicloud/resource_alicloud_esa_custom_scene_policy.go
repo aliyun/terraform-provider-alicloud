@@ -25,10 +25,6 @@ func resourceAliCloudEsaCustomScenePolicy() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"create_time": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
 			"custom_scene_policy_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -41,6 +37,11 @@ func resourceAliCloudEsaCustomScenePolicy() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -49,6 +50,12 @@ func resourceAliCloudEsaCustomScenePolicy() *schema.Resource {
 			"template": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"create_time": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field `create_time` has been deprecated from provider version 1.281.0. New field `start_time` instead",
 			},
 		},
 	}
@@ -66,10 +73,18 @@ func resourceAliCloudEsaCustomScenePolicyCreate(d *schema.ResourceData, meta int
 	request = make(map[string]interface{})
 
 	request["Template"] = d.Get("template")
-	request["StartTime"] = d.Get("create_time")
 	request["Name"] = d.Get("custom_scene_policy_name")
 	request["SiteIds"] = d.Get("site_ids")
 	request["EndTime"] = d.Get("end_time")
+
+	if v, ok := d.GetOk("start_time"); ok {
+		request["StartTime"] = v
+	} else if v, ok := d.GetOk("create_time"); ok {
+		request["StartTime"] = v
+	} else {
+		return WrapError(Error(`[ERROR] Field "start_time" or "create_time" must be set one!`))
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
@@ -107,12 +122,13 @@ func resourceAliCloudEsaCustomScenePolicyRead(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["StartTime"])
 	d.Set("custom_scene_policy_name", objectRaw["Name"])
 	d.Set("end_time", objectRaw["EndTime"])
+	d.Set("site_ids", objectRaw["SiteIds"])
+	d.Set("start_time", objectRaw["StartTime"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("template", objectRaw["Template"])
-	d.Set("site_ids", objectRaw["SiteIds"])
+	d.Set("create_time", objectRaw["StartTime"])
 
 	return nil
 }
@@ -156,13 +172,13 @@ func resourceAliCloudEsaCustomScenePolicyUpdate(d *schema.ResourceData, meta int
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				esaServiceV2 := EsaServiceV2{client}
+
 				stateConf := BuildStateConf([]string{}, []string{"Disabled"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, esaServiceV2.EsaCustomScenePolicyStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-
 			}
+
 			if target == "Running" {
 				action := "EnableCustomScenePolicy"
 				request = make(map[string]interface{})
@@ -185,12 +201,11 @@ func resourceAliCloudEsaCustomScenePolicyUpdate(d *schema.ResourceData, meta int
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				esaServiceV2 := EsaServiceV2{client}
+
 				stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, esaServiceV2.EsaCustomScenePolicyStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-
 			}
 		}
 	}
@@ -200,15 +215,25 @@ func resourceAliCloudEsaCustomScenePolicyUpdate(d *schema.ResourceData, meta int
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["PolicyId"] = d.Id()
+	request["StartTime"] = d.Get("start_time")
 
 	if !d.IsNewResource() && d.HasChange("template") {
 		update = true
 	}
 	request["Template"] = d.Get("template")
+
+	if !d.IsNewResource() && d.HasChange("start_time") {
+		update = true
+
+		request["StartTime"] = d.Get("start_time")
+	}
+
 	if !d.IsNewResource() && d.HasChange("create_time") {
 		update = true
+
+		request["StartTime"] = d.Get("create_time")
 	}
-	request["StartTime"] = d.Get("create_time")
+
 	if !d.IsNewResource() && d.HasChange("custom_scene_policy_name") {
 		update = true
 	}
@@ -258,7 +283,6 @@ func resourceAliCloudEsaCustomScenePolicyDelete(d *schema.ResourceData, meta int
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

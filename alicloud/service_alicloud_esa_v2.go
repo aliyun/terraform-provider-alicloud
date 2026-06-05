@@ -8,7 +8,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/tidwall/sjson"
@@ -3512,6 +3511,7 @@ func (s *EsaServiceV2) EsaVersionStateRefreshFuncWithApi(id string, field string
 }
 
 // DescribeEsaVersion >>> Encapsulated.
+
 // DescribeEsaCustomScenePolicy <<< Encapsulated get interface for Esa CustomScenePolicy.
 
 func (s *EsaServiceV2) DescribeEsaCustomScenePolicy(id string) (object map[string]interface{}, err error) {
@@ -3556,22 +3556,20 @@ func (s *EsaServiceV2) DescribeEsaCustomScenePolicy(id string) (object map[strin
 }
 
 func (s *EsaServiceV2) EsaCustomScenePolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaCustomScenePolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCustomScenePolicy)
+}
+
+func (s *EsaServiceV2) EsaCustomScenePolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaCustomScenePolicy(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
-		if field == "$.Objects" {
-			e := jsonata.MustCompile("$reduce($.Objects, function($i, $j){$i & ',' & $j})")
-			v, _ = e.Eval(object)
-			currentStatus = fmt.Sprint(v)
-		}
 
 		if strings.HasPrefix(field, "#") {
 			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
