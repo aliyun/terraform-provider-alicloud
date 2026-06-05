@@ -139,7 +139,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 							"encrypted":            "false",
 						},
 					},
-					"resource_group_id": "rg-zkdfjahg9zxncv0",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"user_data":         "xxxxxxx",
 					"vswitch_id":        "${alicloud_vswitch.shareVswitch1.id}",
 					"vpc_id":            "vpc-asdfnbg0as8dfk1nb2",
@@ -594,7 +594,7 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 					"spot_price_limit":              "5",
 					"spot_strategy":                 "SpotWithPriceLimit",
 					"security_group_ids":            []string{"${alicloud_security_group.default.id}"},
-					"resource_group_id":             "rg-zkdfjahg9zxncv0",
+					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"user_data":                     "xxxxxxx",
 					"vswitch_id":                    "${alicloud_vswitch.shareVswitch1.id}",
 					"vpc_id":                        "vpc-asdfnbg0as8dfk1nb2",
@@ -732,13 +732,13 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 					"password_inherit":              "false",
 					"period":                        "1",
 					"private_ip_address":            "172.16.0.10",
-					"template_resource_group_id":    "${alicloud_resource_manager_resource_group.test.id}",
+					"template_resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"version_description":           name,
 					"system_disk_category":          "cloud_ssd",
 					"system_disk_description":       name,
 					"system_disk_name":              name,
 					"system_disk_size":              "40",
-					"resource_group_id":             "${alicloud_resource_manager_resource_group.test.id}",
+					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"userdata":                      "xxxxxxx",
 					"vswitch_id":                    "${alicloud_vswitch.shareVswitch1.id}",
 					"tags": map[string]string{
@@ -959,13 +959,13 @@ func TestAccAliCloudECSLaunchTemplateBasic2(t *testing.T) {
 					"period":                        "1",
 					"period_unit":                   "Month",
 					"private_ip_address":            "172.16.0.10",
-					"template_resource_group_id":    "${alicloud_resource_manager_resource_group.test.id}",
+					"template_resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"version_description":           name,
 					"system_disk_category":          "cloud_ssd",
 					"system_disk_description":       name,
 					"system_disk_name":              name,
 					"system_disk_size":              "40",
-					"resource_group_id":             "${alicloud_resource_manager_resource_group.test.id}",
+					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"userdata":                      "xxxxxxx",
 					"http_endpoint":                 "enabled",
 					"http_tokens":                   "optional",
@@ -1113,7 +1113,7 @@ func TestAccAliCloudECSLaunchTemplateMulti(t *testing.T) {
 							"kms_key_id":           "${alicloud_kms_key.default.id}",
 						},
 					},
-					"resource_group_id": "alicloud_resource_manager_resource_group.test.id",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"user_data":         "xxxxxxxxxxxxxx",
 					"vswitch_id":        "${alicloud_vswitch.shareVswitch1.id}",
 					"vpc_id":            "${alicloud_vpc.shareVPC.id}",
@@ -1223,6 +1223,9 @@ data "alicloud_images" "default" {
   most_recent = true
   owners      = "system"
 }
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
 }
@@ -1286,7 +1289,9 @@ data "alicloud_images" "default" {
   most_recent = true
   owners      = "system"
 }
-
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
 }

@@ -279,19 +279,22 @@ data "alicloud_instance_types" "default" {
   system_disk_category = "cloud_essd"
 }
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+  vpc_name   = "${var.name}"
+  cidr_block = "172.16.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vswitch" "default" {
+  vswitch_name = "${var.name}"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {
   name        = "${var.name}"
   description = "New security group"
-  vpc_id      = data.alicloud_vpcs.default.ids.0
+  vpc_id      = alicloud_vpc.default.id
 }
 
 resource "alicloud_disk" "default" {
@@ -313,7 +316,7 @@ resource "alicloud_instance" "default" {
   image_id          = data.alicloud_images.default.images.0.id
   instance_type     = data.alicloud_instance_types.default.instance_types.0.id
   security_groups   = [alicloud_security_group.default.id]
-  vswitch_id        = data.alicloud_vswitches.default.ids.0
+  vswitch_id        = alicloud_vswitch.default.id
 }
 
 resource "alicloud_disk_attachment" "default" {
