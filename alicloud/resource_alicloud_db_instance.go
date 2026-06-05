@@ -686,7 +686,8 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: IntInSlice([]int{0, 1}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("engine").(string) != "SQLServer"
+					engine := d.Get("engine").(string)
+					return engine != "MySQL" && engine != "SQLServer"
 				},
 			},
 			"ssl_certificate": {
@@ -1590,10 +1591,12 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 
-		if d.Get("engine").(string) == "SQLServer" {
+		if engine := d.Get("engine").(string); engine == "MySQL" || engine == "SQLServer" {
 			if v, ok := d.GetOkExists("force_encryption"); ok {
 				request["ForceEncryption"] = v.(int)
 			}
+		}
+		if d.Get("engine").(string) == "SQLServer" {
 			if d.HasChange("ssl_certificate") {
 				if v, ok := d.GetOk("ssl_certificate"); ok && v.(string) != "" {
 					request["Certificate"] = v.(string)
