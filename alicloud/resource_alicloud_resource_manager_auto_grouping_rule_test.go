@@ -35,7 +35,7 @@ func TestAccAliCloudResourceManagerAutoGroupingRule_basic9952(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"rule_contents": []map[string]interface{}{
 						{
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******zj2ob\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r1.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 					},
 					"rule_type": "custom_condition",
@@ -51,34 +51,34 @@ func TestAccAliCloudResourceManagerAutoGroupingRule_basic9952(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"exclude_resource_group_ids_scope": "rg-aekz******4b5ea",
+					"exclude_resource_group_ids_scope": "${alicloud_resource_manager_resource_group.r3.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"exclude_resource_group_ids_scope": "rg-aekz******4b5ea",
+						"exclude_resource_group_ids_scope": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"exclude_resource_group_ids_scope": REMOVEKEY,
-					"resource_group_ids_scope":         "rg-aekz******4b5ea",
+					"resource_group_ids_scope":         "${alicloud_resource_manager_resource_group.r3.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"exclude_resource_group_ids_scope": REMOVEKEY,
-						"resource_group_ids_scope":         "rg-aekz******4b5ea",
+						"resource_group_ids_scope":         CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"exclude_resource_group_ids_scope": "rg-aekz******4b5ea",
+					"exclude_resource_group_ids_scope": "${alicloud_resource_manager_resource_group.r3.id}",
 					"resource_group_ids_scope":         REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"exclude_resource_group_ids_scope": "rg-aekz******4b5ea",
+						"exclude_resource_group_ids_scope": CHECKSET,
 						"resource_group_ids_scope":         REMOVEKEY,
 					}),
 				),
@@ -189,16 +189,16 @@ func TestAccAliCloudResourceManagerAutoGroupingRule_basic9952(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"rule_contents": []map[string]interface{}{
 						{
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******zj2ob\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r1.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 							"auto_grouping_scope_condition":   "{\\\"children\\\":[{\\\"desired\\\":\\\"name_b\\\",\\\"featurePath\\\":\\\"$.resourceName\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEqualsAny\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 						{
 							"auto_grouping_scope_condition":   "{\\\"children\\\":[{\\\"desired\\\":\\\"name_c\\\",\\\"featurePath\\\":\\\"$.resourceName\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEqualsAny\\\"}],\\\"operator\\\":\\\"and\\\"}",
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******r62ua\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r2.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 						{
 							"auto_grouping_scope_condition":   "{\\\"children\\\":[{\\\"desired\\\":\\\"name_d\\\",\\\"featurePath\\\":\\\"$.resourceName\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEqualsAny\\\"}],\\\"operator\\\":\\\"and\\\"}",
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******4b5ea\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r3.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 					},
 				}),
@@ -262,22 +262,22 @@ func TestAccAliCloudResourceManagerAutoGroupingRule_basic9952_twin(t *testing.T)
 				Config: testAccConfig(map[string]interface{}{
 					"rule_contents": []map[string]interface{}{
 						{
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******zj2ob\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r1.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 							"auto_grouping_scope_condition":   "{\\\"children\\\":[{\\\"desired\\\":\\\"name_b\\\",\\\"featurePath\\\":\\\"$.resourceName\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEqualsAny\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 						{
 							"auto_grouping_scope_condition":   "{\\\"children\\\":[{\\\"desired\\\":\\\"name_c\\\",\\\"featurePath\\\":\\\"$.resourceName\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEqualsAny\\\"}],\\\"operator\\\":\\\"and\\\"}",
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******r62ua\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r2.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 						{
 							"auto_grouping_scope_condition":   "{\\\"children\\\":[{\\\"desired\\\":\\\"name_d\\\",\\\"featurePath\\\":\\\"$.resourceName\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEqualsAny\\\"}],\\\"operator\\\":\\\"and\\\"}",
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******4b5ea\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r3.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 					},
 					"rule_desc":                        "资源用例测试规则",
 					"rule_type":                        "custom_condition",
 					"exclude_region_ids_scope":         "cn-beijing",
-					"exclude_resource_group_ids_scope": "rg-aekz******4b5ea",
+					"exclude_resource_group_ids_scope": "${alicloud_resource_manager_resource_group.r3.id}",
 					"exclude_resource_ids_scope":       "dmock-xxxx",
 					"exclude_resource_types_scope":     "ecs.instance",
 					"rule_name":                        "资源用例测试规则",
@@ -288,7 +288,7 @@ func TestAccAliCloudResourceManagerAutoGroupingRule_basic9952_twin(t *testing.T)
 						"rule_desc":                        "资源用例测试规则",
 						"rule_type":                        "custom_condition",
 						"exclude_region_ids_scope":         "cn-beijing",
-						"exclude_resource_group_ids_scope": "rg-aekz******4b5ea",
+						"exclude_resource_group_ids_scope": CHECKSET,
 						"exclude_resource_ids_scope":       "dmock-xxxx",
 						"exclude_resource_types_scope":     "ecs.instance",
 						"rule_name":                        "资源用例测试规则",
@@ -329,22 +329,22 @@ func TestAccAliCloudResourceManagerAutoGroupingRule_basic9958_twin(t *testing.T)
 				Config: testAccConfig(map[string]interface{}{
 					"rule_contents": []map[string]interface{}{
 						{
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******zj2ob\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r1.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 							"auto_grouping_scope_condition":   "{\\\"children\\\":[{\\\"desired\\\":\\\"name_b\\\",\\\"featurePath\\\":\\\"$.resourceName\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEqualsAny\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 						{
 							"auto_grouping_scope_condition":   "{\\\"children\\\":[{\\\"desired\\\":\\\"name_c\\\",\\\"featurePath\\\":\\\"$.resourceName\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEqualsAny\\\"}],\\\"operator\\\":\\\"and\\\"}",
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******r62ua\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r2.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 						{
 							"auto_grouping_scope_condition":   "{\\\"children\\\":[{\\\"desired\\\":\\\"name_d\\\",\\\"featurePath\\\":\\\"$.resourceName\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEqualsAny\\\"}],\\\"operator\\\":\\\"and\\\"}",
-							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"rg-aekz******4b5ea\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
+							"target_resource_group_condition": "{\\\"children\\\":[{\\\"desired\\\":\\\"${alicloud_resource_manager_resource_group.r3.id}\\\",\\\"featurePath\\\":\\\"$.resourceGroupId\\\",\\\"featureSource\\\":\\\"RESOURCE\\\",\\\"operator\\\":\\\"StringEquals\\\"}],\\\"operator\\\":\\\"and\\\"}",
 						},
 					},
 					"rule_desc":                "资源用例测试规则",
 					"rule_type":                "custom_condition",
 					"region_ids_scope":         "cn-beijing",
-					"resource_group_ids_scope": "rg-aekz******4b5ea",
+					"resource_group_ids_scope": "${alicloud_resource_manager_resource_group.r3.id}",
 					"resource_ids_scope":       "dmock-xxxx",
 					"resource_types_scope":     "ecs.instance",
 					"rule_name":                "资源用例测试规则",
@@ -355,7 +355,7 @@ func TestAccAliCloudResourceManagerAutoGroupingRule_basic9958_twin(t *testing.T)
 						"rule_desc":                "资源用例测试规则",
 						"rule_type":                "custom_condition",
 						"region_ids_scope":         "cn-beijing",
-						"resource_group_ids_scope": "rg-aekz******4b5ea",
+						"resource_group_ids_scope": CHECKSET,
 						"resource_ids_scope":       "dmock-xxxx",
 						"resource_types_scope":     "ecs.instance",
 						"rule_name":                "资源用例测试规则",
@@ -380,7 +380,18 @@ variable "name" {
     default = "%s"
 }
 
-
+resource "alicloud_resource_manager_resource_group" "r1" {
+  resource_group_name = "${var.name}-1"
+  display_name        = "${var.name}-1"
+}
+resource "alicloud_resource_manager_resource_group" "r2" {
+  resource_group_name = "${var.name}-2"
+  display_name        = "${var.name}-2"
+}
+resource "alicloud_resource_manager_resource_group" "r3" {
+  resource_group_name = "${var.name}-3"
+  display_name        = "${var.name}-3"
+}
 `, name)
 }
 
