@@ -1,6 +1,7 @@
 package connectivity
 
 import (
+	"net/http"
 	"os"
 	"sync"
 	"testing"
@@ -9,6 +10,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/stretchr/testify/assert"
 )
@@ -224,4 +227,93 @@ func TestUnitCommonWithRamClient_Proxy(t *testing.T) {
 			}
 		})
 	}
+}
+
+// otsProxyTestEndpoint mimics a cn-hangzhou TableStore data-plane endpoint.
+const otsProxyTestEndpoint = "https://my-inst.cn-hangzhou.ots.aliyuncs.com"
+
+// TestUnitGetOtsProxy verifies the OTS data-plane proxy resolution: honor HTTP(S)_PROXY,
+// skip when NO_PROXY matches, and stay direct when no proxy is configured.
+func TestUnitGetOtsProxy(t *testing.T) {
+	client := &AliyunClient{config: &Config{Protocol: "HTTPS"}}
+	cases := []struct {
+		name       string
+		httpsProxy string
+		noProxy    string
+		wantProxy  string // "" means direct (nil)
+	}{
+		{"no proxy -> direct", "", "", ""},
+		{"proxy set -> via proxy", "https://de.coia.siemens.net:9400", "", "https://de.coia.siemens.net:9400"},
+		{"no_proxy matches -> direct", "https://de.coia.siemens.net:9400", "ots.aliyuncs.com", ""},
+		{"no_proxy non-match -> via proxy", "https://de.coia.siemens.net:9400", "example.com", "https://de.coia.siemens.net:9400"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("HTTPS_PROXY", tc.httpsProxy)
+			t.Setenv("NO_PROXY", tc.noProxy)
+			proxy, err := client.getOtsProxy(otsProxyTestEndpoint)
+			assert.NoError(t, err)
+			if tc.wantProxy == "" {
+				assert.Nil(t, proxy)
+			} else {
+				assert.NotNil(t, proxy)
+				assert.Equal(t, tc.wantProxy, proxy.String())
+			}
+		})
+	}
+}
+
+// TestUnitWithTableStoreClient_Proxy verifies the table-store data-plane transport routes
+// through the proxy when set and stays direct otherwise.
+func TestUnitWithTableStoreClient_Proxy(t *testing.T) {
+	client := &AliyunClient{config: &Config{Protocol: "HTTPS"}}
+	req, _ := http.NewRequest("POST", otsProxyTestEndpoint, nil)
+
+	t.Run("with proxy", func(t *testing.T) {
+		t.Setenv("HTTPS_PROXY", "https://de.coia.siemens.net:9400")
+		t.Setenv("NO_PROXY", "")
+		cfg := tablestore.NewDefaultTableStoreConfig()
+		proxy, err := client.getOtsProxy(otsProxyTestEndpoint)
+		assert.NoError(t, err)
+		assert.NotNil(t, proxy)
+		cfg.Transport = &http.Transport{Proxy: http.ProxyURL(proxy)}
+		used, err := cfg.Transport.(*http.Transport).Proxy(req)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://de.coia.siemens.net:9400", used.String())
+	})
+
+	t.Run("without proxy -> direct", func(t *testing.T) {
+		t.Setenv("HTTPS_PROXY", "")
+		t.Setenv("NO_PROXY", "")
+		proxy, err := client.getOtsProxy(otsProxyTestEndpoint)
+		assert.NoError(t, err)
+		assert.Nil(t, proxy) // transport untouched -> SDK default direct connection
+	})
+}
+
+// TestUnitWithTableStoreTunnelClient_Proxy verifies the tunnel data-plane transport routes
+// through the proxy when set and stays on the SDK default otherwise.
+func TestUnitWithTableStoreTunnelClient_Proxy(t *testing.T) {
+	client := &AliyunClient{config: &Config{Protocol: "HTTPS"}}
+	req, _ := http.NewRequest("POST", otsProxyTestEndpoint, nil)
+
+	t.Run("with proxy", func(t *testing.T) {
+		t.Setenv("HTTPS_PROXY", "https://de.coia.siemens.net:9400")
+		t.Setenv("NO_PROXY", "")
+		proxy, err := client.getOtsProxy(otsProxyTestEndpoint)
+		assert.NoError(t, err)
+		cfg := *otsTunnel.DefaultTunnelConfig
+		cfg.Transport = &http.Transport{Proxy: http.ProxyURL(proxy)}
+		used, err := cfg.Transport.(*http.Transport).Proxy(req)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://de.coia.siemens.net:9400", used.String())
+	})
+
+	t.Run("without proxy -> direct", func(t *testing.T) {
+		t.Setenv("HTTPS_PROXY", "")
+		t.Setenv("NO_PROXY", "")
+		proxy, err := client.getOtsProxy(otsProxyTestEndpoint)
+		assert.NoError(t, err)
+		assert.Nil(t, proxy) // tunnel keeps DefaultTunnelConfig (no forced proxy)
+	})
 }

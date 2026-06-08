@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -1530,7 +1531,22 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 		externalHeaders["x-ots-sourceip"] = client.config.SourceIp
 	}
 	accessKey, secretKey, token := client.config.GetRefreshCredential()
-	tableStoreClient = tablestore.NewClientWithExternalHeader(endpoint, instanceName, accessKey, secretKey, token, tablestore.NewDefaultTableStoreConfig(), externalHeaders)
+	otsConfig := tablestore.NewDefaultTableStoreConfig()
+	// The TableStore data plane does not honor HTTP(S)_PROXY by default, so configure the proxy
+	// explicitly to keep it consistent with the OTS control plane (e.g. cross-border proxy access).
+	if proxy, err := client.getOtsProxy(endpoint); err != nil {
+		return nil, err
+	} else if proxy != nil {
+		otsConfig.Transport = &http.Transport{
+			MaxIdleConnsPerHost: otsConfig.MaxIdleConnections,
+			IdleConnTimeout:     otsConfig.IdleConnTimeout,
+			Proxy:               http.ProxyURL(proxy),
+			Dial: (&net.Dialer{
+				Timeout: otsConfig.HTTPTimeout.ConnectionTimeout,
+			}).Dial,
+		}
+	}
+	tableStoreClient = tablestore.NewClientWithExternalHeader(endpoint, instanceName, accessKey, secretKey, token, otsConfig, externalHeaders)
 	client.tablestoreconnByInstanceName[instanceName] = tableStoreClient
 
 	return do(tableStoreClient)
@@ -1564,7 +1580,17 @@ func (client *AliyunClient) WithTableStoreTunnelClient(instanceName string, do f
 		externalHeaders["x-ots-sourceip"] = client.config.SourceIp
 	}
 	accessKey, secretKey, token := client.config.GetRefreshCredential()
-	tunnelClient = otsTunnel.NewTunnelClientWithConfigAndExternalHeader(endpoint, instanceName, accessKey, secretKey, token, otsTunnel.DefaultTunnelConfig, externalHeaders)
+	tunnelConfig := otsTunnel.DefaultTunnelConfig
+	// Keep the OTS tunnel data plane consistent with the control plane by honoring the proxy,
+	// otherwise it ignores the provider proxy/HTTP(S)_PROXY and forces a direct connection.
+	if proxy, err := client.getOtsProxy(endpoint); err != nil {
+		return nil, err
+	} else if proxy != nil {
+		cfg := *otsTunnel.DefaultTunnelConfig
+		cfg.Transport = &http.Transport{Proxy: http.ProxyURL(proxy)}
+		tunnelConfig = &cfg
+	}
+	tunnelClient = otsTunnel.NewTunnelClientWithConfigAndExternalHeader(endpoint, instanceName, accessKey, secretKey, token, tunnelConfig, externalHeaders)
 	client.otsTunnelConnByInstanceName[instanceName] = tunnelClient
 
 	return do(tunnelClient)
@@ -1735,6 +1761,23 @@ func (client *AliyunClient) getTransport() *http.Transport {
 	transport.TLSHandshakeTimeout = time.Duration(handshakeTimeout) * time.Second
 
 	return transport
+}
+
+// getOtsProxy returns the proxy URL to use for an OTS data-plane endpoint, honoring the
+// HTTP(S)_PROXY env vars and NO_PROXY. It returns nil when the request should be sent direct.
+func (client *AliyunClient) getOtsProxy(endpoint string) (*url.URL, error) {
+	proxy, err := client.getHttpProxy()
+	if err != nil || proxy == nil {
+		return nil, err
+	}
+	skip, err := client.skipProxy(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	if skip {
+		return nil, nil
+	}
+	return proxy, nil
 }
 
 func (client *AliyunClient) getHttpProxy() (proxy *url.URL, err error) {
