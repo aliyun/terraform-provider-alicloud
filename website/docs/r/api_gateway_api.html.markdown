@@ -203,6 +203,11 @@ The fc_service_config mapping supports the following:
 * `only_business_path` - (Optional, Available in v1.219.0) Whether to filter path in `function_base_url`. Optional if `function_type` is `HttpTrigger`.
 * `arn_role` - (Required) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
 * `timeout` - (Required) Backend service time-out time; unit: millisecond.
+* `content_type_category` - (Optional, Computed, Available since v1.281.0) The strategy for setting the Content-Type header when calling an HTTP backend service. Valid values:
+ * `DEFAULT`: Use the default value provided by API Gateway.
+ * `CUSTOM`: Use a custom value.
+ * `CLIENT`: Use the Content-Type header from the client request.
+* `content_type_value` - (Optional, Computed, Available since v1.281.0) The value of the Content-Type header when `content_type_category` is `DEFAULT` or `CUSTOM`.
 
 ### `mock_service_config`
 

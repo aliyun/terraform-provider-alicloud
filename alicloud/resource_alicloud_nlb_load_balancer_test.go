@@ -144,13 +144,13 @@ func TestAccAliCloudNlbLoadBalancer_basic0(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbloadbalancer%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNLBLoadBalancerBasicDependence0)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -311,14 +311,14 @@ func TestAccAliCloudNlbLoadBalancer_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNLBLoadBalancerBasicDependence0)
-	resource.Test(t, resource.TestCase{
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNLBLoadBalancerBasicDependence1)
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -482,63 +482,67 @@ var AlicloudNLBLoadBalancerMap0 = map[string]string{
 
 func AlicloudNLBLoadBalancerBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-	variable "name" {
-  		default = "%s"
-	}
+variable "name" {
+  default = "%s"
+}
 
-	data "alicloud_nlb_zones" "default" {
-	}
+data "alicloud_nlb_zones" "default" {
+}
 
-	data "alicloud_resource_manager_resource_groups" "default" {
-	}
+data "alicloud_resource_manager_resource_groups" "default" {
+}
 
-	resource "alicloud_eip" "zone_a" {
-	  bandwidth            = "10"
-	  internet_charge_type = "PayByTraffic"
-	}
+resource "alicloud_eip" "zone_a" {
+  bandwidth            = "10"
+  internet_charge_type = "PayByTraffic"
+}
 
-	resource "alicloud_eip" "zone_b" {
-	  bandwidth            = "10"
-	  internet_charge_type = "PayByTraffic"
-	}
+resource "alicloud_eip" "zone_b" {
+  bandwidth            = "10"
+  internet_charge_type = "PayByTraffic"
+}
 
-	resource "alicloud_vpc" "default" {
-	  name       = var.name
-	  cidr_block = "172.16.0.0/16"
-      enable_ipv6 = true
-	}
+resource "alicloud_vpc" "default" {
+  name        = var.name
+  cidr_block  = "172.16.0.0/16"
+  enable_ipv6 = true
+}
 
-	resource "alicloud_vpc_ipv6_gateway" "default" {
-	  description       = var.name
-	  ipv6_gateway_name = var.name
-	  vpc_id            = alicloud_vpc.default.id
-	}
+resource "alicloud_vpc_ipv6_gateway" "default" {
+  description       = var.name
+  ipv6_gateway_name = var.name
+  vpc_id            = alicloud_vpc.default.id
+}
 
-	resource "alicloud_vswitch" "default" {
-	  count      = length(data.alicloud_nlb_zones.default.zones)
-	  vpc_id     = alicloud_vpc.default.id
-	  cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 3, count.index)
-	  zone_id    = data.alicloud_nlb_zones.default.zones[count.index].id
-      ipv6_cidr_block_mask = count.index + 60
-      enable_ipv6 = true
-	}
+resource "alicloud_vswitch" "default" {
+  count                = length(data.alicloud_nlb_zones.default.zones)
+  vpc_id               = alicloud_vpc.default.id
+  cidr_block           = cidrsubnet(alicloud_vpc.default.cidr_block, 3, count.index)
+  zone_id              = data.alicloud_nlb_zones.default.zones[count.index].id
+  ipv6_cidr_block_mask = count.index + 60
+  enable_ipv6          = true
+}
 
-	locals {
-  		zone_id_1    = data.alicloud_nlb_zones.default.zones.0.id
-  		vswitch_id_1 = alicloud_vswitch.default.0.id
-  		zone_id_2    = data.alicloud_nlb_zones.default.zones.1.id
-  		vswitch_id_2 = alicloud_vswitch.default.1.id
-  		zone_id_3    = data.alicloud_nlb_zones.default.zones.2.id
-  		vswitch_id_3 = alicloud_vswitch.default.2.id
-	}
+locals {
+  zone_id_1    = data.alicloud_nlb_zones.default.zones.0.id
+  vswitch_id_1 = alicloud_vswitch.default.0.id
+  zone_id_2    = data.alicloud_nlb_zones.default.zones.1.id
+  vswitch_id_2 = alicloud_vswitch.default.1.id
+  zone_id_3    = data.alicloud_nlb_zones.default.zones.2.id
+  vswitch_id_3 = alicloud_vswitch.default.2.id
+}
 
-	resource "alicloud_common_bandwidth_package" "default" {
-  		bandwidth            = 2
-  		internet_charge_type = "PayByBandwidth"
-  		name                 = "${var.name}"
-  		description          = "${var.name}_description"
-	}
+resource "alicloud_common_bandwidth_package" "default" {
+  bandwidth            = 2
+  internet_charge_type = "PayByBandwidth"
+  name                 = "${var.name}"
+  description          = "${var.name}_description"
+}
 `, name)
+}
+
+func AlicloudNLBLoadBalancerBasicDependence1(name string) string {
+	return strings.ReplaceAll(AlicloudNLBLoadBalancerBasicDependence0(name), "172.16.", "172.17.")
 }
 
 var AlicloudNLBLoadBalancerMap1 = map[string]string{
@@ -1243,14 +1247,14 @@ func TestAccAliCloudNlbLoadBalancer_basic3678(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbloadbalancer%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbLoadBalancerBasicDependence3678)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.NLBSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1649,7 +1653,7 @@ var AlicloudNlbLoadBalancerMap3678 = map[string]string{
 func AlicloudNlbLoadBalancerBasicDependence3678(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 data "alicloud_nlb_zones" "default" {
@@ -1678,20 +1682,20 @@ resource "alicloud_vswitch" "vsk" {
 }
 
 resource "alicloud_security_group" "defaultLkkjal" {
-  vpc_id              = alicloud_vpc.vpc.id
-  name = var.name
+  vpc_id = alicloud_vpc.vpc.id
+  name   = var.name
 
 }
 
 resource "alicloud_security_group" "defaultmlAdy7" {
-  vpc_id              = alicloud_vpc.vpc.id
-  name = var.name
+  vpc_id = alicloud_vpc.vpc.id
+  name   = var.name
 
 }
 
 resource "alicloud_security_group" "defaultCr6BU3" {
-  vpc_id              = alicloud_vpc.vpc.id
-  name = var.name
+  vpc_id = alicloud_vpc.vpc.id
+  name   = var.name
 
 }
 
@@ -1704,10 +1708,7 @@ resource "alicloud_vswitch" "vsg" {
   cidr_block   = "192.168.30.0/24"
   vswitch_name = var.name
 
-}
-
-
-`, name)
+}`, name)
 }
 
 // Case 3862
@@ -1723,13 +1724,13 @@ func TestAccAliCloudNlbLoadBalancer_basic3862(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbloadbalancer%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbLoadBalancerBasicDependence3862)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1899,7 +1900,7 @@ var AlicloudNlbLoadBalancerMap3862 = map[string]string{
 func AlicloudNlbLoadBalancerBasicDependence3862(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 data "alicloud_nlb_zones" "default" {
@@ -1934,10 +1935,7 @@ resource "alicloud_vswitch" "defaultkR35um" {
 resource "alicloud_common_bandwidth_package" "cbwp" {
   bandwidth            = "1000"
   internet_charge_type = "PayByBandwidth"
-}
-
-
-`, name)
+}`, name)
 }
 
 // Case 3678  twin
@@ -1952,15 +1950,15 @@ func TestAccAliCloudNlbLoadBalancer_basic3678_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbLoadBalancerBasicDependence3678)
-	resource.Test(t, resource.TestCase{
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbLoadBalancerBasicDependence3678Twin)
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.NLBSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2043,14 +2041,14 @@ func TestAccAliCloudNlbLoadBalancer_basic3862_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%snlbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbLoadBalancerBasicDependence3862)
-	resource.Test(t, resource.TestCase{
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbLoadBalancerBasicDependence3862Twin)
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2105,3 +2103,15 @@ func TestAccAliCloudNlbLoadBalancer_basic3862_twin(t *testing.T) {
 }
 
 // Test Nlb LoadBalancer. <<< Resource test cases, automatically generated.
+
+func AlicloudNlbLoadBalancerBasicDependence3678Twin(name string) string {
+	return strings.ReplaceAll(AlicloudNlbLoadBalancerBasicDependence3678(name), "192.168.", "172.18.")
+}
+
+func AlicloudNlbLoadBalancerBasicDependence3862Twin(name string) string {
+	return strings.NewReplacer(
+		"10.0.0.0/8", "10.1.0.0/16",
+		"10.0.1.0/24", "10.1.1.0/24",
+		"10.0.2.0/24", "10.1.2.0/24",
+	).Replace(AlicloudNlbLoadBalancerBasicDependence3862(name))
+}
