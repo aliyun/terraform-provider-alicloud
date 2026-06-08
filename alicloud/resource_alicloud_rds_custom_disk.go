@@ -41,7 +41,6 @@ func resourceAliCloudRdsCustomDisk() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"disk_category": {
 				Type:     schema.TypeString,
@@ -50,7 +49,6 @@ func resourceAliCloudRdsCustomDisk() *schema.Resource {
 			"disk_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
@@ -253,7 +251,41 @@ func resourceAliCloudRdsCustomDiskUpdate(d *schema.ResourceData, meta interface{
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+	update = false
+	action = "ModifyRCDiskAttribute"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DiskId"] = d.Id()
+	request["RegionId"] = client.RegionId
 
+	if !d.IsNewResource() && d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+
+	if !d.IsNewResource() && d.HasChange("disk_name") {
+		update = true
+		request["DiskName"] = d.Get("disk_name")
+	}
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
 	return resourceAliCloudRdsCustomDiskRead(d, meta)
 }
 

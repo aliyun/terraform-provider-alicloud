@@ -14,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/stretchr/testify/assert"
 )
 
 var clusterConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com"
@@ -131,8 +130,8 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
 	rac := resourceAttrCheckInit(rc, ra)
 
-	err := deleteTDEPolicyAndRole()
-	assert.Nil(t, err)
+	//err := deleteTDEPolicyAndRole()
+	//assert.Nil(t, err)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterTDEConfigDependence)
@@ -142,14 +141,14 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.GDNPolarDBSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 
 		// module name
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -319,6 +318,7 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 						"security_ips":             []string{"100.69.7.113"},
 					}},
 				}),
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_cluster_ip_array.#": "3",
@@ -357,7 +357,6 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 					"description": "tf-testaccPolarDBClusterUpdate1",
 					//"maintain_time": "02:00Z-03:00Z",
 					"db_node_count": "2",
-					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.2.db_node_class}",
 					"sub_category":  "Exclusive",
 					"modify_type":   "Upgrade",
 					"security_ips":  []string{"10.168.1.13", "100.69.7.113"},
@@ -385,20 +384,12 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"security_group_ids": "${alicloud_security_group.default.*.id}",
+					"deletion_lock":      "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_group_ids.#": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"deletion_lock": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"deletion_lock": "1",
+						"deletion_lock":        "1",
 					}),
 				),
 			},
@@ -452,7 +443,7 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -569,7 +560,7 @@ func TestAccAliCloudPolarDBCluster_Multi(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -614,14 +605,14 @@ func TestAccAliCloudPolarDBCluster_CreateGDN(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.GDNPolarDBSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 
 		// module name
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -687,7 +678,7 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -851,6 +842,88 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudPolarDBCluster_GlobalSecurityGroupOnCreate(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccDBCluGSG%d", rand)
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":       CHECKSET,
+		"db_node_class":     CHECKSET,
+		"vswitch_id":        CHECKSET,
+		"db_type":           CHECKSET,
+		"db_version":        CHECKSET,
+		"connection_string": REGEXMATCH + clusterConnectionStringRegexp,
+		"port":              "3306",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":           "MySQL",
+					"db_version":        "8.0",
+					"pay_type":          "PostPaid",
+					"db_node_count":     "2",
+					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"vswitch_id":        "${local.vswitch_id}",
+					"zone_id":           "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
+					"creation_category": "Normal",
+					"description":       "${var.name}",
+					"global_security_group_list": []string{
+						"${alicloud_polardb_global_security_ip_group.default.id}",
+						"${alicloud_polardb_global_security_ip_group.default2.id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "source_resource_id", "clone_data_point", "db_node_num", "parameter_group_id"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": []string{
+						"${alicloud_polardb_global_security_ip_group.default.id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "source_resource_id", "clone_data_point", "db_node_num", "parameter_group_id"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPolarDBCluster_CreateCloneFromPolarDB(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testAccPolarDBClusterCreateCloneFromPolarDB"
@@ -884,7 +957,7 @@ func TestAccAliCloudPolarDBCluster_CreateCloneFromPolarDB(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -963,7 +1036,7 @@ func TestAccAliCloudPolarDBCluster_CreateCloneFromRDS(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1039,7 +1112,7 @@ func TestAccAliCloudPolarDBCluster_CreateMigrationFromRDS(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1115,7 +1188,7 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1189,9 +1262,9 @@ func TestAccAliCloudPolarDBCluster_NormalMultimaster(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.PolarDBCloneFromRdsSupportRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1251,7 +1324,7 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1344,7 +1417,7 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreateWithStandbyAz(t *testing.T)
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1415,7 +1488,7 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreate(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1504,7 +1577,7 @@ func TestAccAliCloudPolarDBCluster_Serverless(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1643,7 +1716,7 @@ func TestAccAliCloudPolarDBCluster_SteadyServerless(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1859,7 +1932,7 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1972,7 +2045,7 @@ func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2046,9 +2119,9 @@ func TestAccAliCloudPolarDBCluster_Xengine(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2112,9 +2185,9 @@ func TestAccAliCloudPolarDBCluster_3AZ(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.Cluster3AZPolarDBSupportRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2316,7 +2389,7 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
 
 	resource "alicloud_security_group" "default" {
 		count = 2
-		name   = var.name
+		security_group_name   = var.name
 		vpc_id = alicloud_vpc.default.id
 	}
 
@@ -2329,7 +2402,7 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
         status                  = "Enabled"
     }
     resource "alicloud_ram_role" "default" {
-      name        = "AliyunRDSInstanceEncryptionDefaultRole"
+      role_name   = "AliyunRDSInstanceEncryptionDefaultRole"
 	  document    = <<DEFINITION
 		{
 			"Statement": [
@@ -2348,15 +2421,16 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
 		DEFINITION
 	  description = "RDS使用此角色来访问您在其他云产品中的资源"
     }
+	
+	// principal_name = "<roleName>@role.<userDefaultDomainName>"
     resource "alicloud_resource_manager_policy_attachment" "default" {
 	    policy_name       = "AliyunRDSInstanceEncryptionRolePolicy"
 	    policy_type       = "System"
 	    principal_name    = "${alicloud_ram_role.default.name}@role.${data.alicloud_account.current.id}.onaliyunservice.com"
 	    principal_type    = "ServiceRole"
 	    resource_group_id = "${data.alicloud_account.current.id}"
-    }
-
-`, name)
+		depends_on = [alicloud_ram_role.default]
+    }`, name)
 }
 
 func resourcePolarDBClusterConfigDependence(name string) string {

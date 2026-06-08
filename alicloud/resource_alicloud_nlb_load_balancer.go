@@ -508,6 +508,7 @@ func resourceAliCloudNlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 
 func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	nlbServiceV2 := NlbServiceV2{client}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
@@ -515,7 +516,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	d.Partial(true)
 
 	if d.HasChange("ipv6_address_type") {
-		nlbServiceV2 := NlbServiceV2{client}
 		object, err := nlbServiceV2.DescribeNlbLoadBalancer(d.Id())
 		if err != nil {
 			return WrapError(err)
@@ -523,8 +523,11 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 		target := d.Get("ipv6_address_type").(string)
 		if object["Ipv6AddressType"].(string) != target {
-			if target == "Intranet" {
-				action := "DisableLoadBalancerIpv6Internet"
+			action := map[string]string{
+				"Intranet": "DisableLoadBalancerIpv6Internet",
+				"Internet": "EnableLoadBalancerIpv6Internet",
+			}[target]
+			if action != "" {
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["LoadBalancerId"] = d.Id()
@@ -546,32 +549,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-
-			}
-			if target == "Internet" {
-				action := "EnableLoadBalancerIpv6Internet"
-				request = make(map[string]interface{})
-				query = make(map[string]interface{})
-				request["LoadBalancerId"] = d.Id()
-				request["RegionId"] = client.RegionId
-				request["ClientToken"] = buildClientToken(action)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
-					if err != nil {
-						if IsExpectedErrors(err, []string{"IncorrectStatus.Ipv6Gateway"}) || NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-
 			}
 		}
 	}
@@ -604,7 +581,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		nlbServiceV2 := NlbServiceV2{client}
 		stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.DescribeAsyncNlbLoadBalancerStateRefreshFunc(d, response, "$.Status", []string{}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
@@ -653,7 +629,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		nlbServiceV2 := NlbServiceV2{client}
 		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.NlbLoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -702,7 +677,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		nlbServiceV2 := NlbServiceV2{client}
 		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.NlbLoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -825,7 +799,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("tags") {
-		nlbServiceV2 := NlbServiceV2{client}
 		if err := nlbServiceV2.SetResourceTags(d, "loadbalancer"); err != nil {
 			return WrapError(err)
 		}
@@ -834,19 +807,24 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		oldEntry, newEntry := d.GetChange("security_group_ids")
 		oldEntrySet := oldEntry.(*schema.Set)
 		newEntrySet := newEntry.(*schema.Set)
-		removed := oldEntrySet.Difference(newEntrySet)
-		added := newEntrySet.Difference(oldEntrySet)
 
-		if removed.Len() > 0 {
-			action := "LoadBalancerLeaveSecurityGroup"
+		for _, op := range []struct {
+			action string
+			ids    []interface{}
+		}{
+			{"LoadBalancerLeaveSecurityGroup", oldEntrySet.Difference(newEntrySet).List()},
+			{"LoadBalancerJoinSecurityGroup", newEntrySet.Difference(oldEntrySet).List()},
+		} {
+			if len(op.ids) == 0 {
+				continue
+			}
+			action := op.action
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["LoadBalancerId"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
-			localData := removed.List()
-			securityGroupIdsMapsArray := localData
-			request["SecurityGroupIds"] = securityGroupIdsMapsArray
+			request["SecurityGroupIds"] = op.ids
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -864,51 +842,19 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			nlbServiceV2 := NlbServiceV2{client}
 			stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.DescribeAsyncNlbLoadBalancerStateRefreshFunc(d, response, "$.Status", []string{}))
 			if jobDetail, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
 			}
-
 		}
-
-		if added.Len() > 0 {
-			action := "LoadBalancerJoinSecurityGroup"
-			request = make(map[string]interface{})
-			query = make(map[string]interface{})
-			request["LoadBalancerId"] = d.Id()
-			request["RegionId"] = client.RegionId
-			request["ClientToken"] = buildClientToken(action)
-			localData := added.List()
-			securityGroupIdsMapsArray := localData
-			request["SecurityGroupIds"] = securityGroupIdsMapsArray
-
-			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = client.RpcPost("Nlb", "2022-04-30", action, query, request, true)
-				if err != nil {
-					if IsExpectedErrors(err, []string{"SystemBusy"}) || NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, request)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-			nlbServiceV2 := NlbServiceV2{client}
-			stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.DescribeAsyncNlbLoadBalancerStateRefreshFunc(d, response, "$.Status", []string{}))
-			if jobDetail, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
-			}
-
-		}
-
 	}
 	d.Partial(false)
+
+	// Wait LB out of Configuring/Provisioning before Read.
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbServiceV2.NlbLoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{"CreateFailed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return resourceAliCloudNlbLoadBalancerRead(d, meta)
 }
 

@@ -9,17 +9,19 @@ type ApiGatewayRequestConfig struct {
 }
 
 type ApiGatewayFunctionComputeConfig struct {
-	FunctionVersion  string `json:"fcVersion"`
-	FunctionType     string `json:"fcType"`
-	FunctionBaseUrl  string `json:"fcBaseUrl"`
-	Path             string `json:"path"`
-	Method           string `json:"method"`
-	OnlyBusinessPath bool   `json:"onlyBusinessPath"`
-	Qualifier        string `json:"qualifier"`
-	Region           string `json:"fcRegionId"`
-	ServiceName      string `json:"serviceName"`
-	FunctionName     string `json:"functionName"`
-	Arn              string `json:"roleArn"`
+	FunctionVersion     string `json:"fcVersion"`
+	FunctionType        string `json:"fcType"`
+	FunctionBaseUrl     string `json:"fcBaseUrl"`
+	Path                string `json:"path"`
+	Method              string `json:"method"`
+	OnlyBusinessPath    bool   `json:"onlyBusinessPath"`
+	Qualifier           string `json:"qualifier"`
+	Region              string `json:"fcRegionId"`
+	ServiceName         string `json:"serviceName"`
+	FunctionName        string `json:"functionName"`
+	Arn                 string `json:"roleArn"`
+	ContentTypeCategory string `json:"contentTypeCatagory"`
+	ContentTypeValue    string `json:"contentTypeValue"`
 }
 
 type ApiGatewayVpcConfig struct {

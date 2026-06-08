@@ -76,8 +76,7 @@ The following arguments are supported:
 
 -> **NOTE:**  When purchasing by month, the automatic renewal period is 1 month.
 When purchasing by year, the automatic renewal period is 1 year.
-* `description` - (Optional, ForceNew) The disk description. It must be 2 to 256 characters in length and cannot start with 'http:// 'or 'https.
-Default value: empty.
+* `description` - (Optional) The disk description. It must be 2 to 256 characters in length and cannot start with 'http:// 'or 'https. From version 1.281.0, `description` can be modified.
 * `disk_category` - (Required) The type of the data disk. Value range:
   - `cloud` (default): a normal cloud disk.
   - `cloud_efficiency`: The ultra cloud disk.
@@ -87,8 +86,7 @@ Default value: empty.
   - `Cloud_essd_entry`: the ESSD Entry disk.
   - `Elastic_ephemeral_disk_standard`: Elastic temporary disk-standard version.
   - `Elastic_ephemeral_disk_premium`: Elastic temporary disk-Pro version.
-* `disk_name` - (Optional, ForceNew) The disk name. It can be 2 to 128 characters in length. It supports letters in Unicode (including English, Chinese, and numbers). Can contain a colon (:), an underscore (_), a period (.), or a dash (-).
-Default value: empty.
+* `disk_name` - (Optional) The disk name. It can be 2 to 128 characters in length. It supports letters in Unicode (including English, Chinese, and numbers). Can contain a colon (:), an underscore (_), a period (.), or a dash (-). From version 1.281.0, `disk_name` can be modified.
 * `dry_run` - (Optional) Whether to pre-check the instance creation operation. Valid values:
   - `true`: The PreCheck operation is performed without creating an instance. Check items include request parameters, request formats, business restrictions, and inventory.
   - `false` (default): Sends a normal request and directly creates an instance after the check is passed.
