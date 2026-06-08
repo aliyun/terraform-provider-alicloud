@@ -1,22 +1,23 @@
-## 1.281.0 (Unreleased)
+## 1.282.0 (Unreleased)
+## 1.281.0 (June 08, 2026)
 
-- **New Resource:** `alicloud_cms_agg_task_group` [GH-9810]
+- **New Resource:** `alicloud_cms_agg_task_group` ([#9810](https://github.com/aliyun/terraform-provider-alicloud/issues/9810))
 
 ENHANCEMENTS:
 
-- resource/alicloud_esa_custom_scene_policy: Added the field start_time; Deprecated the field create_time; Improved alicloud_esa_custom_scene_policy testcase. [GH-9770]
-- resource/alicloud_ddoscoo_domain_resource: Added the field custom_ciphers, ssl13_enabled, ssl_ciphers, ssl_protocols, tls13_custom_ciphers. [GH-9807]
-- resource/alicloud_vswitch: require ipv6_cidr_block_mask when enabling enable_ipv6. [GH-9813]
-- resource/alicloud_esa_client_ca_certificate: Added the field client_ca_certificate_hostnames. [GH-9814]
-- resource/alicloud_nlb_load_balancer: Add refresh at the end of Update. [GH-9819]
-- resource/alicloud_rds_custom_disk: Removed the ForceNew for field description, disk_name. [GH-9820]
-- resource/alicloud_api_gateway_api: Add support for fc_service_config.content_type_category and fc_service_config.content_type_value. [GH-9821]
-- data-source/alicloud_threat_detection_check_structures: refactor data-source/alicloud_threat_detection_check_item_configs: refactor data soruce. [GH-9812]
-- docs: Improved the document redis_tair_instance. [GH-9811]
+- resource/alicloud_esa_custom_scene_policy: Added the field start_time; Deprecated the field create_time; Improved alicloud_esa_custom_scene_policy testcase. ([#9770](https://github.com/aliyun/terraform-provider-alicloud/issues/9770))
+- resource/alicloud_ddoscoo_domain_resource: Added the field custom_ciphers, ssl13_enabled, ssl_ciphers, ssl_protocols, tls13_custom_ciphers. ([#9807](https://github.com/aliyun/terraform-provider-alicloud/issues/9807))
+- resource/alicloud_vswitch: require ipv6_cidr_block_mask when enabling enable_ipv6. ([#9813](https://github.com/aliyun/terraform-provider-alicloud/issues/9813))
+- resource/alicloud_esa_client_ca_certificate: Added the field client_ca_certificate_hostnames. ([#9814](https://github.com/aliyun/terraform-provider-alicloud/issues/9814))
+- resource/alicloud_nlb_load_balancer: Add refresh at the end of Update. ([#9819](https://github.com/aliyun/terraform-provider-alicloud/issues/9819))
+- resource/alicloud_rds_custom_disk: Removed the ForceNew for field description, disk_name. ([#9820](https://github.com/aliyun/terraform-provider-alicloud/issues/9820))
+- resource/alicloud_api_gateway_api: Add support for fc_service_config.content_type_category and fc_service_config.content_type_value. ([#9821](https://github.com/aliyun/terraform-provider-alicloud/issues/9821))
+- data-source/alicloud_threat_detection_check_structures: refactor data-source/alicloud_threat_detection_check_item_configs: refactor data soruce. ([#9812](https://github.com/aliyun/terraform-provider-alicloud/issues/9812))
+- docs: Improved the document redis_tair_instance. ([#9811](https://github.com/aliyun/terraform-provider-alicloud/issues/9811))
 
 BUG FIXES:
 
-- resource/alicloud_polardb_cluster: fix global_security_group_list not set on the first apply. [GH-9817]
+- resource/alicloud_polardb_cluster: fix global_security_group_list not set on the first apply. ([#9817](https://github.com/aliyun/terraform-provider-alicloud/issues/9817))
 
 ## 1.280.0 (June 01, 2026)
 
@@ -45,7 +46,7 @@ ENHANCEMENTS:
 BUG FIXES:
 
 - resource/alicloud_vswitch: fix ipv6_cidr_block_mask sending Ipv6CidrBlock=0 on removal. ([#9806](https://github.com/aliyun/terraform-provider-alicloud/issues/9806))
-- testcase: fix CloudStorageGateway GatewayCacheDisk regression. [GH-9765]
+- testcase: fix CloudStorageGateway GatewayCacheDisk regression. ([#9765](https://github.com/aliyun/terraform-provider-alicloud/issues/9765))
 
 ## 1.279.0 (May 22, 2026)
 
