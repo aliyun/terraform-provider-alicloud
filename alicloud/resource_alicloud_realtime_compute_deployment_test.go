@@ -54,7 +54,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11896(t *testing.T) {
 					},
 					"deployment_name": name,
 					"description":     "This is a test deployment.",
-					"engine_version":  "vvr-8.0.10-flink-1.17",
+					"engine_version":  "vvr-8.0.11-flink-1.17",
 					"local_variables": []map[string]interface{}{
 						{
 							"value": "value",
@@ -120,7 +120,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11896(t *testing.T) {
 					testAccCheck(map[string]string{
 						"deployment_name":   name,
 						"description":       "This is a test deployment.",
-						"engine_version":    "vvr-8.0.10-flink-1.17",
+						"engine_version":    "vvr-8.0.11-flink-1.17",
 						"local_variables.#": "1",
 						"execution_mode":    "STREAMING",
 						"namespace":         CHECKSET,
@@ -149,7 +149,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11896(t *testing.T) {
 					},
 					"deployment_name": name + "_update",
 					"description":     "This is a test deployment 2.",
-					"engine_version":  "vvr-8.0.10-flink-1.17",
+					"engine_version":  "vvr-8.0.11-flink-1.17",
 					"local_variables": []map[string]interface{}{
 						{
 							"value": "value1",
@@ -207,7 +207,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11896(t *testing.T) {
 					testAccCheck(map[string]string{
 						"deployment_name":   name + "_update",
 						"description":       "This is a test deployment 2.",
-						"engine_version":    "vvr-8.0.10-flink-1.17",
+						"engine_version":    "vvr-8.0.11-flink-1.17",
 						"local_variables.#": "2",
 					}),
 				),
@@ -284,7 +284,7 @@ resource "alicloud_oss_bucket" "create_bucket" {
 }
 
 resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
-  vvp_instance_name = "code-test-tf-deployment"
+  vvp_instance_name = "${var.name}"
   storage {
     oss {
       bucket = alicloud_oss_bucket.create_bucket.id
@@ -347,7 +347,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11895(t *testing.T) {
 					},
 					"deployment_name": name,
 					"description":     "This is a test deployment.",
-					"engine_version":  "vvr-8.0.10-flink-1.17",
+					"engine_version":  "vvr-8.0.11-flink-1.17",
 					"local_variables": []map[string]interface{}{
 						{
 							"value": "value",
@@ -413,7 +413,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11895(t *testing.T) {
 					testAccCheck(map[string]string{
 						"deployment_name":   name,
 						"description":       "This is a test deployment.",
-						"engine_version":    "vvr-8.0.10-flink-1.17",
+						"engine_version":    "vvr-8.0.11-flink-1.17",
 						"local_variables.#": "1",
 						"execution_mode":    "STREAMING",
 						"namespace":         CHECKSET,
@@ -441,7 +441,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11895(t *testing.T) {
 					},
 					"deployment_name": name + "_update",
 					"description":     "This is a test deployment 2.",
-					"engine_version":  "vvr-8.0.10-flink-1.17",
+					"engine_version":  "vvr-8.0.11-flink-1.17",
 					"local_variables": []map[string]interface{}{
 						{
 							"value": "value1",
@@ -499,7 +499,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11895(t *testing.T) {
 					testAccCheck(map[string]string{
 						"deployment_name":   name + "_update",
 						"description":       "This is a test deployment 2.",
-						"engine_version":    "vvr-8.0.10-flink-1.17",
+						"engine_version":    "vvr-8.0.11-flink-1.17",
 						"local_variables.#": "2",
 					}),
 				),
@@ -576,7 +576,7 @@ resource "alicloud_oss_bucket" "create_bucket" {
 }
 
 resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
-  vvp_instance_name = "code-test-tf-deployment"
+  vvp_instance_name = "${var.name}"
   storage {
     oss {
       bucket = alicloud_oss_bucket.create_bucket.id
@@ -621,7 +621,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11872(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"deployment_name": name,
-					"engine_version":  "vvr-8.0.10-flink-1.17",
+					"engine_version":  "vvr-8.0.11-flink-1.17",
 					"resource_id":     "${alicloud_realtime_compute_vvp_instance.create_VvpInstance.resource_id}",
 					"execution_mode":  "STREAMING",
 					"deployment_target": []map[string]interface{}{
@@ -653,7 +653,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11872(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deployment_name": name,
-						"engine_version":  "vvr-8.0.10-flink-1.17",
+						"engine_version":  "vvr-8.0.11-flink-1.17",
 						"execution_mode":  "STREAMING",
 					}),
 				),
@@ -743,7 +743,7 @@ resource "alicloud_oss_bucket" "create_bucket4" {
 }
 
 resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
-  vvp_instance_name = "code-test-tf-deployment"
+  vvp_instance_name = "${var.name}"
   storage {
     oss {
       bucket = alicloud_oss_bucket.create_bucket4.id
@@ -789,7 +789,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11873(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"deployment_name": name,
 					"description":     "This is a test deployment.",
-					"engine_version":  "vvr-8.0.10-flink-1.17",
+					"engine_version":  "vvr-8.0.11-flink-1.17",
 					"resource_id":     "${alicloud_realtime_compute_vvp_instance.create_VvpInstance.resource_id}",
 					"execution_mode":  "STREAMING",
 					"deployment_target": []map[string]interface{}{
@@ -832,7 +832,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11873(t *testing.T) {
 					testAccCheck(map[string]string{
 						"deployment_name": name,
 						"description":     "This is a test deployment.",
-						"engine_version":  "vvr-8.0.10-flink-1.17",
+						"engine_version":  "vvr-8.0.11-flink-1.17",
 						"execution_mode":  "STREAMING",
 					}),
 				),
@@ -904,7 +904,7 @@ resource "alicloud_oss_bucket" "create_bucket2" {
 }
 
 resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
-  vvp_instance_name = "code-test-tf-deployment"
+  vvp_instance_name = "${var.name}"
   storage {
     oss {
       bucket = alicloud_oss_bucket.create_bucket2.id
@@ -950,7 +950,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11870(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"deployment_name": name,
 					"description":     "This is a test deployment.",
-					"engine_version":  "vvr-8.0.10-flink-1.17",
+					"engine_version":  "vvr-8.0.11-flink-1.17",
 					"resource_id":     "${alicloud_realtime_compute_vvp_instance.create_VvpInstance.resource_id}",
 					"batch_resource_setting": []map[string]interface{}{
 						{
@@ -999,7 +999,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11870(t *testing.T) {
 					testAccCheck(map[string]string{
 						"deployment_name": name,
 						"description":     "This is a test deployment.",
-						"engine_version":  "vvr-8.0.10-flink-1.17",
+						"engine_version":  "vvr-8.0.11-flink-1.17",
 						"execution_mode":  "BATCH",
 					}),
 				),
@@ -1071,7 +1071,7 @@ resource "alicloud_oss_bucket" "create_bucket1" {
 }
 
 resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
-  vvp_instance_name = "code-test-tf-deployment"
+  vvp_instance_name = "${var.name}"
   storage {
     oss {
       bucket = alicloud_oss_bucket.create_bucket1.id
@@ -1137,7 +1137,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11871(t *testing.T) {
 						},
 					},
 					"deployment_name": name,
-					"engine_version":  "vvr-8.0.10-flink-1.17",
+					"engine_version":  "vvr-8.0.11-flink-1.17",
 					"resource_id":     "${alicloud_realtime_compute_vvp_instance.create_VvpInstance.resource_id}",
 					"execution_mode":  "STREAMING",
 					"deployment_target": []map[string]interface{}{
@@ -1165,7 +1165,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11871(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deployment_name": name,
-						"engine_version":  "vvr-8.0.10-flink-1.17",
+						"engine_version":  "vvr-8.0.11-flink-1.17",
 						"execution_mode":  "STREAMING",
 					}),
 				),
@@ -1265,7 +1265,7 @@ resource "alicloud_oss_bucket" "create_bucket3" {
 }
 
 resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
-  vvp_instance_name = "code-test-tf-deployment"
+  vvp_instance_name = "${var.name}"
   storage {
     oss {
       bucket = alicloud_oss_bucket.create_bucket3.id
@@ -1332,7 +1332,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11869(t *testing.T) {
 						},
 					},
 					"deployment_name": name,
-					"engine_version":  "vvr-8.0.10-flink-1.17",
+					"engine_version":  "vvr-8.0.11-flink-1.17",
 					"resource_id":     "${alicloud_realtime_compute_vvp_instance.create_VvpInstance.resource_id}",
 					"execution_mode":  "STREAMING",
 					"deployment_target": []map[string]interface{}{
@@ -1360,7 +1360,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11869(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deployment_name": name,
-						"engine_version":  "vvr-8.0.10-flink-1.17",
+						"engine_version":  "vvr-8.0.11-flink-1.17",
 						"execution_mode":  "STREAMING",
 					}),
 				),
@@ -1478,7 +1478,7 @@ resource "alicloud_oss_bucket" "create_bucket3" {
 }
 
 resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
-  vvp_instance_name = "code-test-tf-deployment"
+  vvp_instance_name = "${var.name}"
   storage {
     oss {
       bucket = alicloud_oss_bucket.create_bucket3.id
