@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudSLBAclEntryAttachment_basic0(t *testing.T) {
+func TestAccAliCloudSLBAclEntryAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_acl_entry_attachment.default"
 	ra := resourceAttrInit(resourceId, nil)

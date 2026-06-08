@@ -113,7 +113,7 @@ func testSweepSlbCACertificate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSLBCACertificate_basic(t *testing.T) {
+func TestAccAliCloudSLBCACertificate_basic(t *testing.T) {
 	var sc *slb.CACertificate
 	resourceId := "alicloud_slb_ca_certificate.default"
 	ra := resourceAttrInit(resourceId, ca_certificateMap)
@@ -199,7 +199,7 @@ func TestAccAlicloudSLBCACertificate_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBCACertificate_multi(t *testing.T) {
+func TestAccAliCloudSLBCACertificate_multi(t *testing.T) {
 	var sc *slb.CACertificate
 	resourceId := "alicloud_slb_ca_certificate.default.9"
 	ra := resourceAttrInit(resourceId, ca_certificateMap)
@@ -235,7 +235,7 @@ func TestAccAlicloudSLBCACertificate_multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBCACertificate_basic1(t *testing.T) {
+func TestAccAliCloudSLBCACertificate_basic1(t *testing.T) {
 	var sc *slb.CACertificate
 	resourceId := "alicloud_slb_ca_certificate.default"
 	ra := resourceAttrInit(resourceId, ca_certificateMap)
