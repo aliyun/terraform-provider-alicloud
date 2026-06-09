@@ -76,7 +76,7 @@ func testSweepAlidnsDomainGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudAlidnsDomainGroup_basic(t *testing.T) {
+func TestAccAliCloudAlidnsDomainGroup_basic(t *testing.T) {
 	var v alidns.DomainGroup
 	resourceId := "alicloud_alidns_domain_group.default"
 	ra := resourceAttrInit(resourceId, AlidnsDomainGroupMap)
@@ -93,9 +93,9 @@ func TestAccAlicloudAlidnsDomainGroup_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
