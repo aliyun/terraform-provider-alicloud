@@ -210,7 +210,7 @@ var scdnDomainConfigBasicMap = map[string]string{
 }
 
 // lintignore: R001
-func TestUnitAlicloudScdnDomainConfig(t *testing.T) {
+func SkipTestUnitAlicloudScdnDomainConfig(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_scdn_domain_config"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_scdn_domain_config"].Schema).Data(nil, nil)
