@@ -200,6 +200,185 @@ func TestAccAliCloudEssNotification_timeZone1(t *testing.T) {
 
 }
 
+func TestAccAliCloudEssNotification_mns_messageEncodingCreate(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.NotificationConfigurationModel
+	resourceId := "alicloud_ess_notification.default"
+
+	basicMap := map[string]string{
+		"notification_types.#": "2",
+		"scaling_group_id":     CHECKSET,
+		"notification_arn":     CHECKSET,
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	name := fmt.Sprintf("tf-testAccEssNotificationTimeZone-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssNotification)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssNotificationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":   "${alicloud_ess_scaling_group.default.id}",
+					"notification_types": []string{"AUTOSCALING:SCALE_OUT_SUCCESS", "AUTOSCALING:SCALE_OUT_ERROR"},
+					"notification_arn":   "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}",
+					"time_zone":          "UTC+8",
+					"message_encoding":   "PlainText",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_zone":        "UTC-7",
+					"message_encoding": "Base64",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_zone":        "UTC-7",
+						"message_encoding": "Base64",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudEssNotification_mns_messageEncodingUpdate(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.NotificationConfigurationModel
+	resourceId := "alicloud_ess_notification.default"
+
+	basicMap := map[string]string{
+		"notification_types.#": "2",
+		"scaling_group_id":     CHECKSET,
+		"notification_arn":     CHECKSET,
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	name := fmt.Sprintf("tf-testAccEssNotificationmessageEncodingUpdate-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssNotification)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssNotificationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":   "${alicloud_ess_scaling_group.default.id}",
+					"notification_types": []string{"AUTOSCALING:SCALE_OUT_SUCCESS", "AUTOSCALING:SCALE_OUT_ERROR"},
+					"notification_arn":   "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}",
+					"time_zone":          "UTC+8",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_zone":        "UTC-7",
+					"message_encoding": "Base64",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_zone":        "UTC-7",
+						"message_encoding": "Base64",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudEssNotification_cms(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.NotificationConfigurationModel
+	resourceId := "alicloud_ess_notification.default"
+
+	basicMap := map[string]string{
+		"notification_types.#": "2",
+		"scaling_group_id":     CHECKSET,
+		"notification_arn":     CHECKSET,
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	name := fmt.Sprintf("tf-testAccEssNotificationTimeCms-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssNotification)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssNotificationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":   "${alicloud_ess_scaling_group.default.id}",
+					"notification_types": []string{"AUTOSCALING:SCALE_OUT_SUCCESS", "AUTOSCALING:SCALE_OUT_ERROR"},
+					"notification_arn":   "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:cloudmonitor",
+					"time_zone":          "UTC+8",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_zone": "UTC-7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_zone": "UTC-7",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
+
 func testAccCheckEssNotificationDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	essService := EssService{client}
@@ -228,7 +407,7 @@ func testAccEssNotification(common string) string {
 		default = "%s"
 	}
 	variable "newname" {
-		default = "newnameN"
+		default = "newnameNotification"
 	}
     resource "alicloud_mns_queue" "default1"{
 		name="${var.newname}"
