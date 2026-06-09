@@ -35,19 +35,18 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-resource "alicloud_esa_routine" "default" {
-  description = "example-routine2"
-  name        = "example-routine2"
-}
-
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
+}
+
+resource "alicloud_esa_routine" "default" {
+  name = var.name
 }
 
 resource "alicloud_esa_routine_related_record" "default" {
   name        = alicloud_esa_routine.default.id
   record_name = "tfexampleacc.com"
-  site_id     = "618651327383200"
+  site_id     = data.alicloud_esa_sites.default.sites.0.id
 }
 ```
 
@@ -56,6 +55,7 @@ resource "alicloud_esa_routine_related_record" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `name` - (Required, ForceNew) The routine name.
 * `record_name` - (Required, ForceNew) The record name.
 * `site_id` - (Required, ForceNew) The website ID.
@@ -63,8 +63,10 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<name>:<record_id>`.
+
+* `id` - The resource ID in terraform of Routine Related Record. It formats as `<name>:<record_id>`.
 * `record_id` - The record ID.
+* `site_name` - (Available since v1.282.0) site name.
 
 ## Timeouts
 
