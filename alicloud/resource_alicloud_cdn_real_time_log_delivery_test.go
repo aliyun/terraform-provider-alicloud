@@ -42,14 +42,14 @@ func TestAccAliCloudCDNRealTimeLogDelivery_basic0(t *testing.T) {
 					"domain":     "${alicloud_cdn_domain_new.default.domain_name}",
 					"project":    "${alicloud_log_project.default.name}",
 					"logstore":   "${alicloud_log_store.default.name}",
-					"sls_region": defaultRegionToTest,
+					"sls_region": "${data.alicloud_regions.default.regions.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain":     CHECKSET,
 						"project":    name,
 						"logstore":   name,
-						"sls_region": defaultRegionToTest,
+						"sls_region": CHECKSET,
 					}),
 				),
 			},
@@ -68,6 +68,9 @@ func AlicloudCDNRealTimeLogDeliveryBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
+}
+data "alicloud_regions" "default" {
+  current = true
 }
 resource "alicloud_cdn_domain_new" "default" {
   domain_name = "%s"
@@ -93,7 +96,7 @@ resource "alicloud_log_store" "default" {
   max_split_shard_count = 60
   append_meta           = true
 }
-`, name, fmt.Sprintf("%s.example.com", name))
+`, name, fmt.Sprintf("%s.alicloud-provider.cn", name))
 }
 
 // lintignore: R001
@@ -326,7 +329,7 @@ func TestAccAliCloudCdnRealTimeLogDelivery_basic9189_modify(t *testing.T) {
 					"project":    "${alicloud_log_project.slsPoject.name}",
 					"logstore":   "${alicloud_log_store.logstore.name}",
 					"domain":     "${alicloud_cdn_domain_new.domain.domain_name}",
-					"sls_region": defaultRegionToTest,
+					"sls_region": "${data.alicloud_regions.current_regions.regions.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -404,7 +407,7 @@ resource "alicloud_log_store" "logstore" {
 }
 
 resource "alicloud_cdn_domain_new" "domain" {
-  domain_name = format("%%s.example.com", var.name)
+  domain_name = format("%%s.alicloud-provider.cn", var.name)
   cdn_type = "web"
   scope = "overseas"
   sources {
