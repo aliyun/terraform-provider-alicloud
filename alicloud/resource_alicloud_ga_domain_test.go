@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudGaDomain_basic2188(t *testing.T) {
+func TestAccAliCloudGaDomain_basic2188(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ga_domain.default"
 	ra := resourceAttrInit(resourceId, AlicloudGaDomainMap2188)
@@ -26,9 +26,9 @@ func TestAccAlicloudGaDomain_basic2188(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
