@@ -1185,7 +1185,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("sql_collector_status")
 	}
 
-	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") && d.Get("engine").(string) == string(MySQL) {
+	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") {
 		action := "ModifySQLCollectorRetention"
 		request := map[string]interface{}{
 			"RegionId":     client.RegionId,
@@ -1869,6 +1869,31 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		if d.HasChange("optimized_writes") {
+			expected := d.Get("optimized_writes").(string)
+			stateConf := &resource.StateChangeConf{
+				Pending: []string{},
+				Target:  []string{expected},
+				Refresh: func() (interface{}, string, error) {
+					object, err := rdsService.DescribeDBInstance(d.Id())
+					if err != nil {
+						return nil, "", WrapError(err)
+					}
+					actual := ""
+					if v, ok := object["OptimizedWritesInfo"]; ok {
+						actual = ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(v))
+					}
+					return object, actual, nil
+				},
+				Timeout:    d.Timeout(schema.TimeoutUpdate),
+				Delay:      5 * time.Second,
+				MinTimeout: 3 * time.Second,
+			}
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 	}
 
