@@ -775,7 +775,6 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 					"security_groups":            []string{"${alicloud_security_group.default.0.id}"},
 					"instance_name":              name,
 					"description":                name,
-					"internet_max_bandwidth_out": "0",
 					"host_name":                  REMOVEKEY,
 					"password":                   REMOVEKEY,
 					// "credit_specification":       "Standard",
@@ -823,11 +822,11 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 						// "credit_specification": "Standard",
 
 						"private_ip": CHECKSET,
-						"public_ip":  "",
+						"public_ip":  CHECKSET,
 						"status":     "Running",
 
 						"internet_charge_type":       string(PayByBandwidth),
-						"internet_max_bandwidth_out": "0",
+						"internet_max_bandwidth_out": "50",
 
 						"deletion_protection": "false",
 					}),
