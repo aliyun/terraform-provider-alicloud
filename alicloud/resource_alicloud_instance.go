@@ -1002,12 +1002,14 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 				disksMap["Device"] = device
 			}
 
-			if device, ok := item["provisioned_iops"].(string); ok && disksMap["Category"] == string(DiskCloudAuto) {
-				disksMap["ProvisionedIops"] = device
-			}
+			if disksMap["Category"] == string(DiskCloudAuto) {
+				if v, ok := item["provisioned_iops"]; ok {
+					disksMap["ProvisionedIops"] = v.(int)
+				}
 
-			if device, ok := item["bursting_enabled"].(string); ok && disksMap["Category"] == string(DiskCloudAuto) {
-				disksMap["BurstingEnabled"] = device
+				if v, ok := item["bursting_enabled"]; ok {
+					disksMap["BurstingEnabled"] = v.(bool)
+				}
 			}
 
 			if performanceLevel, ok := item["performance_level"].(string); ok && performanceLevel != "" && disksMap["Category"] == string(DiskCloudESSD) {
@@ -1270,32 +1272,32 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	disk, err := ecsService.DescribeEcsSystemDisk(d.Id())
+	sysDisk, err := ecsService.DescribeEcsSystemDisk(d.Id())
 	if err != nil {
-		// if old resource happenes an not found error, there may system has been detached
+		// if old resource happens a not found error, the system disk my have been detached
 		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[WARNING] describing instance %s system disk failed. Error: %v", d.Id(), err)
 		} else {
 			return WrapError(err)
 		}
 	} else {
-		d.Set("system_disk_category", disk["Category"])
-		d.Set("system_disk_name", disk["DiskName"])
-		d.Set("system_disk_description", disk["Description"])
-		d.Set("system_disk_size", disk["Size"])
-		d.Set("system_disk_auto_snapshot_policy_id", disk["AutoSnapshotPolicyId"])
-		d.Set("system_disk_storage_cluster_id", disk["StorageClusterId"])
-		d.Set("system_disk_encrypted", disk["Encrypted"])
-		d.Set("system_disk_kms_key_id", disk["KMSKeyId"])
-		d.Set("system_disk_provisioned_iops", disk["ProvisionedIops"])
-		d.Set("system_disk_id", disk["DiskId"])
-		d.Set("system_disk_performance_level", disk["PerformanceLevel"])
+		d.Set("system_disk_category", sysDisk["Category"])
+		d.Set("system_disk_name", sysDisk["DiskName"])
+		d.Set("system_disk_description", sysDisk["Description"])
+		d.Set("system_disk_size", sysDisk["Size"])
+		d.Set("system_disk_auto_snapshot_policy_id", sysDisk["AutoSnapshotPolicyId"])
+		d.Set("system_disk_storage_cluster_id", sysDisk["StorageClusterId"])
+		d.Set("system_disk_encrypted", sysDisk["Encrypted"])
+		d.Set("system_disk_kms_key_id", sysDisk["KMSKeyId"])
+		d.Set("system_disk_provisioned_iops", sysDisk["ProvisionedIops"])
+		d.Set("system_disk_id", sysDisk["DiskId"])
+		d.Set("system_disk_performance_level", sysDisk["PerformanceLevel"])
 
-		if disk["BurstingEnabled"] != nil {
-			d.Set("system_disk_bursting_enabled", disk["BurstingEnabled"])
+		if sysDisk["BurstingEnabled"] != nil {
+			d.Set("system_disk_bursting_enabled", sysDisk["BurstingEnabled"])
 		}
 
-		if v, ok := disk["Tags"].(map[string]interface{}); ok {
+		if v, ok := sysDisk["Tags"].(map[string]interface{}); ok {
 			d.Set("volume_tags", tagsToMap(v["Tag"]))
 		}
 	}
