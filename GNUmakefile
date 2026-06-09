@@ -10,7 +10,7 @@ tools:
 	@echo "==> installing required tooling..."
 	go install golang.org/x/tools/cmd/goimports@latest
 	go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@latest
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH || $$GOPATH)/bin v2.7.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH || $$GOPATH)/bin v2.12.2
 
 default: build
 
