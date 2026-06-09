@@ -266,7 +266,7 @@ func resourceAliCloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 
 	var funArgs []map[string]string
 	ignoreFunctionArg := []string{"aliyun_id", "scheme_origin_port", "dsl", "session_timeout",
-		"oss_pri_buckets", "private_oss_tbl", "cert", "cert_name",
+		"oss_pri_buckets", "private_oss_tbl", "private_oss_ram_unauthorized", "cert", "cert_name",
 		"cert_type", "https", "dkey", "pkey"}
 
 	for _, k := range args {
