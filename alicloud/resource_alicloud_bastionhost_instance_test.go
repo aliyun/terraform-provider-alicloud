@@ -67,7 +67,7 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_update",
+					"description": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -77,7 +77,7 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
+					"description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -178,6 +178,36 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 						"renew_period":        "2",
 						"renewal_period_unit": "M",
 						"renewal_status":      "AutoRenewal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_period_unit": "Y",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_period_unit": "Y",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renew_period": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renew_period": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_period_unit": "M",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_period_unit": "M",
 					}),
 				),
 			},

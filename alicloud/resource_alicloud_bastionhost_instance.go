@@ -710,9 +710,9 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 
 	if !d.IsNewResource() && d.HasChange("renew_period") {
 		update = true
-		if v, ok := d.GetOk("renew_period"); ok {
-			setRenewalReq["RenewalPeriod"] = v
-		}
+	}
+	if v, ok := d.GetOk("renew_period"); ok {
+		setRenewalReq["RenewalPeriod"] = v
 	}
 
 	if d.HasChange("renewal_period_unit") {
