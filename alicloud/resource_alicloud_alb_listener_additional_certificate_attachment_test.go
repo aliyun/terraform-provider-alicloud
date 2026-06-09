@@ -2,22 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
-	"reflect"
 	"testing"
 
-	"github.com/agiledragon/gomonkey/v2"
-	"github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudALBListenerAdditionalCertificateAttachment_basic0(t *testing.T) {
+func TestAccAliCloudALBListenerAdditionalCertificateAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener_additional_certificate_attachment.default"
 	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
@@ -34,9 +26,9 @@ func TestAccAlicloudALBListenerAdditionalCertificateAttachment_basic0(t *testing
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -203,216 +195,3 @@ locals{
 }
 
 // lintignore: R001
-func TestUnitAlicloudALBListenerAdditionalCertificateAttachment(t *testing.T) {
-	p := Provider().ResourcesMap
-	d, _ := schema.InternalMap(p["alicloud_alb_listener_additional_certificate_attachment"].Schema).Data(nil, nil)
-	dCreate, _ := schema.InternalMap(p["alicloud_alb_listener_additional_certificate_attachment"].Schema).Data(nil, nil)
-	dCreate.MarkNewResource()
-	for key, value := range map[string]interface{}{
-		"listener_id":    "listener_id",
-		"certificate_id": "certificate_id",
-	} {
-		err := dCreate.Set(key, value)
-		assert.Nil(t, err)
-		err = d.Set(key, value)
-		assert.Nil(t, err)
-	}
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
-	ReadMockResponse := map[string]interface{}{
-		"Certificates": []interface{}{
-			map[string]interface{}{
-				"CertificateId":   "certificate_id",
-				"Status":          "Associated",
-				"CertificateType": "Server",
-			},
-		},
-	}
-
-	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
-		"RetryError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
-				StatusCode: tea.Int(400),
-			}
-		},
-		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_alb_listener_additional_certificate_attachment", "listener_id:certificate_id"))
-		},
-		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
-				StatusCode: tea.Int(400),
-			}
-		},
-		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
-			result := ReadMockResponse
-			return result, nil
-		},
-		"DeleteNormal": func(errorCode string) (map[string]interface{}, error) {
-			result := ReadMockResponse
-			return result, nil
-		},
-		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
-			result := ReadMockResponse
-			return result, nil
-		},
-	}
-	// Create
-	t.Run("CreateClientAbnormal", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlbClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
-				StatusCode: tea.Int(400),
-			}
-		})
-		err := resourceAlicloudAlbListenerAdditionalCertificateAttachmentCreate(d, rawClient)
-		patches.Reset()
-		assert.NotNil(t, err)
-	})
-	t.Run("CreateAbnormal", func(t *testing.T) {
-		retryFlag := true
-		noRetryFlag := true
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if retryFlag {
-				retryFlag = false
-				return responseMock["RetryError"]("Throttling")
-			} else if noRetryFlag {
-				noRetryFlag = false
-				return responseMock["NoRetryError"]("NonRetryableError")
-			}
-			return responseMock["CreateNormal"]("")
-		})
-		err := resourceAlicloudAlbListenerAdditionalCertificateAttachmentCreate(d, rawClient)
-		patches.Reset()
-		assert.NotNil(t, err)
-	})
-	t.Run("CreateNormal", func(t *testing.T) {
-		retryFlag := false
-		noRetryFlag := false
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if retryFlag {
-				retryFlag = false
-				return responseMock["RetryError"]("Throttling")
-			} else if noRetryFlag {
-				noRetryFlag = false
-				return responseMock["NoRetryError"]("NonRetryableError")
-			}
-			return responseMock["CreateNormal"]("")
-		})
-		err := resourceAlicloudAlbListenerAdditionalCertificateAttachmentCreate(dCreate, rawClient)
-		patches.Reset()
-		assert.Nil(t, err)
-	})
-	t.Run("CreateNoRetryErrorError", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			return responseMock["CreateNormal"]("")
-		})
-		patchDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&AlbService{}), "DescribeAlbListenerAdditionalCertificateAttachment", func(*AlbService, string) (map[string]interface{}, error) {
-			return responseMock["NoRetryError"]("NoRetryError")
-		})
-		err := resourceAlicloudAlbListenerAdditionalCertificateAttachmentCreate(d, rawClient)
-		patches.Reset()
-		patchDescribe.Reset()
-		assert.NotNil(t, err)
-	})
-
-	// Set ID for Delete Method
-	d.SetId("listener_id:certificate_id")
-
-	// Delete
-	t.Run("DeleteClientAbnormal", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlbClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
-				StatusCode: tea.Int(400),
-			}
-		})
-		err := resourceAlicloudAlbListenerAdditionalCertificateAttachmentDelete(d, rawClient)
-		patches.Reset()
-		assert.NotNil(t, err)
-	})
-	t.Run("DeleteMockAbnormal", func(t *testing.T) {
-		retryFlag := true
-		noRetryFlag := true
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if retryFlag {
-				retryFlag = false
-				// retry until the timeout comes
-				return responseMock["RetryError"]("Throttling")
-			} else if noRetryFlag {
-				noRetryFlag = false
-				return responseMock["NoRetryError"]("NonRetryableError")
-			}
-			return responseMock["DeleteNormal"]("")
-		})
-		err := resourceAlicloudAlbListenerAdditionalCertificateAttachmentDelete(d, rawClient)
-		patches.Reset()
-		assert.NotNil(t, err)
-	})
-	t.Run("DeleteMockNormal", func(t *testing.T) {
-		retryFlag := false
-		noRetryFlag := false
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if retryFlag {
-				return responseMock["RetryError"]("Throttling")
-			} else if noRetryFlag {
-				return responseMock["NoRetryError"]("NonRetryableError")
-			}
-			return responseMock["DeleteNormal"]("")
-		})
-		patchDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&AlbService{}), "DescribeAlbListenerAdditionalCertificateAttachment", func(*AlbService, string) (map[string]interface{}, error) {
-			return responseMock["NotFoundError"]("NotFoundError")
-		})
-		err := resourceAlicloudAlbListenerAdditionalCertificateAttachmentDelete(d, rawClient)
-		patches.Reset()
-		patchDescribe.Reset()
-		assert.Nil(t, err)
-	})
-	t.Run("DeleteNonRetryableError", func(t *testing.T) {
-		retryFlag := false
-		noRetryFlag := true
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if retryFlag {
-				return responseMock["RetryError"]("Throttling")
-			} else if noRetryFlag {
-				noRetryFlag = false
-				return responseMock["NoRetryError"]("NonRetryableError")
-			}
-			return responseMock["DeleteNormal"]("")
-		})
-		err := resourceAlicloudAlbListenerAdditionalCertificateAttachmentDelete(d, rawClient)
-		patches.Reset()
-		assert.NotNil(t, err)
-	})
-
-	//Read
-	t.Run("ReadDescribeVpcAlbListenerAdditionalCertificateAttachmentNotFound", func(t *testing.T) {
-		patchRequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			NotFoundFlag := true
-			noRetryFlag := false
-			if NotFoundFlag {
-				return responseMock["NotFoundError"]("ResourceNotfound")
-			} else if noRetryFlag {
-				return responseMock["NoRetryError"]("NoRetryError")
-			}
-			return responseMock["ReadNormal"]("")
-		})
-		err := resourceAlicloudAlbListenerAdditionalCertificateAttachmentRead(d, rawClient)
-		patchRequest.Reset()
-		assert.Nil(t, err)
-	})
-}

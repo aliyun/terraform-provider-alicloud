@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudAlbLoadBalancerCommonBandwidthPackageAttachment_basic(t *testing.T) {
+func TestAccAliCloudAlbLoadBalancerCommonBandwidthPackageAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_load_balancer_common_bandwidth_package_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudAlbLoadBalancerCommonBandwidthPackageAttachmentMap)
@@ -26,9 +26,9 @@ func TestAccAlicloudAlbLoadBalancerCommonBandwidthPackageAttachment_basic(t *tes
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
