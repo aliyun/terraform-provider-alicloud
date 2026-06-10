@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudThreatDetectionBaselineStrategy_basic1862(t *testing.T) {
+func TestAccAliCloudThreatDetectionBaselineStrategy_basic1862(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_baseline_strategy.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionBaselineStrategyMap1862)
@@ -26,9 +26,9 @@ func TestAccAlicloudThreatDetectionBaselineStrategy_basic1862(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

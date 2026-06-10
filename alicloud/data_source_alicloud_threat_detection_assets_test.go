@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudThreatDetectionAssetsDataSource(t *testing.T) {
+func TestAccAliCloudThreatDetectionAssetsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudThreatDetectionAssetsDataSourceName(rand, map[string]string{
