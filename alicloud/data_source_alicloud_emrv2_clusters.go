@@ -234,6 +234,9 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 		})
 		addDebug(action, response, request)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
+				break
+			}
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_emrv2_clusters", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Clusters", response)

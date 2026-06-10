@@ -1047,12 +1047,12 @@ const EmrCommonTestCase = `
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_emr_main_versions" "default" {
-	cluster_type = ["HADOOP"]
+	cluster_type = ["DRUID"]
 }
 
 data "alicloud_emr_instance_types" "default" {
     destination_resource = "InstanceType"
-    cluster_type = "HADOOP"
+    cluster_type = "DRUID"
     support_local_storage = false
     instance_charge_type = "PostPaid"
     support_node_type = ["MASTER", "CORE"]
@@ -1060,7 +1060,7 @@ data "alicloud_emr_instance_types" "default" {
 
 data "alicloud_emr_disk_types" "data_disk" {
 	destination_resource = "DataDisk"
-	cluster_type = "HADOOP"
+	cluster_type = "DRUID"
 	instance_charge_type = "PostPaid"
 	instance_type = data.alicloud_emr_instance_types.default.types.0.id
 	zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
@@ -1068,7 +1068,7 @@ data "alicloud_emr_disk_types" "data_disk" {
 
 data "alicloud_emr_disk_types" "system_disk" {
 	destination_resource = "SystemDisk"
-	cluster_type = "HADOOP"
+	cluster_type = "DRUID"
 	instance_charge_type = "PostPaid"
 	instance_type = data.alicloud_emr_instance_types.default.types.0.id
 	zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
@@ -1305,8 +1305,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 
 const EmrHadoopClusterTestCase = `
 data "alicloud_emr_main_versions" "default" {
-	cluster_type = ["HADOOP"]
-	emr_version = "EMR-3.24.0"
+	cluster_type = ["DRUID"]
 }
 
 data "alicloud_db_zones" "default" {
@@ -1319,7 +1318,7 @@ data "alicloud_db_zones" "default" {
 
 data "alicloud_emr_instance_types" "default" {
 	destination_resource = "InstanceType"
-	cluster_type = "HADOOP"
+	cluster_type = "DRUID"
 	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
 	support_local_storage = false
 	instance_charge_type = "PostPaid"
@@ -1328,7 +1327,7 @@ data "alicloud_emr_instance_types" "default" {
 
 data "alicloud_emr_disk_types" "data_disk" {
 	destination_resource = "DataDisk"
-	cluster_type = "HADOOP"
+	cluster_type = "DRUID"
 	instance_charge_type = "PostPaid"
 	instance_type = data.alicloud_emr_instance_types.default.types.0.id
 	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
@@ -1336,7 +1335,7 @@ data "alicloud_emr_disk_types" "data_disk" {
 
 data "alicloud_emr_disk_types" "system_disk" {
 	destination_resource = "SystemDisk"
-	cluster_type = "HADOOP"
+	cluster_type = "DRUID"
 	instance_charge_type = "PostPaid"
 	instance_type = data.alicloud_emr_instance_types.default.types.0.id
 	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
@@ -1415,7 +1414,7 @@ resource "alicloud_ram_role" "default" {
 
 const EmrGatewayTestCase = `
 data "alicloud_emr_main_versions" "default" {
-	cluster_type = ["HADOOP"]
+	cluster_type = ["DRUID"]
 }
 
 data "alicloud_emr_instance_types" "default" {
@@ -1551,7 +1550,7 @@ resource "alicloud_emr_cluster" "default" {
 `
 const EmrLocalStorageTestCase = `
 data "alicloud_emr_main_versions" "default" {
-	cluster_type = ["HADOOP"]
+	cluster_type = ["DRUID"]
 }
 
 data "alicloud_emr_instance_types" "local_disk" {

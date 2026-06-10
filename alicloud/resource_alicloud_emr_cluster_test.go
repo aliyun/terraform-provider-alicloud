@@ -98,6 +98,7 @@ func testSweepEmrCluster(region string) error {
 }
 
 func TestAccAlicloudEmrCluster_basic(t *testing.T) {
+	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -190,6 +191,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 }
 
 func TestAccAlicloudEmrCluster_hadoop_cluster(t *testing.T) {
+	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -215,7 +217,7 @@ func TestAccAlicloudEmrCluster_hadoop_cluster(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                      name,
 					"emr_ver":                   "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}",
-					"cluster_type":              "HADOOP",
+					"cluster_type":              "DRUID",
 					"deposit_type":              "HALF_MANAGED",
 					"high_availability_enable":  "false",
 					"zone_id":                   "${data.alicloud_emr_instance_types.default.types.0.zone_id}",
@@ -298,6 +300,7 @@ func TestAccAlicloudEmrCluster_hadoop_cluster(t *testing.T) {
 }
 
 func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
+	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -389,6 +392,7 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 }
 
 func TestAccAlicloudEmrCluster_gateway(t *testing.T) {
+	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default_gateway"
 	ra := resourceAttrInit(resourceId, nil)
@@ -456,6 +460,7 @@ func TestAccAlicloudEmrCluster_gateway(t *testing.T) {
 }
 
 func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
+	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default.0"
 	ra := resourceAttrInit(resourceId, nil)
