@@ -9,6 +9,7 @@ import (
 )
 
 func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
+	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported', so the test fixture cannot be created. Please use alicloud_emrv2_clusters instead.")
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
@@ -48,7 +49,7 @@ func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
 	clusterTypeListConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_emr_cluster.default.id}"]`,
-			"cluster_type_list": `["HADOOP","KAFKA"]`,
+			"cluster_type_list": `["DRUID","KAFKA"]`,
 			"enable_details":    "true",
 		}),
 		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
@@ -164,7 +165,7 @@ func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_emr_cluster.default.id}"]`,
 			"name_regex":        `"${alicloud_emr_cluster.default.name}"`,
-			"cluster_type_list": `["HADOOP","KAFKA"]`,
+			"cluster_type_list": `["DRUID","KAFKA"]`,
 			"create_type":       `"MANUAL"`,
 			"deposit_type":      `"HALF_MANAGED"`,
 			"machine_type":      `"ECS"`,
@@ -292,6 +293,7 @@ func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
 }
 
 func TestAccAlicloudEmrClustersDataSource1(t *testing.T) {
+	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported', so the test fixture cannot be created. Please use alicloud_emrv2_clusters instead.")
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
@@ -331,7 +333,7 @@ func TestAccAlicloudEmrClustersDataSource1(t *testing.T) {
 	clusterTypeListConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_emr_cluster.default.id}"]`,
-			"cluster_type_list": `["HADOOP","KAFKA"]`,
+			"cluster_type_list": `["DRUID","KAFKA"]`,
 			"enable_details":    "false",
 		}),
 		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
@@ -447,7 +449,7 @@ func TestAccAlicloudEmrClustersDataSource1(t *testing.T) {
 		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_emr_cluster.default.id}"]`,
 			"name_regex":        `"${alicloud_emr_cluster.default.name}"`,
-			"cluster_type_list": `["HADOOP","KAFKA"]`,
+			"cluster_type_list": `["DRUID","KAFKA"]`,
 			"create_type":       `"MANUAL"`,
 			"deposit_type":      `"HALF_MANAGED"`,
 			"machine_type":      `"ECS"`,
@@ -532,7 +534,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 
 data "alicloud_emr_instance_types" "default" {
   destination_resource  = "InstanceType"
-  cluster_type          = "HADOOP"
+  cluster_type          = "DRUID"
   support_local_storage = false
   instance_charge_type  = "PostPaid"
   support_node_type     = ["MASTER", "CORE", "TASK"]
@@ -540,7 +542,7 @@ data "alicloud_emr_instance_types" "default" {
 
 data "alicloud_emr_disk_types" "data_disk" {
   destination_resource = "DataDisk"
-  cluster_type         = "HADOOP"
+  cluster_type         = "DRUID"
   instance_charge_type = "PostPaid"
   instance_type        = data.alicloud_emr_instance_types.default.types.0.id
   zone_id              = data.alicloud_emr_instance_types.default.types.0.zone_id
@@ -548,7 +550,7 @@ data "alicloud_emr_disk_types" "data_disk" {
 
 data "alicloud_emr_disk_types" "system_disk" {
   destination_resource = "SystemDisk"
-  cluster_type         = "HADOOP"
+  cluster_type         = "DRUID"
   instance_charge_type = "PostPaid"
   instance_type        = data.alicloud_emr_instance_types.default.types.0.id
   zone_id              = data.alicloud_emr_instance_types.default.types.0.zone_id
@@ -599,7 +601,7 @@ resource "alicloud_emr_cluster" "default" {
 
   emr_ver = "EMR-3.24.0"
 
-  cluster_type = "HADOOP"
+  cluster_type = "DRUID"
 
   host_group {
     host_group_name   = "master_group"

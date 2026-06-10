@@ -462,8 +462,8 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 															"threshold":           "10",
 															"tags": []map[string]interface{}{
 																{
-																	"key":   "app",
-																	"value": "emr",
+																	"key":   "queue_name",
+																	"value": "root",
 																},
 															},
 														},
