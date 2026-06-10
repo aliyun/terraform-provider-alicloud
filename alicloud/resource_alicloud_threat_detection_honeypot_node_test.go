@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudThreatDetectionHoneypotNode_basic1988(t *testing.T) {
+func TestAccAliCloudThreatDetectionHoneypotNode_basic1988(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_honeypot_node.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionHoneypotNodeMap1988)
@@ -26,9 +26,9 @@ func TestAccAlicloudThreatDetectionHoneypotNode_basic1988(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -8,12 +8,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudThreatDetectionHoneypotImageDataSource(t *testing.T) {
+// NOTE: Test depends on data source or hardcoded are not stable and may fail at any time
+
+func TestAccAliCloudThreatDetectionHoneypotImagesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudThreatDetectionHoneypotImageSourceConfig(rand, map[string]string{
-			"ids": `["sha256:02882320c9a55303410127c5dc4ae2dc470150f9d7f2483102d994f5e5f4d9df"]`,
+			"ids": `["sha256:b1a9c97eb7e4b4b9030e038a0d6dfb1838401e16cf53d1ee5b3a880d3186c458"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudThreatDetectionHoneypotImageSourceConfig(rand, map[string]string{
 			"ids": `["metabase_fake"]`,
@@ -22,11 +24,11 @@ func TestAccAlicloudThreatDetectionHoneypotImageDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudThreatDetectionHoneypotImageSourceConfig(rand, map[string]string{
-			"ids":        `["sha256:02882320c9a55303410127c5dc4ae2dc470150f9d7f2483102d994f5e5f4d9df"]`,
-			"name_regex": `"^meta"`,
+			"ids":        `["sha256:b1a9c97eb7e4b4b9030e038a0d6dfb1838401e16cf53d1ee5b3a880d3186c458"]`,
+			"name_regex": `"^counter_honeypot"`,
 		}),
 		fakeConfig: testAccCheckAlicloudThreatDetectionHoneypotImageSourceConfig(rand, map[string]string{
-			"ids":        `["sha256:02882320c9a55303410127c5dc4ae2dc470150f9d7f2483102d994f5e5f4d9df"]`,
+			"ids":        `["sha256:b1a9c97eb7e4b4b9030e038a0d6dfb1838401e16cf53d1ee5b3a880d3186c458"]`,
 			"name_regex": `"^xxmeta"`,
 		}),
 	}
@@ -36,9 +38,9 @@ func TestAccAlicloudThreatDetectionHoneypotImageDataSource(t *testing.T) {
 
 var existThreatDetectionHoneypotImageMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"images.#":                             "1",
+		"images.#":                             "3",
 		"images.0.id":                          CHECKSET,
-		"images.0.honeypot_image_display_name": CHECKSET,
+		"images.0.honeypot_image_display_name": "",
 		"images.0.honeypot_image_id":           CHECKSET,
 		"images.0.honeypot_image_name":         CHECKSET,
 		"images.0.honeypot_image_type":         CHECKSET,

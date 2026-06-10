@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudThreatDetectionWebLockConfigDataSource(t *testing.T) {
+func TestAccAliCloudThreatDetectionWebLockConfigsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	idsConf := dataSourceTestAccConfig{
@@ -100,7 +100,7 @@ data "alicloud_threat_detection_assets" "default" {
 
 resource "alicloud_threat_detection_web_lock_config" "default" {
   inclusive_file_type = "php;jsp;asp;aspx;js;cgi;html;htm;xml;shtml;shtm;jpg"
-  uuid                = data.alicloud_threat_detection_assets.default.ids.0
+  uuid                = data.alicloud_threat_detection_assets.default.ids.13
   mode                = "whitelist"
   local_backup_dir    = "/usr/local/aegis/bak"
   dir                 = "/tmp/"

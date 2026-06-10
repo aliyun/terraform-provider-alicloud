@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudThreatDetectionLogShipperDataSource(t *testing.T) {
+func TestAccAliCloudThreatDetectionLogShipperDataSource(t *testing.T) {
 	resourceId := "data.alicloud_threat_detection_log_shipper.current"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{

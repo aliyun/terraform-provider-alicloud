@@ -1,13 +1,15 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -41,7 +43,7 @@ type checkStructureSec struct {
 
 func dataSourceAliCloudThreatDetectionCheckStructures() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudThreatDetectionCheckStructureRead,
+		ReadContext: dataSourceAliCloudThreatDetectionCheckStructureRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -144,7 +146,7 @@ func dataSourceAliCloudThreatDetectionCheckStructures() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudThreatDetectionCheckStructureRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudThreatDetectionCheckStructureRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*connectivity.AliyunClient)
 
 	idsMap := make(map[string]string)
@@ -181,30 +183,30 @@ func dataSourceAliCloudThreatDetectionCheckStructureRead(d *schema.ResourceData,
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err = retry.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return diag.FromErr(WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR))
 	}
 
 	respBytes, err := json.Marshal(response)
 	if err != nil {
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 	var parsed checkStructureResponse
 	if err := json.Unmarshal(respBytes, &parsed); err != nil {
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 
 	objects := make([]checkStructureItem, 0, len(parsed.CheckStructureResponse))
@@ -265,11 +267,11 @@ func dataSourceAliCloudThreatDetectionCheckStructureRead(d *schema.ResourceData,
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 
 	if err := d.Set("structures", s); err != nil {
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
