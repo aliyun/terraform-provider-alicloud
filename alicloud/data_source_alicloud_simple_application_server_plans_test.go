@@ -13,7 +13,7 @@ func TestAccAlicloudSimpleApplicationServerPlansDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	bandwidhthConf := dataSourceTestAccConfig{
 		existConfig: dataSourcesimpleApplicationServerPlansConfigDependence(rand, map[string]string{
-			"bandwidth": `"30"`,
+			"bandwidth": `"200"`,
 		}),
 		fakeConfig: dataSourcesimpleApplicationServerPlansConfigDependence(rand, map[string]string{
 			"bandwidth": `"1"`,
@@ -37,7 +37,7 @@ func TestAccAlicloudSimpleApplicationServerPlansDataSource(t *testing.T) {
 	}
 	flowConf := dataSourceTestAccConfig{
 		existConfig: dataSourcesimpleApplicationServerPlansConfigDependence(rand, map[string]string{
-			"flow": `"3072"`,
+			"flow": `"1200"`,
 		}),
 		fakeConfig: dataSourcesimpleApplicationServerPlansConfigDependence(rand, map[string]string{
 			"flow": `"-1"`,
@@ -58,18 +58,18 @@ func TestAccAlicloudSimpleApplicationServerPlansDataSource(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: dataSourcesimpleApplicationServerPlansConfigDependence(rand, map[string]string{
-			"memory":    `"1"`,
-			"bandwidth": `"30"`,
-			"disk_size": `"40"`,
-			"flow":      `"1024"`,
+			"memory":    `"4"`,
+			"bandwidth": `"6"`,
+			"disk_size": `"80"`,
+			"flow":      `"1200"`,
 			"core":      `"2"`,
 			"platform":  `"Linux"`,
 		}),
 		fakeConfig: dataSourcesimpleApplicationServerPlansConfigDependence(rand, map[string]string{
-			"memory":    `"1"`,
-			"bandwidth": `"30"`,
-			"disk_size": `"40"`,
-			"flow":      `"3072"`,
+			"memory":    `"4"`,
+			"bandwidth": `"6"`,
+			"disk_size": `"80"`,
+			"flow":      `"1200"`,
 			"core":      `"-1"`,
 		}),
 	}
