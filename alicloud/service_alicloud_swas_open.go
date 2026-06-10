@@ -246,3 +246,17 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerCustomImage(id string) 
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
+
+func (s *SwasOpenService) SimpleApplicationServerCustomImageStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeSimpleApplicationServerCustomImage(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		return object, "Exist", nil
+	}
+}
