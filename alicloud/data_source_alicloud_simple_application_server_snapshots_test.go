@@ -54,11 +54,11 @@ func TestAccAlicloudSimpleApplicationServerSnapshotsDataSource(t *testing.T) {
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_simple_application_server_snapshot.default.id}"},
-			"status": "accomplished",
+			"status": "Accomplished",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_simple_application_server_snapshot.default.id}"},
-			"status": "failed",
+			"status": "Failed",
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
@@ -67,14 +67,14 @@ func TestAccAlicloudSimpleApplicationServerSnapshotsDataSource(t *testing.T) {
 			"ids":         []string{"${alicloud_simple_application_server_snapshot.default.id}"},
 			"disk_id":     "${alicloud_simple_application_server_snapshot.default.disk_id}",
 			"instance_id": "${data.alicloud_simple_application_server_disks.default.disks.0.instance_id}",
-			"status":      "accomplished",
+			"status":      "Accomplished",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":  "${alicloud_simple_application_server_snapshot.default.snapshot_name}-fake",
 			"ids":         []string{"${alicloud_simple_application_server_snapshot.default.id}"},
 			"disk_id":     "${alicloud_simple_application_server_snapshot.default.disk_id}-fake",
 			"instance_id": "${data.alicloud_simple_application_server_disks.default.disks.0.instance_id}-fake",
-			"status":      "failed",
+			"status":      "Failed",
 		}),
 	}
 	var existSimpleApplicationServerSnapshotMapFunc = func(rand int) map[string]string {

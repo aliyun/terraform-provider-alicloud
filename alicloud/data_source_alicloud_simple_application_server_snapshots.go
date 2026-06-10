@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -43,7 +44,7 @@ func dataSourceAlicloudSimpleApplicationServerSnapshots() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"accomplished", "failed", "progressing"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Accomplished", "Failed", "Progressing"}, true),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -165,7 +166,7 @@ func dataSourceAlicloudSimpleApplicationServerSnapshotsRead(d *schema.ResourceDa
 					continue
 				}
 			}
-			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+			if statusOk && status.(string) != "" && !strings.EqualFold(status.(string), fmt.Sprint(item["Status"])) {
 				continue
 			}
 			objects = append(objects, item)
