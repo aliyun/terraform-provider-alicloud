@@ -1,11 +1,11 @@
 package alicloud
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -87,7 +87,7 @@ func resourceAlicloudEdasApplicationCreate(d *schema.ResourceData, meta interfac
 	request.ClusterId = d.Get("cluster_id").(string)
 
 	if v, ok := d.GetOk("build_pack_id"); ok {
-		request.BuildPackId = fmt.Sprint(v)
+		request.BuildPackId = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("descriotion"); ok {

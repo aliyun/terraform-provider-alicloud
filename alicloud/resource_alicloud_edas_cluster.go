@@ -1,10 +1,10 @@
 package alicloud
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -59,8 +59,8 @@ func rresourceAlicloudEdasClusterCreate(d *schema.ResourceData, meta interface{}
 	request := edas.CreateInsertClusterRequest()
 	request.RegionId = client.RegionId
 	request.ClusterName = d.Get("cluster_name").(string)
-	request.ClusterType = fmt.Sprint(d.Get("cluster_type"))
-	request.NetworkMode = fmt.Sprint(d.Get("network_mode"))
+	request.ClusterType = requests.NewInteger(d.Get("cluster_type").(int))
+	request.NetworkMode = requests.NewInteger(d.Get("network_mode").(int))
 	if v, ok := d.GetOk("logical_region_id"); ok {
 		request.LogicalRegionId = v.(string)
 	}

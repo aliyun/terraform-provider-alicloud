@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -149,7 +150,7 @@ func resourceAlicloudEdasApplicationScaleDelete(d *schema.ResourceData, meta int
 	request.AppId = d.Get("app_id").(string)
 	request.EccInfo = d.Get("ecc_info").(string)
 	if v, ok := d.GetOk("force_status"); ok {
-		request.ForceStatus = fmt.Sprint(v)
+		request.ForceStatus = requests.NewBoolean(v.(bool))
 	}
 
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {

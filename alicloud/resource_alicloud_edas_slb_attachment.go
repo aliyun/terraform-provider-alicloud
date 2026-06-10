@@ -1,8 +1,7 @@
 package alicloud
 
 import (
-	"fmt"
-
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -78,7 +77,7 @@ func resourceAlicloudEdasSlbAttachmentCreate(d *schema.ResourceData, meta interf
 	request.SlbId = slbId
 	request.SlbIp = d.Get("slb_ip").(string)
 	if v, ok := d.GetOk("listener_port"); ok {
-		request.ListenerPort = fmt.Sprint(v.(int))
+		request.ListenerPort = requests.NewInteger(v.(int))
 	}
 	if v, ok := d.GetOk("vserver_group_id"); ok {
 		request.VServerGroupId = v.(string)
