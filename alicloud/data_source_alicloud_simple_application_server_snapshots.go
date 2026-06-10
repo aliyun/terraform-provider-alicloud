@@ -43,7 +43,7 @@ func dataSourceAlicloudSimpleApplicationServerSnapshots() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Accomplished", "Failed", "Progressing"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"accomplished", "failed", "progressing"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,

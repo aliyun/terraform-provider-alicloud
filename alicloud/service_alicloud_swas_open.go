@@ -131,6 +131,20 @@ func (s *SwasOpenService) DescribeSimpleApplicationServerFirewallRule(id string)
 	return
 }
 
+func (s *SwasOpenService) SimpleApplicationServerFirewallRuleStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeSimpleApplicationServerFirewallRule(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		return object, "Exist", nil
+	}
+}
+
 func (s *SwasOpenService) DescribeSimpleApplicationServerSnapshot(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client

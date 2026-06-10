@@ -54,11 +54,11 @@ func TestAccAlicloudSimpleApplicationServerSnapshotsDataSource(t *testing.T) {
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_simple_application_server_snapshot.default.id}"},
-			"status": "Accomplished",
+			"status": "accomplished",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_simple_application_server_snapshot.default.id}"},
-			"status": "Failed",
+			"status": "failed",
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
@@ -67,14 +67,14 @@ func TestAccAlicloudSimpleApplicationServerSnapshotsDataSource(t *testing.T) {
 			"ids":         []string{"${alicloud_simple_application_server_snapshot.default.id}"},
 			"disk_id":     "${alicloud_simple_application_server_snapshot.default.disk_id}",
 			"instance_id": "${data.alicloud_simple_application_server_disks.default.disks.0.instance_id}",
-			"status":      "Accomplished",
+			"status":      "accomplished",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":  "${alicloud_simple_application_server_snapshot.default.snapshot_name}-fake",
 			"ids":         []string{"${alicloud_simple_application_server_snapshot.default.id}"},
 			"disk_id":     "${alicloud_simple_application_server_snapshot.default.disk_id}-fake",
 			"instance_id": "${data.alicloud_simple_application_server_disks.default.disks.0.instance_id}-fake",
-			"status":      "Failed",
+			"status":      "failed",
 		}),
 	}
 	var existSimpleApplicationServerSnapshotMapFunc = func(rand int) map[string]string {
@@ -83,7 +83,7 @@ func TestAccAlicloudSimpleApplicationServerSnapshotsDataSource(t *testing.T) {
 			"ids.0":                        CHECKSET,
 			"snapshots.#":                  "1",
 			"snapshots.0.snapshot_name":    fmt.Sprintf("tf-testacc-swas_snapshots-%d", rand),
-			"snapshots.0.status":           "Accomplished",
+			"snapshots.0.status":           "accomplished",
 			"snapshots.0.create_time":      CHECKSET,
 			"snapshots.0.disk_id":          CHECKSET,
 			"snapshots.0.progress":         CHECKSET,
