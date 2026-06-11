@@ -4235,6 +4235,7 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"engine_version":    "18.0",
 					"collect_stat_mode": "Before",
+					"upgrade_mode":      "inPlaceUpgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -4246,7 +4247,7 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "tde_encryption_key", "collect_stat_mode"},
+				ImportStateVerifyIgnore: []string{"force_restart", "tde_encryption_key", "collect_stat_mode", "upgrade_mode"},
 			},
 		},
 	})
@@ -4683,4 +4684,85 @@ var instanceBasicMap9 = map[string]string{
 	"connection_string":    CHECKSET,
 	"status":               CHECKSET,
 	"create_time":          CHECKSET,
+}
+
+func resourceDBInstancePostgreSQLTempConfigDependence(name string) string {
+	return fmt.Sprintf(`
+		data "alicloud_db_zones" "default" {
+			engine         = "PostgreSQL"
+			engine_version = "17.0"
+			category       = "Basic"
+		}
+
+		data "alicloud_vpcs" "default" {
+			name_regex = "^default-NODELETING$"
+		}
+
+		data "alicloud_vswitches" "default" {
+			vpc_id  = data.alicloud_vpcs.default.ids.0
+			zone_id = data.alicloud_db_zones.default.zones.0.id
+		}
+	`, name)
+}
+
+func TestAccAliCloudDBInstance_TEMP_Upgrade_Mode(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap7)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceConfig%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstancePostgreSQLTempConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "PostgreSQL",
+					"engine_version":           "17.0",
+					"instance_type":            "pg.n4.2c.2m",
+					"instance_storage":         "30",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":               "PostgreSQL",
+						"engine_version":       "17.0",
+						"instance_charge_type": "Postpaid",
+						"instance_name":        name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":    "18.0",
+					"upgrade_mode":      "blueGreenDeployment",
+					"collect_stat_mode": "Before",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "18.0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "collect_stat_mode", "upgrade_mode"},
+			},
+		},
+	})
 }

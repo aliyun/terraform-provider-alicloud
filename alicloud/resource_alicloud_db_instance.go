@@ -675,6 +675,12 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
+			"upgrade_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"inPlaceUpgrade", "blueGreenDeployment", "zeroDownTimeUpgrade"}, false),
+			},
+
 			"collation": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -1077,6 +1083,13 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("engine_version"); ok && v.(string) != "" {
 			request["TargetMajorVersion"] = v
 		}
+		if v, ok := d.GetOk("upgrade_mode"); ok && v.(string) != "" {
+			mode := v.(string)
+			if mode == "blueGreenDeployment" {
+				mode = "greenBlueDeployment"
+			}
+			request["UpgradeMode"] = mode
+		}
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -1107,9 +1120,13 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			"RegionId":       client.RegionId,
 			"DBInstanceId":   d.Id(),
 			"SwitchOver":     "true",
-			"UpgradeMode":    "inPlaceUpgrade",
 			"SwitchTimeMode": "Immediate",
 			"SourceIp":       client.SourceIp,
+		}
+		if v, ok := d.GetOk("upgrade_mode"); ok && v.(string) != "" {
+			request["UpgradeMode"] = v
+		} else {
+			request["UpgradeMode"] = "inPlaceUpgrade"
 		}
 		if v, ok := d.GetOk("engine_version"); ok && v.(string) != "" {
 			request["TargetMajorVersion"] = v
