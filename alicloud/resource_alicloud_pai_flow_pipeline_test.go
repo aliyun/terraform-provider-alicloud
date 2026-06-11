@@ -126,7 +126,7 @@ resource "alicloud_pai_workspace_workspace" "defaultWjQD1e" {
   description    = "paiflow resource record test"
   display_name   = var.name
   workspace_name = var.name
-  env_types      = ["dev"]
+  env_types      = ["prod"]
 }
 `, name)
 }
