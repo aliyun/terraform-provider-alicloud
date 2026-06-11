@@ -38,17 +38,21 @@ func TestAccAlicloudBpStudioApplicationsDataSource(t *testing.T) {
 	}
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudBpStudioApplicationsDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_bp_studio_application.default.id}"]`,
 			"resource_group_id": `"${alicloud_bp_studio_application.default.resource_group_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudBpStudioApplicationsDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_bp_studio_application.default.id}"]`,
 			"resource_group_id": `"${alicloud_bp_studio_application.default.resource_group_id}_fake"`,
 		}),
 	}
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudBpStudioApplicationsDataSourceName(rand, map[string]string{
+			"ids":    `["${alicloud_bp_studio_application.default.id}"]`,
 			"status": `"success"`,
 		}),
 		fakeConfig: testAccCheckAlicloudBpStudioApplicationsDataSourceName(rand, map[string]string{
+			"ids":    `["${alicloud_bp_studio_application.default.id}"]`,
 			"status": `"release"`,
 		}),
 	}
@@ -77,7 +81,6 @@ func TestAccAlicloudBpStudioApplicationsDataSource(t *testing.T) {
 			"applications.0.application_id":    CHECKSET,
 			"applications.0.application_name":  CHECKSET,
 			"applications.0.resource_group_id": CHECKSET,
-			"applications.0.topo_url":          CHECKSET,
 			"applications.0.image_url":         CHECKSET,
 			"applications.0.create_time":       CHECKSET,
 			"applications.0.status":            CHECKSET,
@@ -117,8 +120,46 @@ func testAccCheckAlicloudBpStudioApplicationsDataSourceName(rand int, attrMap ma
 		name_regex = "tf"
 	}
 
-	data "alicloud_instances" "default" {
-		status = "Running"
+	data "alicloud_zones" "default" {
+		available_disk_category     = "cloud_efficiency"
+		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_images" "default" {
+		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+		most_recent   = true
+		owners        = "system"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+	}
+
+	data "alicloud_instance_types" "default" {
+		availability_zone    = data.alicloud_zones.default.zones.0.id
+		instance_type_family = "ecs.sn1ne"
+	}
+
+	data "alicloud_vpcs" "default" {
+		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+		vpc_id  = data.alicloud_vpcs.default.ids.0
+		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+		name   = var.name
+		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_instance" "default" {
+		image_id             = data.alicloud_images.default.images.0.id
+		instance_type        = data.alicloud_instance_types.default.instance_types.0.id
+		instance_name        = var.name
+		security_groups      = alicloud_security_group.default.*.id
+		availability_zone    = data.alicloud_zones.default.zones.0.id
+		instance_charge_type = "PostPaid"
+		system_disk_category = "cloud_efficiency"
+		vswitch_id           = data.alicloud_vswitches.default.ids.0
 	}
 
 	resource "alicloud_bp_studio_application" "default" {
@@ -127,8 +168,8 @@ func testAccCheckAlicloudBpStudioApplicationsDataSourceName(rand int, attrMap ma
 		resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
 		area_id           = var.area_id
 		instances {
-			id        = data.alicloud_instances.default.instances.0.id
-			node_name = data.alicloud_instances.default.instances.0.name
+			id        = alicloud_instance.default.id
+			node_name = alicloud_instance.default.instance_name
 			node_type = "ecs"
   		}
   		configuration = {

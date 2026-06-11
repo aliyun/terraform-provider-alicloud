@@ -81,8 +81,9 @@ func dataSourceAlicloudBpStudioApplications() *schema.Resource {
 							Computed: true,
 						},
 						"topo_url": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:       schema.TypeString,
+							Computed:   true,
+							Deprecated: "Field 'topo_url' has been deprecated and it is no longer returned by the server.",
 						},
 						"image_url": {
 							Type:     schema.TypeString,
