@@ -1,12 +1,12 @@
 package alicloud
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -245,18 +245,18 @@ func resourceAlicloudEdasK8sApplicationCreate(d *schema.ResourceData, meta inter
 		}
 	}
 
-	request.Replicas = fmt.Sprint(d.Get("replicas").(int))
+	request.Replicas = requests.NewInteger(d.Get("replicas").(int))
 
 	if v, ok := d.GetOk("application_descriotion"); ok {
 		request.ApplicationDescription = v.(string)
 	}
 
 	if v, ok := d.GetOk("limit_mem"); ok {
-		request.LimitMem = fmt.Sprint(v.(int))
+		request.LimitMem = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("requests_mem"); ok {
-		request.RequestsMem = fmt.Sprint(v.(int))
+		request.RequestsMem = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("command"); ok {
@@ -280,11 +280,11 @@ func resourceAlicloudEdasK8sApplicationCreate(d *schema.ResourceData, meta inter
 	}
 
 	if v, ok := d.GetOk("internet_slb_port"); ok {
-		request.InternetSlbPort = fmt.Sprint(v.(int))
+		request.InternetSlbPort = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("internet_target_port"); ok {
-		request.InternetTargetPort = fmt.Sprint(v.(int))
+		request.InternetTargetPort = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("envs"); ok {
@@ -332,11 +332,11 @@ func resourceAlicloudEdasK8sApplicationCreate(d *schema.ResourceData, meta inter
 	}
 
 	if v, ok := d.GetOk("requests_m_cpu"); ok {
-		request.RequestsmCpu = fmt.Sprint(v.(int))
+		request.RequestsmCpu = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("limit_m_cpu"); ok {
-		request.LimitmCpu = fmt.Sprint(v.(int))
+		request.LimitmCpu = requests.NewInteger(v.(int))
 	}
 
 	var appId string
@@ -512,16 +512,16 @@ func resourceAlicloudEdasK8sApplicationUpdate(d *schema.ResourceData, meta inter
 	if d.HasChange("replicas") {
 		partialKeys = append(partialKeys, "replicas")
 	}
-	request.Replicas = fmt.Sprint(d.Get("replicas").(int))
+	request.Replicas = requests.NewInteger(d.Get("replicas").(int))
 
 	if d.HasChange("limit_mem") {
 		partialKeys = append(partialKeys, "limit_mem")
-		request.MemoryLimit = fmt.Sprint(d.Get("limit_mem").(int))
+		request.MemoryLimit = requests.NewInteger(d.Get("limit_mem").(int))
 	}
 
 	if d.HasChange("requests_mem") {
 		partialKeys = append(partialKeys, "requests_mem")
-		request.MemoryRequest = fmt.Sprint(d.Get("requests_mem").(int))
+		request.MemoryRequest = requests.NewInteger(d.Get("requests_mem").(int))
 	}
 
 	if d.HasChange("command") {
@@ -592,12 +592,12 @@ func resourceAlicloudEdasK8sApplicationUpdate(d *schema.ResourceData, meta inter
 
 	if d.HasChange("requests_m_cpu") {
 		partialKeys = append(partialKeys, "requests_m_cpu")
-		request.McpuRequest = fmt.Sprint(d.Get("requests_m_cpu").(int))
+		request.McpuRequest = requests.NewInteger(d.Get("requests_m_cpu").(int))
 	}
 
 	if d.HasChange("limit_m_cpu") {
 		partialKeys = append(partialKeys, "limit_m_cpu")
-		request.McpuLimit = fmt.Sprint(d.Get("limit_m_cpu").(int))
+		request.McpuLimit = requests.NewInteger(d.Get("limit_m_cpu").(int))
 	}
 
 	if len(partialKeys) > 0 {
