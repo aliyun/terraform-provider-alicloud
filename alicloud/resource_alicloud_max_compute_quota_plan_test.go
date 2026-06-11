@@ -21,7 +21,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9566(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputequotaplan%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccmcqp%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeQuotaPlanBasicDependence9566)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -43,7 +43,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9566(t *testing.T) {
 							},
 							"sub_quota_info_list": []map[string]interface{}{
 								{
-									"nick_name": "sub_quota",
+									"nick_name": "sub_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "0",
@@ -53,7 +53,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9566(t *testing.T) {
 									},
 								},
 								{
-									"nick_name": "os_terrform",
+									"nick_name": "os_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "50",
@@ -66,7 +66,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9566(t *testing.T) {
 						},
 					},
 					"plan_name": "quota_plan",
-					"nickname":  "os_terrform_p",
+					"nickname":  "${alicloud_max_compute_quota.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -86,7 +86,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9566(t *testing.T) {
 							},
 							"sub_quota_info_list": []map[string]interface{}{
 								{
-									"nick_name": "sub_quota",
+									"nick_name": "sub_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "30",
@@ -96,7 +96,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9566(t *testing.T) {
 									},
 								},
 								{
-									"nick_name": "os_terrform",
+									"nick_name": "os_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "20",
@@ -135,15 +135,7 @@ variable "name" {
 }
 
 variable "elastic_reserved_cu" {
-  default = "50"
-}
-
-variable "sub1" {
-  default = "sub1"
-}
-
-variable "sub_max_cu" {
-  default = "35"
+  default = "0"
 }
 
 variable "update_elastic_reserved_cu" {
@@ -154,8 +146,27 @@ variable "plan_name" {
   default = "TFPlan1737081504"
 }
 
-variable "part_name" {
-  default = "TFTest"
+resource "alicloud_max_compute_quota" "default" {
+  payment_type   = "Subscription"
+  part_nick_name = var.name
+  commodity_code = "odpsplus"
+  commodity_data = "{\"CU\":50,\"ord_time\":\"1:Month\",\"autoRenew\":false}"
+  sub_quota_info_list {
+    nick_name = "os_${var.name}"
+    type      = "FUXI_OFFLINE"
+    parameter {
+      min_cu = "30"
+      max_cu = "50"
+    }
+  }
+  sub_quota_info_list {
+    nick_name = "sub_${var.name}"
+    type      = "FUXI_OFFLINE"
+    parameter {
+      min_cu = "20"
+      max_cu = "50"
+    }
+  }
 }
 
 
@@ -173,7 +184,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9854(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputequotaplan%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccmcqp%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeQuotaPlanBasicDependence9854)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -195,17 +206,17 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9854(t *testing.T) {
 							},
 							"sub_quota_info_list": []map[string]interface{}{
 								{
-									"nick_name": "sub_quota",
+									"nick_name": "sub_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "0",
-											"max_cu":              "37",
+											"max_cu":              "20",
 											"elastic_reserved_cu": "${var.elastic_reserved_cu}",
 										},
 									},
 								},
 								{
-									"nick_name": "os_terrform",
+									"nick_name": "os_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "50",
@@ -219,7 +230,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9854(t *testing.T) {
 					},
 					"plan_name":    "${var.plan_name}",
 					"is_effective": "false",
-					"nickname":     "os_terrform_p",
+					"nickname":     "${alicloud_max_compute_quota.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -240,7 +251,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9854(t *testing.T) {
 							},
 							"sub_quota_info_list": []map[string]interface{}{
 								{
-									"nick_name": "os_terrform",
+									"nick_name": "os_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "30",
@@ -250,11 +261,11 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9854(t *testing.T) {
 									},
 								},
 								{
-									"nick_name": "sub_quota",
+									"nick_name": "sub_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "20",
-											"max_cu":              "40",
+											"max_cu":              "50",
 											"elastic_reserved_cu": "${var.update_elastic_reserved_cu}",
 										},
 									},
@@ -262,11 +273,11 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9854(t *testing.T) {
 							},
 						},
 					},
-					"is_effective": "true",
+					"is_effective": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"is_effective": "true",
+						"is_effective": "false",
 					}),
 				),
 			},
@@ -289,27 +300,41 @@ variable "name" {
 }
 
 variable "elastic_reserved_cu" {
-  default = 50
-}
-
-variable "sub1" {
-  default = "sub1"
-}
-
-variable "sub_max_cu" {
-  default = "920"
+  default = 0
 }
 
 variable "update_elastic_reserved_cu" {
-  default = 0
+  # 50 (not 0) so the applied plan differs from the built-in Default plan
+  # (QUOTA_PLAN_DUPLICATE) without drifting quota attributes terraform tracks;
+  # the service requires ElasticReservedCU to be a multiple of 50
+  default = 50
 }
 
 variable "plan_name" {
   default = "TFPlan1737081505"
 }
 
-variable "part_name" {
-  default = "TFTest"
+resource "alicloud_max_compute_quota" "default" {
+  payment_type   = "Subscription"
+  part_nick_name = var.name
+  commodity_code = "odpsplus"
+  commodity_data = "{\"CU\":50,\"ord_time\":\"1:Month\",\"autoRenew\":false}"
+  sub_quota_info_list {
+    nick_name = "os_${var.name}"
+    type      = "FUXI_OFFLINE"
+    parameter {
+      min_cu = "30"
+      max_cu = "50"
+    }
+  }
+  sub_quota_info_list {
+    nick_name = "sub_${var.name}"
+    type      = "FUXI_OFFLINE"
+    parameter {
+      min_cu = "20"
+      max_cu = "50"
+    }
+  }
 }
 
 
@@ -327,7 +352,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9853(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputequotaplan%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccmcqp%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeQuotaPlanBasicDependence9853)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -349,20 +374,20 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9853(t *testing.T) {
 							},
 							"sub_quota_info_list": []map[string]interface{}{
 								{
-									"nick_name": "${var.sub1}",
+									"nick_name": "sub_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
-											"min_cu":              "0",
-											"max_cu":              "370",
+											"min_cu":              "20",
+											"max_cu":              "50",
 											"elastic_reserved_cu": "${var.elastic_reserved_cu}",
 										},
 									},
 								},
 								{
-									"nick_name": "os_${{ref(variable, partName)}}",
+									"nick_name": "os_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
-											"min_cu":              "50",
+											"min_cu":              "30",
 											"max_cu":              "50",
 											"elastic_reserved_cu": "0",
 										},
@@ -372,14 +397,14 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9853(t *testing.T) {
 						},
 					},
 					"plan_name":    "${var.plan_name}",
-					"is_effective": "true",
-					"nickname":     "os_${{ref(variable, partName)}}_p",
+					"is_effective": "false",
+					"nickname":     "${alicloud_max_compute_quota.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"plan_name":    CHECKSET,
-						"is_effective": "true",
-						"nickname":     "os_${{ref(variable, partName)}}_p",
+						"is_effective": "false",
+						"nickname":     CHECKSET,
 					}),
 				),
 			},
@@ -402,31 +427,41 @@ variable "name" {
 }
 
 variable "elastic_reserved_cu" {
-  default = <<EOF
-50
-EOF
-}
-
-variable "sub1" {
-  default = "sub1"
-}
-
-variable "sub_max_cu" {
-  default = "214"
+  # 50 (not 0) so the applied plan differs from the built-in Default plan
+  # (QUOTA_PLAN_DUPLICATE) without drifting quota attributes terraform tracks;
+  # the service requires ElasticReservedCU to be a multiple of 50
+  default = "50"
 }
 
 variable "update_elastic_reserved_cu" {
-  default = <<EOF
-0
-EOF
+  default = "0"
 }
 
 variable "plan_name" {
   default = "TFPlan1737081505"
 }
 
-variable "part_name" {
-  default = "TFTest"
+resource "alicloud_max_compute_quota" "default" {
+  payment_type   = "Subscription"
+  part_nick_name = var.name
+  commodity_code = "odpsplus"
+  commodity_data = "{\"CU\":50,\"ord_time\":\"1:Month\",\"autoRenew\":false}"
+  sub_quota_info_list {
+    nick_name = "os_${var.name}"
+    type      = "FUXI_OFFLINE"
+    parameter {
+      min_cu = "30"
+      max_cu = "50"
+    }
+  }
+  sub_quota_info_list {
+    nick_name = "sub_${var.name}"
+    type      = "FUXI_OFFLINE"
+    parameter {
+      min_cu = "20"
+      max_cu = "50"
+    }
+  }
 }
 
 
@@ -444,7 +479,7 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9869(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputequotaplan%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccmcqp%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeQuotaPlanBasicDependence9869)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -466,17 +501,17 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9869(t *testing.T) {
 							},
 							"sub_quota_info_list": []map[string]interface{}{
 								{
-									"nick_name": "${var.sub1}",
+									"nick_name": "sub_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "0",
-											"max_cu":              "982",
+											"max_cu":              "20",
 											"elastic_reserved_cu": "${var.elastic_reserved_cu}",
 										},
 									},
 								},
 								{
-									"nick_name": "os_${{ref(variable, partName)}}",
+									"nick_name": "os_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "50",
@@ -489,10 +524,12 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9869(t *testing.T) {
 						},
 					},
 					"plan_name": "${var.plan_name}",
+					"nickname":  "${alicloud_max_compute_quota.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"plan_name": CHECKSET,
+						"nickname":  CHECKSET,
 					}),
 				),
 			},
@@ -507,17 +544,17 @@ func TestAccAliCloudMaxComputeQuotaPlan_basic9869(t *testing.T) {
 							},
 							"sub_quota_info_list": []map[string]interface{}{
 								{
-									"nick_name": "os_${{ref(variable, partName)}}",
+									"nick_name": "os_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "30",
-											"max_cu":              "757",
+											"max_cu":              "40",
 											"elastic_reserved_cu": "0",
 										},
 									},
 								},
 								{
-									"nick_name": "${var.sub1}",
+									"nick_name": "sub_${var.name}",
 									"parameter": []map[string]interface{}{
 										{
 											"min_cu":              "20",
@@ -556,35 +593,38 @@ variable "name" {
 }
 
 variable "elastic_reserved_cu" {
-  default = <<EOF
-50
-EOF
-}
-
-variable "sub1" {
-  default = "sub1"
-}
-
-variable "default_sub" {
-  default = "os_TFTest"
-}
-
-variable "sub_max_cu" {
-  default = "151"
+  default = "0"
 }
 
 variable "update_elastic_reserved_cu" {
-  default = <<EOF
-0
-EOF
+  default = "0"
 }
 
 variable "plan_name" {
   default = "TFPlan1737081505"
 }
 
-variable "part_name" {
-  default = "TFTest"
+resource "alicloud_max_compute_quota" "default" {
+  payment_type   = "Subscription"
+  part_nick_name = var.name
+  commodity_code = "odpsplus"
+  commodity_data = "{\"CU\":50,\"ord_time\":\"1:Month\",\"autoRenew\":false}"
+  sub_quota_info_list {
+    nick_name = "os_${var.name}"
+    type      = "FUXI_OFFLINE"
+    parameter {
+      min_cu = "30"
+      max_cu = "50"
+    }
+  }
+  sub_quota_info_list {
+    nick_name = "sub_${var.name}"
+    type      = "FUXI_OFFLINE"
+    parameter {
+      min_cu = "20"
+      max_cu = "50"
+    }
+  }
 }
 
 

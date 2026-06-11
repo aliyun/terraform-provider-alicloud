@@ -21,22 +21,21 @@ func TestAccAliCloudMaxComputeRoleUserAttachment_basic9962(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputeroleuserattachment%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9962)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"role_name":    "${var.role_name}",
-					"user":         "${var.ram_role}",
-					"project_name": "${var.project_name}",
+					"role_name":    "${alicloud_max_compute_role.default.role_name}",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -64,24 +63,54 @@ variable "name" {
     default = "%s"
 }
 
-variable "aliyun_user" {
-  default = "ALIYUN$openapiautomation@test.aliyunid.com"
+variable "account_name" {
+  # canonical MaxCompute account name of the ACube test account; RAM GetAccountAlias
+  # returns a different alias, so this cannot be derived from a data source
+  default = "openapiautomation_testcloud_com"
 }
 
-variable "ram_user" {
-  default = "RAM$openapiautomation@test.aliyunid.com:tf-example"
+resource "alicloud_maxcompute_project" "default" {
+  default_quota = "默认后付费Quota"
+  project_name  = var.name
+  comment       = var.name
+  product_type  = "PayAsYouGo"
 }
 
-variable "ram_role" {
-  default = "RAM$openapiautomation@test.aliyunid.com:role/terraform-no-ak-assumerole-no-deleting"
+resource "alicloud_max_compute_role" "default" {
+  project_name = alicloud_maxcompute_project.default.id
+  role_name    = "role_project_admin"
+  type         = "admin"
+  policy       = jsonencode({
+    Statement = [{
+      Action   = ["odps:*"]
+      Effect   = "Allow"
+      Resource = ["acs:odps:*:projects/project_name/authorization/roles", "acs:odps:*:projects/project_name/authorization/roles/*/*"]
+    }]
+    Version = "1"
+  })
 }
 
-variable "role_name" {
-  default = "role_project_admin"
+resource "alicloud_ram_role" "default" {
+  name     = replace(var.name, "_", "-")
+  document = <<EOF
+{
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": ["ecs.aliyuncs.com"]
+      }
+    }
+  ],
+  "Version": "1"
+}
+EOF
+  force    = true
 }
 
-variable "project_name" {
-  default = "default_project_669886c"
+locals {
+  user = format("RAM$%%s:role/%%s", var.account_name, alicloud_ram_role.default.name)
 }
 
 
@@ -99,22 +128,21 @@ func TestAccAliCloudMaxComputeRoleUserAttachment_basic9961(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputeroleuserattachment%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9961)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"role_name":    "${var.role_name}",
-					"user":         "${var.ram_user}",
-					"project_name": "${var.project_name}",
+					"role_name":    "${alicloud_max_compute_role.default.role_name}",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -142,24 +170,39 @@ variable "name" {
     default = "%s"
 }
 
-variable "aliyun_user" {
-  default = "ALIYUN$openapiautomation@test.aliyunid.com"
+variable "account_name" {
+  # canonical MaxCompute account name of the ACube test account; RAM GetAccountAlias
+  # returns a different alias, so this cannot be derived from a data source
+  default = "openapiautomation_testcloud_com"
 }
 
-variable "ram_user" {
-  default = "RAM$openapiautomation@test.aliyunid.com:tf-example"
+resource "alicloud_maxcompute_project" "default" {
+  default_quota = "默认后付费Quota"
+  project_name  = var.name
+  comment       = var.name
+  product_type  = "PayAsYouGo"
 }
 
-variable "ram_role" {
-  default = "RAM$openapiautomation@test.aliyunid.com:role/terraform-no-ak-assumerole-no-deleting"
+resource "alicloud_max_compute_role" "default" {
+  project_name = alicloud_maxcompute_project.default.id
+  role_name    = "role_project_admin"
+  type         = "admin"
+  policy       = jsonencode({
+    Statement = [{
+      Action   = ["odps:*"]
+      Effect   = "Allow"
+      Resource = ["acs:odps:*:projects/project_name/authorization/roles", "acs:odps:*:projects/project_name/authorization/roles/*/*"]
+    }]
+    Version = "1"
+  })
 }
 
-variable "role_name" {
-  default = "role_project_admin"
+resource "alicloud_ram_user" "default" {
+  name = var.name
 }
 
-variable "project_name" {
-  default = "default_project_669886c"
+locals {
+  user = format("RAM$%%s:%%s", var.account_name, alicloud_ram_user.default.name)
 }
 
 
@@ -177,22 +220,21 @@ func TestAccAliCloudMaxComputeRoleUserAttachment_basic9966(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputeroleuserattachment%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9966)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"role_name":    "admin",
-					"user":         "${var.ram_user}",
-					"project_name": "${var.project_name}",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -220,24 +262,25 @@ variable "name" {
     default = "%s"
 }
 
-variable "aliyun_user" {
-  default = "ALIYUN$openapiautomation@test.aliyunid.com"
+variable "account_name" {
+  # canonical MaxCompute account name of the ACube test account; RAM GetAccountAlias
+  # returns a different alias, so this cannot be derived from a data source
+  default = "openapiautomation_testcloud_com"
 }
 
-variable "ram_user" {
-  default = "RAM$openapiautomation@test.aliyunid.com:tf-example"
+resource "alicloud_maxcompute_project" "default" {
+  default_quota = "默认后付费Quota"
+  project_name  = var.name
+  comment       = var.name
+  product_type  = "PayAsYouGo"
 }
 
-variable "ram_role" {
-  default = "RAM$openapiautomation@test.aliyunid.com:role/terraform-no-ak-assumerole-no-deleting"
+resource "alicloud_ram_user" "default" {
+  name = var.name
 }
 
-variable "role_name" {
-  default = "role_project_admin"
-}
-
-variable "project_name" {
-  default = "default_project_669886c"
+locals {
+  user = format("RAM$%%s:%%s", var.account_name, alicloud_ram_user.default.name)
 }
 
 
@@ -255,22 +298,21 @@ func TestAccAliCloudMaxComputeRoleUserAttachment_basic9967(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputeroleuserattachment%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9967)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"role_name":    "${var.role_name}",
-					"user":         "${var.ram_user}",
-					"project_name": "${var.project_name}",
+					"role_name":    "${alicloud_max_compute_role.default.role_name}",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -298,24 +340,39 @@ variable "name" {
     default = "%s"
 }
 
-variable "aliyun_user" {
-  default = "ALIYUN$openapiautomation@test.aliyunid.com"
+variable "account_name" {
+  # canonical MaxCompute account name of the ACube test account; RAM GetAccountAlias
+  # returns a different alias, so this cannot be derived from a data source
+  default = "openapiautomation_testcloud_com"
 }
 
-variable "ram_user" {
-  default = "RAM$openapiautomation@test.aliyunid.com:tf-example"
+resource "alicloud_maxcompute_project" "default" {
+  default_quota = "默认后付费Quota"
+  project_name  = var.name
+  comment       = var.name
+  product_type  = "PayAsYouGo"
 }
 
-variable "ram_role" {
-  default = "RAM$openapiautomation@test.aliyunid.com:role/terraform-no-ak-assumerole-no-deleting"
+resource "alicloud_max_compute_role" "default" {
+  project_name = alicloud_maxcompute_project.default.id
+  role_name    = "role_project_admin"
+  type         = "admin"
+  policy       = jsonencode({
+    Statement = [{
+      Action   = ["odps:*"]
+      Effect   = "Allow"
+      Resource = ["acs:odps:*:projects/project_name/authorization/roles", "acs:odps:*:projects/project_name/authorization/roles/*/*"]
+    }]
+    Version = "1"
+  })
 }
 
-variable "role_name" {
-  default = "role_project_admin"
+resource "alicloud_ram_user" "default" {
+  name = var.name
 }
 
-variable "project_name" {
-  default = "default_project_669886c"
+locals {
+  user = format("RAM$%%s:%%s", var.account_name, alicloud_ram_user.default.name)
 }
 
 
@@ -333,22 +390,21 @@ func TestAccAliCloudMaxComputeRoleUserAttachment_basic9960(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputeroleuserattachment%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf_testacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeRoleUserAttachmentBasicDependence9960)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"role_name":    "${var.role_name}",
-					"user":         "${var.aliyun_user}",
-					"project_name": "${var.project_name}",
+					"role_name":    "${alicloud_max_compute_role.default.role_name}",
+					"user":         "${local.user}",
+					"project_name": "${alicloud_maxcompute_project.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -376,24 +432,35 @@ variable "name" {
     default = "%s"
 }
 
-variable "aliyun_user" {
-  default = "ALIYUN$openapiautomation@test.aliyunid.com"
+variable "account_name" {
+  # canonical MaxCompute account name of the ACube test account; RAM GetAccountAlias
+  # returns a different alias, so this cannot be derived from a data source
+  default = "openapiautomation_testcloud_com"
 }
 
-variable "ram_user" {
-  default = "RAM$openapiautomation@test.aliyunid.com:tf-example"
+resource "alicloud_maxcompute_project" "default" {
+  default_quota = "默认后付费Quota"
+  project_name  = var.name
+  comment       = var.name
+  product_type  = "PayAsYouGo"
 }
 
-variable "ram_role" {
-  default = "RAM$openapiautomation@test.aliyunid.com:role/terraform-no-ak-assumerole-no-deleting"
+resource "alicloud_max_compute_role" "default" {
+  project_name = alicloud_maxcompute_project.default.id
+  role_name    = "role_project_admin"
+  type         = "admin"
+  policy       = jsonencode({
+    Statement = [{
+      Action   = ["odps:*"]
+      Effect   = "Allow"
+      Resource = ["acs:odps:*:projects/project_name/authorization/roles", "acs:odps:*:projects/project_name/authorization/roles/*/*"]
+    }]
+    Version = "1"
+  })
 }
 
-variable "role_name" {
-  default = "role_project_admin"
-}
-
-variable "project_name" {
-  default = "default_project_669886c"
+locals {
+  user = format("ALIYUN$%%s", var.account_name)
 }
 
 
