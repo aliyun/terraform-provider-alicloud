@@ -61,21 +61,24 @@ variable "name" {
   default = "tf-testAccBackupPolicy-%d"
 }
 
-data "alicloud_click_house_regions" "default" {	
+data "alicloud_click_house_regions" "default" {
   current = true
 }
 
-data "alicloud_vpcs" "default"	{
-  name_regex = "default-NODELETING"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
 }
 
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "20.3.10.75"
+  db_cluster_version      = "23.8"
   status                  = "Running"
   category                = "Basic"
   db_cluster_class        = "S8"
@@ -85,7 +88,7 @@ resource "alicloud_click_house_db_cluster" "default" {
   payment_type            = "PayAsYouGo"
   db_node_storage         = "500"
   storage_type            = "cloud_essd"
-  vswitch_id              = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id              = alicloud_vswitch.default.id
   db_cluster_access_white_list {
     db_cluster_ip_array_name      = "test"
     security_ip_list              = "192.168.0.1"

@@ -67,6 +67,19 @@ func (s *ClickhouseService) ClickHouseDbClusterStateRefreshFunc(id string, failS
 	}
 }
 
+func (s *ClickhouseService) ClickHouseDbClusterResourceGroupIdRefreshFunc(id string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeClickHouseDbCluster(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		return object, fmt.Sprint(object["ResourceGroupId"]), nil
+	}
+}
+
 func (s *ClickhouseService) DescribeClickHouseAccount(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var response map[string]interface{}
