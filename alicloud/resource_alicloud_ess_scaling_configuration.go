@@ -554,6 +554,39 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					},
 				},
 			},
+			"resource_pool_options_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"PrivatePoolFirst", "PrivatePoolOnly", "None"}, false),
+			},
+			"resource_pool_options_private_pool_ids": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				ConflictsWith: []string{"resource_pool_options_private_pool_tags"},
+				MaxItems:      int(MaxResourcePoolOptionsPrivatePoolIds),
+				MinItems:      int(MinResourcePoolOptionsPrivatePoolIds),
+			},
+			"resource_pool_options_private_pool_tags": {
+				Optional:      true,
+				Type:          schema.TypeSet,
+				ConflictsWith: []string{"resource_pool_options_private_pool_ids"},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -582,6 +615,28 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	request["ScalingGroupId"] = d.Get("scaling_group_id")
 	request["PasswordInherit"] = d.Get("password_inherit")
 	request["SystemDisk.Encrypted"] = d.Get("system_disk_encrypted")
+	if v, ok := d.GetOk("resource_pool_options_strategy"); ok {
+		request["ResourcePoolOptions.Strategy"] = v
+	}
+	//N个进行遍历
+	if v, ok := d.GetOk("resource_pool_options_private_pool_ids"); ok {
+		idCount := 1
+		for _, value := range v.(*schema.Set).List() {
+			request[fmt.Sprintf("ResourcePoolOptions.PrivatePoolIds.%d", idCount)] = value
+			idCount++
+		}
+	}
+	if v, ok := d.GetOk("resource_pool_options_private_pool_tags"); ok {
+		resourcePoolOptionsPrivatePoolTags := v.(*schema.Set).List()
+		count := 1
+		for _, rew := range resourcePoolOptionsPrivatePoolTags {
+			item := rew.(map[string]interface{})
+			request[fmt.Sprintf("ResourcePoolOptions.PrivatePoolTags.%d.Key", count)] = item["key"]
+			request[fmt.Sprintf("ResourcePoolOptions.PrivatePoolTags.%d.Value", count)] = item["value"]
+			count++
+		}
+	}
+
 	request["ImageOptions.LoginAsNonRoot"] = d.Get("image_options_login_as_non_root")
 	request["DeletionProtection"] = d.Get("deletion_protection")
 	request["SystemDisk.KMSKeyId"] = d.Get("system_disk_kms_key_id")
@@ -1006,6 +1061,37 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		"ScalingConfigurationId": d.Id(),
 	}
 	update := false
+	if d.HasChange("resource_pool_options_private_pool_ids") {
+		if v, ok := d.GetOk("resource_pool_options_private_pool_ids"); ok {
+			idCount := 1
+			for _, value := range v.(*schema.Set).List() {
+				request[fmt.Sprintf("ResourcePoolOptions.PrivatePoolIds.%d", idCount)] = value
+				idCount++
+			}
+		}
+		update = true
+	}
+
+	if d.HasChange("resource_pool_options_strategy") {
+		if v, ok := d.GetOk("resource_pool_options_strategy"); ok {
+			request["ResourcePoolOptions.Strategy"] = v
+			update = true
+		}
+	}
+
+	if d.HasChange("resource_pool_options_private_pool_tags") {
+		if v, ok := d.GetOk("resource_pool_options_private_pool_tags"); ok {
+			resourcePoolOptionsPrivatePoolTags := v.(*schema.Set).List()
+			count := 1
+			for _, rew := range resourcePoolOptionsPrivatePoolTags {
+				item := rew.(map[string]interface{})
+				request[fmt.Sprintf("ResourcePoolOptions.PrivatePoolTags.%d.Key", count)] = item["key"]
+				request[fmt.Sprintf("ResourcePoolOptions.PrivatePoolTags.%d.Value", count)] = item["value"]
+				count++
+			}
+			update = true
+		}
+	}
 
 	if d.HasChange("override") {
 		request["Override"] = d.Get("override")
@@ -1520,6 +1606,29 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			return nil
 		}
 		return WrapError(err)
+	}
+	if v := response["ResourcePoolOptions"]; v != nil {
+		m := v.(map[string]interface{})
+		if m["Strategy"] != nil {
+			d.Set("resource_pool_options_strategy", m["Strategy"])
+		}
+		if m["PrivatePoolIds"] != nil {
+			v := m["PrivatePoolIds"].(map[string]interface{})
+			d.Set("resource_pool_options_private_pool_ids", schema.NewSet(schema.HashString, v["PrivatePoolId"].([]interface{})))
+		}
+		if m["PrivatePoolTags"] != nil {
+			v := m["PrivatePoolTags"].(map[string]interface{})
+			result := make([]map[string]interface{}, 0)
+			for _, i := range v["PrivatePoolTag"].([]interface{}) {
+				r := i.(map[string]interface{})
+				l := map[string]interface{}{
+					"key":   r["Key"].(string),
+					"value": r["Value"].(string),
+				}
+				result = append(result, l)
+			}
+			d.Set("resource_pool_options_private_pool_tags", result)
+		}
 	}
 
 	d.Set("scaling_group_id", response["ScalingGroupId"])

@@ -1195,6 +1195,392 @@ func TestAccAliCloudEssScalingConfiguration_EnchanceCreate(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolTags(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.pl"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"instance_type":     CHECKSET,
+		"security_group_id": CHECKSET,
+		"image_id":          REGEXMATCH + "^aliyun",
+		"override":          "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigDependenceForResourcePoolOptions)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":                "${alicloud_ess_scaling_group.default.id}",
+					"image_id":                        "aliyun_3_9_x64_20G_alibase_20231219.vhd",
+					"instance_type":                   "${data.alicloud_instance_types.n4.instance_types.0.id}",
+					"security_group_id":               "${alicloud_security_group.default.id}",
+					"security_enhancement_strategy":   "Deactive",
+					"force_delete":                    "true",
+					"instance_description":            "test",
+					"spot_duration":                   "0",
+					"spot_strategy":                   "SpotWithPriceLimit",
+					"image_options_login_as_non_root": "true",
+					"system_disk_encrypt_algorithm":   "AES-256",
+					"system_disk_category":            "cloud_essd",
+					"system_disk_provisioned_iops":    "10",
+					"system_disk_encrypted":           "true",
+					"system_disk_kms_key_id":          "${alicloud_kms_key.key.id}",
+					"resource_pool_options_strategy":  "PrivatePoolFirst",
+					"resource_pool_options_private_pool_tags": []map[string]string{
+						{
+							"key":   "TagKey",
+							"value": "TagValue",
+						},
+					},
+					"data_disk": []map[string]string{
+						{
+							"size":                 "20",
+							"provisioned_iops":     "20",
+							"category":             "cloud_essd",
+							"delete_with_instance": "false",
+							"encrypted":            "true",
+							"kms_key_id":           "${alicloud_kms_key.key.id}",
+							"name":                 "kms",
+							"description":          "kms",
+							"performance_level":    "PL1",
+						},
+						{
+							"size":             "20",
+							"provisioned_iops": "10",
+							"category":         "cloud_essd",
+							"name":             "${var.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit":                 "false",
+						"security_enhancement_strategy":    "Deactive",
+						"instance_description":             "test",
+						"system_disk_category":             "cloud_essd",
+						"spot_duration":                    "0",
+						"image_options_login_as_non_root":  "true",
+						"system_disk_encrypt_algorithm":    "AES-256",
+						"system_disk_provisioned_iops":     "10",
+						"system_disk_encrypted":            "true",
+						"system_disk_kms_key_id":           CHECKSET,
+						"data_disk.#":                      "2",
+						"data_disk.0.size":                 "20",
+						"data_disk.0.provisioned_iops":     "20",
+						"data_disk.0.category":             "cloud_essd",
+						"data_disk.0.delete_with_instance": "false",
+						"data_disk.0.encrypted":            "true",
+						"data_disk.0.kms_key_id":           CHECKSET,
+						"data_disk.0.name":                 "kms",
+						"data_disk.0.description":          "kms",
+						"data_disk.0.performance_level":    "PL1",
+
+						"data_disk.1.size":                          "20",
+						"data_disk.1.category":                      "cloud_essd",
+						"data_disk.1.provisioned_iops":              "10",
+						"data_disk.1.delete_with_instance":          "true",
+						"data_disk.1.encrypted":                     "false",
+						"data_disk.1.kms_key_id":                    "",
+						"data_disk.1.name":                          name,
+						"data_disk.1.description":                   "",
+						"resource_pool_options_strategy":            "PrivatePoolFirst",
+						"resource_pool_options_private_pool_tags.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":                "${alicloud_ess_scaling_group.default.id}",
+					"image_id":                        "aliyun_3_9_x64_20G_alibase_20231219.vhd",
+					"instance_type":                   "${data.alicloud_instance_types.n4.instance_types.0.id}",
+					"security_group_id":               "${alicloud_security_group.default.id}",
+					"security_enhancement_strategy":   "Deactive",
+					"force_delete":                    "true",
+					"instance_description":            "test",
+					"spot_duration":                   "0",
+					"spot_strategy":                   "SpotWithPriceLimit",
+					"image_options_login_as_non_root": "true",
+					"system_disk_encrypt_algorithm":   "AES-256",
+					"system_disk_category":            "cloud_essd",
+					"system_disk_provisioned_iops":    "10",
+					"system_disk_encrypted":           "true",
+					"system_disk_kms_key_id":          "${alicloud_kms_key.key.id}",
+					"resource_pool_options_strategy":  "PrivatePoolOnly",
+					"resource_pool_options_private_pool_tags": []map[string]string{
+						{
+							"key":   "TagKey",
+							"value": "TagValue",
+						},
+						{
+							"key":   "TagKey1",
+							"value": "TagValue2",
+						},
+					},
+					"data_disk": []map[string]string{
+						{
+							"size":                 "20",
+							"provisioned_iops":     "20",
+							"category":             "cloud_essd",
+							"delete_with_instance": "false",
+							"encrypted":            "true",
+							"kms_key_id":           "${alicloud_kms_key.key.id}",
+							"name":                 "kms",
+							"description":          "kms",
+							"performance_level":    "PL1",
+						},
+						{
+							"size":             "20",
+							"provisioned_iops": "10",
+							"category":         "cloud_essd",
+							"name":             "${var.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit":                 "false",
+						"security_enhancement_strategy":    "Deactive",
+						"instance_description":             "test",
+						"system_disk_category":             "cloud_essd",
+						"spot_duration":                    "0",
+						"image_options_login_as_non_root":  "true",
+						"system_disk_encrypt_algorithm":    "AES-256",
+						"system_disk_provisioned_iops":     "10",
+						"system_disk_encrypted":            "true",
+						"system_disk_kms_key_id":           CHECKSET,
+						"data_disk.#":                      "2",
+						"data_disk.0.size":                 "20",
+						"data_disk.0.provisioned_iops":     "20",
+						"data_disk.0.category":             "cloud_essd",
+						"data_disk.0.delete_with_instance": "false",
+						"data_disk.0.encrypted":            "true",
+						"data_disk.0.kms_key_id":           CHECKSET,
+						"data_disk.0.name":                 "kms",
+						"data_disk.0.description":          "kms",
+						"data_disk.0.performance_level":    "PL1",
+
+						"data_disk.1.size":                          "20",
+						"data_disk.1.category":                      "cloud_essd",
+						"data_disk.1.provisioned_iops":              "10",
+						"data_disk.1.delete_with_instance":          "true",
+						"data_disk.1.encrypted":                     "false",
+						"data_disk.1.kms_key_id":                    "",
+						"data_disk.1.name":                          name,
+						"data_disk.1.description":                   "",
+						"resource_pool_options_strategy":            "PrivatePoolOnly",
+						"resource_pool_options_private_pool_tags.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingConfiguration_ResourcePoolOptions_PoolIds(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.pl"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"instance_type":     CHECKSET,
+		"security_group_id": CHECKSET,
+		"image_id":          REGEXMATCH + "^aliyun",
+		"override":          "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigDependenceForResourcePoolOptions)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":                       "${alicloud_ess_scaling_group.default.id}",
+					"image_id":                               "aliyun_3_9_x64_20G_alibase_20231219.vhd",
+					"instance_type":                          "${data.alicloud_instance_types.n4.instance_types.0.id}",
+					"security_group_id":                      "${alicloud_security_group.default.id}",
+					"security_enhancement_strategy":          "Deactive",
+					"force_delete":                           "true",
+					"instance_description":                   "test",
+					"spot_duration":                          "0",
+					"spot_strategy":                          "SpotWithPriceLimit",
+					"image_options_login_as_non_root":        "true",
+					"system_disk_encrypt_algorithm":          "AES-256",
+					"system_disk_category":                   "cloud_essd",
+					"system_disk_provisioned_iops":           "10",
+					"system_disk_encrypted":                  "true",
+					"system_disk_kms_key_id":                 "${alicloud_kms_key.key.id}",
+					"resource_pool_options_strategy":         "PrivatePoolFirst",
+					"resource_pool_options_private_pool_ids": []string{"${alicloud_ecs_capacity_reservation.default.0.id}"},
+					"data_disk": []map[string]string{
+						{
+							"size":                 "20",
+							"provisioned_iops":     "20",
+							"category":             "cloud_essd",
+							"delete_with_instance": "false",
+							"encrypted":            "true",
+							"kms_key_id":           "${alicloud_kms_key.key.id}",
+							"name":                 "kms",
+							"description":          "kms",
+							"performance_level":    "PL1",
+						},
+						{
+							"size":             "20",
+							"provisioned_iops": "10",
+							"category":         "cloud_essd",
+							"name":             "${var.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit":                 "false",
+						"security_enhancement_strategy":    "Deactive",
+						"instance_description":             "test",
+						"system_disk_category":             "cloud_essd",
+						"spot_duration":                    "0",
+						"image_options_login_as_non_root":  "true",
+						"system_disk_encrypt_algorithm":    "AES-256",
+						"system_disk_provisioned_iops":     "10",
+						"system_disk_encrypted":            "true",
+						"system_disk_kms_key_id":           CHECKSET,
+						"data_disk.#":                      "2",
+						"data_disk.0.size":                 "20",
+						"data_disk.0.provisioned_iops":     "20",
+						"data_disk.0.category":             "cloud_essd",
+						"data_disk.0.delete_with_instance": "false",
+						"data_disk.0.encrypted":            "true",
+						"data_disk.0.kms_key_id":           CHECKSET,
+						"data_disk.0.name":                 "kms",
+						"data_disk.0.description":          "kms",
+						"data_disk.0.performance_level":    "PL1",
+
+						"data_disk.1.size":                         "20",
+						"data_disk.1.category":                     "cloud_essd",
+						"data_disk.1.provisioned_iops":             "10",
+						"data_disk.1.delete_with_instance":         "true",
+						"data_disk.1.encrypted":                    "false",
+						"data_disk.1.kms_key_id":                   "",
+						"data_disk.1.name":                         name,
+						"data_disk.1.description":                  "",
+						"resource_pool_options_strategy":           "PrivatePoolFirst",
+						"resource_pool_options_private_pool_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":                       "${alicloud_ess_scaling_group.default.id}",
+					"image_id":                               "aliyun_3_9_x64_20G_alibase_20231219.vhd",
+					"instance_type":                          "${data.alicloud_instance_types.n4.instance_types.0.id}",
+					"security_group_id":                      "${alicloud_security_group.default.id}",
+					"security_enhancement_strategy":          "Deactive",
+					"force_delete":                           "true",
+					"instance_description":                   "test",
+					"spot_duration":                          "0",
+					"spot_strategy":                          "SpotWithPriceLimit",
+					"image_options_login_as_non_root":        "true",
+					"system_disk_encrypt_algorithm":          "AES-256",
+					"system_disk_category":                   "cloud_essd",
+					"system_disk_provisioned_iops":           "10",
+					"system_disk_encrypted":                  "true",
+					"system_disk_kms_key_id":                 "${alicloud_kms_key.key.id}",
+					"resource_pool_options_strategy":         "PrivatePoolOnly",
+					"resource_pool_options_private_pool_ids": []string{"${alicloud_ecs_capacity_reservation.default.0.id}", "${alicloud_ecs_capacity_reservation.default.1.id}"},
+					"data_disk": []map[string]string{
+						{
+							"size":                 "20",
+							"provisioned_iops":     "20",
+							"category":             "cloud_essd",
+							"delete_with_instance": "false",
+							"encrypted":            "true",
+							"kms_key_id":           "${alicloud_kms_key.key.id}",
+							"name":                 "kms",
+							"description":          "kms",
+							"performance_level":    "PL1",
+						},
+						{
+							"size":             "20",
+							"provisioned_iops": "10",
+							"category":         "cloud_essd",
+							"name":             "${var.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit":                 "false",
+						"security_enhancement_strategy":    "Deactive",
+						"instance_description":             "test",
+						"system_disk_category":             "cloud_essd",
+						"spot_duration":                    "0",
+						"image_options_login_as_non_root":  "true",
+						"system_disk_encrypt_algorithm":    "AES-256",
+						"system_disk_provisioned_iops":     "10",
+						"system_disk_encrypted":            "true",
+						"system_disk_kms_key_id":           CHECKSET,
+						"data_disk.#":                      "2",
+						"data_disk.0.size":                 "20",
+						"data_disk.0.provisioned_iops":     "20",
+						"data_disk.0.category":             "cloud_essd",
+						"data_disk.0.delete_with_instance": "false",
+						"data_disk.0.encrypted":            "true",
+						"data_disk.0.kms_key_id":           CHECKSET,
+						"data_disk.0.name":                 "kms",
+						"data_disk.0.description":          "kms",
+						"data_disk.0.performance_level":    "PL1",
+
+						"data_disk.1.size":                         "20",
+						"data_disk.1.category":                     "cloud_essd",
+						"data_disk.1.provisioned_iops":             "10",
+						"data_disk.1.delete_with_instance":         "true",
+						"data_disk.1.encrypted":                    "false",
+						"data_disk.1.kms_key_id":                   "",
+						"data_disk.1.name":                         name,
+						"data_disk.1.description":                  "",
+						"resource_pool_options_strategy":           "PrivatePoolOnly",
+						"resource_pool_options_private_pool_ids.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint_Create(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
@@ -1985,6 +2371,118 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 		pending_window_in_days  = "7"
 		key_state               = "Enabled"
 	}
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+func resourceEssScalingConfigurationConfigDependenceForResourcePoolOptions(name string) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "%s"
+	}
+	resource "alicloud_key_pair" "default" {
+  		key_pair_name = "${var.name}"
+	}
+	data "alicloud_resource_manager_resource_groups" "default" {
+	  name_regex = "default"
+	}
+
+	data "alicloud_kms_keys" "default" {
+		  status = "Enabled"
+		}
+	resource "alicloud_kms_key" "default" {
+	  description = var.name
+	  status = "Enabled"
+	  pending_window_in_days = 7
+	}
+	data "alicloud_instance_types" "cloud_auto" {
+	  availability_zone    = data.alicloud_zones.default.zones.0.id
+	  kubernetes_node_role = "Worker"
+	  system_disk_category = "cloud_auto"
+	}
+	resource "alicloud_kms_ciphertext" "default" {
+	  key_id = "${alicloud_kms_key.default.id}"
+	  plaintext = "YourPassword1234"
+	  encryption_context = {
+		"name" = var.name
+	  }
+	}
+
+	resource "alicloud_ram_role" "default" {
+	  name = "${var.name}"
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
+	  description = "this is a test"
+	  force = true
+	}
+
+	resource "alicloud_security_group" "default1" {
+	  name   = "${var.name}"
+	  vpc_id = "${alicloud_vpc.default.id}"
+	}
+
+	data "alicloud_images" "default1" {
+		name_regex  = "^centos.*_64"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_images" "default2" {
+		name_regex  = "^debian"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_instance_types" "t5" {
+      instance_type_family = "ecs.t5"
+	}
+    data "alicloud_instance_types" "c6" {
+      
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+     data "alicloud_instance_types" "n4" {
+      instance_type_family = "ecs.g7h"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+	 data "alicloud_instance_types" "default12" {
+      instance_type_family = "ecs.n4"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+	resource "alicloud_kms_key" "key" {
+		description             = var.name
+		pending_window_in_days  = "7"
+		key_state               = "Enabled"
+	}
+    resource "alicloud_ecs_capacity_reservation" "default" {
+	  count = 2
+	  description               = "terraform-example"
+	  platform                  = "linux"
+	  capacity_reservation_name = "terraform-example"
+	  end_time_type             = "Unlimited"
+	  instance_amount           = 1
+	  instance_type             = data.alicloud_instance_types.n4.instance_types.0.id
+	  match_criteria            = "Target"
+	  zone_ids = ["${data.alicloud_zones.default.zones.0.id}"]
+    }
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
