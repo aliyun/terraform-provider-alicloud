@@ -112,7 +112,7 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDataset(id string) (object m
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"201300003"}) {
+		if IsExpectedErrors(err, []string{"201300003", "201300002"}) {
 			return object, WrapErrorf(NotFoundErr("Dataset", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -314,6 +314,11 @@ func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceRun(id string) (object map[s
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		// GetRun on a deleted run is observed to fail with a 500 InternalServerErrorProblem
+		// wrapping a 400 InvalidAction.Mismatch instead of a regular NotFound code.
+		if IsExpectedErrors(err, []string{"InvalidAction.Mismatch"}) {
+			return object, WrapErrorf(NotFoundErr("Run", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	currentStatus := response["Name"]
