@@ -137,13 +137,12 @@ func resourceAliCloudPaiServiceRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("region_id", objectRaw["Region"])
-	d.Set("service_uid", objectRaw["ServiceUid"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("workspace_id", objectRaw["WorkspaceId"])
 
 	e := jsonata.MustCompile("$merge($map($.Labels, function($v, $k) {{$lookup($v, \"LabelKey\"): $lookup($v, \"LabelValue\")}}))")
 	evaluation, _ := e.Eval(objectRaw)
-	d.Set("tags", evaluation)
+	d.Set("tags", tagsToMap(evaluation))
 	e = jsonata.MustCompile("$.ServiceConfig")
 	evaluation, _ = e.Eval(objectRaw)
 	d.Set("service_config", evaluation)
