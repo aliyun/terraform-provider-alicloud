@@ -772,6 +772,28 @@ func compareJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
 	return equal, nil
 }
 
+// compareJsonHasSubset reports whether every key in sub exists in sup with an
+// equal value. Used for ForceNew JSON fields the server enriches with extra
+// keys after create: the user config is a subset of the server-returned state,
+// so the diff should be suppressed instead of forcing replacement.
+func compareJsonHasSubset(sup, sub string) (bool, error) {
+	supObj := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(sup), &supObj); err != nil {
+		return false, err
+	}
+	subObj := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(sub), &subObj); err != nil {
+		return false, err
+	}
+	for k, v := range subObj {
+		sv, ok := supObj[k]
+		if !ok || !reflect.DeepEqual(sv, v) {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 func compareArrayJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
 	obj1 := make([]map[string]interface{}, 0)
 	err := json.Unmarshal([]byte(tem1), &obj1)

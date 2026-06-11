@@ -102,6 +102,16 @@ func resourceAlicloudComputeNestServiceInstance() *schema.Resource {
 							Optional: true,
 							ForceNew: true,
 							Computed: true,
+							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+								if new == "" {
+									return true
+								}
+								subset, err := compareJsonHasSubset(old, new)
+								if err != nil {
+									return old == new
+								}
+								return subset
+							},
 						},
 						"operated_service_instance_id": {
 							Type:     schema.TypeString,
