@@ -109,7 +109,7 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "20.3.10.75"
+  db_cluster_version      = "23.8"
   category                = "Basic"
   db_cluster_class        = "S8"
   db_cluster_network_type = "vpc"

@@ -53,6 +53,7 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Normal", "Super"}, false),
 			},
