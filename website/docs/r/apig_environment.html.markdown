@@ -1,5 +1,5 @@
 ---
-subcategory: "APIG"
+subcategory: "Cloud Native API Gateway (APIG)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_apig_environment"
 description: |-
