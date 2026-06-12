@@ -1,4 +1,31 @@
 ## 1.282.0 (Unreleased)
+
+- **New Data Source:**`alicloud_esa_cache_reserve_instances` [GH-9841]
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_instance: Optimized the field sql_collector_config_value to support all engines. [GH-9724]
+- resource/alicloud_ess_scaling_configuration: add resource_pool_options_strategy,resource_pool_options_private_pool_ids and resource_pool_options_private_pool_tags. [GH-9799]
+- resource/alicloud_db_instance: Add UsedTime/Period for UpgradeDBInstanceMajorVersion on Prepaid instances. [GH-9816]
+- resource/alicloud_cs_managed_kubernetes: support new cluster_spec values ack.pro.xlarge, ack.pro.2xlarge, ack.pro.4xlarge; data-source/alicloud_cs_clusters: docs update for new cluster_spec values. [GH-9825]
+- resource/alicloud_express_connect_virtual_border_router: Refactored the resource alicloud_express_connect_virtual_border_router, document. [GH-9827]
+- resource/alicloud_vpc_ipam_ipam_pool_cidr: Add retry for delete. [GH-9829]
+- resource/alicloud_ros_stack: read template_body from stack and improve state polling. [GH-9830]
+- resource/alicloud_ess_notification: add message_encoding property. [GH-9831]
+- resource/alicloud_nlb_load_balancer_security_group_attachment: Add retry for resource updating status. [GH-9836]
+- resource/alicloud_ddoscoo_domain_resource: Supported ssl_ciphers set to improved. [GH-9839]
+- resource/alicloud_db_instance: Support force_encryption for MySQL and SQLServer. [GH-9840]
+- testcase: Deprecated sdcdn testcase. [GH-9818]
+- testcase: Improved cdn_real_time_log_delivery testcase. [GH-9826]
+- docs: Rename apig to Cloud Native API Gateway. [GH-9846]
+
+BUG FIXES:
+
+- resource/alicloud_esa_routine_related_record: Fixed the int overflow bug in field record_id; Improved alicloud_esa_routine_related_record testcase. [GH-9828]
+- resource/alicloud_bastionhost_instance: Fixed the update error caused by field renew_period. [GH-9832]
+- resource/alicloud_cdn_domain_config: fix l2_oss_key plan diff by adding private_oss_ram_unauthorized to ignoreFunctionArg. [GH-9833]
+- resource/alicloud_instance: Fix provisioned_iops and bursting_enabled not set bug. [GH-9835]
+
 ## 1.281.0 (June 08, 2026)
 
 - **New Resource:** `alicloud_cms_agg_task_group` ([#9810](https://github.com/aliyun/terraform-provider-alicloud/issues/9810))
