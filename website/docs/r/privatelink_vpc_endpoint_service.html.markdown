@@ -47,7 +47,7 @@ The following arguments are supported:
 * `auto_accept_connection` - (Optional) Indicates whether the endpoint service automatically accepts endpoint connection requests. Valid values:
   - `true`
   - `false`
-* `connect_bandwidth` - (Optional, Computed, Int) The default bandwidth of the endpoint connection. Valid values: 100 to 10240. Unit: Mbit/s.
+* `connect_bandwidth` - (Optional, Computed, Int) The default bandwidth of the endpoint connection. Valid values: 100 to 10240. Unit: Mbit/s. When `service_resource_type` is `slb`, this field can be read from the remote API. When `service_resource_type` is `nlb`, `alb`, or `gwlb`, this field can be configured but is not returned by the remote API.
 * `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request.
   - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
@@ -64,6 +64,7 @@ The following arguments are supported:
 * `service_support_ipv6` - (Optional, Computed) Specifies whether to enable IPv6 for the endpoint service. Valid values:
   - `true`
   - **false (default)**
+* `supported_region_list` - (Optional, Computed, Set, Available since v1.282.0) The list of remote region IDs that are supported by the endpoint service.
 * `tags` - (Optional, Map) The list of tags.
 * `zone_affinity_enabled` - (Optional, Computed) Specifies whether to first resolve the domain name of the nearest endpoint that is associated with the endpoint service. Valid values:
   - `true`
