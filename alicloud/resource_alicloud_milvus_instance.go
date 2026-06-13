@@ -32,6 +32,10 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"components": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -194,6 +198,9 @@ func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface
 	}
 
 	request["paymentType"] = d.Get("payment_type")
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		request["autoPay"] = v
+	}
 	if v, ok := d.GetOk("configuration"); ok {
 		request["configuration"] = v
 	}
@@ -387,6 +394,9 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 		update = true
 	}
 	request["instanceName"] = d.Get("instance_name")
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		request["autoPay"] = v
+	}
 	if d.HasChange("auto_backup") {
 		update = true
 	}
