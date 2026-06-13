@@ -1,4 +1,9 @@
 ## 1.283.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_cloud_firewall_instance: Added the field auto_asset_protection.
+
 ## 1.282.0 (June 15, 2026)
 
 - **New Data Source:**`alicloud_esa_cache_reserve_instances` ([#9841](https://github.com/aliyun/terraform-provider-alicloud/issues/9841))

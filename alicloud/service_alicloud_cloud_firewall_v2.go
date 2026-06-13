@@ -1096,6 +1096,40 @@ func (s *CloudFirewallServiceV2) DescribeInstanceDescribeUserBuyVersion(id strin
 	return response, nil
 }
 
+func (s *CloudFirewallServiceV2) DescribeInstanceDescribeAssetStatistic(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	action := "DescribeAssetStatistic"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ErrorParamsNotEnough"}) {
+			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
 func (s *CloudFirewallServiceV2) CloudFirewallInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.CloudFirewallInstanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeCloudFirewallInstance)
 }
