@@ -9,9 +9,9 @@ import (
 
 func TestAccAlicloudDataWorksFoldersDataSource(t *testing.T) {
 
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandInt()
 	resourceId := "data.alicloud_data_works_folders.default"
-	name := fmt.Sprintf("tf_testacc_dwf%v", rand)
+	name := fmt.Sprintf("tf-testacc-dataworksfolder%v", rand)
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceDataworksFoldersConfigDependence)
 
@@ -19,12 +19,12 @@ func TestAccAlicloudDataWorksFoldersDataSource(t *testing.T) {
 		existConfig: testAccConfig(map[string]interface{}{
 			"project_id":         "${alicloud_data_works_folder.default.project_id}",
 			"ids":                []string{"${alicloud_data_works_folder.default.folder_id}"},
-			"parent_folder_path": "Business Flow",
+			"parent_folder_path": "Business Flow/tfTestAcc/folderDi",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"project_id":         "${alicloud_data_works_folder.default.project_id}",
 			"ids":                []string{"${alicloud_data_works_folder.default.folder_id}_fake"},
-			"parent_folder_path": "Business Flow",
+			"parent_folder_path": "Business Flow/tfTestAcc/folderDi",
 		}),
 	}
 
@@ -58,16 +58,10 @@ func dataSourceDataworksFoldersConfigDependence(name string) string {
 		variable "name" {
 		 default = "%v"
 		}
-
-		resource "alicloud_data_works_project" "default" {
-		  project_name     = var.name
-		  display_name     = var.name
-		  pai_task_enabled = true
-		}
-
+		
 		resource "alicloud_data_works_folder" "default" {
-			project_id = alicloud_data_works_project.default.id
-			folder_path = "Business Flow/${var.name}"
+			project_id = "638"
+			folder_path = "Business Flow/tfTestAcc/folderDi/tftest1"
 		}
 		`, name)
 }

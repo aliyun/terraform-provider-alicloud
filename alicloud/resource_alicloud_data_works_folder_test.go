@@ -28,7 +28,7 @@ func TestAccAlicloudDataWorksFolder_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf_testacc_dwf%d", rand)
+	name := fmt.Sprintf("tf-testacc%sdataworksfolder%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksFolderBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -40,23 +40,23 @@ func TestAccAlicloudDataWorksFolder_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project_id":  "${alicloud_data_works_project.defaultProject.id}",
-					"folder_path": "Business Flow/tfacc_folder1",
+					"project_id":  "34051",
+					"folder_path": "Business Flow/tfTestAcc/folderDi/tftest1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"project_id":  CHECKSET,
-						"folder_path": "Business Flow/tfacc_folder1",
+						"project_id":  "34051",
+						"folder_path": "Business Flow/tfTestAcc/folderDi/tftest1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"folder_path": "Business Flow/tfacc_folder2",
+					"folder_path": "Business Flow/tfTestAcc/folderDi/tftest2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"folder_path": "Business Flow/tfacc_folder2",
+						"folder_path": "Business Flow/tfTestAcc/folderDi/tftest2",
 					}),
 				),
 			},
@@ -73,19 +73,13 @@ var AlicloudDataWorksFolderMap0 = map[string]string{
 	"folder_id":          CHECKSET,
 	"folder_path":        "",
 	"project_identifier": NOSET,
-	"project_id":         CHECKSET,
+	"project_id":         "34051",
 }
 
 func AlicloudDataWorksFolderBasicDependence0(name string) string {
-	return fmt.Sprintf(`
+	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
-}
-
-resource "alicloud_data_works_project" "defaultProject" {
-  project_name     = var.name
-  display_name     = var.name
-  pai_task_enabled = true
 }
 `, name)
 }
@@ -98,7 +92,7 @@ func TestUnitAlicloudDataWorksFolder(t *testing.T) {
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"project_id":         "CreateFolderValue",
-		"folder_path":        "Business Flow/tfacc_folder1",
+		"folder_path":        "Business Flow/tfTestAcc/folderDi/tftest1",
 		"project_identifier": "CreateFolderValue",
 	}
 	for key, value := range attributes {
@@ -122,7 +116,7 @@ func TestUnitAlicloudDataWorksFolder(t *testing.T) {
 		"Data": map[string]interface{}{
 			"ProjectId":  "CreateFolderValue",
 			"Data":       "CreateFolderValue",
-			"FolderPath": "Business Flow/tfacc_folder1",
+			"FolderPath": "Business Flow/tfTestAcc/folderDi/tftest1",
 		},
 	}
 	CreateMockResponse := map[string]interface{}{
@@ -164,7 +158,7 @@ func TestUnitAlicloudDataWorksFolder(t *testing.T) {
 		"Data": map[string]interface{}{
 			"ProjectId":  "CreateFolderValue",
 			"Data":       "CreateFolderValue",
-			"FolderPath": "Business Flow/tfacc_folder1",
+			"FolderPath": "Business Flow/tfTestAcc/folderDi/tftest1",
 		},
 	}
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -218,7 +212,7 @@ func TestUnitAlicloudDataWorksFolder(t *testing.T) {
 	assert.NotNil(t, err)
 	// UpdateFolder
 	attributesDiff := map[string]interface{}{
-		"folder_path":        "Business Flow/tfacc_folder2",
+		"folder_path":        "Business Flow/tfTestAcc/folderDi/tftest2",
 		"project_identifier": "UpdateFolderValue",
 	}
 	diff, err := newInstanceDiff("alicloud_data_works_folder", attributes, attributesDiff, dInit.State())
@@ -229,7 +223,7 @@ func TestUnitAlicloudDataWorksFolder(t *testing.T) {
 	ReadMockResponseDiff = map[string]interface{}{
 		// GetFolder Response
 		"Data": map[string]interface{}{
-			"FolderPath": "Business Flow/tfacc_folder2",
+			"FolderPath": "Business Flow/tfTestAcc/folderDi/tftest2",
 		},
 	}
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
