@@ -131,6 +131,15 @@ func resourceAliCloudDataWorksProjectCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
+	// Enabling PAI for a project is asynchronous: DescribeDataWorksProject may keep
+	// returning PaiTaskEnabled=false for a short while after the project reaches the
+	// Available state, which leads to a perpetual "false -> true" diff. Wait until the
+	// server-side value converges to the requested one before reading the resource back.
+	paiStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("pai_task_enabled"))}, d.Timeout(schema.TimeoutCreate), 10*time.Second, dataWorksServiceV2.DataWorksProjectStateRefreshFunc(d.Id(), "$.Project.PaiTaskEnabled", []string{}))
+	if _, err := paiStateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAliCloudDataWorksProjectUpdate(d, meta)
 }
 
@@ -208,7 +217,7 @@ func resourceAliCloudDataWorksProjectUpdate(d *schema.ResourceData, meta interfa
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("dataworks-public", "2020-05-18", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -260,7 +269,7 @@ func resourceAliCloudDataWorksProjectUpdate(d *schema.ResourceData, meta interfa
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -306,7 +315,7 @@ func resourceAliCloudDataWorksProjectDelete(d *schema.ResourceData, meta interfa
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
