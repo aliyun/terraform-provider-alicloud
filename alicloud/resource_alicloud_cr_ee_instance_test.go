@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
@@ -9,6 +10,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func TestAccAliCloudCrInstance_0SweepOssBuckets(t *testing.T) {
+	testAccPreCheck(t)
+	testAccPreCheckWithAccountSiteType(t, DomesticSite)
+
+	regions := []string{os.Getenv("ALICLOUD_REGION"), string(connectivity.Hangzhou)}
+	sweptRegions := make(map[string]bool)
+	for _, region := range regions {
+		if region == "" || sweptRegions[region] {
+			continue
+		}
+		sweptRegions[region] = true
+
+		t.Logf("[INFO] Sweeping CR related OSS buckets in %s", region)
+		if err := sweepOSSBuckets(region, ossBucketSweepPrefixes); err != nil {
+			t.Fatalf("failed to sweep CR related OSS buckets in %s: %s", region, err)
+		}
+	}
+}
 
 func TestAccAliCloudCrInstance_Basic(t *testing.T) {
 	var v *cr_ee.GetInstanceResponse
@@ -233,6 +253,61 @@ func TestAccAliCloudCrInstance_Advanced(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCrInstance_EconomyDisableScanner(t *testing.T) {
+	var v *cr_ee.GetInstanceResponse
+	resourceId := "alicloud_cr_ee_instance.default"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeCrEEInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-economy-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCrEEInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":   "Subscription",
+					"period":         "1",
+					"renewal_status": "ManualRenewal",
+					"instance_type":  "Economy",
+					"instance_name":  name,
+					"image_scanner":  "DISABLE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":         CHECKSET,
+						"created_time":   CHECKSET,
+						"end_time":       CHECKSET,
+						"renewal_status": "ManualRenewal",
+						"instance_name":  name,
+						"instance_type":  "Economy",
+						"payment_type":   "Subscription",
+						"image_scanner":  "DISABLE",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "custom_oss_bucket", "password", "kms_encrypted_password", "kms_encryption_context", "image_scanner"},
+			},
+		},
+	})
+}
+
 func resourceCrEEInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -340,8 +415,19 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_ram_roles" "cr_custom_oss" {
+  name_regex = "^AliyunContainerRegistryCustomizedOSSBucketRole$"
+}
+
+data "alicloud_ram_policies" "cr_custom_oss" {
+  name_regex     = "(?i)^AliyunContainerRegistryCustomizedOSSBucketRolePolicy$"
+  type           = "Custom"
+  enable_details = false
+}
+
 resource "alicloud_ram_role" "defaultRole" {
-  name = "AliyunContainerRegistryCustomizedOSSBucketRole"
+  count = length(data.alicloud_ram_roles.cr_custom_oss.names) > 0 ? 0 : 1
+  name  = "AliyunContainerRegistryCustomizedOSSBucketRole"
 
   description = var.name
   document = <<EOF
@@ -363,6 +449,7 @@ resource "alicloud_ram_role" "defaultRole" {
 }
 
 resource "alicloud_ram_policy" "defaultLPolicy" {
+  count = length(data.alicloud_ram_policies.cr_custom_oss.names) > 0 ? 0 : 1
   policy_name = "AliyunContainerRegistryCustomizedOSSBucketRolePolicy"
   description = var.name
 
@@ -466,10 +553,22 @@ resource "alicloud_ram_policy" "defaultLPolicy" {
   EOF
 }
 
+locals {
+  cr_custom_oss_role_name   = length(data.alicloud_ram_roles.cr_custom_oss.names) > 0 ? data.alicloud_ram_roles.cr_custom_oss.names[0] : concat(alicloud_ram_role.defaultRole.*.name, [""])[0]
+  cr_custom_oss_policy_name = length(data.alicloud_ram_policies.cr_custom_oss.names) > 0 ? data.alicloud_ram_policies.cr_custom_oss.names[0] : concat(alicloud_ram_policy.defaultLPolicy.*.policy_name, [""])[0]
+}
+
+data "alicloud_ram_role_policy_attachments" "cr_custom_oss" {
+  count     = length(data.alicloud_ram_roles.cr_custom_oss.names) > 0 ? 1 : 0
+  role_name = local.cr_custom_oss_role_name
+  ids       = ["role:${local.cr_custom_oss_policy_name}:Custom:${local.cr_custom_oss_role_name}"]
+}
+
 resource "alicloud_ram_role_policy_attachment" "RolePolicyAttachment" {
+  count       = length(flatten(data.alicloud_ram_role_policy_attachments.cr_custom_oss.*.ids)) > 0 ? 0 : 1
   policy_type = "Custom"
-  role_name   = alicloud_ram_role.defaultRole.name
-  policy_name = alicloud_ram_policy.defaultLPolicy.policy_name
+  role_name   = local.cr_custom_oss_role_name
+  policy_name = local.cr_custom_oss_policy_name
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}
