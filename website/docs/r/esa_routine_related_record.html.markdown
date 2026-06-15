@@ -21,7 +21,7 @@ For information about ESA Routine Related Record and how to use it, see [What is
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_routine_related_record&exampleId=92ca3c6f-be82-dd93-a5d6-ffc9f4d434ff62a3220d&activeTab=example&spm=docs.r.esa_routine_related_record.0.92ca3c6fbe&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_esa_routine_related_record&exampleId=6051a9e1-fb82-cb49-8839-2989bb043ef1a6bda7b3&activeTab=example&spm=docs.r.esa_routine_related_record.0.6051a9e1fb&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
