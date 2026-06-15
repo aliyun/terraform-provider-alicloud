@@ -353,9 +353,9 @@ variable "function_name" {
   default = "TestNativeRuntimePython_Nas_Pre2"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+# Use alicloud_fc_zones: returns only zones FC actually supports
+# (e.g. excludes cn-beijing-a / cn-shanghai-a which are not enabled for FCv3 VPC binding).
+data "alicloud_fc_zones" "default" {}
 
 resource "alicloud_vpc" "vpc-a" {
   description = "Alibaba-Fc-V3-Component-Generated"
@@ -366,7 +366,7 @@ resource "alicloud_vpc" "vpc-a" {
 resource "alicloud_vswitch" "vsw-a-1" {
   description  = "Alibaba-Fc-V3-Component-Generated"
   vpc_id       = alicloud_vpc.vpc-a.id
-  zone_id      = data.alicloud_zones.default.zones.0.id
+  zone_id      = data.alicloud_fc_zones.default.zones.0.id
   cidr_block   = "10.20.0.0/24"
   vswitch_name = var.name
 }
@@ -743,7 +743,7 @@ func TestAccAliCloudFcv3Function_basic6950_raw(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"function_name": name,
-					"memory_size":   "512",
+					"memory_size":   "4096",
 					"runtime":       "custom-container",
 					"timeout":       "3",
 					"handler":       "index.handler",
@@ -764,7 +764,7 @@ func TestAccAliCloudFcv3Function_basic6950_raw(t *testing.T) {
 							},
 						},
 					},
-					"cpu":       "0.5",
+					"cpu":       "4",
 					"disk_size": "512",
 					"custom_container_config": []map[string]interface{}{
 						{
@@ -802,23 +802,23 @@ func TestAccAliCloudFcv3Function_basic6950_raw(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"function_name": name,
-						"memory_size":   "512",
+						"memory_size":   "4096",
 						"runtime":       "custom-container",
 						"timeout":       "3",
 						"handler":       "index.handler",
 						"description":   "Create",
-						"cpu":           "0.5",
+						"cpu":           "4",
 						"disk_size":     "512",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"memory_size": "1024",
+					"memory_size": "8192",
 					"timeout":     "6",
 					"handler":     "index.Handler",
 					"description": "update",
-					"cpu":         "1",
+					"cpu":         "8",
 					"custom_container_config": []map[string]interface{}{
 						{
 							"image": "${var.image2}",
@@ -848,11 +848,11 @@ func TestAccAliCloudFcv3Function_basic6950_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"memory_size": "1024",
+						"memory_size": "8192",
 						"timeout":     "6",
 						"handler":     "index.Handler",
 						"description": "update",
-						"cpu":         "1",
+						"cpu":         "8",
 					}),
 				),
 			},
@@ -1176,14 +1176,14 @@ func TestAccAliCloudFcv3Function_basic6927_raw(t *testing.T) {
 								{
 									"bucket_name": "${alicloud_oss_bucket.default.bucket}",
 									"bucket_path": "/test",
-									"endpoint":    "http://oss-" + defaultRegionToTest + "-internal.aliyuncs.com",
+									"endpoint":    "http://oss-cn-shanghai-internal.aliyuncs.com",
 									"mount_dir":   "/mnt1",
 									"read_only":   "false",
 								},
 								{
 									"bucket_name": "${alicloud_oss_bucket.default1.bucket}",
 									"bucket_path": "/test2",
-									"endpoint":    "http://oss-" + defaultRegionToTest + "-internal.aliyuncs.com",
+									"endpoint":    "http://oss-cn-shanghai-internal.aliyuncs.com",
 									"mount_dir":   "/mnt2",
 									"read_only":   "false",
 								},
@@ -1223,14 +1223,14 @@ func TestAccAliCloudFcv3Function_basic6927_raw(t *testing.T) {
 								{
 									"bucket_name": "${alicloud_oss_bucket.default.bucket}",
 									"bucket_path": "/test3",
-									"endpoint":    "http://oss-" + defaultRegionToTest + ".aliyuncs.com",
+									"endpoint":    "http://oss-cn-shanghai.aliyuncs.com",
 									"mount_dir":   "/mnt4",
 									"read_only":   "true",
 								},
 								{
 									"bucket_name": "${alicloud_oss_bucket.default1.bucket}",
 									"bucket_path": "/test2",
-									"endpoint":    "http://oss-" + defaultRegionToTest + "-internal.aliyuncs.com",
+									"endpoint":    "http://oss-cn-shanghai-internal.aliyuncs.com",
 									"mount_dir":   "/mnt2",
 									"read_only":   "false",
 								},

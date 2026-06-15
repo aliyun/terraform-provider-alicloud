@@ -170,6 +170,15 @@ resource "alicloud_log_project" "default1" {
   description  = format("%%supdate", var.name)
 }
 
+resource "alicloud_log_store" "default1" {
+  project_name          = alicloud_log_project.default1.name
+  logstore_name         = format("%%supdate", var.name)
+  shard_count           = 3
+  auto_split            = true
+  max_split_shard_count = 60
+  append_meta           = true
+}
+
 resource "alicloud_fcv3_function" "function" {
   memory_size = "512"
   cpu         = 0.5
@@ -451,8 +460,8 @@ func TestAccAliCloudFcv3Trigger_basic6983_raw(t *testing.T) {
 					"trigger_name":    name,
 					"description":     "create",
 					"qualifier":       "LATEST",
-					"trigger_config":  "{\\\"sourceConfig\\\":{\\\"logstore\\\":\\\"${alicloud_log_project.default1.project_name}\\\",\\\"startTime\\\":null},\\\"jobConfig\\\":{\\\"maxRetryTime\\\":3,\\\"triggerInterval\\\":60},\\\"functionParameter\\\":{},\\\"logConfig\\\":{\\\"project\\\":\\\"${alicloud_log_project.default.project_name}\\\",\\\"logstore\\\":\\\"${alicloud_log_store.default.logstore_name}\\\"},\\\"enable\\\":true}",
-					"source_arn":      "acs:log:cn-shanghai:1511928242963727:project/${alicloud_log_project.default1.project_name}-cn-shanghai",
+					"trigger_config":  "{\\\"sourceConfig\\\":{\\\"logstore\\\":\\\"${alicloud_log_store.default1.logstore_name}\\\",\\\"startTime\\\":null},\\\"jobConfig\\\":{\\\"maxRetryTime\\\":3,\\\"triggerInterval\\\":60},\\\"functionParameter\\\":{},\\\"logConfig\\\":{\\\"project\\\":\\\"${alicloud_log_project.default.project_name}\\\",\\\"logstore\\\":\\\"${alicloud_log_store.default.logstore_name}\\\"},\\\"enable\\\":true}",
+					"source_arn":      "acs:log:cn-shanghai:1511928242963727:project/${alicloud_log_project.default1.project_name}",
 					"invocation_role": "acs:ram::1511928242963727:role/aliyunlogetlrole",
 				}),
 				Check: resource.ComposeTestCheckFunc(

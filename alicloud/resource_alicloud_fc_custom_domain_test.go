@@ -213,7 +213,7 @@ func TestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name": "${alicloud_alidns_record.record.domain_name}",
+					"domain_name": "alicloud-provider.shop",
 					"protocol":    "HTTP",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -302,7 +302,7 @@ resource "alicloud_oss_bucket_object" "default" {
   content = <<EOF
     # -*- coding: utf-8 -*-
   def handler(event, context):
-      print "hello world"
+      print("hello world")
       return 'hello world'
   EOF
 }
@@ -314,19 +314,6 @@ resource "alicloud_fc_function" "default" {
   memory_size = 512
   runtime = "python3.9"
   handler = "hello.handler"
-}
-data "alicloud_account" "current" {}
-data "alicloud_regions" "current" {
-  current = true
-}
-
-resource "alicloud_alidns_record" "record" {
-  domain_name = "tftestacc.com"
-  rr          = "@"
-  type        = "CNAME"
-  value       = "${data.alicloud_account.current.id}.${data.alicloud_regions.current.ids.0}.fc.aliyuncs.com"
-  remark      = "tf-example"
-  status      = "ENABLE"
 }
 `, name)
 }

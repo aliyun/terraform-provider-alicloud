@@ -123,7 +123,7 @@ resource "alicloud_oss_bucket_object" "default" {
 	content = <<EOF
 		# -*- coding: utf-8 -*-
 	def handler(event, context):
-		print "hello world"
+		print("hello world")
 		return 'hello world'
 	EOF
 }
@@ -134,7 +134,7 @@ resource "alicloud_fc_function" "default" {
 	oss_bucket = "${alicloud_oss_bucket.default.id}"
 	oss_key = "${alicloud_oss_bucket_object.default.key}"
 	memory_size = 512
-	runtime = "python2.7"
+	runtime = "python3.10"
 	handler = "hello.handler"
 }
 `, name, testFcPrivateKey, testFcCertificate)

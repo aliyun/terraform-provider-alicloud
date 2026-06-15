@@ -32,5 +32,20 @@ func TestAccAlicloudFCZonesDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeFCZonesMapFunc,
 	}
 
-	fcZonesCheckInfo.dataSourceTestCheck(t, rand)
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudFCZonesDataSourceConfig(),
+	}
+
+	fcZonesCheckInfo.dataSourceTestCheck(t, rand, allConf)
+}
+
+func testAccCheckAlicloudFCZonesDataSourceConfig() string {
+	// alicloud_fc_zones has no filter arguments, so a bare data source block is
+	// the only valid config. Returning at least one config makes the test build a
+	// real TestStep (previously it generated zero steps, which terraform-plugin-sdk/v2
+	// rejects with "TestCase missing Steps").
+	return `
+data "alicloud_fc_zones" "default" {
+}
+`
 }
