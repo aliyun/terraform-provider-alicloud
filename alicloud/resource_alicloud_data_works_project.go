@@ -135,9 +135,17 @@ func resourceAliCloudDataWorksProjectCreate(d *schema.ResourceData, meta interfa
 	// returning PaiTaskEnabled=false for a short while after the project reaches the
 	// Available state, which leads to a perpetual "false -> true" diff. Wait until the
 	// server-side value converges to the requested one before reading the resource back.
-	paiStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("pai_task_enabled"))}, d.Timeout(schema.TimeoutCreate), 10*time.Second, dataWorksServiceV2.DataWorksProjectStateRefreshFunc(d.Id(), "$.Project.PaiTaskEnabled", []string{}))
+	//
+	// Use a bounded timeout (2 minutes) and degrade gracefully if it elapses:
+	// some accounts/regions silently reject PAI enablement (e.g. PAI is not
+	// purchased in the target region). In that case the value will never
+	// converge and we should not fail Create — proceed to Read and let the
+	// caller see the actual server-side value rather than hanging until the
+	// Create timeout elapses.
+	paiStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("pai_task_enabled"))}, 2*time.Minute, 10*time.Second, dataWorksServiceV2.DataWorksProjectStateRefreshFunc(d.Id(), "$.Project.PaiTaskEnabled", []string{}))
 	if _, err := paiStateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		log.Printf("[WARN] alicloud_data_works_project %s: PaiTaskEnabled did not converge to %v within timeout; the account may not have PAI enabled in this region. Proceeding with current server-side value: %s",
+			d.Id(), d.Get("pai_task_enabled"), err)
 	}
 
 	return resourceAliCloudDataWorksProjectUpdate(d, meta)
