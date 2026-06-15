@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 )
 
 func TestAccAlicloudIotDeviceGroupsDataSource(t *testing.T) {
+	os.Setenv("ALICLOUD_REGION", "cn-shanghai")
 	rand := acctest.RandIntRange(1, 100)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
