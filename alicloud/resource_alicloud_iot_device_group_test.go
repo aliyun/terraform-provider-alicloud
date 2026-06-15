@@ -109,6 +109,7 @@ func TestAccAlicloudIotDeviceGroup_basic0(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudIotDeviceGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			os.Setenv("ALICLOUD_REGION", "cn-shanghai")
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
