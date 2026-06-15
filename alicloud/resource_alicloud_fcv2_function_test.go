@@ -1350,8 +1350,10 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 						},
 					},
 					"instance_type":   "fc.gpu.tesla.1",
-					"gpu_memory_size": "2048",
-					"memory_size":     "1280",
+					"gpu_memory_size": "16384",
+					"memory_size":     "4096",
+					"cpu":             "4",
+					"disk_size":       "512",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1360,20 +1362,22 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 						"service_name":    CHECKSET,
 						"handler":         "index.handler",
 						"instance_type":   "fc.gpu.tesla.1",
-						"gpu_memory_size": "2048",
-						"memory_size":     "1280",
+						"gpu_memory_size": "16384",
+						"memory_size":     "4096",
+						"cpu":             "4",
+						"disk_size":       "512",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"gpu_memory_size": "4096",
-					"memory_size":     "2560",
+					"gpu_memory_size": "16384",
+					"memory_size":     "8192",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"gpu_memory_size": "4096",
-						"memory_size":     "2560",
+						"gpu_memory_size": "16384",
+						"memory_size":     "8192",
 					}),
 				),
 			},
@@ -1484,12 +1488,12 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"disk_size": "512",
-					"cpu":       "1",
+					"cpu":       "4",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"disk_size": "512",
-						"cpu":       "1",
+						"cpu":       "4",
 					}),
 				),
 			},
@@ -1505,11 +1509,11 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cpu": "2",
+					"cpu": "8",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cpu": "2",
+						"cpu": "8",
 					}),
 				),
 			},
@@ -1563,11 +1567,11 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"gpu_memory_size": "4096",
+					"gpu_memory_size": "16384",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"gpu_memory_size": "4096",
+						"gpu_memory_size": "16384",
 					}),
 				),
 			},
@@ -1719,11 +1723,11 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"gpu_memory_size": "8192",
+					"gpu_memory_size": "16384",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"gpu_memory_size": "8192",
+						"gpu_memory_size": "16384",
 					}),
 				),
 			},
@@ -1757,7 +1761,7 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 					},
 					"disk_size":            "512",
 					"instance_concurrency": "10",
-					"cpu":                  "2",
+					"cpu":                  "4",
 					"custom_health_check_config": []map[string]interface{}{
 						{
 							"http_get_url":          "/healthcheck",
@@ -1778,7 +1782,7 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 							"web_server_mode":   "true",
 						},
 					},
-					"gpu_memory_size": "4096",
+					"gpu_memory_size": "16384",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1794,9 +1798,9 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 						"instance_type":          "fc.gpu.tesla.1",
 						"disk_size":              "512",
 						"instance_concurrency":   "10",
-						"cpu":                    "2",
+						"cpu":                    "4",
 						"ca_port":                "9000",
-						"gpu_memory_size":        "4096",
+						"gpu_memory_size":        "16384",
 					}),
 				),
 			},
@@ -2215,7 +2219,7 @@ func TestAccAliCloudFcv2Function_basic3395_twin(t *testing.T) {
 					},
 					"disk_size":            "10240",
 					"instance_concurrency": "20",
-					"cpu":                  "2",
+					"cpu":                  "4",
 					"custom_health_check_config": []map[string]interface{}{
 						{
 							"http_get_url":          "/healthcheck1",
@@ -2236,7 +2240,7 @@ func TestAccAliCloudFcv2Function_basic3395_twin(t *testing.T) {
 							"web_server_mode":   "true",
 						},
 					},
-					"gpu_memory_size": "8192",
+					"gpu_memory_size": "16384",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2252,9 +2256,9 @@ func TestAccAliCloudFcv2Function_basic3395_twin(t *testing.T) {
 						"instance_type":               "fc.gpu.tesla.1",
 						"disk_size":                   "10240",
 						"instance_concurrency":        "20",
-						"cpu":                         "2",
+						"cpu":                         "4",
 						"ca_port":                     "8000",
-						"gpu_memory_size":             "8192",
+						"gpu_memory_size":             "16384",
 						"environment_variables.%":     "1",
 						"environment_variables.env_k": "env_v",
 					}),

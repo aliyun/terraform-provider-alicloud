@@ -69,7 +69,7 @@ func TestAccAliCloudFcv3CustomDomain_basic6974_raw(t *testing.T) {
 	}, "DescribeFcv3CustomDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, defaultRegionToTest)
+	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, "cn-shanghai")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFc3CustomDomainBasicDependence6974)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -339,7 +339,7 @@ func TestAccAliCloudFcv3CustomDomain_basic7241_raw(t *testing.T) {
 	}, "DescribeFcv3CustomDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, defaultRegionToTest)
+	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, "cn-shanghai")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFc3CustomDomainBasicDependence7241)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -607,7 +607,7 @@ func TestAccAliCloudFcv3CustomDomain_basic12462(t *testing.T) {
 	}, "DescribeFcv3CustomDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, defaultRegionToTest)
+	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, "cn-shanghai")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3CustomDomainBasicDependence12462)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
