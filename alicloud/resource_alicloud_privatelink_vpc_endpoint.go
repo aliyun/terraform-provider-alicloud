@@ -39,6 +39,11 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"cross_region_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -90,6 +95,12 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"service_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"service_region_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -156,6 +167,12 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOkExists("zone_private_ip_address_count"); ok {
 		request["ZonePrivateIpAddressCount"] = v
 	}
+	if v, ok := d.GetOk("address_ip_version"); ok {
+		request["AddressIpVersion"] = v
+	}
+	if v, ok := d.GetOk("cross_region_bandwidth"); ok {
+		request["CrossRegionBandwidth"] = v
+	}
 	if v, ok := d.GetOk("security_group_ids"); ok {
 		securityGroupIdMapsArray := v.(*schema.Set).List()
 		request["SecurityGroupId"] = securityGroupIdMapsArray
@@ -170,6 +187,9 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 	request["VpcId"] = d.Get("vpc_id")
 	if v, ok := d.GetOk("service_name"); ok {
 		request["ServiceName"] = v
+	}
+	if v, ok := d.GetOk("service_region_id"); ok {
+		request["ServiceRegionId"] = v
 	}
 	if v, ok := d.GetOk("endpoint_description"); ok {
 		request["EndpointDescription"] = v
@@ -232,6 +252,9 @@ func resourceAliCloudPrivateLinkVpcEndpointRead(d *schema.ResourceData, meta int
 	if objectRaw["ConnectionStatus"] != nil {
 		d.Set("connection_status", objectRaw["ConnectionStatus"])
 	}
+	if objectRaw["CrossRegionBandwidth"] != nil {
+		d.Set("cross_region_bandwidth", objectRaw["CrossRegionBandwidth"])
+	}
 	if objectRaw["CreateTime"] != nil {
 		d.Set("create_time", objectRaw["CreateTime"])
 	}
@@ -258,6 +281,9 @@ func resourceAliCloudPrivateLinkVpcEndpointRead(d *schema.ResourceData, meta int
 	}
 	if objectRaw["ServiceId"] != nil {
 		d.Set("service_id", objectRaw["ServiceId"])
+	}
+	if objectRaw["ServiceRegionId"] != nil {
+		d.Set("service_region_id", objectRaw["ServiceRegionId"])
 	}
 	if objectRaw["ServiceName"] != nil {
 		d.Set("service_name", objectRaw["ServiceName"])
@@ -299,7 +325,6 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	d.Partial(true)
 
 	action := "UpdateVpcEndpointAttribute"
 	var err error
@@ -326,13 +351,17 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	if d.HasChange("address_ip_version") {
+	if !d.IsNewResource() && d.HasChange("address_ip_version") {
 		update = true
 		request["AddressIpVersion"] = d.Get("address_ip_version")
 	}
+	if !d.IsNewResource() && d.HasChange("cross_region_bandwidth") {
+		update = true
+		request["CrossRegionBandwidth"] = d.Get("cross_region_bandwidth")
+	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(5*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 			if err != nil {
@@ -368,7 +397,7 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, false)
+			response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -477,7 +506,6 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 		}
 
 	}
-	d.Partial(false)
 	return resourceAliCloudPrivateLinkVpcEndpointRead(d, meta)
 }
 
