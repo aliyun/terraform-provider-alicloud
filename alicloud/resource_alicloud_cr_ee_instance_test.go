@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
@@ -10,25 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
-
-func TestAccAliCloudCrInstance_0SweepOssBuckets(t *testing.T) {
-	testAccPreCheck(t)
-	testAccPreCheckWithAccountSiteType(t, DomesticSite)
-
-	regions := []string{os.Getenv("ALICLOUD_REGION"), string(connectivity.Hangzhou)}
-	sweptRegions := make(map[string]bool)
-	for _, region := range regions {
-		if region == "" || sweptRegions[region] {
-			continue
-		}
-		sweptRegions[region] = true
-
-		t.Logf("[INFO] Sweeping CR related OSS buckets in %s", region)
-		if err := sweepOSSBuckets(region, ossBucketSweepPrefixes); err != nil {
-			t.Fatalf("failed to sweep CR related OSS buckets in %s: %s", region, err)
-		}
-	}
-}
 
 func TestAccAliCloudCrInstance_Basic(t *testing.T) {
 	var v *cr_ee.GetInstanceResponse

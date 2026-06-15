@@ -20,270 +20,113 @@ func init() {
 	})
 }
 
-var ossBucketSweepPrefixes = []string{
-	"tf-testacc",
-	"tf-test-",
-	"test-bucket-",
-	"tf-oss-test-",
-	"tf-oss-bucket-",
-	"tf-oss-module-test-",
-	"tf-object-test-",
-	"test-acc-alicloud-",
-	"tftest",
-	"cri",
-	"tf-example",
-	"tf_example",
-	"terraform-example",
-}
-
 func testSweepOSSBuckets(region string) error {
-	return sweepOSSBuckets(region, ossBucketSweepPrefixes)
-}
-
-func sweepOSSBuckets(region string, prefixes []string) error {
-	// The shared test endpoint cache is keyed by product only, so reset OSS before a region-scoped sweep.
-	endpoints.Delete("oss")
-
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	var sweepErrors []string
-	nextMarker := ""
-	for {
-		var options []oss.Option
-		options = append(options, oss.MaxKeys(1000))
-		if nextMarker != "" {
-			options = append(options, oss.Marker(nextMarker))
-		}
+	prefixes := []string{
+		"tf-testacc",
+		"tf-test-",
+		"test-bucket-",
+		"tf-oss-test-",
+		"tf-object-test-",
+		"test-acc-alicloud-",
+		"tftest",
+		"cri",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
+	}
 
-		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-			return ossClient.ListBuckets(options...)
-		})
-		if err != nil {
-			return fmt.Errorf("Error retrieving OSS buckets: %s", err)
+	var options []oss.Option
+	options = append(options, oss.MaxKeys(1000))
+
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return ossClient.ListBuckets(options...)
+	})
+	if err != nil {
+		return fmt.Errorf("Error retrieving OSS buckets: %s", err)
+	}
+	resp, _ := raw.(oss.ListBucketsResult)
+	for _, v := range resp.Buckets {
+		name := v.Name
+		if !strings.HasSuffix(v.Location, client.RegionId) {
+			continue
 		}
-		resp, _ := raw.(oss.ListBucketsResult)
-		for _, v := range resp.Buckets {
-			name := v.Name
-			if !strings.HasSuffix(v.Location, client.RegionId) {
+		skip := true
+		if !sweepAll() {
+			if strings.HasPrefix(strings.ToLower(name), "terraform-alicloud-provider") {
 				continue
 			}
-			if !shouldSweepOSSBucket(name, prefixes) {
+			if strings.HasPrefix(strings.ToLower(name), "terraform-remote-backend") {
+				continue
+			}
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
 				log.Printf("[INFO] Skipping OSS bucket: %s", name)
 				continue
 			}
-
-			if err := sweepOSSBucket(client, name); err != nil {
-				if isIgnorableOSSBucketSweepError(err) {
-					log.Printf("[WARN] Skipping OSS bucket (%s) after cleanup attempt: %s", name, err)
-					continue
-				}
-				log.Printf("[ERROR] Failed to sweep OSS bucket (%s): %s", name, err)
-				sweepErrors = append(sweepErrors, fmt.Sprintf("%s: %s", name, err))
+		}
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.Bucket(name)
+		})
+		if err != nil {
+			return fmt.Errorf("Error getting bucket (%s): %#v", name, err)
+		}
+		bucket, _ := raw.(*oss.Bucket)
+		var initialOptions []oss.Option
+		nextMarker := ""
+		for {
+			var options []oss.Option
+			options = append(options, initialOptions...)
+			if nextMarker != "" {
+				options = append(options, oss.Marker(nextMarker))
+			}
+			raw, err := client.WithOssBucketByName(bucket.BucketName, func(bucket *oss.Bucket) (interface{}, error) {
+				return bucket.ListObjects(options...)
+			})
+			if err != nil {
 				continue
 			}
+			response, _ := raw.(oss.ListObjectsResult)
+
+			if response.Objects == nil || len(response.Objects) < 1 {
+				break
+			}
+
+			if len(response.Objects) < 1 {
+				break
+			}
+
+			if len(response.Objects) > 0 {
+				for _, o := range response.Objects {
+					if err := bucket.DeleteObject(o.Key); err != nil {
+						log.Printf("[ERROR] Failed to delete object (%s): %s.", o.Key, err)
+					}
+				}
+			}
+
+			nextMarker = response.NextMarker
+			if nextMarker == "" {
+				break
+			}
 		}
 
-		nextMarker = resp.NextMarker
-		if nextMarker == "" {
-			break
-		}
-	}
+		log.Printf("[INFO] Deleting OSS bucket: %s", name)
 
-	if len(sweepErrors) > 0 {
-		return fmt.Errorf("failed to sweep %d OSS buckets: %s", len(sweepErrors), strings.Join(sweepErrors, "; "))
-	}
-	return nil
-}
-
-func shouldSweepOSSBucket(name string, prefixes []string) bool {
-	if sweepAll() {
-		return true
-	}
-
-	lowerName := strings.ToLower(name)
-	if strings.HasPrefix(lowerName, "terraform-alicloud-provider") {
-		return false
-	}
-	if strings.HasPrefix(lowerName, "terraform-remote-backend") {
-		return false
-	}
-
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(lowerName, strings.ToLower(prefix)) {
-			return true
-		}
-	}
-	return false
-}
-
-func isIgnorableOSSBucketSweepError(err error) bool {
-	return IsExpectedErrors(err, []string{"AccessDenied", "BucketBindingAccessPoints"})
-}
-
-func sweepOSSBucket(client *connectivity.AliyunClient, name string) error {
-	if err := deleteOSSBucketPolicy(client, name); err != nil {
-		log.Printf("[WARN] Failed to delete OSS bucket policy (%s): %s", name, err)
-	}
-
-	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return ossClient.Bucket(name)
-	})
-	if err != nil {
-		return fmt.Errorf("Error getting bucket (%s): %#v", name, err)
-	}
-	bucket, _ := raw.(*oss.Bucket)
-
-	if err := deleteOSSBucketObjectVersions(bucket); err != nil {
-		if isIgnorableOSSBucketSweepError(err) {
-			log.Printf("[WARN] Failed to delete object versions in OSS bucket (%s): %s", name, err)
-		} else {
-			log.Printf("[ERROR] Failed to delete object versions in OSS bucket (%s): %s", name, err)
-		}
-	}
-	if err := deleteOSSBucketObjects(bucket); err != nil {
-		return err
-	}
-	if err := abortOSSBucketMultipartUploads(bucket); err != nil {
-		log.Printf("[ERROR] Failed to abort multipart uploads in OSS bucket (%s): %s", name, err)
-	}
-
-	log.Printf("[INFO] Deleting OSS bucket: %s", name)
-
-	_, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.DeleteBucket(name)
-	})
-	if err != nil {
-		return fmt.Errorf("Failed to delete OSS bucket (%s): %s", name, err)
-	}
-	return nil
-}
-
-func deleteOSSBucketPolicy(client *connectivity.AliyunClient, name string) error {
-	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.DeleteBucketPolicy(name)
-	})
-	if err != nil && !NotFoundError(err) && !IsExpectedErrors(err, []string{"NoSuchBucketPolicy"}) {
-		return err
-	}
-	return nil
-}
-
-func deleteOSSBucketObjectVersions(bucket *oss.Bucket) error {
-	keyMarker := ""
-	versionIDMarker := ""
-	for {
-		var options []oss.Option
-		options = append(options, oss.MaxKeys(1000))
-		if keyMarker != "" {
-			options = append(options, oss.KeyMarker(keyMarker))
-		}
-		if versionIDMarker != "" {
-			options = append(options, oss.VersionIdMarker(versionIDMarker))
-		}
-
-		lor, err := bucket.ListObjectVersions(options...)
+		_, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.DeleteBucket(name)
+		})
 		if err != nil {
-			return err
-		}
-
-		objectsToDelete := make([]oss.DeleteObject, 0, len(lor.ObjectDeleteMarkers)+len(lor.ObjectVersions))
-		for _, object := range lor.ObjectDeleteMarkers {
-			objectsToDelete = append(objectsToDelete, oss.DeleteObject{
-				Key:       object.Key,
-				VersionId: object.VersionId,
-			})
-		}
-		for _, object := range lor.ObjectVersions {
-			objectsToDelete = append(objectsToDelete, oss.DeleteObject{
-				Key:       object.Key,
-				VersionId: object.VersionId,
-			})
-		}
-
-		if len(objectsToDelete) > 0 {
-			if _, err := bucket.DeleteObjectVersions(objectsToDelete); err != nil {
-				return err
-			}
-		}
-
-		keyMarker = lor.NextKeyMarker
-		versionIDMarker = lor.NextVersionIdMarker
-		if !lor.IsTruncated || keyMarker == "" {
-			break
-		}
-	}
-	return nil
-}
-
-func deleteOSSBucketObjects(bucket *oss.Bucket) error {
-	nextMarker := ""
-	for {
-		var options []oss.Option
-		options = append(options, oss.MaxKeys(1000))
-		if nextMarker != "" {
-			options = append(options, oss.Marker(nextMarker))
-		}
-
-		lor, err := bucket.ListObjects(options...)
-		if err != nil {
-			return fmt.Errorf("Failed to list objects in OSS bucket (%s): %s", bucket.BucketName, err)
-		}
-
-		if len(lor.Objects) > 0 {
-			objectKeys := make([]string, 0, len(lor.Objects))
-			for _, object := range lor.Objects {
-				objectKeys = append(objectKeys, object.Key)
-			}
-			if _, err := bucket.DeleteObjects(objectKeys); err != nil {
-				return fmt.Errorf("Failed to delete objects in OSS bucket (%s): %s", bucket.BucketName, err)
-			}
-		}
-
-		nextMarker = lor.NextMarker
-		if !lor.IsTruncated || nextMarker == "" {
-			break
-		}
-	}
-	return nil
-}
-
-func abortOSSBucketMultipartUploads(bucket *oss.Bucket) error {
-	keyMarker := ""
-	uploadIDMarker := ""
-	for {
-		var options []oss.Option
-		options = append(options, oss.MaxUploads(1000))
-		if keyMarker != "" {
-			options = append(options, oss.KeyMarker(keyMarker))
-		}
-		if uploadIDMarker != "" {
-			options = append(options, oss.UploadIDMarker(uploadIDMarker))
-		}
-
-		lmur, err := bucket.ListMultipartUploads(options...)
-		if err != nil {
-			return err
-		}
-
-		for _, upload := range lmur.Uploads {
-			imur := oss.InitiateMultipartUploadResult{
-				Bucket:   bucket.BucketName,
-				Key:      upload.Key,
-				UploadID: upload.UploadID,
-			}
-			if err := bucket.AbortMultipartUpload(imur); err != nil {
-				return err
-			}
-		}
-
-		keyMarker = lmur.NextKeyMarker
-		uploadIDMarker = lmur.NextUploadIDMarker
-		if !lmur.IsTruncated || keyMarker == "" {
-			break
+			log.Printf("[ERROR] Failed to delete OSS bucket (%s): %s", name, err)
 		}
 	}
 	return nil
