@@ -48,7 +48,7 @@ func resourceAliCloudCrInstance() *schema.Resource {
 			"image_scanner": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"ACR", "SAS"}, false),
+				ValidateFunc: StringInSlice([]string{"ACR", "SAS", "DISABLE"}, false),
 			},
 			"instance_endpoints": {
 				Type:     schema.TypeList,
@@ -90,7 +90,7 @@ func resourceAliCloudCrInstance() *schema.Resource {
 			"instance_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"Basic", "Standard", "Advanced"}, false),
+				ValidateFunc: StringInSlice([]string{"Basic", "Standard", "Advanced", "Economy"}, false),
 			},
 			"namespace_quota": {
 				Type:     schema.TypeInt,

@@ -42,6 +42,11 @@ func resourceAlicloudEssNotification() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"message_encoding": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"PlainText", "Base64"}, false),
+			},
 		},
 	}
 }
@@ -57,6 +62,9 @@ func resourceAlicloudEssNotificationCreate(d *schema.ResourceData, meta interfac
 	request["NotificationArn"] = d.Get("notification_arn").(string)
 	if v, ok := d.GetOk("time_zone"); ok {
 		request["TimeZone"] = v
+	}
+	if v, ok := d.GetOk("message_encoding"); ok {
+		request["MessageEncoding"] = v
 	}
 	if v, ok := d.GetOk("notification_types"); ok {
 		notificationTypes := make([]string, 0)
@@ -80,9 +88,12 @@ func resourceAlicloudEssNotificationCreate(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
 	d.SetId(fmt.Sprintf("%s:%s", request["ScalingGroupId"], request["NotificationArn"]))
 	return resourceAlicloudEssNotificationRead(d, meta)
 }
@@ -101,6 +112,7 @@ func resourceAlicloudEssNotificationRead(d *schema.ResourceData, meta interface{
 	d.Set("scaling_group_id", object["ScalingGroupId"])
 	d.Set("notification_arn", object["NotificationArn"])
 	d.Set("time_zone", object["TimeZone"])
+	d.Set("message_encoding", object["MessageEncoding"])
 	notificationTypes, _ := jsonpath.Get("$.NotificationTypes", object)
 	notificationType, _ := jsonpath.Get("$.NotificationType", notificationTypes)
 	d.Set("notification_types", notificationType)
@@ -132,6 +144,11 @@ func resourceAlicloudEssNotificationUpdate(d *schema.ResourceData, meta interfac
 	if d.HasChange("time_zone") {
 		if v, ok := d.GetOk("time_zone"); ok {
 			request["TimeZone"] = v
+		}
+	}
+	if d.HasChange("message_encoding") {
+		if v, ok := d.GetOk("message_encoding"); ok {
+			request["MessageEncoding"] = v
 		}
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)

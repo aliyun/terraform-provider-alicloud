@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -90,6 +89,12 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"supported_region_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -147,6 +152,9 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceCreate(d *schema.ResourceData,
 	if v, ok := d.GetOkExists("auto_accept_connection"); ok {
 		request["AutoAcceptEnabled"] = v
 	}
+	if v, ok := d.GetOk("supported_region_list"); ok {
+		request["SupportedRegionList"] = v.(*schema.Set).List()
+	}
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
@@ -198,7 +206,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceRead(d *schema.ResourceData, m
 
 	d.Set("address_ip_version", objectRaw["AddressIpVersion"])
 	d.Set("auto_accept_connection", objectRaw["AutoAcceptEnabled"])
-	d.Set("connect_bandwidth", objectRaw["ConnectBandwidth"])
+	setVpcEndpointServiceConnectBandwidth(d, objectRaw)
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("payer", objectRaw["Payer"])
 	d.Set("region_id", objectRaw["RegionId"])
@@ -208,6 +216,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceRead(d *schema.ResourceData, m
 	d.Set("service_domain", objectRaw["ServiceDomain"])
 	d.Set("service_resource_type", objectRaw["ServiceResourceType"])
 	d.Set("service_support_ipv6", objectRaw["ServiceSupportIPv6"])
+	d.Set("supported_region_list", convertSupportedRegionSetToStringList(objectRaw["SupportedRegionSet"]))
 	d.Set("status", objectRaw["ServiceStatus"])
 	d.Set("vpc_endpoint_service_name", objectRaw["ServiceName"])
 	d.Set("zone_affinity_enabled", objectRaw["ZoneAffinityEnabled"])
@@ -221,6 +230,41 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceRead(d *schema.ResourceData, m
 	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
+}
+
+func setVpcEndpointServiceConnectBandwidth(d *schema.ResourceData, objectRaw map[string]interface{}) {
+	connectBandwidth, ok := objectRaw["ConnectBandwidth"]
+	serviceResourceType := fmt.Sprint(objectRaw["ServiceResourceType"])
+	if serviceResourceType == "" || serviceResourceType == "<nil>" {
+		if v, ok := d.GetOk("service_resource_type"); ok {
+			serviceResourceType = v.(string)
+		}
+	}
+
+	if serviceResourceType == "slb" {
+		d.Set("connect_bandwidth", connectBandwidth)
+		return
+	}
+	if ok && !isEmptyVpcEndpointServiceConnectBandwidth(connectBandwidth) {
+		d.Set("connect_bandwidth", connectBandwidth)
+	}
+}
+
+func isEmptyVpcEndpointServiceConnectBandwidth(v interface{}) bool {
+	switch vv := v.(type) {
+	case nil:
+		return true
+	case int:
+		return vv == 0
+	case int64:
+		return vv == 0
+	case float64:
+		return vv == 0
+	case string:
+		return vv == "" || vv == "0"
+	default:
+		return fmt.Sprint(vv) == "" || fmt.Sprint(vv) == "0"
+	}
 }
 
 func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -287,6 +331,77 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData,
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("supported_region_list") {
+		oldEntry, newEntry := d.GetChange("supported_region_list")
+		oldEntrySet := oldEntry.(*schema.Set)
+		newEntrySet := newEntry.(*schema.Set)
+		removed := oldEntrySet.Difference(newEntrySet)
+		added := newEntrySet.Difference(oldEntrySet)
+
+		if added.Len() > 0 {
+			action = "UpdateVpcEndpointServiceAttribute"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ServiceId"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ClientToken"] = buildClientToken(action)
+			request["AddSupportedRegionSet"] = added.List()
+			if v, ok := d.GetOkExists("dry_run"); ok {
+				request["DryRun"] = v
+			}
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EndpointServiceOperationDenied", "ConcurrentCallNotSupported", "EndpointServiceLocked"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		if removed.Len() > 0 {
+			action = "UpdateVpcEndpointServiceAttribute"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ServiceId"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ClientToken"] = buildClientToken(action)
+			request["DeleteSupportedRegionSet"] = removed.List()
+			if v, ok := d.GetOkExists("dry_run"); ok {
+				request["DryRun"] = v
+			}
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EndpointServiceOperationDenied", "ConcurrentCallNotSupported", "EndpointServiceLocked"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		privateLinkServiceV2 := PrivateLinkServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointServiceStateRefreshFunc(d.Id(), "ServiceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -385,4 +500,23 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceDelete(d *schema.ResourceData,
 	}
 
 	return nil
+}
+
+func convertSupportedRegionSetToStringList(src interface{}) (result []interface{}) {
+	if src == nil {
+		return
+	}
+	for _, v := range convertToInterfaceArray(src) {
+		vv, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(vv["RegionServiceStatus"]) == "Closed" {
+			continue
+		}
+		if regionId, ok := vv["SupportedRegionId"]; ok {
+			result = append(result, fmt.Sprint(regionId))
+		}
+	}
+	return
 }

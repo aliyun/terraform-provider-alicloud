@@ -336,6 +336,43 @@ func (s *RosService) DescribeRosTemplate(id string) (object map[string]interface
 	return object, nil
 }
 
+func (s *RosService) DescribeRosTemplateByStackId(stackId string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "GetTemplate"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"StackId":  stackId,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"StackNotFound"}) {
+			err = WrapErrorf(NotFoundErr("RosTemplate", stackId), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, stackId, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, stackId, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
 func (s *RosService) DescribeRosStackInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client

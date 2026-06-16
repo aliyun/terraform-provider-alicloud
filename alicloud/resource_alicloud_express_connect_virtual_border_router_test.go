@@ -568,9 +568,9 @@ func TestAccAliCloudExpressConnectVirtualBorderRouter_basic11568(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -865,9 +865,9 @@ func TestAccAliCloudExpressConnectVirtualBorderRouter_basic11568_twin(t *testing
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -982,17 +982,17 @@ func TestAccAliCloudExpressConnectVirtualBorderRouter_basic11569(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"local_gateway_ip":       "10.0.0.1",
 					"peer_gateway_ip":        "10.0.0.2",
 					"peering_subnet_mask":    "255.255.255.252",
-					"physical_connection_id": "${data.alicloud_express_connect_virtual_physical_connections.default.ids.0}",
-					"vlan_id":                "${data.alicloud_express_connect_virtual_physical_connections.default.connections.0.vlan_id}",
+					"physical_connection_id": "${data.alicloud_express_connect_physical_connections.default.ids.0}",
+					"vlan_id":                fmt.Sprint(rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1000,7 +1000,7 @@ func TestAccAliCloudExpressConnectVirtualBorderRouter_basic11569(t *testing.T) {
 						"peer_gateway_ip":        "10.0.0.2",
 						"peering_subnet_mask":    "255.255.255.252",
 						"physical_connection_id": CHECKSET,
-						"vlan_id":                CHECKSET,
+						"vlan_id":                fmt.Sprint(rand),
 					}),
 				),
 			},
@@ -1259,18 +1259,18 @@ func TestAccAliCloudExpressConnectVirtualBorderRouter_basic11569_twin(t *testing
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"local_gateway_ip":           "10.0.0.1",
 					"peer_gateway_ip":            "10.0.0.2",
 					"peering_subnet_mask":        "255.255.255.252",
-					"physical_connection_id":     "${data.alicloud_express_connect_virtual_physical_connections.default.ids.0}",
-					"vlan_id":                    "${data.alicloud_express_connect_virtual_physical_connections.default.connections.0.vlan_id}",
-					"bandwidth":                  "${data.alicloud_express_connect_virtual_physical_connections.default.connections.0.bandwidth}",
+					"physical_connection_id":     "${data.alicloud_express_connect_physical_connections.default.ids.0}",
+					"vlan_id":                    fmt.Sprint(rand),
+					"bandwidth":                  "100",
 					"circuit_code":               "1024",
 					"description":                name,
 					"detect_multiplier":          "6",
@@ -1352,7 +1352,8 @@ data "alicloud_account" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {
 }
 
-data "alicloud_express_connect_virtual_physical_connections" "default" {
+data "alicloud_express_connect_physical_connections" "default" {
+  name_regex = "^preserved-NODELETING"
 }
 `, name)
 }

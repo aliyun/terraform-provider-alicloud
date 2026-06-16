@@ -28,9 +28,9 @@ func TestAccAliCloudCrInstance_Basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -103,9 +103,9 @@ func TestAccAliCloudCrInstance_Standard(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -177,9 +177,9 @@ func TestAccAliCloudCrInstance_Advanced(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -233,6 +233,61 @@ func TestAccAliCloudCrInstance_Advanced(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCrInstance_EconomyDisableScanner(t *testing.T) {
+	var v *cr_ee.GetInstanceResponse
+	resourceId := "alicloud_cr_ee_instance.default"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeCrEEInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-economy-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCrEEInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":   "Subscription",
+					"period":         "1",
+					"renewal_status": "ManualRenewal",
+					"instance_type":  "Economy",
+					"instance_name":  name,
+					"image_scanner":  "DISABLE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":         CHECKSET,
+						"created_time":   CHECKSET,
+						"end_time":       CHECKSET,
+						"renewal_status": "ManualRenewal",
+						"instance_name":  name,
+						"instance_type":  "Economy",
+						"payment_type":   "Subscription",
+						"image_scanner":  "DISABLE",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "custom_oss_bucket", "password", "kms_encrypted_password", "kms_encryption_context", "image_scanner"},
+			},
+		},
+	})
+}
+
 func resourceCrEEInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -276,9 +331,9 @@ func TestAccAliCloudCrInstance_basic7970_modified(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -340,18 +395,169 @@ variable "name" {
     default = "%s"
 }
 
-# NOTE: The RAM role "AliyunContainerRegistryCustomizedOSSBucketRole" is a
-# reserved, account-singleton role that Container Registry auto-creates the
-# first time custom OSS storage is used. CR assumes this fixed-name role to
-# access the custom bucket, so it cannot be renamed. Re-creating it here would
-# fail with EntityAlreadyExists.Role (409) on any account that has already used
-# CR. We therefore rely on the existing role instead of declaring it.
+data "alicloud_ram_roles" "cr_custom_oss" {
+  name_regex = "^AliyunContainerRegistryCustomizedOSSBucketRole$"
+}
+
+data "alicloud_ram_policies" "cr_custom_oss" {
+  name_regex     = "(?i)^AliyunContainerRegistryCustomizedOSSBucketRolePolicy$"
+  type           = "Custom"
+  enable_details = false
+}
+
+resource "alicloud_ram_role" "defaultRole" {
+  count = length(data.alicloud_ram_roles.cr_custom_oss.names) > 0 ? 0 : 1
+  name  = "AliyunContainerRegistryCustomizedOSSBucketRole"
+
+  description = var.name
+  document = <<EOF
+{
+    "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": [
+                    "cr.aliyuncs.com"
+                ]
+            }
+        }
+    ],
+    "Version": "1"
+}
+  EOF
+}
+
+resource "alicloud_ram_policy" "defaultLPolicy" {
+  count = length(data.alicloud_ram_policies.cr_custom_oss.names) > 0 ? 0 : 1
+  policy_name = "AliyunContainerRegistryCustomizedOSSBucketRolePolicy"
+  description = var.name
+
+  document = <<EOF
+
+{
+    "Version": "1",
+    "Statement": [
+        {
+            "Action": [
+                "oss:GetObject",
+                "oss:PutObject",
+                "oss:DeleteObject",
+                "oss:ListParts",
+                "oss:AbortMultipartUpload",
+                "oss:InitiateMultipartUpload",
+                "oss:CompleteMultipartUpload",
+                "oss:DeleteMultipleObjects",
+                "oss:ListMultipartUploads",
+                "oss:ListObjects",
+                "oss:DeleteObjectVersion",
+                "oss:GetObjectVersion",
+                "oss:ListObjectVersions",
+                "oss:PutObjectTagging",
+                "oss:GetObjectTagging",
+                "oss:DeleteObjectTagging"
+            ],
+            "Resource": [
+                "acs:oss:*:*:cri-*",
+                "acs:oss:*:*:cri-*/*",
+                "acs:oss:*:*:${var.name}",
+                "acs:oss:*:*:${var.name}/*"
+            ],
+            "Effect": "Allow",
+            "Condition": {
+
+            }
+        },
+        {
+            "Action": [
+                "oss:PutBucket",
+                "oss:GetBucket",
+                "oss:GetBucketLocation",
+                "oss:PutBucketEncryption",
+                "oss:GetBucketEncryption",
+                "oss:PutBucketAcl",
+                "oss:GetBucketAcl",
+                "oss:PutBucketLogging",
+                "oss:GetBucketReferer",
+                "oss:PutBucketReferer",
+                "oss:GetBucketLogging",
+                "oss:PutBucketVersioning",
+                "oss:GetBucketVersioning",
+                "oss:GetBucketLifecycle",
+                "oss:PutBucketLifecycle",
+                "oss:DeleteBucketLifecycle",
+                "oss:GetBucketTransferAcceleration"
+            ],
+            "Resource": [
+                "acs:oss:*:*:cri-*",
+                "acs:oss:*:*:cri-*/*",
+                "acs:oss:*:*:${var.name}",
+                "acs:oss:*:*:${var.name}/*"
+            ],
+            "Effect": "Allow",
+            "Condition": {
+
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Action": "oss:ListBuckets",
+            "Resource": [
+                "acs:oss:*:*:*",
+                "acs:oss:*:*:*/*"
+            ],
+            "Condition": {
+
+            }
+        },
+        {
+            "Action": [
+                "vpc:DescribeVpcs"
+            ],
+            "Resource": "acs:vpc:*:*:vpc/*",
+            "Effect": "Allow",
+            "Condition": {
+
+            }
+        },
+        {
+            "Action": [
+                "cms:QueryMetricLast",
+                "cms:QueryMetricList"
+            ],
+            "Resource": "*",
+            "Effect": "Allow"
+        }
+    ]
+}
+  EOF
+}
+
+locals {
+  cr_custom_oss_role_name   = length(data.alicloud_ram_roles.cr_custom_oss.names) > 0 ? data.alicloud_ram_roles.cr_custom_oss.names[0] : concat(alicloud_ram_role.defaultRole.*.name, [""])[0]
+  cr_custom_oss_policy_name = length(data.alicloud_ram_policies.cr_custom_oss.names) > 0 ? data.alicloud_ram_policies.cr_custom_oss.names[0] : concat(alicloud_ram_policy.defaultLPolicy.*.policy_name, [""])[0]
+}
+
+data "alicloud_ram_role_policy_attachments" "cr_custom_oss" {
+  count     = length(data.alicloud_ram_roles.cr_custom_oss.names) > 0 ? 1 : 0
+  role_name = local.cr_custom_oss_role_name
+  ids       = ["role:${local.cr_custom_oss_policy_name}:Custom:${local.cr_custom_oss_role_name}"]
+}
+
+resource "alicloud_ram_role_policy_attachment" "RolePolicyAttachment" {
+  count       = length(flatten(data.alicloud_ram_role_policy_attachments.cr_custom_oss.*.ids)) > 0 ? 0 : 1
+  policy_type = "Custom"
+  role_name   = local.cr_custom_oss_role_name
+  policy_name = local.cr_custom_oss_policy_name
+}
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_oss_bucket" "defaultkcvHCP" {
+	depends_on = [
+			alicloud_ram_role_policy_attachment.RolePolicyAttachment]
   storage_class = "Standard"
-  bucket        = var.name
+  bucket = var.name
 }
 
 
@@ -376,9 +582,9 @@ func TestAccAliCloudCrInstance_basic8613(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

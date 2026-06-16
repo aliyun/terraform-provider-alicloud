@@ -157,7 +157,7 @@ func resourceAliCloudDdosCooDomainResource() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"default", "all", "strong"}, false),
+				ValidateFunc: StringInSlice([]string{"default", "all", "strong", "improved"}, false),
 			},
 			"ssl_protocols": {
 				Type:         schema.TypeString,

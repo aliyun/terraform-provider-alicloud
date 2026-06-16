@@ -91,6 +91,10 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 
 The following arguments are supported:
 * `auto_backup` - (Optional, Computed) Whether to enable automatic backup
+* `auto_pay` - (Optional, Available since v1.282.0) Whether to pay automatically.
+
+-> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
+
 * `components` - (Optional, Set) Instance component information. Includes Starter Edition/Standard Edition.
   - Starter version: Array including standalone
   - Standard Edition: The configuration is different according to the 2.5 version and 2.6 version.

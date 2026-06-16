@@ -147,7 +147,7 @@ The following arguments are supported:
   - `false`: indicates that it is not enabled.
 * `ssl_ciphers` - (Optional, Available since v1.281.0) The type of cipher suite. Valid values:
   - `all`: All supported cipher suites, including both strong and weak cipher suites.
-  - `improved`: The enhanced cipher suites.
+  - `improved`: (Available since v1.282.0) The enhanced cipher suites.
   - `strong`: The strong cipher suites.
   - `default`: The default cipher suites, which include only strong cipher suites.
 * `ssl_protocols` - (Optional, Available since v1.281.0) The TLS protocol version. Valid values:

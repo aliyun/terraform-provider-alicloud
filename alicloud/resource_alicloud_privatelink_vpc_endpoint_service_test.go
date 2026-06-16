@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
@@ -18,7 +17,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	testAccPrivateLinkCrossRegionServiceRegion  = "cn-hangzhou"
+	testAccPrivateLinkCrossRegionEndpointRegion = "cn-beijing"
 )
 
 func init() {
@@ -99,7 +104,7 @@ func testSweepPrivatelinkVpcEndpointService(region string) error {
 	return nil
 }
 
-func TestAccAliCloudPrivatelinkVpcEndpointService_basic(t *testing.T) {
+func TestAccAliCloudPrivatelinkVpcEndpointService_base(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
@@ -117,9 +122,9 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -189,6 +194,255 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_basic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudPrivatelinkVpcEndpointService_supportedRegionList(t *testing.T) {
+	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccPrivateLinkCrossRegion%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckPrivateLinkCrossRegion(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      testAccCheckPrivateLinkVpcEndpointServiceDestroyInRegion(testAccPrivateLinkCrossRegionServiceRegion),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPrivateLinkVpcEndpointServiceSupportedRegionConfig(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_description":     name,
+						"service_resource_type":   "nlb",
+						"auto_accept_connection":  "true",
+						"supported_region_list.#": "1",
+					}),
+					testAccCheckPrivateLinkVpcEndpointServiceSupportedRegions(resourceId, testAccPrivateLinkCrossRegionServiceRegion),
+					testAccAttachPrivateLinkVpcEndpointServiceResources(
+						resourceId,
+						"alicloud_nlb_load_balancer.service",
+						"data.alicloud_nlb_zones.default",
+					),
+				),
+			},
+			{
+				Config: testAccPrivateLinkVpcEndpointServiceSupportedAllRegionsConfig(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"supported_region_list.#": "2",
+						"service_support_ipv6":    "false",
+					}),
+					testAccCheckPrivateLinkVpcEndpointServiceSupportedRegions(resourceId, testAccPrivateLinkCrossRegionServiceRegion, testAccPrivateLinkCrossRegionEndpointRegion),
+				),
+			},
+			{
+				Config: testAccPrivateLinkVpcEndpointServiceSupportedRegionConfig(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"supported_region_list.#": "1",
+					}),
+					testAccCheckPrivateLinkVpcEndpointServiceSupportedRegions(resourceId, testAccPrivateLinkCrossRegionServiceRegion),
+				),
+			},
+			// ImportState is intentionally omitted because this test uses
+			// ProviderFactories with an inline provider region; Terraform SDK v1
+			// import steps can fail with "unknown provider \"alicloud\"" in this shape.
+		},
+	})
+}
+
+func testAccPrivateLinkVpcEndpointServiceSupportedRegionConfig(name string) string {
+	return testAccPrivateLinkVpcEndpointServiceSupportedRegionListConfig(name, []string{
+		testAccPrivateLinkCrossRegionServiceRegion,
+	})
+}
+
+func testAccPrivateLinkVpcEndpointServiceSupportedAllRegionsConfig(name string) string {
+	return testAccPrivateLinkVpcEndpointServiceSupportedRegionListConfig(name, []string{
+		testAccPrivateLinkCrossRegionServiceRegion,
+		testAccPrivateLinkCrossRegionEndpointRegion,
+	})
+}
+
+func testAccPreCheckPrivateLinkCrossRegion(t *testing.T) {
+	testAccPreCheck(t)
+	if !testAccPrivateLinkRegionInList(connectivity.Hangzhou, connectivity.NLBSupportRegions) {
+		t.Skipf("Skipping unsupported service region %s. NLB supported regions: %v.", connectivity.Hangzhou, connectivity.NLBSupportRegions)
+		t.Skipped()
+	}
+}
+
+func testAccPrivateLinkRegionInList(region connectivity.Region, regions []connectivity.Region) bool {
+	for _, r := range regions {
+		if region == r {
+			return true
+		}
+	}
+	return false
+}
+
+func testAccCheckPrivateLinkVpcEndpointServiceDestroyInRegion(region string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rawClient, err := sharedClientForRegion(region)
+		if err != nil {
+			return WrapErrorf(err, "Error getting Alicloud client.")
+		}
+		client := rawClient.(*connectivity.AliyunClient)
+		service := PrivateLinkServiceV2{client}
+
+		for _, rs := range s.RootModule().Resources {
+			if rs.Type != "alicloud_privatelink_vpc_endpoint_service" {
+				continue
+			}
+			_, err := service.DescribePrivateLinkVpcEndpointService(rs.Primary.ID)
+			if err != nil {
+				if NotFoundError(err) {
+					continue
+				}
+				return err
+			}
+			return fmt.Errorf("PrivateLink VpcEndpointService %s still exists", rs.Primary.ID)
+		}
+		return nil
+	}
+}
+
+func testAccAttachPrivateLinkVpcEndpointServiceResources(serviceResourceName, resourceResourceName, zonesDataSourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		serviceId, err := testAccPrivateLinkStateResourceID(s, serviceResourceName)
+		if err != nil {
+			return err
+		}
+		resourceId, err := testAccPrivateLinkStateResourceID(s, resourceResourceName)
+		if err != nil {
+			return err
+		}
+		zoneIds, err := testAccPrivateLinkNlbZoneIdsFromState(s, zonesDataSourceName)
+		if err != nil {
+			return err
+		}
+
+		rawClient, err := sharedClientForRegion(testAccPrivateLinkCrossRegionServiceRegion)
+		if err != nil {
+			return WrapErrorf(err, "Error getting Alicloud client.")
+		}
+		client := rawClient.(*connectivity.AliyunClient)
+		for _, zoneId := range zoneIds {
+			if err := testAccAttachPrivateLinkVpcEndpointServiceResource(client, serviceId, resourceId, zoneId); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func testAccPrivateLinkStateResourceID(s *terraform.State, resourceName string) (string, error) {
+	rs, ok := s.RootModule().Resources[resourceName]
+	if !ok {
+		return "", fmt.Errorf("resource %s not found", resourceName)
+	}
+	if rs.Primary == nil || rs.Primary.ID == "" {
+		return "", fmt.Errorf("resource %s has empty ID", resourceName)
+	}
+	return rs.Primary.ID, nil
+}
+
+func testAccPrivateLinkNlbZoneIdsFromState(s *terraform.State, resourceName string) ([]string, error) {
+	rs, ok := s.RootModule().Resources[resourceName]
+	if !ok {
+		return nil, fmt.Errorf("resource %s not found", resourceName)
+	}
+	if rs.Primary == nil {
+		return nil, fmt.Errorf("resource %s has empty state", resourceName)
+	}
+
+	zoneIds := make([]string, 0, 2)
+	for i := 0; i < 2; i++ {
+		zoneId := rs.Primary.Attributes[fmt.Sprintf("zones.%d.id", i)]
+		if zoneId == "" {
+			zoneId = rs.Primary.Attributes[fmt.Sprintf("ids.%d", i)]
+		}
+		if zoneId == "" {
+			return nil, fmt.Errorf("resource %s has empty NLB zone at index %d", resourceName, i)
+		}
+		zoneIds = append(zoneIds, zoneId)
+	}
+	return zoneIds, nil
+}
+
+func testAccAttachPrivateLinkVpcEndpointServiceResource(client *connectivity.AliyunClient, serviceId, resourceId, zoneId string) error {
+	privateLinkServiceV2 := PrivateLinkServiceV2{client}
+	id := fmt.Sprintf("%s:%s:%s", serviceId, resourceId, zoneId)
+	if _, err := privateLinkServiceV2.DescribePrivateLinkVpcEndpointServiceResource(id); err == nil {
+		return nil
+	} else if !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	action := "AttachResourceToVpcEndpointService"
+	query := make(map[string]interface{})
+	request := map[string]interface{}{
+		"ResourceId":   resourceId,
+		"ServiceId":    serviceId,
+		"ZoneId":       zoneId,
+		"RegionId":     client.RegionId,
+		"ResourceType": "nlb",
+	}
+	var response map[string]interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		request["ClientToken"] = buildClientToken(action)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"EndpointServiceOperationDenied", "ConcurrentCallNotSupported", "EndpointServiceLocked"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if _, describeErr := privateLinkServiceV2.DescribePrivateLinkVpcEndpointServiceResource(id); describeErr == nil {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service_resource", action, AlibabaCloudSdkGoERROR)
+	}
+
+	stateConf := BuildStateConf([]string{}, []string{resourceId}, 5*time.Minute, 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointServiceResourceStateRefreshFunc(id, "ResourceId", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, id)
+	}
+	return nil
+}
+
+func testAccCheckPrivateLinkVpcEndpointServiceSupportedRegions(resourceName string, expected ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %s not found", resourceName)
+		}
+		actual := make(map[string]bool)
+		for key, value := range rs.Primary.Attributes {
+			if strings.HasPrefix(key, "supported_region_list.") && key != "supported_region_list.#" {
+				actual[value] = true
+			}
+		}
+		if len(actual) != len(expected) {
+			return fmt.Errorf("expected supported_region_list %#v, got %#v", expected, actual)
+		}
+		for _, region := range expected {
+			if !actual[region] {
+				return fmt.Errorf("expected supported_region_list to contain %s, got %#v", region, actual)
+			}
+		}
+		return nil
+	}
+}
+
 var AlicloudPrivatelinkVpcEndpointServiceMap = map[string]string{
 	"service_business_status": "Normal",
 	"service_domain":          CHECKSET,
@@ -205,6 +459,135 @@ func AlicloudPrivatelinkVpcEndpointServiceBasicDependence(name string) string {
 	  enable = "On"
 	}
 `, name)
+}
+
+func testAccPrivateLinkVpcEndpointServiceSupportedRegionListConfig(name string, supportedRegions []string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+provider "alicloud" {
+  region = "%s"
+}
+
+data "alicloud_nlb_zones" "default" {}
+
+resource "alicloud_vpc" "service" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "service_a" {
+  vpc_id     = alicloud_vpc.service.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  cidr_block = "10.1.0.0/16"
+}
+
+resource "alicloud_vswitch" "service_b" {
+  vpc_id     = alicloud_vpc.service.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  cidr_block = "10.2.0.0/16"
+}
+
+resource "alicloud_nlb_load_balancer" "service" {
+  load_balancer_name = var.name
+  vpc_id             = alicloud_vpc.service.id
+  address_type       = "Intranet"
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.service_a.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  }
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.service_b.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  }
+}
+
+resource "alicloud_privatelink_vpc_endpoint_service" "default" {
+  service_description    = var.name
+  service_resource_type  = "nlb"
+  auto_accept_connection = true
+  supported_region_list  = [
+%s
+  ]
+
+  depends_on = [alicloud_nlb_load_balancer.service]
+}
+`, name, testAccPrivateLinkCrossRegionServiceRegion, testAccPrivateLinkQuotedList(supportedRegions))
+}
+
+func testAccPrivateLinkQuotedList(values []string) string {
+	list := make([]string, 0, len(values))
+	for _, value := range values {
+		list = append(list, fmt.Sprintf("    %q,", value))
+	}
+	return strings.Join(list, "\n")
+}
+
+func TestUnitVpcEndpointServiceConnectBandwidthReadByResourceType(t *testing.T) {
+	p := Provider().ResourcesMap
+
+	cases := []struct {
+		name                string
+		serviceResourceType string
+		response            map[string]interface{}
+		expected            int
+	}{
+		{
+			name:                "slb missing connect bandwidth is authoritative",
+			serviceResourceType: "slb",
+			response: map[string]interface{}{
+				"ServiceResourceType": "slb",
+			},
+			expected: 0,
+		},
+		{
+			name:                "slb returned connect bandwidth is authoritative",
+			serviceResourceType: "slb",
+			response: map[string]interface{}{
+				"ServiceResourceType": "slb",
+				"ConnectBandwidth":    100,
+			},
+			expected: 100,
+		},
+		{
+			name:                "nlb missing connect bandwidth preserves config",
+			serviceResourceType: "nlb",
+			response: map[string]interface{}{
+				"ServiceResourceType": "nlb",
+			},
+			expected: 3072,
+		},
+		{
+			name:                "alb zero connect bandwidth preserves config",
+			serviceResourceType: "alb",
+			response: map[string]interface{}{
+				"ServiceResourceType": "alb",
+				"ConnectBandwidth":    0,
+			},
+			expected: 3072,
+		},
+		{
+			name:                "gwlb empty connect bandwidth preserves config",
+			serviceResourceType: "gwlb",
+			response: map[string]interface{}{
+				"ServiceResourceType": "gwlb",
+				"ConnectBandwidth":    "",
+			},
+			expected: 3072,
+		},
+	}
+
+	for _, tc := range cases {
+		d, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_service"].Schema).Data(nil, nil)
+		assert.Nil(t, d.Set("service_resource_type", tc.serviceResourceType))
+		assert.Nil(t, d.Set("connect_bandwidth", 3072))
+		setVpcEndpointServiceConnectBandwidth(d, tc.response)
+		assert.Equal(t, tc.expected, d.Get("connect_bandwidth"), tc.name)
+	}
 }
 
 // lintignore: R001
@@ -462,7 +845,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointService(t *testing.T) {
 
 // Test PrivateLink VpcEndpointService. >>> Resource test cases, automatically generated.
 // Case 生命周期测试-克隆-nlb 4837
-func TestAccAliCloudPrivateLinkVpcEndpointService_basic4837(t *testing.T) {
+func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceMap4837)
@@ -479,9 +862,9 @@ func TestAccAliCloudPrivateLinkVpcEndpointService_basic4837(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -589,7 +972,7 @@ func TestAccAliCloudPrivateLinkVpcEndpointService_basic4837(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ImportStateVerifyIgnore: []string{"connect_bandwidth", "dry_run"},
 			},
 		},
 	})
@@ -617,7 +1000,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 }
 
 // Case pvl+gwlb生命周期测试 9628
-func TestAccAliCloudPrivateLinkVpcEndpointService_basic9628(t *testing.T) {
+func TestAccAliCloudPrivatelinkVpcEndpointService_case9628(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceMap9628)
@@ -633,9 +1016,9 @@ func TestAccAliCloudPrivateLinkVpcEndpointService_basic9628(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
