@@ -1028,7 +1028,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 	}
 
 	idExist := false
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
