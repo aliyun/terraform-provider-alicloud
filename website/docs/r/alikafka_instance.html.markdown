@@ -197,6 +197,7 @@ The following attributes are exported:
 * `domain_endpoint` - (Available since v1.234.0) The default endpoint of the instance in domain name mode.
 * `ssl_domain_endpoint` - (Available since v1.234.0) The SSL endpoint of the instance in domain name mode.
 * `sasl_domain_endpoint` - (Available since v1.234.0) The Simple Authentication and Security Layer (SASL) endpoint of the instance in domain name mode.
+* `vpc_sasl_domain_endpoint` - (Available since v1.283.0) The IP-based endpoint for SASL access over a VPC.
 * `topic_num_of_buy` - (Available since v1.214.1) The number of purchased topics.
 * `topic_used` - (Available since v1.214.1) The number of used topics.
 * `topic_left` - (Available since v1.214.1) The number of available topics.
