@@ -122,7 +122,7 @@ func resourceAliCloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interfac
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "BIZ_FIND_CONSUMER_GROUP_INFO_ERROR"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
