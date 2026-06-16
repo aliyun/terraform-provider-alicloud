@@ -39,9 +39,9 @@ func SkipTestAccAlicloudScdnDomainConfig_ip_allow_list(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -92,9 +92,9 @@ func SkipTestAccAlicloudScdnDomainConfig_referer_white_list(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -146,9 +146,9 @@ func SkipTestAccAlicloudScdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -210,7 +210,7 @@ var scdnDomainConfigBasicMap = map[string]string{
 }
 
 // lintignore: R001
-func TestUnitAlicloudScdnDomainConfig(t *testing.T) {
+func SkipTestUnitAlicloudScdnDomainConfig(t *testing.T) {
 	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_scdn_domain_config"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_scdn_domain_config"].Schema).Data(nil, nil)

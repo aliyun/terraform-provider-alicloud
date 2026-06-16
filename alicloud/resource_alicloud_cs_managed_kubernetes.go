@@ -339,7 +339,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
+				ValidateFunc: StringInSlice([]string{"ack.standard", "ack.pro.small", "ack.pro.xlarge", "ack.pro.2xlarge", "ack.pro.4xlarge"}, false),
 			},
 			"maintenance_window": {
 				Type:     schema.TypeList,

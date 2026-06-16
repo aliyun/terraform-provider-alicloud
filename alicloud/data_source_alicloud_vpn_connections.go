@@ -404,7 +404,7 @@ func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	var allVpnConns []vpc.VpnConnection
+	var allVpnConns []vpc.VpnConnectionInDescribeVpnConnections
 
 	if v, ok := d.GetOk("vpn_gateway_id"); ok && v.(string) != "" {
 		request.VpnGatewayId = v.(string)
@@ -441,7 +441,7 @@ func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface
 		request.PageNumber = page
 	}
 
-	var filteredVpnConns []vpc.VpnConnection
+	var filteredVpnConns []vpc.VpnConnectionInDescribeVpnConnections
 	var reg *regexp.Regexp
 	var ids []string
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
@@ -477,10 +477,10 @@ func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface
 		}
 	}
 
-	return vpnConnectionsDecriptionAttributes(d, filteredVpnConns, meta)
+	return vpnConnectionsDescriptionAttributes(d, filteredVpnConns, meta)
 }
 
-func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.VpnConnection, meta interface{}) error {
+func vpnConnectionsDescriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.VpnConnectionInDescribeVpnConnections, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 	var ids []string

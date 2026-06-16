@@ -2,8 +2,10 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +45,10 @@ func resourceAliCloudEsaRoutineRelatedRecord() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"site_name": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -106,7 +112,12 @@ func resourceAliCloudEsaRoutineRelatedRecordRead(d *schema.ResourceData, meta in
 		d.Set("site_id", v)
 	}
 
-	d.Set("record_id", objectRaw["RecordId"])
+	d.Set("site_name", objectRaw["SiteName"])
+	recordId, err := strconv.ParseInt(objectRaw["RecordId"].(json.Number).String(), 10, 64)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("record_id", recordId)
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("name", parts[0])

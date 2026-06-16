@@ -728,7 +728,7 @@ The following arguments are supported:
 
   -> **NOTE:** The default time zone of the instance is China Standard Time. You must specify one of the Collation and Timezone parameters.
 
-* `force_encryption` - (Optional, Available since v1.277.0) Specifies whether to enable the forceful SSL encryption feature. This parameter is supported only for ApsaraDB RDS for SQL Server instances.Valid values:
+* `force_encryption` - (Optional, Available since v1.277.0) Specifies whether to enable the forceful SSL encryption feature. This parameter is supported only for ApsaraDB RDS for MySQL and SQL Server instances. Valid values:
   - 1: enables the feature.
   - 0: disables the feature.
 * `ssl_certificate` -(Optional, Available in 1.277.0) The custom certificate.

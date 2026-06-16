@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -191,7 +190,7 @@ func resourceAliCloudExpressConnectVirtualBorderRouterCreate(d *schema.ResourceD
 	request["PeeringSubnetMask"] = d.Get("peering_subnet_mask")
 	request["PhysicalConnectionId"] = d.Get("physical_connection_id")
 	request["PeerGatewayIp"] = d.Get("peer_gateway_ip")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
@@ -210,6 +209,12 @@ func resourceAliCloudExpressConnectVirtualBorderRouterCreate(d *schema.ResourceD
 	}
 
 	d.SetId(fmt.Sprint(response["VbrId"]))
+
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"active", "unconfirmed"}, d.Timeout(schema.TimeoutCreate), 1*time.Second, expressConnectServiceV2.ExpressConnectVirtualBorderRouterStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAliCloudExpressConnectVirtualBorderRouterUpdate(d, meta)
 }
@@ -441,7 +446,6 @@ func resourceAliCloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 	if v, ok := d.GetOkExists("detect_multiplier"); ok || d.HasChange("detect_multiplier") {
 		request["DetectMultiplier"] = v
 	}
-
 	if d.HasChange("sitelink_enable") {
 		update = true
 
@@ -473,6 +477,11 @@ func resourceAliCloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		expressConnectServiceV2 := ExpressConnectServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, expressConnectServiceV2.ExpressConnectVirtualBorderRouterStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -528,7 +537,7 @@ func resourceAliCloudExpressConnectVirtualBorderRouterDelete(d *schema.ResourceD
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
@@ -547,6 +556,12 @@ func resourceAliCloudExpressConnectVirtualBorderRouterDelete(d *schema.ResourceD
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	expressConnectServiceV2 := ExpressConnectServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 1*time.Second, expressConnectServiceV2.ExpressConnectVirtualBorderRouterStateRefreshFunc(d.Id(), "$.VbrId", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return nil
