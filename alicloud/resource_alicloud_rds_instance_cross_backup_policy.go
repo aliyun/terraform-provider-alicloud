@@ -21,7 +21,7 @@ func resourceAlicloudRdsInstanceCrossBackupPolicy() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -157,28 +157,79 @@ func resourceAlicloudRdsInstanceCrossBackupPolicyUpdate(d *schema.ResourceData, 
 func resourceAlicloudRdsInstanceCrossBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
+
+	// Check if DB instance exists - if not, the policy is already gone
+	_, err := rdsService.DescribeDBInstance(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+	}
+
+	// Check if cross backup policy exists and is enabled
 	object, err := rdsService.DescribeInstanceCrossBackupPolicy(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			d.SetId("")
+			return nil
+		}
+		if IsExpectedErrors(err, []string{"InternalError"}) {
 			return nil
 		}
 		return WrapError(err)
 	}
+
+	// Check if backup is already disabled
+	if backupEnabled, ok := object["BackupEnabled"]; ok {
+		if backupEnabled.(string) == "Disabled" || backupEnabled.(string) == "0" {
+			return nil
+		}
+	}
+
+	// Check LockMode - if null, the policy effectively doesn't exist
 	if v, ok := object["LockMode"]; ok && v.(string) == "null" {
-		d.SetId("")
 		return nil
 	}
+
+	// Wait for DB instance to be in Running state before attempting to disable
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting", "Released"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	// Disable the cross backup policy
 	action := "ModifyInstanceCrossBackupPolicy"
 	request := map[string]interface{}{
-		"RegionId":      client.RegionId,
-		"DBInstanceId":  d.Id(),
-		"BackupEnabled": "0",
-		"SourceIp":      client.SourceIp,
+		"RegionId":         client.RegionId,
+		"DBInstanceId":     d.Id(),
+		"BackupEnabled":    "0",
+		"LogBackupEnabled": "0",
+		"SourceIp":         client.SourceIp,
 	}
+	if crossBackupRegion, ok := object["CrossBackupRegion"]; ok && crossBackupRegion != nil {
+		request["CrossBackupRegion"] = crossBackupRegion
+	}
+
 	if err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalError"}) {
+				// Re-check if the policy is now disabled
+				checkObject, checkErr := rdsService.DescribeInstanceCrossBackupPolicy(d.Id())
+				if checkErr != nil && NotFoundError(checkErr) {
+					return nil
+				}
+				if checkObject != nil {
+					if backupEnabled, ok := checkObject["BackupEnabled"]; ok {
+						if backupEnabled.(string) == "Disabled" || backupEnabled.(string) == "0" {
+							return nil
+						}
+					}
+				}
+				return resource.RetryableError(err)
+			}
 			if NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
@@ -190,6 +241,9 @@ func resourceAlicloudRdsInstanceCrossBackupPolicyDelete(d *schema.ResourceData, 
 		addDebug(action, response, request)
 		return nil
 	}); err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
