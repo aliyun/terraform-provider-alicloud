@@ -106,46 +106,46 @@ func resourceRdsInstanceCrossBackupPolicyMysqlConfigDependence(name string) stri
 variable "name" {
   default = "%s"
 }
-data "alicloud_db_zones" "default"{
-	engine = "MySQL"
-	engine_version = "8.0"
-	instance_charge_type = "PostPaid"
-	category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
-	instance_charge_type = "PostPaid"
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
+  instance_charge_type     = "PostPaid"
 }
 
 data "alicloud_rds_cross_regions" "regions" {
 }
 
 data "alicloud_vpcs" "default" {
- name_regex = "^default-NODELETING"
+  name_regex = "^default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_db_zones.default.ids.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
-	status = "OK"
+  status = "OK"
 }
 
 resource "alicloud_db_instance" "default" {
-    engine = "MySQL"
-	engine_version = "8.0"
- 	db_instance_storage_type = "local_ssd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-	vswitch_id = data.alicloud_vswitches.default.ids.0
-	instance_name = var.name
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  db_instance_storage_type = "local_ssd"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  instance_name            = var.name
 }
 `, name)
 }
@@ -240,48 +240,48 @@ func TestAccAliCloudRdsInstanceCrossBackupPolicyPostgreSQL(t *testing.T) {
 func resourceRdsInstanceCrossBackupPolicyPostgreSQLConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "%s"
+  default = "%s"
 }
-data "alicloud_db_zones" "default"{
-	engine = "PostgreSQL"
-	engine_version = "10.0"
-	instance_charge_type = "PostPaid"
-	category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
+data "alicloud_db_zones" "default" {
+  engine                   = "PostgreSQL"
+  engine_version           = "18.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "PostgreSQL"
-	engine_version = "10.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
-	instance_charge_type = "PostPaid"
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "PostgreSQL"
+  engine_version           = "18.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 data "alicloud_rds_cross_regions" "regions" {
 }
 
 data "alicloud_vpcs" "default" {
- name_regex = "^default-NODELETING"
+  name_regex = "^default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
-	status = "OK"
+  status = "OK"
 }
 
 resource "alicloud_db_instance" "default" {
-	engine = "PostgreSQL"
-	engine_version = "10.0"
- 	db_instance_storage_type = "local_ssd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-	vswitch_id = data.alicloud_vswitches.default.ids.0
-	instance_name = var.name
+  engine                   = "PostgreSQL"
+  engine_version           = "18.0"
+  db_instance_storage_type = "cloud_essd"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  instance_name            = var.name
 }
 `, name)
 }
