@@ -55,6 +55,9 @@ The following arguments are supported:
 * `message_retention_period` - (Optional, Int) The maximum duration for which a message is retained in the queue. After the specified retention period ends, the message is deleted regardless of whether the message is received. Valid values: `60` to `604800`. Unit: seconds. Default value: `345600`.
 * `polling_wait_seconds` - (Optional, Int) The maximum duration for which long polling requests are held after the ReceiveMessage operation is called. Valid values: `0` to `30`. Unit: seconds. Default value: `0`.
 * `queue_name` - (Required, ForceNew) The name of the queue.
+* `queue_type` - (Optional, ForceNew, Available since v1.283.0) The type of the queue. Default value: `normal`. Valid values:
+  - `normal`: Standard queue.
+  - `fifo`: FIFO queue.
 * `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
 * `visibility_timeout` - (Optional, Int) The duration for which a message stays in the Inactive state after the message is received from the queue. Valid values: `1` to `43200`. Unit: seconds. Default value: `30`.
 
