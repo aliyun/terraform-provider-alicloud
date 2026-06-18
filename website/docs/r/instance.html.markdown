@@ -235,6 +235,10 @@ The following arguments are supported:
 * `launch_template_name` - (Optional, ForceNew, Available since v1.213.1) The name of the launch template.
 * `launch_template_version` - (Optional, ForceNew, Available since v1.213.1) The version of the launch template. If you set `launch_template_id` or `launch_template_name` parameter but do not set the version number of the launch template, the default template version is used.
 * `enable_jumbo_frame` - (Optional, Bool, Available since v1.223.2) Specifies whether to enable the Jumbo Frames feature for the instance. Valid values: `true`, `false`.
+* `enable_high_density_mode` - (Optional, Bool, Available since v1.283.0) Specifies whether to enable the high density mode for the instance. Valid values: `true`, `false`.
+
+  -> **NOTE:** Modifying `enable_high_density_mode` requires the instance to be stopped.
+
 * `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.227.1) The communication mode of the Primary ENI. Default value: `Standard`. Valid values:
   - `Standard`: Uses the TCP communication mode.
   - `HighPerformance`: Uses the remote direct memory access (RDMA) communication mode with Elastic RDMA Interface (ERI) enabled.
