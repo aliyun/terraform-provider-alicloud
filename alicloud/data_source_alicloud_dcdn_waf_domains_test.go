@@ -5,13 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAliCloudDcdnWafDomainsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
-	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDcdnWafDomainsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dcdn_waf_domain.default.id}"]`,
@@ -56,16 +54,17 @@ func testAccCheckAlicloudDcdnWafDomainsDataSourceName(rand int, attrMap map[stri
 
 	config := fmt.Sprintf(`
 
-variable "domain_name" {	
-	default = "tf-testacc%d.pfytlm.xyz"
+variable "domain_name" {
+  default = "tf-testacc%s%d.alicloud-provider.cn"
 }
 resource "alicloud_dcdn_domain" "default" {
-  domain_name = "${var.domain_name}"
+  domain_name = var.domain_name
+  scope       = "overseas"
   sources {
-    content = "1.1.1.1"
-    port = "80"
+    content  = "1.1.1.1"
+    port     = "80"
     priority = "20"
-    type = "ipaddr"
+    type     = "ipaddr"
   }
 }
 resource "alicloud_dcdn_waf_domain" "default" {
@@ -77,6 +76,6 @@ data "alicloud_dcdn_waf_domains" "default" {
 	enable_details = true
 	%s
 }
-`, rand, strings.Join(pairs, " \n "))
+`, defaultRegionToTest, rand, strings.Join(pairs, " \n "))
 	return config
 }

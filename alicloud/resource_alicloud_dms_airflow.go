@@ -262,7 +262,7 @@ func resourceAliCloudDmsAirflowUpdate(d *schema.ResourceData, meta interface{}) 
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Dms", "2025-04-14", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"DMS.AIRFLOW.InternalError"}) {
 					wait()
 					return resource.RetryableError(err)
 				}

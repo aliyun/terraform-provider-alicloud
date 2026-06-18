@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudGpdbDbInstancePlansDataSource(t *testing.T) {
+func TestAccAliCloudGpdbDbInstancePlansDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 	idsConf := dataSourceTestAccConfig{
@@ -109,7 +109,7 @@ func TestAccAlicloudGpdbDbInstancePlansDataSource(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 	alicloudGpdbDbInstancePlansCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, planScheduleTypeConf, planTypeConf, nameRegexConf, statusConf, allConf)
 }

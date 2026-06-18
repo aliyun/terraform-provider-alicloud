@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudRdsDBAccountPrivilege_mysql(t *testing.T) {
+func TestAccAliCloudRdsDBAccountPrivilege_mysql(t *testing.T) {
 
 	var v map[string]interface{}
 	name := "tf-testAccDBAccountPrivilege_mysql"
@@ -39,7 +39,7 @@ func TestAccAlicloudRdsDBAccountPrivilege_mysql(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -88,7 +88,7 @@ func TestAccAlicloudRdsDBAccountPrivilege_mysql(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsDBAccountPrivilege_PostgreSql(t *testing.T) {
+func TestAccAliCloudRdsDBAccountPrivilege_PostgreSql(t *testing.T) {
 
 	var v map[string]interface{}
 	name := "tf-testAccDBAccountPrivilege_PostgreSql"
@@ -118,7 +118,7 @@ func TestAccAlicloudRdsDBAccountPrivilege_PostgreSql(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -154,7 +154,7 @@ func TestAccAlicloudRdsDBAccountPrivilege_PostgreSql(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsDBAccountPrivilege_SQLServer(t *testing.T) {
+func TestAccAliCloudRdsDBAccountPrivilege_SQLServer(t *testing.T) {
 
 	var v map[string]interface{}
 	rand := acctest.RandIntRange(10000, 999999)
@@ -185,7 +185,7 @@ func TestAccAlicloudRdsDBAccountPrivilege_SQLServer(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -276,7 +276,7 @@ resource "alicloud_db_instance" "default" {
 	engine_version = "8.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 }
@@ -353,7 +353,7 @@ resource "alicloud_db_instance" "default" {
 	engine_version = "10.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 }
@@ -422,7 +422,7 @@ resource "alicloud_db_instance" "default" {
 	engine_version = "2017_std_ha"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 }

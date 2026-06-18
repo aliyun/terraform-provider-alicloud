@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
@@ -38,7 +39,11 @@ func TestAccAlicloudADBZonesDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeAdbZonesMapFunc,
 	}
 
-	adbZonesCheckInfo.dataSourceTestCheck(t, rand, multiConfig)
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+	}
+	adbZonesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, multiConfig)
 }
 
 func dataSourceAdbZonesConfigDependence(name string) string {

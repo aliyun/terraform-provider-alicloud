@@ -240,7 +240,7 @@ func dataSourceAlicloudAdbDbClusterLakeVersionsRead(d *schema.ResourceData, meta
 			"db_cluster_version": object["DBVersion"],
 			"engine":             object["Engine"],
 			"expire_time":        object["ExpireTime"],
-			"expired":            object["Expired"],
+			"expired":            fmt.Sprint(object["Expired"]),
 			"lock_mode":          object["LockMode"],
 			"lock_reason":        object["LockReason"],
 			"port":               object["Port"],

@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRdsDBEnginesDatasource(t *testing.T) {
+func TestAccAliCloudRdsDBEnginesDatasource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_db_instance_engines.default"
 

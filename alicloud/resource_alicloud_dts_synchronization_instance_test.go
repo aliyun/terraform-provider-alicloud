@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"reflect"
 	"testing"
 
@@ -18,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
+func TestAccAliCloudDTSSynchronizationInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_synchronization_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationInstanceMap0)
@@ -122,7 +121,7 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 			log.Printf("[ERROR] the field %s setting error", key)
 		}
 	}
-	region := os.Getenv("ALICLOUD_REGION")
+	region := "cn-beijing"
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)

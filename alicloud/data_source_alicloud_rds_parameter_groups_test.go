@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRdsParameterGroupsDataSource(t *testing.T) {
+func TestAccAliCloudRdsParameterGroupsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRdsParameterGroupsDataSourceName(rand, map[string]string{

@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRdsCollationTimeZonesDatasource(t *testing.T) {
+func TestAccAliCloudRdsCollationTimeZonesDatasource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_rds_collation_time_zones.default"
 	name := "tf-testAccAlicloudRdsCollationTimeZones"

@@ -25,9 +25,9 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -223,20 +223,20 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853_raw(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGpdbRemoteADBDataSourceBasicDependence6853)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"remote_database":       "test_001",
 					"manager_user_name":     "test_001",
 					"user_name":             "test_001",
-					"remote_db_instance_id": "${alicloud_gpdb_account.defaultwXePof.db_instance_id}",
+					"remote_db_instance_id": "${alicloud_gpdb_instance.defaultEtEzMF.id}",
 					"local_database":        "test_001",
-					"data_source_name":      "mytest",
+					"data_source_name":      name,
 					"user_password":         "test_001",
 					"manager_user_password": "test_001",
 					"local_db_instance_id":  "${alicloud_gpdb_instance.defaultEtEzMF.id}",
@@ -248,7 +248,7 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853_raw(t *testing.T) {
 						"user_name":             "test_001",
 						"remote_db_instance_id": CHECKSET,
 						"local_database":        "test_001",
-						"data_source_name":      "mytest",
+						"data_source_name":      name,
 						"user_password":         "test_001",
 						"manager_user_password": "test_001",
 						"local_db_instance_id":  CHECKSET,

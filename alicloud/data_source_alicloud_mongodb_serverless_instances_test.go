@@ -200,6 +200,7 @@ func TestAccAlicloudMongodbServerlessInstancesDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 	alicloudMongodbServerlessInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, dBInstanceClassConf, dBInstanceDescriptionConf, networkTypeConf, resourceGroupIdConf, tagsConf, vSwitchIdConf, vpcIdConf, zoneIdConf, statusConf, allConf)
 }

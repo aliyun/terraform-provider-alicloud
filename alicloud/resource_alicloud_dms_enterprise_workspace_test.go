@@ -13,6 +13,7 @@ import (
 // Test DmsEnterprise Workspace. >>> Resource test cases, automatically generated.
 // Case workspace_testcases_new_打包 11210
 func TestAccAliCloudDmsEnterpriseWorkspace_basic11210(t *testing.T) {
+	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_workspace.default"
 	ra := resourceAttrInit(resourceId, AliCloudDmsEnterpriseWorkspaceMap11210)
@@ -29,9 +30,9 @@ func TestAccAliCloudDmsEnterpriseWorkspace_basic11210(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -78,6 +79,7 @@ func TestAccAliCloudDmsEnterpriseWorkspace_basic11210(t *testing.T) {
 }
 
 func TestAccAliCloudDmsEnterpriseWorkspace_basic11210_twin(t *testing.T) {
+	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_workspace.default"
 	ra := resourceAttrInit(resourceId, AliCloudDmsEnterpriseWorkspaceMap11210)
@@ -94,9 +96,9 @@ func TestAccAliCloudDmsEnterpriseWorkspace_basic11210_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

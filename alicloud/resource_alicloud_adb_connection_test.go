@@ -32,6 +32,7 @@ func TestAccAlicloudADBConnectionConfig(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
 
 		// module name

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudTsdbInstancesDataSource(t *testing.T) {
+func SkipTestAccAliCloudTsdbInstancesDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{

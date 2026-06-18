@@ -109,7 +109,7 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 	return nil
 }
 
-func TestAccAlicloudGraphDatabaseDbInstance_basic0(t *testing.T) {
+func TestAccAliCloudGraphDatabaseDbInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_graph_database_db_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudGraphDatabaseDbInstanceMap0)
@@ -243,7 +243,7 @@ func TestAccAlicloudGraphDatabaseDbInstance_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGraphDatabaseDbInstance_basic1(t *testing.T) {
+func TestAccAliCloudGraphDatabaseDbInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_graph_database_db_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.GraphDatabaseDbInstanceSupportRegions)
@@ -303,7 +303,7 @@ func TestAccAlicloudGraphDatabaseDbInstance_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGraphDatabaseDbInstance_single(t *testing.T) {
+func TestAccAliCloudGraphDatabaseDbInstance_single(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_graph_database_db_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.GraphDatabaseDbInstanceSupportRegions)

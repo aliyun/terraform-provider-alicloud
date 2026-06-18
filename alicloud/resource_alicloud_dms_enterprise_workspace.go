@@ -58,6 +58,7 @@ func resourceAliCloudDmsEnterpriseWorkspaceCreate(d *schema.ResourceData, meta i
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
+	request["WorkspaceRegion"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
 	request["Description"] = d.Get("description")

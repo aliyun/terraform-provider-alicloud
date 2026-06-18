@@ -93,7 +93,8 @@ func testSweepDMSEnterpriseInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDMSEnterprise(t *testing.T) {
+func TestAccAliCloudDMSEnterprise(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	resourceId := "alicloud_dms_enterprise_instance.default"
 	rac := resourceAttrCheckInit(
 		resourceCheckInit(resourceId, &map[string]interface{}{},
@@ -110,9 +111,9 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  resourceDMSEnterpriseCheckDestroy(rac.resourceCheck),
+		CheckDestroy:      resourceDMSEnterpriseCheckDestroy(rac.resourceCheck),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -291,7 +292,7 @@ resource "alicloud_db_instance" "instance" {
   engine_version           = "8.0"
   db_instance_storage_type = "cloud_essd"
   instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id               = data.alicloud_vswitches.default.ids.0
   instance_name            = var.name
   security_ips             = ["100.104.5.0/24", "192.168.0.6"]

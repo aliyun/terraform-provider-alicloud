@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudDmsProxyAccess_basic2036(t *testing.T) {
+func TestAccAliCloudDmsProxyAccess_basic2036(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_proxy_access.default"
 	ra := resourceAttrInit(resourceId, AlicloudDmsProxyAccessMap2036)
@@ -27,9 +27,9 @@ func TestAccAlicloudDmsProxyAccess_basic2036(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

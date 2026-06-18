@@ -43,6 +43,7 @@ func TestAccAlicloudMongodbAccountsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 	alicloudMongodbAccountsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
 }
@@ -74,9 +75,9 @@ resource "alicloud_vswitch" "vswitch" {
   vswitch_name      = "subnet-for-local-test"
 }
 resource "alicloud_mongodb_instance" "default" {
-  engine_version      = "3.4"
-  db_instance_class   = "dds.mongo.mid"
-  db_instance_storage = 10
+  engine_version      = "4.2"
+  db_instance_class   = "mongo.x8.medium"
+  db_instance_storage = 20
   name                = var.name
   vswitch_id          = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
   tags = {

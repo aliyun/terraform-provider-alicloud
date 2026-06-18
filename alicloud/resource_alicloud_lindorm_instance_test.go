@@ -108,6 +108,7 @@ func testSweepLindormInstances(region string) error {
 
 func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"eu-central-1"})
 	resourceId := "alicloud_lindorm_instance.default_0"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -122,9 +123,9 @@ func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -446,6 +447,7 @@ func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 
 func TestAccAliCloudLindormInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"eu-central-1"})
 	resourceId := "alicloud_lindorm_instance.default_1"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -460,9 +462,9 @@ func TestAccAliCloudLindormInstance_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -549,9 +551,9 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -564,7 +566,7 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 					"primary_vswitch_id":         "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":              name,
 					"table_engine_node_count":    "4",
-					"table_engine_specification": "lindorm.g.4xlarge",
+					"table_engine_specification": "lindorm.g.2xlarge",
 					//"core_spec":               "lindorm.i2.xlarge",
 					"log_num":                "4",
 					"log_single_storage":     "400",
@@ -656,6 +658,7 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 
 func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"eu-central-1"})
 	resourceId := "alicloud_lindorm_instance.default_0"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -670,9 +673,9 @@ func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -758,6 +761,7 @@ func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 
 func TestAccAliCloudLindormInstance_twin(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"eu-central-1"})
 	resourceId := "alicloud_lindorm_instance.default_1"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -772,9 +776,9 @@ func TestAccAliCloudLindormInstance_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -13,6 +13,7 @@ import (
 // Test Dms Airflow. >>> Resource test cases, automatically generated.
 // Case Airflow_tests 11207
 func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
+	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_airflow.default"
 	ra := resourceAttrInit(resourceId, AlicloudDmsAirflowMap11207)
@@ -29,9 +30,9 @@ func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -46,10 +47,10 @@ func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
 					"airflow_name":               name,
 					"security_group_id":          "${alicloud_security_group.security_group.id}",
 					"vswitch_id":                 "${data.alicloud_vswitches.default.ids.0}",
-					"requirement_file":           "default/requirements.txt",
-					"plugins_dir":                "default/plugins",
-					"dags_dir":                   "default/dags",
-					"startup_file":               "default/startup.sh",
+					"requirement_file":           "/Workspace/requirements.txt",
+					"plugins_dir":                "/Workspace/plugins",
+					"dags_dir":                   "/Workspace/dags",
+					"startup_file":               "/Workspace/startup.sh",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -64,10 +65,10 @@ func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
 						"airflow_name":               name,
 						"security_group_id":          CHECKSET,
 						"vswitch_id":                 CHECKSET,
-						"requirement_file":           "default/requirements.txt",
-						"plugins_dir":                "default/plugins",
-						"dags_dir":                   "default/dags",
-						"startup_file":               "default/startup.sh",
+						"requirement_file":           "/Workspace/requirements.txt",
+						"plugins_dir":                "/Workspace/plugins",
+						"dags_dir":                   "/Workspace/dags",
+						"startup_file":               "/Workspace/startup.sh",
 					}),
 				),
 			},
@@ -77,10 +78,10 @@ func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
 					"description":                "11111",
 					"app_spec":                   "MEDIUM",
 					"airflow_name":               name + "_update",
-					"requirement_file":           "default/requirements2.txt",
-					"plugins_dir":                "default/plugins2",
-					"dags_dir":                   "default/dags2",
-					"startup_file":               "default/startup2.sh",
+					"requirement_file":           "/Workspace/requirements2.txt",
+					"plugins_dir":                "/Workspace/plugins2",
+					"dags_dir":                   "/Workspace/dags2",
+					"startup_file":               "/Workspace/startup2.sh",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -88,10 +89,10 @@ func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
 						"description":                CHECKSET,
 						"app_spec":                   "MEDIUM",
 						"airflow_name":               name + "_update",
-						"requirement_file":           "default/requirements2.txt",
-						"plugins_dir":                "default/plugins2",
-						"dags_dir":                   "default/dags2",
-						"startup_file":               "default/startup2.sh",
+						"requirement_file":           "/Workspace/requirements2.txt",
+						"plugins_dir":                "/Workspace/plugins2",
+						"dags_dir":                   "/Workspace/dags2",
+						"startup_file":               "/Workspace/startup2.sh",
 					}),
 				),
 			},

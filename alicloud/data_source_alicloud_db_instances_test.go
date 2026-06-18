@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
+func TestAccAliCloudRdsDBInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	nameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
@@ -169,7 +169,7 @@ func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
 	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, nameConf, idsConf, engineConf, vpcIdConf, vswitchIdConf, tagsConf, allConf)
 }
 
-func TestAccAlicloudRdsDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
+func TestAccAliCloudRdsDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
 	rand := acctest.RandInt()
 	nameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
@@ -399,7 +399,7 @@ resource "alicloud_db_instance" "default" {
 	engine_version = "8.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	tags = {
@@ -475,7 +475,7 @@ resource "alicloud_db_instance" "default" {
 	engine_version = "13.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	tags = {

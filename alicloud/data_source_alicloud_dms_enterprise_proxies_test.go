@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudDmsEnterpriseProxiesDataSource(t *testing.T) {
+func TestAccAliCloudDmsEnterpriseProxiesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	idsConf := dataSourceTestAccConfig{
@@ -112,7 +112,7 @@ resource "alicloud_db_instance" "instance" {
 	engine_version = "8.0"
 	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id       = data.alicloud_vswitches.default.ids.0
 	instance_name    = var.name
 	security_ips     = ["100.104.5.0/24","192.168.0.6"]
@@ -148,9 +148,7 @@ resource "alicloud_dms_enterprise_instance" "default" {
   query_timeout     =	 "70"
   export_timeout    =	 "2000"
   ecs_region        =	 "%s"
-  ddl_online        =	 "0"
-  use_dsql          =	 "0"
-  data_link_name    =	 ""
+  sell_trust        =	 "true"
 }
 
 resource "alicloud_dms_enterprise_proxy" "default" {

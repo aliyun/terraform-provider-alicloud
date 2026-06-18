@@ -5,10 +5,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudDMSEnterprisesDataSource(t *testing.T) {
+func TestAccAliCloudDMSEnterprisesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_dms_enterprise_instances.default"
 	name := fmt.Sprintf("tf_testAccDmsEnterpriseInstancesDataSource_%d", rand)
@@ -136,7 +138,7 @@ func dataSourceDmsEnterpriseInstancesConfigDependence(name string) string {
 		engine_version = "8.0"
 		db_instance_storage_type = "cloud_essd"
 		instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 		vswitch_id       = data.alicloud_vswitches.default.ids.0
 		instance_name    = var.name
 		security_ips     = ["100.104.5.0/24","192.168.0.6"]
@@ -168,10 +170,12 @@ func dataSourceDmsEnterpriseInstancesConfigDependence(name string) string {
 	  env_type          =	 "test"
 	  database_user     =	 alicloud_db_account.account.name
 	  database_password =	 alicloud_db_account.account.password
-	  instance_alias    =	 var.name
+	  instance_name     =	 var.name
 	  query_timeout     =	 "70"
 	  export_timeout    =	 "2000"
+	  ddl_online        =	 "0"
 	  ecs_region        =	 "%s"
+	  sell_trust        =	 "true"
 	}
 `, name, defaultRegionToTest)
 }
