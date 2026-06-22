@@ -23,7 +23,7 @@ jarvis 是 `my-day` / `aone-triage` / `a1` / `cloudspec` 之上的**交接层 + 
 
 | 件 | 路径 | 作用 |
 |---|---|---|
-| 自举 | `IDENTITY.md` | 进来先读：你是谁、对谁负责、开局动作。补 README 空缺 |
+| 自举 | `CLAUDE.md`（自动入上下文）`@import` 身份/清单/决策权 | 进来必读：你是谁、对谁负责、开局动作。任意 IDENTITY.md 不会被自动读，故用 CLAUDE.md 作主入口 |
 | 清单 | `loops/aone-triage.md` | 触发/输入/工具链/决策点/done/仅人工步。第一条吃透 |
 | 决策权 | `autonomy.md` | 硬门=正式发布；预发/CR 以下全自动；低置信降级为"起草不发出+入队" |
 | 真源/记忆 | `.my-day/` + `memory/` | Aone=真源、可重建；memory 存跨会话连续性 |
@@ -39,7 +39,7 @@ jarvis 是 `my-day` / `aone-triage` / `a1` / `cloudspec` 之上的**交接层 + 
 
 ## 路径
 
-- **P0 自举**：IDENTITY + README，写清"任何 Claude 怎么开局"
+- **P0 自举**：`CLAUDE.md`（`@import` 身份/`loops/`/`autonomy.md`）+ README，写清"任何 Claude 怎么开局"
 - **P1 盘点**：把 aone-triage 这条 loop 写成清单（仅 triage）
 - **P2 单点跑通**：确认门下全自动，技能收敛进项目，鉴权 smoke test
 - **P3 拆门放权**：信任建立后减少确认，全链到预发
@@ -58,4 +58,4 @@ jarvis 是 `my-day` / `aone-triage` / `a1` / `cloudspec` 之上的**交接层 + 
 
 ## YAGNI
 
-不做：全量日常盘点（先 triage 一条）、自动正式发布、重写技能、Web UI。
+不做：全量日常盘点（先 triage 一条）、自动正式发布、重写技能、Web UI、独立 IDENTITY.md（合进 CLAUDE.md）。
