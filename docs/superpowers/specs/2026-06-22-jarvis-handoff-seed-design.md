@@ -39,7 +39,7 @@ jarvis 是 `my-day` / `aone-triage` / `a1` / `cloudspec` 之上的**交接层 + 
 
 ## 前置依赖（全显式、可自动装）
 
-原则：`bootstrap/install.sh` 幂等，`bootstrap/verify.sh` 逐项 smoke test，无网/凭证缺时清晰报缺；新容器 = 克隆 + 注凭证 + 一键装 + 验过即可干活。
+原则：`bootstrap/install.sh` 幂等；`bootstrap/verify.sh` **每个依赖一条独立 check，单独 PASS/FAIL，任一 FAIL 整体退非零，绝不聚合成"全 ok"**。逐项独立验意味着缺哪个一眼定位。新容器 = 克隆 + 注凭证 + 一键装 + 全绿即可干活。
 
 | 类 | 清单 | 装法 | 验法 |
 |---|---|---|---|
@@ -48,7 +48,7 @@ jarvis 是 `my-day` / `aone-triage` / `a1` / `cloudspec` 之上的**交接层 + 
 | MCP | claude.ai / 其它必需 | `bootstrap/mcp.json` 声明 | 列工具成功 |
 | 凭证 | a1(容器内) / gh token / aliyun key | `.env.example` 模板，用户注入 | `verify.sh` 各调一下 |
 
-`bootstrap/deps.lock` 记全部版本；缺任一 → install 装、verify 红，绝不静默。
+`bootstrap/deps.lock` 记全部版本。每个凭证也各自单独验（gh token 调一次、a1 调一次、aliyun 调一次），不互相代替。`verify.sh` 输出形如 `PASS a1 / PASS gh / FAIL aliyun`，整体退非零。
 
 ## 路径
 
