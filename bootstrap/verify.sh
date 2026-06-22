@@ -37,7 +37,7 @@ chk_cred() {
 chk_skill() {
     local name="$1"
     local repo_root="$(git rev-parse --show-toplevel)"
-    local skill_file="${repo_root}/skills/${name}/SKILL.md"
+    local skill_file="${repo_root}/.claude/skills/${name}/SKILL.md"
 
     if test -f "$skill_file"; then
         echo "PASS $name"

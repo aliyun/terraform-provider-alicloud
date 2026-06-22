@@ -15,7 +15,7 @@
 - **CLAUDE.md** 自举入口
 - **autonomy.md** 决策权，硬门 = 正式发布
 - **loops/** 工作流
-- **skills/** vendored 技能
+- **.claude/skills/** vendored 技能（标准路径，clone 即被加载）
 - **bootstrap/** 装配与验证
 - **runs/** 审计
 - **escalation/** 停队
