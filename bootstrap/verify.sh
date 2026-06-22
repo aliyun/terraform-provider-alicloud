@@ -31,6 +31,22 @@ chk_cred() {
     fi
 }
 
+# chk_skill function: checks if a vendored skill exists
+# Usage: chk_skill NAME
+# PASS if skills/NAME/SKILL.md exists, FAIL otherwise
+chk_skill() {
+    local name="$1"
+    local repo_root="$(git rev-parse --show-toplevel)"
+    local skill_file="${repo_root}/skills/${name}/SKILL.md"
+
+    if test -f "$skill_file"; then
+        echo "PASS $name"
+    else
+        echo "FAIL $name"
+        ((fail_count++))
+    fi
+}
+
 # Check the 4 CLIs
 chk a1 a1
 chk gh gh
@@ -41,6 +57,9 @@ chk aliyun aliyun
 chk_cred gh "gh auth status"
 chk_cred aliyun "aliyun sts GetCallerIdentity"
 chk_cred a1 "a1 whoami"
+
+# Check vendored skills
+chk_skill aone-triage
 
 # Exit with non-zero if any check failed
 if [ $fail_count -gt 0 ]; then
