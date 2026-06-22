@@ -255,6 +255,7 @@ func TestAccAliCloudMessageServiceTopic_basic9031_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"topic_name":       name,
+					"topic_type":       "normal",
 					"enable_logging":   "true",
 					"max_message_size": "65536",
 					"tags": map[string]string{
@@ -265,6 +266,7 @@ func TestAccAliCloudMessageServiceTopic_basic9031_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topic_name":       name,
+						"topic_type":       "normal",
 						"enable_logging":   "true",
 						"max_message_size": "65536",
 						"tags.%":           "2",
@@ -306,10 +308,12 @@ func TestAccAliCloudMessageServiceTopic_basic9032(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"topic_name": name,
+					"topic_type": "fifo",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topic_name": name,
+						"topic_type": "fifo",
 					}),
 				),
 			},
@@ -417,6 +421,7 @@ func TestAccAliCloudMessageServiceTopic_basic9032_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"topic_name":       name,
+					"topic_type":       "fifo",
 					"logging_enabled":  "true",
 					"max_message_size": "65536",
 					"tags": map[string]string{
@@ -427,6 +432,7 @@ func TestAccAliCloudMessageServiceTopic_basic9032_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topic_name":       name,
+						"topic_type":       "fifo",
 						"logging_enabled":  "true",
 						"max_message_size": "65536",
 						"tags.%":           "2",
@@ -445,7 +451,9 @@ func TestAccAliCloudMessageServiceTopic_basic9032_twin(t *testing.T) {
 }
 
 var AliCloudMessageServiceTopicMap9031 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time":      CHECKSET,
+	"topic_type":       CHECKSET,
+	"max_message_size": CHECKSET,
 }
 
 func AliCloudMessageServiceTopicBasicDependence9031(name string) string {

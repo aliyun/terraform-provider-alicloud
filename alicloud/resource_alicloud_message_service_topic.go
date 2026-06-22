@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -33,8 +32,8 @@ func resourceAliCloudMessageServiceTopic() *schema.Resource {
 			"enable_logging": {
 				Type:          schema.TypeBool,
 				Optional:      true,
-				ConflictsWith: []string{"logging_enabled"},
 				Computed:      true,
+				ConflictsWith: []string{"logging_enabled"},
 			},
 			"max_message_size": {
 				Type:         schema.TypeInt,
@@ -47,6 +46,13 @@ func resourceAliCloudMessageServiceTopic() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"topic_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"normal", "fifo"}, false),
 			},
 			"logging_enabled": {
 				Type:       schema.TypeBool,
@@ -77,6 +83,9 @@ func resourceAliCloudMessageServiceTopicCreate(d *schema.ResourceData, meta inte
 	}
 	if v, ok := d.GetOkExists("max_message_size"); ok {
 		request["MaxMessageSize"] = v
+	}
+	if v, ok := d.GetOk("topic_type"); ok {
+		request["TopicType"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
@@ -120,23 +129,15 @@ func resourceAliCloudMessageServiceTopicRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	if objectRaw["CreateTime"] != nil {
-		d.Set("create_time", objectRaw["CreateTime"])
-	}
-	if objectRaw["LoggingEnabled"] != nil {
-		d.Set("enable_logging", objectRaw["LoggingEnabled"])
-		d.Set("logging_enabled", objectRaw["LoggingEnabled"])
-	}
-	if objectRaw["MaxMessageSize"] != nil {
-		d.Set("max_message_size", objectRaw["MaxMessageSize"])
-	}
-	if objectRaw["TopicName"] != nil {
-		d.Set("topic_name", objectRaw["TopicName"])
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("enable_logging", objectRaw["LoggingEnabled"])
+	d.Set("max_message_size", objectRaw["MaxMessageSize"])
+	d.Set("topic_name", objectRaw["TopicName"])
+	d.Set("topic_type", objectRaw["TopicType"])
+	d.Set("logging_enabled", objectRaw["LoggingEnabled"])
 
-	if objectRaw["Tags"] != nil {
-		d.Set("tags", tagsToMap(objectRaw["Tags"]))
-	}
+	tagsMaps := objectRaw["Tags"]
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
