@@ -52,6 +52,7 @@ chk a1 a1
 chk gh gh
 chk git git
 chk aliyun aliyun
+chk cloudspec cloudspec
 
 # Check credentials (each independent PASS/FAIL)
 chk_cred gh "gh auth status"
