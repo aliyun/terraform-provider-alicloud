@@ -1,0 +1,4 @@
+a1|curl -fsSL https://git.cn-hangzhou.oss-cdn.aliyun-inc.com/aone-cli/install.sh | sh|https://a1.io.alibaba-inc.com/docs/guide/
+aliyun|/bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"|https://help.aliyun.com/zh/cli/install-update-alibaba-cloud-cli
+cloudspec|sudo -v ; curl https://acube.aliyun-inc.com/api/v1/cloudspec/cli/install.sh | sudo bash|https://aliyuque.antfin.com/cloudspec/model/mslpwp94a4k2aygc
+gh|brew install gh|https://cli.github.com/
