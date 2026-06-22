@@ -1201,6 +1201,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_db_resource_group":                               resourceAliCloudGpdbDbResourceGroup(),
 			"alicloud_cloud_firewall_nat_firewall":                          resourceAliCloudCloudFirewallNatFirewall(),
 			"alicloud_oss_bucket_public_access_block":                       resourceAliCloudOssBucketPublicAccessBlock(),
+			"alicloud_oss_bucket_inventory":                                 resourceAliCloudOssBucketInventory(),
 			"alicloud_oss_account_public_access_block":                      resourceAliCloudOssAccountPublicAccessBlock(),
 			"alicloud_oss_bucket_data_redundancy_transition":                resourceAliCloudOssBucketDataRedundancyTransition(),
 			"alicloud_oss_bucket_meta_query":                                resourceAliCloudOssBucketMetaQuery(),
