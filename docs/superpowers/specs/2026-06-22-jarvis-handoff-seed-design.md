@@ -37,6 +37,19 @@ jarvis 是 `my-day` / `aone-triage` / `a1` / `cloudspec` 之上的**交接层 + 
 `定时 scan → triage → 自交付到预发/CR → wrap`，**停在正式发布前**。
 低置信 / 验收不过 → 降级起草并入 `escalation/` 队列，待人一键续。
 
+## 前置依赖（全显式、可自动装）
+
+原则：`bootstrap/install.sh` 幂等，`bootstrap/verify.sh` 逐项 smoke test，无网/凭证缺时清晰报缺；新容器 = 克隆 + 注凭证 + 一键装 + 验过即可干活。
+
+| 类 | 清单 | 装法 | 验法 |
+|---|---|---|---|
+| CLI | a1 / gh / git / aliyun / terraform | 锁版本，脚本装 | `--version` |
+| 技能 | aone-triage 等 vendored 到 `skills/` | 入仓即随克隆 | 能被 Skill 加载 |
+| MCP | claude.ai / 其它必需 | `bootstrap/mcp.json` 声明 | 列工具成功 |
+| 凭证 | a1(容器内) / gh token / aliyun key | `.env.example` 模板，用户注入 | `verify.sh` 各调一下 |
+
+`bootstrap/deps.lock` 记全部版本；缺任一 → install 装、verify 红，绝不静默。
+
 ## 路径
 
 - **P0 自举**：`CLAUDE.md`（`@import` 身份/`loops/`/`autonomy.md`）+ README，写清"任何 Claude 怎么开局"
@@ -47,7 +60,7 @@ jarvis 是 `my-day` / `aone-triage` / `a1` / `cloudspec` 之上的**交接层 + 
 
 ## 待闭合缺口（按阻塞排序）
 
-1. **headless 鉴权**（最硬）：容器内 a1 凭证 / gh token / 用户兜底 → 必须 smoke test 跑通
+1. **依赖+鉴权**（最硬）：CLI/技能/MCP/凭证全显式，`install.sh` 装、`verify.sh` smoke test 跑通
 2. **escalation 队列**：停下的活+原因+一键续
 3. **审计回滚**：全量 run 日志、可撤销
 4. **验收门**：预发前过测/benchmark
