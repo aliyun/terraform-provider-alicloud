@@ -77,6 +77,9 @@ The following arguments are supported:
   - `PRIVATE`: The repository is a private repository.
 * `summary` - (Required) The summary about the repository.
 * `detail` - (Optional) The description of the repository.
+* `tag_immutability` - (Optional, Available since v1.283.0) Whether to enable image tag immutability. Valid values:
+  - `true`: Image tag immutability is enabled. Existing image tags in the repository cannot be overwritten.
+  - `false`: Image tag immutability is disabled. Existing image tags can be overwritten.
 
 ## Attributes Reference
 
