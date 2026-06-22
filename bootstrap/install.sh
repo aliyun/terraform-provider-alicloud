@@ -2,8 +2,8 @@
 set -u
 
 # Read deps.lock and parse each line
-# Format: name|install_cmd|doc_url
-while IFS='|' read -r name install_cmd doc_url; do
+# Format: name<TAB>install_cmd<TAB>doc_url
+while IFS=$'\t' read -r name install_cmd doc_url || [ -n "$name" ]; do
   # Skip empty lines
   [[ -z "$name" ]] && continue
 
