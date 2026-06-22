@@ -50,6 +50,16 @@ jarvis 是 `my-day` / `aone-triage` / `a1` / `cloudspec` 之上的**交接层 + 
 
 `bootstrap/deps.lock` 记全部版本。每个凭证也各自单独验（gh token 调一次、a1 调一次、aliyun 调一次），不互相代替。`verify.sh` 输出形如 `PASS a1 / PASS gh / FAIL aliyun`，整体退非零。
 
+### 内部 CLI 安装源（脚本 + 文档双记，防过时）
+
+| CLI | 安装命令 | 文档（脚本过时查这里） |
+|---|---|---|
+| a1 | `curl -fsSL https://git.cn-hangzhou.oss-cdn.aliyun-inc.com/aone-cli/install.sh \| sh` | https://a1.io.alibaba-inc.com/docs/guide/ |
+| aliyun | `/bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"` | https://help.aliyun.com/zh/cli/install-update-alibaba-cloud-cli |
+| cloudspec | `sudo -v ; curl https://acube.aliyun-inc.com/api/v1/cloudspec/cli/install.sh \| sudo bash` | https://aliyuque.antfin.com/cloudspec/model/mslpwp94a4k2aygc |
+
+每条 install 命令旁必带文档链接，安装失败时 `install.sh` 报"脚本可能过时，见 <doc>"。
+
 ## 路径
 
 - **P0 自举**：`CLAUDE.md`（`@import` 身份/`loops/`/`autonomy.md`）+ README，写清"任何 Claude 怎么开局"
