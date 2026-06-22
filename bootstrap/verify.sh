@@ -16,11 +16,31 @@ chk() {
     fi
 }
 
+# chk_cred function: checks if a credential is valid by running a command
+# Usage: chk_cred NAME "COMMAND"
+# Runs COMMAND; PASS if exit 0, FAIL if non-zero
+chk_cred() {
+    local name="$1"
+    local cmd="$2"
+
+    if eval "$cmd" >/dev/null 2>&1; then
+        echo "PASS $name-cred"
+    else
+        echo "FAIL $name-cred"
+        ((fail_count++))
+    fi
+}
+
 # Check the 4 CLIs
 chk a1 a1
 chk gh gh
 chk git git
 chk aliyun aliyun
+
+# Check credentials (each independent PASS/FAIL)
+chk_cred gh "gh auth status"
+chk_cred aliyun "aliyun sts GetCallerIdentity"
+chk_cred a1 "a1 whoami"
 
 # Exit with non-zero if any check failed
 if [ $fail_count -gt 0 ]; then
