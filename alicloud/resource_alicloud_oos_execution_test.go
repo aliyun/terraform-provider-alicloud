@@ -88,7 +88,7 @@ func testSweepOosExecution(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOOSExecution_basic(t *testing.T) {
+func TestAccAliCloudOOSExecution_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_execution.default"
 	ra := resourceAttrInit(resourceId, OosExecutionMap)
@@ -111,15 +111,32 @@ func TestAccAlicloudOOSExecution_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"template_name": "${alicloud_oos_template.default.template_name}",
-					"description":   "From TF Test",
-					"parameters":    `{\"Status\":\"Running\"}`,
+					"template_name":       "${alicloud_oos_template.default.template_name}",
+					"description":         "From TF Test",
+					"parameters":          `{\"Status\":\"Running\"}`,
+					"mode":                "Automatic",
+					"safety_check":        "Skip",
+					"template_content":    "${alicloud_oos_template.default.content}",
+					"template_version":    "${alicloud_oos_template.default.template_version}",
+					"loop_mode":           "Automatic",
+					"parent_execution_id": "",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Execution Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"template_name": CHECKSET,
-						"description":   "From TF Test",
-						"parameters":    CHECKSET,
+						"template_name":    CHECKSET,
+						"description":      "From TF Test",
+						"parameters":       CHECKSET,
+						"mode":             "Automatic",
+						"safety_check":     "Skip",
+						"template_content": CHECKSET,
+						"template_version": CHECKSET,
+						"tags.%":           "2",
+						"tags.Created":     "TF",
+						"tags.For":         "Execution Test",
 					}),
 				),
 			},
@@ -127,7 +144,7 @@ func TestAccAlicloudOOSExecution_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"description", "loop_mode", "safety_check", "parameters"},
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
@@ -196,6 +213,10 @@ func TestUnitAlicloudOOSExecution(t *testing.T) {
 		"template_content":    "template_content",
 		"template_name":       "template_name",
 		"template_version":    "template_version",
+		"tags": map[string]interface{}{
+			"Created": "TF",
+			"For":     "Test",
+		},
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -219,7 +240,7 @@ func TestUnitAlicloudOOSExecution(t *testing.T) {
 				"IsParent":          "is_parent",
 				"Mode":              "mode",
 				"Outputs":           "outputs",
-				"Parameters":        "parameters",
+				"Parameters":        map[string]interface{}{"Status": "Running"},
 				"ParentExecutionId": "parent_execution_id",
 				"RamRole":           "ram_role",
 				"StartDate":         "start_date",
@@ -230,6 +251,10 @@ func TestUnitAlicloudOOSExecution(t *testing.T) {
 				"TemplateVersion":   "template_version",
 				"UpdateDate":        "update_date",
 				"ExecutionId":       "MockExecutionId",
+				"Tags": map[string]interface{}{
+					"Created": "TF",
+					"For":     "Test",
+				},
 			},
 		},
 		"Execution": map[string]interface{}{
