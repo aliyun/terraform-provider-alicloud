@@ -57,7 +57,7 @@ chk cloudspec cloudspec
 # Check credentials (each independent PASS/FAIL)
 chk_cred gh "gh auth status"
 chk_cred aliyun "aliyun sts GetCallerIdentity"
-chk_cred a1 "a1 whoami"
+chk_cred a1 "a1 auth whoami"
 
 # Check vendored skills
 chk_skill aone-triage
