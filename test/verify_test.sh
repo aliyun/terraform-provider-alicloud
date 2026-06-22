@@ -3,14 +3,15 @@
 # Test harness for verify.sh credential checks
 # Stubs gh to fail, verifies output and exit code
 
-set -e
-
 test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$test_dir"
+proj_root="$(cd "$test_dir/.." && pwd)"
 
 # Create a temporary bin directory with a stub gh that fails
 tmpbin=$(mktemp -d)
-trap "rm -rf $tmpbin" EXIT
+
+# Create a temporary file for output
+verify_output=$(mktemp)
+trap "rm -rf $tmpbin; rm -f $verify_output" EXIT
 
 # Create stub gh that exits with non-zero
 cat > "$tmpbin/gh" << 'EOF'
@@ -23,9 +24,9 @@ chmod +x "$tmpbin/gh"
 export PATH="$tmpbin:$PATH"
 
 # Capture output and exit code
-bash verify.sh > /tmp/verify_output.txt 2>&1
+bash "$proj_root/bootstrap/verify.sh" > "$verify_output" 2>&1
 exit_code=$?
-output=$(cat /tmp/verify_output.txt)
+output=$(cat "$verify_output")
 
 echo "=== Test Output ==="
 echo "$output"
@@ -53,3 +54,4 @@ fi
 
 echo ""
 echo "✓ All test assertions passed"
+exit 0
