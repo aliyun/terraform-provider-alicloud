@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -48,6 +47,11 @@ func resourceAliCloudCrEERepo() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tag_immutability": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"repo_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -58,28 +62,30 @@ func resourceAliCloudCrEERepo() *schema.Resource {
 
 func resourceAliCloudCrEERepoCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	crService := &CrService{client}
-	response := &cr_ee.CreateRepositoryResponse{}
-	request := cr_ee.CreateCreateRepositoryRequest()
-	request.RegionId = crService.client.RegionId
 
-	request.InstanceId = d.Get("instance_id").(string)
-	request.RepoNamespaceName = d.Get("namespace").(string)
-	request.RepoName = d.Get("name").(string)
-	request.RepoType = d.Get("repo_type").(string)
-	request.Summary = d.Get("summary").(string)
+	action := "CreateRepository"
+	query := make(map[string]interface{})
+	request := make(map[string]interface{})
+
+	request["RegionId"] = client.RegionId
+	request["InstanceId"] = d.Get("instance_id")
+	request["RepoNamespaceName"] = d.Get("namespace")
+	request["RepoName"] = d.Get("name")
+	request["RepoType"] = d.Get("repo_type")
+	request["Summary"] = d.Get("summary")
 
 	if v, ok := d.GetOk("detail"); ok {
-		request.Detail = v.(string)
+		request["Detail"] = v
+	}
+	if v, ok := d.GetOkExists("tag_immutability"); ok {
+		request["TagImmutability"] = v
 	}
 
-	var raw interface{}
+	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		raw, err = crService.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-			return creeClient.CreateRepository(request)
-		})
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -89,27 +95,25 @@ func resourceAliCloudCrEERepoCreate(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_repo", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_repo", action, AlibabaCloudSdkGoERROR)
+	}
+	if isSuccess, ok := response["IsSuccess"].(bool); ok && !isSuccess {
+		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_cr_ee_repo", action, AlibabaCloudSdkGoERROR)
 	}
 
-	response, _ = raw.(*cr_ee.CreateRepositoryResponse)
-	if !response.CreateRepositoryIsSuccess {
-		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_cr_ee_repo", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	d.SetId(fmt.Sprintf("%s:%s:%s", request.InstanceId, request.RepoNamespaceName, request.RepoName))
+	d.SetId(fmt.Sprintf("%s:%s:%s", request["InstanceId"], request["RepoNamespaceName"], request["RepoName"]))
 
 	return resourceAliCloudCrEERepoRead(d, meta)
 }
 
 func resourceAliCloudCrEERepoRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	crService := &CrService{client}
+	crServiceV2 := CrServiceV2{client}
 
-	resp, err := crService.DescribeCrEERepo(d.Id())
+	object, err := crServiceV2.DescribeCrEERepo(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
@@ -118,58 +122,61 @@ func resourceAliCloudCrEERepoRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	d.Set("instance_id", resp.InstanceId)
-	d.Set("namespace", resp.RepoNamespaceName)
-	d.Set("name", resp.RepoName)
-	d.Set("repo_type", resp.RepoType)
-	d.Set("summary", resp.Summary)
-	d.Set("detail", resp.Detail)
-	d.Set("repo_id", resp.RepoId)
+	d.Set("instance_id", object["InstanceId"])
+	d.Set("namespace", object["RepoNamespaceName"])
+	d.Set("name", object["RepoName"])
+	d.Set("repo_type", object["RepoType"])
+	d.Set("summary", object["Summary"])
+	d.Set("detail", object["Detail"])
+	d.Set("tag_immutability", object["TagImmutability"])
+	d.Set("repo_id", object["RepoId"])
 
 	return nil
 }
 
 func resourceAliCloudCrEERepoUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	crService := &CrService{client}
-	response := &cr_ee.UpdateRepositoryResponse{}
+
+	action := "UpdateRepository"
+	query := make(map[string]interface{})
+	request := make(map[string]interface{})
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
 	}
 
-	update := false
-	request := cr_ee.CreateUpdateRepositoryRequest()
-	request.RegionId = crService.client.RegionId
-	request.InstanceId = parts[0]
-	request.RepoId = d.Get("repo_id").(string)
+	request["RegionId"] = client.RegionId
+	request["InstanceId"] = parts[0]
+	request["RepoId"] = d.Get("repo_id")
+	request["RepoType"] = d.Get("repo_type")
+	request["Summary"] = d.Get("summary")
 
+	update := false
 	if d.HasChange("repo_type") {
 		update = true
 	}
-	request.RepoType = d.Get("repo_type").(string)
-
 	if d.HasChange("summary") {
 		update = true
 	}
-	request.Summary = d.Get("summary").(string)
-
 	if d.HasChange("detail") {
 		update = true
 	}
 	if v, ok := d.GetOk("detail"); ok {
-		request.Detail = v.(string)
+		request["Detail"] = v
+	}
+	if d.HasChange("tag_immutability") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("tag_immutability"); ok {
+		request["TagImmutability"] = v
 	}
 
 	if update {
-		var raw interface{}
-		var err error
+		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			raw, err = crService.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-				return creeClient.UpdateRepository(request)
-			})
+			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -179,15 +186,13 @@ func resourceAliCloudCrEERepoUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 			return nil
 		})
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
-		response, _ = raw.(*cr_ee.UpdateRepositoryResponse)
-		if !response.UpdateRepositoryIsSuccess {
-			return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if isSuccess, ok := response["IsSuccess"].(bool); ok && !isSuccess {
+			return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
