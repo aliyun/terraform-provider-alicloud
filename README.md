@@ -2,13 +2,13 @@
 
 可被 Claude 完全接替日常工作的自包含起点母版。
 
-## 起步
+## 起步（人类只需 3 步）
 
 1. `git clone` 本仓库
-2. `cp bootstrap/.env.example bootstrap/.env` 并填写 `GH_TOKEN` 和阿里云密钥（a1 用容器内凭证）
-3. `bash bootstrap/install.sh` 安装依赖
-4. `bash bootstrap/verify.sh` 验证环境 —— 全绿才干活，任一 FAIL 整体退非零
-5. 读 `CLAUDE.md` 开局
+2. `cp bootstrap/.env.example bootstrap/.env` 填好 `GH_TOKEN`/阿里云密钥（a1 用容器内凭证）
+3. 进目录启动 `claude`
+
+之后全是和 Claude 对话。`CLAUDE.md` 会让 Claude 自己跑 `install.sh`/`verify.sh`、全绿后开工——你不用手敲。环境缺啥它会告诉你。
 
 ## 结构
 
