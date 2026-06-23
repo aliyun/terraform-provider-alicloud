@@ -222,6 +222,87 @@ fi
 rm -rf "$tmpgarbage"
 
 # ---------------------------------------------------------------------------
+# Test 12: stdin JSON → plan shows only unseen items, scan.sh not called
+# pipe 3 items; WI-300 already seen; expect WI-400 and WI-500 in plan, not WI-300
+# ---------------------------------------------------------------------------
+echo "=== Test 12: stdin JSON consumed; scan.sh NOT invoked; 2 of 3 items shown ==="
+
+# Fresh runs dir for isolation
+tmpruns2=$(mktemp -d)
+trap 'rm -rf "$tmpruns2"' EXIT
+
+# Pre-seed WI-300 as already seen
+touch "$tmpruns2/2026-01-01-WI-300.md"
+
+# Intercept scan.sh: write a marker file if invoked from within plan.sh
+cat > "$tmpbin/scan.sh" << 'STUB'
+#!/bin/bash
+echo "SCAN_CALLED" >> "${JARVIS_RUNS_DIR:-/tmp}/scan_called.marker"
+echo '[{"id":"SCAN-ITEM","title":"Should not appear","type":"bug","status":"open"}]'
+STUB
+chmod +x "$tmpbin/scan.sh"
+
+stdin_json='[{"id":"WI-300","title":"Already done","type":"task","status":"closed"},{"id":"WI-400","title":"New bug","type":"bug","status":"open"},{"id":"WI-500","title":"New req","type":"req","status":"open"}]'
+
+stdin_output=$(echo "$stdin_json" | JARVIS_RUNS_DIR="$tmpruns2" bash "$proj_root/bootstrap/plan.sh" 2>&1)
+stdin_exit=$?
+
+# scan.sh must NOT have been called
+if [ -f "$tmpruns2/scan_called.marker" ]; then
+    assert_fail "scan.sh was invoked despite stdin being provided"
+else
+    assert_pass "scan.sh not invoked when stdin JSON provided"
+fi
+
+# WI-400 and WI-500 should appear in the plan output
+if echo "$stdin_output" | grep -q "WI-400" && echo "$stdin_output" | grep -q "WI-500"; then
+    assert_pass "unseen items WI-400 and WI-500 appear in stdin-driven plan"
+else
+    assert_fail "expected WI-400 and WI-500 in plan but got: $(echo "$stdin_output" | head -5)"
+fi
+
+# WI-300 (seen) must NOT appear
+if echo "$stdin_output" | grep -q "WI-300"; then
+    assert_fail "seen item WI-300 should be excluded from stdin-driven plan"
+else
+    assert_pass "seen item WI-300 correctly excluded from stdin-driven plan"
+fi
+
+# exactly 2 new items (not 3)
+item_count_in_plan=$(echo "$stdin_output" | grep -cE "WI-(400|500)" || true)
+if [ "$item_count_in_plan" -eq 2 ]; then
+    assert_pass "exactly 2 new items shown (not 3)"
+else
+    assert_fail "expected 2 new items in plan, found $item_count_in_plan"
+fi
+
+rm -rf "$tmpruns2"
+
+# ---------------------------------------------------------------------------
+# Test 13: plan output includes a priority column
+# ---------------------------------------------------------------------------
+echo "=== Test 13: plan file/output contains priority column ==="
+
+plan_file_main=$(ls "$tmpruns"/plan-*.md 2>/dev/null | head -1)
+if grep -qi "priority\|优先" "$plan_file_main" 2>/dev/null; then
+    assert_pass "plan file contains priority column"
+else
+    assert_fail "plan file missing priority column"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 14: batch dedup — no per-item bash log.sh fork (strace/ps not available on macOS;
+# verify indirectly: plan.sh source must not contain 'bash.*log.sh seen')
+# ---------------------------------------------------------------------------
+echo "=== Test 14: plan.sh source does not fork bash log.sh seen per-item ==="
+
+if grep -qE 'bash.*log\.sh.*seen' "$proj_root/bootstrap/plan.sh" 2>/dev/null; then
+    assert_fail "plan.sh still contains per-item 'bash log.sh seen' fork"
+else
+    assert_pass "no per-item bash log.sh seen fork in plan.sh source"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""
