@@ -92,5 +92,22 @@
 - [ ] **Step 1:** CLAUDE.md 开局 2) 改为"跑 scan.sh→plan.sh→出计划等授权→按 loop 处理"；cron.example 给定时启 claude 跑 loop 样例（注明默认 supervised）
 - [ ] **Step 2: 验** `bash bootstrap/verify.sh` 仍 exit0；**Commit** `feat: wire triage loop into bootstrap`
 
+## 验收标准（怎么确认 plan2 达成）
+
+端到端 demo，逐条可演示：
+1. **不用喂单**：`scan.sh` 拉出当前 Aone 入箱真清单（≥1 条）。
+2. **计划先行**：`plan.sh` 出执行计划，每条带 动作/置信/自动or停/不可逆点；supervised 下退码 2、**全程零 Aone 写**。
+3. **去重**：已处理的 id 二次跑被跳过（`seen` 命中），不重复处理。
+4. **授权后到预发**：授权一条 → 全链跑到预发/CR，runs/ 有该条审计；正式发布**未触发**。
+5. **低置信入队**：一条查证冲突/缺源码 → 不发出，escalation/ 有该条+原因。
+6. **硬门**：全程无任何正式发布动作。
+
+全 6 条过 = plan2 达成。
+
+## 模板成立判据（可复制到下一条 loop）
+- scan/plan/log/escalate 四脚本与具体业务无关，换 loop 只改"逐项动作"，护栏复用；
+- 新 loop = 复制 `loops/aone-triage.md` 结构 + vendored 对应技能，不改 bootstrap。
+确认方式：拿第二条 loop 的目录骨架走一遍 1-6，无需改 bootstrap/ 即成立。
+
 ## YAGNI
 不做：多 app 交付、正式发布自动化、MCP 接入。先 triage→预发一条全绿。
