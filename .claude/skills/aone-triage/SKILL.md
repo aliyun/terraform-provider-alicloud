@@ -43,7 +43,7 @@ status) need a clear user yes first — confirm before each.
 - 改代码/接资源/修 bug → 仅命中开发行才进链路(link app→CR→worktree)
 
 ## 工单全流程
-`a1 project workitem get <id>`(URL 末尾数字,`-f json` 取字段)→ 概要表(id/标题/类型/状态/指派/工单ID)+ 诉求 → 按类型分诊:
+`bootstrap/aone-get.sh <id>`(包 `a1 project workitem get -f json`,3h 缓存,写后自动失效;强制重取加 `JARVIS_CACHE_TTL=0`)→ 概要表(id/标题/类型/状态/指派/工单ID)+ 诉求 → 按类型分诊:
 1. **需求/咨询** → 查证 → 回复(授权)→ 真缺口转 Cloudspec 池 + 双向关联 + 源工单改"待上游排期"
 2. **缺陷** → 复现要点 + 源码定位 → 回复/指派,确认 spec 缺口才转需求
 3. **任务** → 直接执行或拆解

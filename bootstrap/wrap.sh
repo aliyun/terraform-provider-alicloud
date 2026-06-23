@@ -42,6 +42,7 @@ case "$cmd" in
         text="${text}$(code_footer)"
         a1 project workitem comment create "$id" -m "$text" \
             || echo "wrap.sh: a1 comment 失败（id=${id}），进展未落 Aone，请人工补" >&2
+        bash "$script_dir/cache.sh" bust "wi-$id"  # 评论后详情已变，丢缓存
         ;;
     done)
         summary="${3:-}"
@@ -59,6 +60,7 @@ case "$cmd" in
             a1 project workitem update "$id" --status "$status" \
                 || echo "wrap.sh: a1 状态更新失败（id=${id} → ${status}），请人工核" >&2
         fi
+        bash "$script_dir/cache.sh" bust "wi-$id"  # 收尾改动后详情已变，丢缓存
         ;;
     *)
         echo "Usage: wrap.sh {sync|done} <id> \"<text>\" [status]" >&2
