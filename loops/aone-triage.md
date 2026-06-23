@@ -53,6 +53,12 @@ plan.sh 分析扫描结果，输出本轮拟执行的逐项计划。
 
 保留 **supervised 门**与 **release_prod 硬门**两道关口。
 
+### 产物落点纪律
+
+- 计划/审计走 `runs/`（scan→plan 的 stdout，run_done/escalate 记录）。
+- 临时数据用 `.my-day/`（gitignored）或 `mktemp`，**禁止**往仓库根甩 `scratch_*`/`*.tmp`。
+- 开发不在 master：worktree 切分支 → MR → 人工合并；`.gitignore` 兜底脏文件。
+
 ---
 
 ## 四、逐项执行
