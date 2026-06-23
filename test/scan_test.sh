@@ -37,7 +37,7 @@ if [ "$1" = "auth" ] && [ "$2" = "whoami" ]; then
     exit 0
 fi
 if [ "$1" = "project" ] && [ "$2" = "workitem" ] && [ "$3" = "list" ]; then
-    echo '[{"identifier":"WI-001","subject":"Test item","categoryIdentifier":"bug","status":"open","other":"ignored"}]'
+    echo '[{"identifier":"WI-001","subject":"Test item","categoryIdentifier":"bug","status":"open","priority":"high","tag":["p0","urgent"],"other":"ignored"}]'
     exit 0
 fi
 exit 1
@@ -95,12 +95,26 @@ else
     assert_fail "status field missing or wrong"
 fi
 
-# Validate fields: id, title, type, status, pool (5 fields)
-field_count=$(echo "$output" | jq -e '.[0] | keys | length' 2>/dev/null)
-if [ "$field_count" -eq 5 ]; then
-    assert_pass "output object has exactly 5 fields (id,title,type,status,pool)"
+# Validate priority field
+if echo "$output" | jq -e '.[0].priority == "high"' > /dev/null 2>&1; then
+    assert_pass "priority field correct"
 else
-    assert_fail "output object has $field_count fields (expected 5 including pool)"
+    assert_fail "priority field missing or wrong (expected \"high\")"
+fi
+
+# Validate tag field
+if echo "$output" | jq -e '.[0].tag == ["p0","urgent"]' > /dev/null 2>&1; then
+    assert_pass "tag field correct"
+else
+    assert_fail "tag field missing or wrong (expected [\"p0\",\"urgent\"])"
+fi
+
+# Validate fields: id, title, type, status, pool, priority, tag (7 fields)
+field_count=$(echo "$output" | jq -e '.[0] | keys | length' 2>/dev/null)
+if [ "$field_count" -eq 7 ]; then
+    assert_pass "output object has exactly 7 fields (id,title,type,status,pool,priority,tag)"
+else
+    assert_fail "output object has $field_count fields (expected 7 including pool,priority,tag)"
 fi
 
 # Validate pool field present
@@ -595,6 +609,148 @@ if echo "$recorded_args9" | grep -q '555'; then
     assert_pass "--project 555 passed for pool_x"
 else
     assert_fail "--project 555 not found in recorded args: $recorded_args9"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 10: --columns id,title,status,priority,tag passed to a1 list (pool-scoped)
+# ---------------------------------------------------------------------------
+
+echo "=== Test 10: --columns id,title,status,priority,tag passed to a1 list (pool-scoped) ==="
+
+tmpconfig10=$(mktemp -d)
+mkdir -p "$tmpconfig10/config"
+cat > "$tmpconfig10/config/pools.json" << 'JSON'
+{
+  "pools": {
+    "pool_cols": { "project": 777, "name": "Cols Pool" }
+  },
+  "claim": { "tag": "jarvis-claimed" }
+}
+JSON
+
+args_file10=$(mktemp)
+
+cat > "$tmpbin/a1" << STUB
+#!/bin/bash
+if [ "\$1" = "auth" ] && [ "\$2" = "whoami" ]; then
+    echo "Account:  chenhanzhang.chz"
+    exit 0
+fi
+if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
+    echo "\$@" >> "$args_file10"
+    echo '[{"identifier":"WI-777","subject":"Cols item","categoryIdentifier":"task","status":"open","priority":"medium","tag":["qa"]}]'
+    exit 0
+fi
+exit 1
+STUB
+chmod +x "$tmpbin/a1"
+
+output10=$(JARVIS_ROOT="$tmpconfig10" bash "$proj_root/bootstrap/scan.sh" 2>&1)
+exit_code10=$?
+recorded_args10=$(cat "$args_file10" 2>/dev/null || echo "")
+rm -f "$args_file10"
+rm -rf "$tmpconfig10"
+
+echo "Exit code: $exit_code10"
+echo "Recorded a1 args: $recorded_args10"
+echo "Output: $output10"
+echo ""
+
+if [ "$exit_code10" -eq 0 ]; then
+    assert_pass "exit code 0 with --columns test"
+else
+    assert_fail "exit code should be 0 with --columns test, got $exit_code10"
+fi
+
+if echo "$recorded_args10" | grep -q -- '--columns'; then
+    assert_pass "--columns flag passed to a1 list"
+else
+    assert_fail "--columns flag not found in a1 args: $recorded_args10"
+fi
+
+if echo "$recorded_args10" | grep -q 'id,title,status,priority,tag'; then
+    assert_pass "--columns id,title,status,priority,tag present in a1 args"
+else
+    assert_fail "--columns id,title,status,priority,tag not found in a1 args: $recorded_args10"
+fi
+
+# Output object should have priority and tag fields
+if echo "$output10" | jq -e '.[0].priority == "medium"' > /dev/null 2>&1; then
+    assert_pass "pool-scoped output carries priority field"
+else
+    assert_fail "pool-scoped output missing priority field: $output10"
+fi
+
+if echo "$output10" | jq -e '.[0].tag == ["qa"]' > /dev/null 2>&1; then
+    assert_pass "pool-scoped output carries tag field"
+else
+    assert_fail "pool-scoped output missing tag field: $output10"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 11: --columns id,title,status,priority,tag passed to a1 list (no-pools fallback)
+# ---------------------------------------------------------------------------
+
+echo "=== Test 11: --columns passed in no-pools fallback path ==="
+
+tmpconfig11=$(mktemp -d)
+# No pools.json at all → falls back to global assignee list
+args_file11=$(mktemp)
+
+cat > "$tmpbin/a1" << STUB
+#!/bin/bash
+if [ "\$1" = "auth" ] && [ "\$2" = "whoami" ]; then
+    echo "Account:  chenhanzhang.chz"
+    exit 0
+fi
+if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
+    echo "\$@" >> "$args_file11"
+    echo '[{"identifier":"WI-888","subject":"Global item","categoryIdentifier":"req","status":"open","priority":"low","tag":[]}]'
+    exit 0
+fi
+exit 1
+STUB
+chmod +x "$tmpbin/a1"
+
+output11=$(JARVIS_ROOT="$tmpconfig11" bash "$proj_root/bootstrap/scan.sh" 2>&1)
+exit_code11=$?
+recorded_args11=$(cat "$args_file11" 2>/dev/null || echo "")
+rm -f "$args_file11"
+rm -rf "$tmpconfig11"
+
+echo "Exit code: $exit_code11"
+echo "Recorded a1 args: $recorded_args11"
+echo "Output: $output11"
+echo ""
+
+if [ "$exit_code11" -eq 0 ]; then
+    assert_pass "exit code 0 for no-pools fallback with --columns"
+else
+    assert_fail "exit code should be 0 for no-pools fallback, got $exit_code11"
+fi
+
+if echo "$recorded_args11" | grep -q -- '--columns'; then
+    assert_pass "--columns flag passed in no-pools fallback"
+else
+    assert_fail "--columns flag not found in no-pools fallback args: $recorded_args11"
+fi
+
+if echo "$recorded_args11" | grep -q 'id,title,status,priority,tag'; then
+    assert_pass "--columns id,title,status,priority,tag in no-pools fallback"
+else
+    assert_fail "--columns id,title,status,priority,tag not found in no-pools fallback args: $recorded_args11"
+fi
+
+if echo "$output11" | jq -e '.[0].priority == "low"' > /dev/null 2>&1; then
+    assert_pass "no-pools fallback output carries priority field"
+else
+    assert_fail "no-pools fallback output missing priority field: $output11"
+fi
+
+if echo "$output11" | jq -e '.[0].tag == []' > /dev/null 2>&1; then
+    assert_pass "no-pools fallback output carries tag field (empty array)"
+else
+    assert_fail "no-pools fallback output missing tag field: $output11"
 fi
 
 # ---------------------------------------------------------------------------

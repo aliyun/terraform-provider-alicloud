@@ -47,16 +47,16 @@ if $has_pools; then
     fi
     while :; do
       if [ -n "$filter" ]; then
-        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --columns id,title,status,priority,tag --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
       else
-        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --columns id,title,status,priority,tag --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
       fi
       n=$(echo "$pg" | jq 'length' 2>/dev/null); [ -z "$n" ] && break
       pool_out=$(jq -s 'add' <<<"$pool_out"$'\n'"$pg" 2>/dev/null) || pool_out="[]"
       [ "$n" -lt "$PAGE_SIZE" ] && break
       page=$((page+1))
     done
-    echo "$pool_out" | jq --arg pool "$pool_key" '[.[] | {id:.identifier,title:.subject,type:.categoryIdentifier,status,pool:$pool}]'
+    echo "$pool_out" | jq --arg pool "$pool_key" '[.[] | {id:.identifier,title:.subject,type:.categoryIdentifier,status,pool:$pool,priority,tag}]'
   }
 
   tmpd=$(mktemp -d); trap 'rm -rf "$tmpd"' EXIT
@@ -72,10 +72,10 @@ if $has_pools; then
 else
   # No pools configured: fall back to assignee-based global list.
   if [ -n "$claim_tag" ]; then
-    a1 project workitem list --assignee "$account" --filter "NOT tag=$claim_tag" -f json \
-      | jq '[.[] | {id: .identifier, title: .subject, type: .categoryIdentifier, status}]'
+    a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag --filter "NOT tag=$claim_tag" -f json \
+      | jq '[.[] | {id: .identifier, title: .subject, type: .categoryIdentifier, status, priority, tag}]'
   else
-    a1 project workitem list --assignee "$account" -f json \
-      | jq '[.[] | {id: .identifier, title: .subject, type: .categoryIdentifier, status}]'
+    a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag -f json \
+      | jq '[.[] | {id: .identifier, title: .subject, type: .categoryIdentifier, status, priority, tag}]'
   fi
 fi
