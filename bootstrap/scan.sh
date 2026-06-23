@@ -10,4 +10,4 @@ if [ -z "$account" ]; then
   exit 1
 fi
 a1 project workitem list --assignee "$account" -f json \
-  | jq '[.[] | {id: .identifier, title, type: .categoryIdentifier, status}]'
+  | jq '[.[] | {id: .identifier, title: .subject, type: .categoryIdentifier, status}]'

@@ -37,7 +37,7 @@ if [ "$1" = "auth" ] && [ "$2" = "whoami" ]; then
     exit 0
 fi
 if [ "$1" = "project" ] && [ "$2" = "workitem" ] && [ "$3" = "list" ]; then
-    echo '[{"identifier":"WI-001","title":"Test item","categoryIdentifier":"bug","status":"open","other":"ignored"}]'
+    echo '[{"identifier":"WI-001","subject":"Test item","categoryIdentifier":"bug","status":"open","other":"ignored"}]'
     exit 0
 fi
 exit 1
