@@ -22,6 +22,8 @@
 | `create_cr` | 建变更 / CR |
 | `worktree` | worktree 开发（本地分支） |
 | `prestage` | 预发部署 |
+| `adhoc_aone` | ad-hoc 建/补单（loops/adhoc-intake.md，PR 默认落 tf_provider） |
+| `pr_review` | 只读 PR 评审（不写不合并） |
 
 ---
 
@@ -50,6 +52,7 @@
 | `low_conf` | 置信度低，无法自动决策 |
 | `verify_fail` | 验证步骤失败（查证返回矛盾结果） |
 | `redline` | 红线操作：推送 master / 零差异 CR / 正式发布 |
+| `missing_capability` | 缺工作区/工具/池映射（config/workspaces.json 未登记） |
 
 Escalate 行为：暂停执行，输出摘要，通知用户决策。
 
@@ -58,5 +61,5 @@ Escalate 行为：暂停执行，输出摘要，通知用户决策。
 ## 机读策略块
 
 ```json
-{"mode":"supervised","auto":["reply","create_req","tag","create_cr","worktree","prestage"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline"]}
+{"mode":"supervised","auto":["reply","create_req","tag","create_cr","worktree","prestage","adhoc_aone","pr_review"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability"]}
 ```
