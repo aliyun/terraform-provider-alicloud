@@ -25,7 +25,7 @@ func TestAccAliCloudSlsMachineGroup_basic10981(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsMachineGroupBasicDependence10981)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-nanjing"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -81,7 +81,7 @@ variable "project_name" {
 
 resource "alicloud_log_project" "defaultyJqrue" {
   description = "for terraform test"
-  name        = var.project_name
+  name        = var.name
 }
 
 
@@ -103,7 +103,7 @@ func TestAccAliCloudSlsMachineGroup_basic10982(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsMachineGroupBasicDependence10982)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-nanjing"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -162,7 +162,7 @@ variable "project_name" {
 
 resource "alicloud_log_project" "defaultyJqrue" {
   description = "for terraform test"
-  name        = var.project_name
+  name        = var.name
 }
 
 
