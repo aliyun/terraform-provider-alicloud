@@ -62,5 +62,5 @@
       "desc": "上游依赖(谜拟)，无管理权，缺口只可提单升级，不纳入 pools.sh 视检"
     }
   },
-  "claim": { "tag": "jarvis-claimed", "fallback": "title" }
+  "claim": { "tag": "jarvis-claimed", "fallback": "title", "done_tag": "jarvis-done", "ttl_min": 45 }
 }

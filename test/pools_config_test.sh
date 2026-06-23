@@ -33,5 +33,13 @@ done
 [ "$(jq -r '.claim.tag' "$POOLS_JSON")" = "jarvis-claimed" ] \
   && ok "claim.tag jarvis-claimed" || bad "claim.tag wrong"
 
+# S7: claim.done_tag
+[ "$(jq -r '.claim.done_tag' "$POOLS_JSON")" = "jarvis-done" ] \
+  && ok "claim.done_tag jarvis-done" || bad "claim.done_tag wrong"
+
+# S8: claim.ttl_min
+[ "$(jq '.claim.ttl_min' "$POOLS_JSON")" = "45" ] \
+  && ok "claim.ttl_min 45" || bad "claim.ttl_min wrong"
+
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -gt 0 ] && exit 1; exit 0
