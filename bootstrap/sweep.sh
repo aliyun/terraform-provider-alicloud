@@ -38,6 +38,7 @@ POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
 TTL_MIN="$(jq -r '.claim.ttl_min' "$POOLS_JSON")"
 CLAIM_TAG="$(jq -r '.claim.tag' "$POOLS_JSON")"
+DONE_TAG="$(jq -r '.claim.done_tag' "$POOLS_JSON")"
 
 # Collect all project IDs from pools
 PROJECTS="$(python3 -c "
@@ -95,16 +96,17 @@ STALE_IDS=()
 while IFS= read -r project; do
     [ -z "$project" ] && continue
 
-    # List all jarvis-claimed items in this project
-    claimed_json=$(a1 project workitem list --project "$project" --tag "$CLAIM_TAG" -f json 2>/dev/null || echo "[]")
+    # List all jarvis-claimed items in this project, excluding those marked done
+    claimed_json=$(a1 project workitem list --project "$project" --tag "$CLAIM_TAG" --filter "NOT tag=$DONE_TAG" -f json 2>/dev/null || echo "[]")
 
-    # Extract item IDs (support both string and numeric ids)
+    # Extract item identifiers (use 'identifier' key, fall back to 'id' for compatibility)
     item_ids=$(printf '%s' "$claimed_json" | python3 -c "
 import json, sys
 try:
     items = json.loads(sys.stdin.read())
     for item in items:
-        print(str(item.get('id', '')))
+        item_id = item.get('identifier', item.get('id', ''))
+        print(str(item_id))
 except Exception:
     pass
 " 2>/dev/null || true)

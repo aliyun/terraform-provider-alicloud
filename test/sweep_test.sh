@@ -46,7 +46,7 @@ OLD_TS=$(date -u -v -60M +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
 cat > "$tmpbin/a1" << STUB
 #!/bin/bash
 if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
-    echo '[{"id":"$STALE_ID"}]'
+    echo '[{"identifier":"$STALE_ID"}]'
     exit 0
 fi
 if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "comment" ] && [ "\$4" = "list" ]; then
@@ -101,7 +101,7 @@ NEW_TS=$(date -u -v -5M +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
 cat > "$tmpbin/a1" << STUB
 #!/bin/bash
 if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
-    echo '[{"id":"$FRESH_ID"}]'
+    echo '[{"identifier":"$FRESH_ID"}]'
     exit 0
 fi
 if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "comment" ] && [ "\$4" = "list" ]; then
@@ -145,7 +145,7 @@ rm -f "$tmpesc/${NO_CLAIM_ID}.md"
 cat > "$tmpbin/a1" << STUB
 #!/bin/bash
 if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
-    echo '[{"id":"$NO_CLAIM_ID"}]'
+    echo '[{"identifier":"$NO_CLAIM_ID"}]'
     exit 0
 fi
 if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "comment" ] && [ "\$4" = "list" ]; then
@@ -189,7 +189,7 @@ rm -f "$tmpesc/${MALFORMED_ID}.md"
 cat > "$tmpbin/a1" << STUB
 #!/bin/bash
 if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
-    echo '[{"id":"$MALFORMED_ID"}]'
+    echo '[{"identifier":"$MALFORMED_ID"}]'
     exit 0
 fi
 if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "comment" ] && [ "\$4" = "list" ]; then
