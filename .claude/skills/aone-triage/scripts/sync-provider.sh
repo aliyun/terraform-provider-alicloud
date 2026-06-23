@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# Ensure ~/go/src/github.com/chenhanzhang/terraform-provider-alicloud holds the latest terraform-provider-alicloud master.
-# No repo -> clone; existing repo -> fetch only (no reset, protects local dev work).
+# Ensure the alicloud provider repo is synced. Path is read from config/workspaces.json
+# (.workspaces.terraform_provider.path) — edit there to relocate. No repo -> clone; existing repo -> fetch only.
 set -euo pipefail
 
-REPO_DIR="${TERRAFLOW_ALICLOUD:-$HOME/go/src/github.com/chenhanzhang/terraform-provider-alicloud}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG="$SCRIPT_DIR/../../../../config/workspaces.json"
+REPO_DIR="$(jq -r '.workspaces.terraform_provider.path' "$CONFIG")"
+REPO_DIR="${REPO_DIR/#\~/$HOME}"
 REMOTE="https://github.com/aliyun/terraform-provider-alicloud.git"
 
 if [ ! -d "$REPO_DIR/.git" ]; then
