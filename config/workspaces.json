@@ -2,6 +2,7 @@
   "workspaces": {
     "terraform_provider": {
       "repo": "terraform-provider-alicloud",
+      "git_url": "git@github.com:ChenHanZhang/terraform-provider-alicloud.git",
       "path": "/Users/tfhnia/go/src/github.com/chenhanzhang/terraform-provider-alicloud",
       "upstream_remote": "alicloud", "origin_remote": "origin", "default_branch": "master",
       "pools": ["tf_provider","tf_customer"],
@@ -11,6 +12,7 @@
     "mcp_server": { "repo":"aliyun-automation-agent","pool":"mcp_server","app":283346,"delivery":"delivery-aliyun-automation-agent.md","ops":{} },
     "agent_toolkit": {
       "repo": "alibabacloud-agent-toolkit",
+      "git_url": "git@github.com:ChenHanZhang/alibabacloud-agent-toolkit.git",
       "path": "/Users/tfhnia/cloudspec/alibabacloud-agent-toolkit",
       "origin_remote": "origin", "default_branch": "main",
       "pools": ["api_toolkit"],
@@ -18,6 +20,15 @@
       "ops": {"validate":"python3 tools/validate.py","lint":"npx markdownlint-cli2 '**/*.md' '#node_modules'","hooks":"bash tools/dev-hooks/verify-hooks.sh"},
       "test_profile": "TerraformUT",
       "desc": "Claude Code 插件市场（core/spec-ops/iac-service）; 新插件照搬 core, 见 loops/plugin-dev.md, 实测用 TerraformUT"
+    },
+    "acube": {
+      "repo": "a-cube-aliyun-com",
+      "git_url": "git@gitlab.alibaba-inc.com:opensource-tools/a-cube-aliyun-com.git",
+      "default_branch": "master",
+      "app": 180726,
+      "pools": ["api_toolkit"],
+      "ops": {},
+      "desc": "自动化能力管理内部平台; Terraform 自动化测试集成/度量/发布; 池 api_toolkit"
     }
   }
 }
