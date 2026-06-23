@@ -774,7 +774,7 @@ func TestAccAliCloudEnsInstance_basic5657(t *testing.T) {
 					"auto_renew":                 "false",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "true",
 					"private_ip_address":         "192.168.2.4",
 					"net_work_id":                "${alicloud_ens_network.创建网络.id}",
@@ -803,7 +803,7 @@ func TestAccAliCloudEnsInstance_basic5657(t *testing.T) {
 						"auto_renew":                 "false",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "true",
 						"private_ip_address":         "192.168.2.4",
 						"net_work_id":                CHECKSET,
@@ -869,7 +869,7 @@ resource "alicloud_ens_network" "创建网络" {
 
   description   = "NetworkDescription_autotest"
   cidr_block    = "192.168.2.0/24"
-  ens_region_id = "cn-nanjing-cmcc"
+  ens_region_id = "cn-wuxi-telecom_unicom_cmcc-2"
 }
 
 resource "alicloud_ens_vswitch" "创建交换机" {
@@ -877,7 +877,7 @@ resource "alicloud_ens_vswitch" "创建交换机" {
   cidr_block   = "192.168.2.0/24"
   vswitch_name = var.name
 
-  ens_region_id = "cn-nanjing-cmcc"
+  ens_region_id = "cn-wuxi-telecom_unicom_cmcc-2"
   network_id    = alicloud_ens_network.创建网络.id
 }
 
@@ -946,7 +946,7 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 					"auto_renew":                 "true",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "false",
 					"status":                     "Stopped",
 					"force_stop":                 "true",
@@ -975,7 +975,7 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 						"auto_renew":                 "true",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "false",
 						"status":                     "Stopped",
 						"force_stop":                 "true",
@@ -1057,7 +1057,7 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 					"auto_renew":                 "false",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1083,7 +1083,7 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 						"auto_renew":                 "false",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "false",
 					}),
 				),
@@ -1178,7 +1178,7 @@ func TestAccAliCloudEnsInstance_basic5657_twin(t *testing.T) {
 					"auto_renew":                 "false",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "true",
 					"private_ip_address":         "192.168.2.4",
 					"net_work_id":                "${alicloud_ens_network.创建网络.id}",
@@ -1207,7 +1207,7 @@ func TestAccAliCloudEnsInstance_basic5657_twin(t *testing.T) {
 						"auto_renew":                 "false",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "true",
 						"private_ip_address":         "192.168.2.4",
 						"net_work_id":                CHECKSET,
@@ -1281,7 +1281,7 @@ func TestAccAliCloudEnsInstance_basic5608_twin(t *testing.T) {
 					"auto_renew":                 "true",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "false",
 					"status":                     "Stopped",
 					"force_stop":                 "true",
@@ -1310,7 +1310,7 @@ func TestAccAliCloudEnsInstance_basic5608_twin(t *testing.T) {
 						"auto_renew":                 "true",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "false",
 						"status":                     "Stopped",
 						"force_stop":                 "true",
@@ -1511,7 +1511,7 @@ func TestAccAliCloudEnsInstance_basic7627(t *testing.T) {
 					"amount":                     "1",
 					"internet_charge_type":       "95BandwidthByMonth",
 					"ens_region_id":              "sg-singapore-9",
-					"auto_release_time":          "2024-09-10T18:00:00Z",
+					"auto_release_time":          "2027-09-10T18:00:00Z",
 					"internet_max_bandwidth_out": "0",
 					"period_unit":                "Month",
 					"billing_cycle":              "Day",
@@ -1530,7 +1530,7 @@ func TestAccAliCloudEnsInstance_basic7627(t *testing.T) {
 						"amount":                     "1",
 						"internet_charge_type":       "95BandwidthByMonth",
 						"ens_region_id":              "sg-singapore-9",
-						"auto_release_time":          "2024-09-10T18:00:00Z",
+						"auto_release_time":          "2027-09-10T18:00:00Z",
 						"internet_max_bandwidth_out": "0",
 						"period_unit":                "Month",
 						"billing_cycle":              "Day",
@@ -1621,7 +1621,7 @@ func TestAccAliCloudEnsInstance_basic5608_raw(t *testing.T) {
 					"auto_renew":                 "false",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "false",
 					"status":                     "Running",
 				}),
@@ -1648,7 +1648,7 @@ func TestAccAliCloudEnsInstance_basic5608_raw(t *testing.T) {
 						"auto_renew":                 "false",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "false",
 						"status":                     "Running",
 					}),

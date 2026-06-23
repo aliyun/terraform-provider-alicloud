@@ -33,6 +33,7 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, EcsDedicatedHostBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-zhangjiakou"})
 			testAccPreCheck(t)
 		},
 
@@ -42,13 +43,13 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dedicated_host_type": "ddh.g6",
+					"dedicated_host_type": "ddh.c6e",
 					"description":         "From_Terraform",
 					"dedicated_host_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dedicated_host_type": "ddh.g6",
+						"dedicated_host_type": "ddh.c6e",
 						"description":         "From_Terraform",
 						"dedicated_host_name": name,
 					}),
@@ -219,8 +220,8 @@ func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, EcsDedicatedHostBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-zhangjiakou"})
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EcsDedicatedHostRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -229,7 +230,7 @@ func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dedicated_host_type":   "ddh.r6",
+					"dedicated_host_type":   "ddh.c6e",
 					"description":           "From_Terraform",
 					"dedicated_host_name":   name,
 					"action_on_maintenance": "Migrate",
@@ -246,11 +247,10 @@ func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
 						"Created": "TF",
 						"For":     "DDH_Test",
 					},
-					"zone_id": "cn-hangzhou-i",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dedicated_host_type":   "ddh.r6",
+						"dedicated_host_type":   "ddh.c6e",
 						"description":           "From_Terraform",
 						"dedicated_host_name":   name,
 						"action_on_maintenance": "Migrate",
@@ -261,7 +261,6 @@ func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
 						"tags.%":                "2",
 						"tags.Created":          "TF",
 						"tags.For":              "DDH_Test",
-						"zone_id":               CHECKSET,
 					}),
 				),
 			},
@@ -283,13 +282,6 @@ var EcsDedicatedHostMap = map[string]string{
 
 func EcsDedicatedHostBasicdependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_vpcs" "default" {
-	  name_regex = "^default-NODELETING$"
-	}
-	data "alicloud_vswitches" "default" {
-	  vpc_id = data.alicloud_vpcs.default.ids.0
-      zone_id = "cn-hangzhou-i"
-	}
 	data "alicloud_resource_manager_resource_groups" "default"{
 	}
 `)

@@ -69,7 +69,7 @@ variable "name" {
 }
 
 variable "ens_region_id" {
-  default = "cn-chenzhou-telecom_unicom_cmcc"
+  default = "cn-wuxi-telecom_unicom_cmcc-2"
 }
 
 resource "alicloud_ens_network" "defaultmIE0nO" {
@@ -164,7 +164,7 @@ variable "name" {
 }
 
 variable "ens_region_id" {
-  default = "cn-chenzhou-telecom_unicom_cmcc"
+  default = "cn-wuxi-telecom_unicom_cmcc-2"
 }
 
 resource "alicloud_ens_instance" "defaultXKjq1W" {

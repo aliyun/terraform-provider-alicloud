@@ -775,7 +775,6 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 					"security_groups":            []string{"${alicloud_security_group.default.0.id}"},
 					"instance_name":              name,
 					"description":                name,
-					"internet_max_bandwidth_out": "0",
 					"host_name":                  REMOVEKEY,
 					"password":                   REMOVEKEY,
 					// "credit_specification":       "Standard",
@@ -823,11 +822,11 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 						// "credit_specification": "Standard",
 
 						"private_ip": CHECKSET,
-						"public_ip":  "",
+						"public_ip":  CHECKSET,
 						"status":     "Running",
 
 						"internet_charge_type":       string(PayByBandwidth),
-						"internet_max_bandwidth_out": "0",
+						"internet_max_bandwidth_out": "50",
 
 						"deletion_protection": "false",
 					}),
@@ -1841,6 +1840,7 @@ func TestAccAliCloudECSInstanceHpcCluster(t *testing.T) {
 	name := fmt.Sprintf("tf-testAcc%sEcsInstanceHpcCluster%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcHpcClusterIDDependence)
 
+	os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1856,7 +1856,7 @@ func TestAccAliCloudECSInstanceHpcCluster(t *testing.T) {
 					"security_groups":               []string{"${alicloud_security_group.default.id}"},
 					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
-					"system_disk_category":          "cloud_efficiency",
+					"system_disk_category":          "cloud_essd",
 					"instance_name":                 "${var.name}",
 					"key_name":                      "${alicloud_key_pair.default.key_name}",
 					"spot_strategy":                 "NoSpot",
@@ -1893,11 +1893,13 @@ variable "name" {
 
 data "alicloud_instance_types" "default" {
   instance_type_family = "ecs.sccc7"
+  system_disk_category = "cloud_essd"
 }
 
 data "alicloud_images" "default" {
-  name_regex = "^aliyun_3_x64_20G_scc*"
-  owners     = "system"
+  name_regex    = "^aliyun_3_x64*"
+  owners        = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
 }
 
 resource "alicloud_vpc" "default" {

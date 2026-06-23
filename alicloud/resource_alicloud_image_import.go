@@ -245,7 +245,7 @@ func resourceAliCloudImageImportUpdate(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	return resourceAliCloudImageRead(d, meta)
+	return resourceAliCloudImageImportRead(d, meta)
 }
 
 func resourceAliCloudImageImportDelete(d *schema.ResourceData, meta interface{}) error {
