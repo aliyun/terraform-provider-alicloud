@@ -61,6 +61,22 @@ func tagsSchemaWithIgnore() *schema.Schema {
 	}
 }
 
+// parse template_tags
+func parsingTemplateTags(d *schema.ResourceData) (map[string]interface{}, []string) {
+	oraw, nraw := d.GetChange("template_tags")
+	removedTags := oraw.(map[string]interface{})
+	addedTags := nraw.(map[string]interface{})
+	removed := make([]string, 0)
+	for key, value := range removedTags {
+		old, ok := addedTags[key]
+		if !ok || old != value {
+			removed = append(removed, key)
+		}
+	}
+
+	return addedTags, removed
+}
+
 func parsingTags(d *schema.ResourceData) (map[string]interface{}, []string) {
 	oraw, nraw := d.GetChange("tags")
 	removedTags := oraw.(map[string]interface{})

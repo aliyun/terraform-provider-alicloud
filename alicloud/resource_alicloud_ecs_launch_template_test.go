@@ -563,6 +563,21 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"template_tags": map[string]string{
+						"tag1": "updated",
+						"tag2": "updated",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"template_tags.tag1":    "updated",
+						"template_tags.tag2":    "updated",
+						"latest_version_number": "27",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"name":                          name,
 					"description":                   name,
 					"host_name":                     name,
@@ -717,13 +732,13 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 					"password_inherit":              "false",
 					"period":                        "1",
 					"private_ip_address":            "172.16.0.10",
-					"template_resource_group_id":    "rg-zkdfjahg9zxncv0",
+					"template_resource_group_id":    "${alicloud_resource_manager_resource_group.test.id}",
 					"version_description":           name,
 					"system_disk_category":          "cloud_ssd",
 					"system_disk_description":       name,
 					"system_disk_name":              name,
 					"system_disk_size":              "40",
-					"resource_group_id":             "rg-zkdfjahg9zxncv0",
+					"resource_group_id":             "${alicloud_resource_manager_resource_group.test.id}",
 					"userdata":                      "xxxxxxx",
 					"vswitch_id":                    "${alicloud_vswitch.shareVswitch1.id}",
 					"tags": map[string]string{
@@ -944,13 +959,13 @@ func TestAccAliCloudECSLaunchTemplateBasic2(t *testing.T) {
 					"period":                        "1",
 					"period_unit":                   "Month",
 					"private_ip_address":            "172.16.0.10",
-					"template_resource_group_id":    "rg-zkdfjahg9zxncv0",
+					"template_resource_group_id":    "${alicloud_resource_manager_resource_group.test.id}",
 					"version_description":           name,
 					"system_disk_category":          "cloud_ssd",
 					"system_disk_description":       name,
 					"system_disk_name":              name,
 					"system_disk_size":              "40",
-					"resource_group_id":             "rg-zkdfjahg9zxncv0",
+					"resource_group_id":             "${alicloud_resource_manager_resource_group.test.id}",
 					"userdata":                      "xxxxxxx",
 					"http_endpoint":                 "enabled",
 					"http_tokens":                   "optional",
@@ -1098,11 +1113,11 @@ func TestAccAliCloudECSLaunchTemplateMulti(t *testing.T) {
 							"kms_key_id":           "${alicloud_kms_key.default.id}",
 						},
 					},
-					"resource_group_id": "rg-zkdfjahg9zxncv0",
+					"resource_group_id": "alicloud_resource_manager_resource_group.test.id",
 					"user_data":         "xxxxxxxxxxxxxx",
 					"vswitch_id":        "${alicloud_vswitch.shareVswitch1.id}",
-					"vpc_id":            "vpc-asdfnbg0as8dfk1nb2",
-					"zone_id":           "cn-beijing-a",
+					"vpc_id":            "${alicloud_vpc.shareVPC.id}",
+					"zone_id":           "cn-hangzhou-i",
 					"tags": map[string]string{
 						"tag1": "hello",
 						"tag2": "world",
@@ -1209,10 +1224,7 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
- vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_vpc" "shareVPC" {
@@ -1233,17 +1245,23 @@ resource "alicloud_vswitch" "shareVswitch2" {
 }
 
 resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id  = "${data.alicloud_vpcs.default.ids.0}"
+  security_group_name = "${var.name}"
+  vpc_id              = "${data.alicloud_vpcs.default.ids.0}"
 }
 resource "alicloud_security_group" "update" {
-  name   = "${var.name}1"
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  security_group_name = "${var.name}1"
+  vpc_id              = "${data.alicloud_vpcs.default.ids.0}"
 }
+
 resource "alicloud_kms_key" "default" {
-	description             = var.name
-	pending_window_in_days  = "7"
-	status               = "Enabled"
+  description            = var.name
+  pending_window_in_days = "7"
+  status                 = "Enabled"
+}
+
+resource "alicloud_resource_manager_resource_group" "test" {
+  resource_group_name = var.name
+  display_name        = var.name
 }
 `, name)
 }
@@ -1258,20 +1276,21 @@ data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
 }
+
 data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
+
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }
+
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+  name_regex = "^default-NODELETING$"
 }
-data "alicloud_vswitches" "default" {
- vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-}
+
 resource "alicloud_vpc" "shareVPC" {
   cidr_block = "172.16.0.0/12"
   vpc_name   = var.name
@@ -1288,14 +1307,22 @@ resource "alicloud_vswitch" "shareVswitch2" {
   zone_id    = data.alicloud_zones.default.zones.1.id
   cidr_block = "172.16.2.0/24"
 }
-resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id  = "${data.alicloud_vpcs.default.ids.0}"
+
+resource "alicloud_resource_manager_resource_group" "test" {
+  resource_group_name = var.name
+  display_name        = var.name
 }
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+
 resource "alicloud_security_group" "update" {
   name   = "${var.name}1"
   vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 }
+
 resource "alicloud_ecs_deployment_set" "default" {
   strategy            = "Availability"
   domain              = "Default"
