@@ -5,3 +5,6 @@ scratch_*
 
 # local rebuildable state (truth lives in Aone + memory/)
 .my-day/
+
+# 开发用 worktree(临时分支工作区)
+.claude/worktrees/
