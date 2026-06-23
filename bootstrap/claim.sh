@@ -39,11 +39,11 @@ fi
 case "$cmd" in
     claim)
         # 1. Tag the workitem as claimed
-        a1 project workitem update "$workitem_id" --project "$project_id" --tag "$CLAIM_TAG"
+        a1 project workitem update "$workitem_id" --tag "$CLAIM_TAG"
 
         # 2. Post a timestamped comment identifying this machine
         utcnow=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-        a1 project workitem comment create "$workitem_id" --project "$project_id" -m "jarvis-claim $(hostname) $utcnow"
+        a1 project workitem comment create "$workitem_id" -m "jarvis-claim $(hostname) $utcnow"
 
         # 3. Readback: verify the workitem appears under the claimed tag (race check)
         readback=$(a1 project workitem list --project "$project_id" --tag "$CLAIM_TAG" -f json 2>/dev/null || echo "[]")
@@ -58,7 +58,7 @@ case "$cmd" in
 
     release)
         # Tag as done (no untag exists; done_tag supersedes claimed)
-        a1 project workitem update "$workitem_id" --project "$project_id" --tag "$DONE_TAG"
+        a1 project workitem update "$workitem_id" --tag "$DONE_TAG"
         echo "claim.sh: released workitem $workitem_id in project $project_id"
         exit 0
         ;;
