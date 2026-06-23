@@ -36,7 +36,8 @@ source "$_sweep_dir/log.sh"
 # ---------------------------------------------------------------------------
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
-TTL_MIN="$(python3 -c "import json,sys; d=json.load(open('$POOLS_JSON')); print(d['claim']['ttl_min'])")"
+TTL_MIN="$(jq -r '.claim.ttl_min' "$POOLS_JSON")"
+CLAIM_TAG="$(jq -r '.claim.tag' "$POOLS_JSON")"
 
 # Collect all project IDs from pools
 PROJECTS="$(python3 -c "
@@ -95,7 +96,7 @@ while IFS= read -r project; do
     [ -z "$project" ] && continue
 
     # List all jarvis-claimed items in this project
-    claimed_json=$(a1 project workitem list --project "$project" --tag jarvis-claimed -f json 2>/dev/null || echo "[]")
+    claimed_json=$(a1 project workitem list --project "$project" --tag "$CLAIM_TAG" -f json 2>/dev/null || echo "[]")
 
     # Extract item IDs (support both string and numeric ids)
     item_ids=$(printf '%s' "$claimed_json" | python3 -c "
