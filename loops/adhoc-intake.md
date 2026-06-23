@@ -66,10 +66,10 @@
 ## 六、审计
 
 ```bash
-bootstrap/log.sh run_done <id> "<任务+落点>"
+bootstrap/wrap.sh done <id> "<任务+落点>" "<status>"
 ```
 
-落 `runs/`；临时数据走 `.my-day/`，禁往仓库根甩 scratch。
+收尾回填 Aone（评论+改状态）并落 `runs/`；dev 中途用 `wrap.sh sync <id> "<进展>"` 报进展。临时数据走 `.my-day/`，禁往仓库根甩 scratch。Aone 唯一真源——禁止只在本地推进不落 Aone。
 
 ---
 
@@ -77,7 +77,7 @@ bootstrap/log.sh run_done <id> "<任务+落点>"
 
 | 结果 | 说明 |
 |------|------|
-| 完成 | 只读出结论 / dev 到 MR·预发，`run_done` 入 `runs/` |
+| 完成 | 只读出结论 / dev 到 MR·预发，`wrap.sh done` 回填 Aone+入 `runs/` |
 | escalation | 缺口/低置信/红线 → 写 `escalation/`，触发 `self-improve` |
 
 ---
@@ -88,5 +88,5 @@ bootstrap/log.sh run_done <id> "<任务+落点>"
 |------|------|
 | `config/workspaces.json` | 工作区 canonical schema → repo/path/remotes/ops |
 | `config/pools.json` | 池路由（ad-hoc PR→tf_provider 528766，客户 1086837） |
-| `bootstrap/log.sh run_done` | 审计 |
+| `bootstrap/wrap.sh sync/done` | 进展实时回填 Aone（真源）+收尾审计 |
 | `loops/self-improve.md` | 缺口→escalation→补丁 |
