@@ -33,65 +33,42 @@ if [ -f "$pools_cfg" ]; then
 fi
 
 if $has_pools; then
-  # Pool-scoped scan: one call per pool, merged via jq -s add.
-  # Results are emitted newline-separated so jq -s can consume them.
-  pool_results=""
+  # Pool-scoped scan: pools fetched in parallel, paginated (page-size 1000), merged.
+  PAGE_SIZE=1000
 
-  # Iterate over pools: for each pool emit a JSON array (or skip on failure).
-  while IFS=$'\t' read -r pool_key pool_project pool_name exclude_status exclude_title; do
-    # Compose filter: skip claimed + per-pool terminal statuses + noise titles
-    filter=""
+  fetch_pool() {  # args: key project status_csv title_csv → prints transformed JSON array
+    local pool_key="$1" pool_project="$2" exclude_status="$3" exclude_title="$4"
+    local filter="" pat pool_out="[]" page=1 pg n
     [ -n "$claim_tag" ] && filter="NOT tag=$claim_tag"
-    if [ -n "$exclude_status" ]; then
-      [ -n "$filter" ] && filter="$filter AND "; filter="${filter}NOT status=$exclude_status"
-    fi
+    [ -n "$exclude_status" ] && { [ -n "$filter" ] && filter="$filter AND "; filter="${filter}NOT status=$exclude_status"; }
     if [ -n "$exclude_title" ]; then
       IFS=',' read -ra _pats <<< "$exclude_title"
-      for pat in "${_pats[@]}"; do
-        [ -n "$filter" ] && filter="$filter AND "; filter="${filter}subject!~$pat"
-      done
+      for pat in "${_pats[@]}"; do [ -n "$filter" ] && filter="$filter AND "; filter="${filter}subject!~$pat"; done
     fi
-    # Paginate: pull all pages (page-size 300) until a short page, merge.
-    pool_out="[]"; page=1
     while :; do
       if [ -n "$filter" ]; then
-        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --filter "$filter" --page "$page" --page-size 300 -f json 2>/dev/null) || true
+        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
       else
-        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --page "$page" --page-size 300 -f json 2>/dev/null) || true
+        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
       fi
       n=$(echo "$pg" | jq 'length' 2>/dev/null); [ -z "$n" ] && break
       pool_out=$(jq -s 'add' <<<"$pool_out"$'\n'"$pg" 2>/dev/null) || pool_out="[]"
-      [ "$n" -lt 300 ] && break
+      [ "$n" -lt "$PAGE_SIZE" ] && break
       page=$((page+1))
     done
-    if [ "$pool_out" = "[]" ]; then continue; fi
+    echo "$pool_out" | jq --arg pool "$pool_key" '[.[] | {id:.identifier,title:.subject,type:.categoryIdentifier,status,pool:$pool}]'
+  }
 
-    # Transform items for this pool, adding the pool key as the pool field.
-    transformed=$(echo "$pool_out" | jq --arg pool "$pool_key" \
-      '[.[] | {id: .identifier, title: .subject, type: .categoryIdentifier, status, pool: $pool}]' \
-      2>/dev/null) || true
-
-    if [ -z "$transformed" ] || [ "$transformed" = "null" ]; then
-      continue
-    fi
-
-    if [ -n "$pool_results" ]; then
-      pool_results="${pool_results}
-${transformed}"
-    else
-      pool_results="${transformed}"
-    fi
+  tmpd=$(mktemp -d); trap 'rm -rf "$tmpd"' EXIT
+  while IFS=$'\t' read -r pool_key pool_project pool_name exclude_status exclude_title; do
+    fetch_pool "$pool_key" "$pool_project" "$exclude_status" "$exclude_title" > "$tmpd/$pool_key.json" 2>/dev/null &
   done < <(jq -r '
     .pools // {} | to_entries[] |
     [.key, (.value.project | tostring), (.value.name // .key), ((.value.exclude_status // [])|join(",")), ((.value.exclude_title // [])|join(","))] |
     @tsv
   ' "$pools_cfg")
-
-  if [ -z "$pool_results" ]; then
-    echo "[]"
-  else
-    echo "$pool_results" | jq -s 'add // []'
-  fi
+  wait
+  jq -s 'add // []' "$tmpd"/*.json 2>/dev/null || echo "[]"
 else
   # No pools configured: fall back to assignee-based global list.
   if [ -n "$claim_tag" ]; then
