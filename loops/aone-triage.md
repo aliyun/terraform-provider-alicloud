@@ -1,3 +1,118 @@
-# aone-triage loop（plan #2 细化）
+# aone-triage 无人值守到预发 triage loop
 
-触发/输入/工具链/决策点/done/仅人工步 待补
+> Plan #2 Task 4 — 将各组件串成完整的 unattended-to-prestage 闭环。
+
+---
+
+## 一、触发
+
+| 方式 | 说明 |
+|------|------|
+| 定时触发 | cron / 调度器定期调用本 runbook |
+| 手动触发 | 用户在 Claude Code 会话中执行 `/aone-triage` 或直接发指令 |
+
+---
+
+## 二、输入扫描
+
+```bash
+bootstrap/scan.sh
+```
+
+输出：标准 JSON 数组，格式 `[{id, title, type, status}]`，代表当前分配给本账号的所有工作项。
+
+- 若 scan.sh 返回非零退出码，终止本轮，输出错误信息，等待下次触发。
+- 若结果为空数组，本轮结束，不做任何写操作。
+
+---
+
+## 三、出执行计划（supervised 授权关口）
+
+```bash
+bootstrap/plan.sh
+```
+
+plan.sh 分析扫描结果，输出本轮拟执行的逐项计划。
+
+- **supervised 模式（默认）**：plan.sh 退出码 2 表示计划等待授权；输出计划后**暂停**，逐项向用户请求授权。
+  - 用户回复"可行 / 允许 / 授权"后，该条目进入下一阶段。
+  - 未授权条目本轮跳过。
+- **unattended 模式**：需用户显式以 `--mode unattended` 开启，计划直接进入执行阶段，无需逐条等待。
+
+---
+
+## 四、逐项执行
+
+对每条**已授权**的工作项，按以下顺序处理：
+
+### 4.1 去重检查
+
+```bash
+bootstrap/log.sh seen <id>
+```
+
+- `seen` 返回 0（已处理）→ 跳过本条，继续下一条。
+- `seen` 返回 1（未处理）→ 进入技能调用。
+
+### 4.2 单条 triage（技能调用）
+
+调用 `.claude/skills/aone-triage` 技能，传入当前工作项 id。
+
+技能完成：读取工单 → 查证（OpenAPI + Cloudspec 映射 + provider 源码）→ 回复 / 打标 / 建需求 / 建 CR。
+
+### 4.3 autonomy 判定（`autonomy.md` 策略）
+
+技能执行后，依据 `autonomy.md` 策略块判断下一步：
+
+| 条件 | 动作 |
+|------|------|
+| 高置信（high_conf）+ 操作可逆（reply / create_req / tag / create_cr / worktree / prestage） | 自动执行至**预发（prestage）** |
+| 低置信（low_conf）/ 验证失败（verify_fail）/ 红线（redline） | 触发 escalate，输出摘要，通知用户决策 |
+
+```bash
+# 自动走到预发
+# → prestage 完成后记录 run_done
+bootstrap/log.sh run_done <id> "自动部署至预发"
+
+# escalate 路径
+bootstrap/log.sh escalate <id> "<reason>"
+```
+
+---
+
+## 五、Done — 本轮结束标准
+
+| 结果 | 说明 |
+|------|------|
+| **到预发（prestage）** | 高置信可逆操作已自动完成，`run_done` 已写入 `runs/` |
+| **入队（escalation）** | 低置信/红线条目已写入 `escalation/`，等待人工决策 |
+
+每条工作项最终落入上述两个状态之一，本轮 loop 结束。
+
+---
+
+## 六、仅人工步骤（正式发布 release_prod）
+
+`autonomy.md` 策略永久停止项：
+
+```
+stop: ["release_prod"]
+```
+
+**正式发布（release_prod / release）无论任何模式，必须人工在 Aone 或 a1 CLI 中确认后才能执行。**
+
+Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手动发布到生产环境。
+
+---
+
+## 七、工具链速查
+
+| 工具 | 作用 |
+|------|------|
+| `bootstrap/scan.sh` | 入箱扫描 → JSON 工作项列表 |
+| `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权 |
+| `bootstrap/log.sh seen` | 去重检查 |
+| `bootstrap/log.sh run_done` | 记录完成 |
+| `bootstrap/log.sh escalate` | 记录上报 |
+| `.claude/skills/aone-triage` | 单条工单全流程技能 |
+| `autonomy.md` | 模式/置信度/停止项策略 |
