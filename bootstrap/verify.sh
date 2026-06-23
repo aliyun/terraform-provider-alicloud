@@ -62,6 +62,15 @@ chk_cred a1 "a1 auth whoami"
 # Check vendored skills
 chk_skill aone-triage
 
+# Check pools config parses and has >=3 pools
+pools_cfg="$(git rev-parse --show-toplevel)/config/pools.json"
+if jq -e '.pools | length >= 3' "$pools_cfg" >/dev/null 2>&1; then
+    echo "PASS pools.json"
+else
+    echo "FAIL pools.json"
+    ((fail_count++))
+fi
+
 # Exit with non-zero if any check failed
 if [ $fail_count -gt 0 ]; then
     exit 1
