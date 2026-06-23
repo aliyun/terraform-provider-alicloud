@@ -43,7 +43,10 @@ case "$cmd" in
         fi
         mkdir -p "$cache_dir"
         out=$("$@"); rc=$?
-        [ "$rc" -eq 0 ] && [ -n "$out" ] && printf '%s' "$out" > "$f"
+        # 原子落盘:temp + mv,并发同 key 不撕裂(失败/空不写,下次重取)
+        if [ "$rc" -eq 0 ] && [ -n "$out" ]; then
+            tmp="$f.$$.tmp"; printf '%s' "$out" > "$tmp" && mv -f "$tmp" "$f" || rm -f "$tmp"
+        fi
         printf '%s' "$out"
         exit "$rc"
         ;;

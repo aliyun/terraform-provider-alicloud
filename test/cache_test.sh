@@ -29,4 +29,9 @@ bash "$cache" bust k
 bash "$cache" get k 60 -- false >/dev/null 2>&1
 bash "$cache" fresh k 60 && { echo "FAIL no-poison"; fail=1; } || echo "PASS no-poison"
 
+# concurrent writes to same key must never leave a torn/empty file
+bash "$cache" bust race
+for i in 1 2 3 4 5 6 7 8; do bash "$cache" get race 0 -- bash -c 'echo wholevalue'$i >/dev/null 2>&1 & done; wait
+v=$(cat "$JARVIS_CACHE_DIR/race"); [[ "$v" == wholevalue* ]] && echo "PASS atomic" || { echo "FAIL atomic: '$v'"; fail=1; }
+
 [ $fail -eq 0 ] && echo "✓ cache tests passed" || exit 1
