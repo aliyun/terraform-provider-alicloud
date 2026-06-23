@@ -1937,7 +1937,7 @@ func (s *EcsService) DescribeLaunchTemplateVersions(id string, version interface
 func (s *EcsService) SetResourceTemplateTags(d *schema.ResourceData, resourceType string) error {
 
 	if d.HasChange("template_tags") {
-		added, removed := parsingTags(d)
+		added, removed := parsingTemplateTags(d)
 		client := s.client
 
 		removedTagKeys := make([]string, 0)
