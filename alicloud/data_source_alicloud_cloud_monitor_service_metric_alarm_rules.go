@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -22,6 +23,10 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRules() *schema.Resource {
 				Computed: true,
 			},
 			"dimensions": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"metric_alarm_rule_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -222,6 +227,10 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRules() *schema.Resource {
 								},
 							},
 						},
+						"metric_alarm_rule_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"metric_name": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -286,6 +295,10 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRules() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"send_ok": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 						"silence_time": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -313,6 +326,11 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRules() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -339,31 +357,32 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleRead(d *schema.Resource
 	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
+
+	if v, ok := d.GetOk("metric_alarm_rule_id"); ok {
+		request["RuleIds"] = v
+	}
 	if v, ok := d.GetOk("dimensions"); ok {
 		request["Dimensions"] = v
 	}
-
 	if v, ok := d.GetOk("metric_name"); ok {
 		request["MetricName"] = v
 	}
-
 	if v, ok := d.GetOk("namespace"); ok {
 		request["Namespace"] = v
 	}
-
 	if v, ok := d.GetOk("rule_name"); ok {
 		request["RuleName"] = v
 	}
-
 	if v, ok := d.GetOkExists("status"); ok {
 		request["EnableState"] = v
 	}
-
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	request["PageSize"] = PageSizeLarge
 	request["Page"] = 1
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
 			response, err = client.RpcPost("Cms", "2019-01-01", action, query, request, true)
 
 			if err != nil {
@@ -373,18 +392,14 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleRead(d *schema.Resource
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
-
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		resp, err := jsonpath.Get("$.Alarms.Alarm", response)
-		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Alarms.Alarm", response)
-		}
+		resp, _ := jsonpath.Get("$.Alarms.Alarm[*]", response)
 
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -397,10 +412,10 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleRead(d *schema.Resource
 			objects = append(objects, item)
 		}
 
-		if len(result) < request["PageSize"].(int) {
+		if len(result) < PageSizeLarge {
 			break
 		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
+		request["Page"] = request["Page"].(int) + 1
 	}
 
 	ids := make([]string, 0)
@@ -421,10 +436,12 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleRead(d *schema.Resource
 		mapping["period"] = objectRaw["Period"]
 		mapping["resources"] = objectRaw["Resources"]
 		mapping["rule_name"] = objectRaw["RuleName"]
+		mapping["send_ok"] = objectRaw["SendOK"]
 		mapping["silence_time"] = objectRaw["SilenceTime"]
 		mapping["source_type"] = objectRaw["SourceType"]
 		mapping["status"] = objectRaw["EnableState"]
 		mapping["webhook"] = objectRaw["Webhook"]
+		mapping["metric_alarm_rule_id"] = objectRaw["RuleId"]
 
 		compositeExpressionMaps := make([]map[string]interface{}, 0)
 		compositeExpressionMap := make(map[string]interface{})
@@ -441,7 +458,7 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleRead(d *schema.Resource
 			expressionListRaw, _ := jsonpath.Get("$.CompositeExpression.ExpressionList.ExpressionList", objectRaw)
 			expressionListMaps := make([]map[string]interface{}, 0)
 			if expressionListRaw != nil {
-				for _, expressionListChildRaw := range expressionListRaw.([]interface{}) {
+				for _, expressionListChildRaw := range convertToInterfaceArray(expressionListRaw) {
 					expressionListMap := make(map[string]interface{})
 					expressionListChildRaw := expressionListChildRaw.(map[string]interface{})
 					expressionListMap["comparison_operator"] = expressionListChildRaw["ComparisonOperator"]
@@ -519,7 +536,7 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleRead(d *schema.Resource
 		labelsRaw, _ := jsonpath.Get("$.Labels.Labels", objectRaw)
 		labelsMaps := make([]map[string]interface{}, 0)
 		if labelsRaw != nil {
-			for _, labelsChildRaw := range labelsRaw.([]interface{}) {
+			for _, labelsChildRaw := range convertToInterfaceArray(labelsRaw) {
 				labelsMap := make(map[string]interface{})
 				labelsChildRaw := labelsChildRaw.(map[string]interface{})
 				labelsMap["key"] = labelsChildRaw["Key"]
@@ -543,7 +560,7 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleRead(d *schema.Resource
 			annotationsRaw, _ := jsonpath.Get("$.Prometheus.Annotations.Annotations", objectRaw)
 			annotationsMaps := make([]map[string]interface{}, 0)
 			if annotationsRaw != nil {
-				for _, annotationsChildRaw := range annotationsRaw.([]interface{}) {
+				for _, annotationsChildRaw := range convertToInterfaceArray(annotationsRaw) {
 					annotationsMap := make(map[string]interface{})
 					annotationsChildRaw := annotationsChildRaw.(map[string]interface{})
 					annotationsMap["key"] = annotationsChildRaw["Key"]
@@ -556,6 +573,18 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleRead(d *schema.Resource
 			prometheusMaps = append(prometheusMaps, prometheusMap)
 		}
 		mapping["prometheus"] = prometheusMaps
+
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(mapping["id"]))
+			s = append(s, mapping)
+			continue
+		}
+
+		id := fmt.Sprint(objectRaw["RuleId"])
+		mapping, err = dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleReadDescription(d, id, mapping, meta)
+		if err != nil {
+			return WrapError(err)
+		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
@@ -574,4 +603,170 @@ func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleRead(d *schema.Resource
 		writeToFile(output.(string), s)
 	}
 	return nil
+}
+
+func dataSourceAliCloudCloudMonitorServiceMetricAlarmRuleReadDescription(d *schema.ResourceData, id string, object map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	client := meta.(*connectivity.AliyunClient)
+
+	cloudMonitorServiceServiceV2 := CloudMonitorServiceServiceV2{client}
+	getResp, err := cloudMonitorServiceServiceV2.DescribeCloudMonitorServiceMetricAlarmRule(id)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	// Merge additional fields from Get API response to mapping
+	// Reuse the response mapping template from Resource's read function
+	mapping := object
+	objectRaw := getResp
+
+	mapping["contact_groups"] = objectRaw["ContactGroups"]
+	mapping["dimensions"] = objectRaw["Dimensions"]
+	mapping["effective_interval"] = objectRaw["EffectiveInterval"]
+	mapping["email_subject"] = objectRaw["MailSubject"]
+	mapping["metric_name"] = objectRaw["MetricName"]
+	mapping["namespace"] = objectRaw["Namespace"]
+	mapping["no_data_policy"] = objectRaw["NoDataPolicy"]
+	mapping["no_effective_interval"] = objectRaw["NoEffectiveInterval"]
+	mapping["period"] = objectRaw["Period"]
+	mapping["resources"] = objectRaw["Resources"]
+	mapping["rule_name"] = objectRaw["RuleName"]
+	mapping["send_ok"] = objectRaw["SendOK"]
+	mapping["silence_time"] = objectRaw["SilenceTime"]
+	mapping["source_type"] = objectRaw["SourceType"]
+	mapping["status"] = objectRaw["EnableState"]
+	mapping["webhook"] = objectRaw["Webhook"]
+	mapping["metric_alarm_rule_id"] = objectRaw["RuleId"]
+
+	compositeExpressionMaps := make([]map[string]interface{}, 0)
+	compositeExpressionMap := make(map[string]interface{})
+	compositeExpressionRaw := make(map[string]interface{})
+	if objectRaw["CompositeExpression"] != nil {
+		compositeExpressionRaw = objectRaw["CompositeExpression"].(map[string]interface{})
+	}
+	if len(compositeExpressionRaw) > 0 {
+		compositeExpressionMap["expression_list_join"] = compositeExpressionRaw["ExpressionListJoin"]
+		compositeExpressionMap["expression_raw"] = compositeExpressionRaw["ExpressionRaw"]
+		compositeExpressionMap["level"] = compositeExpressionRaw["Level"]
+		compositeExpressionMap["times"] = compositeExpressionRaw["Times"]
+
+		expressionListRaw, _ := jsonpath.Get("$.CompositeExpression.ExpressionList.ExpressionList", objectRaw)
+		expressionListMaps := make([]map[string]interface{}, 0)
+		if expressionListRaw != nil {
+			for _, expressionListChildRaw := range convertToInterfaceArray(expressionListRaw) {
+				expressionListMap := make(map[string]interface{})
+				expressionListChildRaw := expressionListChildRaw.(map[string]interface{})
+				expressionListMap["comparison_operator"] = expressionListChildRaw["ComparisonOperator"]
+				expressionListMap["metric_name"] = expressionListChildRaw["MetricName"]
+				expressionListMap["period"] = expressionListChildRaw["Period"]
+				expressionListMap["statistics"] = expressionListChildRaw["Statistics"]
+				expressionListMap["threshold"] = expressionListChildRaw["Threshold"]
+
+				expressionListMaps = append(expressionListMaps, expressionListMap)
+			}
+		}
+		compositeExpressionMap["expression_list"] = expressionListMaps
+		compositeExpressionMaps = append(compositeExpressionMaps, compositeExpressionMap)
+	}
+	mapping["composite_expression"] = compositeExpressionMaps
+	escalationsMaps := make([]map[string]interface{}, 0)
+	escalationsMap := make(map[string]interface{})
+	escalationsRaw := make(map[string]interface{})
+	if objectRaw["Escalations"] != nil {
+		escalationsRaw = objectRaw["Escalations"].(map[string]interface{})
+	}
+	if len(escalationsRaw) > 0 {
+
+		criticalMaps := make([]map[string]interface{}, 0)
+		criticalMap := make(map[string]interface{})
+		criticalRaw := make(map[string]interface{})
+		if escalationsRaw["Critical"] != nil {
+			criticalRaw = escalationsRaw["Critical"].(map[string]interface{})
+		}
+		if len(criticalRaw) > 0 {
+			criticalMap["comparison_operator"] = criticalRaw["ComparisonOperator"]
+			criticalMap["pre_condition"] = criticalRaw["PreCondition"]
+			criticalMap["statistics"] = criticalRaw["Statistics"]
+			criticalMap["threshold"] = criticalRaw["Threshold"]
+			criticalMap["times"] = criticalRaw["Times"]
+
+			criticalMaps = append(criticalMaps, criticalMap)
+		}
+		escalationsMap["critical"] = criticalMaps
+		infoMaps := make([]map[string]interface{}, 0)
+		infoMap := make(map[string]interface{})
+		infoRaw := make(map[string]interface{})
+		if escalationsRaw["Info"] != nil {
+			infoRaw = escalationsRaw["Info"].(map[string]interface{})
+		}
+		if len(infoRaw) > 0 {
+			infoMap["comparison_operator"] = infoRaw["ComparisonOperator"]
+			infoMap["pre_condition"] = infoRaw["PreCondition"]
+			infoMap["statistics"] = infoRaw["Statistics"]
+			infoMap["threshold"] = infoRaw["Threshold"]
+			infoMap["times"] = infoRaw["Times"]
+
+			infoMaps = append(infoMaps, infoMap)
+		}
+		escalationsMap["info"] = infoMaps
+		warnMaps := make([]map[string]interface{}, 0)
+		warnMap := make(map[string]interface{})
+		warnRaw := make(map[string]interface{})
+		if escalationsRaw["Warn"] != nil {
+			warnRaw = escalationsRaw["Warn"].(map[string]interface{})
+		}
+		if len(warnRaw) > 0 {
+			warnMap["comparison_operator"] = warnRaw["ComparisonOperator"]
+			warnMap["pre_condition"] = warnRaw["PreCondition"]
+			warnMap["statistics"] = warnRaw["Statistics"]
+			warnMap["threshold"] = warnRaw["Threshold"]
+			warnMap["times"] = warnRaw["Times"]
+
+			warnMaps = append(warnMaps, warnMap)
+		}
+		escalationsMap["warn"] = warnMaps
+		escalationsMaps = append(escalationsMaps, escalationsMap)
+	}
+	mapping["escalations"] = escalationsMaps
+	labelsRaw, _ := jsonpath.Get("$.Labels.Labels", objectRaw)
+	labelsMaps := make([]map[string]interface{}, 0)
+	if labelsRaw != nil {
+		for _, labelsChildRaw := range convertToInterfaceArray(labelsRaw) {
+			labelsMap := make(map[string]interface{})
+			labelsChildRaw := labelsChildRaw.(map[string]interface{})
+			labelsMap["key"] = labelsChildRaw["Key"]
+			labelsMap["value"] = labelsChildRaw["Value"]
+
+			labelsMaps = append(labelsMaps, labelsMap)
+		}
+	}
+	mapping["labels"] = labelsMaps
+	prometheusMaps := make([]map[string]interface{}, 0)
+	prometheusMap := make(map[string]interface{})
+	prometheusRaw := make(map[string]interface{})
+	if objectRaw["Prometheus"] != nil {
+		prometheusRaw = objectRaw["Prometheus"].(map[string]interface{})
+	}
+	if len(prometheusRaw) > 0 {
+		prometheusMap["level"] = prometheusRaw["Level"]
+		prometheusMap["prom_ql"] = prometheusRaw["PromQL"]
+		prometheusMap["times"] = prometheusRaw["Times"]
+
+		annotationsRaw, _ := jsonpath.Get("$.Prometheus.Annotations.Annotations", objectRaw)
+		annotationsMaps := make([]map[string]interface{}, 0)
+		if annotationsRaw != nil {
+			for _, annotationsChildRaw := range convertToInterfaceArray(annotationsRaw) {
+				annotationsMap := make(map[string]interface{})
+				annotationsChildRaw := annotationsChildRaw.(map[string]interface{})
+				annotationsMap["key"] = annotationsChildRaw["Key"]
+				annotationsMap["value"] = annotationsChildRaw["Value"]
+
+				annotationsMaps = append(annotationsMaps, annotationsMap)
+			}
+		}
+		prometheusMap["annotations"] = annotationsMaps
+		prometheusMaps = append(prometheusMaps, prometheusMap)
+	}
+	mapping["prometheus"] = prometheusMaps
+
+	return mapping, nil
 }
