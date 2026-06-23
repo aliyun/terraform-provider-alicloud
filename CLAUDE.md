@@ -18,6 +18,7 @@
 2) **编码交子代理**：尽量用 SubAgent 处理具体编码/调试工作，主 Agent 只编排，保持上下文干净，不被开发细节和代码污染。
 3) **工作区按登记走**：repo/路径/池/构建命令以 config/workspaces.json 为准；缺登记→escalate（missing_capability），勿臆造。
 4) **自我迭代**：流程/能力缺口按 loops/self-improve.md 沉淀回策略文档，别只口头修。
+5) **Aone 唯一真源**：任何 jarvis 工作必须有 Aone 工作项（无则按 adhoc-intake 建/补单），进展实时 sync、完工 done 回填到 Aone；以 bootstrap/wrap.sh 同步，禁止只在本地推进不落 Aone。
 
 @autonomy.md
 @loops/aone-triage.md

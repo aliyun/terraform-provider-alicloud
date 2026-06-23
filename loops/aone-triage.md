@@ -156,6 +156,7 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权 |
 | `bootstrap/log.sh seen` | 去重检查 |
 | `bootstrap/log.sh run_done` | 记录完成 |
+| `bootstrap/wrap.sh sync/done` | 进展回填 Aone（唯一真源）+收尾审计 |
 | `bootstrap/log.sh escalate` | 记录上报 |
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项（输赢竞争锁）；退码 1 = 输了跳过 |
 | `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-done 标签） |

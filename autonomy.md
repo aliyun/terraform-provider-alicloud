@@ -1,5 +1,7 @@
 # Jarvis 决策权策略（Autonomy Policy）
 
+> Aone 为研发事项唯一真源，进展必同步（bootstrap/wrap.sh）。
+
 ## 运行模式
 
 ### supervised（默认）
@@ -24,6 +26,8 @@
 | `prestage` | 预发部署 |
 | `adhoc_aone` | ad-hoc 建/补单（loops/adhoc-intake.md，PR 默认落 tf_provider） |
 | `pr_review` | 只读 PR 评审（不写不合并） |
+| `wrap_sync` | 中途回填 Aone 进展评论（wrap.sh sync，不改状态） |
+| `wrap_done` | 收尾回填 Aone：评论+run_done+可选改状态（wrap.sh done） |
 
 ---
 
@@ -61,5 +65,5 @@ Escalate 行为：暂停执行，输出摘要，通知用户决策。
 ## 机读策略块
 
 ```json
-{"mode":"supervised","auto":["reply","create_req","tag","create_cr","worktree","prestage","adhoc_aone","pr_review"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability"]}
+{"mode":"supervised","auto":["reply","create_req","tag","create_cr","worktree","prestage","adhoc_aone","pr_review","wrap"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability"]}
 ```
