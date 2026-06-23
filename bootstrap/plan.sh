@@ -112,7 +112,7 @@ plan_file="$runs_dir/plan-${utc_date}.md"
         # Confidence: default low_conf unless explicitly mapped
         # (stub field — real implementation would query OpenAPI/source)
         confidence="low_conf"
-        auto_stop="stop"
+        auto_stop="escalate"
 
         # Irreversibility point
         irreversible="create_cr / release_prod"
@@ -136,11 +136,12 @@ plan_file="$runs_dir/plan-${utc_date}.md"
 cat "$plan_file"
 
 # ---------------------------------------------------------------------------
-# Auth gate
+# Auth gate  (default-deny: exit 0 ONLY for exact "unattended")
 # ---------------------------------------------------------------------------
-if [ "$mode" = "supervised" ]; then
-    exit 2
+if [ "$mode" = "unattended" ]; then
+    exit 0
 fi
 
-# unattended
-exit 0
+# supervised, empty, garbage, missing file → all await human auth
+echo "待授权:逐条 可行?允许?授权?" >&2
+exit 2

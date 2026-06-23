@@ -184,6 +184,44 @@ fi
 rm -rf "$tmpaut"
 
 # ---------------------------------------------------------------------------
+# Test 10: plan.sh source contains NO a1 write verbs
+# ---------------------------------------------------------------------------
+echo "=== Test 10: plan.sh source is read-only (no a1 write verbs) ==="
+
+write_hits=$(grep -E "a1 (project|.* )(create|update|comment|relation|release)" \
+    "$proj_root/bootstrap/plan.sh" 2>/dev/null || true)
+
+if [ -z "$write_hits" ]; then
+    assert_pass "plan.sh source contains no a1 write verbs"
+else
+    assert_fail "plan.sh source contains a1 write verbs: $write_hits"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 11: garbage mode → exit 2 (default-deny)
+# ---------------------------------------------------------------------------
+echo "=== Test 11: garbage mode exits 2 (default-deny) ==="
+
+tmpgarbage=$(mktemp -d)
+cat > "$tmpgarbage/autonomy.md" << 'EOF'
+```json
+{"mode":"GARBAGE_VALUE","auto":[],"stop":[]}
+```
+EOF
+
+JARVIS_RUNS_DIR="$tmpruns" JARVIS_AUTONOMY_FILE="$tmpgarbage/autonomy.md" \
+    bash "$proj_root/bootstrap/plan.sh" > /dev/null 2>&1
+exit_code_g=$?
+
+if [ "$exit_code_g" -eq 2 ]; then
+    assert_pass "garbage mode exits 2 (default-deny gate)"
+else
+    assert_fail "garbage mode should exit 2, got $exit_code_g"
+fi
+
+rm -rf "$tmpgarbage"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""
