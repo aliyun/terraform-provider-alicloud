@@ -56,7 +56,7 @@ if $has_pools; then
       [ "$n" -lt "$PAGE_SIZE" ] && break
       page=$((page+1))
     done
-    echo "$pool_out" | jq --arg pool "$pool_key" '[.[] | {id:.identifier,title:.subject,type:.categoryIdentifier,status,pool:$pool,priority,tag}]'
+    echo "$pool_out" | jq --arg pool "$pool_key" '[.[] | {id:.identifier,title:.subject,type:(.categoryIdentifier // .workitemType),status,pool:$pool,priority,tag}]'
   }
 
   tmpd=$(mktemp -d); trap 'rm -rf "$tmpd"' EXIT
