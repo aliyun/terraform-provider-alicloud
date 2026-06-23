@@ -1,0 +1,45 @@
+{
+  "pools": {
+    "terraform": {
+      "project": 2100304,
+      "product_cfs": "107239=906688",
+      "assignee": 320687,
+      "dev": false
+    },
+    "agent_portal": {
+      "project": 2124589,
+      "app": 283346,
+      "assignee": 320687,
+      "dev": true,
+      "pipelines": {
+        "prestage": 66,
+        "prod": 67
+      },
+      "version_cfs": 100340,
+      "delivery": "delivery-aliyun-automation-agent.md"
+    },
+    "cloudspec_gap": {
+      "project": 2165097,
+      "assignee": 479782,
+      "dev": false
+    }
+  },
+  "routing": [
+    {
+      "match": ["terraform", "provider"],
+      "pool": "terraform"
+    },
+    {
+      "match": ["AgentRuntime", "PlayGround", "MCP"],
+      "pool": "agent_portal"
+    },
+    {
+      "match": ["cloudspec 缺口"],
+      "pool": "cloudspec_gap"
+    }
+  ],
+  "claim": {
+    "tag": "jarvis-claimed",
+    "fallback": "title"
+  }
+}
