@@ -152,7 +152,10 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 
 | 工具 | 作用 |
 |------|------|
+| `bootstrap/preflight.sh` | 开局自检日级闸门：install+verify 24h 跑一次,`--force` 强制重跑 |
 | `bootstrap/scan.sh` | 入箱扫描 → JSON 工作项列表 |
+| `bootstrap/aone-get.sh <id>` | 取工单详情(3h 缓存,写后失效);`JARVIS_CACHE_TTL=0` 强制重取 |
+| `bootstrap/cache.sh` | 通用 TTL 缓存(get/bust/fresh),落 `.my-day/cache/` |
 | `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权 |
 | `bootstrap/log.sh seen` | 去重检查 |
 | `bootstrap/log.sh run_done` | 记录完成 |
