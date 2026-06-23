@@ -42,7 +42,7 @@ cat > "$tmpbin/a1" << STUB
 #!/bin/bash
 echo "\$@" >> "$tmplog"
 if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
-    echo '[{"id":9001}]'
+    echo '[{"id":"9001"}]'
     exit 0
 fi
 exit 0
@@ -80,9 +80,16 @@ else
     assert_fail "claim comment should contain hostname $EXPECTED_HOST (log: $(cat "$tmplog"))"
 fi
 
-# Exit 0 when readback confirms our id
+# Readback list must pass --tag jarvis-claimed
+if grep -q "project workitem list" "$tmplog" && grep -q -- "--tag jarvis-claimed" "$tmplog"; then
+    assert_pass "claim readback list passes --tag jarvis-claimed"
+else
+    assert_fail "claim readback should pass --tag jarvis-claimed to list (log: $(cat "$tmplog"))"
+fi
+
+# Exit 0 when readback confirms our id (now as string)
 if [ "$exit1" -eq 0 ]; then
-    assert_pass "claim exits 0 when readback confirms claimed id"
+    assert_pass "claim exits 0 when readback confirms claimed id (string match)"
 else
     assert_fail "claim should exit 0 when readback confirms id, got $exit1"
 fi

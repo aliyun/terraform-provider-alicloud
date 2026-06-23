@@ -47,7 +47,7 @@ case "$cmd" in
 
         # 3. Readback: verify the workitem appears under the claimed tag (race check)
         readback=$(a1 project workitem list --project "$project_id" --tag "$CLAIM_TAG" -f json 2>/dev/null || echo "[]")
-        if echo "$readback" | jq -e --argjson id "$workitem_id" '[.[].id] | index($id) != null' > /dev/null 2>&1; then
+        if echo "$readback" | jq -e --arg id "$workitem_id" 'any(.[]; (.id|tostring)==$id)' > /dev/null 2>&1; then
             echo "claim.sh: claimed workitem $workitem_id in project $project_id"
             exit 0
         else
