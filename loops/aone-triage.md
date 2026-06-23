@@ -52,7 +52,16 @@ bootstrap/log.sh seen <id>
 ```
 
 - `seen` 返回 0（已处理）→ 跳过本条，继续下一条。
-- `seen` 返回 1（未处理）→ 进入技能调用。
+- `seen` 返回 1（未处理）→ 进入认领。
+
+### 4.1.5 认领（并发竞争锁）
+
+```bash
+bootstrap/claim.sh claim <id> <pool-project>
+```
+
+- 退出码 0 → 认领成功，继续 triage。
+- 退出码 1 → 其他实例已抢先认领，**跳过本条**，继续下一条。
 
 ### 4.2 单条 triage（技能调用）
 
@@ -66,17 +75,31 @@ bootstrap/log.sh seen <id>
 
 | 条件 | 动作 |
 |------|------|
-| 高置信（high_conf）+ 操作可逆（reply / create_req / tag / create_cr / worktree / prestage） | 自动执行至**预发（prestage）** |
-| 低置信（low_conf）/ 验证失败（verify_fail）/ 红线（redline） | 触发 escalate，输出摘要，通知用户决策 |
+| 高置信（high_conf）+ 操作可逆（reply / create_req / tag / create_cr / worktree / prestage） | 自动执行至**预发（prestage）**，完成后 release |
+| 低置信（low_conf）/ 验证失败（verify_fail）/ 红线（redline） | escalate 后 release |
 
 ```bash
 # 自动走到预发
-# → prestage 完成后记录 run_done
+# → prestage 完成后记录 run_done，并释放认领
 bootstrap/log.sh run_done <id> "自动部署至预发"
+bootstrap/claim.sh release <id> <pool-project>
 
 # escalate 路径
 bootstrap/log.sh escalate <id> "<reason>"
+bootstrap/claim.sh release <id> <pool-project>
 ```
+
+---
+
+## 四点五、定期维护（僵尸清扫）
+
+定期（建议每次 loop 结束后，或按 cron 独立触发）运行：
+
+```bash
+bootstrap/sweep.sh
+```
+
+sweep.sh 查找所有 `jarvis-claimed` 超过 `claim.ttl_min`（默认 45 分钟）的工作项，将其写入 `escalation/` 目录，防止僵尸认领长期占用工单。
 
 ---
 
@@ -114,5 +137,8 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/log.sh seen` | 去重检查 |
 | `bootstrap/log.sh run_done` | 记录完成 |
 | `bootstrap/log.sh escalate` | 记录上报 |
+| `bootstrap/claim.sh claim <id> <project>` | 认领工作项（输赢竞争锁）；退码 1 = 输了跳过 |
+| `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-done 标签） |
+| `bootstrap/sweep.sh` | 清扫超时认领（>45min）→ 写入 `escalation/` |
 | `.claude/skills/aone-triage` | 单条工单全流程技能 |
 | `autonomy.md` | 模式/置信度/停止项策略 |

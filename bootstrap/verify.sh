@@ -71,6 +71,14 @@ else
     ((fail_count++))
 fi
 
+# Check claim.done_tag is set to expected value
+if jq -e '.claim.done_tag=="jarvis-done"' "$pools_cfg" >/dev/null 2>&1; then
+    echo "PASS claim.done_tag"
+else
+    echo "FAIL claim.done_tag"
+    ((fail_count++))
+fi
+
 # Exit with non-zero if any check failed
 if [ $fail_count -gt 0 ]; then
     exit 1
