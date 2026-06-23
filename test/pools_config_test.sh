@@ -1,21 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 POOLS_JSON="$(dirname "$0")/../config/pools.json"
 PASS=0
 FAIL=0
-
-assert() {
-  local desc="$1"
-  local result="$2"
-  if [ "$result" = "true" ] || [ "$result" = "1" ] || [ -n "$result" ]; then
-    echo "PASS: $desc"
-    PASS=$((PASS + 1))
-  else
-    echo "FAIL: $desc"
-    FAIL=$((FAIL + 1))
-  fi
-}
 
 # S1: jq parses the file without error
 if jq . "$POOLS_JSON" > /dev/null 2>&1; then
@@ -73,6 +61,16 @@ if [ "$CLAIM_TAG" = "jarvis-claimed" ]; then
   PASS=$((PASS + 1))
 else
   echo "FAIL: .claim.tag (got $CLAIM_TAG)"
+  FAIL=$((FAIL + 1))
+fi
+
+# S7: agent_portal routing match has >= 6 entries
+AGENT_PORTAL_MATCH_LEN=$(jq '.routing[] | select(.pool == "agent_portal") | .match | length' "$POOLS_JSON")
+if [ "$AGENT_PORTAL_MATCH_LEN" -ge 6 ]; then
+  echo "PASS: agent_portal routing match >= 6 entries (got $AGENT_PORTAL_MATCH_LEN)"
+  PASS=$((PASS + 1))
+else
+  echo "FAIL: agent_portal routing match >= 6 entries (got $AGENT_PORTAL_MATCH_LEN)"
   FAIL=$((FAIL + 1))
 fi
 

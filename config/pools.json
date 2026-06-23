@@ -26,15 +26,15 @@
   },
   "routing": [
     {
-      "match": ["terraform", "provider"],
+      "match": ["Terraform", "TF 资源", "provider"],
       "pool": "terraform"
     },
     {
-      "match": ["AgentRuntime", "PlayGround", "MCP"],
+      "match": ["Agent门户", "AgentRuntime", "aliyun-automation-agent", "PlayGround", "MCP Server", "MCP Core"],
       "pool": "agent_portal"
     },
     {
-      "match": ["cloudspec 缺口"],
+      "match": ["Cloudspec 缺口"],
       "pool": "cloudspec_gap"
     }
   ],
