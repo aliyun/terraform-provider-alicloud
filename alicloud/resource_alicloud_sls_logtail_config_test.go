@@ -40,8 +40,6 @@ func TestAccAliCloudSlsLogtailConfig_basic10828(t *testing.T) {
 					"project_name":        "${alicloud_log_project.defaultuA28zS.project_name}",
 					"output_detail": []map[string]interface{}{
 						{
-							"endpoint":      "cn-hangzhou-intranet.log.aliyuncs.com",
-							"region":        "cn-hangzhou",
 							"logstore_name": "test",
 						},
 					},
@@ -95,7 +93,7 @@ variable "project_name" {
 
 resource "alicloud_log_project" "defaultuA28zS" {
   description = "project for terrafrom test"
-  name        = var.project_name
+  name        = var.name
 }
 
 

@@ -36,7 +36,7 @@ func resourceAliCloudSlsLogtailConfig() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareArrayJsonTemplateAreEquivalent(old, new)
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -78,11 +78,13 @@ func resourceAliCloudSlsLogtailConfig() *schema.Resource {
 						"endpoint": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 							ForceNew: true,
 						},
 						"region": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 							ForceNew: true,
 						},
 					},
