@@ -56,7 +56,7 @@ status) need a clear user yes first — confirm before each.
 ## 查证(两层,顺序固定,不凭记忆)
 1. **OpenAPI 全集**:解析 product+action(next.api 链接或描述)→ `AlibabaCloud ListApis` / `GetApiDefinition`。JMESPath 用单引号,反引号会失败:`parameters[?name=='X'].schema.properties|[0]|keys(@)`。
 2. **映射**:`curl "https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformResourceSpec?terraformResourceType=alicloud_x"` —— **仅判断 TF 资源 ↔ Cloudspec 资源是否已建映射,不代表实现**。
-3. **实现以源码为准**:先 `scripts/sync-provider.sh` 同步,再在 `~/terraflow/providers/alicloud` grep 资源 .go,核对 schema 字段 / `Importer` / Create 实际下发参数。单复数陷阱:`*_instances` 多半是数据源。
+3. **实现以源码为准**:先 `scripts/sync-provider.sh` 同步,再在 `~/go/src/github.com/chenhanzhang/terraform-provider-alicloud` grep 资源 .go,核对 schema 字段 / `Importer` / Create 实际下发参数。单复数陷阱:`*_instances` 多半是数据源。
 4. **文档兜底**:GitHub raw markdown。
 
 ## 回复/转需求/关联(写操作,先授权)

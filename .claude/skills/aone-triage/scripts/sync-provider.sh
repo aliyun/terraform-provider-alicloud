@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# Ensure ~/terraflow/providers/alicloud holds the latest terraform-provider-alicloud master.
-# No repo -> clone; existing repo -> fetch + hard-reset to origin default branch.
+# Ensure the alicloud provider repo is synced. Path is read from config/workspaces.json
+# (.workspaces.terraform_provider.path) — edit there to relocate. No repo -> clone; existing repo -> fetch only.
 set -euo pipefail
 
-REPO_DIR="${TERRAFLOW_ALICLOUD:-$HOME/terraflow/providers/alicloud}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG="$SCRIPT_DIR/../../../../config/workspaces.json"
+REPO_DIR="$(jq -r '.workspaces.terraform_provider.path' "$CONFIG")"
+REPO_DIR="${REPO_DIR/#\~/$HOME}"
 REMOTE="https://github.com/aliyun/terraform-provider-alicloud.git"
 
 if [ ! -d "$REPO_DIR/.git" ]; then
@@ -15,6 +18,5 @@ else
   DEF=$(git -C "$REPO_DIR" remote show origin | sed -n 's/.*HEAD branch: //p')
   DEF="${DEF:-master}"
   git -C "$REPO_DIR" fetch --depth 1 origin "$DEF"
-  git -C "$REPO_DIR" reset --hard "origin/$DEF"
 fi
 echo "[sync-provider] ready: $REPO_DIR @ $(git -C "$REPO_DIR" rev-parse --short HEAD)"
