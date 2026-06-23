@@ -9,7 +9,7 @@
 ## 开局动作
 
 1) 跑 bootstrap/install.sh + bootstrap/verify.sh，全绿才干活；
-2) 读 loops/aone-triage.md；
+2) 跑 bootstrap/scan.sh → bootstrap/plan.sh 出计划 → supervised 等用户逐条授权 → 按 loops/aone-triage.md 处理授权项；
 3) 低置信或验收不过→起草不发出，入 escalation/。
 
 @autonomy.md

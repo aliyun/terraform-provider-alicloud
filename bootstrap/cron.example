@@ -1,0 +1,15 @@
+# cron.example — example crontab entry to launch jarvis triage loop on a schedule.
+#
+# Default mode is SUPERVISED: Claude scans and produces a plan, then STOPS and
+# awaits human authorization before taking any action. No Aone writes occur
+# without explicit per-item approval.
+#
+# To use: run `crontab -e` and uncomment + adapt the line below.
+# Replace /path/to/jarvis with the absolute path to your cloned repo.
+#
+# UNATTENDED mode must be explicitly enabled in autonomy.md ("mode":"unattended").
+# Do NOT enable unattended unless you fully understand the consequences —
+# the loop will take actions without human confirmation.
+#
+# Run at 09:00 every weekday (Mon–Fri), supervised by default:
+# 0 9 * * 1-5 cd /path/to/jarvis && claude --no-ui "run the triage loop"
