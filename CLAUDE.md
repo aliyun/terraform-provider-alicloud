@@ -12,5 +12,10 @@
 2) 跑 bootstrap/scan.sh → bootstrap/plan.sh 出计划 → supervised 等用户逐条授权 → 按 loops/aone-triage.md 处理授权项；
 3) 低置信或验收不过→起草不发出，入 escalation/。
 
+## 工作纪律
+
+1) **改文件先开 worktree**：任何涉及修改文件的动作，必须基于 worktree 切到新分支（或上下文已给出的分支）上进行修改与验证，禁止直接在主工作目录改文件。
+2) **编码交子代理**：尽量用 SubAgent 处理具体编码/调试工作，主 Agent 只编排，保持上下文干净，不被开发细节和代码污染。
+
 @autonomy.md
 @loops/aone-triage.md
