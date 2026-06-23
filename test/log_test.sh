@@ -156,6 +156,41 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 10: escalate same id twice — appends, never overwrites
+# ---------------------------------------------------------------------------
+echo "=== Test 10: escalate same id twice appends both reasons ==="
+escalate "TASK-002" "second reason: verify_fail detected"
+
+# (a) exactly ONE file for TASK-002
+esc_file_count=$(ls "$JARVIS_ESCALATION_DIR"/TASK-002.md 2>/dev/null | wc -l | tr -d ' ')
+if [ "$esc_file_count" -eq 1 ]; then
+    assert_pass "exactly one escalation/TASK-002.md after two escalate calls"
+else
+    assert_fail "expected exactly 1 file, got $esc_file_count"
+fi
+
+# (b) BOTH reasons present
+if grep -q "low priority" "$JARVIS_ESCALATION_DIR/TASK-002.md" 2>/dev/null; then
+    assert_pass "first reason still present after second escalate"
+else
+    assert_fail "first reason was overwritten (not found in file)"
+fi
+
+if grep -q "second reason: verify_fail detected" "$JARVIS_ESCALATION_DIR/TASK-002.md" 2>/dev/null; then
+    assert_pass "second reason present in escalation file"
+else
+    assert_fail "second reason not found in escalation file"
+fi
+
+# (c) at least 2 timestamp lines
+ts_count=$(grep -c "^\*\*timestamp:\*\*" "$JARVIS_ESCALATION_DIR/TASK-002.md" 2>/dev/null || echo 0)
+if [ "$ts_count" -ge 2 ]; then
+    assert_pass "at least 2 timestamp lines found ($ts_count)"
+else
+    assert_fail "expected >=2 timestamp lines, found $ts_count"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

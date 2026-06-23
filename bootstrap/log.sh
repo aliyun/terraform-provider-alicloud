@@ -54,7 +54,10 @@ EOF
 
 # ---------------------------------------------------------------------------
 # escalate <id> <reason>
-# Write escalation/<id>.md with id and reason.
+# Append-only audit record: escalation/<id>.md
+# First call creates the file with header + first section.
+# Subsequent calls append "---" separator + a new section.
+# NEVER truncates; one file per id.
 # ---------------------------------------------------------------------------
 escalate() {
     local id="$1"
@@ -64,13 +67,23 @@ escalate() {
     local filepath="$esc_dir/${id}.md"
 
     mkdir -p "$esc_dir"
-    cat > "$filepath" <<EOF
+    if [ ! -f "$filepath" ]; then
+        cat > "$filepath" <<EOF
 # Escalation: $id
 
 **id:** $id
 **reason:** $reason
 **timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
 EOF
+    else
+        cat >> "$filepath" <<EOF
+
+---
+
+**reason:** $reason
+**timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+EOF
+    fi
 }
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,7 @@
+# transient scratch — must NEVER hit the repo root or be committed
+scratch_*
+*.tmp
+*.scratch
+
+# local rebuildable state (truth lives in Aone + memory/)
+.my-day/

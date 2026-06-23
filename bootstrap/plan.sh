@@ -2,8 +2,9 @@
 # bootstrap/plan.sh — emit an execution plan and enforce the supervised auth gate.
 #
 # Reads mode from autonomy.md (default: supervised).
-# Gets work items from scan.sh, filters out already-seen ids (via log.sh seen).
-# Writes a plan to runs/plan-<UTCdate>.md.
+# Gets work items from stdin JSON if provided, else falls back to scan.sh.
+# Filters out already-seen ids via a SINGLE batch jq pass (no per-item fork).
+# Writes a plan to runs/plan-<UTCdate>.md (includes priority column).
 #
 # supervised → print "待授权:逐条 可行?允许?授权?" and EXIT 2  (awaiting human auth)
 # unattended → EXIT 0
@@ -43,43 +44,50 @@ if [ -f "$autonomy_file" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Get items from scan.sh
+# INPUT: read items JSON from stdin if present, else fall back to scan.sh once
 # ---------------------------------------------------------------------------
-scan_script="$bootstrap_dir/scan.sh"
-# Allow override via PATH (tests may inject a stub)
-if command -v scan.sh > /dev/null 2>&1; then
-    raw_items="$(scan.sh 2>/dev/null)"
+if [ -t 0 ]; then
+    # stdin is a terminal — not piped, run scan.sh
+    stdin_data=""
 else
-    raw_items="$(bash "$scan_script" 2>/dev/null)"
+    # stdin is a pipe or file — try to read it
+    stdin_data=$(cat)
+fi
+
+if [ -n "${stdin_data:-}" ] && echo "$stdin_data" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    # Valid JSON array from stdin — use it directly, no scan.sh
+    raw_items="$stdin_data"
+else
+    # No stdin JSON — run scan.sh once
+    scan_script="$bootstrap_dir/scan.sh"
+    if command -v scan.sh > /dev/null 2>&1; then
+        raw_items="$(scan.sh 2>/dev/null)"
+    else
+        raw_items="$(bash "$scan_script" 2>/dev/null)"
+    fi
 fi
 
 # ---------------------------------------------------------------------------
-# Filter out already-seen ids using log.sh seen
+# DEDUP BATCH: list runs/ ONCE, build seen-id set, filter via single jq pass
 # ---------------------------------------------------------------------------
-log_script="$bootstrap_dir/log.sh"
+# Collect all seen ids from runs/*-<id>.md filenames in one ls + sed pass
+seen_ids_json="[]"
+if ls "$runs_dir"/*-*.md >/dev/null 2>&1; then
+    # Extract ids from filenames: YYYY-MM-DD-<id>.md → <id>
+    # Pattern: anything after the date prefix (4d-2d-2d-)
+    seen_ids_json=$(ls "$runs_dir"/*-*.md 2>/dev/null \
+        | sed 's|.*/[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-\(.*\)\.md$|\1|' \
+        | jq -R . | jq -s '.')
+fi
 
-# Build filtered item list as a JSON array of objects
-filtered_items="[]"
-
-item_count=$(echo "$raw_items" | jq 'length' 2>/dev/null || echo 0)
-
-i=0
-while [ "$i" -lt "$item_count" ]; do
-    id=$(echo "$raw_items" | jq -r ".[$i].id")
-    # Check if seen — use direct dispatch of log.sh
-    if JARVIS_RUNS_DIR="$runs_dir" bash "$log_script" seen "$id" 2>/dev/null; then
-        # Already seen — skip
-        i=$((i + 1))
-        continue
-    fi
-    # Append to filtered list
-    item=$(echo "$raw_items" | jq ".[$i]")
-    filtered_items=$(echo "$filtered_items" | jq ". + [$item]")
-    i=$((i + 1))
-done
+# Single jq pass: reject items whose id is in the seen set
+filtered_items=$(echo "$raw_items" \
+    | jq --argjson seen "$seen_ids_json" \
+         '[.[] | select(.id as $id | $seen | index($id) | not)]' \
+    2>/dev/null || echo "[]")
 
 # ---------------------------------------------------------------------------
-# Build plan markdown
+# Build plan markdown (includes priority column)
 # ---------------------------------------------------------------------------
 utc_date=$(date -u +%F)
 plan_file="$runs_dir/plan-${utc_date}.md"
@@ -89,38 +97,15 @@ plan_file="$runs_dir/plan-${utc_date}.md"
     echo ""
     echo "**模式:** $mode"
     echo ""
-    echo "| ID | 标题 | 拟动作 | 置信 | auto/stop | 不可逆点 |"
-    echo "|-----|------|--------|------|-----------|---------|"
+    echo "| ID | 标题 | 优先级 | 拟动作 | 置信 | auto/stop | 不可逆点 |"
+    echo "|-----|------|--------|--------|------|-----------|---------|"
 
-    filtered_count=$(echo "$filtered_items" | jq 'length' 2>/dev/null || echo 0)
-
-    j=0
-    while [ "$j" -lt "$filtered_count" ]; do
-        item_id=$(echo "$filtered_items" | jq -r ".[$j].id")
-        item_title=$(echo "$filtered_items" | jq -r ".[$j].title")
-        item_type=$(echo "$filtered_items" | jq -r ".[$j].type")
-        item_status=$(echo "$filtered_items" | jq -r ".[$j].status")
-
-        # Determine action based on type
-        case "$item_type" in
-            bug)      action="reply + create_req" ;;
-            task)     action="reply" ;;
-            req)      action="create_req + create_cr" ;;
-            *)        action="reply" ;;
-        esac
-
-        # Confidence: default low_conf unless explicitly mapped
-        # (stub field — real implementation would query OpenAPI/source)
-        confidence="low_conf"
-        auto_stop="escalate"
-
-        # Irreversibility point
-        irreversible="create_cr / release_prod"
-
-        echo "| $item_id | $item_title | $action | $confidence | $auto_stop | $irreversible |"
-
-        j=$((j + 1))
-    done
+    # Single jq pass builds all rows (type→action map; confidence stub)
+    echo "$filtered_items" | jq -r '.[] |
+      (if (.type|test("bug|Bug")) then "reply + create_req"
+       elif (.type|test("req|Req|需求")) then "create_req + create_cr"
+       else "reply" end) as $a |
+      "| \(.id) | \(.title) | \(.priority // "P2") | \($a) | low_conf | escalate | create_cr / release_prod |"'
 
     echo ""
     echo "---"
