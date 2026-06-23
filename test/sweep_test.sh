@@ -178,6 +178,63 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 4: item with malformed claim timestamp → no crash, no escalation, exit 0
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== Test 4: malformed timestamp in claim comment → graceful skip ==="
+
+MALFORMED_ID="42004"
+rm -f "$tmpesc/${MALFORMED_ID}.md"
+
+cat > "$tmpbin/a1" << STUB
+#!/bin/bash
+if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
+    echo '[{"id":"$MALFORMED_ID"}]'
+    exit 0
+fi
+if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "comment" ] && [ "\$4" = "list" ]; then
+    echo '[{"content":"jarvis-claim host-C 9999-99-99T99:99:99Z","createdAt":"2099-99-99T99:99:99Z"}]'
+    exit 0
+fi
+exit 0
+STUB
+chmod +x "$tmpbin/a1"
+
+output4=$(PATH="$tmpbin:$PATH" \
+    JARVIS_ROOT="$tmproot" \
+    JARVIS_ESCALATION_DIR="$tmpesc" \
+    bash "$proj_root/bootstrap/sweep.sh" 2>&1)
+exit4=$?
+# Capture stderr separately for the WARN check
+err4=$(PATH="$tmpbin:$PATH" \
+    JARVIS_ROOT="$tmproot" \
+    JARVIS_ESCALATION_DIR="$tmpesc" \
+    bash "$proj_root/bootstrap/sweep.sh" 2>&1 1>/dev/null)
+output4_full="$output4"$'\n'"$err4"
+
+echo "Output: $output4"
+echo "Exit code: $exit4"
+
+if [ ! -f "$tmpesc/${MALFORMED_ID}.md" ]; then
+    assert_pass "malformed timestamp: no escalation file created"
+else
+    assert_fail "malformed timestamp: escalation should NOT be created"
+fi
+
+if [ "$exit4" -eq 0 ]; then
+    assert_pass "sweep exits 0 on malformed timestamp (graceful)"
+else
+    assert_fail "sweep should exit 0 on malformed timestamp, got $exit4"
+fi
+
+# Should see a WARN message about parse failure
+if echo "$output4_full" | grep -q "WARN.*could not parse"; then
+    assert_pass "malformed timestamp: WARN message logged"
+else
+    assert_fail "malformed timestamp: WARN message not found in output"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

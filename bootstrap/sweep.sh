@@ -98,10 +98,10 @@ while IFS= read -r project; do
     claimed_json=$(a1 project workitem list --project "$project" --tag jarvis-claimed -f json 2>/dev/null || echo "[]")
 
     # Extract item IDs (support both string and numeric ids)
-    item_ids=$(python3 -c "
+    item_ids=$(printf '%s' "$claimed_json" | python3 -c "
 import json, sys
 try:
-    items = json.loads('''$claimed_json''')
+    items = json.loads(sys.stdin.read())
     for item in items:
         print(str(item.get('id', '')))
 except Exception:
@@ -115,10 +115,10 @@ except Exception:
         comments_json=$(a1 project workitem comment list "$item_id" -f json 2>/dev/null || echo "[]")
 
         # Find the latest jarvis-claim timestamp in comments
-        latest_ts=$(python3 -c "
+        latest_ts=$(printf '%s' "$comments_json" | python3 -c "
 import json, sys, re
 try:
-    comments = json.loads('''$comments_json''')
+    comments = json.loads(sys.stdin.read())
     pattern = re.compile(r'jarvis-claim\s+\S+\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)')
     timestamps = []
     for c in comments:
