@@ -45,15 +45,17 @@ case "$cmd" in
         utcnow=$(date -u +%Y-%m-%dT%H:%M:%SZ)
         a1 project workitem comment create "$workitem_id" -m "jarvis-claim $(hostname) $utcnow"
 
-        # 3. Readback: verify the workitem appears under the claimed tag (race check)
-        readback=$(a1 project workitem list --project "$project_id" --tag "$CLAIM_TAG" -f json 2>/dev/null || echo "[]")
-        if echo "$readback" | jq -e --arg id "$workitem_id" 'any(.[]; ((.identifier // .id)|tostring)==$id)' > /dev/null 2>&1; then
-            echo "claim.sh: claimed workitem $workitem_id in project $project_id"
-            exit 0
-        else
-            echo "claim.sh: lost race for workitem $workitem_id (not found in readback)" >&2
-            exit 1
-        fi
+        # 3. Readback (with retries for tag-index lag): own id under claimed tag = won
+        for _ in 1 2 3; do
+            readback=$(a1 project workitem list --project "$project_id" --tag "$CLAIM_TAG" -f json 2>/dev/null || echo "[]")
+            if echo "$readback" | jq -e --arg id "$workitem_id" 'any(.[]; ((.identifier // .id)|tostring)==$id)' > /dev/null 2>&1; then
+                echo "claim.sh: claimed workitem $workitem_id in project $project_id"
+                exit 0
+            fi
+            sleep 2
+        done
+        echo "claim.sh: lost race for workitem $workitem_id (not found in readback)" >&2
+        exit 1
         ;;
 
     release)
