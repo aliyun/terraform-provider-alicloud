@@ -1,45 +1,58 @@
 {
+  "lines": {
+    "terraform_provider": "Terraform Provider",
+    "agentic_tools": "Agentic Tools"
+  },
   "pools": {
-    "terraform": {
-      "project": 2100304,
-      "product_cfs": "107239=906688",
+    "tf_customer": {
+      "project": 1086837,
+      "name": "Terraform - 客户需求",
+      "line": "terraform_provider",
+      "desc": "来自客户侧的需求",
       "assignee": 320687,
       "dev": false
     },
-    "agent_portal": {
+    "tf_provider": {
+      "project": 528766,
+      "name": "terraform-provider",
+      "line": "terraform_provider",
+      "desc": "内部发布单 + Terraform 生产流程优化",
+      "assignee": 320687,
+      "dev": false
+    },
+    "mcp_server": {
       "project": 2124589,
+      "name": "MCP Server",
+      "line": "agentic_tools",
       "app": 283346,
       "assignee": 320687,
       "dev": true,
-      "pipelines": {
-        "prestage": 66,
-        "prod": 67
-      },
+      "pipelines": { "prestage": 66, "prod": 67 },
       "version_cfs": 100340,
       "delivery": "delivery-aliyun-automation-agent.md"
     },
-    "cloudspec_gap": {
-      "project": 2165097,
+    "cloudspec": {
+      "project": 1120451,
+      "name": "Cloudspec 需求",
+      "line": "agentic_tools",
       "assignee": 479782,
+      "dev": false
+    },
+    "api_toolkit": {
+      "project": 2100304,
+      "name": "API 工具团队需求",
+      "line": "agentic_tools",
+      "product_cfs": "107239=906688",
+      "assignee": 320687,
       "dev": false
     }
   },
   "routing": [
-    {
-      "match": ["Terraform", "TF 资源", "provider"],
-      "pool": "terraform"
-    },
-    {
-      "match": ["Agent门户", "AgentRuntime", "aliyun-automation-agent", "PlayGround", "MCP Server", "MCP Core"],
-      "pool": "agent_portal"
-    },
-    {
-      "match": ["Cloudspec 缺口"],
-      "pool": "cloudspec_gap"
-    }
+    { "match": ["客户需求", "客户侧"], "pool": "tf_customer" },
+    { "match": ["provider 发布", "生产流程", "alicloud provider"], "pool": "tf_provider" },
+    { "match": ["MCP Server", "MCP Core", "AgentRuntime", "PlayGround", "Agent门户", "aliyun-automation-agent"], "pool": "mcp_server" },
+    { "match": ["Cloudspec", "缺口", "补字段", "补资源"], "pool": "cloudspec" },
+    { "match": ["API 工具", "工具团队"], "pool": "api_toolkit" }
   ],
-  "claim": {
-    "tag": "jarvis-claimed",
-    "fallback": "title"
-  }
+  "claim": { "tag": "jarvis-claimed", "fallback": "title" }
 }
