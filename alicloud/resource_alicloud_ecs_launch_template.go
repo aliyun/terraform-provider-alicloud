@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -450,6 +451,32 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				Deprecated:    "Field 'system_disk_size' has been deprecated from provider version 1.120.0. New field 'system_disk' instead.",
 				ConflictsWith: []string{"system_disk"},
 			},
+		},
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
+			if diff.Id() == "" {
+				return nil
+			}
+			versionTriggers := []string{
+				"auto_release_time", "data_disks", "deployment_set_id", "description",
+				"enable_vm_os_config", "host_name", "image_id", "image_owner_alias",
+				"instance_charge_type", "instance_name", "instance_type", "internet_charge_type",
+				"internet_max_bandwidth_in", "internet_max_bandwidth_out", "io_optimized",
+				"key_pair_name", "launch_template_name", "name", "network_interfaces",
+				"network_type", "password_inherit", "period", "private_ip_address",
+				"ram_role_name", "resource_group_id", "security_enhancement_strategy",
+				"security_group_id", "security_group_ids", "spot_duration", "spot_price_limit",
+				"spot_strategy", "system_disk", "system_disk_category", "system_disk_description",
+				"system_disk_name", "system_disk_size", "tags", "user_data", "userdata",
+				"vswitch_id", "version_description", "vpc_id", "zone_id",
+				"http_endpoint", "http_tokens", "http_put_response_hop_limit", "image_options",
+			}
+			for _, key := range versionTriggers {
+				if diff.HasChange(key) {
+					diff.SetNewComputed("latest_version_number")
+					break
+				}
+			}
+			return nil
 		},
 	}
 }

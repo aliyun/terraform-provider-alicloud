@@ -473,3 +473,56 @@ func (s *CrServiceV2) CrStorageDomainRoutingRuleStateRefreshFuncWithApi(id strin
 }
 
 // DescribeCrStorageDomainRoutingRule >>> Encapsulated.
+
+// DescribeCrEERepo <<< Encapsulated get interface for Cr EE Repo.
+
+func (s *CrServiceV2) DescribeCrEERepo(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":          client.RegionId,
+		"InstanceId":        parts[0],
+		"RepoNamespaceName": parts[1],
+		"RepoName":          parts[2],
+	}
+	query := make(map[string]interface{})
+	action := "GetRepository"
+	var response map[string]interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"REPO_NOT_EXIST"}) {
+			return object, WrapErrorf(NotFoundErr("CrEE:Repo", id), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	code, _ := jsonpath.Get("$.Code", response)
+	if fmt.Sprint(code) == "REPO_NOT_EXIST" {
+		return object, WrapErrorf(NotFoundErr("CrEE:Repo", id), NotFoundMsg, ProviderERROR)
+	}
+	if isSuccess, ok := response["IsSuccess"].(bool); ok && !isSuccess {
+		return object, WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeCrEERepo >>> Encapsulated.

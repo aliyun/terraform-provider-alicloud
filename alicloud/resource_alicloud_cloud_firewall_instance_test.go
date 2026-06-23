@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -18,7 +19,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	cloudFirewallInstanceLogisticsConfig = `{\"cityCode\":\"330100\",\"cityName\":\"Hangzhou\",\"contactName\":\"TerraformAcc\",\"countryCode\":\"CN\",\"detailAddress\":\"No.1 Test Road\",\"districtCode\":\"330106\",\"districtName\":\"Xihu District\",\"email\":\"tfacc@example.com\",\"mobilePhone\":\"153564848844\",\"phone\":\"1234567\",\"provCode\":\"330000\",\"provName\":\"Zhejiang\",\"streetCode\":\"33010610\",\"streetName\":\"Zhuantang\",\"zipCode\":\"0000\"}`
+	cloudFirewallInstanceLogisticsState  = `{"cityCode":"330100","cityName":"Hangzhou","contactName":"TerraformAcc","countryCode":"CN","detailAddress":"No.1 Test Road","districtCode":"330106","districtName":"Xihu District","email":"tfacc@example.com","mobilePhone":"153564848844","phone":"1234567","provCode":"330000","provName":"Zhejiang","streetCode":"33010610","streetName":"Zhuantang","zipCode":"0000"}`
+)
+
 func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
+	ensureCloudFirewallInstanceTestRegion()
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallInstanceMap0)
@@ -32,32 +39,35 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckForCleanUpInstances(t, "", "vipcloudfw", "vipcloudfw", "cfw", "cfw_pre_intl")
+			testAccCloudFirewallInstancePreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type": "PayAsYouGo",
+					"payment_type":          "PayAsYouGo",
+					"auto_asset_protection": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"payment_type": "PayAsYouGo",
+						"payment_type":          "PayAsYouGo",
+						"auto_asset_protection": "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cfw_log":     "true",
-					"modify_type": "Upgrade",
+					"cfw_log":               "true",
+					"modify_type":           "Upgrade",
+					"auto_asset_protection": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cfw_log":     "true",
-						"modify_type": "Upgrade",
+						"cfw_log":               "true",
+						"modify_type":           "Upgrade",
+						"auto_asset_protection": "false",
 					}),
 				),
 			},
@@ -72,6 +82,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 }
 
 func TestAccAliCloudCloudFirewallInstance_basic0_twin(t *testing.T) {
+	ensureCloudFirewallInstanceTestRegion()
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallInstanceMap0)
@@ -85,12 +96,11 @@ func TestAccAliCloudCloudFirewallInstance_basic0_twin(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckForCleanUpInstances(t, "", "vipcloudfw", "vipcloudfw", "cfw", "cfw_pre_intl")
+			testAccCloudFirewallInstancePreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -116,6 +126,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0_twin(t *testing.T) {
 }
 
 func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
+	ensureCloudFirewallInstanceTestRegion()
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallInstanceMap0)
@@ -129,12 +140,11 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckForCleanUpInstances(t, "", "vipcloudfw", "vipcloudfw", "cfw", "cfw_pre_intl")
+			testAccCloudFirewallInstancePreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -143,6 +153,7 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 					"ip_number":    "50",
 					"band_width":   "50",
 					"cfw_log":      "false",
+					"logistics":    cloudFirewallInstanceLogisticsConfig,
 					"period":       "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -151,6 +162,7 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 						"spec":         "enterprise_version",
 						"ip_number":    "50",
 						"cfw_log":      "false",
+						"logistics":    cloudFirewallInstanceLogisticsState,
 						"period":       "1",
 					}),
 				),
@@ -170,44 +182,49 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"band_width":  "55",
-					"modify_type": "Upgrade",
+					"spec":          "ultimate_version",
+					"ip_number":     "400",
+					"band_width":    "200",
+					"fw_vpc_number": "5",
+					"modify_type":   "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"fw_vpc_number": "2",
+						"spec":          "ultimate_version",
+						"ip_number":     "400",
+						"fw_vpc_number": "5",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cfw_log":         "true",
-					"cfw_log_storage": "3000",
+					"cfw_log_storage": "5000",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cfw_log":         "true",
-						"cfw_log_storage": "3000",
+						"cfw_log_storage": "5000",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ip_number": "55",
+					"ip_number": "405",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ip_number": "55",
+						"ip_number": "405",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"fw_vpc_number": "5",
+					"fw_vpc_number": "6",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"fw_vpc_number": "5",
+						"fw_vpc_number": "6",
 					}),
 				),
 			},
@@ -267,23 +284,51 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 			//		}),
 			//	),
 			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"cfw_account":    "true",
-			//		"account_number": "10",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"cfw_account":    "true",
-			//			"account_number": "10",
-			//		}),
-			//	),
-			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"band_width", "period", "modify_type", "cfw_account", "account_number"},
+				ImportStateVerifyIgnore: []string{"band_width", "period", "modify_type", "logistics"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallInstance_unsupportedOrderParameters(t *testing.T) {
+	ensureCloudFirewallInstanceTestRegion()
+	resourceId := "alicloud_cloud_firewall_instance.default"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%ssddpinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccCloudFirewallInstancePreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":   "Subscription",
+					"spec":           "enterprise_version",
+					"ip_number":      "50",
+					"band_width":     "50",
+					"cfw_log":        "false",
+					"cfw_account":    "true",
+					"account_number": "1",
+					"instance_count": "5",
+					"logistics":      cloudFirewallInstanceLogisticsConfig,
+					"period":         "1",
+				}),
+				ExpectError: regexp.MustCompile("InvalidParameter"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cfw_account":    "false",
+					"account_number": "2",
+					"instance_count": "10",
+				}),
+				ExpectError: regexp.MustCompile("InvalidParameter"),
 			},
 		},
 	})
@@ -292,6 +337,24 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 var AliCloudCloudFirewallInstanceMap0 = map[string]string{
 	"user_status": CHECKSET,
 	"status":      CHECKSET,
+}
+
+func ensureCloudFirewallInstanceTestRegion() {
+	if defaultRegionToTest != "" {
+		return
+	}
+	if v := os.Getenv("ALICLOUD_REGION"); v != "" {
+		defaultRegionToTest = v
+		return
+	}
+	defaultRegionToTest = "cn-beijing"
+	os.Setenv("ALICLOUD_REGION", defaultRegionToTest)
+}
+
+func testAccCloudFirewallInstancePreCheck(t *testing.T) {
+	testAccPreCheck(t)
+	ensureCloudFirewallInstanceTestRegion()
+	testAccPreCheckForCleanUpInstances(t, "", "vipcloudfw", "vipcloudfw", "cfw", "cfw_pre_intl")
 }
 
 func AliCloudCloudFirewallInstanceBasicDependence0(name string) string {
@@ -309,18 +372,19 @@ func TestUnitAliCloudCloudFirewallInstance(t *testing.T) {
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_firewall_instance"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"payment_type":    "CreateInstanceValue",
-		"spec":            "CreateInstanceValue",
-		"renewal_status":  "CreateInstanceValue",
-		"ip_number":       20,
-		"band_width":      10,
-		"cfw_log":         false,
-		"cfw_log_storage": 1000,
-		"cfw_service":     false,
-		"period":          6,
-		"fw_vpc_number":   10,
-		"instance_count":  10,
-		"logistics":       "CreateInstanceValue",
+		"payment_type":          "CreateInstanceValue",
+		"spec":                  "CreateInstanceValue",
+		"renewal_status":        "CreateInstanceValue",
+		"ip_number":             20,
+		"band_width":            10,
+		"cfw_log":               false,
+		"cfw_log_storage":       1000,
+		"cfw_service":           false,
+		"period":                6,
+		"fw_vpc_number":         10,
+		"instance_count":        10,
+		"auto_asset_protection": "true",
+		"logistics":             "CreateInstanceValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -354,7 +418,8 @@ func TestUnitAliCloudCloudFirewallInstance(t *testing.T) {
 			},
 			"InstanceId": "CreateInstanceValue",
 		},
-		"Code": "Success",
+		"Code":               "Success",
+		"AutoResourceEnable": true,
 	}
 	CreateMockResponse := map[string]interface{}{
 		// CreateInstance
@@ -577,6 +642,56 @@ func TestUnitAliCloudCloudFirewallInstance(t *testing.T) {
 		}
 	}
 
+	// SetAutoProtectNewAssets
+	attributesDiff = map[string]interface{}{
+		"auto_asset_protection": "false",
+	}
+	diff, err = newInstanceDiff("alicloud_cloud_firewall_instance", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_cloud_firewall_instance"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		"AutoResourceEnable": false,
+		"Code":               "Success",
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "SetAutoProtectNewAssets" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAliCloudCloudFirewallInstanceUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_cloud_firewall_instance"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			_ = dCompare.Set("auto_asset_protection", "false")
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
 	// Read
 	errorCodes = []string{"NonRetryableError", "Throttling", "NotApplicable", "nil", "{}"}
 	for index, errorCode := range errorCodes {
@@ -609,7 +724,24 @@ func TestUnitAliCloudCloudFirewallInstance(t *testing.T) {
 	}
 
 	// Delete
+	ReadMockResponseDiff = map[string]interface{}{
+		// QueryAvailableInstances Response
+		"Data": map[string]interface{}{
+			"InstanceList": []interface{}{},
+		},
+		"Code": "Success",
+	}
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "ReleasePostInstance" {
+			return map[string]interface{}{"Success": true}, nil
+		}
+		if *action == "QueryAvailableInstances" {
+			return ReadMockResponseDiff, nil
+		}
+		return ReadMockResponse, nil
+	})
 	err = resourceAliCloudCloudFirewallInstanceDelete(dExisted, rawClient)
+	patches.Reset()
 	assert.Nil(t, err)
 
 }

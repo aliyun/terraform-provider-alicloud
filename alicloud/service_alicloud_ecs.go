@@ -116,7 +116,7 @@ func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err err
 	request := ecs.CreateDescribeInstancesRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceIds = convertListToJsonString([]interface{}{id})
-	request.AdditionalAttributes = &[]string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT"}
+	request.AdditionalAttributes = &[]string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT", "DISK_HIGH_DENSITY_MODE"}
 
 	var response *ecs.DescribeInstancesResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)
@@ -1931,7 +1931,7 @@ func (s *EcsService) DescribeLaunchTemplateVersions(id string, version interface
 func (s *EcsService) SetResourceTemplateTags(d *schema.ResourceData, resourceType string) error {
 
 	if d.HasChange("template_tags") {
-		added, removed := parsingTags(d)
+		added, removed := parsingTemplateTags(d)
 		client := s.client
 
 		removedTagKeys := make([]string, 0)

@@ -699,6 +699,10 @@ func resourceAliCloudInstance() *schema.Resource {
 					},
 				},
 			},
+			"enable_high_density_mode": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"cpu_options": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1194,6 +1198,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
+	if v, ok := d.GetOk("enable_high_density_mode"); ok {
+		request["AdditionalInfo.EnableHighDensityMode"] = v
+	}
+
 	if coreCount, ok := d.GetOkExists("cpu_options.0.core_count"); ok {
 		request["CpuOptions.Core"] = coreCount
 	}
@@ -1335,6 +1343,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("create_time", instance.CreationTime)
 	d.Set("start_time", instance.StartTime)
 	d.Set("expired_time", instance.ExpiredTime)
+	d.Set("enable_high_density_mode", instance.AdditionalInfo.EnableHighDensityMode)
 
 	imageOptionsMaps := make([]map[string]interface{}, 0)
 	imageOptionsMap := make(map[string]interface{})
@@ -3057,6 +3066,11 @@ func modifyInstanceAttributeNeedStopped(d *schema.ResourceData, meta interface{}
 		update = true
 	}
 
+	if d.HasChange("enable_high_density_mode") {
+		request["AdditionalInfo.EnableHighDensityMode"] = d.Get("enable_high_density_mode")
+		update = true
+	}
+
 	if !run {
 		return update, nil
 	}
@@ -3128,7 +3142,8 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return resource.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{"InternalError"}) {
+				if IsExpectedErrors(err, []string{"InternalError", "UnknownError"}) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
