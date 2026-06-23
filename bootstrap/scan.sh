@@ -47,9 +47,9 @@ if $has_pools; then
     fi
     while :; do
       if [ -n "$filter" ]; then
-        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --columns id,title,status,priority,tag --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --columns id,title,status,priority,tag,type --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
       else
-        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --columns id,title,status,priority,tag --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --columns id,title,status,priority,tag,type --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
       fi
       n=$(echo "$pg" | jq 'length' 2>/dev/null); [ -z "$n" ] && break
       pool_out=$(jq -s 'add' <<<"$pool_out"$'\n'"$pg" 2>/dev/null) || pool_out="[]"
@@ -72,10 +72,10 @@ if $has_pools; then
 else
   # No pools configured: fall back to assignee-based global list.
   if [ -n "$claim_tag" ]; then
-    a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag --filter "NOT tag=$claim_tag" -f json \
-      | jq '[.[] | {id: .identifier, title: .subject, type: .categoryIdentifier, status, priority, tag}]'
+    a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type --filter "NOT tag=$claim_tag" -f json \
+      | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag}]'
   else
-    a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag -f json \
-      | jq '[.[] | {id: .identifier, title: .subject, type: .categoryIdentifier, status, priority, tag}]'
+    a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type -f json \
+      | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag}]'
   fi
 fi
