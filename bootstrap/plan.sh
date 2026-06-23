@@ -100,12 +100,16 @@ plan_file="$runs_dir/plan-${utc_date}.md"
     echo "| ID | 标题 | 优先级 | 拟动作 | 置信 | auto/stop | 不可逆点 |"
     echo "|-----|------|--------|--------|------|-----------|---------|"
 
-    # Single jq pass builds all rows (type→action map; confidence stub)
-    echo "$filtered_items" | jq -r '.[] |
+    # pool→project_id map from config/pools.json (for clickable Aone links; fallback {} on read fail)
+    pool_proj_json=$(jq -c '.pools | map_values(.project)' "$repo_root/config/pools.json" 2>/dev/null || echo '{}')
+
+    # Single jq pass builds all rows (type→action map; confidence stub; ID as Aone link)
+    echo "$filtered_items" | jq -r --argjson pp "$pool_proj_json" '.[] |
       (if (.type|test("bug|Bug")) then "reply + create_req"
        elif (.type|test("req|Req|需求")) then "create_req + create_cr"
        else "reply" end) as $a |
-      "| \(.id) | \(.title) | \(.priority // "P2") | \($a) | low_conf | escalate | create_cr / release_prod |"'
+      (($pp[.pool] // 0) | tostring) as $proj |
+      "| [\(.id)](https://project.aone.alibaba-inc.com/v2/project/\($proj)/req/\(.id)) | \(.title) | \(.priority // "P2") | \($a) | low_conf | escalate | create_cr / release_prod |"'
 
     echo ""
     echo "---"
