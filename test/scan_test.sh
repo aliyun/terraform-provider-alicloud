@@ -465,6 +465,14 @@ else
     assert_fail "--filter NOT tag=jarvis-claimed should appear twice (once per pool), got $filter_count7 times"
 fi
 
+# --assignee flag passed for both pools
+assignee_count7=$(echo "$recorded_args7" | grep -c -- '--assignee' || echo 0)
+if [ "$assignee_count7" -ge 2 ]; then
+    assert_pass "--assignee flag passed for both pools ($assignee_count7 times)"
+else
+    assert_fail "--assignee flag should appear twice (once per pool), got $assignee_count7 times"
+fi
+
 # ---------------------------------------------------------------------------
 # Test 8: one pool fails → still returns items from the healthy pool (non-fatal)
 # ---------------------------------------------------------------------------

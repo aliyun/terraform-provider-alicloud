@@ -42,12 +42,14 @@ if $has_pools; then
     if [ -n "$claim_tag" ]; then
       pool_out=$(a1 project workitem list \
         --project "$pool_project" \
+        --assignee "$account" \
         --filter "NOT tag=$claim_tag" \
         --page-size 300 \
         -f json 2>/dev/null) || true
     else
       pool_out=$(a1 project workitem list \
         --project "$pool_project" \
+        --assignee "$account" \
         --page-size 300 \
         -f json 2>/dev/null) || true
     fi
