@@ -33,7 +33,7 @@ func TestAccAliCloudGovernanceAccount_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_id":          "1493822914031335",
+					"account_id":          "${data.alicloud_resource_manager_accounts.default.ids.0}",
 					"baseline_id":         "${data.alicloud_governance_baselines.default.ids.0}",
 					"payer_account_id":    "${data.alicloud_account.default.id}",
 					"display_name":        name,
@@ -188,6 +188,10 @@ data "alicloud_governance_baselines" "default" {
 }
 
 data "alicloud_resource_manager_folders" "default" {
+}
+
+data "alicloud_resource_manager_accounts" "default" {
+  status = "CreateSuccess"
 }
 
 
