@@ -12,8 +12,6 @@ description: >-
   → 建变更/CR → worktree 开发 → 预发 → 正式 via a1 CLI, when the fix lands in one of our own apps —
   trigger when 提需求给自己 / 给 Agent门户 / AgentRuntime / aliyun-automation-agent / PlayGround 提需求,
   or cwd is the aliyun-automation-agent repo (routes to project 2124589 + app 283346,见 config/pools.json).
-  Also covers GitHub PR review: a github.com/.../pull/N link or "评审/看下这个 PR" → read-only review by default,
-  双层查证后出报告, comment 仅授权后发, ad-hoc PR 默认落 tf_provider 池 528766, 见 references/github-pr-review.md.
 ---
 
 # Aone 工单 / Terraform 能力查证
@@ -36,7 +34,7 @@ status) need a clear user yes first — confirm before each.
 ## 入口分诊
 - **有 workitemId**(贴工单链接/ID)→ 工单全流程(下方)
 - **只有 API/产品**(next.api.aliyun.com 链接、"alicloud 支持 X 吗"、"把 X 接入 Terraform")→ 直接走「查证」,输出"已支持 / 缺哪些属性",无需建工单
-- **GitHub PR**(github.com/.../pull/N、"评审/看下这个 PR")→ 默认只读评审,见 `references/github-pr-review.md`;查证复用本文「查证」核;ad-hoc PR 默认落 tf_provider 池 528766
+- **GitHub PR**(github.com/.../pull/N、"评审/看下这个 PR")→ 独立 skill,见 `terraform-pr-review`(默认只读评审,ad-hoc PR 落 tf_provider 池 528766)
 - 两者都有 → 工单流程内嵌查证
 
 ## 选池 + 是否开发的闸门
