@@ -198,6 +198,119 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 5: pools.json with claim.tag present → a1 list called with --filter NOT tag=<tag>
+# ---------------------------------------------------------------------------
+
+echo "=== Test 5: --filter NOT tag= passed when pools.json has claim.tag ==="
+
+# Create a temp config dir with a pools.json containing claim.tag
+tmpconfig=$(mktemp -d)
+trap 'rm -rf "$tmpconfig" "$tmpbin"' EXIT
+
+mkdir -p "$tmpconfig/config"
+cat > "$tmpconfig/config/pools.json" << 'JSON'
+{
+  "claim": {
+    "tag": "jarvis-claimed"
+  }
+}
+JSON
+
+# Record args passed to a1 list into a file
+args_file=$(mktemp)
+
+cat > "$tmpbin/a1" << STUB
+#!/bin/bash
+if [ "\$1" = "auth" ] && [ "\$2" = "whoami" ]; then
+    echo "Account:  chenhanzhang.chz"
+    exit 0
+fi
+if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
+    echo "\$@" >> "$args_file"
+    echo '[]'
+    exit 0
+fi
+exit 1
+STUB
+chmod +x "$tmpbin/a1"
+
+# Run scan.sh with JARVIS_ROOT pointing to the temp config dir so it finds config/pools.json
+output=$(JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/scan.sh" 2>&1)
+exit_code=$?
+recorded_args=$(cat "$args_file" 2>/dev/null || echo "")
+rm -f "$args_file"
+
+echo "Exit code: $exit_code"
+echo "Recorded a1 args: $recorded_args"
+echo "Output: $output"
+echo ""
+
+if [ "$exit_code" -eq 0 ]; then
+    assert_pass "exit code 0 with pools.json tag"
+else
+    assert_fail "exit code should be 0 with pools.json tag, got $exit_code"
+fi
+
+if echo "$recorded_args" | grep -q -- '--filter'; then
+    assert_pass "--filter flag passed to a1 list"
+else
+    assert_fail "--filter flag not found in a1 args: $recorded_args"
+fi
+
+if echo "$recorded_args" | grep -q 'NOT tag=jarvis-claimed'; then
+    assert_pass "NOT tag=jarvis-claimed present in a1 args"
+else
+    assert_fail "NOT tag=jarvis-claimed not found in a1 args: $recorded_args"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 6: pools.json missing → a1 list called without --filter (no crash)
+# ---------------------------------------------------------------------------
+
+echo "=== Test 6: no --filter when pools.json is absent ==="
+
+args_file2=$(mktemp)
+tmpconfig2=$(mktemp -d)
+# Do NOT create config/pools.json in tmpconfig2
+
+cat > "$tmpbin/a1" << STUB
+#!/bin/bash
+if [ "\$1" = "auth" ] && [ "\$2" = "whoami" ]; then
+    echo "Account:  chenhanzhang.chz"
+    exit 0
+fi
+if [ "\$1" = "project" ] && [ "\$2" = "workitem" ] && [ "\$3" = "list" ]; then
+    echo "\$@" >> "$args_file2"
+    echo '[]'
+    exit 0
+fi
+exit 1
+STUB
+chmod +x "$tmpbin/a1"
+
+output2=$(JARVIS_ROOT="$tmpconfig2" bash "$proj_root/bootstrap/scan.sh" 2>&1)
+exit_code2=$?
+recorded_args2=$(cat "$args_file2" 2>/dev/null || echo "")
+rm -f "$args_file2"
+rm -rf "$tmpconfig2"
+
+echo "Exit code: $exit_code2"
+echo "Recorded a1 args: $recorded_args2"
+echo ""
+
+if [ "$exit_code2" -eq 0 ]; then
+    assert_pass "exit code 0 without pools.json"
+else
+    assert_fail "exit code should be 0 without pools.json, got $exit_code2"
+fi
+
+if echo "$recorded_args2" | grep -q -- '--filter'; then
+    assert_fail "--filter should NOT be passed when pools.json absent"
+else
+    assert_pass "no --filter passed when pools.json absent"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""
