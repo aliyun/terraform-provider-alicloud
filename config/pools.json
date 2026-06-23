@@ -25,7 +25,8 @@
         "需求撤回",
         "方案功能已存在",
         "Later"
-      ]
+      ],
+      "exclude_title": []
     },
     "tf_provider": {
       "project": 528766,
@@ -40,7 +41,8 @@
         "已完成",
         "已拒绝",
         "Won'tfix"
-      ]
+      ],
+      "exclude_title": []
     },
     "mcp_server": {
       "project": 2124589,
@@ -59,7 +61,8 @@
         "Closed",
         "需求撤回",
         "验收通过"
-      ]
+      ],
+      "exclude_title": []
     },
     "cloudspec": {
       "project": 1120451,
@@ -67,7 +70,8 @@
       "line": "agentic_tools",
       "assignee": 479782,
       "dev": false,
-      "exclude_status": []
+      "exclude_status": [],
+      "exclude_title": []
     },
     "api_toolkit": {
       "project": 2100304,
@@ -79,7 +83,8 @@
       "exclude_status": [
         "已发布",
         "已取消"
-      ]
+      ],
+      "exclude_title": []
     }
   },
   "routing": [
