@@ -100,34 +100,12 @@ plan_file="$runs_dir/plan-${utc_date}.md"
     echo "| ID | 标题 | 优先级 | 拟动作 | 置信 | auto/stop | 不可逆点 |"
     echo "|-----|------|--------|--------|------|-----------|---------|"
 
-    filtered_count=$(echo "$filtered_items" | jq 'length' 2>/dev/null || echo 0)
-
-    j=0
-    while [ "$j" -lt "$filtered_count" ]; do
-        item_id=$(echo "$filtered_items" | jq -r ".[$j].id")
-        item_title=$(echo "$filtered_items" | jq -r ".[$j].title")
-        item_type=$(echo "$filtered_items" | jq -r ".[$j].type")
-        item_priority=$(echo "$filtered_items" | jq -r ".[$j].priority // \"P2\"")
-
-        # Determine action based on type
-        case "$item_type" in
-            bug)      action="reply + create_req" ;;
-            task)     action="reply" ;;
-            req)      action="create_req + create_cr" ;;
-            *)        action="reply" ;;
-        esac
-
-        # Confidence: default low_conf unless explicitly mapped
-        confidence="low_conf"
-        auto_stop="escalate"
-
-        # Irreversibility point
-        irreversible="create_cr / release_prod"
-
-        echo "| $item_id | $item_title | $item_priority | $action | $confidence | $auto_stop | $irreversible |"
-
-        j=$((j + 1))
-    done
+    # Single jq pass builds all rows (type→action map; confidence stub)
+    echo "$filtered_items" | jq -r '.[] |
+      (if (.type|test("bug|Bug")) then "reply + create_req"
+       elif (.type|test("req|Req|需求")) then "create_req + create_cr"
+       else "reply" end) as $a |
+      "| \(.id) | \(.title) | \(.priority // "P2") | \($a) | low_conf | escalate | create_cr / release_prod |"'
 
     echo ""
     echo "---"
