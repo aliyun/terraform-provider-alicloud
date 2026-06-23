@@ -41,7 +41,7 @@ case "$cmd" in
         [ -n "$id" ] && [ -n "$text" ] || { echo "Usage: wrap.sh sync <id> \"<progress>\"" >&2; exit 1; }
         text="${text}$(code_footer)"
         a1 project workitem comment create "$id" -m "$text" \
-            || echo "wrap.sh: a1 comment 失败（id=$id），进展未落 Aone，请人工补" >&2
+            || echo "wrap.sh: a1 comment 失败（id=${id}），进展未落 Aone，请人工补" >&2
         ;;
     done)
         summary="${3:-}"
@@ -50,14 +50,14 @@ case "$cmd" in
         # 1) 回填 Aone 进展评论（带代码落点页脚）
         summary="${summary}$(code_footer)"
         a1 project workitem comment create "$id" -m "$summary" \
-            || echo "wrap.sh: a1 comment 失败（id=$id），收尾未落 Aone，请人工补" >&2
+            || echo "wrap.sh: a1 comment 失败（id=${id}），收尾未落 Aone，请人工补" >&2
         # 2) 本地审计（jq 校验 pools.json 可读，与 claim 同源）
         jq -e '.claim' "$pools_cfg" >/dev/null 2>&1 || echo "wrap.sh: pools.json .claim 缺失" >&2
         bash "$script_dir/log.sh" run_done "$id" "$summary"
         # 3) 可选改状态
         if [ -n "$status" ]; then
             a1 project workitem update "$id" --status "$status" \
-                || echo "wrap.sh: a1 状态更新失败（id=$id → $status），请人工核" >&2
+                || echo "wrap.sh: a1 状态更新失败（id=${id} → ${status}），请人工核" >&2
         fi
         ;;
     *)
