@@ -9,7 +9,7 @@ test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 proj_root="$(cd "$test_dir/.." && pwd)"
 
 tmpbin=$(mktemp -d)
-trap "rm -rf $tmpbin" EXIT
+trap 'rm -rf "$tmpbin"' EXIT
 
 PASS=0
 FAIL=0
@@ -169,6 +169,32 @@ if [ "$exit_code" -ne 0 ]; then
     assert_pass "non-zero exit on a1 failure"
 else
     assert_fail "should exit non-zero when a1 fails, got 0"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 4: whoami stub exits 1 → scan.sh exits non-zero
+# ---------------------------------------------------------------------------
+
+cat > "$tmpbin/a1" << 'STUB'
+#!/bin/bash
+if [ "$1" = "auth" ] && [ "$2" = "whoami" ]; then
+    echo "Error: authentication failed" >&2
+    exit 1
+fi
+exit 1
+STUB
+chmod +x "$tmpbin/a1"
+
+echo "=== Test 4: whoami failure exits non-zero ==="
+output=$(bash "$proj_root/bootstrap/scan.sh" 2>&1)
+exit_code=$?
+echo "Exit code: $exit_code"
+echo ""
+
+if [ "$exit_code" -ne 0 ]; then
+    assert_pass "non-zero exit on whoami failure"
+else
+    assert_fail "should exit non-zero when whoami fails, got 0"
 fi
 
 # ---------------------------------------------------------------------------
