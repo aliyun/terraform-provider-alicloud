@@ -5,7 +5,7 @@
       "path": "/Users/tfhnia/go/src/github.com/chenhanzhang/terraform-provider-alicloud",
       "upstream_remote": "alicloud", "origin_remote": "origin", "default_branch": "master",
       "pools": ["tf_provider","tf_customer"],
-      "verify_clone": "/Users/tfhnia/terraflow/providers/alicloud",
+      "verify_clone": "/Users/tfhnia/go/src/github.com/chenhanzhang/terraform-provider-alicloud",
       "ops": {"build":"go build ./...","test":"go test ./alicloud -run <Name>","vet":"go vet ./...","fmt":"gofmt -l alicloud/"},
       "desc": "alicloud provider 开发/评审; 评审看 alicloud(=upstream aliyun) PR, 改在 origin=ChenHanZhang fork"
     },
