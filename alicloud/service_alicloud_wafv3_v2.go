@@ -357,6 +357,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseRule(id string) (object map[string]
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})

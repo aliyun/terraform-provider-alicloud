@@ -58,6 +58,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `domains` - A list of Domain Entries. Each element contains the following attributes:
   * `id` - The ID of the domain. It formats as `<instance_id>:<domain>`.
   * `domain` - The name of the domain.
+  * `domain_id` - The numeric domain ID assigned by WAF. Populated only when `enable_details` is `true`.
   * `cname` - The CNAME assigned by WAF to the domain name.
   * `resource_manager_resource_group_id` - The ID of the resource group.
   * `status` - The status of the domain.
