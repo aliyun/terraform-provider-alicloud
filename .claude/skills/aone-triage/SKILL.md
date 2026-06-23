@@ -11,7 +11,7 @@ description: >-
   with no ticket — a bare API/product link is enough. Also covers the deliver-it-yourself path: 建需求
   → 建变更/CR → worktree 开发 → 预发 → 正式 via a1 CLI, when the fix lands in one of our own apps —
   trigger when 提需求给自己 / 给 Agent门户 / AgentRuntime / aliyun-automation-agent / PlayGround 提需求,
-  or cwd is the aliyun-automation-agent repo (routes to project 2124589 + app 283346).
+  or cwd is the aliyun-automation-agent repo (routes to project 2124589 + app 283346,见 config/pools.json).
 ---
 
 # Aone 工单 / Terraform 能力查证
@@ -58,7 +58,7 @@ status) need a clear user yes first — confirm before each.
 
 ## 回复/转需求/关联(写操作,先授权)
 - 回复:草稿过目 → `a1 project workitem comment create <id> -m "..."`。结构=结论→逐问+证据→方案。
-- 转需求:Cloudspec 池 `2165097`,指派谜拟 `479782` → `a1 project workitem create --project 2165097 --category req --assignee 479782`。描述用 7 字段标准格式(background/requirement/documentUrl/mappingCheckUrl/acceptance/deadline/source)+ 末尾机读 ```json,字段一致;不堆现状。模板见 templates.md。
+- 转需求:Cloudspec 池 `2165097`,指派谜拟 `479782`(见 config/pools.json) → `a1 project workitem create --project 2165097 --category req --assignee 479782`。描述用 7 字段标准格式(background/requirement/documentUrl/mappingCheckUrl/acceptance/deadline/source)+ 末尾机读 ```json,字段一致;不堆现状。模板见 templates.md。
 - 关联:`a1 project workitem relation add <id> relate:<target>` 调两次(A→B、B→A)双向。
 - 源工单改状态"待上游排期":`a1 project workitem update <id> --status "待上游排期"`(仅真缺口已转池时)。
 - 创建报必填字段缺失 → `a1 project workitem field options <field> --project <id>` 查枚举补 `--cfs`(同自家应用建需求那套)。
