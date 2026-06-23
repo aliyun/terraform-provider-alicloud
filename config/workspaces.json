@@ -9,7 +9,34 @@
       "ops": {"build":"go build ./...","test":"go test ./alicloud -run <Name>","vet":"go vet ./...","fmt":"gofmt -l alicloud/"},
       "desc": "alicloud provider 开发/评审; 评审看 alicloud(=upstream aliyun) PR, 改在 origin=ChenHanZhang fork"
     },
-    "mcp_server": { "repo":"aliyun-automation-agent","pool":"mcp_server","app":283346,"delivery":"delivery-aliyun-automation-agent.md","ops":{} },
+    "automation_agent": {
+      "repo": "aliyun-automation-agent",
+      "git_url": "git@gitlab.alibaba-inc.com:opensource-tools/aliyun-automation-agent.git",
+      "path": "/Users/tfhnia/IdeaProjects/aliyun-automation-agent",
+      "app": 283346,
+      "default_branch": "master",
+      "pool": "mcp_server",
+      "delivery": "delivery-aliyun-automation-agent.md",
+      "ops": {}
+    },
+    "mcp_server": {
+      "repo": "cloudspec",
+      "git_url": "git@gitlab.alibaba-inc.com:cloudspec-mcp/cloudspec.git",
+      "path": "/Users/tfhnia/cloudspec/cloudspec",
+      "app": 260634,
+      "default_branch": "master",
+      "ops": {},
+      "desc": "Cloudspec MCP"
+    },
+    "automation_platform": {
+      "repo": "aliyun-automation-platform",
+      "git_url": "git@gitlab.alibaba-inc.com:aliyun-automation-platform/aliyun-automation-platform.git",
+      "path": "/Users/tfhnia/IdeaProjects/aliyun-automation-platform",
+      "app": 172823,
+      "default_branch": "master",
+      "ops": {},
+      "desc": "IaCService / 自动化服务台"
+    },
     "agent_toolkit": {
       "repo": "alibabacloud-agent-toolkit",
       "git_url": "git@github.com:ChenHanZhang/alibabacloud-agent-toolkit.git",
@@ -24,6 +51,7 @@
     "acube": {
       "repo": "a-cube-aliyun-com",
       "git_url": "git@gitlab.alibaba-inc.com:opensource-tools/a-cube-aliyun-com.git",
+      "path": "/Users/tfhnia/IdeaProjects/a-cube-aliyun-com",
       "default_branch": "master",
       "app": 180726,
       "pools": ["api_toolkit"],
