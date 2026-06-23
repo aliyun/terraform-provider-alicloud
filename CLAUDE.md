@@ -9,7 +9,7 @@
 ## 开局动作
 
 1) 跑 bootstrap/install.sh + bootstrap/verify.sh，全绿才干活；
-2) 跑 bootstrap/scan.sh → bootstrap/plan.sh 出计划 → supervised 等用户逐条授权 → 按 loops/aone-triage.md 处理授权项；用户临时丢来的单/PR 走 loops/adhoc-intake.md（建/补单、只读评审）；
+2) 跑 bootstrap/scan.sh → bootstrap/plan.sh 出计划 → supervised 等用户逐条授权 → 按 loops/aone-triage.md 处理授权项；用户临时丢来的任意任务（查证/评审/开发/运维，带不带 Aone）走 loops/adhoc-intake.md（建/补单→进工作区→只读默认）；
 3) 低置信或验收不过→起草不发出，入 escalation/。
 
 ## 工作纪律

@@ -16,11 +16,7 @@ gh pr diff <url>            # 全 diff
 取改了哪些资源 .go、新增/改了哪些 schema 字段。
 
 ## 2. 进 workspace(给查证上下文)
-```
-bootstrap/workspace.sh resolve terraform_provider   # → 仓库路径
-bootstrap/workspace.sh ops terraform-provider-alicloud build|vet   # go build/vet 命令
-```
-cd 到该 path 取上下文;`ensure terraform-provider-alicloud` 不在则按提示 clone。
+读 `config/workspaces.json` 取 `workspaces.terraform_provider`:`path`(仓库路径)+ `ops.build`/`ops.vet`(go build/vet 命令)。cd 到该 path 取上下文;不在则按 path 提示 clone。
 
 ## 3. 双层查证(复用 SKILL.md「查证」核,顺序固定不凭记忆)
 1. OpenAPI 全集:`AlibabaCloud ListApis`/`GetApiDefinition` 核 product+action 与字段。
@@ -40,6 +36,6 @@ PR 看点:字段名/类型对齐 OpenAPI、import 完整、回归用例、无破
 ## 开发路径(独立、需另行授权)
 评审命中需改代码 → 切 origin fork 分支开发,绝不在主目录/master 改:
 ```
-git -C $(bootstrap/workspace.sh resolve terraform_provider) checkout -b <branch> origin/master
+git -C <config/workspaces.json: workspaces.terraform_provider.path> checkout -b <branch> origin/master
 ```
 改完 push origin fork → 走评审,不直发。

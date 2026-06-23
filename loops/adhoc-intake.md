@@ -45,11 +45,7 @@
 
 ## 四、解析工作区 + cd
 
-```bash
-bootstrap/workspace.sh <key>     # terraform_provider | mcp_server
-```
-
-依据 `config/workspaces.json` 解析：`repo` / `path` / remotes / `default_branch` / `pools` / `ops`。
+读 `config/workspaces.json` 取 `workspaces.<key>`（terraform_provider | mcp_server）：`repo` / `path` / remotes / `default_branch` / `pools` / `ops`。
 
 - 评审 alicloud PR：看 `upstream_remote=alicloud`，改在 `origin=ChenHanZhang` fork。
 - cd 进 `path`，dev 先开 worktree 切分支（CLAUDE.md 工作纪律）。
@@ -90,8 +86,7 @@ bootstrap/log.sh run_done <id> "<任务+落点>"
 
 | 工具 | 作用 |
 |------|------|
-| `bootstrap/workspace.sh <key>` | 解析工作区 → repo/path/remotes/ops |
-| `config/workspaces.json` | 工作区 canonical schema |
+| `config/workspaces.json` | 工作区 canonical schema → repo/path/remotes/ops |
 | `config/pools.json` | 池路由（ad-hoc PR→tf_provider 528766，客户 1086837） |
 | `bootstrap/log.sh run_done` | 审计 |
 | `loops/self-improve.md` | 缺口→escalation→补丁 |

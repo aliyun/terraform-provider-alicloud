@@ -40,7 +40,7 @@ status) need a clear user yes first — confirm before each.
 - 两者都有 → 工单流程内嵌查证
 
 ## 选池 + 是否开发的闸门
-建需求前查 `references/routing.md` 选池;命不中先反问。建完按内容分叉:
+建需求前查 `config/pools.json` routing[] 选池;命不中先反问。建完按内容分叉:
 - 分析/调研/咨询/统计 → 建需求即停,不拉分支
 - 改代码/接资源/修 bug → 仅命中开发行才进链路(link app→CR→worktree)
 
