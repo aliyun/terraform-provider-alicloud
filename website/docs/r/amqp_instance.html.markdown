@@ -126,9 +126,13 @@ The following arguments are supported:
 * `renewal_duration_unit` - (Optional, Computed) Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years.
 * `renewal_status` - (Optional, Computed) The renewal status. Value: AutoRenewal: automatic renewal. ManualRenewal: manual renewal. NotRenewal: no renewal.
 * `serverless_charge_type` - (Optional, Available since v1.129.0) The billing type of the serverless instance. Value: onDemand.
+* `serverless_switch` - (Optional, Computed, Available since v1.283.0) Whether to enable the Serverless elastic capability on the instance.
+  - `true`: Enable. The instance's maximum TPS is increased to base TPS multiplied by an edition factor (1.5x for Professional Edition, 2x for Enterprise and Platinum Edition).
+  - `false`: Disable. The instance's maximum TPS reverts to its original base TPS.
 * `storage_size` - (Optional, Computed) Configure the message storage space. Unit: GB. The value is as follows:  Professional Edition and Enterprise Edition: Fixed to 0. Description A value of 0 indicates that the Professional Edition and Enterprise Edition instances do not charge storage fees, but do not have storage space. Platinum version example: m × 100, where the value range of m is [7,28].
 * `support_eip` - (Optional) Whether to support public network.
 * `support_tracing` - (Optional, Computed) Whether to activate the message trace function. The values are as follows:  true: Enable message trace function false: message trace function is not enabled Description The Platinum Edition instance provides the 15-day message trace function free of charge. The trace function can only be enabled and the trace storage duration can only be set to 15 days. For instances of other specifications, you can enable or disable the trace function.
+* `tags` - (Optional, Map, Available since v1.283.0) A mapping of tags to assign to the resource.
 * `tracing_storage_time` - (Optional, Computed) Configure the storage duration of message traces. Unit: Days. The value is as follows:  3:3 days 7:7 days 15:15 days This parameter is valid when SupportTracing is true.
 * `vpc_id` - (Optional, ForceNew, Available since v1.274.0) The ID of the VPC. **NOTE:** From version 1.274.0, `vpc_id` is required.
 * `vswitch_ids` - (Optional, ForceNew, List, Available since v1.274.0) The IDs of the vSwitches with which the instance is associated. `vswitch_ids` only supports setting two values. **NOTE:** From version 1.274.0, `vswitch_ids` is required.
