@@ -79,6 +79,27 @@ else
     ((fail_count++))
 fi
 
+# Check .claude/settings.json exists and has hooks.Stop configured
+settings_file="$(git rev-parse --show-toplevel)/.claude/settings.json"
+if [ -f "$settings_file" ] && jq -e '.hooks.Stop' "$settings_file" >/dev/null 2>&1; then
+    echo "PASS settings.json hooks.Stop"
+else
+    echo "FAIL settings.json hooks.Stop"
+    ((fail_count++))
+fi
+
+# Check the 4 agent definition files exist
+repo_root="$(git rev-parse --show-toplevel)"
+for agent in triager developer pr-reviewer verifier; do
+    agent_file="${repo_root}/.claude/agents/${agent}.md"
+    if [ -f "$agent_file" ]; then
+        echo "PASS agent/${agent}"
+    else
+        echo "FAIL agent/${agent}"
+        ((fail_count++))
+    fi
+done
+
 # Exit with non-zero if any check failed
 if [ $fail_count -gt 0 ]; then
     exit 1
