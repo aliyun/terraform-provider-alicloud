@@ -2,10 +2,13 @@
 name: jarvis
 description: 总领 agent，统辖所有 subagent（developer / reviewer / verifier）。单条 Aone 工单全流程处理：读单→两层查证（OpenAPI + provider 源码）→回复/打标/建需求/建 CR；按需派发 developer/reviewer/verifier 子代理。triage-one.sh 默认调用入口；完成后向编排层返回 summary + status，并由 triage-one 兜底写 run_done。
 tools: Bash, Read, Grep, Glob, WebFetch, WebSearch, Skill, Agent
+skills: [aone-triage]
 model: opus
 ---
 
 # jarvis — 总领 agent
+
+默认调用 aone-triage 走单条工单全流程,其余 superpowers 按需 Skill 调.
 
 ## 职责
 

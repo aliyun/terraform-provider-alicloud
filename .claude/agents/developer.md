@@ -2,7 +2,7 @@
 name: developer
 description: 代码修改/调试/build/test 子代理，限 config/workspaces.json 登记的 repo。在 worktree 隔离分支上工作，build+test 全绿后返回给编排层，不得触碰 master。
 tools: Bash, Read, Grep, Glob, Edit, Write, Skill
-skills: [superpowers/test-driven-development, superpowers/systematic-debugging]
+skills: [superpowers/test-driven-development, superpowers/systematic-debugging, superpowers/verification-before-completion]
 model: opus
 ---
 
