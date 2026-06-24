@@ -191,6 +191,42 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 11: run_done state defaults to pending (2-arg legacy callers unbroken)
+# ---------------------------------------------------------------------------
+echo "=== Test 11: run_done state defaults to pending ==="
+runs_file=$(ls "$JARVIS_RUNS_DIR"/*-TASK-001.md 2>/dev/null | head -1)
+if grep -q "^\*\*state:\*\* pending" "$runs_file" 2>/dev/null; then
+    assert_pass "2-arg run_done defaults state to pending"
+else
+    assert_fail "2-arg run_done did not default state to pending"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 12: run_done merged state honored (3rd arg)
+# ---------------------------------------------------------------------------
+echo "=== Test 12: run_done merged state honored ==="
+run_done "TASK-004" "merged ok" merged
+mfile=$(ls "$JARVIS_RUNS_DIR"/*-TASK-004.md 2>/dev/null | head -1)
+if grep -q "^\*\*state:\*\* merged" "$mfile" 2>/dev/null; then
+    assert_pass "run_done writes state merged when passed"
+else
+    assert_fail "run_done did not write state merged"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 13: direct dispatch run_done with state merged
+# ---------------------------------------------------------------------------
+echo "=== Test 13: direct dispatch run_done state merged ==="
+JARVIS_RUNS_DIR="$JARVIS_RUNS_DIR" JARVIS_ESCALATION_DIR="$JARVIS_ESCALATION_DIR" \
+    bash "$proj_root/bootstrap/log.sh" run_done "TASK-005" "d" merged
+dfile=$(ls "$JARVIS_RUNS_DIR"/*-TASK-005.md 2>/dev/null | head -1)
+if grep -q "^\*\*state:\*\* merged" "$dfile" 2>/dev/null; then
+    assert_pass "dispatch run_done honors merged state"
+else
+    assert_fail "dispatch run_done did not honor merged state"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""
