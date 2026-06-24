@@ -44,7 +44,7 @@ def card(r):
   sm="" if r["summary"]==r["title"] else f'<div class="sum">{e(r["summary"])}</div>'
   tag=f'<span class="tag" style="color:{ac};background:{tint(ac)}">{e(pname(pk))}</span>' if pk else ""
   cl,cfg2,cbg=CAT.get(cat,("","","")); badge=f'<span class="cat" style="color:{cfg2};background:{cbg}">{cl}</span>' if cl else ""
-  return f'''<a class="card" data-pool="{e(pk)}" data-cat="{e(cat)}" style="border-left:4px solid {ac}" href="{e(r['url'])}" target="_blank">
+  return f'''<a class="card" data-pool="{e(pk)}" data-cat="{e(cat)}" data-title="{e(r['title']).lower()}" style="border-left:4px solid {ac}" href="{e(r['url'])}" target="_blank">
 <div class="cr"><span class="cid">#{e(r['id'])}</span><span class="pri" style="color:{fg};background:{bg}">{p or '·'}</span></div>
 <div class="tt">{e(r['title'])}</div>{sm}<div class="cf">{tag}{badge}</div></a>'''
 def col(label,st):
@@ -76,6 +76,7 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 .tb{{display:flex;align-items:center;padding:14px 22px;border-bottom:1px solid #eaecf0}}.bc{{color:#667085;font-size:13.5px}}.bc b{{color:#1d2939}}
 .tb .r{{margin-left:auto;display:flex;gap:8px}}.btn{{border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;color:#344054;cursor:pointer}}
 .btn.k{{background:#1d2939;color:#fff;border-color:#1d2939}}
+.srch{{border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;color:#344054;width:220px;outline:none}}.srch:focus{{border-color:#7f56d9;box-shadow:0 0 0 3px rgba(127,86,217,.15)}}
 .fl{{display:flex;align-items:center;gap:8px;padding:12px 22px}}
 .dd{{position:relative}}.ddb{{border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;color:#344054;cursor:pointer}}
 .ddp{{position:absolute;top:36px;left:0;z-index:5;background:#fff;border:1px solid #eaecf0;border-radius:10px;box-shadow:0 4px 16px rgba(16,24,40,.12);padding:6px;width:280px;display:none}}.ddp.open{{display:block}}
@@ -94,18 +95,20 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 {nav("全部")}{nav("Manager")}{nav("收件箱")}{nav("自动化")}<div class="grp">Workspace</div>
 {nav("工作板"," act")}{nav("Agents")}{nav("Skills")}{nav("知识·记忆")}<div class="grp">管理</div>
 {nav("Workspace管理")}{nav("应用管理")}<div class="sf"><span class="av">辰</span>辰羿<span class="ico">⚙</span></div></aside>
-<main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><button class="btn" id=refresh title="运行 bootstrap/refresh.sh 重扫 Aone 并重建">刷新</button><button class="btn k">+ 新增任务</button></div></div>
+<main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><input class="srch" id=srch type=search placeholder="搜索工作项…" autocomplete=off><button class="btn" id=refresh title="运行 bootstrap/refresh.sh 重扫 Aone 并重建">刷新</button><button class="btn k">+ 新增任务</button></div></div>
 <div class="fl"><div class="dd"><button class="ddb" id=ddb>工作池 ▾</button><div class="ddp" id=ddp><label class="dr ddh"><input type=checkbox id=pfall checked><span class="nm">全选</span><span class="cnt">{TOTAL}</span></label>{rows}</div></div>{pills}<span class="gen">{gen} · agent runs {arun}</span></div>
 <div class="bd">{board}</div></main></div>
 <script>
-var B=document.querySelectorAll('.pf'),A=document.getElementById('pfall'),P=document.querySelectorAll('.cp');
+var B=document.querySelectorAll('.pf'),A=document.getElementById('pfall'),P=document.querySelectorAll('.cp'),S=document.getElementById('srch');
 function sync(){{var on=new Set();B.forEach(c=>{{if(c.checked)on.add(c.dataset.pf)}});
 var ct=new Set();P.forEach(c=>{{if(c.getAttribute('aria-pressed')==='true')ct.add(c.dataset.cf)}});
-document.querySelectorAll('.card').forEach(c=>{{var okP=c.dataset.pool===''||on.has(c.dataset.pool);var okC=c.dataset.cat===''||ct.has(c.dataset.cat);c.classList.toggle('hide',!(okP&&okC))}});
+var q=S.value.trim().toLowerCase();
+document.querySelectorAll('.card').forEach(c=>{{var okP=c.dataset.pool===''||on.has(c.dataset.pool);var okC=c.dataset.cat===''||ct.has(c.dataset.cat);var okT=q===''||(c.dataset.title||'').indexOf(q)>=0;c.classList.toggle('hide',!(okP&&okC&&okT))}});
 document.querySelectorAll('[data-col]').forEach(col=>{{col.querySelector('.badge').textContent=col.querySelectorAll('.card:not(.hide)').length}});
 A.checked=[...B].every(x=>x.checked);}}
 B.forEach(c=>c.onchange=sync);A.onchange=function(){{B.forEach(x=>x.checked=A.checked);sync();}};
 P.forEach(c=>c.onclick=function(){{c.setAttribute('aria-pressed',c.getAttribute('aria-pressed')==='true'?'false':'true');sync();}});
+var sd;S.oninput=function(){{clearTimeout(sd);sd=setTimeout(sync,150);}};
 document.getElementById('ddb').onclick=function(e){{e.stopPropagation();document.getElementById('ddp').classList.toggle('open');}};
 document.onclick=function(){{document.getElementById('ddp').classList.remove('open');}};
 document.getElementById('ddp').onclick=function(e){{e.stopPropagation();}};
