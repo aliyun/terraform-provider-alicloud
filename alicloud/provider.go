@@ -117,7 +117,7 @@ func Provider() terraform.ResourceProvider {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Description:  descriptions["configuration_source"],
-				ValidateFunc: validation.StringLenBetween(0, 128),
+				ValidateFunc: validation.StringLenBetween(0, 1024),
 				DefaultFunc:  schema.EnvDefaultFunc("TF_APPEND_USER_AGENT", ""),
 			},
 			"protocol": {
