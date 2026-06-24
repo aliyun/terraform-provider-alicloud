@@ -157,6 +157,11 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"serverless_switch": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -180,6 +185,7 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 			"tracing_storage_time": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -261,6 +267,12 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("support_eip"); ok {
 		request["SupportEip"] = v
 	}
+	if v, ok := d.GetOkExists("serverless_switch"); ok {
+		request["ServerlessSwitch"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		request["Tags"] = ConvertTags(v.(map[string]interface{}))
+	}
 	if v, ok := d.GetOk("vswitch_ids"); ok {
 		vswitchIdsMapsArray := convertListToJsonString(convertToInterfaceArray(v))
 
@@ -337,6 +349,7 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("provisioned_capacity", objectRaw["ProvisionedCapacity"])
 	d.Set("queue_capacity", objectRaw["MaxQueue"])
 	d.Set("security_group_id", objectRaw["SecurityGroupId"])
+	d.Set("serverless_switch", objectRaw["ServerlessSwitch"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("storage_size", objectRaw["StorageSize"])
 	d.Set("support_eip", objectRaw["SupportEIP"])
@@ -350,6 +363,12 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Set("vswitch_ids", vswitchIdsRaw)
+
+	tagsObject, err := amqpServiceV2.DescribeInstanceListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+	d.Set("tags", tagsToMap(tagsObject["TagResources"]))
 
 	if convertAmqpInstanceDataInstanceTypeResponse(objectRaw["InstanceType"]) == "SERVERLESS" {
 		d.Set("payment_type", "PayAsYouGo")
@@ -582,6 +601,45 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		stateConf := BuildStateConf([]string{}, []string{"SERVING"}, d.Timeout(schema.TimeoutUpdate), 4*time.Minute, amqpServiceV2.AmqpInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	update = false
+	action = "UpdateInstanceServerlessSwitch"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	if d.HasChange("serverless_switch") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("serverless_switch"); ok {
+		request["ServerlessSwitch"] = v
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("tags") {
+		amqpServiceV2 := AmqpServiceV2{client}
+		if err := amqpServiceV2.SetResourceTags(d, "instance"); err != nil {
+			return WrapError(err)
 		}
 	}
 

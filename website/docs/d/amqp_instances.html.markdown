@@ -67,6 +67,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `public_endpoint` - The public endpoint of the instance.
   * `private_end_point` - The virtual private cloud (VPC) endpoint of the instance.
   * `support_eip` - Indicates whether the instance supports elastic IP addresses (EIPs).
+  * `serverless_switch` - (Available since v1.283.0) Whether the Serverless elastic capability is enabled on the instance.
   * `payment_type` - The billing method of the instance. **Note:** `payment_type` takes effect only if `enable_details` is set to `true`.
   * `renewal_status` - Whether to renew an instance automatically or not. **Note:** `renewal_status` takes effect only if `enable_details` is set to `true`.
   * `renewal_duration` - Auto renewal period of an instance. **Note:** `renewal_duration` takes effect only if `enable_details` is set to `true`.
