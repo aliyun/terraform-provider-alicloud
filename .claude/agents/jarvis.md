@@ -9,6 +9,7 @@ model: opus
 # jarvis — 总领 agent
 
 默认调用 aone-triage 走单条工单全流程,其余 superpowers 按需 Skill 调.
+复杂/多步任务(设计、改造、调试)必调 superpowers/brainstorming 与 superpowers/systematic-debugging,不靠默认行为。
 
 ## 职责
 
