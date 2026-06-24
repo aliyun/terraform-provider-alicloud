@@ -26,6 +26,11 @@ POOLS=["tf_provider","tf_customer","mcp_server","api_toolkit","cloudspec"]
 # key→hue: accent border + tag chip tint + filter swatch share one color per pool
 COLOR={"tf_provider":"#3b82f6","tf_customer":"#f59e0b","mcp_server":"#a855f7","cloudspec":"#22c55e","api_toolkit":"#ec4899"}
 cfg=json.load(open(sys.argv[4])); NAMES={k:v.get("name",k) for k,v in cfg.get("pools",{}).items()}
+PCNT={}  # pool key → candidate count (pool_total = full count even if cap clipped DOM)
+for x in data:
+  if x["state"]=="pool": PCNT[x.get("pool")]=x.get("pool_total") or PCNT.get(x.get("pool"),0)
+def pcnt(k): return PCNT.get(k,0)
+TOTAL=sum(PCNT.get(p,0) for p in POOLS)
 def pname(k): return NAMES.get(k,k)
 def pcol(k): return COLOR.get(k,"#98a2b3")  # neutral for unknown/empty
 def tint(hexc): return hexc+"22"  # light bg from hue (~13% alpha), dark text stays the hue
@@ -44,7 +49,7 @@ def col(label,st):
   return f'''<div class="col{cls}" data-col><div class="ch"><span>{label}</span><span class="badge">{len(rows)}</span></div><div class="cb">{body}</div></div>'''
 board="".join(col(l,s) for l,s in COLS)
 arun=len([x for x in data if x["state"]=="inflight"])
-rows="".join(f'<label class="dr"><input type=checkbox class=pf data-pf="{p}" checked><span class="sw" style="background:{pcol(p)}"></span><span>{e(pname(p))}</span></label>' for p in POOLS)
+rows="".join(f'<label class="dr"><input type=checkbox class=pf data-pf="{p}" checked><span class="sw" style="background:{pcol(p)}"></span><span class="nm">{e(pname(p))}</span><span class="cnt">{pcnt(p)}</span></label>' for p in POOLS)
 def nav(t,a=""): return f'<div class="nv{a}">{t}</div>'
 gen=datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style>
@@ -63,8 +68,8 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 .btn.k{{background:#1d2939;color:#fff;border-color:#1d2939}}
 .fl{{display:flex;align-items:center;gap:8px;padding:12px 22px}}
 .dd{{position:relative}}.ddb{{border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;color:#344054;cursor:pointer}}
-.ddp{{position:absolute;top:36px;left:0;z-index:5;background:#fff;border:1px solid #eaecf0;border-radius:10px;box-shadow:0 4px 16px rgba(16,24,40,.12);padding:6px;min-width:200px;display:none}}.ddp.open{{display:block}}
-.dr{{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;font-size:13px;cursor:pointer}}.dr:hover{{background:#f2f4f7}}.dr input{{cursor:pointer}}.ddh{{border-bottom:1px solid #eaecf0;margin:2px 0 4px;font-weight:600}}.sw{{width:10px;height:10px;border-radius:3px;flex:none}}
+.ddp{{position:absolute;top:36px;left:0;z-index:5;background:#fff;border:1px solid #eaecf0;border-radius:10px;box-shadow:0 4px 16px rgba(16,24,40,.12);padding:6px;width:280px;display:none}}.ddp.open{{display:block}}
+.dr{{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;font-size:13px;cursor:pointer;white-space:nowrap}}.dr:hover{{background:#f2f4f7}}.dr input{{cursor:pointer}}.dr .nm{{overflow:hidden;text-overflow:ellipsis}}.cnt{{margin-left:auto;color:#98a2b3;font:11px ui-monospace,monospace;flex:none}}.ddh{{border-bottom:1px solid #eaecf0;margin:2px 0 4px;font-weight:600}}.sw{{width:10px;height:10px;border-radius:3px;flex:none}}
 .gen{{margin-left:auto;color:#98a2b3;font-size:12px}}
 .bd{{display:flex;gap:14px;padding:8px 22px 26px;align-items:start;overflow-x:auto}}
 .col{{flex:0 0 300px;background:#f9fafb;border:1px solid #eaecf0;border-radius:10px;padding:8px}}.col-empty{{background:#fff;border-style:dashed}}
@@ -79,7 +84,7 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 {nav("工作板"," act")}{nav("Agents")}{nav("Skills")}{nav("知识·记忆")}<div class="grp">管理</div>
 {nav("Workspace管理")}{nav("应用管理")}<div class="sf"><span class="av">辰</span>辰羿<span class="ico">⚙</span></div></aside>
 <main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><button class="btn">刷新</button><button class="btn k">+ 新增任务</button></div></div>
-<div class="fl"><div class="dd"><button class="ddb" id=ddb>工作池 ▾</button><div class="ddp" id=ddp><label class="dr ddh"><input type=checkbox id=pfall checked><span>全选</span></label>{rows}</div></div><span class="gen">{gen} · agent runs {arun}</span></div>
+<div class="fl"><div class="dd"><button class="ddb" id=ddb>工作池 ▾</button><div class="ddp" id=ddp><label class="dr ddh"><input type=checkbox id=pfall checked><span class="nm">全选</span><span class="cnt">{TOTAL}</span></label>{rows}</div></div><span class="gen">{gen} · agent runs {arun}</span></div>
 <div class="bd">{board}</div></main></div>
 <script>
 var B=document.querySelectorAll('.pf'),A=document.getElementById('pfall');

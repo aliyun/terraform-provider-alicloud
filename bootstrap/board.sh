@@ -6,7 +6,7 @@
 #   merged    ← runs/<id>.md state=merged          (已完成, 已合)
 #   inflight  ← scan.json tag contains "jarvis-claimed"
 #   escalated ← escalation/<id>.md          (first body line = reason)
-#   pool      ← scan candidates (待处理/New/Open, no jarvis tag, not tracked); cap 200/pool by 紧急>高>中>低, pool_total=full count
+#   pool      ← scan candidates (待处理/New/Open, no jarvis tag, not tracked); cap 2000/pool by 紧急>高>中>低, pool_total=full count
 # Cross-refs scan.json by id for title/priority/pool/project; ids absent from
 # scan still appear (title=summary/reason, default project 528766).
 # Pure python3; no external deps. JARVIS_ROOT overrides repo root.
@@ -101,7 +101,7 @@ for i, s in scan.items():
     cands.setdefault(pk, []).append(i)
 for pool, ids in cands.items():
     ids.sort(key=lambda i: PRANK.get(scan[i].get("priority"), 9))
-    for i in ids[:200]:
+    for i in ids[:2000]:
         put(enrich({"id": i, "state": "pool", "summary": scan[i].get("status", ""), "ts": "", "pool_total": totals[pool]}))
 
 print(json.dumps(sorted(items.values(), key=lambda x: x["ts"], reverse=True), ensure_ascii=False, indent=2))
