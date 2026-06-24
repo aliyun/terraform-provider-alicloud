@@ -1,110 +1,143 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudCrChain() *schema.Resource {
+func resourceAliCloudCrChain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCrChainCreate,
-		Read:   resourceAlicloudCrChainRead,
-		Update: resourceAlicloudCrChainUpdate,
-		Delete: resourceAlicloudCrChainDelete,
+		Create: resourceAliCloudCrChainCreate,
+		Read:   resourceAliCloudCrChainRead,
+		Update: resourceAliCloudCrChainUpdate,
+		Delete: resourceAliCloudCrChainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"chain_config": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"nodes": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"enable": {
-										Type:     schema.TypeBool,
-										Optional: true,
-									},
-									"node_config": {
-										Type:     schema.TypeSet,
-										Optional: true,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"deny_policy": {
-													Type:     schema.TypeSet,
-													Optional: true,
-													Elem: &schema.Resource{
-														Schema: map[string]*schema.Schema{
-															"issue_count": {
-																Type:     schema.TypeString,
-																Optional: true,
-															},
-															"issue_level": {
-																Type:         schema.TypeString,
-																Optional:     true,
-																ValidateFunc: validation.StringInSlice([]string{"LOW", "MEDIUM", "HIGH", "UNKNOWN"}, false),
-															},
-															"logic": {
-																Type:         schema.TypeString,
-																Optional:     true,
-																ValidateFunc: validation.StringInSlice([]string{"AND", "OR"}, false),
-															},
-															"action": {
-																Type:         schema.TypeString,
-																Optional:     true,
-																ValidateFunc: validation.StringInSlice([]string{"BLOCK", "BLOCK_RETAG", "BLOCK_DELETE_TAG"}, false),
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-									"node_name": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ValidateFunc: validation.StringInSlice([]string{"DOCKER_IMAGE_BUILD", "DOCKER_IMAGE_PUSH", "VULNERABILITY_SCANNING", "ACTIVATE_REPLICATION", "TRIGGER", "SNAPSHOT", "TRIGGER_SNAPSHOT"}, false),
-									},
-								},
-							},
+						"chain_config_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"routers": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"from": {
-										Type:     schema.TypeSet,
+										Type:     schema.TypeList,
 										Optional: true,
+										ForceNew: true,
+										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"node_name": {
-													Type:         schema.TypeString,
-													Optional:     true,
-													ValidateFunc: validation.StringInSlice([]string{"DOCKER_IMAGE_BUILD", "DOCKER_IMAGE_PUSH", "VULNERABILITY_SCANNING", "ACTIVATE_REPLICATION", "TRIGGER", "SNAPSHOT", "TRIGGER_SNAPSHOT"}, false),
+													Type:     schema.TypeString,
+													Optional: true,
 												},
 											},
 										},
 									},
 									"to": {
-										Type:     schema.TypeSet,
+										Type:     schema.TypeList,
 										Optional: true,
+										ForceNew: true,
+										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"node_name": {
-													Type:         schema.TypeString,
-													Optional:     true,
-													ValidateFunc: validation.StringInSlice([]string{"DOCKER_IMAGE_BUILD", "DOCKER_IMAGE_PUSH", "VULNERABILITY_SCANNING", "ACTIVATE_REPLICATION", "TRIGGER", "SNAPSHOT", "TRIGGER_SNAPSHOT"}, false),
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"is_active": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"nodes": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"node_name": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"enable": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"node_config": {
+										Type:     schema.TypeList,
+										Optional: true,
+										ForceNew: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"timeout": {
+													Type:     schema.TypeInt,
+													Computed: true,
+												},
+												"deny_policy": {
+													Type:     schema.TypeList,
+													Computed: true,
+													MaxItems: 1,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"action": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+															"issue_count": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+															"logic": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+															"issue_level": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+														},
+													},
+												},
+												"retry": {
+													Type:     schema.TypeInt,
+													Computed: true,
+												},
+												"scan_engine": {
+													Type:     schema.TypeString,
+													Optional: true,
 												},
 											},
 										},
@@ -123,6 +156,14 @@ func resourceAlicloudCrChain() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"code": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -132,43 +173,122 @@ func resourceAlicloudCrChain() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"is_success": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"modified_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"repo_name": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"repo_namespace_name": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
+			},
+			"scope_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"scope_type": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudCrChainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCrChainCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateChain"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	var err error
-	if v, ok := d.GetOk("chain_config"); ok {
-		request["ChainConfig"], _ = convertCrChainConfigToJsonString(v.(*schema.Set).List())
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("instance_id"); ok {
+		request["InstanceId"] = v
 	}
-	request["Name"] = d.Get("chain_name")
+	request["RegionId"] = client.RegionId
+
+	chainConfig := make(map[string]interface{})
+
+	if v := d.Get("chain_config"); !IsNil(v) {
+		localData, err := jsonpath.Get("$[0].nodes", v)
+		if err != nil {
+			localData = make([]interface{}, 0)
+		}
+		localMaps := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(localData) {
+			dataLoopTmp := make(map[string]interface{})
+			if dataLoop != nil {
+				dataLoopTmp = dataLoop.(map[string]interface{})
+			}
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["NodeName"] = dataLoopTmp["node_name"]
+			dataLoopMap["Enable"] = dataLoopTmp["enable"]
+			localData1 := make(map[string]interface{})
+			scanEngine1, _ := jsonpath.Get("$[0].scan_engine", dataLoopTmp["node_config"])
+			if scanEngine1 != nil && scanEngine1 != "" {
+				localData1["ScanEngine"] = scanEngine1
+			}
+			if len(localData1) > 0 {
+				dataLoopMap["NodeConfig"] = localData1
+			}
+			localMaps = append(localMaps, dataLoopMap)
+		}
+		chainConfig["Nodes"] = localMaps
+
+		localData2, err := jsonpath.Get("$[0].routers", v)
+		if err != nil {
+			localData2 = make([]interface{}, 0)
+		}
+		localMaps2 := make([]interface{}, 0)
+		for _, dataLoop2 := range convertToInterfaceArray(localData2) {
+			dataLoop2Tmp := make(map[string]interface{})
+			if dataLoop2 != nil {
+				dataLoop2Tmp = dataLoop2.(map[string]interface{})
+			}
+			dataLoop2Map := make(map[string]interface{})
+			localData3 := make(map[string]interface{})
+			nodeName3, _ := jsonpath.Get("$[0].node_name", dataLoop2Tmp["to"])
+			if nodeName3 != nil && nodeName3 != "" {
+				localData3["NodeName"] = nodeName3
+			}
+			if len(localData3) > 0 {
+				dataLoop2Map["To"] = localData3
+			}
+			localData4 := make(map[string]interface{})
+			nodeName5, _ := jsonpath.Get("$[0].node_name", dataLoop2Tmp["from"])
+			if nodeName5 != nil && nodeName5 != "" {
+				localData4["NodeName"] = nodeName5
+			}
+			if len(localData4) > 0 {
+				dataLoop2Map["From"] = localData4
+			}
+			localMaps2 = append(localMaps2, dataLoop2Map)
+		}
+		chainConfig["Routers"] = localMaps2
+
+		request["ChainConfig"] = chainConfig
+	}
+
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["InstanceId"] = d.Get("instance_id")
-	if v, ok := d.GetOk("repo_name"); ok {
-		request["RepoName"] = v
-	}
-	if v, ok := d.GetOk("repo_namespace_name"); ok {
-		request["RepoNamespaceName"] = v
-	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["RepoNamespaceName"] = d.Get("repo_namespace_name")
+	request["RepoName"] = d.Get("repo_name")
+	request["Name"] = d.Get("chain_name")
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -179,140 +299,237 @@ func resourceAlicloudCrChainCreate(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_chain", action, AlibabaCloudSdkGoERROR)
 	}
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", response["ChainId"]))
 
-	return resourceAlicloudCrChainRead(d, meta)
+	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], response["ChainId"]))
+
+	return resourceAliCloudCrChainRead(d, meta)
 }
-func resourceAlicloudCrChainRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCrChainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	crService := CrService{client}
-	object, err := crService.DescribeCrChain(d.Id())
+	crServiceV2 := CrServiceV2{client}
+
+	objectRaw, err := crServiceV2.DescribeCrChain(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cr_chain crService.DescribeCrChain Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_cr_chain DescribeCrChain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
+
+	d.Set("chain_name", objectRaw["Name"])
+	d.Set("code", objectRaw["Code"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("is_success", objectRaw["IsSuccess"])
+	d.Set("modified_time", objectRaw["ModifiedTime"])
+	d.Set("scope_id", objectRaw["ScopeId"])
+	d.Set("scope_type", objectRaw["ScopeType"])
+	d.Set("chain_id", objectRaw["ChainId"])
+	d.Set("instance_id", objectRaw["InstanceId"])
+
+	chainConfigMaps := make([]map[string]interface{}, 0)
+	chainConfigMap := make(map[string]interface{})
+	chainConfigRaw := make(map[string]interface{})
+	if objectRaw["ChainConfig"] != nil {
+		chainConfigRaw = objectRaw["ChainConfig"].(map[string]interface{})
 	}
-	d.Set("chain_id", parts[1])
-	d.Set("instance_id", parts[0])
-	if chainConfig, ok := object["ChainConfig"].(map[string]interface{}); ok {
+	if len(chainConfigRaw) > 0 {
+		chainConfigMap["chain_config_id"] = chainConfigRaw["ChainConfigId"]
+		chainConfigMap["is_active"] = chainConfigRaw["IsActive"]
+		chainConfigMap["version"] = chainConfigRaw["Version"]
 
-		chainConfigParams := make([]map[string]interface{}, 0)
-		chainConfigParam := make(map[string]interface{})
+		nodesRaw := chainConfigRaw["Nodes"]
+		nodesMaps := make([]map[string]interface{}, 0)
+		if nodesRaw != nil {
+			for _, nodesChildRaw := range convertToInterfaceArray(nodesRaw) {
+				nodesMap := make(map[string]interface{})
+				nodesChildRaw := nodesChildRaw.(map[string]interface{})
+				nodesMap["enable"] = nodesChildRaw["Enable"]
+				nodesMap["node_name"] = nodesChildRaw["NodeName"]
 
-		if routers, ok := chainConfig["Routers"].([]interface{}); ok {
-			routersConfigs := make([]map[string]interface{}, 0)
-			for _, router := range routers {
-				if v, ok := router.(map[string]interface{}); ok {
-					routerConfig := make(map[string]interface{})
-					if fromNode, ok := v["From"].(map[string]interface{}); ok {
-						fromNodeParams := make([]map[string]interface{}, 0)
-						fromNodeParam := map[string]interface{}{
-							"node_name": fromNode["NodeName"],
-						}
-						fromNodeParams = append(fromNodeParams, fromNodeParam)
-						routerConfig["from"] = fromNodeParams
-					}
-					if toNode, ok := v["To"].(map[string]interface{}); ok {
-						toNodeParams := make([]map[string]interface{}, 0)
-						toNodeParam := map[string]interface{}{
-							"node_name": toNode["NodeName"],
-						}
-						toNodeParams = append(toNodeParams, toNodeParam)
-						routerConfig["to"] = toNodeParams
-					}
-					routersConfigs = append(routersConfigs, routerConfig)
+				nodeConfigMaps := make([]map[string]interface{}, 0)
+				nodeConfigMap := make(map[string]interface{})
+				nodeConfigRaw := make(map[string]interface{})
+				if nodesChildRaw["NodeConfig"] != nil {
+					nodeConfigRaw = nodesChildRaw["NodeConfig"].(map[string]interface{})
 				}
-			}
-			chainConfigParam["routers"] = routersConfigs
-		}
+				if len(nodeConfigRaw) > 0 {
+					nodeConfigMap["retry"] = nodeConfigRaw["Retry"]
+					nodeConfigMap["scan_engine"] = nodeConfigRaw["ScanEngine"]
+					nodeConfigMap["timeout"] = nodeConfigRaw["Timeout"]
 
-		if nodes, ok := chainConfig["Nodes"].([]interface{}); ok {
-			nodesParams := make([]map[string]interface{}, 0)
-			for _, node := range nodes {
-				nodeParam := make(map[string]interface{})
-				if v, ok := node.(map[string]interface{}); ok {
-					if enable, ok := v["Enable"]; ok {
-						nodeParam["enable"] = enable
+					denyPolicyMaps := make([]map[string]interface{}, 0)
+					denyPolicyMap := make(map[string]interface{})
+					denyPolicyRaw := make(map[string]interface{})
+					if nodeConfigRaw["DenyPolicy"] != nil {
+						denyPolicyRaw = nodeConfigRaw["DenyPolicy"].(map[string]interface{})
 					}
-					if nodeName, ok := v["NodeName"]; ok {
-						nodeParam["node_name"] = nodeName
+					if len(denyPolicyRaw) > 0 {
+						denyPolicyMap["action"] = denyPolicyRaw["Action"]
+						denyPolicyMap["issue_count"] = denyPolicyRaw["IssueCount"]
+						denyPolicyMap["issue_level"] = denyPolicyRaw["IssueLevel"]
+						denyPolicyMap["logic"] = denyPolicyRaw["Logic"]
+
+						denyPolicyMaps = append(denyPolicyMaps, denyPolicyMap)
 					}
-					nodeConfigParams := make([]map[string]interface{}, 0)
-					nodeConfigParam := make(map[string]interface{})
-					if nodeConfig, ok := v["NodeConfig"].(map[string]interface{}); ok {
-						denyPolicyParams := make([]map[string]interface{}, 0)
-						denyPolicyParam := make(map[string]interface{})
-						if denyPolicy, ok := nodeConfig["DenyPolicy"].(map[string]interface{}); ok {
-							denyPolicyParam["issue_count"] = denyPolicy["IssueCount"]
-							denyPolicyParam["issue_level"] = denyPolicy["IssueLevel"]
-							denyPolicyParam["logic"] = denyPolicy["Logic"]
-							denyPolicyParam["action"] = denyPolicy["Action"]
-						}
-						denyPolicyParams = append(denyPolicyParams, denyPolicyParam)
-						nodeConfigParam["deny_policy"] = denyPolicyParams
-					}
-					nodeConfigParams = append(nodeConfigParams, nodeConfigParam)
-					nodeParam["node_config"] = nodeConfigParams
+					nodeConfigMap["deny_policy"] = denyPolicyMaps
+					nodeConfigMaps = append(nodeConfigMaps, nodeConfigMap)
 				}
-				nodesParams = append(nodesParams, nodeParam)
+				nodesMap["node_config"] = nodeConfigMaps
+				nodesMaps = append(nodesMaps, nodesMap)
 			}
-			chainConfigParam["nodes"] = nodesParams
 		}
+		chainConfigMap["nodes"] = nodesMaps
+		routersRaw := chainConfigRaw["Routers"]
+		routersMaps := make([]map[string]interface{}, 0)
+		if routersRaw != nil {
+			for _, routersChildRaw := range convertToInterfaceArray(routersRaw) {
+				routersMap := make(map[string]interface{})
+				routersChildRaw := routersChildRaw.(map[string]interface{})
 
-		chainConfigParams = append(chainConfigParams, chainConfigParam)
-		if err := d.Set("chain_config", chainConfigParams); err != nil {
-			return WrapError(err)
+				fromMaps := make([]map[string]interface{}, 0)
+				fromMap := make(map[string]interface{})
+				fromRaw := make(map[string]interface{})
+				if routersChildRaw["From"] != nil {
+					fromRaw = routersChildRaw["From"].(map[string]interface{})
+				}
+				if len(fromRaw) > 0 {
+					fromMap["node_name"] = fromRaw["NodeName"]
+
+					fromMaps = append(fromMaps, fromMap)
+				}
+				routersMap["from"] = fromMaps
+				toMaps := make([]map[string]interface{}, 0)
+				toMap := make(map[string]interface{})
+				toRaw := make(map[string]interface{})
+				if routersChildRaw["To"] != nil {
+					toRaw = routersChildRaw["To"].(map[string]interface{})
+				}
+				if len(toRaw) > 0 {
+					toMap["node_name"] = toRaw["NodeName"]
+
+					toMaps = append(toMaps, toMap)
+				}
+				routersMap["to"] = toMaps
+				routersMaps = append(routersMaps, routersMap)
+			}
 		}
+		chainConfigMap["routers"] = routersMaps
+		chainConfigMaps = append(chainConfigMaps, chainConfigMap)
 	}
-	d.Set("chain_name", object["Name"])
-	d.Set("description", object["Description"])
+	if err := d.Set("chain_config", chainConfigMaps); err != nil {
+		return err
+	}
+
 	return nil
 }
-func resourceAlicloudCrChainUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCrChainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var err error
+	var request map[string]interface{}
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	var query map[string]interface{}
 	update := false
-	request := map[string]interface{}{
-		"ChainId":    parts[1],
-		"InstanceId": parts[0],
-	}
+
+	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "UpdateChain"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ChainId"] = parts[1]
+	request["InstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
 	if d.HasChange("chain_config") {
 		update = true
 	}
-	if v, ok := d.GetOk("chain_config"); ok {
-		request["ChainConfig"], _ = convertCrChainConfigToJsonString(v.(*schema.Set).List())
+	chainConfig := make(map[string]interface{})
+
+	if v := d.Get("chain_config"); v != nil {
+		localData, err := jsonpath.Get("$[0].nodes", v)
+		if err != nil {
+			localData = make([]interface{}, 0)
+		}
+		localMaps := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(localData) {
+			dataLoopTmp := make(map[string]interface{})
+			if dataLoop != nil {
+				dataLoopTmp = dataLoop.(map[string]interface{})
+			}
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["NodeName"] = dataLoopTmp["node_name"]
+			dataLoopMap["Enable"] = dataLoopTmp["enable"]
+			if !IsNil(dataLoopTmp["node_config"]) {
+				localData1 := make(map[string]interface{})
+				scanEngine1, _ := jsonpath.Get("$[0].scan_engine", dataLoopTmp["node_config"])
+				if scanEngine1 != nil && scanEngine1 != "" {
+					localData1["ScanEngine"] = scanEngine1
+				}
+				if len(localData1) > 0 {
+					dataLoopMap["NodeConfig"] = localData1
+				}
+			}
+			localMaps = append(localMaps, dataLoopMap)
+		}
+		chainConfig["Nodes"] = localMaps
+
+		localData2, err := jsonpath.Get("$[0].routers", v)
+		if err != nil {
+			localData2 = make([]interface{}, 0)
+		}
+		localMaps2 := make([]interface{}, 0)
+		for _, dataLoop2 := range convertToInterfaceArray(localData2) {
+			dataLoop2Tmp := make(map[string]interface{})
+			if dataLoop2 != nil {
+				dataLoop2Tmp = dataLoop2.(map[string]interface{})
+			}
+			dataLoop2Map := make(map[string]interface{})
+			if !IsNil(dataLoop2Tmp["to"]) {
+				localData3 := make(map[string]interface{})
+				nodeName3, _ := jsonpath.Get("$[0].node_name", dataLoop2Tmp["to"])
+				if nodeName3 != nil && nodeName3 != "" {
+					localData3["NodeName"] = nodeName3
+				}
+				if len(localData3) > 0 {
+					dataLoop2Map["To"] = localData3
+				}
+			}
+			if !IsNil(dataLoop2Tmp["from"]) {
+				localData4 := make(map[string]interface{})
+				nodeName5, _ := jsonpath.Get("$[0].node_name", dataLoop2Tmp["from"])
+				if nodeName5 != nil && nodeName5 != "" {
+					localData4["NodeName"] = nodeName5
+				}
+				if len(localData4) > 0 {
+					dataLoop2Map["From"] = localData4
+				}
+			}
+			localMaps2 = append(localMaps2, dataLoop2Map)
+		}
+		chainConfig["Routers"] = localMaps2
+
+		request["ChainConfig"] = chainConfig
 	}
+
+	if d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+
 	if d.HasChange("chain_name") {
 		update = true
 	}
 	request["Name"] = d.Get("chain_name")
-	if d.HasChange("description") {
-		update = true
-	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
 	if update {
-		action := "UpdateChain"
-
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
+			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -327,24 +544,27 @@ func resourceAlicloudCrChainUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudCrChainRead(d, meta)
-}
-func resourceAlicloudCrChainDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	action := "DeleteChain"
-	var response map[string]interface{}
-	request := map[string]interface{}{
-		"ChainId":    parts[1],
-		"InstanceId": parts[0],
-	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	return resourceAliCloudCrChainRead(d, meta)
+}
+
+func resourceAliCloudCrChainDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteChain"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["InstanceId"] = parts[0]
+	request["ChainId"] = parts[1]
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -355,88 +575,13 @@ func resourceAlicloudCrChainDelete(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
-}
-
-func convertCrChainConfigToJsonString(configs []interface{}) (string, error) {
-	chainConfig := make(map[string]interface{})
-
-	for _, config := range configs {
-		if v, ok := config.(map[string]interface{}); ok {
-
-			if v["routers"] != nil {
-				routersConfigs := make([]map[string]interface{}, 0)
-
-				for _, router := range v["routers"].(*schema.Set).List() {
-					routersConfig := make(map[string]interface{})
-					if routerParameters, ok := router.(map[string]interface{}); ok {
-						if _, ok := routerParameters["from"].(*schema.Set); ok {
-							for _, fromNode := range routerParameters["from"].(*schema.Set).List() {
-								routersConfigFromNode := make(map[string]interface{})
-								routersConfigFromNode["NodeName"] = fromNode.(map[string]interface{})["node_name"]
-								routersConfig["From"] = routersConfigFromNode
-							}
-						}
-						if _, ok := routerParameters["to"].(*schema.Set); ok {
-							for _, toNode := range routerParameters["to"].(*schema.Set).List() {
-								routersConfigToNode := make(map[string]interface{})
-								routersConfigToNode["NodeName"] = toNode.(map[string]interface{})["node_name"]
-								routersConfig["To"] = routersConfigToNode
-							}
-						}
-						routersConfigs = append(routersConfigs, routersConfig)
-					}
-				}
-				chainConfig["Routers"] = routersConfigs
-			}
-			if v["nodes"] != nil {
-				nodesConfigs := make([]map[string]interface{}, 0)
-
-				for _, node := range v["nodes"].(*schema.Set).List() {
-
-					if nodeParameters, ok := node.(map[string]interface{}); ok {
-						nodesConfig := make(map[string]interface{})
-						nodesConfig["Enable"] = nodeParameters["enable"]
-						nodesConfig["NodeName"] = nodeParameters["node_name"]
-
-						nodeConfigParameter := make(map[string]interface{})
-						if _, ok := nodeParameters["node_config"].(*schema.Set); ok {
-							for _, nodeConfig := range nodeParameters["node_config"].(*schema.Set).List() {
-								nodeConfigArg := nodeConfig.(map[string]interface{})
-								denyPolicyParameter := make(map[string]interface{})
-								if _, ok := nodeConfigArg["deny_policy"].(*schema.Set); ok {
-									for _, denyPolicy := range nodeConfigArg["deny_policy"].(*schema.Set).List() {
-										if vv, ok := denyPolicy.(map[string]interface{})["issue_count"]; ok {
-											denyPolicyParameter["IssueCount"] = vv
-										}
-										if vv, ok := denyPolicy.(map[string]interface{})["issue_level"]; ok {
-											denyPolicyParameter["IssueLevel"] = vv
-										}
-										if vv, ok := denyPolicy.(map[string]interface{})["logic"]; ok {
-											denyPolicyParameter["Logic"] = vv
-										}
-										if vv, ok := denyPolicy.(map[string]interface{})["action"]; ok {
-											denyPolicyParameter["Action"] = vv
-										}
-									}
-									nodeConfigParameter["DenyPolicy"] = denyPolicyParameter
-								}
-							}
-							nodesConfig["node_config"] = nodeConfigParameter
-						}
-						nodesConfigs = append(nodesConfigs, nodesConfig)
-					}
-				}
-				chainConfig["Nodes"] = nodesConfigs
-			}
-		}
-	}
-	if v, err := convertArrayObjectToJsonString(chainConfig); err != nil {
-		return "", WrapError(err)
-	} else {
-		return v, nil
-	}
 }
