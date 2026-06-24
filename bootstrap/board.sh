@@ -29,20 +29,29 @@ except Exception:
     pass
 
 pools = {}
+proj2pool = {}
 try:
     cfg = json.load(open(os.path.join(root, "config", "pools.json")))
     pools = {k: v.get("project") for k, v in cfg.get("pools", {}).items()}
+    proj2pool = {v.get("project"): k for k, v in cfg.get("pools", {}).items()}
 except Exception:
     pass
 
 def project_for(pool):
     return pools.get(pool) or DEF_PROJ
 
+def pool_for(s):
+    # backfill empty pool: infer key from project, else default tf_provider
+    p = s.get("pool")
+    if p:
+        return p
+    return proj2pool.get(s.get("project")) or "tf_provider"
+
 def enrich(item):
     s = scan.get(item["id"], {})
     item["title"] = s.get("title") or "Run %s" % item["id"]
     item["priority"] = s.get("priority", "")
-    item["pool"] = s.get("pool", "")
+    item["pool"] = pool_for(s)
     item["project"] = project_for(item["pool"])
     item["url"] = URL.format(p=item["project"], i=item["id"])
     return item
@@ -87,8 +96,9 @@ for i, s in scan.items():
     if i in items: continue
     if s.get("status") not in OPEN: continue
     if "jarvis" in (s.get("tag") or ""): continue
-    totals[s.get("pool", "")] = totals.get(s.get("pool", ""), 0) + 1
-    cands.setdefault(s.get("pool", ""), []).append(i)
+    pk = pool_for(s)  # backfilled key so empty-pool items group + cap correctly
+    totals[pk] = totals.get(pk, 0) + 1
+    cands.setdefault(pk, []).append(i)
 for pool, ids in cands.items():
     ids.sort(key=lambda i: PRANK.get(scan[i].get("priority"), 9))
     for i in ids[:200]:
