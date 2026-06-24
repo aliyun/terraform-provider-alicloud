@@ -23,15 +23,16 @@
 
 命名统一为 actor 名词（-er）。
 
+主会话(CLAUDE.md)即总领 jarvis，直接派 developer/reviewer/verifier；不单设 jarvis 子代理（避免与 CLAUDE.md 重复）。
+
 | 类型 | 用途 | 隔离 | 工具白名单 | 写权限 | 触发/路由 | 收尾 |
 |------|------|------|-----------|--------|-----------|------|
-| `jarvis` | 总领 agent：单条工单全流程，读单→两层查证→回复/打标/建需求/建 CR；统辖并按需派发 `developer`/`reviewer`/`verifier` | 默认 | Bash, Read, Grep, Glob, WebFetch/Search, Skill(aone-triage), aone-get/wrap/claim.sh | a1 评论/标签/状态/建单（已授权项） | 默认入口，scan/plan 出的工单都走它 | 返回 summary+status 给编排层，由 triage-one 兜底 done |
-| `developer` | 改代码/调试/build/test，限 workspaces.json 登记 repo | **worktree** | 全（Edit/Write/Bash/Read/Grep） | 仅 worktree 分支，走 PR/CR，禁 master | jarvis 判定需落码 / 自交付路径 | build+test 绿才回，dirty 不退 |
+| `developer` | 改代码/调试/build/test，限 workspaces.json 登记 repo | **worktree** | 全（Edit/Write/Bash/Read/Grep/Skill） | 仅 worktree 分支，走 PR/CR，禁 master | 主会话/编排层判定需落码 / 自交付路径 | build+test 绿才回，dirty 不退 |
 | `reviewer` | TF provider GitHub PR 评审，默认只读 | 默认 | Read, Bash(git/gh), Grep, WebFetch, Skill(terraform-pr-review) | 默认零写，授权后评论 | 出评审报告，不合并不 push | 报告回编排层 |
-| `verifier` | 纯查证 OpenAPI+provider 源码，定支不支持 | 默认 | Bash, Read, Grep, WebFetch | 只读 | jarvis 调用 / 裸 API 问题 | 出 high/low_conf 结论 |
+| `verifier` | 纯查证 OpenAPI+provider 源码，定支不支持 | 默认 | Bash, Read, Grep, WebFetch | 只读 | 主会话/编排层调用 / 裸 API 问题 | 出 high/low_conf 结论 |
 
-- 主 Agent 默认派 `jarvis`；裸代码任务派 `developer`，裸 PR 链接派 `reviewer`，裸"支不支持"问题派 `verifier`。`developer` 必须 worktree 隔离避免并发改文件冲突。
-- **更新**：`jarvis` 工具白名单加入 `Agent`，可直接嵌套派发 `developer`/`reviewer`/`verifier`（深度5级）；`developer` 工具加入 `Skill`，frontmatter 预加载 `superpowers/test-driven-development` + `superpowers/systematic-debugging`，feature/bugfix 必过 TDD，bug 诊断必过 systematic-debugging。
+- 主会话直接派 `developer`（裸代码任务）、`reviewer`（裸 PR 链接）、`verifier`（裸"支不支持"问题）。`developer` 必须 worktree 隔离避免并发改文件冲突。
+- `developer` 工具包含 `Skill`，frontmatter 预加载 `superpowers/test-driven-development` + `superpowers/systematic-debugging`，feature/bugfix 必过 TDD，bug 诊断必过 systematic-debugging。
 
 ### 第2层 · wrap.sh done 收紧（直接改硬）
 - `status` 从可选改**必填**，缺则 `exit 1`。

@@ -15,7 +15,7 @@
 ## 工作纪律
 
 1) **改文件先开 worktree，严禁直接合入主干**：任何涉及修改文件的动作，必须基于 worktree 切到新分支（或上下文已给出的分支）上进行修改与验证，禁止直接在主工作目录改文件；分支只走 PR/MR 待仓库主人人工合并，主 Agent 严禁自行 `git merge`/`push` 入 master。例外：仓库主人当面授权的指定文件可直接改 master。**切 worktree 前先 `git pull` 主干；任务完成清理 worktree 后再 `git pull` 同步 master**，保证每轮都基于最新。
-2) **编码交子代理**：尽量用 SubAgent 处理具体编码/调试工作，主 Agent 只编排，保持上下文干净，不被开发细节和代码污染。子代理定义见 `.claude/agents/`（jarvis / developer / reviewer / verifier）；单条工单执行由 `bootstrap/triage-one.sh` 做首尾 bookend，主 Agent 调度它即可。
+2) **编码交子代理**：尽量用 SubAgent 处理具体编码/调试工作，主会话即编排者，只编排，保持上下文干净，不被开发细节和代码污染。子代理定义见 `.claude/agents/`（developer / reviewer / verifier）；主会话直接派发三类子代理，单条工单执行由 `bootstrap/triage-one.sh` 做首尾 bookend，主会话调度它即可。不单设 jarvis 子代理（CLAUDE.md 已承担总领角色，避免重复）。
 3) **工作区按登记走**：repo/路径/池/构建命令以 config/workspaces.json 为准；缺登记→escalate（missing_capability），勿臆造。进工作区按序解析路径：(a) path 字段存在且目录在→用之；(b) 否则 `${JARVIS_WORKSPACE_ROOT:-~/workspace}/<repo>` 存在→用之；(c) 否则有 git_url→clone 到该处再用；(d) 无 git_url→escalate（missing_capability）。所以 path 可选，缺仓有 git_url 自动 clone。
 4) **自我迭代**：流程/能力缺口按 loops/self-improve.md 沉淀回策略文档，别只口头修。
 5) **Aone 唯一真源**：任何 jarvis 工作必须有 Aone 工作项（无则按 adhoc-intake 建/补单），进展实时 sync、完工 done 回填到 Aone；以 bootstrap/wrap.sh 同步，禁止只在本地推进不落 Aone。
