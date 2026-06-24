@@ -2,8 +2,9 @@
 # bootstrap/board-html.sh — render board.html: light kanban dashboard
 # (Harness-style). Sidebar nav + main pane w/ 5-column board. Data from board.sh.
 # Cards link to Aone, priority chip + pool tag, data-pool for filter. No assets.
-# 任务池 col = pool-state candidates (cap ~80 visible + "+N 更多"). Pool filter bar:
-# multi-select chips (default all on) hide/show by data-pool, live-update counts.
+# 任务池 col = pool-state candidates (cap ~80 visible + "+N 更多"). 5 equal 300px
+# cols overflow-x scroll. Pool filter = dropdown w/ checkboxes (names from pools.json),
+# default all checked, hide/show by data-pool, live counts. data-pool=key, label=name.
 # Writes both .my-day/board.html (ephemeral) and docs/board.html (repo-tracked).
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,7 +15,7 @@ mkdir -p "$root/.my-day" "$root/docs"
 json_f="$(mktemp)"; trap 'rm -f "$json_f"' EXIT
 "$script_dir/board.sh" > "$json_f"
 
-python3 - "$out" "$docs_out" "$json_f" <<PY
+python3 - "$out" "$docs_out" "$json_f" "$root/config/pools.json" <<PY
 import json, sys, html, datetime
 out=sys.argv[1]; docs_out=sys.argv[2]
 data=json.load(open(sys.argv[3]))
@@ -22,11 +23,13 @@ def e(s): return html.escape(str(s or ""))
 PRI={"紧急":("#d92d20","#fef3f2"),"高":("#d92d20","#fef3f2"),"中":("#b54708","#fffaeb"),"低":("#475467","#f2f4f7")}
 COLS=[("任务池","pool"),("待开始","__pre"),("进行中","inflight"),("审核中","done"),("已完成","merged")]
 POOLS=["tf_provider","tf_customer","mcp_server","api_toolkit","cloudspec"]
+cfg=json.load(open(sys.argv[4])); NAMES={k:v.get("name",k) for k,v in cfg.get("pools",{}).items()}
+def pname(k): return NAMES.get(k,k)
 CAP=80
 def card(r):
   fg,bg=PRI.get(r.get("priority"),("#475467","#f2f4f7")); p=e(r.get("priority"))
   sm="" if r["summary"]==r["title"] else f'<div class="sum">{e(r["summary"])}</div>'
-  tag=f'<span class="tag">{e(r["pool"])}</span>' if r.get("pool") else ""
+  tag=f'<span class="tag">{e(pname(r["pool"]))}</span>' if r.get("pool") else ""
   return f'''<a class="card" data-pool="{e(r.get("pool"))}" href="{e(r['url'])}" target="_blank">
 <div class="cr"><span class="cid">#{e(r['id'])}</span><span class="pri" style="color:{fg};background:{bg}">{p or '·'}</span></div>
 <div class="tt">{e(r['title'])}</div>{sm}<div class="cf">{tag}</div></a>'''
@@ -39,7 +42,7 @@ def col(label,st):
   return f'''<div class="col{cls}" data-col><div class="ch"><span>{label}</span><span class="badge">{len(vis)}</span></div><div class="cb">{body}{foot}</div></div>'''
 board="".join(col(l,s) for l,s in COLS)
 arun=len([x for x in data if x["state"]=="inflight"])
-chips="".join(f'<span class="pill on" data-pf="{p}">{p}</span>' for p in POOLS)
+rows="".join(f'<label class="dr"><input type=checkbox class=pf data-pf="{p}" checked><span>{e(pname(p))}</span></label>' for p in POOLS)
 def nav(t,a=""): return f'<div class="nv{a}">{t}</div>'
 gen=datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style>
@@ -56,11 +59,13 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 .tb{{display:flex;align-items:center;padding:14px 22px;border-bottom:1px solid #eaecf0}}.bc{{color:#667085;font-size:13.5px}}.bc b{{color:#1d2939}}
 .tb .r{{margin-left:auto;display:flex;gap:8px}}.btn{{border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;color:#344054;cursor:pointer}}
 .btn.k{{background:#1d2939;color:#fff;border-color:#1d2939}}
-.fl{{display:flex;align-items:center;gap:8px;padding:12px 22px;flex-wrap:wrap}}
-.pill{{padding:5px 12px;border:1px solid #eaecf0;border-radius:16px;font-size:12.5px;color:#98a2b3;cursor:pointer;user-select:none}}.pill.on{{background:#f2f4f7;color:#1d2939;border-color:#d0d5dd}}
+.fl{{display:flex;align-items:center;gap:8px;padding:12px 22px}}
+.dd{{position:relative}}.ddb{{border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;color:#344054;cursor:pointer}}
+.ddp{{position:absolute;top:36px;left:0;z-index:5;background:#fff;border:1px solid #eaecf0;border-radius:10px;box-shadow:0 4px 16px rgba(16,24,40,.12);padding:6px;min-width:200px;display:none}}.ddp.open{{display:block}}
+.dr{{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;font-size:13px;cursor:pointer}}.dr:hover{{background:#f2f4f7}}.dr input{{cursor:pointer}}.ddh{{border-bottom:1px solid #eaecf0;margin:2px 0 4px;font-weight:600}}
 .gen{{margin-left:auto;color:#98a2b3;font-size:12px}}
-.bd{{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:8px 22px 26px;align-items:start}}
-.col{{background:#f9fafb;border:1px solid #eaecf0;border-radius:10px;padding:8px}}.col-empty{{background:#fff;border-style:dashed}}
+.bd{{display:flex;gap:14px;padding:8px 22px 26px;align-items:start;overflow-x:auto}}
+.col{{flex:0 0 300px;background:#f9fafb;border:1px solid #eaecf0;border-radius:10px;padding:8px}}.col-empty{{background:#fff;border-style:dashed}}
 .ch{{display:flex;justify-content:space-between;padding:6px 6px 10px;font-weight:600;font-size:13px;color:#344054}}.badge{{background:#eaecf0;color:#475467;border-radius:10px;font-size:11px;padding:0 7px}}
 .cb{{display:flex;flex-direction:column;gap:8px;min-height:60px}}.empty{{color:#98a2b3;text-align:center;padding:24px 0;font-size:13px}}.more{{color:#98a2b3;text-align:center;font-size:12px;padding:6px 0}}
 .card{{display:block;background:#fff;border:1px solid #eaecf0;border-radius:10px;padding:11px;text-decoration:none;color:inherit;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:.15s}}
@@ -72,16 +77,18 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 {nav("工作板"," act")}{nav("Agents")}{nav("Skills")}{nav("知识·记忆")}<div class="grp">管理</div>
 {nav("Workspace管理")}{nav("应用管理")}<div class="sf"><span class="av">辰</span>辰羿<span class="ico">⚙</span></div></aside>
 <main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><button class="btn">刷新</button><button class="btn k">+ 新增任务</button></div></div>
-<div class="fl"><span class="pill on" data-pf="__all">全部</span>{chips}<span class="gen">{gen} · agent runs {arun}</span></div>
+<div class="fl"><div class="dd"><button class="ddb" id=ddb>工作池 ▾</button><div class="ddp" id=ddp><label class="dr ddh"><input type=checkbox id=pfall checked><span>全选</span></label>{rows}</div></div><span class="gen">{gen} · agent runs {arun}</span></div>
 <div class="bd">{board}</div></main></div>
 <script>
-var P=["{'","'.join(POOLS)}"];
-function sync(){{var on=new Set();document.querySelectorAll('.pill[data-pf].on').forEach(c=>{{if(c.dataset.pf!=='__all')on.add(c.dataset.pf)}});
+var B=document.querySelectorAll('.pf'),A=document.getElementById('pfall');
+function sync(){{var on=new Set();B.forEach(c=>{{if(c.checked)on.add(c.dataset.pf)}});
 document.querySelectorAll('.card').forEach(c=>{{c.classList.toggle('hide',c.dataset.pool!==''&&!on.has(c.dataset.pool))}});
-document.querySelectorAll('[data-col]').forEach(col=>{{col.querySelector('.badge').textContent=col.querySelectorAll('.card:not(.hide)').length}});}}
-document.querySelectorAll('.pill[data-pf]').forEach(c=>c.onclick=function(){{
- if(this.dataset.pf==='__all'){{var all=!this.classList.contains('on');document.querySelectorAll('.pill[data-pf]').forEach(x=>x.classList.toggle('on',all));}}
- else{{this.classList.toggle('on');var n=[...document.querySelectorAll('.pill[data-pf]:not([data-pf="__all"])')].every(x=>x.classList.contains('on'));document.querySelector('.pill[data-pf="__all"]').classList.toggle('on',n);}}sync();}});
+document.querySelectorAll('[data-col]').forEach(col=>{{col.querySelector('.badge').textContent=col.querySelectorAll('.card:not(.hide)').length}});
+A.checked=[...B].every(x=>x.checked);}}
+B.forEach(c=>c.onchange=sync);A.onchange=function(){{B.forEach(x=>x.checked=A.checked);sync();}};
+document.getElementById('ddb').onclick=function(e){{e.stopPropagation();document.getElementById('ddp').classList.toggle('open');}};
+document.onclick=function(){{document.getElementById('ddp').classList.remove('open');}};
+document.getElementById('ddp').onclick=function(e){{e.stopPropagation();}};
 sync();
 </script>'''
 open(out,"w",encoding="utf-8").write(doc); print(out)
