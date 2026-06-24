@@ -1,13 +1,28 @@
 #!/bin/bash
-# scan.sh – pull assigned Aone work items per pool, emit [{id,title,type,status,pool}] JSON to stdout.
+# scan.sh – pull assigned Aone work items per pool, emit [{id,title,type,status,pool,category}] JSON.
 # Uses pool-scoped --project queries so claim tag filter (--filter NOT tag=<tag>) works.
-# Empty or failing pools are skipped (non-fatal). Exits non-zero only on fatal errors.
+# Each pool scanned thrice (--category req,bug,task); rows stamped category:"req|bug|task".
+# Writes .my-day/scan.json AND echoes to stdout. 30min TTL: serve cached scan.json if fresh,
+# unless --force (mirror preflight.sh; JARVIS_SCAN_TTL=0 forces too). Empty/failing pools
+# skipped (non-fatal). Exits non-zero only on fatal errors.
 
 set -uo pipefail
 
 # Determine repo root: allow override via JARVIS_ROOT (used in tests), else derive from script location.
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
+
+# 30min TTL gate: serve cached scan.json if younger than TTL, unless --force (or JARVIS_SCAN_TTL=0).
+out_f="$jarvis_root/.my-day/scan.json"
+ttl="${JARVIS_SCAN_TTL:-1800}"   # 30min
+[ "${1:-}" = "--force" ] && ttl=0
+if [ "$ttl" -gt 0 ] && [ -s "$out_f" ]; then
+  m=$(stat -f %m "$out_f" 2>/dev/null || stat -c %Y "$out_f" 2>/dev/null)
+  if [ -n "$m" ] && [ $(( $(date +%s) - m )) -lt "$ttl" ]; then
+    echo "scan.sh: skip (scan.json < $((ttl/60))min old; --force to rescan)" >&2
+    cat "$out_f"; exit 0
+  fi
+fi
 
 # Verify we can authenticate.
 account=$(a1 auth whoami | awk '/Account:/{print $2}')
@@ -38,25 +53,30 @@ if $has_pools; then
 
   fetch_pool() {  # args: key project status_csv title_csv → prints transformed JSON array
     local pool_key="$1" pool_project="$2" exclude_status="$3" exclude_title="$4"
-    local filter="" pat pool_out="[]" page=1 pg n
+    local filter="" pat pool_out="[]" cat page pg n
     [ -n "$claim_tag" ] && filter="NOT tag=$claim_tag"
     [ -n "$exclude_status" ] && { [ -n "$filter" ] && filter="$filter AND "; filter="${filter}NOT status=$exclude_status"; }
     if [ -n "$exclude_title" ]; then
       IFS=',' read -ra _pats <<< "$exclude_title"
       for pat in "${_pats[@]}"; do [ -n "$filter" ] && filter="$filter AND "; filter="${filter}subject!~$pat"; done
     fi
-    while :; do
-      if [ -n "$filter" ]; then
-        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --columns id,title,status,priority,tag,type --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
-      else
-        pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --columns id,title,status,priority,tag,type --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
-      fi
-      n=$(echo "$pg" | jq 'length' 2>/dev/null); [ -z "$n" ] && break
-      pool_out=$(jq -s 'add' <<<"$pool_out"$'\n'"$pg" 2>/dev/null) || pool_out="[]"
-      [ "$n" -lt "$PAGE_SIZE" ] && break
-      page=$((page+1))
+    # Three categories: req,bug,task. --category makes categoryIdentifier authoritative; stamp literal.
+    for cat in req bug task; do
+      page=1
+      while :; do
+        if [ -n "$filter" ]; then
+          pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --category "$cat" --columns id,title,status,priority,tag,type,category --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+        else
+          pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --category "$cat" --columns id,title,status,priority,tag,type,category --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+        fi
+        n=$(echo "$pg" | jq 'length' 2>/dev/null); [ -z "$n" ] && break
+        pg=$(jq --arg c "$cat" '[.[] | .category=$c]' <<<"$pg" 2>/dev/null) || pg="[]"
+        pool_out=$(jq -s 'add' <<<"$pool_out"$'\n'"$pg" 2>/dev/null) || pool_out="[]"
+        [ "$n" -lt "$PAGE_SIZE" ] && break
+        page=$((page+1))
+      done
     done
-    echo "$pool_out" | jq --arg pool "$pool_key" '[.[] | {id:.identifier,title:.subject,type:(.categoryIdentifier // .workitemType),status,pool:$pool,priority,tag}]'
+    echo "$pool_out" | jq --arg pool "$pool_key" '[.[] | {id:.identifier,title:.subject,type:(.categoryIdentifier // .workitemType),status,pool:$pool,priority,tag,category}]'
   }
 
   tmpd=$(mktemp -d); trap 'rm -rf "$tmpd"' EXIT
@@ -68,14 +88,19 @@ if $has_pools; then
     @tsv
   ' "$pools_cfg")
   wait
-  jq -s 'add // []' "$tmpd"/*.json 2>/dev/null || echo "[]"
+  result=$(jq -s 'add // []' "$tmpd"/*.json 2>/dev/null) || result="[]"
 else
-  # No pools configured: fall back to assignee-based global list.
+  # No pools configured: fall back to assignee-based global list (category unstamped).
   if [ -n "$claim_tag" ]; then
-    a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type --filter "NOT tag=$claim_tag" -f json \
-      | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag}]'
+    result=$(a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type --filter "NOT tag=$claim_tag" -f json \
+      | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag, category: null}]') || result="[]"
   else
-    a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type -f json \
-      | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag}]'
+    result=$(a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type -f json \
+      | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag, category: null}]') || result="[]"
   fi
 fi
+
+# Persist scan.json atomically (temp+mv, no torn file) and echo to stdout.
+mkdir -p "$(dirname "$out_f")"
+tmp="$out_f.$$.tmp"; printf '%s' "$result" > "$tmp" && mv -f "$tmp" "$out_f" || rm -f "$tmp"
+printf '%s\n' "$result"

@@ -6,7 +6,7 @@
 #   merged    ← runs/<id>.md state=merged          (已完成, 已合)
 #   inflight  ← scan.json tag contains "jarvis-claimed"
 #   escalated ← escalation/<id>.md          (first body line = reason)
-#   pool      ← scan candidates (待处理/New/Open, no jarvis tag, not tracked); cap 2000/pool by 紧急>高>中>低, pool_total=full count
+#   pool      ← scan candidates (any item not tracked/jarvis-tagged; scan already applied exclude_status); cap 2000/pool by 紧急>高>中>低, pool_total=full count + req/bug/task split
 # Cross-refs scan.json by id for title/priority/pool/project; ids absent from
 # scan still appear (title=summary/reason, default project 528766).
 # Pure python3; no external deps. JARVIS_ROOT overrides repo root.
@@ -51,6 +51,7 @@ def enrich(item):
     s = scan.get(item["id"], {})
     item["title"] = s.get("title") or "Run %s" % item["id"]
     item["priority"] = s.get("priority", "")
+    item["category"] = s.get("category") or ""
     item["pool"] = pool_for(s)
     item["project"] = project_for(item["pool"])
     item["url"] = URL.format(p=item["project"], i=item["id"])
@@ -88,21 +89,25 @@ for f in glob.glob(os.path.join(root, "escalation", "*.md")):
     reason = next((l.strip() for l in open(f, encoding="utf-8") if l.strip()), "")
     put(enrich({"id": rid, "state": "escalated", "summary": reason, "ts": ""}))
 
-# pool ← scan candidates: status in (待处理,New,Open), no jarvis tag, not already tracked.
+# pool ← scan candidates: any scan item not already tracked + no jarvis tag.
+# scan already applied exclude_status, so trust it — no active-status whitelist; status passes through.
 PRANK = {"紧急": 0, "高": 1, "中": 2, "低": 3}
-OPEN = {"待处理", "New", "Open"}
-cands, totals = {}, {}
+cands, totals, catc = {}, {}, {}  # pool → ids ; pool_total ; pool → {req,bug,task counts}
 for i, s in scan.items():
     if i in items: continue
-    if s.get("status") not in OPEN: continue
     if "jarvis" in (s.get("tag") or ""): continue
     pk = pool_for(s)  # backfilled key so empty-pool items group + cap correctly
     totals[pk] = totals.get(pk, 0) + 1
+    c = catc.setdefault(pk, {"req": 0, "bug": 0, "task": 0})
+    cat = s.get("category")
+    if cat in c: c[cat] += 1
     cands.setdefault(pk, []).append(i)
 for pool, ids in cands.items():
     ids.sort(key=lambda i: PRANK.get(scan[i].get("priority"), 9))
+    cc = catc[pool]
     for i in ids[:2000]:
-        put(enrich({"id": i, "state": "pool", "summary": scan[i].get("status", ""), "ts": "", "pool_total": totals[pool]}))
+        put(enrich({"id": i, "state": "pool", "summary": scan[i].get("status", ""), "ts": "",
+                    "pool_total": totals[pool], "pool_req": cc["req"], "pool_bug": cc["bug"], "pool_task": cc["task"]}))
 
 print(json.dumps(sorted(items.values(), key=lambda x: x["ts"], reverse=True), ensure_ascii=False, indent=2))
 PY
