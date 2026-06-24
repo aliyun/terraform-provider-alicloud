@@ -69,7 +69,8 @@ ROOT1=""
 ROOT2=""
 ROOT3=""
 ROOT4=""
-trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" 2>/dev/null; exit' INT TERM EXIT
+ROOT5=""
+trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" 2>/dev/null; exit' INT TERM EXIT
 
 # ---------------------------------------------------------------------------
 # Test 1: done:false id, no runs/ file → exit 2
@@ -116,6 +117,20 @@ ROOT4="$(make_jarvis_root)"
 
 assert_exit_code "no claims file → exit 0" 0 \
     env JARVIS_ROOT="$ROOT4" JARVIS_RUNS_DIR="$ROOT4/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 5: claim in YESTERDAY's file, unclosed, no runs/ file → exit 2
+# (midnight-orphan edge case: wrap-check must scan all claims-*.json, not just today's)
+# ---------------------------------------------------------------------------
+echo "Test 5: yesterday's claims file, done:false + no run file → exit 2"
+ROOT5="$(make_jarvis_root)"
+yesterday="$(date -u -v-1d +%F 2>/dev/null || date -u --date='1 day ago' +%F)"
+yesterday_claims="$ROOT5/.my-day/claims-${yesterday}.json"
+printf '[{"id":"WI-T5","done":false}]\n' > "$yesterday_claims"
+# No runs/ file for WI-T5 — should trigger exit 2
+
+assert_exit_code "yesterday unclosed claim → exit 2" 2 \
+    env JARVIS_ROOT="$ROOT5" JARVIS_RUNS_DIR="$ROOT5/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Summary

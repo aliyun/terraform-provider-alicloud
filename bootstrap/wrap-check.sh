@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # bootstrap/wrap-check.sh — claim-ledger integrity check for Stop hooks.
 #
-# Reads today's claims-<date>.json from ${JARVIS_ROOT}/.my-day/.
-# For each entry with done:false, checks if a runs/ file exists via log.sh seen.
+# Scans ALL .my-day/claims-*.json files (not just today's) so that a claim
+# opened before midnight is not silently skipped the next day.
+# For each entry with done:false across all ledger files, checks if a runs/
+# file exists via log.sh seen.
 # If any unclosed claim has no run record → prints the offending ids and exits 2.
 # Otherwise exits 0.
 #
 # Exit codes:
-#   0 — all open claims have corresponding run records (or no claims file)
+#   0 — all open claims have corresponding run records (or no claims files)
 #   2 — one or more open claims are missing run records
 #
 # Respects:
@@ -25,19 +27,30 @@ export JARVIS_RUNS_DIR="${JARVIS_RUNS_DIR:-$jarvis_root/runs}"
 # shellcheck source=bootstrap/log.sh
 source "$script_dir/log.sh"
 
-today_date="$(date -u +%F)"
-ledger_file="$jarvis_root/.my-day/claims-${today_date}.json"
+myday_dir="$jarvis_root/.my-day"
 
-# No claims file for today → nothing to check
-if [ ! -f "$ledger_file" ]; then
+# Collect all ledger files across all dates
+ledger_files=()
+if [ -d "$myday_dir" ]; then
+    while IFS= read -r -d '' f; do
+        ledger_files+=("$f")
+    done < <(find "$myday_dir" -maxdepth 1 -name 'claims-*.json' -print0 2>/dev/null)
+fi
+
+# No claims files at all → nothing to check
+if [ "${#ledger_files[@]}" -eq 0 ]; then
     exit 0
 fi
 
-# Extract all ids where done == false
+# Merge all ledger files: extract ids where done == false, deduplicate via sort -u
 open_ids=()
 while IFS= read -r id; do
     [ -n "$id" ] && open_ids+=("$id")
-done < <(jq -r '.[] | select(.done == false) | .id' "$ledger_file" 2>/dev/null)
+done < <(
+    for ledger_file in "${ledger_files[@]}"; do
+        jq -r '.[] | select(.done == false) | .id' "$ledger_file" 2>/dev/null
+    done | sort -u
+)
 
 if [ "${#open_ids[@]}" -eq 0 ]; then
     exit 0
