@@ -46,20 +46,20 @@ _ledger_upsert() {
     local id="$1"
     local done_val="$2"
     mkdir -p "$myday_dir"
-    # Create file with empty array if absent
-    if [ ! -f "$ledger_file" ]; then
-        printf '[]' > "$ledger_file"
-    fi
     local tmp
     tmp="$(mktemp "$myday_dir/.claims-tmp.XXXXXX")"
-    # If id already exists: update done field; otherwise append new entry
-    jq --arg id "$id" --argjson done "$done_val" \
-        'if any(.[]; .id == $id) then
-             map(if .id == $id then .done = $done else . end)
-         else
-             . + [{"id": $id, "done": $done}]
-         end' \
-        "$ledger_file" > "$tmp" && mv "$tmp" "$ledger_file"
+    # Seed tmp with existing ledger or empty array; never create a partial ledger_file first
+    if [ -f "$ledger_file" ]; then
+        jq --arg id "$id" --argjson done "$done_val" \
+            'if any(.[]; .id == $id) then
+                 map(if .id == $id then .done = $done else . end)
+             else
+                 . + [{"id": $id, "done": $done}]
+             end' \
+            "$ledger_file" > "$tmp" && mv "$tmp" "$ledger_file"
+    else
+        printf '[{"id":"%s","done":%s}]' "$id" "$done_val" > "$tmp" && mv "$tmp" "$ledger_file"
+    fi
 }
 
 case "$cmd" in

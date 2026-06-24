@@ -63,11 +63,19 @@ make_jarvis_root() {
 today="$(date -u +%F)"
 
 # ---------------------------------------------------------------------------
+# Declare all temp roots up front so the trap never references an unset variable
+# ---------------------------------------------------------------------------
+ROOT1=""
+ROOT2=""
+ROOT3=""
+ROOT4=""
+trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" 2>/dev/null; exit' INT TERM EXIT
+
+# ---------------------------------------------------------------------------
 # Test 1: done:false id, no runs/ file → exit 2
 # ---------------------------------------------------------------------------
 echo "Test 1: done:false + no run file → exit 2"
 ROOT1="$(make_jarvis_root)"
-trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" 2>/dev/null; exit' INT TERM EXIT
 
 claims_file="$ROOT1/.my-day/claims-${today}.json"
 printf '[{"id":"WI-T1","done":false}]\n' > "$claims_file"

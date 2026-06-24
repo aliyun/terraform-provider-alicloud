@@ -18,7 +18,12 @@ set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
-runs_dir="${JARVIS_RUNS_DIR:-$jarvis_root/runs}"
+export JARVIS_ROOT="$jarvis_root"
+export JARVIS_RUNS_DIR="${JARVIS_RUNS_DIR:-$jarvis_root/runs}"
+
+# Source log.sh so we can call seen() directly (mirrors sweep.sh pattern)
+# shellcheck source=bootstrap/log.sh
+source "$script_dir/log.sh"
 
 today_date="$(date -u +%F)"
 ledger_file="$jarvis_root/.my-day/claims-${today_date}.json"
@@ -38,12 +43,10 @@ if [ "${#open_ids[@]}" -eq 0 ]; then
     exit 0
 fi
 
-# For each open id, check if a run file exists
+# For each open id, use log.sh seen as the authoritative run-exists check
 missing=()
 for id in "${open_ids[@]}"; do
-    # Match pattern: runs/<date>-<id>.md  (any date)
-    match_count="$(ls "$runs_dir"/*-"${id}".md 2>/dev/null | wc -l | tr -d ' ')"
-    if [ "$match_count" -eq 0 ]; then
+    if ! seen "$id"; then
         missing+=("$id")
     fi
 done
