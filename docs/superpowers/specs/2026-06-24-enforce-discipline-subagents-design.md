@@ -17,7 +17,18 @@
 ### 第1层 · 编排：一条工单一 subagent
 - 新增 `bootstrap/triage-one.sh <id> <pool> <project>`：bookend 全在脚本，主 Agent 不靠记忆。
   顺序：`claim.sh claim` → 派 subagent 跑单 → `wrap.sh done <id> <summary> <status>`（status 必填）→ `claim.sh release`。任一步失败 → escalate + 不 release。
-- 新增 `.claude/agents/`：`triager`（默认全流程，内部可再派）、`dev`（编码调试）、`pr-review`、`verify`（OpenAPI+源码查证）。主会话只编排，每条派一个，上下文干净独立。
+- 主会话只编排，每条派一个，上下文干净独立。
+
+#### subagent 类型定义（落 `.claude/agents/<name>.md`，frontmatter: name/description/tools/model）
+
+| 类型 | 用途 | 隔离 | 工具白名单 | 写权限 | 触发/路由 | 收尾 |
+|------|------|------|-----------|--------|-----------|------|
+| `triager` | 单条工单全流程：读单→两层查证→回复/打标/建需求/建 CR；可再调 `dev`/`verify` | 默认 | Bash, Read, Grep, Glob, WebFetch/Search, Skill(aone-triage), aone-get/wrap/claim.sh | a1 评论/标签/状态/建单（已授权项） | 默认入口，scan/plan 出的工单都走它 | 返回 summary+status 给编排层，由 triage-one 兜底 done |
+| `dev` | 改代码/调试/build/test，限 workspaces.json 登记 repo | **worktree** | 全（Edit/Write/Bash/Read/Grep） | 仅 worktree 分支，走 PR/CR，禁 master | triager 判定需落码 / 自交付路径 | build+test 绿才回，dirty 不退 |
+| `pr-review` | TF provider GitHub PR 评审，默认只读 | 默认 | Read, Bash(git/gh), Grep, WebFetch, Skill(terraform-pr-review) | 默认零写，授权后评论 | 出评审报告，不合并不 push | 报告回编排层 |
+| `verify` | 纯查证 OpenAPI+provider 源码，定支不支持 | 默认 | Bash, Read, Grep, WebFetch | 只读 | triager 调用 / 裸 API 问题 | 出 high/low_conf 结论 |
+
+- 主 Agent 默认派 `triager`；裸代码任务派 `dev`，裸 PR 链接派 `pr-review`，裸"支不支持"问题派 `verify`。`dev` 必须 worktree 隔离避免并发改文件冲突。
 
 ### 第2层 · wrap.sh done 收紧（直接改硬）
 - `status` 从可选改**必填**，缺则 `exit 1`。
