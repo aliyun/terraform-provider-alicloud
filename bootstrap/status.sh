@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # bootstrap/status.sh — terminal status board. Calls board.sh, groups by state.
-# Sections: 跟进中 (inflight) / 已上报 (escalated) / 审核中=待合 (done) / 已完成=已合 (merged).
+# Sections: 跟进中 (inflight) / 已上报 (escalated) / 审核中=待合 (done) / 已完成=已合 (merged); 任务池 (pool) in footer only.
 # Columns: ID | 标题(trunc) | 优先级 | 摘要. ANSI color, footer counts.
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || (cd "$script_dir/.." && pwd))"
 
-json="$("$script_dir/board.sh")"
+json_f="$(mktemp)"; trap 'rm -f "$json_f"' EXIT
+"$script_dir/board.sh" > "$json_f"
 
-python3 - <<PY
+python3 - "$json_f" <<PY
 import json, sys
-data = json.loads('''$json''')
+data = json.load(open(sys.argv[1]))
 def C(c): return "" if not sys.stdout.isatty() else c
 RST,DIM=C("\033[0m"),C("\033[2m"); B=C("\033[1m")
 RED,GRN,YEL,CYN=C("\033[31m"),C("\033[32m"),C("\033[33m"),C("\033[36m")
@@ -33,5 +34,5 @@ for label,st,col in secs:
         print(f"  {DIM}{r['id']:>9}{RST} {w(r['title'],40)} {PRI.get(p,'')}{p or '·':>2}{RST} {DIM}{w(sm,46)}{RST}")
     print()
 n=lambda s:len([x for x in data if x["state"]==s])
-print(f"{B}总计{RST} {len(data)}  {CYN}跟进中 {n('inflight')}{RST}  {RED}已上报 {n('escalated')}{RST}  {YEL}审核中 {n('done')}{RST}  {GRN}已完成 {n('merged')}{RST}")
+print(f"{B}总计{RST} {len(data)}  {CYN}跟进中 {n('inflight')}{RST}  {RED}已上报 {n('escalated')}{RST}  {YEL}审核中 {n('done')}{RST}  {GRN}已完成 {n('merged')}{RST}  {DIM}任务池 {n('pool')}{RST}")
 PY
