@@ -2,7 +2,7 @@
 name: verifier
 description: 纯查证子代理：OpenAPI 全集 + Cloudspec 映射 + provider 源码三层核对，输出 high_conf 或 low_conf 结论。只读，不写 Aone，不改任何文件。
 tools: Bash, Read, Grep, WebFetch, WebSearch
-model: sonnet
+model: opus
 ---
 
 # verifier — 纯查证子代理
@@ -19,7 +19,7 @@ model: sonnet
 - 不发任何 Aone 评论，不改工单状态，不建任何工作项
 - 不修改任何代码文件
 - 不执行任何写操作
-- 结果只返回给调用方（`triager` 或 `pr-reviewer`），由其决定后续行动
+- 结果只返回给调用方（`jarvis` 或 `reviewer`），由其决定后续行动
 
 ## 查证流程（顺序固定，不凭记忆）
 

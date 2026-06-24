@@ -4,7 +4,7 @@
 
 **Goal:** 把 jarvis 收尾纪律从提示词换成代码兜底（4 层），并落 4 类隔离 subagent。
 
-**Architecture:** 改硬 `wrap.sh done`（status 必填、a1 失败 exit1）；`claim.sh` 写本地认领台账；Stop-hook `wrap-check.sh` 收尾未齐拦会话；`triage-one.sh` 一条一派 bookend；`reconcile.sh` 事后对账；`.claude/agents/` 落 triager/developer/pr-reviewer/verifier。
+**Architecture:** 改硬 `wrap.sh done`（status 必填、a1 失败 exit1）；`claim.sh` 写本地认领台账；Stop-hook `wrap-check.sh` 收尾未齐拦会话；`triage-one.sh` 一条一派 bookend；`reconcile.sh` 事后对账；`.claude/agents/` 落 jarvis/developer/reviewer/verifier。
 
 **Tech Stack:** bash（`set -uo pipefail`）、jq、python3、a1 CLI；测试用纯 bash + PATH stub，无 bats。
 
@@ -82,7 +82,7 @@ A1_FAIL=1 bash "$root/bootstrap/wrap.sh" done 100 "s" "已发布" >/dev/null 2>&
 
 ### Task 5: .claude/agents/ 四类定义
 
-**Files:** Create `triager.md/developer.md/pr-reviewer.md/verifier.md`
+**Files:** Create `jarvis.md/developer.md/reviewer.md/verifier.md`
 - [ ] **Step1:** 各文件 frontmatter `name/description/tools/model`，正文照 spec 表（用途/隔离/工具/写权/路由/收尾）。`developer` 注明 worktree。Step2: 提交。
 
 ### Task 6: triage-one.sh 编排 bookend

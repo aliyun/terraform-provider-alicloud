@@ -90,7 +90,7 @@ fi
 
 # Check the 4 agent definition files exist
 repo_root="$(git rev-parse --show-toplevel)"
-for agent in triager developer pr-reviewer verifier; do
+for agent in jarvis developer reviewer verifier; do
     agent_file="${repo_root}/.claude/agents/${agent}.md"
     if [ -f "$agent_file" ]; then
         echo "PASS agent/${agent}"
