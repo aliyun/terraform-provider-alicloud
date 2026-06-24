@@ -1,0 +1,23 @@
+{
+  "_desc": "API 工具团队联系人花名表：姓名/花名/工号。建单时解析指派(assignee)/抄送(tracker)/参与者(participant)。花名为 '-' 表示该成员无花名(外包/工号 WB 前缀)。",
+  "contacts": [
+    {"name": "逄磊",   "flower": "马裘",   "id": "404709"},
+    {"name": "徐文平", "flower": null,     "id": "WB01146046"},
+    {"name": "杨阳",   "flower": "知嘉行", "id": "536760"},
+    {"name": "邹盼盼", "flower": "飞澋",   "id": "412138"},
+    {"name": "丁爽",   "flower": null,     "id": "WB01167321"},
+    {"name": "刘源",   "flower": null,     "id": "WB01269865"},
+    {"name": "陈汉璋", "flower": "辰羿",   "id": "320687"},
+    {"name": "金子超", "flower": "苏铂",   "id": "539838"},
+    {"name": "廖兴杰", "flower": "岳宿",   "id": "479417"},
+    {"name": "王栗",   "flower": "木西",   "id": "509653"},
+    {"name": "蔡何",   "flower": "觉谦",   "id": "220791"},
+    {"name": "朱明明", "flower": "原根",   "id": "265607"},
+    {"name": "张旭",   "flower": "新山",   "id": "521957"},
+    {"name": "徐茈琦", "flower": "杉也",   "id": "414322"},
+    {"name": "李超林", "flower": "临钧",   "id": "429768"},
+    {"name": "苏胜超", "flower": null,     "id": "WB771735"},
+    {"name": "陈闻菲", "flower": "秋雯",   "id": "270513"},
+    {"name": "杜亚男", "flower": "南禾",   "id": "257646"}
+  ]
+}
