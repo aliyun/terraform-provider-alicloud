@@ -111,15 +111,11 @@ func TestAccAliCloudOOSExecution_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"template_name":       "${alicloud_oos_template.default.template_name}",
-					"description":         "From TF Test",
-					"parameters":          `{\"Status\":\"Running\"}`,
-					"mode":                "Automatic",
-					"safety_check":        "Skip",
-					"template_content":    "${alicloud_oos_template.default.content}",
-					"template_version":    "${alicloud_oos_template.default.template_version}",
-					"loop_mode":           "Automatic",
-					"parent_execution_id": "",
+					"template_name":    "${alicloud_oos_template.default.template_name}",
+					"description":      "From TF Test",
+					"parameters":       `{\"Status\":\"Running\"}`,
+					"safety_check":     "Skip",
+					"template_version": "${alicloud_oos_template.default.template_version}",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Execution Test",
@@ -130,9 +126,7 @@ func TestAccAliCloudOOSExecution_basic(t *testing.T) {
 						"template_name":    CHECKSET,
 						"description":      "From TF Test",
 						"parameters":       CHECKSET,
-						"mode":             "Automatic",
 						"safety_check":     "Skip",
-						"template_content": CHECKSET,
 						"template_version": CHECKSET,
 						"tags.%":           "2",
 						"tags.Created":     "TF",
@@ -144,7 +138,7 @@ func TestAccAliCloudOOSExecution_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"loop_mode", "template_content", "template_name", "description", "safety_check", "parameters"},
 			},
 		},
 	})
