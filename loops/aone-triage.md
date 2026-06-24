@@ -164,5 +164,8 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项（输赢竞争锁）；退码 1 = 输了跳过 |
 | `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-done 标签） |
 | `bootstrap/sweep.sh` | 清扫超时认领（>45min）→ 写入 `escalation/` |
+| `bootstrap/triage-one.sh <id>` | 单条工单 bookend 编排：claim→子代理→wrap done（**status 必填**）→release |
+| `bootstrap/wrap-check.sh` | Stop 闸门：会话结束时校验未完工工单是否已回填，失败则阻断 |
+| `bootstrap/reconcile.sh` | 漂移对账：比对 runs/ 台账与 Aone 在线状态，输出差异清单 |
 | `.claude/skills/aone-triage` | 单条工单全流程技能 |
 | `autonomy.md` | 模式/置信度/停止项策略 |

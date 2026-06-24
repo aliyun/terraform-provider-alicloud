@@ -36,6 +36,32 @@ if [ -z "$cmd" ] || [ -z "$workitem_id" ] || [ -z "$project_id" ]; then
     exit 1
 fi
 
+myday_dir="$jarvis_root/.my-day"
+today_date="$(date -u +%F)"
+ledger_file="$myday_dir/claims-${today_date}.json"
+
+# Atomically append/update entry in the claims ledger.
+# Usage: _ledger_upsert <id> <done_value>   (done_value: true|false)
+_ledger_upsert() {
+    local id="$1"
+    local done_val="$2"
+    mkdir -p "$myday_dir"
+    local tmp
+    tmp="$(mktemp "$myday_dir/.claims-tmp.XXXXXX")"
+    # Seed tmp with existing ledger or empty array; never create a partial ledger_file first
+    if [ -f "$ledger_file" ]; then
+        jq --arg id "$id" --argjson done "$done_val" \
+            'if any(.[]; .id == $id) then
+                 map(if .id == $id then .done = $done else . end)
+             else
+                 . + [{"id": $id, "done": $done}]
+             end' \
+            "$ledger_file" > "$tmp" && mv "$tmp" "$ledger_file"
+    else
+        printf '[{"id":"%s","done":%s}]' "$id" "$done_val" > "$tmp" && mv "$tmp" "$ledger_file"
+    fi
+}
+
 case "$cmd" in
     claim)
         # 1. Tag the workitem as claimed
@@ -50,6 +76,7 @@ case "$cmd" in
             readback=$(a1 project workitem list --project "$project_id" --tag "$CLAIM_TAG" -f json 2>/dev/null || echo "[]")
             if echo "$readback" | jq -e --arg id "$workitem_id" 'any(.[]; ((.identifier // .id)|tostring)==$id)' > /dev/null 2>&1; then
                 echo "claim.sh: claimed workitem $workitem_id in project $project_id"
+                _ledger_upsert "$workitem_id" false
                 exit 0
             fi
             sleep 2
@@ -62,6 +89,7 @@ case "$cmd" in
         # Tag as done (no untag exists; done_tag supersedes claimed)
         a1 project workitem update "$workitem_id" --tag "$DONE_TAG"
         echo "claim.sh: released workitem $workitem_id in project $project_id"
+        _ledger_upsert "$workitem_id" true
         exit 0
         ;;
 
