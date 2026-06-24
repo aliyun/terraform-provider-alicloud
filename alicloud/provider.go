@@ -171,6 +171,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_wafv3_address_books":                        dataSourceAliCloudWafv3AddressBooks(),
 			"alicloud_amqp_open_source_accounts":                  dataSourceAliCloudAmqpOpenSourceAccounts(),
 			"alicloud_vpc_ipv6_cidr_blocks":                       dataSourceAliCloudVpcIpv6CidrBlocks(),
 			"alicloud_amqp_open_source_permissions":               dataSourceAliCloudAmqpOpenSourcePermissions(),
@@ -925,6 +926,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_wafv3_address_book":                                   resourceAliCloudWafv3AddressBook(),
 			"alicloud_amqp_open_source_account":                             resourceAliCloudAmqpOpenSourceAccount(),
 			"alicloud_vpc_ipv6_cidr_block":                                  resourceAliCloudVpcIpv6CidrBlock(),
 			"alicloud_amqp_open_source_permission":                          resourceAliCloudAmqpOpenSourcePermission(),
