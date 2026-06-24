@@ -51,7 +51,10 @@ def enrich(item):
     s = scan.get(item["id"], {})
     item["title"] = s.get("title") or "Run %s" % item["id"]
     item["priority"] = s.get("priority", "")
-    item["category"] = s.get("category") or ""
+    # done/merged/escalated come from runs/escalation; if id absent from scan
+    # (or scan never carried a category) default to "req" so the badge + type
+    # filter keep them visible instead of vanishing as uncategorized.
+    item["category"] = s.get("category") or ("req" if item["state"] in ("done", "merged", "escalated") else "")
     item["pool"] = pool_for(s)
     item["project"] = project_for(item["pool"])
     item["url"] = URL.format(p=item["project"], i=item["id"])

@@ -94,7 +94,7 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 {nav("全部")}{nav("Manager")}{nav("收件箱")}{nav("自动化")}<div class="grp">Workspace</div>
 {nav("工作板"," act")}{nav("Agents")}{nav("Skills")}{nav("知识·记忆")}<div class="grp">管理</div>
 {nav("Workspace管理")}{nav("应用管理")}<div class="sf"><span class="av">辰</span>辰羿<span class="ico">⚙</span></div></aside>
-<main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><button class="btn" title="运行 bootstrap/refresh.sh 重扫 Aone 并重建">刷新</button><button class="btn k">+ 新增任务</button></div></div>
+<main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><button class="btn" id=refresh title="运行 bootstrap/refresh.sh 重扫 Aone 并重建">刷新</button><button class="btn k">+ 新增任务</button></div></div>
 <div class="fl"><div class="dd"><button class="ddb" id=ddb>工作池 ▾</button><div class="ddp" id=ddp><label class="dr ddh"><input type=checkbox id=pfall checked><span class="nm">全选</span><span class="cnt">{TOTAL}</span></label>{rows}</div></div>{pills}<span class="gen">{gen} · agent runs {arun}</span></div>
 <div class="bd">{board}</div></main></div>
 <script>
@@ -109,6 +109,11 @@ P.forEach(c=>c.onclick=function(){{c.setAttribute('aria-pressed',c.getAttribute(
 document.getElementById('ddb').onclick=function(e){{e.stopPropagation();document.getElementById('ddp').classList.toggle('open');}};
 document.onclick=function(){{document.getElementById('ddp').classList.remove('open');}};
 document.getElementById('ddp').onclick=function(e){{e.stopPropagation();}};
+var R=document.getElementById('refresh');R.onclick=function(){{
+if(location.protocol==='file:'){{alert('未通过服务运行,请跑 bootstrap/serve.sh 后从 http://localhost:8787 打开');return;}}
+R.disabled=true;R.textContent='刷新中…';
+fetch('/refresh',{{method:'POST'}}).then(r=>{{if(r.ok)location.reload();else throw 0;}})
+.catch(()=>{{alert('刷新失败,请手动运行 bootstrap/refresh.sh');R.disabled=false;R.textContent='刷新';}});}};
 sync();
 </script>'''
 open(out,"w",encoding="utf-8").write(doc); print(out)
