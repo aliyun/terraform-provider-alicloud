@@ -50,7 +50,7 @@ The following arguments are supported:
 * `description` - (Optional) The description of the Address Book.
 * `instance_id` - (Required, ForceNew) The ID of the WAF instance.
 
--> **NOTE:**  You can call [DescribeInstance](~~ 433756 ~~) to view the ID of the current WAF instance.
+-> **NOTE:**  You can call [DescribeInstance](https://next.api.alibabacloud.com/document/waf-openapi/2021-10-01/DescribeInstance) to view the ID of the current WAF instance.
 
 
 ## Attributes Reference

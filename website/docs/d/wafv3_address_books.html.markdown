@@ -51,7 +51,7 @@ output "alicloud_wafv3_address_book_example_id" {
 The following arguments are supported:
 * `instance_id` - (Required) The ID of the WAF instance.
 
--> **NOTE:**  You can call [DescribeInstance](~~ 433756 ~~) to view the ID of the current WAF instance.
+-> **NOTE:**  You can call [DescribeInstance](https://next.api.alibabacloud.com/document/waf-openapi/2021-10-01/DescribeInstance) to view the ID of the current WAF instance.
 
 * `ids` - (Optional, Computed) A list of Address Book IDs. The value is formulated as `<instance_id>:<address_book_id>`.
 * `name_regex` - (Optional) A regex string to filter results by Address Book name.
