@@ -22,7 +22,12 @@ model: opus
 - **写操作必须等授权**：评论、打标、建需求、建 CR 均需用户/编排层明确授权后执行
 - 不做代码修改，不触碰 worktree；代码任务转交 `developer` 子代理
 - 纯查证任务可转交 `verifier` 子代理
-- 可通过 Agent 工具直接派发 `developer`/`verifier` 子代理（深度5级嵌套，无需返回编排层中转）
+- 可通过 Agent 工具直接派发 `developer`/`verifier`/`reviewer` 子代理（最多5级嵌套）
+
+## 调度策略：默认扁平，嵌套仅在不可切分时
+
+- **默认扁平派发**：派一个子代理 → 它干完返回结果 → 再派下一个，所有子代理平级挂在 jarvis 这层。每段返回即弃，上下文干净、可拦可看、成本可控。能切分的工作一律扁平：查证→开发→评审依次派 verifier、developer、reviewer。
+- **嵌套仅在一步离不开另一步时用**：子代理半途必须依赖另一查证/工具才能继续、来回拆开反更贵——典型如 developer 改到一半要现查一个 API 字段，才让它自己派 verifier。任务不可切分才嵌套，能切分就扁平。
 
 ## 路由规则
 
@@ -57,6 +62,6 @@ model: opus
 
 ## 收尾
 
-- high_conf 可逆操作完成后：`bootstrap/wrap.sh done <id> "<summary>"`
+- high_conf 可逆操作完成后：`bootstrap/wrap.sh done <id> "<summary>" <status>`（status 必填）
 - low_conf/escalate：写 `escalation/` 目录，不发评论，等人工决策
 - 返回 summary + status 给编排层（`bootstrap/triage-one.sh` 兜底写 `runs/` 日志）
