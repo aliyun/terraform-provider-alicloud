@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# bootstrap/board.sh — merge runs/ + escalation/ + scan.json into one status array.
+# bootstrap/board.sh — classify scan.json (single source = Aone tags/status) into one status array.
 # Emits JSON to stdout: [{id,title,state,summary,priority,pool,project,url,ts}].
-#   state: escalated > inflight > merged > done (precedence on id collision)
-#   done      ← runs/<id>.md state=pending/absent (审核中, 待合)
-#   merged    ← runs/<id>.md state=merged          (已完成, 已合)
-#   inflight  ← scan.json tag contains "jarvis-claimed"
-#   escalated ← escalation/<id>.md          (first body line = reason)
-#   pool      ← scan candidates (any item not tracked/jarvis-tagged; scan already applied exclude_status); cap 2000/pool by 紧急>高>中>低, pool_total=full count + req/bug/task split
-# Cross-refs scan.json by id for title/priority/pool/project; ids absent from
-# scan still appear (title=summary/reason, default project 528766).
+#   state: escalated > merged > done > inflight > pool (precedence on id collision)
+#   escalated ← escalation/<id>.md exists                 (first body line = reason)
+#   merged    ← tag jarvis-done  + status 已发布/验收通过/已完成/已发布待需求方验收
+#   done      ← tag jarvis-done  + any other status        (审核中)
+#   inflight  ← tag jarvis-claimed                         (进行中)
+#   pool      ← untagged scan candidate (scan already applied exclude_status); cap 2000/pool by 紧急>高>中>低, pool_total=full count + req/bug/task split
+# runs/<id>.md is NO LONGER source of done/merged — only enriches summary text;
+# scan items with no runs record use title as summary. escalation/ still supplies reason.
+# Cross-refs scan.json by id for title/priority/pool/project; escalated ids absent from
+# scan still appear (title=reason, default project 528766).
 # Pure python3; no external deps. JARVIS_ROOT overrides repo root.
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -47,27 +49,8 @@ def pool_for(s):
         return p
     return proj2pool.get(s.get("project")) or "tf_provider"
 
-def enrich(item):
-    s = scan.get(item["id"], {})
-    item["title"] = s.get("title") or "Run %s" % item["id"]
-    item["priority"] = s.get("priority", "")
-    # done/merged/escalated come from runs/escalation; if id absent from scan
-    # (or scan never carried a category) default to "req" so the badge + type
-    # filter keep them visible instead of vanishing as uncategorized.
-    item["category"] = s.get("category") or ("req" if item["state"] in ("done", "merged", "escalated") else "")
-    item["pool"] = pool_for(s)
-    item["project"] = project_for(item["pool"])
-    item["url"] = URL.format(p=item["project"], i=item["id"])
-    return item
-
-items = {}  # id -> record ; precedence escalated>inflight>merged>done
-RANK = {"done": 0, "merged": 1, "inflight": 2, "escalated": 3}
-def put(rec):
-    old = items.get(rec["id"])
-    if old is None or RANK[rec["state"]] >= RANK[old["state"]]:
-        items[rec["id"]] = rec
-
-# done from runs/
+# runs/<id>.md → summary only (no longer drives state). Map id → summary/ts.
+runs = {}
 for f in glob.glob(os.path.join(root, "runs", "*.md")):
     b = os.path.basename(f)
     if b.startswith("plan-"): continue
@@ -75,16 +58,42 @@ for f in glob.glob(os.path.join(root, "runs", "*.md")):
     if not m: continue
     txt = open(f, encoding="utf-8").read()
     g = lambda k: (re.search(r"\*\*%s:\*\*\s*(.+)" % k, txt) or [None, ""])[1].strip()
-    rid = g("id") or m.group(1)
-    st = "merged" if g("state") == "merged" else "done"
-    put(enrich({"id": rid, "state": st, "summary": g("summary"), "ts": g("timestamp")}))
+    runs[g("id") or m.group(1)] = {"summary": g("summary"), "ts": g("timestamp")}
 
-# inflight from scan tags
+def enrich(item):
+    s = scan.get(item["id"], {})
+    item["title"] = s.get("title") or "Run %s" % item["id"]
+    item["priority"] = s.get("priority", "")
+    # default uncategorized non-pool items to "req" so the badge + type filter
+    # keep them visible instead of vanishing as uncategorized.
+    item["category"] = s.get("category") or ("req" if item["state"] in ("done", "merged", "escalated") else "")
+    item["pool"] = pool_for(s)
+    item["project"] = project_for(item["pool"])
+    item["url"] = URL.format(p=item["project"], i=item["id"])
+    # runs/ enrich: prefer its summary text + ts when present, else fall back to title
+    r = runs.get(item["id"], {})
+    item["summary"] = item.get("summary") or r.get("summary") or item["title"]
+    item["ts"] = item.get("ts") or r.get("ts") or ""
+    return item
+
+items = {}  # id -> record ; precedence escalated>merged>done>inflight>pool
+RANK = {"pool": 0, "inflight": 1, "done": 2, "merged": 3, "escalated": 4}
+def put(rec):
+    old = items.get(rec["id"])
+    if old is None or RANK[rec["state"]] >= RANK[old["state"]]:
+        items[rec["id"]] = rec
+
+# Aone tags = single source for done/merged/inflight.
+MERGED_STATUS = {"已发布", "验收通过", "已完成", "已发布待需求方验收"}
 for i, s in scan.items():
-    if "jarvis-claimed" in (s.get("tag") or ""):
+    tag = s.get("tag") or ""
+    if "jarvis-claimed" in tag:
         put(enrich({"id": i, "state": "inflight", "summary": s.get("status", ""), "ts": ""}))
+    elif "jarvis-done" in tag:
+        st = "merged" if s.get("status") in MERGED_STATUS else "done"
+        put(enrich({"id": i, "state": st, "summary": "", "ts": ""}))
 
-# escalated from escalation/
+# escalated from escalation/ (overrides tag-derived state)
 for f in glob.glob(os.path.join(root, "escalation", "*.md")):
     b = os.path.basename(f)
     if not b.endswith(".md") or b == ".gitkeep": continue
