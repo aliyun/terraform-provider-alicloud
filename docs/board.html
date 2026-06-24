@@ -1,0 +1,36 @@
+<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style>
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#1d2939;background:#fff}
+.app{display:flex;min-height:100vh}
+.sb{width:210px;flex:none;background:#fafafa;border-right:1px solid #eaecf0;display:flex;flex-direction:column;padding:14px 10px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;padding:6px 8px 14px}
+.dot{width:10px;height:10px;border-radius:50%;background:#7f56d9}
+.grp{font-size:11px;color:#98a2b3;text-transform:uppercase;letter-spacing:.4px;margin:14px 8px 4px}
+.nv{padding:6px 10px;border-radius:7px;color:#475467;cursor:default;font-size:13.5px}.nv:hover{background:#f2f4f7}.act{background:#eef0f3;color:#1d2939;font-weight:600}
+.sf{margin-top:auto;display:flex;align-items:center;gap:8px;padding:8px;border-top:1px solid #eaecf0}
+.av{width:24px;height:24px;border-radius:50%;background:#7f56d9;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+.ico{margin-left:auto;color:#98a2b3}.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.tb{display:flex;align-items:center;padding:14px 22px;border-bottom:1px solid #eaecf0}.bc{color:#667085;font-size:13.5px}.bc b{color:#1d2939}
+.tb .r{margin-left:auto;display:flex;gap:8px}.btn{border:1px solid #d0d5dd;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;color:#344054;cursor:pointer}
+.btn.k{background:#1d2939;color:#fff;border-color:#1d2939}
+.fl{display:flex;align-items:center;gap:10px;padding:12px 22px}.tog{display:flex;border:1px solid #d0d5dd;border-radius:8px;overflow:hidden}.tog span{padding:5px 14px;font-size:13px;color:#475467}.tog .on{background:#f2f4f7;color:#1d2939;font-weight:600}
+.pill{padding:5px 12px;border:1px solid #eaecf0;border-radius:16px;font-size:12.5px;color:#475467}.pill.on{background:#f2f4f7;color:#1d2939;border-color:#d0d5dd}
+.sr{margin-left:auto;border:1px solid #d0d5dd;border-radius:8px;padding:6px 12px;font-size:13px;color:#98a2b3;min-width:200px}
+.bd{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:8px 22px 26px;align-items:start}
+.col{background:#f9fafb;border:1px solid #eaecf0;border-radius:10px;padding:8px}.col-empty{background:#fff;border-style:dashed}
+.ch{display:flex;justify-content:space-between;padding:6px 6px 10px;font-weight:600;font-size:13px;color:#344054}.badge{background:#eaecf0;color:#475467;border-radius:10px;font-size:11px;padding:0 7px}
+.cb{display:flex;flex-direction:column;gap:8px;min-height:60px}.empty{color:#98a2b3;text-align:center;padding:24px 0;font-size:13px}
+.card{display:block;background:#fff;border:1px solid #eaecf0;border-radius:10px;padding:11px;text-decoration:none;color:inherit;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:.15s}
+.card:hover{box-shadow:0 4px 12px rgba(16,24,40,.1);transform:translateY(-2px)}
+.cr{display:flex;justify-content:space-between;margin-bottom:5px}.cid{font:11px ui-monospace,monospace;color:#98a2b3}.pri{font-size:11px;font-weight:600;padding:0 8px;border-radius:10px}
+.tt{font-weight:600;font-size:13px;color:#1d2939;margin-bottom:4px}.sum{color:#667085;font-size:12px}.cf{margin-top:8px}.tag{font-size:11px;color:#667085;background:#f2f4f7;border-radius:6px;padding:1px 7px}
+</style><div class="app"><aside class="sb"><div class="brand"><span class="dot"></span>Jarvis</div>
+<div class="nv">全部</div><div class="nv">Manager</div><div class="nv">收件箱</div><div class="nv">自动化</div><div class="grp">Workspace</div>
+<div class="nv act">工作板</div><div class="nv">Agents</div><div class="nv">Skills</div><div class="nv">知识·记忆</div><div class="grp">管理</div>
+<div class="nv">Workspace管理</div><div class="nv">应用管理</div><div class="sf"><span class="av">辰</span>辰羿<span class="ico">⚙</span></div></aside>
+<main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><button class="btn">刷新</button><button class="btn k">+ 新增任务</button></div></div>
+<div class="fl"><div class="tog"><span class="on">Board</span><span>List</span></div><span class="pill on">All</span><span class="pill">Assigned to me</span><span class="pill">Agent runs · 0</span><input class="sr" placeholder="搜索…"></div>
+<div class="bd"><div class="col col-empty"><div class="ch"><span>任务池</span><span class="badge">0</span></div><div class="cb"><div class="empty">No items</div></div></div><div class="col col-empty"><div class="ch"><span>待开始</span><span class="badge">0</span></div><div class="cb"><div class="empty">No items</div></div></div><div class="col col-empty"><div class="ch"><span>进行中</span><span class="badge">0</span></div><div class="cb"><div class="empty">No items</div></div></div><div class="col"><div class="ch"><span>审核中</span><span class="badge">1</span></div><div class="cb"><a class="card" href="https://project.aone.alibaba-inc.com/v2/project/528766/req/83479642" target="_blank">
+<div class="cr"><span class="cid">#83479642</span><span class="pri" style="color:#475467;background:#f2f4f7">·</span></div>
+<div class="tt">Run 83479642</div><div class="sum">缓存机制已落地(commit f7b0d19,branch worktree-jarvis-cache,未合 master)。3 新脚本 cache.sh/aone-get.sh/preflight.sh + wrap.sh 写后 bust + skill/CLAUDE.md/runbook 改入口;test 9 项全绿。待人工 review+合并。</div><div class="cf"></div></a></div></div><div class="col"><div class="ch"><span>已完成</span><span class="badge">1</span></div><div class="cb"><a class="card" href="https://project.aone.alibaba-inc.com/v2/project/528766/req/83477575" target="_blank">
+<div class="cr"><span class="cid">#83477575</span><span class="pri" style="color:#475467;background:#f2f4f7">·</span></div>
+<div class="tt">Run 83477575</div><div class="sum">状态置已发布(MR已合 master)</div><div class="cf"></div></a></div></div></div></main></div>

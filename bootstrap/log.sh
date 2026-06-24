@@ -2,7 +2,8 @@
 # bootstrap/log.sh — audit + dedup ledger for jarvis triage-loop
 #
 # Provides three functions:
-#   run_done <id> <summary>  — write runs/<UTCdate>-<id>.md
+#   run_done <id> <summary> [state]  — write runs/<UTCdate>-<id>.md
+#                                       state ∈ {pending,merged} default pending
 #   escalate <id> <reason>   — write escalation/<id>.md
 #   seen <id>                — exit 0 if runs/ already has a file for id, else exit 1
 #
@@ -30,12 +31,14 @@ _log_escalation_dir() {
 }
 
 # ---------------------------------------------------------------------------
-# run_done <id> <summary>
-# Write runs/<UTCdate>-<id>.md with id, summary, and timestamp.
+# run_done <id> <summary> [state]
+# Write runs/<UTCdate>-<id>.md with id, summary, state, and timestamp.
+# state defaults to "pending" (审核中); "merged" = 已完成. 2-arg callers unbroken.
 # ---------------------------------------------------------------------------
 run_done() {
     local id="$1"
     local summary="$2"
+    local state="${3:-}"; state="${state:-pending}"
     local runs_dir
     runs_dir="$(_log_runs_dir)"
     local utc_date
@@ -48,6 +51,7 @@ run_done() {
 
 **id:** $id
 **summary:** $summary
+**state:** $state
 **timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
 EOF
 }
@@ -111,7 +115,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     cmd="${1:-}"
     case "$cmd" in
         run_done)
-            run_done "${2:-}" "${3:-}"
+            run_done "${2:-}" "${3:-}" "${4:-}"
             ;;
         escalate)
             escalate "${2:-}" "${3:-}"
