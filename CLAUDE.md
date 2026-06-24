@@ -20,6 +20,7 @@
 4) **自我迭代**：流程/能力缺口按 loops/self-improve.md 沉淀回策略文档，别只口头修。
 5) **Aone 唯一真源**：任何 jarvis 工作必须有 Aone 工作项（无则按 adhoc-intake 建/补单），进展实时 sync、完工 done 回填到 Aone；以 bootstrap/wrap.sh 同步，禁止只在本地推进不落 Aone。
 6) **汇报带链接**：最后总结汇报必须带上 Aone 工作项链接与 MR/CR 链接（有几条带几条）；缺其一视为汇报不完整。
+7) **对外不带 AI 署名**：PR/MR/CR 正文与评论、Aone 工单回复等对外产物禁止出现「🤖 Generated with Claude Code」等 AI 署名/水印；发出前剥掉，发现存量改掉。（git commit 的 Co-Authored-By 不在此限。）
 
 @autonomy.md
 @loops/aone-triage.md
