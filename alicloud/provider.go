@@ -932,6 +932,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_open_source_permission":                          resourceAliCloudAmqpOpenSourcePermission(),
 			"alicloud_vpn_gateway_enhanced_vpn_gateway":                     resourceAliCloudVpnGatewayEnhancedVpnGateway(),
 			"alicloud_oss_bucket_object_worm_configuration":                 resourceAliCloudOssBucketObjectWormConfiguration(),
+			"alicloud_oss_bucket_inventory":                                 resourceAliCloudOssBucketInventory(),
 			"alicloud_alidns_cloud_gtm_instance_config":                     resourceAliCloudAlidnsCloudGtmInstanceConfig(),
 			"alicloud_alidns_cloud_gtm_monitor_template":                    resourceAliCloudAlidnsCloudGtmMonitorTemplate(),
 			"alicloud_alidns_cloud_gtm_address":                             resourceAliCloudAlidnsCloudGtmAddress(),
