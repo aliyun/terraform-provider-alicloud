@@ -1,0 +1,24 @@
+name: ACube AccTest
+on:
+  pull_request_review:
+    types: [submitted, edited]
+    paths:
+      - alicloud/*.go
+
+jobs:
+  ACubeAccTest:
+    if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.x'
+      - name: ACube AccTest Check
+        run: |
+          headSha="${{ github.event.pull_request.head.sha }}"
+          echo "polling acube acctest results for head sha: ${headSha}"
+          go run scripts/acube/acube_check.go ${headSha}
