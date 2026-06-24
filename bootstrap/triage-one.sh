@@ -36,7 +36,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ---------------------------------------------------------------------------
 # Arg validation
 # ---------------------------------------------------------------------------
-if [ "${#}" -lt 5 ]; then
+if [ "${#}" -ne 5 ]; then
     echo "Usage: triage-one.sh <id> <pool> <project> <summary> <status>" >&2
     exit 1
 fi
