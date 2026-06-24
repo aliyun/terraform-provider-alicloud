@@ -3,10 +3,11 @@
 # Aone = 唯一真源：任何 jarvis 工作都得在 Aone 留痕；中途 sync，收尾 done。
 # Usage:
 #   wrap.sh sync <id> "<progress>"            — 中途报进展（评论），不改状态、不写 run_done
-#   wrap.sh done <id> "<summary>" [status]    — 收尾：评论 + run_done + 可选改状态
+#   wrap.sh done <id> "<summary>" <status>     — 收尾：评论 + run_done + 改状态（status 必填）
 #
 # done 是每条 dev/adhoc/plugin-dev 路径在宣告 Done 前的必经收尾。
-# a1 调用失败仅告警，本地审计照常落盘（Aone 真源不达也不丢账）。
+# done: 本地审计先落盘（审计不丢），再 a1 调用——失败则 exit 1（Aone 真源强制）。
+# sync: a1 调用失败仅告警，本地不写 run_done。
 # 评论自动追加代码落点（repo @ 分支 commit）：在开发库目录调用，或 CODE_DIR 指定。
 # 标签/状态约定读 config/pools.json；JARVIS_ROOT 可覆盖仓库根。
 
@@ -47,19 +48,15 @@ case "$cmd" in
     done)
         summary="${3:-}"
         status="${4:-}"
-        [ -n "$id" ] && [ -n "$summary" ] || { echo "Usage: wrap.sh done <id> \"<summary>\" [status]" >&2; exit 1; }
-        # 1) 回填 Aone 进展评论（带代码落点页脚）
-        summary="${summary}$(code_footer)"
-        a1 project workitem comment create "$id" -m "$summary" \
-            || echo "wrap.sh: a1 comment 失败（id=${id}），收尾未落 Aone，请人工补" >&2
-        # 2) 本地审计（jq 校验 pools.json 可读，与 claim 同源）
+        [ -n "$id" ] && [ -n "$summary" ] && [ -n "$status" ] || { echo "Usage: wrap.sh done <id> \"<summary>\" <status>" >&2; exit 1; }
+        # 1) 本地审计先写，审计绝不丢（即使 Aone 调用失败）
         jq -e '.claim' "$pools_cfg" >/dev/null 2>&1 || echo "wrap.sh: pools.json .claim 缺失" >&2
         bash "$script_dir/log.sh" run_done "$id" "$summary"
-        # 3) 可选改状态
-        if [ -n "$status" ]; then
-            a1 project workitem update "$id" --status "$status" \
-                || echo "wrap.sh: a1 状态更新失败（id=${id} → ${status}），请人工核" >&2
-        fi
+        # 2) 回填 Aone 进展评论（带代码落点页脚）；失败则 exit 1
+        local_summary="${summary}$(code_footer)"
+        a1 project workitem comment create "$id" -m "$local_summary"
+        # 3) 改状态；失败则 exit 1
+        a1 project workitem update "$id" --status "$status"
         bash "$script_dir/cache.sh" bust "wi-$id"  # 收尾改动后详情已变，丢缓存
         ;;
     *)
