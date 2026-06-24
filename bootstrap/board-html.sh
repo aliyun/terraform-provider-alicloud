@@ -2,8 +2,8 @@
 # bootstrap/board-html.sh — render board.html: light kanban dashboard
 # (Harness-style). Sidebar nav + main pane w/ 5-column board. Data from board.sh.
 # Cards link to Aone, priority chip + pool tag, data-pool for filter. No assets.
-# 任务池 col = pool-state candidates (cap ~80 visible + "+N 更多"). 5 equal 300px
-# cols overflow-x scroll. Pool filter = dropdown w/ checkboxes (names from pools.json),
+# 任务池 col = pool-state candidates (ALL rendered; col body scrolls vertically). 5 equal
+# 300px cols overflow-x scroll. Pool filter = dropdown w/ checkboxes (names from pools.json),
 # default all checked, hide/show by data-pool, live counts. data-pool=key, label=name.
 # Writes both .my-day/board.html (ephemeral) and docs/board.html (repo-tracked).
 set -euo pipefail
@@ -29,7 +29,6 @@ cfg=json.load(open(sys.argv[4])); NAMES={k:v.get("name",k) for k,v in cfg.get("p
 def pname(k): return NAMES.get(k,k)
 def pcol(k): return COLOR.get(k,"#98a2b3")  # neutral for unknown/empty
 def tint(hexc): return hexc+"22"  # light bg from hue (~13% alpha), dark text stays the hue
-CAP=80
 def card(r):
   fg,bg=PRI.get(r.get("priority"),("#475467","#f2f4f7")); p=e(r.get("priority"))
   pk=r.get("pool"); ac=pcol(pk)
@@ -40,11 +39,9 @@ def card(r):
 <div class="tt">{e(r['title'])}</div>{sm}<div class="cf">{tag}</div></a>'''
 def col(label,st):
   rows=[x for x in data if x["state"]==st]
-  vis=rows[:CAP]; more=len(rows)-len(vis)
-  body="".join(card(r) for r in vis) if vis else '<div class="empty">No items</div>'
-  foot=f'<div class="more">+{more} 更多</div>' if more>0 else ''
+  body="".join(card(r) for r in rows) if rows else '<div class="empty">No items</div>'
   cls=" col-empty" if not rows else ""
-  return f'''<div class="col{cls}" data-col><div class="ch"><span>{label}</span><span class="badge">{len(vis)}</span></div><div class="cb">{body}{foot}</div></div>'''
+  return f'''<div class="col{cls}" data-col><div class="ch"><span>{label}</span><span class="badge">{len(rows)}</span></div><div class="cb">{body}</div></div>'''
 board="".join(col(l,s) for l,s in COLS)
 arun=len([x for x in data if x["state"]=="inflight"])
 rows="".join(f'<label class="dr"><input type=checkbox class=pf data-pf="{p}" checked><span class="sw" style="background:{pcol(p)}"></span><span>{e(pname(p))}</span></label>' for p in POOLS)
@@ -72,7 +69,7 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 .bd{{display:flex;gap:14px;padding:8px 22px 26px;align-items:start;overflow-x:auto}}
 .col{{flex:0 0 300px;background:#f9fafb;border:1px solid #eaecf0;border-radius:10px;padding:8px}}.col-empty{{background:#fff;border-style:dashed}}
 .ch{{display:flex;justify-content:space-between;padding:6px 6px 10px;font-weight:600;font-size:13px;color:#344054}}.badge{{background:#eaecf0;color:#475467;border-radius:10px;font-size:11px;padding:0 7px}}
-.cb{{display:flex;flex-direction:column;gap:8px;min-height:60px}}.empty{{color:#98a2b3;text-align:center;padding:24px 0;font-size:13px}}.more{{color:#98a2b3;text-align:center;font-size:12px;padding:6px 0}}
+.cb{{display:flex;flex-direction:column;gap:8px;min-height:60px;max-height:calc(100vh - 220px);overflow-y:auto}}.empty{{color:#98a2b3;text-align:center;padding:24px 0;font-size:13px}}
 .card{{display:block;background:#fff;border:1px solid #eaecf0;border-radius:10px;padding:11px;text-decoration:none;color:inherit;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:.15s}}
 .card:hover{{box-shadow:0 4px 12px rgba(16,24,40,.1);transform:translateY(-2px)}}.card.hide{{display:none}}
 .cr{{display:flex;justify-content:space-between;margin-bottom:5px}}.cid{{font:11px ui-monospace,monospace;color:#98a2b3}}.pri{{font-size:11px;font-weight:600;padding:0 8px;border-radius:10px}}
