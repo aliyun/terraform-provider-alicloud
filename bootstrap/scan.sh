@@ -1,6 +1,7 @@
 #!/bin/bash
 # scan.sh – pull assigned Aone work items per pool, emit [{id,title,type,status,pool,category}] JSON.
-# Uses pool-scoped --project queries so claim tag filter (--filter NOT tag=<tag>) works.
+# Returns ALL assigned items incl. jarvis-claimed (board.sh needs them for 进行中/inflight).
+# Uses pool-scoped --project queries; no claim-tag exclusion (dedup is downstream, not here).
 # Each pool scanned thrice (--category req,bug,task); rows stamped category:"req|bug|task".
 # Writes .my-day/scan.json AND echoes to stdout. 30min TTL: serve cached scan.json if fresh,
 # unless --force (mirror preflight.sh; JARVIS_SCAN_TTL=0 forces too). Empty/failing pools
@@ -31,12 +32,9 @@ if [ -z "$account" ]; then
   exit 1
 fi
 
-# Read claim tag and pools from config/pools.json if present.
-claim_tag=""
+# Pools come from config/pools.json. claim_tag is no longer used to filter scan output
+# (claimed items are kept for the board); the key stays in config for claim.sh/triage dedup.
 pools_cfg="$jarvis_root/config/pools.json"
-if [ -f "$pools_cfg" ]; then
-  claim_tag=$(jq -r '.claim.tag // empty' "$pools_cfg" 2>/dev/null || true)
-fi
 
 # Check whether pools[].project entries exist.
 has_pools=false
@@ -54,7 +52,9 @@ if $has_pools; then
   fetch_pool() {  # args: key project status_csv title_csv → prints transformed JSON array
     local pool_key="$1" pool_project="$2" exclude_status="$3" exclude_title="$4"
     local filter="" pat pool_out="[]" cat page pg n
-    [ -n "$claim_tag" ] && filter="NOT tag=$claim_tag"
+    # NOTE: jarvis-claimed items are intentionally KEPT (board.sh maps them → 进行中/inflight).
+    # The old "NOT tag=$claim_tag" exclusion was triage-loop dedup, not for the board, and broke
+    # 进行中 (always empty). If a triage caller needs dedup, filter on tag downstream, not in scan.
     [ -n "$exclude_status" ] && { [ -n "$filter" ] && filter="$filter AND "; filter="${filter}NOT status=$exclude_status"; }
     if [ -n "$exclude_title" ]; then
       IFS=',' read -ra _pats <<< "$exclude_title"
@@ -91,13 +91,9 @@ if $has_pools; then
   result=$(jq -s 'add // []' "$tmpd"/*.json 2>/dev/null) || result="[]"
 else
   # No pools configured: fall back to assignee-based global list (category unstamped).
-  if [ -n "$claim_tag" ]; then
-    result=$(a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type --filter "NOT tag=$claim_tag" -f json \
-      | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag, category: null}]') || result="[]"
-  else
-    result=$(a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type -f json \
-      | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag, category: null}]') || result="[]"
-  fi
+  # No claim-tag exclusion — keep jarvis-claimed so the board can show 进行中.
+  result=$(a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type -f json \
+    | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag, category: null}]') || result="[]"
 fi
 
 # Persist scan.json atomically (temp+mv, no torn file) and echo to stdout.
