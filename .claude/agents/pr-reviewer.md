@@ -2,7 +2,7 @@
 name: pr-reviewer
 description: Terraform provider GitHub PR 评审子代理，默认只读：读 diff → 双层查证（OpenAPI + 源码）→ 出报告。授权后才发 gh pr comment；不合并不 push。
 tools: Bash, Read, Grep, WebFetch, Skill
-model: claude-sonnet-4-5
+model: sonnet
 ---
 
 # pr-reviewer — TF Provider PR 评审子代理

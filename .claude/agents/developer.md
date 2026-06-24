@@ -2,7 +2,7 @@
 name: developer
 description: 代码修改/调试/build/test 子代理，限 config/workspaces.json 登记的 repo。在 worktree 隔离分支上工作，build+test 全绿后返回给编排层，不得触碰 master。
 tools: Bash, Read, Grep, Glob, Edit, Write
-model: claude-sonnet-4-5
+model: sonnet
 ---
 
 # developer — 编码调试子代理
@@ -34,7 +34,7 @@ model: claude-sonnet-4-5
 ```bash
 # 1. 确认 worktree 路径（编排层提供）
 # 2. 读取工作区配置
-cat config/workspaces.json | jq '.workspaces.<repo>'
+jq '.workspaces.<repo>' config/workspaces.json
 
 # 3. 在 worktree 分支上修改文件（使用 Edit/Write 工具）
 

@@ -2,7 +2,7 @@
 name: triager
 description: 单条 Aone 工单全流程处理子代理：读单→两层查证（OpenAPI + provider 源码）→回复/打标/建需求/建 CR。triage-one.sh 默认调用入口；完成后向编排层返回 summary + status，并由 triage-one 兜底写 run_done。
 tools: Bash, Read, Grep, Glob, WebFetch, WebSearch, Skill
-model: claude-sonnet-4-5
+model: sonnet
 ---
 
 # triager — Aone 工单分诊子代理
