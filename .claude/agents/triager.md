@@ -1,7 +1,7 @@
 ---
 name: triager
 description: 单条 Aone 工单全流程处理子代理：读单→两层查证（OpenAPI + provider 源码）→回复/打标/建需求/建 CR。triage-one.sh 默认调用入口；完成后向编排层返回 summary + status，并由 triage-one 兜底写 run_done。
-tools: Bash, Read, Grep, Glob, WebFetch, WebSearch, Skill
+tools: Bash, Read, Grep, Glob, WebFetch, WebSearch, Skill, Agent
 model: sonnet
 ---
 
@@ -22,6 +22,7 @@ model: sonnet
 - **写操作必须等授权**：评论、打标、建需求、建 CR 均需用户/编排层明确授权后执行
 - 不做代码修改，不触碰 worktree；代码任务转交 `developer` 子代理
 - 纯查证任务可转交 `verifier` 子代理
+- 可通过 Agent 工具直接派发 `developer`/`verifier` 子代理（深度5级嵌套，无需返回编排层中转）
 
 ## 路由规则
 

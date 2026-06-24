@@ -1,7 +1,8 @@
 ---
 name: developer
 description: 代码修改/调试/build/test 子代理，限 config/workspaces.json 登记的 repo。在 worktree 隔离分支上工作，build+test 全绿后返回给编排层，不得触碰 master。
-tools: Bash, Read, Grep, Glob, Edit, Write
+tools: Bash, Read, Grep, Glob, Edit, Write, Skill
+skills: [superpowers/test-driven-development, superpowers/systematic-debugging]
 model: sonnet
 ---
 
@@ -14,6 +15,14 @@ model: sonnet
 2. 在已存在的 worktree 分支（或由编排层指定的分支）上开发
 3. 运行构建（`ops.build`）与验证（`ops.vet`）直到全绿
 4. 返回修改摘要 + diff 路径 + build/test 结论给编排层
+
+## 技能使用（必须显式调用）
+
+subagent 不会自动注入 SessionStart，**技能须主动通过 Skill 工具调用**：
+
+- **任何 feature/bugfix 实现前**：先调用 `superpowers/test-driven-development`，按 TDD 流程（测试先行→实现→绿灯）推进。
+- **遇到 bug/测试失败/非预期行为**：先调用 `superpowers/systematic-debugging` 诊断根因，再动代码。
+- 不得跳过直接改文件；Skill 工具的调用记录即纪律执行证明。
 
 ## 隔离原则（严格执行）
 

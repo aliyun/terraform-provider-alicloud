@@ -31,6 +31,7 @@
 | `verifier` | 纯查证 OpenAPI+provider 源码，定支不支持 | 默认 | Bash, Read, Grep, WebFetch | 只读 | triager 调用 / 裸 API 问题 | 出 high/low_conf 结论 |
 
 - 主 Agent 默认派 `triager`；裸代码任务派 `developer`，裸 PR 链接派 `pr-reviewer`，裸"支不支持"问题派 `verifier`。`developer` 必须 worktree 隔离避免并发改文件冲突。
+- **更新**：`triager` 工具白名单加入 `Agent`，可直接嵌套派发 `developer`/`verifier`（深度5级）；`developer` 工具加入 `Skill`，frontmatter 预加载 `superpowers/test-driven-development` + `superpowers/systematic-debugging`，feature/bugfix 必过 TDD，bug 诊断必过 systematic-debugging。
 
 ### 第2层 · wrap.sh done 收紧（直接改硬）
 - `status` 从可选改**必填**，缺则 `exit 1`。
