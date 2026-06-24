@@ -51,7 +51,8 @@ CLAIM_TAG="$(jq -r '.claim.tag' "$POOLS_JSON")"
 DONE_TAG="$(jq -r '.claim.done_tag' "$POOLS_JSON")"
 
 # Collect all project IDs from pools (mirrors sweep.sh pattern)
-PROJECTS="$(jq -r '.pools[].project' "$POOLS_JSON")"
+# Guard against pools that have no project field (would emit literal "null")
+PROJECTS="$(jq -r '.pools[].project | select(. != null)' "$POOLS_JSON")"
 
 # ---------------------------------------------------------------------------
 # Main reconcile loop
@@ -87,11 +88,8 @@ except Exception:
         # Check if a run file exists: work finished but release was missed
         if seen "$item_id"; then
             # Release the claim: apply jarvis-done tag.
-            # Prefer claim.sh found on PATH (allows test stubs); fall back to co-located script.
-            _claim_cmd="$_reconcile_dir/claim.sh"
-            if command -v claim.sh &>/dev/null; then
-                _claim_cmd="claim.sh"
-            fi
+            # Default to co-located claim.sh; override via RECONCILE_CLAIM_CMD for tests.
+            _claim_cmd="${RECONCILE_CLAIM_CMD:-$_reconcile_dir/claim.sh}"
             $_claim_cmd release "$item_id" "$project"
             echo "RECONCILED: $item_id"
             RECONCILED_IDS+=("$item_id")

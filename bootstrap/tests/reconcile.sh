@@ -79,7 +79,8 @@ exit 0
 STUB
 chmod +x "$FAKE_BIN_DIR/a1"
 
-# claim.sh stub: record invocations, always succeed
+# claim.sh stub: record invocations, always succeed.
+# Injected via RECONCILE_CLAIM_CMD (not PATH) to avoid the ambient-PATH footgun.
 cat > "$FAKE_BIN_DIR/claim.sh" <<'STUB'
 #!/usr/bin/env bash
 echo "claim.sh $*" >> "${STUB_LOG:-/dev/null}"
@@ -88,6 +89,7 @@ STUB
 chmod +x "$FAKE_BIN_DIR/claim.sh"
 
 export PATH="$FAKE_BIN_DIR:$PATH"
+FAKE_BIN="$FAKE_BIN_DIR"
 
 # ---------------------------------------------------------------------------
 # Test 1: claimed id WITH a runs/ file → RECONCILED: <id>
@@ -110,6 +112,7 @@ output=$(env \
     JARVIS_ESCALATION_DIR="$ROOT1/escalation" \
     STUB_LOG="$STUB_LOG1" \
     A1_LIST_JSON="$A1_LIST_JSON" \
+    RECONCILE_CLAIM_CMD="$FAKE_BIN/claim.sh" \
     bash "$RECONCILE" 2>/dev/null)
 
 # Check output contains RECONCILED: WI-999
@@ -142,6 +145,7 @@ output2=$(env \
     JARVIS_ESCALATION_DIR="$ROOT2/escalation" \
     STUB_LOG="$STUB_LOG2" \
     A1_LIST_JSON="$A1_LIST_JSON" \
+    RECONCILE_CLAIM_CMD="$FAKE_BIN/claim.sh" \
     bash "$RECONCILE" 2>/dev/null)
 
 if echo "$output2" | grep -q "RECONCILED: none"; then
