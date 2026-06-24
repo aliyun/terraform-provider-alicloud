@@ -1606,6 +1606,57 @@ func (s *OssServiceV2) OssBucketStyleStateRefreshFunc(id string, field string, f
 
 // DescribeOssBucketStyle >>> Encapsulated.
 
+// DescribeOssBucketInventory <<< Encapsulated get interface for Oss BucketInventory.
+
+func (s *OssServiceV2) DescribeOssBucketInventory(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return object, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	hostMap := make(map[string]*string)
+	hostMap["bucket"] = StringPointer(parts[0])
+	query["inventoryId"] = StringPointer(parts[1])
+
+	action := fmt.Sprintf("/?inventory")
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.Do("Oss", xmlParam("GET", "2019-05-17", "GetBucketInventory", action), query, nil, nil, hostMap, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchInventory", "NoSuchBucket"}) {
+			return object, WrapErrorf(NotFoundErr("BucketInventory", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.InventoryConfiguration", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InventoryConfiguration", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+// DescribeOssBucketInventory >>> Encapsulated.
+
 // DescribeOssBucketLogging <<< Encapsulated get interface for Oss BucketLogging.
 
 func (s *OssServiceV2) DescribeOssBucketLogging(id string) (object map[string]interface{}, err error) {
