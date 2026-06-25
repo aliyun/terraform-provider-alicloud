@@ -36,6 +36,7 @@
 2. **命中** → 复用其 id；记录池（`config/pools.json` 路由）。
 3. **未命中** → **反问选池**（不擅自创建）：列出候选池（tf_provider / tf_customer / mcp_server / cloudspec / api_toolkit），等用户选。
 4. **授权后建 + 双向关联**：建工作项 → 工单挂本任务链接，本任务记 Aone id（双向）。
+   - **统一建为需求（`--category req`）**：adhoc 接入默认开需求单，不开 task/bug，便于后续走需求→变更→发布链路。确属缺陷再用 bug。
    - ad-hoc PR 无明确归属 → 默认落 **tf_provider (528766)**。
 5. **凡要写工单(新建 or 复用)都开 bookend**：拿到 id 后(无论第 2 步复用还是第 4 步新建)，**开局即 `bootstrap/claim.sh claim <id> <project>`**(打 jarvis-claimed、入台账)，收尾走 bookend 收口(`triage-one.sh` 或 `wrap.sh done`+`claim.sh release`)。漏 claim = 后续标签/状态/对账全失灵。纯本地只读、不动任何工单的任务可跳过本节直接进四。
 
