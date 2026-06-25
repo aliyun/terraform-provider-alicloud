@@ -15,8 +15,10 @@ Env:
   DINGTALK_APP_KEY / DINGTALK_APP_SECRET   Stream credentials (required).
   DINGTALK_TEMPLATE_ID                     AI card template id (required for reply).
   DINGTALK_ROBOT_CODE                      robot code for createAndDeliver (default: app key).
-  JARVIS_ALLOW_STAFF                       comma staffId whitelist (default 320687).
-  JARVIS_ROOT                              cwd for claude (default repo root, two up).
+  JARVIS_TATA_STAFF                        comma staffId audience for Tata (empty = everyone).
+  JARVIS_MASTER_STAFF                      staffId allowed to escalate to Jarvis (default 320687).
+  JARVIS_TATA_ROOT                         Tata cwd (default ~/.jarvis/tata-cwd, no jarvis bootstrap).
+  JARVIS_ROOT                              cwd for Jarvis claude (default repo root, two up).
   DINGTALK_SKILL                           override path to streaming.py.
   CLAUDE_BIN                               claude binary (default: PATH / ~/.local/bin/claude).
   CLAUDE_TIMEOUT                           per-round seconds (default 300).
@@ -67,11 +69,6 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 log = logging.getLogger("jarvis-bot")
-
-
-def allow_set():
-    raw = os.environ.get("JARVIS_ALLOW_STAFF", "320687")
-    return {s.strip() for s in raw.split(",") if s.strip()}
 
 
 def skill_path():
@@ -250,13 +247,16 @@ class JarvisHandler(AsyncChatbotHandler):
     # subprocess calls never freeze the WS event loop / keepalive ack.
     def __init__(self):
         super().__init__()
-        self.allow = allow_set()
-        self.sessions = {}                       # staff_id -> session uuid
-        self.started = set()                      # staff with an existing claude session
+        self.audience = tata_audience()           # 空=全员; 非空=Tata 受众名单
+        self.tata_sessions = {}                   # staff -> Tata session uuid
+        self.tata_started = set()                 # staff with a live Tata session
+        self.jarvis_sessions = {}                 # staff -> Jarvis session uuid (master only)
+        self.jarvis_started = set()               # staff with a live Jarvis session
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
-        log.info("whitelist=%s root=%s claude=%s skill=%s",
-                 self.allow, jarvis_root(), claude_bin(), skill_path())
+        log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s",
+                 self.audience or "*", master_staff(), jarvis_root(), tata_root(),
+                 claude_bin(), skill_path())
 
     def _quick_card(self, target, text):
         """One-shot card (no live stream): create then finalize once. Best-effort."""
@@ -274,8 +274,9 @@ class JarvisHandler(AsyncChatbotHandler):
         msg = ChatbotMessage.from_dict(callback.data)
         staff = msg.sender_staff_id or ""
         text = (msg.text.content if msg.text else "").strip()
-        if staff not in self.allow:
-            log.warning("ignore non-whitelisted staff=%s nick=%s", staff, msg.sender_nick)
+        # 受众闸：名单空=全员放行；非空=仅名单内可与 Tata 聊。
+        if self.audience and staff not in self.audience:
+            log.warning("ignore off-audience staff=%s nick=%s", staff, msg.sender_nick)
             return AckMessage.STATUS_OK, "ignored"
         if not text:
             return AckMessage.STATUS_OK, "empty"
@@ -286,11 +287,27 @@ class JarvisHandler(AsyncChatbotHandler):
             return AckMessage.STATUS_OK, "busy"
         try:
             log.info("staff=%s msg=%r", staff, text[:200])
-            sid = self.sessions.setdefault(staff, str(uuid.uuid4()))
-            resume = staff in self.started
-            self.started.add(staff)
             t0 = time.time()
-            self._stream_round(staff, text, sid, resume)
+            # 第一层：Tata 门面，全文先建卡流推；哨兵剥行不上屏。
+            tsid = self.tata_sessions.setdefault(staff, str(uuid.uuid4()))
+            tresume = staff in self.tata_started
+            self.tata_started.add(staff)
+            full = self._stream_round(
+                staff, text, tsid, tresume,
+                lambda t, s, r: run_tata_stream(t, s, r),
+                clean_sentinel=True,
+                tail_on_handoff="\n\n交给 Jarvis 处理…")
+            _, task = extract_jarvis_task(full)
+            # master 闸：仅辰羿且 Tata 发了哨兵任务，才升级第二层重型 Jarvis。
+            if task and staff == master_staff():
+                log.info("staff=%s handoff -> jarvis: %r", staff, task[:200])
+                jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
+                jresume = staff in self.jarvis_started
+                self.jarvis_started.add(staff)
+                self._stream_round(staff, task, jsid, jresume,
+                                   lambda t, s, r: run_claude_stream(t, s, r))
+            elif task:
+                log.info("staff=%s sent sentinel but not master; ignored", staff)
             log.info("staff=%s done in %.1fs", staff, time.time() - t0)
         except Exception as e:  # noqa: BLE001 — never crash the loop
             log.exception("process error: %s", e)
@@ -299,29 +316,41 @@ class JarvisHandler(AsyncChatbotHandler):
             lock.release()
         return AckMessage.STATUS_OK, "ok"
 
-    def _stream_round(self, target, text, sid, resume):
-        """Create one card, stream claude tokens into it live, finalize. Throttled."""
+    def _stream_round(self, target, text, sid, resume, runner,
+                      clean_sentinel=False, tail_on_handoff=""):
+        """建一张卡, 把 runner yield 的累积文本边流边 PUT, finalize。返回终文(含哨兵)。
+
+        clean_sentinel: 上屏前剥掉 [[JARVIS]] 哨兵行(交接信号别给用户看)。
+        tail_on_handoff: 若检测到哨兵, finalize 时附此尾巴定格交接提示。"""
         if not self.sm:
             log.error("streaming module unavailable; cannot reply")
-            return
+            return ""
         tok = self.sm.get_access_token(os.environ["DINGTALK_APP_KEY"], os.environ["DINGTALK_APP_SECRET"])
         tid = os.environ.get("DINGTALK_TEMPLATE_ID")
         otid = self.sm.create_and_deliver_card(tok, tid, robot_code(), target, "user")
         acc, last_put, last_len, first = "", 0.0, 0, True
+
+        def shown(raw):
+            return extract_jarvis_task(raw)[0] if clean_sentinel else raw
+
         try:
-            for acc in run_claude_stream(text, sid, resume):
+            for acc in runner(text, sid, resume):
                 now = time.time()
                 if first or now - last_put > PUT_MIN_INTERVAL or len(acc) - last_len > PUT_MIN_GROWTH:
-                    self.sm.streaming_update(tok, otid, CARD_KEY, truncate(acc))
+                    self.sm.streaming_update(tok, otid, CARD_KEY, truncate(shown(acc)))
                     last_put, last_len, first = now, len(acc), False
-            self.sm.streaming_update(tok, otid, CARD_KEY, truncate(acc or "(空回复)"), is_finalize=True)
+            disp = shown(acc)
+            if tail_on_handoff and extract_jarvis_task(acc)[1]:
+                disp = (disp + tail_on_handoff).strip()
+            self.sm.streaming_update(tok, otid, CARD_KEY, truncate(disp or "(空回复)"), is_finalize=True)
         except Exception as e:  # noqa: BLE001 — finalize an error rather than leave it hanging
             log.exception("stream_round error: %s", e)
             try:
-                self.sm.streaming_update(tok, otid, CARD_KEY, truncate((acc or "") + "\n⚠️ 处理出错。"),
+                self.sm.streaming_update(tok, otid, CARD_KEY, truncate(shown(acc or "") + "\n⚠️ 处理出错。"),
                                          is_finalize=True, is_error=True)
             except Exception:
                 pass
+        return acc
 
 
 def load_env_file():

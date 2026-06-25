@@ -1,25 +1,35 @@
-# Jarvis DingTalk bridge (inbound, two-way)
+# Jarvis DingTalk bridge (two-tier: Tata × Jarvis)
 
 Long-running process: holds a DingTalk **Stream** WebSocket, receives messages
-you send to the bot, runs a headless `claude` round, and streams the answer
-back **live** into one AI card. Turns the one-way `dingtalk-ai-card` push into a
-two-way conversation with a real typewriter effect.
+you send to the bot, and streams the answer back **live** into one AI card with a
+real typewriter effect. Two tiers: a lightweight **Tata** front 陪聊 everyone, and
+heavy **Jarvis** only 辰羿 can escalate to.
 
-## Flow (true streaming)
-1. You DM the bot → `jarvis_dingtalk_bot.py` checks whitelist (`JARVIS_ALLOW_STAFF`).
-2. Creates one AI card immediately, then reads `claude -p <text> --output-format
-   stream-json --include-partial-messages --verbose --session-id <per-sender uuid>`
-   token-by-token and PUTs the growing text onto that card (throttled), so you
-   watch the answer build up. 300s cap. Finalizes when done; truncated to 2KB.
-3. Card helpers are imported from the skill's `streaming.py` (no subprocess回放).
+## Two-tier flow
+```
+DingTalk DM ─► 受众闸(JARVIS_TATA_STAFF, 空=全员)
+            └► Tata 卡: claude -p + 轻量人设, cwd=空目录(不吃 CLAUDE.md), 秒回流式
+               扫回复末尾 [[JARVIS]] <任务> 哨兵
+                 ├ sender == JARVIS_MASTER_STAFF(辰羿) ► Tata 卡定格"交给 Jarvis 处理…"
+                 │                                       第二张卡: 重型 Jarvis(cwd=仓库根)流式接力
+                 └ 其他人/无哨兵 ► 只闲聊, 哨兵剥掉不上屏
+```
+1. **受众闸**: `JARVIS_TATA_STAFF` 空=全员可跟 Tata 聊; 填名单则收窄。
+2. **Tata 一层**: 建卡即跑 `claude -p <text> --append-system-prompt <Tata人设>
+   --output-format stream-json --include-partial-messages --verbose`, cwd=空目录,
+   秒回; per-sender session。回复里 `[[JARVIS]]` 哨兵剥掉再上屏。
+3. **master 闸 + 升级**: 仅辰羿(`JARVIS_MASTER_STAFF`)且 Tata 发了哨兵, 第二张卡跑重型
+   Jarvis(cwd=`JARVIS_ROOT` 仓库根, 独立 session)流式接力。300s cap, 截 2KB。
+4. Card helpers imported from the skill's `streaming.py`. master 闸在 bridge 端硬判, Tata 人设不可信。
 
-One claude round per sender at a time; second message → "请稍候". Other senders independent.
+One round per sender at a time; second message → "请稍候". Other senders independent.
 
 ## Setup
 1. **DingTalk console**: app → enable **Stream mode** (not webhook). Grant the
    robot message read/send. Note appKey/appSecret. Create an AI card template, note its id.
 2. `cp jarvis.env.example jarvis.env`, fill APP_KEY/SECRET/TEMPLATE_ID, set
-   `JARVIS_ALLOW_STAFF` (your staffId, default 320687), `JARVIS_ROOT`.
+   `JARVIS_TATA_STAFF` (空=全员), `JARVIS_MASTER_STAFF` (你的 staffId, 默认 320687),
+   `JARVIS_TATA_ROOT`/`JARVIS_ROOT`.
 3. Ensure deps: `python3 -c "import dingtalk_stream"` and `claude` on PATH (`~/.local/bin`).
 4. `./run.sh start` → `./run.sh status` → `./run.sh logs`. Stop: `./run.sh stop`.
 
