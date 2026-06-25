@@ -52,6 +52,8 @@ TATA_PROMPT = (
     "才在回复最后单起一行 [[JARVIS]] <一句话任务>，由系统转交 Jarvis。"
     "不需要转交就完全不要写这行——绝不要用它来说明“无需/不需要转交”，闲聊问候（如“在吗”“你好”）一律不写。"
 )
+# idealab 网关吃掉 --append-system-prompt, 改在常驻进程对话首轮注入身份做 priming。
+TATA_PRIMING = TATA_PROMPT + "\n\n(从现在起按以上身份回应, 只回一个'好'确认)"
 
 
 def _load_streaming_module():
@@ -304,11 +306,27 @@ class TataPool:
         self._guard = threading.Lock()
 
     def _default_spawn(self, staff):
+        # idealab 网关忽略 --append-system-prompt, 人设改由对话首轮 priming 注入(_spawn_primed)。
         cmd = tata_cmd() + ["--input-format", "stream-json", "--output-format", "stream-json",
                             "--include-partial-messages", "--verbose"]
         return subprocess.Popen(cmd, cwd=tata_root(), text=True,
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=subprocess.DEVNULL)
+
+    def _spawn_primed(self, staff):
+        """起一条常驻进程并以 stream-json 首轮注入 Tata 人设(idealab 不吃 append, 故对话注入)。
+        喂 priming 读到 result 即"已注入"; 预热进程正好用空转时间 priming 好。"""
+        proc = self._spawn(staff)
+        if proc is None:
+            return None
+        try:
+            proc.stdin.write(_tata_settings_round(TATA_PRIMING) + "\n")
+            proc.stdin.flush()
+            for _ in parse_stream_lines(_one_round(proc.stdout)):
+                pass
+        except Exception:  # noqa: BLE001 — priming 失败(进程崩)交由 _alive/重起兜底
+            pass
+        return proc
 
     def warm_count(self):
         return len([p for p in self._warm if p.poll() is None])
@@ -325,7 +343,7 @@ class TataPool:
             need = min(self.prewarm_n - len(self._warm), budget)
             for _ in range(max(0, need)):
                 try:
-                    p = self._spawn(None)
+                    p = self._spawn_primed(None)   # 空转时间顺带 priming 注入 Tata 人设
                 except Exception:  # noqa: BLE001 — 预热失败回退懒起, 不崩
                     break
                 if p is not None:
@@ -350,7 +368,7 @@ class TataPool:
                 proc = cand
         if proc is None:
             try:
-                proc = self._spawn(staff)
+                proc = self._spawn_primed(staff)   # 懒起也先 priming 注入 Tata 人设
             except Exception as e:  # noqa: BLE001
                 raise TataSpawnError(str(e))
         if proc is None:
