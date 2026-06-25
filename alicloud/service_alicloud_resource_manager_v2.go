@@ -1525,3 +1525,74 @@ func (s *ResourceManagerServiceV2) ResourceManagerDeliveryChannelStateRefreshFun
 }
 
 // DescribeResourceManagerDeliveryChannel >>> Encapsulated.
+// DescribeResourceManagerResourceDirectorySharing <<< Encapsulated get interface for ResourceManager ResourceDirectorySharing.
+
+func (s *ResourceManagerServiceV2) DescribeResourceManagerResourceDirectorySharing(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	action := "CheckSharingWithResourceDirectoryStatus"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	currentStatus := response["EnableSharingWithRd"]
+	if fmt.Sprint(currentStatus) == "" {
+		return object, WrapErrorf(NotFoundErr("ResourceDirectorySharing", id), NotFoundMsg, response)
+	}
+
+	return response, nil
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerResourceDirectorySharingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ResourceManagerResourceDirectorySharingStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerResourceDirectorySharing)
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerResourceDirectorySharingStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeResourceManagerResourceDirectorySharing >>> Encapsulated.
