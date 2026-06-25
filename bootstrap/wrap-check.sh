@@ -37,19 +37,30 @@ if [ -d "$myday_dir" ]; then
     done < <(find "$myday_dir" -maxdepth 1 -name 'claims-*.json' -print0 2>/dev/null)
 fi
 
-# No claims files at all → nothing to check
-if [ "${#ledger_files[@]}" -eq 0 ]; then
+# Touched ledgers: wrap.sh records every sync/done id here. Catches the blind spot
+# where a ticket was handled but NEVER claimed → no claims-*.json entry → vacuous pass.
+touched_files=()
+while IFS= read -r -d '' f; do touched_files+=("$f"); done \
+    < <(find "$myday_dir" -maxdepth 1 -name 'touched-*.json' -print0 2>/dev/null)
+
+# No ledgers at all → nothing to check
+if [ "${#ledger_files[@]}" -eq 0 ] && [ "${#touched_files[@]}" -eq 0 ]; then
     exit 0
 fi
 
-# Merge all ledger files: extract ids where done == false, deduplicate via sort -u
+# Merge: open claims (done==false) + every touched id, deduplicate. Each must have a run_done.
 open_ids=()
 while IFS= read -r id; do
     [ -n "$id" ] && open_ids+=("$id")
 done < <(
-    for ledger_file in "${ledger_files[@]}"; do
-        jq -r '.[] | select(.done == false) | .id' "$ledger_file" 2>/dev/null
-    done | sort -u
+    {
+        for ledger_file in ${ledger_files[@]+"${ledger_files[@]}"}; do
+            jq -r '.[] | select(.done == false) | .id' "$ledger_file" 2>/dev/null
+        done
+        for tf in ${touched_files[@]+"${touched_files[@]}"}; do
+            jq -r '.[]' "$tf" 2>/dev/null
+        done
+    } | sort -u
 )
 
 if [ "${#open_ids[@]}" -eq 0 ]; then
@@ -68,7 +79,7 @@ if [ "${#missing[@]}" -eq 0 ]; then
     exit 0
 fi
 
-echo "wrap-check: unclosed claims with no run record:" >&2
+echo "wrap-check: claimed-or-touched workitems with no run_done (未收尾):" >&2
 for id in "${missing[@]}"; do
     echo "  $id" >&2
 done

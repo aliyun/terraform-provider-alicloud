@@ -37,7 +37,7 @@
 3. **未命中** → **反问选池**（不擅自创建）：列出候选池（tf_provider / tf_customer / mcp_server / cloudspec / api_toolkit），等用户选。
 4. **授权后建 + 双向关联**：建工作项 → 工单挂本任务链接，本任务记 Aone id（双向）。
    - ad-hoc PR 无明确归属 → 默认落 **tf_provider (528766)**。
-5. 纯本地只读任务可跳过本节，直接进四。
+5. **凡要写工单(新建 or 复用)都开 bookend**：拿到 id 后(无论第 2 步复用还是第 4 步新建)，**开局即 `bootstrap/claim.sh claim <id> <project>`**(打 jarvis-claimed、入台账)，收尾走 bookend 收口(`triage-one.sh` 或 `wrap.sh done`+`claim.sh release`)。漏 claim = 后续标签/状态/对账全失灵。纯本地只读、不动任何工单的任务可跳过本节直接进四。
 
 保留 **supervised 门**：建/写 Aone 前逐项等授权。
 
@@ -70,6 +70,8 @@ bootstrap/wrap.sh done <id> "<任务+落点>" "<status>"
 ```
 
 收尾回填 Aone（评论+改状态）并落 `runs/`；dev 中途用 `wrap.sh sync <id> "<进展>"` 报进展。临时数据走 `.my-day/`，禁往仓库根甩 scratch。Aone 唯一真源——禁止只在本地推进不落 Aone。
+
+> **收尾必走 bookend，禁裸 `log.sh run_done`**：凡 claim 过的工单(新建/复用都算)，收尾用 `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>`(claim→done→release 一把成对)，或手跑 `wrap.sh done` + `claim.sh release` 两步。裸 run_done 只落本地审计：标签停 claimed/状态不动/release 漏。claim 开头、release 收尾闭合，`wrap-check.sh`+`reconcile.sh` 才兜得住。
 
 ---
 

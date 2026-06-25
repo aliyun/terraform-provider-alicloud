@@ -33,6 +33,16 @@ code_footer() {
     printf '\n\n代码：%s @ %s (%s%s)' "$repo" "$branch" "$sha" "${dirty:-}"
 }
 
+# 触碰台账：任何 sync/done 都记 id，wrap-check 据此抓"碰过但没收尾(无 run_done)"的盲区
+# ——盲区指根本没 claim、claim 台账无记录的工单(see 83498126)。
+touch_ledger() {
+    local tid="$1"; local dir="${JARVIS_ROOT:-$jarvis_root}/.my-day"
+    mkdir -p "$dir"; local f="$dir/touched-$(date -u +%F).json"
+    local tmp; tmp="$(mktemp "$dir/.touched-tmp.XXXXXX")"
+    if [ -f "$f" ]; then jq --arg id "$tid" 'if any(.[]; .==$id) then . else .+[$id] end' "$f" >"$tmp" && mv "$tmp" "$f"
+    else echo "[\"$tid\"]" >"$f"; rm -f "$tmp"; fi
+}
+
 cmd="${1:-}"
 id="${2:-}"
 
@@ -40,6 +50,7 @@ case "$cmd" in
     sync)
         text="${3:-}"
         [ -n "$id" ] && [ -n "$text" ] || { echo "Usage: wrap.sh sync <id> \"<progress>\"" >&2; exit 1; }
+        touch_ledger "$id"
         text="${text}$(code_footer)"
         a1 project workitem comment create "$id" -m "$text" \
             || echo "wrap.sh: a1 comment 失败（id=${id}），进展未落 Aone，请人工补" >&2
@@ -49,6 +60,7 @@ case "$cmd" in
         summary="${3:-}"
         status="${4:-}"
         [ -n "$id" ] && [ -n "$summary" ] && [ -n "$status" ] || { echo "Usage: wrap.sh done <id> \"<summary>\" <status>" >&2; exit 1; }
+        touch_ledger "$id"
         # 1) 本地审计先写，审计绝不丢（即使 Aone 调用失败）
         jq -e '.claim' "$pools_cfg" >/dev/null 2>&1 || echo "wrap.sh: pools.json .claim 缺失" >&2
         bash "$script_dir/log.sh" run_done "$id" "$summary"
