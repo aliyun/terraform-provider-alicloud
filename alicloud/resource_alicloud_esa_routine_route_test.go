@@ -10,20 +10,19 @@ import (
 )
 
 // Test ESA RoutineRoute. >>> Resource test cases, automatically generated.
-// Case resource_RoutineRoute_test
-func TestAccAliCloudESARoutineRouteresource_RoutineRoute_test(t *testing.T) {
+// Case 0
+func TestAccAliCloudEsaRoutineRoute_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_esa_routine_route.default"
-	ra := resourceAttrInit(resourceId, AliCloudESARoutineRouteresource_RoutineRoute_testMap)
+	ra := resourceAttrInit(resourceId, AliCloudEsaRoutineRouteMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEsaRoutineRoute")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sESARoutineRoute%d", defaultRegionToTest, rand)
-
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudESARoutineRouteresource_RoutineRoute_testBasicDependence)
+	name := fmt.Sprintf("tf-testacc%serr%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEsaRoutineRouteBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -35,28 +34,70 @@ func TestAccAliCloudESARoutineRouteresource_RoutineRoute_test(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"routine_name": "${alicloud_esa_routine.default.name}",
-					"site_id":      "${alicloud_esa_site.default.id}",
-					"bypass":       "off",
-					"route_name":   "example_routine",
+					"site_id":      "${data.alicloud_esa_sites.default.sites.0.id}",
+					"routine_name": "${alicloud_esa_routine.default.id}",
+					"route_name":   name,
 					"route_enable": "on",
 					"rule":         "(http.host eq \\\"video.example1.com\\\")",
-					"sequence":     "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"site_id":      CHECKSET,
+						"routine_name": CHECKSET,
+						"route_name":   name,
+						"route_enable": "on",
+						"rule":         CHECKSET,
+					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bypass":       "on",
-					"route_name":   "test_routine_test2",
-					"route_enable": "off",
-					"rule":         "(http.host eq \\\"video.example2.com\\\")",
-					"sequence":     "1",
+					"route_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"route_name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule": "(http.host eq \\\"video.example2.com\\\")",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"route_enable": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"route_enable": "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"route_enable": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"route_enable": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bypass": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bypass": "on",
+					}),
 				),
 			},
 			{
@@ -70,6 +111,16 @@ func TestAccAliCloudESARoutineRouteresource_RoutineRoute_test(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"sequence": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sequence": "1",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -79,32 +130,81 @@ func TestAccAliCloudESARoutineRouteresource_RoutineRoute_test(t *testing.T) {
 	})
 }
 
-var AliCloudESARoutineRouteresource_RoutineRoute_testMap = map[string]string{
-	"id": CHECKSET,
+func TestAccAliCloudEsaRoutineRoute_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_routine_route.default"
+	ra := resourceAttrInit(resourceId, AliCloudEsaRoutineRouteMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEsaRoutineRoute")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%serr%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEsaRoutineRouteBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":      "${data.alicloud_esa_sites.default.sites.0.id}",
+					"routine_name": "${alicloud_esa_routine.default.id}",
+					"route_name":   name,
+					"route_enable": "on",
+					"rule":         "(http.host eq \\\"video.example1.com\\\")",
+					"bypass":       "on",
+					"fallback":     "on",
+					"sequence":     "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"site_id":      CHECKSET,
+						"routine_name": CHECKSET,
+						"route_name":   name,
+						"route_enable": "on",
+						"rule":         CHECKSET,
+						"bypass":       "on",
+						"fallback":     "on",
+						"sequence":     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
 }
 
-func AliCloudESARoutineRouteresource_RoutineRoute_testBasicDependence(name string) string {
+var AliCloudEsaRoutineRouteMap0 = map[string]string{
+	"bypass":    CHECKSET,
+	"config_id": CHECKSET,
+	"fallback":  CHECKSET,
+	"sequence":  CHECKSET,
+}
+
+func AliCloudEsaRoutineRouteBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 data "alicloud_esa_sites" "default" {
   plan_subscribe_type = "enterpriseplan"
 }
 
-resource "alicloud_esa_site" "default" {
-  site_name   = "chenxin0116.site"
-  instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
-  coverage    = "overseas"
-  access_type = "NS"
-}
-
 resource "alicloud_esa_routine" "default" {
-  description = "example-routine2"
-  name        = "example-routine2"
+  name = var.name
 }
-
 `, name)
 }
 
