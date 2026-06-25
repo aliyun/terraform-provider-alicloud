@@ -3,7 +3,7 @@
     "generated": true
   },
   "description": "通过钉钉 AI 卡片发送流式消息（打字机效果）。当用户需要发送流式钉钉消息、 AI 卡片消息、打字机效果消息、或通过钉钉卡片推送内容时使用此技能。 触发关键词：流式消息、AI卡片、打字机效果、streaming card、发卡片、钉钉卡片推送。",
-  "name": "chenhanzhang-chz-dingtalk-ai-card",
+  "name": "dingtalk-ai-card",
   "publishConfig": {
     "registry": "https://contextlab.alibaba-inc.com/skill"
   },

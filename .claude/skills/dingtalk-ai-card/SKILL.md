@@ -5,7 +5,7 @@ description: >
   AI 卡片消息、打字机效果消息、或通过钉钉卡片推送内容时使用此技能。
   触发关键词：流式消息、AI卡片、打字机效果、streaming card、发卡片、钉钉卡片推送。
 allowed-tools: Bash, Read
-name: chenhanzhang-chz-dingtalk-ai-card
+name: dingtalk-ai-card
 x-source: aone-open
 ---
 
@@ -27,7 +27,7 @@ curl -fsSL https://am.io.alibaba-inc.com/install.sh | bash
 
 ```bash
 # 设好 DINGTALK_APP_KEY / DINGTALK_APP_SECRET / DINGTALK_STAFF_ID（DINGTALK_ROBOT_CODE 默认=appKey）
-bash ~/.claude/skills/chenhanzhang-chz-dingtalk-ai-card/scripts/ensure-bind.sh
+bash ~/.claude/skills/dingtalk-ai-card/scripts/ensure-bind.sh
 ```
 
 手动等价：
@@ -57,7 +57,7 @@ am bind --type=bot \
 ### 发送流式消息（打字机效果）
 
 ```bash
-python3 ~/.claude/skills/chenhanzhang-chz-dingtalk-ai-card/scripts/streaming.py \
+python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
   --to <staffId> \
   --template-id <templateId> \
   -m $'消息内容\n支持换行和**Markdown**'
@@ -66,7 +66,7 @@ python3 ~/.claude/skills/chenhanzhang-chz-dingtalk-ai-card/scripts/streaming.py 
 ### 一次性发送（无打字机效果）
 
 ```bash
-python3 ~/.claude/skills/chenhanzhang-chz-dingtalk-ai-card/scripts/streaming.py \
+python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
   --to <staffId> \
   --template-id <templateId> \
   --no-stream \
@@ -76,7 +76,7 @@ python3 ~/.claude/skills/chenhanzhang-chz-dingtalk-ai-card/scripts/streaming.py 
 ### 从 stdin 读取
 
 ```bash
-echo "内容" | python3 ~/.claude/skills/chenhanzhang-chz-dingtalk-ai-card/scripts/streaming.py \
+echo "内容" | python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
   --to <staffId> \
   --template-id <templateId> \
   --stdin
@@ -85,7 +85,7 @@ echo "内容" | python3 ~/.claude/skills/chenhanzhang-chz-dingtalk-ai-card/scrip
 ### 发送到群聊
 
 ```bash
-python3 ~/.claude/skills/chenhanzhang-chz-dingtalk-ai-card/scripts/streaming.py \
+python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
   --to-group <openConversationId> \
   --template-id <templateId> \
   -m "群消息"
