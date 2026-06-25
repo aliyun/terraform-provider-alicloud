@@ -13,12 +13,44 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.24.x'
       - name: ACube AccTest Check
+        env:
+          ACUBE_OSS_ENDPOINT: ${{ secrets.ACUBE_OSS_ENDPOINT }}
+          ACUBE_OSS_AK: ${{ secrets.ACUBE_OSS_AK }}
+          ACUBE_OSS_SK: ${{ secrets.ACUBE_OSS_SK }}
+          ACUBE_OSS_BUCKET: ${{ secrets.ACUBE_OSS_BUCKET }}
         run: |
+          set -euo pipefail
           headSha="${{ github.event.pull_request.head.sha }}"
+          endpoint="${ACUBE_OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}"
+          bucket="${ACUBE_OSS_BUCKET:-terraform-acctest-code-bucket}"
+          objectPrefix="dst-pr-${headSha}"
+          resultObj="oss://${bucket}/${objectPrefix}/run.result"
+          logObj="oss://${bucket}/${objectPrefix}/run.log"
           echo "polling acube acctest results for head sha: ${headSha}"
-          go run scripts/acube/acube_check.go ${headSha}
+          echo "result object: ${resultObj}"
+          echo "log object: ${logObj}"
+
+          # install ossutil (read-only OSS access via repo secrets)
+          curl -fsSL -o ossutil64 http://gosspublic.alicdn.com/ossutil/1.7.19/ossutil64
+          chmod +x ossutil64
+          export OSSUTIL="$(pwd)/ossutil64"
+          ossArgs=(-e "${endpoint}" -i "${ACUBE_OSS_AK}" -k "${ACUBE_OSS_SK}")
+
+          deadline=$(( $(date +%s) + 30*60 ))
+          while [ "$(date +%s)" -lt "${deadline}" ]; do
+            if "${OSSUTIL}" "${ossArgs[@]}" cat "${resultObj}" > run.result 2>/dev/null; then
+              echo "run.result is ready, fetching run.log"
+              "${OSSUTIL}" "${ossArgs[@]}" cat "${logObj}" 2>/dev/null || echo "[WARN] run.log not available"
+              firstLine="$(head -n 1 run.result | tr -d '[:space:]')"
+              echo "acube acctest result: ${firstLine}"
+              case "${firstLine}" in
+                SUCCESS*) exit 0 ;;
+                *) exit 1 ;;
+              esac
+            fi
+            echo "waiting for acube job running..."
+            sleep 10
+          done
+          echo "[ERROR] Timeout: waiting for acube acctest finished timeout after 30 minutes."
+          exit 1
