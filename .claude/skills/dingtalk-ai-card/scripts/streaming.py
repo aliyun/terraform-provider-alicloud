@@ -11,40 +11,39 @@ Usage:
 import argparse
 import json
 import os
-import subprocess
+import ssl
 import sys
 import time
 import uuid
 import urllib.request
 import urllib.error
-from pathlib import Path
 
 
-def ensure_bind():
-    """Best-effort idempotent am bind from env vars; never fatal."""
-    helper = Path(__file__).resolve().parent / "ensure-bind.sh"
-    if not helper.exists():
-        return
+# ---------------------------------------------------------------------------
+# SSL context: auto-detect a usable CA bundle so the script works out-of-the-
+# box on macOS Homebrew Python (which ships without bundled root certs).
+# Priority: certifi > /etc/ssl/cert.pem (macOS) > ca-certificates.crt (Linux)
+# The SSL_CERT_FILE env var is still honoured by ssl.create_default_context().
+# ---------------------------------------------------------------------------
+def _build_ssl_context():
+    if os.environ.get("SSL_CERT_FILE"):
+        return ssl.create_default_context()          # env var takes precedence
     try:
-        subprocess.run(["bash", str(helper)], check=False,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
         pass
+    for candidate in ("/etc/ssl/cert.pem", "/etc/ssl/certs/ca-certificates.crt"):
+        if os.path.isfile(candidate):
+            return ssl.create_default_context(cafile=candidate)
+    return ssl.create_default_context()
+
+_SSL_CTX = _build_ssl_context()
 
 
-def load_am_config(bot_name=None):
-    if bot_name:
-        config_path = Path.home() / ".config" / "aone-message-cli" / "profiles" / bot_name / "config.properties"
-    else:
-        config_path = Path.home() / ".config" / "aone-message-cli" / "config.properties"
-    config = {}
-    if config_path.exists():
-        for line in config_path.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                config[k.strip()] = v.strip()
-    return config
+def _urlopen(req, **kwargs):
+    """urllib.request.urlopen wrapper that injects the auto-detected SSL ctx."""
+    return urllib.request.urlopen(req, context=_SSL_CTX, **kwargs)
 
 
 def get_access_token(app_key, app_secret):
@@ -54,7 +53,7 @@ def get_access_token(app_key, app_secret):
         data=data,
         headers={"Content-Type": "application/json"},
     )
-    resp = urllib.request.urlopen(req)
+    resp = _urlopen(req)
     result = json.loads(resp.read())
     return result["accessToken"]
 
@@ -87,7 +86,7 @@ def create_and_deliver_card(token, template_id, robot_code, target, target_type=
             "x-acs-dingtalk-access-token": token,
         },
     )
-    resp = urllib.request.urlopen(req)
+    resp = _urlopen(req)
     result = json.loads(resp.read())
 
     if result.get("success"):
@@ -118,7 +117,7 @@ def streaming_update(token, out_track_id, key, content, is_full=True, is_finaliz
             "x-acs-dingtalk-access-token": token,
         },
     )
-    resp = urllib.request.urlopen(req)
+    resp = _urlopen(req)
     return json.loads(resp.read())
 
 
@@ -150,22 +149,19 @@ def main():
     parser.add_argument("--template-id", help="AI card template ID")
     parser.add_argument("--app-key", help="DingTalk app key")
     parser.add_argument("--app-secret", help="DingTalk app secret")
-    parser.add_argument("--robot-code", help="Robot code")
-    parser.add_argument("--bot", help="am bot profile name")
+    parser.add_argument("--robot-code", help="Robot code (defaults to appKey)")
     args = parser.parse_args()
 
-    ensure_bind()
-    am_config = load_am_config(args.bot)
-    app_key = args.app_key or os.environ.get("DINGTALK_APP_KEY") or am_config.get("aliding.access-key-id")
-    app_secret = args.app_secret or os.environ.get("DINGTALK_APP_SECRET") or am_config.get("aliding.access-key-secret")
-    robot_code = args.robot_code or os.environ.get("DINGTALK_ROBOT_CODE") or am_config.get("aliding.robot-code")
+    app_key = args.app_key or os.environ.get("DINGTALK_APP_KEY")
+    app_secret = args.app_secret or os.environ.get("DINGTALK_APP_SECRET")
+    robot_code = args.robot_code or os.environ.get("DINGTALK_ROBOT_CODE") or app_key
     template_id = args.template_id or os.environ.get("DINGTALK_TEMPLATE_ID")
 
     if not template_id:
         print("Error: --template-id or DINGTALK_TEMPLATE_ID required.", file=sys.stderr)
         sys.exit(1)
     if not app_key or not app_secret:
-        print("Error: credentials required. Use --app-key/--app-secret, env vars, or `am bind`.", file=sys.stderr)
+        print("Error: credentials required. Use --app-key/--app-secret or set DINGTALK_APP_KEY/DINGTALK_APP_SECRET.", file=sys.stderr)
         sys.exit(1)
     if not args.to and not args.to_group:
         print("Error: --to or --to-group required.", file=sys.stderr)
