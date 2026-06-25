@@ -2,14 +2,29 @@
 
 可被 Claude 完全接替日常工作的自包含起点母版。
 
-## 启动
+## 配置（一次性）
 
 ```bash
-bridge/run.sh start          # 数字员工常驻：钉钉收消息 → 跑 jarvis → 流式回卡
-claude                       # 当面用：进目录起会话，CLAUDE.md 接管 scan→plan→triage
+bash bootstrap/install.sh                       # 装依赖（a1/aliyun/cloudspec/gh）
+cp bootstrap/.env.example bootstrap/.env        # 填 GH_TOKEN + 阿里云 AK
+bin/a1id login jarvis && bin/a1id login chenyi  # 两个身份各登一次
 ```
 
-一次性 setup：`bash bootstrap/install.sh`（装依赖）→ `cp bootstrap/.env.example bootstrap/.env` 填密钥 → `bin/a1id login jarvis`（只登 jarvis；钉钉桥另填 `bridge/jarvis.env`）。
+钉钉数字员工还需 `cp bridge/jarvis.env.example bridge/jarvis.env`，填钉钉 appKey/appSecret/卡片模板 id。
+
+## 启动
+
+**当面用** —— 进目录起会话，CLAUDE.md 接管 scan→plan→triage：
+
+```bash
+claude
+```
+
+**数字员工** —— 常驻钉钉，收消息 → 跑 jarvis → 流式回卡：
+
+```bash
+bridge/run.sh start
+```
 
 ## triage loop
 
