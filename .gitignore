@@ -5,6 +5,10 @@ scratch_*
 
 # local rebuildable state (truth lives in Aone + memory/)
 .my-day/
+docs/board.html
+
+# plan snapshots — write-only audit, rebuilt each run; ledger runs/<date>-<id>.md stays tracked
+runs/plan-*.md
 
 # 开发用 worktree(临时分支工作区)
 .claude/worktrees/

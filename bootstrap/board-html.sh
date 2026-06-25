@@ -5,20 +5,19 @@
 # 任务池 col = pool-state candidates (ALL rendered; col body scrolls vertically). 5 equal
 # 300px cols overflow-x scroll. Pool filter = dropdown w/ checkboxes (names from pools.json),
 # default all checked, hide/show by data-pool, live counts. data-pool=key, label=name.
-# Writes both .my-day/board.html (ephemeral) and docs/board.html (repo-tracked).
+# Writes docs/board.html (gitignored build artifact; rebuild via refresh.sh, served by serve.sh).
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="${JARVIS_ROOT:-$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || (cd "$script_dir/.." && pwd))}"
-out="$root/.my-day/board.html"
 docs_out="$root/docs/board.html"
-mkdir -p "$root/.my-day" "$root/docs"
+mkdir -p "$root/docs"
 json_f="$(mktemp)"; trap 'rm -f "$json_f"' EXIT
 "$script_dir/board.sh" > "$json_f"
 
-python3 - "$out" "$docs_out" "$json_f" "$root/config/pools.json" <<PY
+python3 - "$docs_out" "$json_f" "$root/config/pools.json" <<PY
 import json, sys, html, datetime
-out=sys.argv[1]; docs_out=sys.argv[2]
-data=json.load(open(sys.argv[3]))
+docs_out=sys.argv[1]
+data=json.load(open(sys.argv[2]))
 def e(s): return html.escape(str(s or ""))
 PRI={"紧急":("#d92d20","#fef3f2"),"高":("#d92d20","#fef3f2"),"中":("#b54708","#fffaeb"),"低":("#475467","#f2f4f7")}
 COLS=[("任务池","pool"),("待开始","__pre"),("进行中","inflight"),("审核中","done"),("已完成","merged")]
@@ -26,7 +25,7 @@ POOLS=["tf_provider","tf_customer","mcp_server","api_toolkit","cloudspec"]
 # key→hue: accent border + tag chip tint + filter swatch share one color per pool
 COLOR={"tf_provider":"#3b82f6","tf_customer":"#f59e0b","mcp_server":"#a855f7","cloudspec":"#22c55e","api_toolkit":"#ec4899"}
 CAT={"req":("需求","#0e7090","#ecfdff"),"bug":("缺陷","#b42318","#fef3f2"),"task":("任务","#5925dc","#f4f3ff")}
-cfg=json.load(open(sys.argv[4])); NAMES={k:v.get("name",k) for k,v in cfg.get("pools",{}).items()}
+cfg=json.load(open(sys.argv[3])); NAMES={k:v.get("name",k) for k,v in cfg.get("pools",{}).items()}
 PCNT={}; PSPLIT={}  # pool key → candidate count + {req,bug,task} split (full, even if cap clipped DOM)
 for x in data:
   if x["state"]=="pool":
@@ -119,6 +118,5 @@ fetch('/refresh',{{method:'POST'}}).then(r=>{{if(r.ok)location.reload();else thr
 .catch(()=>{{alert('刷新失败,请手动运行 bootstrap/refresh.sh');R.disabled=false;R.textContent='刷新';}});}};
 sync();
 </script>'''
-open(out,"w",encoding="utf-8").write(doc); print(out)
 open(docs_out,"w",encoding="utf-8").write(doc); print(docs_out)
 PY
