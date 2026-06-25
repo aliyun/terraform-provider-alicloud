@@ -2,8 +2,7 @@
 # bootstrap/week.sh — 周回顾工具
 #
 # Cross-pool, lists jarvis-done workitems modified in the last N days (default 7)
-# and produces a markdown checklist with Aone links, then cross-checks against
-# local runs/<date>-<id>.md ledger to surface drift.
+# and produces a markdown checklist with Aone links from the Aone source of truth.
 #
 # Usage:
 #   bash bootstrap/week.sh            # last 7 days
@@ -11,10 +10,9 @@
 #
 # Environment overrides:
 #   JARVIS_ROOT       — repo root (default: git rev-parse --show-toplevel)
-#   JARVIS_RUNS_DIR   — runs dir (default: <JARVIS_ROOT>/runs)
 #   JARVIS_WEEK_DAYS  — window in days (default 7; --days wins over env)
 #
-# Read-only on Aone; only reads local runs/. Pure bash + jq + a1, no network deps.
+# Read-only on Aone. Pure bash + jq + a1, no network deps.
 
 set -uo pipefail
 
@@ -27,7 +25,6 @@ if [ -z "${JARVIS_ROOT:-}" ]; then
 fi
 export JARVIS_ROOT
 
-RUNS_DIR="${JARVIS_RUNS_DIR:-$JARVIS_ROOT/runs}"
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
 # ---------------------------------------------------------------------------
@@ -74,7 +71,7 @@ except Exception:
 echo "# 本周回顾 — 近 ${DAYS} 天 jarvis-done"
 echo ""
 
-DONE_IDS=()
+found=0
 
 while IFS= read -r project; do
     [ -z "$project" ] && continue
@@ -96,53 +93,11 @@ while IFS= read -r project; do
         fi
         url=$(printf "$URL_FMT" "$project" "$id")
         echo "- [$id] $subject — $url"
-        DONE_IDS+=("$id")
+        found=1
     done <<< "$rows"
 
 done <<< "$PROJECTS"
 
-[ "${#DONE_IDS[@]}" -eq 0 ] && echo "_(无)_"
-
-# ---------------------------------------------------------------------------
-# Cross-check local runs/<date>-<id>.md ledger vs jarvis-done
-# ---------------------------------------------------------------------------
-LEDGER_IDS=()
-if [ -d "$RUNS_DIR" ]; then
-    while IFS= read -r f; do
-        bn="$(basename "$f")"
-        lid="${bn##*-}"; lid="${lid%.md}"
-        [ -n "$lid" ] && LEDGER_IDS+=("$lid")
-    done < <(ls "$RUNS_DIR"/*-*.md 2>/dev/null)
-fi
-
-in_list() { local x="$1"; shift; for e in "$@"; do [ "$e" = "$x" ] && return 0; done; return 1; }
-
-echo ""
-echo "## 漂移核对"
-echo ""
-echo "### 有台账但没 jarvis-done"
-miss_done=0
-if [ "${#LEDGER_IDS[@]}" -gt 0 ]; then
-    for lid in "${LEDGER_IDS[@]}"; do
-        if [ "${#DONE_IDS[@]}" -eq 0 ] || ! in_list "$lid" "${DONE_IDS[@]}"; then
-            echo "- $lid (runs/ 有,在线无 jarvis-done)"
-            miss_done=1
-        fi
-    done
-fi
-[ "$miss_done" -eq 0 ] && echo "_(无)_"
-
-echo ""
-echo "### 有 done 但本地无台账"
-miss_led=0
-if [ "${#DONE_IDS[@]}" -gt 0 ]; then
-    for did in "${DONE_IDS[@]}"; do
-        if [ "${#LEDGER_IDS[@]}" -eq 0 ] || ! in_list "$did" "${LEDGER_IDS[@]}"; then
-            echo "- $did (在线 jarvis-done,runs/ 无台账)"
-            miss_led=1
-        fi
-    done
-fi
-[ "$miss_led" -eq 0 ] && echo "_(无)_"
+[ "$found" -eq 0 ] && echo "_(无)_"
 
 exit 0
