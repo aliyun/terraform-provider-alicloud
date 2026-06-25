@@ -11,6 +11,7 @@ Usage:
 import argparse
 import json
 import os
+import ssl
 import subprocess
 import sys
 import time
@@ -18,6 +19,33 @@ import uuid
 import urllib.request
 import urllib.error
 from pathlib import Path
+
+
+# ---------------------------------------------------------------------------
+# SSL context: auto-detect a usable CA bundle so the script works out-of-the-
+# box on macOS Homebrew Python (which ships without bundled root certs).
+# Priority: certifi > /etc/ssl/cert.pem (macOS) > ca-certificates.crt (Linux)
+# The SSL_CERT_FILE env var is still honoured by ssl.create_default_context().
+# ---------------------------------------------------------------------------
+def _build_ssl_context():
+    if os.environ.get("SSL_CERT_FILE"):
+        return ssl.create_default_context()          # env var takes precedence
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        pass
+    for candidate in ("/etc/ssl/cert.pem", "/etc/ssl/certs/ca-certificates.crt"):
+        if os.path.isfile(candidate):
+            return ssl.create_default_context(cafile=candidate)
+    return ssl.create_default_context()
+
+_SSL_CTX = _build_ssl_context()
+
+
+def _urlopen(req, **kwargs):
+    """urllib.request.urlopen wrapper that injects the auto-detected SSL ctx."""
+    return urllib.request.urlopen(req, context=_SSL_CTX, **kwargs)
 
 
 def ensure_bind():
@@ -54,7 +82,7 @@ def get_access_token(app_key, app_secret):
         data=data,
         headers={"Content-Type": "application/json"},
     )
-    resp = urllib.request.urlopen(req)
+    resp = _urlopen(req)
     result = json.loads(resp.read())
     return result["accessToken"]
 
@@ -87,7 +115,7 @@ def create_and_deliver_card(token, template_id, robot_code, target, target_type=
             "x-acs-dingtalk-access-token": token,
         },
     )
-    resp = urllib.request.urlopen(req)
+    resp = _urlopen(req)
     result = json.loads(resp.read())
 
     if result.get("success"):
@@ -118,7 +146,7 @@ def streaming_update(token, out_track_id, key, content, is_full=True, is_finaliz
             "x-acs-dingtalk-access-token": token,
         },
     )
-    resp = urllib.request.urlopen(req)
+    resp = _urlopen(req)
     return json.loads(resp.read())
 
 
@@ -158,7 +186,10 @@ def main():
     am_config = load_am_config(args.bot)
     app_key = args.app_key or os.environ.get("DINGTALK_APP_KEY") or am_config.get("aliding.access-key-id")
     app_secret = args.app_secret or os.environ.get("DINGTALK_APP_SECRET") or am_config.get("aliding.access-key-secret")
-    robot_code = args.robot_code or os.environ.get("DINGTALK_ROBOT_CODE") or am_config.get("aliding.robot-code")
+    robot_code = (args.robot_code
+                  or os.environ.get("DINGTALK_ROBOT_CODE")
+                  or am_config.get("aliding.robot-code")
+                  or app_key)          # robotCode defaults to appKey
     template_id = args.template_id or os.environ.get("DINGTALK_TEMPLATE_ID")
 
     if not template_id:

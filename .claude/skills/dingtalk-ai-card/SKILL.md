@@ -15,13 +15,28 @@ x-source: aone-open
 
 ## 前置条件
 
-### 1. 安装 am CLI
+### 1. 设置环境变量（必须）
+
+| 变量 | 说明 |
+|------|------|
+| `DINGTALK_APP_KEY` | appKey |
+| `DINGTALK_APP_SECRET` | appSecret |
+| `DINGTALK_STAFF_ID` | 目标用户 staffId |
+| `DINGTALK_TEMPLATE_ID` | AI 卡片模板 ID |
+| `DINGTALK_ROBOT_CODE` | robotCode（可选，默认=appKey） |
+
+设好以上变量后，脚本即可直接使用，无需 `am` CLI。
+
+### 2. 安装 am CLI（可选）
+
+`am` 是凭据持久化的备选方案（写入 `~/.config/aone-message-cli/`），环境变量已设时非必须。  
+**注意：`am` 依赖 Java 运行时**，需先安装 JDK/JRE（如 `brew install openjdk`）。
 
 ```bash
 curl -fsSL https://am.io.alibaba-inc.com/install.sh | bash
 ```
 
-### 2. 绑定机器人
+### 3. 绑定机器人（可选，需 am + Java）
 
 凭证全走环境变量，绑定可自动幂等完成（已绑则跳过）：
 
@@ -40,7 +55,7 @@ am bind --type=bot \
   --robot-code $DINGTALK_APP_KEY
 ```
 
-### 3. 创建 AI 卡片模板
+### 4. 创建 AI 卡片模板
 
 在 [钉钉卡片平台](https://open-dev.dingtalk.com/fe/card) 创建：
 
@@ -52,7 +67,7 @@ am bind --type=bot \
 
 ## 使用方法
 
-脚本位于 `scripts/streaming.py`，自动从 `am bind` 配置读取凭据。
+脚本位于 `scripts/streaming.py`，凭据优先从环境变量读取，也可从 `am bind` 配置回退读取。
 
 ### 发送流式消息（打字机效果）
 
@@ -125,7 +140,7 @@ python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
 - 单次流式内容不超过 1KB，总大小建议不超过 3KB
 - 卡片模板必须已发布且关联了正确的机器人应用
 - 机器人应用需把出口 IP 加进白名单（IPv4/IPv6 都加，或临时关闭），否则 `am`/卡片 403
-- macOS python.org 的 Python 3.13 缺根证书：跑 `streaming.py` 前 `export SSL_CERT_FILE=$(python3 -c 'import certifi;print(certifi.where())')`，否则 SSL 校验失败
+- SSL 证书：脚本已内置自动检测（优先 certifi → 回退 `/etc/ssl/cert.pem` → Linux `ca-certificates.crt`），通常无需手动处理。如仍有问题可设 `SSL_CERT_FILE` 环境变量指向 CA bundle 路径
 - 常用模板可写进 `DINGTALK_TEMPLATE_ID` 免每次带 `--template-id`
 
 ## 底层 API 参考
