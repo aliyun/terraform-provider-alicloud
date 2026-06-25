@@ -7,8 +7,9 @@ scratch_*
 .my-day/
 docs/board.html
 
-# plan snapshots — write-only audit, rebuilt each run; ledger runs/<date>-<id>.md stays tracked
-runs/plan-*.md
+# runs/ 是本地审计缓存，真源在 Aone，周回顾走 bootstrap/week.sh
+runs/*.md
+!runs/.gitkeep
 
 # 开发用 worktree(临时分支工作区)
 .claude/worktrees/
