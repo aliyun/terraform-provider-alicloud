@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- launchd template (mac). Copy to ~/Library/LaunchAgents/com.jarvis.dingtalk.plist,
+     replace PLACEHOLDERS, then: launchctl load ~/Library/LaunchAgents/com.jarvis.dingtalk.plist -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.jarvis.dingtalk</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__PYTHON_PATH__</string>          <!-- e.g. /usr/bin/python3 -->
+    <string>__SCRIPT_PATH__</string>          <!-- .../bridge/jarvis_dingtalk_bot.py -->
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>JARVIS_ENV_FILE</key><string>__ENV_FILE__</string>  <!-- .../bridge/jarvis.env -->
+    <key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:__HOME__/.local/bin</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>__HOME__/.jarvis/dingtalk.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/.jarvis/dingtalk.log</string>
+</dict>
+</plist>
+<!-- systemd alt: create ~/.config/systemd/user/jarvis-dingtalk.service with
+     ExecStart=__PYTHON_PATH__ __SCRIPT_PATH__ and EnvironmentFile=__ENV_FILE__, then
+     systemctl --user enable --now jarvis-dingtalk -->
