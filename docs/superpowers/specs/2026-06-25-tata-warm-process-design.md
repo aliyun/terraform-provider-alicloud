@@ -28,10 +28,18 @@ user JSON，依次回 A、B，一进程多轮保温。冷启只付一次，续�
 - 进程崩→标记，下条自动重起。spawn 失败→回退一次性 run_tata_stream，不阻断。
 - 关停 main 时全 kill。
 
+## 启动命令（Tata=idea, Jarvis=cc）
+
+子进程无 shell 别名，复刻为绝对命令：
+- **Tata** = `idea` = `claude --settings ~/.claude/idea_settings.json`（走 idealab 网关，
+  自带 token，与主账号隔离）。常驻进程基命令；env `JARVIS_TATA_SETTINGS` 可覆盖档路径。
+- **Jarvis** = `cc` = `~/claude-start.sh`（预检后 exec claude）。env `JARVIS_CC` 可覆盖；
+  调用挂 `stdin</dev/null` 防 IP 不符时 read 卡死；banner 非 JSON 被 parse_stream_lines 跳过。
+
 ## 配置
 
 - 复用 tata_root/JARVIS_TATA_STAFF/JARVIS_MASTER_STAFF。
-- 新增 `JARVIS_TATA_IDLE_MIN`=30、`JARVIS_TATA_MAX`=10。
+- 新增 `JARVIS_TATA_IDLE_MIN`=30、`JARVIS_TATA_MAX`=10、`JARVIS_TATA_SETTINGS`、`JARVIS_CC`。
 
 ## 数据流
 
