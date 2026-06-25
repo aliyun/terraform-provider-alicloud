@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -106,11 +108,75 @@ func resourceAliCloudEsaOriginPool() *schema.Resource {
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
+						"ip_version_policy": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
 						"name": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
 					},
+				},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					o, n := d.GetChange("origins")
+					if o == nil || n == nil {
+						return old == new
+					}
+					oldList := o.(*schema.Set).List()
+					newList := n.(*schema.Set).List()
+					if len(oldList) != len(newList) {
+						return false
+					}
+
+					normalizeOrigins := func(items []interface{}) []map[string]interface{} {
+						result := make([]map[string]interface{}, 0, len(items))
+						for _, item := range items {
+							m := item.(map[string]interface{})
+							normalized := map[string]interface{}{
+								"address": m["address"],
+								"type":    m["type"],
+								"name":    m["name"],
+								"weight":  m["weight"],
+								"enabled": m["enabled"],
+								"header":  m["header"],
+							}
+							if authConf, ok := m["auth_conf"]; ok && authConf != nil {
+								authList := authConf.([]interface{})
+								if len(authList) > 0 {
+									auth := authList[0].(map[string]interface{})
+									normalized["auth_conf"] = map[string]interface{}{
+										"access_key": auth["access_key"],
+										"auth_type":  auth["auth_type"],
+										"region":     auth["region"],
+										"version":    auth["version"],
+									}
+								}
+							}
+							result = append(result, normalized)
+						}
+						sort.Slice(result, func(i, j int) bool {
+							return fmt.Sprint(result[i]["name"]) < fmt.Sprint(result[j]["name"])
+						})
+						return result
+					}
+
+					oldNormalized := normalizeOrigins(oldList)
+					newNormalized := normalizeOrigins(newList)
+
+					for i := range oldNormalized {
+						oldH := fmt.Sprint(oldNormalized[i]["header"])
+						newH := fmt.Sprint(newNormalized[i]["header"])
+						if oldH != newH {
+							if equal, _ := compareJsonTemplateAreEquivalent(oldH, newH); equal {
+								oldNormalized[i]["header"] = ""
+								newNormalized[i]["header"] = ""
+							}
+						}
+					}
+
+					return reflect.DeepEqual(oldNormalized, newNormalized)
 				},
 			},
 			"site_id": {
@@ -168,6 +234,9 @@ func resourceAliCloudEsaOriginPoolCreate(d *schema.ResourceData, meta interface{
 				localData1["Region"] = region1
 			}
 			dataLoopMap["AuthConf"] = localData1
+			if ipVersionPolicy, ok := dataLoopTmp["ip_version_policy"]; ok {
+				dataLoopMap["IpVersionPolicy"] = ipVersionPolicy
+			}
 			dataLoopMap["Weight"] = dataLoopTmp["weight"]
 			if enabled, ok := dataLoopTmp["enabled"]; ok {
 				dataLoopMap["Enabled"] = enabled
@@ -258,6 +327,7 @@ func resourceAliCloudEsaOriginPoolRead(d *schema.ResourceData, meta interface{})
 			if header, ok := originsChildRaw["Header"]; ok {
 				originsMap["header"] = convertObjectToJsonString(header)
 			}
+			originsMap["ip_version_policy"] = originsChildRaw["IpVersionPolicy"]
 			originsMap["name"] = originsChildRaw["Name"]
 			originsMap["origin_id"] = fmt.Sprint(originsChildRaw["Id"])
 			originsMap["type"] = originsChildRaw["Type"]
@@ -343,6 +413,9 @@ func resourceAliCloudEsaOriginPoolUpdate(d *schema.ResourceData, meta interface{
 						localData1["Region"] = region1
 					}
 					dataLoopMap["AuthConf"] = localData1
+				}
+				if ipVersionPolicy, ok := dataLoopTmp["ip_version_policy"]; ok {
+					dataLoopMap["IpVersionPolicy"] = ipVersionPolicy
 				}
 				dataLoopMap["Weight"] = dataLoopTmp["weight"]
 				if enabled, ok := dataLoopTmp["enabled"]; ok {
