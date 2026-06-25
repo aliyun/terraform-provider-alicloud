@@ -12,13 +12,11 @@ import argparse
 import json
 import os
 import ssl
-import subprocess
 import sys
 import time
 import uuid
 import urllib.request
 import urllib.error
-from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
@@ -46,33 +44,6 @@ _SSL_CTX = _build_ssl_context()
 def _urlopen(req, **kwargs):
     """urllib.request.urlopen wrapper that injects the auto-detected SSL ctx."""
     return urllib.request.urlopen(req, context=_SSL_CTX, **kwargs)
-
-
-def ensure_bind():
-    """Best-effort idempotent am bind from env vars; never fatal."""
-    helper = Path(__file__).resolve().parent / "ensure-bind.sh"
-    if not helper.exists():
-        return
-    try:
-        subprocess.run(["bash", str(helper)], check=False,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception:
-        pass
-
-
-def load_am_config(bot_name=None):
-    if bot_name:
-        config_path = Path.home() / ".config" / "aone-message-cli" / "profiles" / bot_name / "config.properties"
-    else:
-        config_path = Path.home() / ".config" / "aone-message-cli" / "config.properties"
-    config = {}
-    if config_path.exists():
-        for line in config_path.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                config[k.strip()] = v.strip()
-    return config
 
 
 def get_access_token(app_key, app_secret):
@@ -178,25 +149,19 @@ def main():
     parser.add_argument("--template-id", help="AI card template ID")
     parser.add_argument("--app-key", help="DingTalk app key")
     parser.add_argument("--app-secret", help="DingTalk app secret")
-    parser.add_argument("--robot-code", help="Robot code")
-    parser.add_argument("--bot", help="am bot profile name")
+    parser.add_argument("--robot-code", help="Robot code (defaults to appKey)")
     args = parser.parse_args()
 
-    ensure_bind()
-    am_config = load_am_config(args.bot)
-    app_key = args.app_key or os.environ.get("DINGTALK_APP_KEY") or am_config.get("aliding.access-key-id")
-    app_secret = args.app_secret or os.environ.get("DINGTALK_APP_SECRET") or am_config.get("aliding.access-key-secret")
-    robot_code = (args.robot_code
-                  or os.environ.get("DINGTALK_ROBOT_CODE")
-                  or am_config.get("aliding.robot-code")
-                  or app_key)          # robotCode defaults to appKey
+    app_key = args.app_key or os.environ.get("DINGTALK_APP_KEY")
+    app_secret = args.app_secret or os.environ.get("DINGTALK_APP_SECRET")
+    robot_code = args.robot_code or os.environ.get("DINGTALK_ROBOT_CODE") or app_key
     template_id = args.template_id or os.environ.get("DINGTALK_TEMPLATE_ID")
 
     if not template_id:
         print("Error: --template-id or DINGTALK_TEMPLATE_ID required.", file=sys.stderr)
         sys.exit(1)
     if not app_key or not app_secret:
-        print("Error: credentials required. Use --app-key/--app-secret, env vars, or `am bind`.", file=sys.stderr)
+        print("Error: credentials required. Use --app-key/--app-secret or set DINGTALK_APP_KEY/DINGTALK_APP_SECRET.", file=sys.stderr)
         sys.exit(1)
     if not args.to and not args.to_group:
         print("Error: --to or --to-group required.", file=sys.stderr)

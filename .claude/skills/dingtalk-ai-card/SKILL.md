@@ -15,7 +15,7 @@ x-source: aone-open
 
 ## 前置条件
 
-### 1. 设置环境变量（必须）
+### 1. 设置环境变量
 
 | 变量 | 说明 |
 |------|------|
@@ -25,37 +25,7 @@ x-source: aone-open
 | `DINGTALK_TEMPLATE_ID` | AI 卡片模板 ID |
 | `DINGTALK_ROBOT_CODE` | robotCode（可选，默认=appKey） |
 
-设好以上变量后，脚本即可直接使用，无需 `am` CLI。
-
-### 2. 安装 am CLI（可选）
-
-`am` 是凭据持久化的备选方案（写入 `~/.config/aone-message-cli/`），环境变量已设时非必须。  
-**注意：`am` 依赖 Java 运行时**，需先安装 JDK/JRE（如 `brew install openjdk`）。
-
-```bash
-curl -fsSL https://am.io.alibaba-inc.com/install.sh | bash
-```
-
-### 3. 绑定机器人（可选，需 am + Java）
-
-凭证全走环境变量，绑定可自动幂等完成（已绑则跳过）：
-
-```bash
-# 设好 DINGTALK_APP_KEY / DINGTALK_APP_SECRET / DINGTALK_STAFF_ID（DINGTALK_ROBOT_CODE 默认=appKey）
-bash ~/.claude/skills/dingtalk-ai-card/scripts/ensure-bind.sh
-```
-
-手动等价：
-
-```bash
-am bind --type=bot \
-  --access-key-id=$DINGTALK_APP_KEY \
-  --access-key-secret=$DINGTALK_APP_SECRET \
-  --account-id=$DINGTALK_STAFF_ID \
-  --robot-code $DINGTALK_APP_KEY
-```
-
-### 4. 创建 AI 卡片模板
+### 2. 创建 AI 卡片模板
 
 在 [钉钉卡片平台](https://open-dev.dingtalk.com/fe/card) 创建：
 
@@ -67,7 +37,7 @@ am bind --type=bot \
 
 ## 使用方法
 
-脚本位于 `scripts/streaming.py`，凭据优先从环境变量读取，也可从 `am bind` 配置回退读取。
+脚本位于 `scripts/streaming.py`，凭据从环境变量或 CLI 参数读取。
 
 ### 发送流式消息（打字机效果）
 
@@ -119,18 +89,17 @@ python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
 | `--delay` | | 否 | 0.15 | 每次更新间隔秒数 |
 | `--no-stream` | | 否 | | 跳过打字机效果，直接显示完整内容 |
 | `--key` | | 否 | content | 卡片模板中流式 markdown 变量名 |
-| `--bot` | | 否 | | am 的命名 bot profile |
-| `--app-key` | | 否 | am 配置 | 覆盖 appKey |
-| `--app-secret` | | 否 | am 配置 | 覆盖 appSecret |
-| `--robot-code` | | 否 | am 配置 | 覆盖 robotCode |
+| `--app-key` | | 否 | `$DINGTALK_APP_KEY` | 覆盖 appKey |
+| `--app-secret` | | 否 | `$DINGTALK_APP_SECRET` | 覆盖 appSecret |
+| `--robot-code` | | 否 | `$DINGTALK_ROBOT_CODE` / appKey | 覆盖 robotCode |
 
 ### 环境变量
 
 | 变量 | 说明 |
 |------|------|
-| `DINGTALK_APP_KEY` | appKey（优先级高于 am 配置） |
+| `DINGTALK_APP_KEY` | appKey |
 | `DINGTALK_APP_SECRET` | appSecret |
-| `DINGTALK_ROBOT_CODE` | robotCode |
+| `DINGTALK_ROBOT_CODE` | robotCode（默认=appKey） |
 | `DINGTALK_TEMPLATE_ID` | 默认模板 ID |
 
 ## 重要提示
@@ -139,7 +108,7 @@ python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
 - markdown 类型的流式变量，`isFull` 必须为 `true`（脚本已默认设置）
 - 单次流式内容不超过 1KB，总大小建议不超过 3KB
 - 卡片模板必须已发布且关联了正确的机器人应用
-- 机器人应用需把出口 IP 加进白名单（IPv4/IPv6 都加，或临时关闭），否则 `am`/卡片 403
+- 机器人应用需把出口 IP 加进白名单（IPv4/IPv6 都加，或临时关闭），否则卡片 API 403
 - SSL 证书：脚本已内置自动检测（优先 certifi → 回退 `/etc/ssl/cert.pem` → Linux `ca-certificates.crt`），通常无需手动处理。如仍有问题可设 `SSL_CERT_FILE` 环境变量指向 CA bundle 路径
 - 常用模板可写进 `DINGTALK_TEMPLATE_ID` 免每次带 `--template-id`
 
