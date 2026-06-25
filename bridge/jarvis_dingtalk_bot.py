@@ -110,6 +110,19 @@ def tata_root():
     return p
 
 
+def tata_cmd():
+    """Tata 基命令 = idea = claude --settings idea_settings.json（走 idealab 网关，
+    自带 token，与主账号隔离）。JARVIS_TATA_SETTINGS 可覆盖设置档路径。"""
+    settings = os.environ.get("JARVIS_TATA_SETTINGS") or str(
+        Path.home() / ".claude" / "idea_settings.json")
+    return [claude_bin(), "--settings", settings]
+
+
+def jarvis_cmd():
+    """Jarvis 基命令 = cc = ~/claude-start.sh（预检后 exec claude）。JARVIS_CC 可覆盖。"""
+    return [os.environ.get("JARVIS_CC") or str(Path.home() / "claude-start.sh")]
+
+
 JARVIS_SENTINEL = re.compile(r"^\s*\[\[JARVIS\]\]\s*(.+)$", re.MULTILINE)
 # Tata 偶尔即便闲聊也甩哨兵, 任务文写成"无需转交"。兜底: 含否定词/过短一律不升级。
 TASK_REJECT = re.compile(r"无需|不需要|不用|纯打招呼|闲聊|没有真活|无须|不必|没真活")
