@@ -130,7 +130,7 @@ func TestAccAliCloudOOSExecution_basic(t *testing.T) {
 						"template_version": CHECKSET,
 						"tags.%":           "2",
 						"tags.Created":     "TF",
-						"tags.For":         "Execution Test WRONG",
+						"tags.For":         "Execution Test",
 					}),
 				),
 			},
