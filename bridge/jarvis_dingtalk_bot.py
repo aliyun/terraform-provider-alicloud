@@ -292,12 +292,15 @@ class TataPool:
     send(staff,text) 写一行 user JSON、读到本轮 result 为止 yield 累积；进程不关。
     空闲 >idle_min 回收；并发 >max_n LRU 踢最旧；崩溃下条重起；spawn 失败抛 TataSpawnError。"""
 
-    def __init__(self, max_n=None, idle_min=None, spawn=None):
+    def __init__(self, max_n=None, idle_min=None, prewarm=None, spawn=None):
         self.max_n = int(max_n if max_n is not None else os.environ.get("JARVIS_TATA_MAX", "10"))
         self.idle_sec = int(idle_min if idle_min is not None
                             else os.environ.get("JARVIS_TATA_IDLE_MIN", "30")) * 60
+        self.prewarm_n = int(prewarm if prewarm is not None
+                             else os.environ.get("JARVIS_TATA_PREWARM", "3"))
         self._spawn = spawn or self._default_spawn
         self.procs = {}                  # staff -> {proc, last_used, lock}
+        self._warm = []                  # 未绑定 sender 的预热 generic 进程, 空转待命
         self._guard = threading.Lock()
 
     def _default_spawn(self, staff):
@@ -307,6 +310,30 @@ class TataPool:
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=subprocess.DEVNULL)
 
+    def warm_count(self):
+        return len([p for p in self._warm if p.poll() is None])
+
+    def prewarm(self):
+        """启动即预热 prewarm_n 个 generic 常驻进程, 首批 sender 免冷启。失败不阻断。"""
+        self.refill()
+
+    def refill(self):
+        """补预热进程到 prewarm_n, 且不让 已绑+预热 超过 max_n。单个 spawn 失败跳过。"""
+        with self._guard:
+            self._warm = [p for p in self._warm if p.poll() is None]
+            budget = self.max_n - len(self.procs) - len(self._warm)
+            need = min(self.prewarm_n - len(self._warm), budget)
+            for _ in range(max(0, need)):
+                try:
+                    p = self._spawn(None)
+                except Exception:  # noqa: BLE001 — 预热失败回退懒起, 不崩
+                    break
+                if p is not None:
+                    self._warm.append(p)
+
+    def _refill_async(self):
+        threading.Thread(target=self.refill, daemon=True).start()
+
     def _alive(self, ent):
         p = ent["proc"]
         return p is not None and p.poll() is None
@@ -315,10 +342,17 @@ class TataPool:
         ent = self.procs.get(staff)
         if ent and self._alive(ent):
             return ent
-        try:
-            proc = self._spawn(staff)
-        except Exception as e:  # noqa: BLE001
-            raise TataSpawnError(str(e))
+        proc = None
+        # 新 sender 优先领一个预热好的 generic 进程绑定, 免冷启; 领走后再后台补满。
+        while self._warm and proc is None:
+            cand = self._warm.pop(0)
+            if cand.poll() is None:
+                proc = cand
+        if proc is None:
+            try:
+                proc = self._spawn(staff)
+            except Exception as e:  # noqa: BLE001
+                raise TataSpawnError(str(e))
         if proc is None:
             raise TataSpawnError("spawn returned None")
         ent = {"proc": proc, "last_used": time.time(), "lock": threading.Lock()}
@@ -346,11 +380,14 @@ class TataPool:
     def send(self, staff, text):
         with self._guard:
             self._reap()
+            existed = staff in self.procs and self._alive(self.procs[staff])
             ent = self._ensure(staff)
             ent["last_used"] = time.time()
             self._reap(keep=staff)
             lock = ent["lock"]
             proc = ent["proc"]
+        if not existed:
+            self._refill_async()  # 新 sender 领走一个 → 后台补满预热, 不阻塞回复
         with lock:
             proc.stdin.write(_tata_settings_round(text) + "\n")
             proc.stdin.flush()
@@ -361,6 +398,12 @@ class TataPool:
     def shutdown(self):
         for s in list(self.procs):
             self._kill(s)
+        for p in self._warm:          # 含预热进程, 全 kill
+            try:
+                p.kill()
+            except Exception:  # noqa: BLE001
+                pass
+        self._warm = []
 
 
 class JarvisHandler(AsyncChatbotHandler):
@@ -505,6 +548,7 @@ def main():
     client = DingTalkStreamClient(cred)
     handler = JarvisHandler()
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
+    handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
     log.info("starting DingTalk stream listener…")
     try:
         client.start_forever()

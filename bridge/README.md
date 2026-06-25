@@ -17,7 +17,8 @@ DingTalk DM ─► 受众闸(JARVIS_TATA_STAFF, 空=全员)
 1. **受众闸**: `JARVIS_TATA_STAFF` 空=全员可跟 Tata 聊; 填名单则收窄。
 2. **Tata 一层(保温)**: 每 sender 一个长生 **idea** 进程(`claude --settings ~/.claude/idea_settings.json`,
    走 idealab 网关)跑双向 stream-json, 逐轮喂一行 `{"type":"user",...}` 读到 result, 进程不关 →
-   冷启只付一次, 续轮 ~1-3s, cwd=空目录。空闲 30min 回收, >10 并发 LRU 踢旧; 起不来回退一次性冷起。
+   冷启只付一次, 续轮 ~1-3s, cwd=空目录。启动即预热 `JARVIS_TATA_PREWARM`(默认3)个未绑定 generic
+   进程待命, 首批 sender 直接领走免冷启、后台补满。空闲 30min 回收, >10 并发 LRU 踢旧; 起不来回退一次性冷起。
    回复里 `[[JARVIS]]` 哨兵剥掉再上屏。
 3. **master 闸 + 升级**: 仅辰羿(`JARVIS_MASTER_STAFF`)且 Tata 发了哨兵, 第二张卡跑重型
    Jarvis = **cc**(`~/claude-start.sh`, 预检后 exec claude, 挂 stdin</dev/null 防 IP 不符卡死),
@@ -31,7 +32,7 @@ One round per sender at a time; second message → "请稍候". Other senders in
    robot message read/send. Note appKey/appSecret. Create an AI card template, note its id.
 2. `cp jarvis.env.example jarvis.env`, fill APP_KEY/SECRET/TEMPLATE_ID, set
    `JARVIS_TATA_STAFF` (空=全员), `JARVIS_MASTER_STAFF` (你的 staffId, 默认 320687),
-   `JARVIS_TATA_ROOT`/`JARVIS_ROOT`. 保温调参: `JARVIS_TATA_IDLE_MIN`(30)/`JARVIS_TATA_MAX`(10);
+   `JARVIS_TATA_ROOT`/`JARVIS_ROOT`. 保温调参: `JARVIS_TATA_IDLE_MIN`(30)/`JARVIS_TATA_MAX`(10)/`JARVIS_TATA_PREWARM`(3);
    启动档: `JARVIS_TATA_SETTINGS`(idea, 默认 ~/.claude/idea_settings.json)、`JARVIS_CC`(默认 ~/claude-start.sh)。
 3. Ensure deps: `python3 -c "import dingtalk_stream"`, `claude` on PATH (`~/.local/bin`),
    idea 设置档 `~/.claude/idea_settings.json` + `~/claude-start.sh` 在位。
