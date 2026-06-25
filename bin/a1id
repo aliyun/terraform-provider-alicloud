@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# a1id —— a1 多身份切换器(串行;a1 不支持并发多身份)
+#
+# 机制:a1 凭据固定在 ~/.config/a1/auth.yaml,只能持一个身份,且写入用临时文件
+# rename(会替换符号链接)。故各身份的 auth.yaml 各存一份真文件,切换=复制覆盖
+# live,登录=登完把 live 复制回该身份 store。串行切换(a1 本就不支持并发)。
+#
+# 两个身份:
+#   jarvis  —— 默认身份(open_jarvis),Jarvis 全程用它。
+#   chenyi  —— 仓库主人(辰羿)本人。Jarvis 不得擅用,仅当面授权时临时 `as chenyi`,
+#              用完即回 jarvis(无代码硬门,纪律见 CLAUDE.md 第8条)。
+#
+# 用法:
+#   a1id login  <jarvis|chenyi>    登录并保存该身份(交互 BUC SSO)
+#   a1id use    <jarvis|chenyi>    把 active 持久切到某身份
+#   a1id status                    看当前 active 身份
+#   a1id who                       看 a1 实际登录账号(透传 auth whoami)
+#   a1id as <jarvis|chenyi> -- ... 以指定身份跑一条 a1,跑完自动还原原身份
+#   a1id -- <a1 args...>           以默认身份(jarvis)跑
+set -euo pipefail
+
+A1="${A1_BIN:-a1}"
+CFG="${A1_CONFIG_DIR:-$HOME/.config/a1}"
+STORE="$CFG/identities"
+LIVE="$CFG/auth.yaml"
+ACTIVE="$STORE/.active"        # 记当前 active 身份名
+DEFAULT_ID="jarvis"
+
+mkdir -p "$STORE"
+die(){ echo "a1id: $*" >&2; exit 1; }
+store_for(){ echo "$STORE/$1.auth.yaml"; }
+valid(){ [ "$1" = jarvis ] || [ "$1" = chenyi ]; }
+
+# 首跑迁移:既有 auth.yaml 收编为 jarvis 身份
+[ -f "$LIVE" ] && [ ! -f "$(store_for jarvis)" ] && cp "$LIVE" "$(store_for jarvis)" && echo jarvis > "$ACTIVE"
+
+cur(){ cat "$ACTIVE" 2>/dev/null || echo "$DEFAULT_ID"; }
+
+# 切 live=该身份 store(若 active 未变则免拷),记 active
+activate(){
+  valid "$1" || die "未知身份 '$1'(jarvis|chenyi)"
+  [ -f "$(store_for "$1")" ] || die "身份 '$1' 未登录,先 'a1id login $1'"
+  cp "$(store_for "$1")" "$LIVE"; echo "$1" > "$ACTIVE"
+}
+
+cmd="${1:-status}"; shift || true
+case "$cmd" in
+  login)
+    id="${1:-}"; valid "$id" || die "用法: a1id login <jarvis|chenyi>"
+    "$A1" auth login --buc
+    cp "$LIVE" "$(store_for "$id")"; echo "$id" > "$ACTIVE"   # 登完落盘到该身份 store
+    echo "a1id: '$id' 登录已保存"; "$A1" auth whoami ;;
+  use)  id="${1:-}"; activate "$id"; echo "a1id: active=$id" ;;
+  status) echo "active : $(cur)" ;;
+  who) "$A1" auth whoami ;;
+  as)
+    id="${1:-}"; shift || true; [ "${1:-}" = "--" ] && shift
+    prev="$(cur)"
+    trap 'activate "$prev" >/dev/null 2>&1 || true' EXIT
+    activate "$id"; "$A1" "$@" ;;
+  --) activate "$DEFAULT_ID"; "$A1" "$@" ;;
+  *) sed -n '2,21p' "$0"; exit 1 ;;
+esac
