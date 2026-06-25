@@ -5,7 +5,7 @@ description: Use when developing a NEW alicloud Terraform provider resource end-
 
 # Provider 资源开发全流程
 
-从客户需求到 provider PR。真源=镇元(Zhenyuan)`ResourceTypeSchema`;生成器吃镇元料出 .go,生成器对 XML 产品有缺陷需手改;**只信 acc 测**。
+从客户需求到 provider PR。真源=镇元(Zhenyuan)`ResourceTypeSchema`;生成器吃镇元料出一整套(resource.go + _test.go + service + provider.go 注册行 + website 文档 markdown),生成器对 XML 产品有缺陷需手改;**只信 acc 测**。
 
 ## 工具/路径
 - cspec 仓 `cloudspec-model/<Product>_pop_*`;provider `~/go/src/.../terraform-provider-alicloud`(fork=ChenHanZhang,upstream=aliyun);acube `~/IdeaProjects/a-cube-aliyun-com`(详 [[acube-tf-generation-pipeline]])。
