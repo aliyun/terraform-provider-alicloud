@@ -23,6 +23,7 @@ Env:
 """
 
 import os
+import re
 import sys
 import json
 import uuid
@@ -82,6 +83,41 @@ def claude_bin():
 
 def jarvis_root():
     return os.environ.get("JARVIS_ROOT") or str(REPO_ROOT)
+
+
+def tata_audience():
+    """Tata 受众名单（staffId 集合）。空/未设 → 空集 = 全员放行。"""
+    raw = os.environ.get("JARVIS_TATA_STAFF", "")
+    return {s.strip() for s in raw.split(",") if s.strip()}
+
+
+def master_staff():
+    """唯一能让 Tata 升级到重型 Jarvis 的 staffId，默认辰羿 320687。"""
+    return (os.environ.get("JARVIS_MASTER_STAFF") or "320687").strip()
+
+
+def tata_root():
+    """Tata 的 cwd：空目录，不加载 jarvis bootstrap。建好返回路径。"""
+    p = os.environ.get("JARVIS_TATA_ROOT") or str(Path.home() / ".jarvis" / "tata-cwd")
+    try:
+        Path(p).mkdir(parents=True, exist_ok=True)
+    except Exception:  # noqa: BLE001
+        pass
+    return p
+
+
+JARVIS_SENTINEL = re.compile(r"^\s*\[\[JARVIS\]\]\s*(.+)$", re.MULTILINE)
+
+
+def extract_jarvis_task(text):
+    """扫 Tata 全文里的 ``[[JARVIS]] <任务>`` 哨兵行，剥行返 (clean, task|None)。
+
+    哨兵只是路由信号，不展示给用户。无哨兵 → (原文, None)。多个取最后一个。"""
+    tasks = JARVIS_SENTINEL.findall(text)
+    if not tasks:
+        return text, None
+    clean = JARVIS_SENTINEL.sub("", text).strip()
+    return clean, tasks[-1].strip()
 
 
 def truncate(text, limit=MAX_REPLY):
