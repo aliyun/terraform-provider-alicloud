@@ -3,16 +3,18 @@
 Jarvis DingTalk inbound bridge.
 
 Long-running process that holds a DingTalk Stream WebSocket. On each text
-message from a whitelisted user it acks fast, runs a headless `claude` round
-(per-sender session continuity), and streams the answer back via the existing
-dingtalk-ai-card streaming.py card sender.
+message from a whitelisted user it creates one AI card and streams claude's
+answer into it live — reading `claude` stream-json token-by-token and PUTting
+the accumulated text onto the card so the user sees it grow in real time
+(true streaming, no upfront "处理中" ack). Per-sender session continuity.
 
-Direction: INBOUND (user -> bot -> claude -> bot -> user). The reply path is
-delegated to streaming.py; this file only listens, gatekeeps, and orchestrates.
+Direction: INBOUND (user -> bot -> claude -> bot -> user). The card sender
+helpers are imported from the dingtalk-ai-card skill's streaming.py.
 
 Env:
   DINGTALK_APP_KEY / DINGTALK_APP_SECRET   Stream credentials (required).
   DINGTALK_TEMPLATE_ID                     AI card template id (required for reply).
+  DINGTALK_ROBOT_CODE                      robot code for createAndDeliver (default: app key).
   JARVIS_ALLOW_STAFF                       comma staffId whitelist (default 320687).
   JARVIS_ROOT                              cwd for claude (default repo root, two up).
   DINGTALK_SKILL                           override path to streaming.py.
@@ -22,6 +24,7 @@ Env:
 
 import os
 import sys
+import json
 import uuid
 import time
 import logging
@@ -35,8 +38,21 @@ from dingtalk_stream import AckMessage, AsyncChatbotHandler, ChatbotMessage, Cre
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SKILL = Path.home() / ".claude" / "skills" / "dingtalk-ai-card" / "scripts" / "streaming.py"
-MAX_REPLY = 2000  # bytes; keep stream under send_card timeout and <3KB card cap
-ACK_TEXT = "🟡 收到, 处理中…"
+MAX_REPLY = 2000          # bytes; keep card under the 2KB cap
+CARD_KEY = "content"      # streaming variable name in the AI card template
+PUT_MIN_INTERVAL = 0.4    # seconds between card PUTs (throttle)
+PUT_MIN_GROWTH = 40       # chars of growth that also triggers a PUT
+
+
+def _load_streaming_module():
+    """Import the dingtalk-ai-card skill's streaming.py as a module (no subprocess)."""
+    sp = skill_path()
+    if not sp.exists():
+        log.error("streaming.py not found at %s; replies disabled", sp)
+        return None
+    sys.path.insert(0, str(sp.parent))
+    import streaming  # noqa: E402
+    return streaming
 
 logging.basicConfig(
     level=logging.INFO,
@@ -75,42 +91,78 @@ def truncate(text, limit=MAX_REPLY):
     return b[: limit - 3].decode("utf-8", "ignore") + "…"
 
 
-def send_card(staff_id, text, stream=True):
-    """Reply via the dingtalk-ai-card streaming.py sender. Best-effort.
-    Fast chunks so a ~2KB stream finishes well under the 300s timeout."""
-    sp = skill_path()
-    if not sp.exists():
-        log.error("streaming.py not found at %s; cannot reply", sp)
-        return
-    args = [sys.executable, str(sp), "--to", staff_id, "-m", truncate(text)]
-    if stream:
-        args += ["--chunk-size", "8", "--delay", "0.05"]
-    else:
-        args.append("--no-stream")
-    try:
-        subprocess.run(args, check=False, timeout=300,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception as e:  # noqa: BLE001
-        log.error("send_card failed: %s", e)
+def robot_code():
+    return os.environ.get("DINGTALK_ROBOT_CODE") or os.environ.get("DINGTALK_APP_KEY") or ""
 
 
-def run_claude(text, session_id, resume):
-    """Headless claude round. First turn creates --session-id; later turns --resume."""
+def parse_stream_lines(lines):
+    """Parse claude --output-format stream-json lines, yield ACCUMULATED text.
+
+    Pure generator (no subprocess) so it is unit-testable. Increments arrive as
+    type=='stream_event' event.type=='content_block_delta' delta.type=='text_delta'
+    → delta.text. Non-text blocks (tool calls) are ignored. The terminal
+    type=='result' carries the full text and is yielded as the final fallback."""
+    acc = ""
+    for raw in lines:
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            obj = json.loads(raw)
+        except (ValueError, TypeError):
+            continue
+        t = obj.get("type")
+        if t == "stream_event":
+            ev = obj.get("event") or {}
+            if ev.get("type") == "content_block_delta":
+                d = ev.get("delta") or {}
+                if d.get("type") == "text_delta":
+                    acc += d.get("text", "")
+                    yield acc
+        elif t == "result":
+            final = obj.get("result")
+            if isinstance(final, str) and final.strip():
+                acc = final
+            yield acc
+
+
+def run_claude_stream(text, session_id, resume):
+    """Spawn claude streaming round; yield accumulated answer text as it grows.
+
+    On timeout the process is killed and a notice yielded; stderr is captured
+    for a fallback error message. First turn --session-id, later turns --resume."""
     timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
-    cmd = [claude_bin(), "-p", text, "--output-format", "text"]
+    cmd = [claude_bin(), "-p", text, "--output-format", "stream-json",
+           "--include-partial-messages", "--verbose"]
     cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
+    deadline = time.time() + timeout
+    p = subprocess.Popen(cmd, cwd=jarvis_root(), text=True,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    saw_any = False
     try:
-        r = subprocess.run(cmd, cwd=jarvis_root(), timeout=timeout,
-                           capture_output=True, text=True)
-    except subprocess.TimeoutExpired:
-        return "⚠️ 处理超时(>%ds), 请稍后再试或拆小问题。" % timeout
+        for acc in parse_stream_lines(p.stdout):
+            saw_any = True
+            yield acc
+            if time.time() > deadline:
+                p.kill()
+                yield (acc + "\n⚠️ 处理超时(>%ds), 已中断。" % timeout) if acc else \
+                      "⚠️ 处理超时(>%ds), 请稍后再试或拆小问题。" % timeout
+                return
     except Exception as e:  # noqa: BLE001
-        return "⚠️ 调用失败: %s" % e
-    out = (r.stdout or "").strip()
-    if r.returncode != 0 and not out:
-        err = (r.stderr or "").strip().splitlines()[-1:] or ["unknown"]
-        return "⚠️ claude 返回错误: %s" % err[0]
-    return out or "(空回复)"
+        try:
+            p.kill()
+        except Exception:
+            pass
+        yield "⚠️ 调用失败: %s" % e
+        return
+    rc = p.wait()
+    err = (p.stderr.read() if p.stderr else "") or ""
+    if not saw_any:
+        if rc != 0:
+            last = err.strip().splitlines()[-1:] or ["unknown"]
+            yield "⚠️ claude 返回错误: %s" % last[0]
+        else:
+            yield "(空回复)"
 
 
 class JarvisHandler(AsyncChatbotHandler):
@@ -122,8 +174,21 @@ class JarvisHandler(AsyncChatbotHandler):
         self.sessions = {}                       # staff_id -> session uuid
         self.started = set()                      # staff with an existing claude session
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
+        self.sm = _load_streaming_module()        # imported streaming.py helpers
         log.info("whitelist=%s root=%s claude=%s skill=%s",
                  self.allow, jarvis_root(), claude_bin(), skill_path())
+
+    def _quick_card(self, target, text):
+        """One-shot card (no live stream): create then finalize once. Best-effort."""
+        if not self.sm:
+            return
+        try:
+            tok = self.sm.get_access_token(os.environ["DINGTALK_APP_KEY"], os.environ["DINGTALK_APP_SECRET"])
+            tid = os.environ.get("DINGTALK_TEMPLATE_ID")
+            otid = self.sm.create_and_deliver_card(tok, tid, robot_code(), target, "user")
+            self.sm.streaming_update(tok, otid, CARD_KEY, truncate(text), is_finalize=True)
+        except Exception as e:  # noqa: BLE001
+            log.error("quick_card failed: %s", e)
 
     def process(self, callback):
         msg = ChatbotMessage.from_dict(callback.data)
@@ -137,27 +202,46 @@ class JarvisHandler(AsyncChatbotHandler):
 
         lock = self.locks[staff]
         if not lock.acquire(blocking=False):
-            send_card(staff, "🟠 上一条还在处理中, 请稍候再发。", stream=False)
+            self._quick_card(staff, "🟠 上一条还在处理中, 请稍候再发。")
             return AckMessage.STATUS_OK, "busy"
         try:
             log.info("staff=%s msg=%r", staff, text[:200])
-            send_card(staff, ACK_TEXT, stream=False)
             sid = self.sessions.setdefault(staff, str(uuid.uuid4()))
             resume = staff in self.started
             self.started.add(staff)
             t0 = time.time()
-            answer = run_claude(text, sid, resume)
-            log.info("staff=%s done in %.1fs len=%d", staff, time.time() - t0, len(answer))
-            send_card(staff, answer, stream=True)
+            self._stream_round(staff, text, sid, resume)
+            log.info("staff=%s done in %.1fs", staff, time.time() - t0)
         except Exception as e:  # noqa: BLE001 — never crash the loop
             log.exception("process error: %s", e)
-            try:
-                send_card(staff, "⚠️ 内部错误, 已记录。", stream=False)
-            except Exception:
-                pass
+            self._quick_card(staff, "⚠️ 内部错误, 已记录。")
         finally:
             lock.release()
         return AckMessage.STATUS_OK, "ok"
+
+    def _stream_round(self, target, text, sid, resume):
+        """Create one card, stream claude tokens into it live, finalize. Throttled."""
+        if not self.sm:
+            log.error("streaming module unavailable; cannot reply")
+            return
+        tok = self.sm.get_access_token(os.environ["DINGTALK_APP_KEY"], os.environ["DINGTALK_APP_SECRET"])
+        tid = os.environ.get("DINGTALK_TEMPLATE_ID")
+        otid = self.sm.create_and_deliver_card(tok, tid, robot_code(), target, "user")
+        acc, last_put, last_len, first = "", 0.0, 0, True
+        try:
+            for acc in run_claude_stream(text, sid, resume):
+                now = time.time()
+                if first or now - last_put > PUT_MIN_INTERVAL or len(acc) - last_len > PUT_MIN_GROWTH:
+                    self.sm.streaming_update(tok, otid, CARD_KEY, truncate(acc))
+                    last_put, last_len, first = now, len(acc), False
+            self.sm.streaming_update(tok, otid, CARD_KEY, truncate(acc or "(空回复)"), is_finalize=True)
+        except Exception as e:  # noqa: BLE001 — finalize an error rather than leave it hanging
+            log.exception("stream_round error: %s", e)
+            try:
+                self.sm.streaming_update(tok, otid, CARD_KEY, truncate((acc or "") + "\n⚠️ 处理出错。"),
+                                         is_finalize=True, is_error=True)
+            except Exception:
+                pass
 
 
 def load_env_file():

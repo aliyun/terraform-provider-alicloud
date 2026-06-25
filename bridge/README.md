@@ -1,14 +1,17 @@
 # Jarvis DingTalk bridge (inbound, two-way)
 
 Long-running process: holds a DingTalk **Stream** WebSocket, receives messages
-you send to the bot, runs a headless `claude` round, streams the answer back as
-an AI card. Turns the one-way `dingtalk-ai-card` push into a two-way conversation.
+you send to the bot, runs a headless `claude` round, and streams the answer
+back **live** into one AI card. Turns the one-way `dingtalk-ai-card` push into a
+two-way conversation with a real typewriter effect.
 
-## Flow
+## Flow (true streaming)
 1. You DM the bot → `jarvis_dingtalk_bot.py` checks whitelist (`JARVIS_ALLOW_STAFF`).
-2. Acks `🟡 收到, 处理中…` (no-stream) so you see it instantly.
-3. `claude -p <text> --output-format text --session-id <per-sender uuid>` in `JARVIS_ROOT`, 300s cap.
-4. Streams the answer back (truncated <3KB) via the skill `streaming.py` card.
+2. Creates one AI card immediately, then reads `claude -p <text> --output-format
+   stream-json --include-partial-messages --verbose --session-id <per-sender uuid>`
+   token-by-token and PUTs the growing text onto that card (throttled), so you
+   watch the answer build up. 300s cap. Finalizes when done; truncated to 2KB.
+3. Card helpers are imported from the skill's `streaming.py` (no subprocess回放).
 
 One claude round per sender at a time; second message → "请稍候". Other senders independent.
 
