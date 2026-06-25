@@ -2,11 +2,29 @@
 
 可被 Claude 完全接替日常工作的自包含起点母版。
 
-## 使用
+## 配置（一次性）
 
-1. `git clone` 本仓库
-2. `cp bootstrap/.env.example bootstrap/.env` 填好 `GH_TOKEN`/阿里云密钥（a1 用容器内凭证）
-3. 进目录启动 `claude` 开始使用
+```bash
+bash bootstrap/install.sh                       # 装依赖（a1/aliyun/cloudspec/gh）
+cp bootstrap/.env.example bootstrap/.env        # 填 GH_TOKEN + 阿里云 AK
+bin/a1id login jarvis && bin/a1id login chenyi  # 两个身份各登一次
+```
+
+钉钉数字员工还需 `cp bridge/jarvis.env.example bridge/jarvis.env`，填钉钉 appKey/appSecret/卡片模板 id。
+
+## 启动
+
+**当面用** —— 进目录起会话，CLAUDE.md 接管 scan→plan→triage：
+
+```bash
+claude
+```
+
+**数字员工** —— 常驻钉钉，收消息 → 跑 jarvis → 流式回卡：
+
+```bash
+bridge/run.sh start
+```
 
 ## triage loop
 

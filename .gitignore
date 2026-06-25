@@ -16,3 +16,4 @@ runs/*.md
 
 # 开发用 worktree(临时分支工作区)
 .claude/worktrees/
+bridge/jarvis.env
