@@ -266,6 +266,101 @@ def run_tata_stream(text, session_id, resume):
             yield "(空回复)"
 
 
+class TataSpawnError(RuntimeError):
+    """常驻 Tata 进程起不来——上层据此回退一次性 run_tata_stream。"""
+
+
+def _tata_settings_round(text):
+    return json.dumps({"type": "user", "message": {"role": "user", "content": text}},
+                      ensure_ascii=False)
+
+
+def _one_round(lines):
+    """从常驻进程 stdout 取本轮行，遇 type==result 收尾即止（不读下一轮、不挂死管道）。"""
+    for raw in lines:
+        yield raw
+        s = raw.replace(" ", "")
+        if '"type":"result"' in s:
+            return
+
+
+class TataPool:
+    """每 staff 一个长生 idea 子进程跑双向 stream-json，逐轮喂 user JSON 保温消冷启。
+
+    send(staff,text) 写一行 user JSON、读到本轮 result 为止 yield 累积；进程不关。
+    空闲 >idle_min 回收；并发 >max_n LRU 踢最旧；崩溃下条重起；spawn 失败抛 TataSpawnError。"""
+
+    def __init__(self, max_n=None, idle_min=None, spawn=None):
+        self.max_n = int(max_n if max_n is not None else os.environ.get("JARVIS_TATA_MAX", "10"))
+        self.idle_sec = int(idle_min if idle_min is not None
+                            else os.environ.get("JARVIS_TATA_IDLE_MIN", "30")) * 60
+        self._spawn = spawn or self._default_spawn
+        self.procs = {}                  # staff -> {proc, last_used, lock}
+        self._guard = threading.Lock()
+
+    def _default_spawn(self, staff):
+        cmd = tata_cmd() + ["--input-format", "stream-json", "--output-format", "stream-json",
+                            "--include-partial-messages", "--verbose"]
+        return subprocess.Popen(cmd, cwd=tata_root(), text=True,
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL)
+
+    def _alive(self, ent):
+        p = ent["proc"]
+        return p is not None and p.poll() is None
+
+    def _ensure(self, staff):
+        ent = self.procs.get(staff)
+        if ent and self._alive(ent):
+            return ent
+        try:
+            proc = self._spawn(staff)
+        except Exception as e:  # noqa: BLE001
+            raise TataSpawnError(str(e))
+        if proc is None:
+            raise TataSpawnError("spawn returned None")
+        ent = {"proc": proc, "last_used": time.time(), "lock": threading.Lock()}
+        self.procs[staff] = ent
+        return ent
+
+    def _reap(self, keep=None):
+        now = time.time()
+        for s in [s for s, e in list(self.procs.items())
+                  if not self._alive(e) or now - e["last_used"] > self.idle_sec]:
+            self._kill(s)
+        evictable = lambda: [s for s in self.procs if s != keep]
+        while len(self.procs) > self.max_n and evictable():
+            oldest = min(evictable(), key=lambda s: self.procs[s]["last_used"])
+            self._kill(oldest)
+
+    def _kill(self, staff):
+        ent = self.procs.pop(staff, None)
+        if ent and ent["proc"]:
+            try:
+                ent["proc"].kill()
+            except Exception:  # noqa: BLE001
+                pass
+
+    def send(self, staff, text):
+        with self._guard:
+            self._reap()
+            ent = self._ensure(staff)
+            ent["last_used"] = time.time()
+            self._reap(keep=staff)
+            lock = ent["lock"]
+            proc = ent["proc"]
+        with lock:
+            proc.stdin.write(_tata_settings_round(text) + "\n")
+            proc.stdin.flush()
+            for acc in parse_stream_lines(_one_round(proc.stdout)):
+                yield acc
+            ent["last_used"] = time.time()
+
+    def shutdown(self):
+        for s in list(self.procs):
+            self._kill(s)
+
+
 class JarvisHandler(AsyncChatbotHandler):
     # process() runs in a ThreadPoolExecutor (sync, NOT async) so blocking
     # subprocess calls never freeze the WS event loop / keepalive ack.
