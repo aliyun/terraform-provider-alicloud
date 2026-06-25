@@ -195,11 +195,13 @@ def run_claude_stream(text, session_id, resume):
     On timeout the process is killed and a notice yielded; stderr is captured
     for a fallback error message. First turn --session-id, later turns --resume."""
     timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
-    cmd = [claude_bin(), "-p", text, "--output-format", "stream-json",
+    cmd = jarvis_cmd() + ["-p", text, "--output-format", "stream-json",
            "--include-partial-messages", "--verbose"]
     cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
     deadline = time.time() + timeout
-    p = subprocess.Popen(cmd, cwd=jarvis_root(), text=True,
+    # stdin</dev/null: claude-start.sh 预检里若 read 等待(IP 不符)会卡死, 喂空输入直放行。
+    # banner 等非 JSON 行被 parse_stream_lines 自动跳过。
+    p = subprocess.Popen(cmd, cwd=jarvis_root(), text=True, stdin=subprocess.DEVNULL,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     saw_any = False
     try:
@@ -367,15 +369,23 @@ class JarvisHandler(AsyncChatbotHandler):
     def __init__(self):
         super().__init__()
         self.audience = tata_audience()           # 空=全员; 非空=Tata 受众名单
-        self.tata_sessions = {}                   # staff -> Tata session uuid
-        self.tata_started = set()                 # staff with a live Tata session
         self.jarvis_sessions = {}                 # staff -> Jarvis session uuid (master only)
         self.jarvis_started = set()               # staff with a live Jarvis session
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
+        self.pool = TataPool()                    # 常驻 idea 进程保温, 消 Tata 冷启
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
                  claude_bin(), skill_path())
+
+    def _tata_runner(self, text, sid, resume):
+        """Tata 一轮: 优先常驻进程保温(self.pool.send), 起不来回退一次性 run_tata_stream。
+        进程即会话, 无需 uuid/resume; 崩溃由 pool 下条重起。"""
+        try:
+            yield from self.pool.send(sid, text)
+        except (TataSpawnError, BrokenPipeError, OSError) as e:
+            log.warning("tata pool fallback (%s); 一次性冷起", e)
+            yield from run_tata_stream(text, sid, resume)
 
     def _quick_card(self, target, text):
         """One-shot card (no live stream): create then finalize once. Best-effort."""
@@ -407,13 +417,10 @@ class JarvisHandler(AsyncChatbotHandler):
         try:
             log.info("staff=%s msg=%r", staff, text[:200])
             t0 = time.time()
-            # 第一层：Tata 门面，全文先建卡流推；哨兵剥行不上屏。
-            tsid = self.tata_sessions.setdefault(staff, str(uuid.uuid4()))
-            tresume = staff in self.tata_started
-            self.tata_started.add(staff)
+            # 第一层：Tata 门面，全文先建卡流推；哨兵剥行不上屏。常驻进程即会话, 键=staff。
             full = self._stream_round(
-                staff, text, tsid, tresume,
-                lambda t, s, r: run_tata_stream(t, s, r),
+                staff, text, staff, False,
+                self._tata_runner,
                 clean_sentinel=True,
                 tail_on_handoff="\n\n交给 Jarvis 处理…")
             _, task = extract_jarvis_task(full)
@@ -496,9 +503,13 @@ def main():
         log.warning("DINGTALK_TEMPLATE_ID unset — replies will silently no-op")
     cred = Credential(key, secret)
     client = DingTalkStreamClient(cred)
-    client.register_callback_handler(ChatbotMessage.TOPIC, JarvisHandler())
+    handler = JarvisHandler()
+    client.register_callback_handler(ChatbotMessage.TOPIC, handler)
     log.info("starting DingTalk stream listener…")
-    client.start_forever()
+    try:
+        client.start_forever()
+    finally:
+        handler.pool.shutdown()  # 收尾全 kill 常驻 Tata 进程
 
 
 if __name__ == "__main__":
