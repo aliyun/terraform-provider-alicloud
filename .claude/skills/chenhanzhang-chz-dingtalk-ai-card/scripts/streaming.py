@@ -11,12 +11,25 @@ Usage:
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 import uuid
 import urllib.request
 import urllib.error
 from pathlib import Path
+
+
+def ensure_bind():
+    """Best-effort idempotent am bind from env vars; never fatal."""
+    helper = Path(__file__).resolve().parent / "ensure-bind.sh"
+    if not helper.exists():
+        return
+    try:
+        subprocess.run(["bash", str(helper)], check=False,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
 
 
 def load_am_config(bot_name=None):
@@ -141,6 +154,7 @@ def main():
     parser.add_argument("--bot", help="am bot profile name")
     args = parser.parse_args()
 
+    ensure_bind()
     am_config = load_am_config(args.bot)
     app_key = args.app_key or os.environ.get("DINGTALK_APP_KEY") or am_config.get("aliding.access-key-id")
     app_secret = args.app_secret or os.environ.get("DINGTALK_APP_SECRET") or am_config.get("aliding.access-key-secret")

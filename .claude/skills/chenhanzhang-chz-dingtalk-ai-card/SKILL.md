@@ -23,12 +23,21 @@ curl -fsSL https://am.io.alibaba-inc.com/install.sh | bash
 
 ### 2. 绑定机器人
 
+凭证全走环境变量，绑定可自动幂等完成（已绑则跳过）：
+
+```bash
+# 设好 DINGTALK_APP_KEY / DINGTALK_APP_SECRET / DINGTALK_STAFF_ID（DINGTALK_ROBOT_CODE 默认=appKey）
+bash ~/.claude/skills/chenhanzhang-chz-dingtalk-ai-card/scripts/ensure-bind.sh
+```
+
+手动等价：
+
 ```bash
 am bind --type=bot \
-  --access-key-id=<appKey> \
-  --access-key-secret=<appSecret> \
-  --account-id=<staffId> \
-  --robot-code <robotCode>
+  --access-key-id=$DINGTALK_APP_KEY \
+  --access-key-secret=$DINGTALK_APP_SECRET \
+  --account-id=$DINGTALK_STAFF_ID \
+  --robot-code $DINGTALK_APP_KEY
 ```
 
 ### 3. 创建 AI 卡片模板
