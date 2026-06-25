@@ -49,7 +49,9 @@ The following arguments are supported:
 * `max_message_size` - (Optional, Int) The maximum length of the message that is sent to the topic. Default value: `65536`. Valid values: `1024` to `65536`. Unit: bytes.
 * `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
 * `topic_name` - (Required, ForceNew) The name of the topic.
-
+* `topic_type` - (Optional, ForceNew, Computed, Available since v1.283.0) The type of the topic. Default value: `normal`. Valid values:
+  - `normal`: Standard topic.
+  - `fifo`: FIFO queue.
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `logging_enabled` - (Deprecated since v1.241.0). Field `logging_enabled` has been deprecated from provider version 1.241.0. New field `enable_logging` instead.
 
