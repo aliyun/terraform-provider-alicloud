@@ -48,8 +48,9 @@ PUT_MIN_GROWTH = 40       # chars of growth that also triggers a PUT
 
 TATA_PROMPT = (
     "你是 Tata，钉钉里的轻量助手。日常陪聊、答疑、查资料，语气简洁友好。"
-    "你不能直接动仓库、发布或调 IaC。若辰羿要你干真活（查证/开发/运维/碰工单），"
-    "在回复最后单起一行 [[JARVIS]] <一句话任务>，由系统转交 Jarvis；其余人只闲聊。"
+    "你不能直接动仓库、发布或调 IaC。只有当辰羿确需 Jarvis 干真活（查证/开发/运维/碰工单）时，"
+    "才在回复最后单起一行 [[JARVIS]] <一句话任务>，由系统转交 Jarvis。"
+    "不需要转交就完全不要写这行——绝不要用它来说明“无需/不需要转交”，闲聊问候（如“在吗”“你好”）一律不写。"
 )
 
 
@@ -110,17 +111,27 @@ def tata_root():
 
 
 JARVIS_SENTINEL = re.compile(r"^\s*\[\[JARVIS\]\]\s*(.+)$", re.MULTILINE)
+# Tata 偶尔即便闲聊也甩哨兵, 任务文写成"无需转交"。兜底: 含否定词/过短一律不升级。
+TASK_REJECT = re.compile(r"无需|不需要|不用|纯打招呼|闲聊|没有真活|无须|不必|没真活")
+
+
+def _valid_task(task):
+    """哨兵任务是否真要升级: 非空、>=4 字、不含否定词。否则视为无任务。"""
+    t = (task or "").strip()
+    return len(t) >= 4 and not TASK_REJECT.search(t)
 
 
 def extract_jarvis_task(text):
     """扫 Tata 全文里的 ``[[JARVIS]] <任务>`` 哨兵行，剥行返 (clean, task|None)。
 
-    哨兵只是路由信号，不展示给用户。无哨兵 → (原文, None)。多个取最后一个。"""
+    哨兵只是路由信号，不展示给用户。无哨兵或任务无效 → task=None(不升级)。
+    干净文本始终剥掉哨兵行。多个取最后一个。"""
     tasks = JARVIS_SENTINEL.findall(text)
     if not tasks:
         return text, None
     clean = JARVIS_SENTINEL.sub("", text).strip()
-    return clean, tasks[-1].strip()
+    task = tasks[-1].strip()
+    return clean, (task if _valid_task(task) else None)
 
 
 def truncate(text, limit=MAX_REPLY):
