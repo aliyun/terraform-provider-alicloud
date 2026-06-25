@@ -7,6 +7,9 @@ scratch_*
 .my-day/
 docs/board.html
 
+# 本机工作区路径覆盖(每台机不同，base workspaces.json 不存绝对路径)
+config/workspaces.local.json
+
 # runs/ 是本地审计缓存，真源在 Aone，周回顾走 bootstrap/week.sh
 runs/*.md
 !runs/.gitkeep

@@ -1,0 +1,6 @@
+{
+  "_comment": "拷成 config/workspaces.local.json(gitignored)覆盖本机路径;只列要改的字段,base * 此文件深合并,本地优先。多数机器只需设 JARVIS_WORKSPACE_ROOT 即可,无需此文件。",
+  "workspaces": {
+    "mcp_server": { "path": "/Users/jarvis/workspace/cloudspec" }
+  }
+}

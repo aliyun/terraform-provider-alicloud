@@ -3,7 +3,6 @@
     "terraform_provider": {
       "repo": "terraform-provider-alicloud",
       "git_url": "git@github.com:ChenHanZhang/terraform-provider-alicloud.git",
-      "path": "/Users/tfhnia/go/src/github.com/chenhanzhang/terraform-provider-alicloud",
       "upstream_remote": "alicloud", "origin_remote": "origin", "default_branch": "master",
       "pools": ["tf_provider","tf_customer"],
       "ops": {"build":"go build ./...","test":"go test ./alicloud -run <Name>","vet":"go vet ./...","fmt":"gofmt -l alicloud/"},
@@ -12,7 +11,6 @@
     "automation_agent": {
       "repo": "aliyun-automation-agent",
       "git_url": "git@gitlab.alibaba-inc.com:opensource-tools/aliyun-automation-agent.git",
-      "path": "/Users/tfhnia/IdeaProjects/aliyun-automation-agent",
       "app": 283346,
       "default_branch": "master",
       "pool": "mcp_server",
@@ -22,16 +20,14 @@
     "mcp_server": {
       "repo": "cloudspec",
       "git_url": "git@gitlab.alibaba-inc.com:cloudspec-mcp/cloudspec.git",
-      "path": "/Users/tfhnia/cloudspec/cloudspec",
       "app": 260634,
       "default_branch": "master",
-      "ops": {},
-      "desc": "Cloudspec MCP"
+      "ops": {"build":"./mvnw -q -DskipTests package","test":"./mvnw -q -Dtest=AlibabaCloudListApisCallTest test"},
+      "desc": "Cloudspec MCP / OpenAPI MCP Server"
     },
     "automation_platform": {
       "repo": "aliyun-automation-platform",
       "git_url": "git@gitlab.alibaba-inc.com:aliyun-automation-platform/aliyun-automation-platform.git",
-      "path": "/Users/tfhnia/IdeaProjects/aliyun-automation-platform",
       "app": 172823,
       "default_branch": "master",
       "ops": {},
@@ -40,7 +36,6 @@
     "agent_toolkit": {
       "repo": "alibabacloud-agent-toolkit",
       "git_url": "git@github.com:ChenHanZhang/alibabacloud-agent-toolkit.git",
-      "path": "/Users/tfhnia/cloudspec/alibabacloud-agent-toolkit",
       "origin_remote": "origin", "default_branch": "main",
       "pools": ["api_toolkit"],
       "loop": "loops/plugin-dev.md",
@@ -51,7 +46,6 @@
     "acube": {
       "repo": "a-cube-aliyun-com",
       "git_url": "git@gitlab.alibaba-inc.com:opensource-tools/a-cube-aliyun-com.git",
-      "path": "/Users/tfhnia/IdeaProjects/a-cube-aliyun-com",
       "default_branch": "master",
       "app": 180726,
       "pools": ["api_toolkit"],
