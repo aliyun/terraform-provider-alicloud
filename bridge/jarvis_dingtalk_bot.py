@@ -44,6 +44,12 @@ CARD_KEY = "content"      # streaming variable name in the AI card template
 PUT_MIN_INTERVAL = 0.4    # seconds between card PUTs (throttle)
 PUT_MIN_GROWTH = 40       # chars of growth that also triggers a PUT
 
+TATA_PROMPT = (
+    "你是 Tata，钉钉里的轻量助手。日常陪聊、答疑、查资料，语气简洁友好。"
+    "你不能直接动仓库、发布或调 IaC。若辰羿要你干真活（查证/开发/运维/碰工单），"
+    "在回复最后单起一行 [[JARVIS]] <一句话任务>，由系统转交 Jarvis；其余人只闲聊。"
+)
+
 
 def _load_streaming_module():
     """Import the dingtalk-ai-card skill's streaming.py as a module (no subprocess)."""
@@ -173,6 +179,44 @@ def run_claude_stream(text, session_id, resume):
     cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
     deadline = time.time() + timeout
     p = subprocess.Popen(cmd, cwd=jarvis_root(), text=True,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    saw_any = False
+    try:
+        for acc in parse_stream_lines(p.stdout):
+            saw_any = True
+            yield acc
+            if time.time() > deadline:
+                p.kill()
+                yield (acc + "\n⚠️ 处理超时(>%ds), 已中断。" % timeout) if acc else \
+                      "⚠️ 处理超时(>%ds), 请稍后再试或拆小问题。" % timeout
+                return
+    except Exception as e:  # noqa: BLE001
+        try:
+            p.kill()
+        except Exception:
+            pass
+        yield "⚠️ 调用失败: %s" % e
+        return
+    rc = p.wait()
+    err = (p.stderr.read() if p.stderr else "") or ""
+    if not saw_any:
+        if rc != 0:
+            last = err.strip().splitlines()[-1:] or ["unknown"]
+            yield "⚠️ claude 返回错误: %s" % last[0]
+        else:
+            yield "(空回复)"
+
+
+def run_tata_stream(text, session_id, resume):
+    """轻量 Tata 一轮：同 run_claude_stream，但 cwd=tata_root()（空目录，不吃
+    jarvis CLAUDE.md），附 --append-system-prompt 灌 Tata 人设。yield 累积文本。"""
+    timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
+    cmd = [claude_bin(), "-p", text, "--output-format", "stream-json",
+           "--include-partial-messages", "--verbose",
+           "--append-system-prompt", TATA_PROMPT]
+    cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
+    deadline = time.time() + timeout
+    p = subprocess.Popen(cmd, cwd=tata_root(), text=True,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     saw_any = False
     try:
