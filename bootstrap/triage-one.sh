@@ -62,6 +62,9 @@ if ! "$CLAIM_CMD" claim "$id" "$project"; then
     exit 0
 fi
 
+# Coord: mark instance as having claimed this item (non-blocking)
+bash "$script_dir/coord.sh" checkpoint "$id" claimed || true
+
 # ---------------------------------------------------------------------------
 # Step 2: wrap.sh done — failure → escalate + exit 1 (no release)
 # ---------------------------------------------------------------------------
@@ -73,6 +76,8 @@ fi
 # ---------------------------------------------------------------------------
 # Step 3: Release
 # ---------------------------------------------------------------------------
+# Coord: mark item as done before releasing the claim (non-blocking)
+bash "$script_dir/coord.sh" checkpoint "$id" done || true
 "$CLAIM_CMD" release "$id" "$project"
 
 # ---------------------------------------------------------------------------
