@@ -4,6 +4,27 @@
 
 ---
 
+## 零、实例协调（coord.sh）
+
+每个 triage 实例启动后先通过 `coord.sh` 扫孤儿、续跑；dispatch（Tata 委派）实例只做心跳与 checkpoint，不做 adopt。
+
+```bash
+# triage 实例开局：注册自身，扫孤儿并续跑
+COORD_ID=$(bootstrap/coord.sh register triage)
+for oid in $(bootstrap/coord.sh list-orphans); do
+  COORD_ID=$COORD_ID bootstrap/coord.sh adopt "$oid"
+done
+
+# dispatch 实例（Tata 委派）：只心跳 + checkpoint，跳过 adopt
+# nohup bootstrap/heartbeat.sh "$COORD_ID" $$ >/dev/null 2>&1 &
+```
+
+- `list-orphans`：列出任务文件中 owner_instance 已死（`coord.sh dead` 返回 0）的工单 id。
+- `adopt <aone_id>`：将孤儿任务的 `owner_instance` 改为当前实例，使其进入本轮 triage 队列续跑。
+- dispatch 实例（如 DingTalk bridge）不执行 adopt，避免重复接管正常分派的工单；仅保持心跳和阶段 checkpoint，供 watchdog 监控存活。
+
+---
+
 ## 一、触发
 
 | 方式 | 说明 |
