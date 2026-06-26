@@ -2,8 +2,10 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +32,7 @@ func resourceAliCloudEsaRoutineRoute() *schema.Resource {
 			"bypass": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"config_id": {
 				Type:     schema.TypeInt,
@@ -42,11 +45,11 @@ func resourceAliCloudEsaRoutineRoute() *schema.Resource {
 			},
 			"route_enable": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"route_name": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"routine_name": {
 				Type:     schema.TypeString,
@@ -55,11 +58,12 @@ func resourceAliCloudEsaRoutineRoute() *schema.Resource {
 			},
 			"rule": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"sequence": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"site_id": {
 				Type:     schema.TypeString,
@@ -90,21 +94,15 @@ func resourceAliCloudEsaRoutineRouteCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOkExists("sequence"); ok {
 		request["Sequence"] = v
 	}
-	if v, ok := d.GetOk("route_name"); ok {
-		request["RouteName"] = v
-	}
-	if v, ok := d.GetOk("route_enable"); ok {
-		request["RouteEnable"] = v
-	}
+	request["RouteName"] = d.Get("route_name")
+	request["RouteEnable"] = d.Get("route_enable")
 	if v, ok := d.GetOk("bypass"); ok {
 		request["Bypass"] = v
 	}
 	if v, ok := d.GetOk("fallback"); ok {
 		request["Fallback"] = v
 	}
-	if v, ok := d.GetOk("rule"); ok {
-		request["Rule"] = v
-	}
+	request["Rule"] = d.Get("rule")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
@@ -148,7 +146,11 @@ func resourceAliCloudEsaRoutineRouteRead(d *schema.ResourceData, meta interface{
 	d.Set("route_name", objectRaw["RouteName"])
 	d.Set("rule", objectRaw["Rule"])
 	d.Set("sequence", objectRaw["Sequence"])
-	d.Set("config_id", objectRaw["ConfigId"])
+	configId, err := strconv.ParseInt(objectRaw["ConfigId"].(json.Number).String(), 10, 64)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("config_id", configId)
 	d.Set("routine_name", objectRaw["RoutineName"])
 
 	parts := strings.Split(d.Id(), ":")
@@ -180,14 +182,12 @@ func resourceAliCloudEsaRoutineRouteUpdate(d *schema.ResourceData, meta interfac
 
 	if d.HasChange("route_name") {
 		update = true
-		request["RouteName"] = d.Get("route_name")
 	}
-
+	request["RouteName"] = d.Get("route_name")
 	if d.HasChange("route_enable") {
 		update = true
-		request["RouteEnable"] = d.Get("route_enable")
 	}
-
+	request["RouteEnable"] = d.Get("route_enable")
 	if d.HasChange("bypass") {
 		update = true
 		request["Bypass"] = d.Get("bypass")
@@ -200,9 +200,8 @@ func resourceAliCloudEsaRoutineRouteUpdate(d *schema.ResourceData, meta interfac
 
 	if d.HasChange("rule") {
 		update = true
-		request["Rule"] = d.Get("rule")
 	}
-
+	request["Rule"] = d.Get("rule")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
