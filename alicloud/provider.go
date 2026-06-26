@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"alicloud_wafv3_address_books":                        dataSourceAliCloudWafv3AddressBooks(),
+			"alicloud_wafv3_defense_rules":                        dataSourceAliCloudWafv3DefenseRules(),
 			"alicloud_amqp_open_source_accounts":                  dataSourceAliCloudAmqpOpenSourceAccounts(),
 			"alicloud_vpc_ipv6_cidr_blocks":                       dataSourceAliCloudVpcIpv6CidrBlocks(),
 			"alicloud_amqp_open_source_permissions":               dataSourceAliCloudAmqpOpenSourcePermissions(),
