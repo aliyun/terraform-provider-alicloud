@@ -11,4 +11,5 @@ case "$cmd" in
  dead) f="$I/${2}.hb"; pid="${2##*-}"; [ -f "$f" ] || exit 0
    kill -0 "$pid" 2>/dev/null && exit 1
    m=$(stat -f %m "$f" 2>/dev/null||stat -c %Y "$f"); [ $(( $(date +%s)-m )) -gt "$TTL" ] && exit 0 || exit 1;;
+ checkpoint) aid="$2"; st="$3"; wt="${4:-}"; br="${5:-}"; rp="${6:-}"; umask 077; tmp=$(mktemp "$T/.t.XXXX"); printf '{"aone_id":"%s","owner_instance":"%s","stage":"%s","worktree":"%s","branch":"%s","repo":"%s","updated":"%s"}' "$aid" "${COORD_ID:-}" "$st" "$wt" "$br" "$rp" "$(date -u +%FT%TZ)" >"$tmp" && mv "$tmp" "$T/$aid.json";;
  *) echo "usage: coord.sh {register|heartbeat|dead}" >&2; exit 2;; esac
