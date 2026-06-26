@@ -76,7 +76,14 @@ The following arguments are supported:
 
 -> **NOTE:**  When purchasing by month, the automatic renewal period is 1 month.
 When purchasing by year, the automatic renewal period is 1 year.
-* `description` - (Optional) The disk description. It must be 2 to 256 characters in length and cannot start with 'http:// 'or 'https. From version 1.281.0, `description` can be modified.
+* `bursting_enabled` - (Optional, Bool, Available since v1.283.0) Whether to enable this function for disks that support Burst (performance Burst). Valid values: `true`, `false`.
+* `delete_with_instance` - (Optional, Bool, Available since v1.283.0) Specifies whether to release the disk together with the instance. Valid values:
+  - `true`: The disk is released together with the instance when the instance is released.
+  - `false`: The disk is retained when the instance is released.
+* `description` - (Optional) The disk description. It must be 2 to 256 characters in length and cannot start with 'http:// 'or 'https.
+
+-> **NOTE:** From version 1.281.0, `description` can be modified.
+
 * `disk_category` - (Required) The type of the data disk. Value range:
   - `cloud` (default): a normal cloud disk.
   - `cloud_efficiency`: The ultra cloud disk.
@@ -86,20 +93,27 @@ When purchasing by year, the automatic renewal period is 1 year.
   - `Cloud_essd_entry`: the ESSD Entry disk.
   - `Elastic_ephemeral_disk_standard`: Elastic temporary disk-standard version.
   - `Elastic_ephemeral_disk_premium`: Elastic temporary disk-Pro version.
-* `disk_name` - (Optional) The disk name. It can be 2 to 128 characters in length. It supports letters in Unicode (including English, Chinese, and numbers). Can contain a colon (:), an underscore (_), a period (.), or a dash (-). From version 1.281.0, `disk_name` can be modified.
+* `disk_name` - (Optional) The disk name. It can be 2 to 128 characters in length. It supports letters in Unicode (including English, Chinese, and numbers). Can contain a colon (:), an underscore (_), a period (.), or a dash (-).
+
+-> **NOTE:** From version 1.281.0, `disk_name` can be modified.
+
 * `dry_run` - (Optional) Whether to pre-check the instance creation operation. Valid values:
   - `true`: The PreCheck operation is performed without creating an instance. Check items include request parameters, request formats, business restrictions, and inventory.
   - `false` (default): Sends a normal request and directly creates an instance after the check is passed.
-* `instance_charge_type` - (Optional) The Payment type. Only `Postpaid`: Pay-As-You-Go is supported.
-* `performance_level` - (Optional, ForceNew) When creating an ESSD cloud disk, set the performance level of the disk. Value range:
+* `instance_charge_type` - (Optional, ForceNew) The billing method. Valid values:
+  - `Postpaid`: Pay-as-you-go. Disks with this billing method do not need to be attached to an instance. You can optionally attach them during creation to any instance regardless of its billing method.
+  - `Prepaid`: Subscription. Disks with this billing method must be attached to a subscription instance. Therefore, you must specify a subscription `InstanceId` (instance ID).
+* `instance_id` - (Optional, ForceNew, Available since v1.283.0) The ID of the instance to which the disk is attached. If `instance_charge_type` is `Prepaid`, you must specify the ID of a prepaid instance.
+* `performance_level` - (Optional) When creating an ESSD cloud disk, set the performance level of the disk. Value range:
   - `PL0`: The maximum random read/write IOPS 10000 for a single disk.
   - `PL1` (default): The maximum number of random read/write IOPS 50000 for a single disk.
   - `PL2`: maximum random read/write IOPS 100000 for a single disk.
   - `PL3`: The maximum random read/write IOPS 1 million for a single disk.
 
+-> **NOTE:** From version 1.283.0, `performance_level` can be modified.
+
 For more information about how to select an ESSD performance level, see [ESSD cloud disk](~~ 122389 ~~).
-* `period` - (Optional, Int) Reserved parameters, no need to fill in.
-* `period_unit` - (Optional) Reserved parameters, no need to fill in.
+* `resource_group_id` - (Optional, Available since v1.283.0) The ID of the resource group to which the disk belongs.
 * `size` - (Required, Int) Capacity size. Unit: GiB. You must pass in a parameter value for this parameter. Value range:
   - `cloud`:5~2,000.
   - `cloud_efficiency`:20 to 32,768.
@@ -117,29 +131,33 @@ For more information about how to select an ESSD performance level, see [ESSD cl
 If you specify the 'SnapshotId' parameter, the 'SnapshotId' parameter and the 'Size' parameter have the following limitations:
   - If the snapshot capacity corresponding to the 'SnapshotId' parameter is greater than the set 'Size' parameter value, the actual size of the cloud disk created is the size of the specified snapshot.
   - If the snapshot capacity corresponding to the 'SnapshotId' parameter is less than the set 'Size' parameter value, the size of the cloud disk created is the specified 'Size' parameter value.
-* `snapshot_id` - (Optional) The snapshot used to create the cloud disk. Snapshots made on or before July 15, 2013 cannot be used to create cloud disks. The 'SnapshotId' parameter and the 'Size' parameter have the following limitations:
+* `snapshot_id` - (Optional, ForceNew) The snapshot used to create the cloud disk. Snapshots made on or before July 15, 2013 cannot be used to create cloud disks. The 'SnapshotId' parameter and the 'Size' parameter have the following limitations:
   - If the snapshot capacity corresponding to the 'SnapshotId' parameter is greater than the set 'Size' parameter value, the actual size of the cloud disk created is the size of the specified snapshot.
   - If the snapshot capacity corresponding to the 'SnapshotId' parameter is less than the set 'Size' parameter value, the size of the cloud disk created is the specified 'Size' parameter value.
   - Snapshots are not supported for creating elastic temporary disks.
+* `tags` - (Optional, Map, Available since v1.283.0) The list of tags.
 * `type` - (Optional) The method of expanding the disk. Value range:
 offline (default): offline expansion. After the expansion, the instance must be restarted to take effect.
 online: online expansion, which can be completed without restarting the instance.
 * `zone_id` - (Required, ForceNew) The zone ID.
+* `period` - (Deprecated since v1.283.0) Field `period` has been deprecated from provider version 1.283.0.
+* `period_unit` - (Deprecated since v1.283.0) Field `period_unit` has been deprecated from provider version 1.283.0.
 
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time.
 * `region_id` - The region ID. You can view the region ID through the DescribeRegions interface.
-* `resource_group_id` - The ID of the resource group to which the disk belongs.
-* `status` - Disk status. Value Description:_use: In use.
+* `status` - Disk status.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Custom Disk.
-* `delete` - (Defaults to 5 mins) Used when delete the Custom Disk.
+
+* `create` - (Defaults to 6 mins) Used when create the Custom Disk.
+* `delete` - (Defaults to 30 mins) Used when delete the Custom Disk.
 * `update` - (Defaults to 5 mins) Used when update the Custom Disk.
 
 ## Import
