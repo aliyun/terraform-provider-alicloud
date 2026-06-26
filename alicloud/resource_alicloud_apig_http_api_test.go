@@ -10,19 +10,137 @@ import (
 )
 
 // Test Apig HttpApi. >>> Resource test cases, automatically generated.
-// Case HttpApi测试_CCApi_2 9288
-func TestAccAliCloudApigHttpApi_basic9288(t *testing.T) {
+// Case http_api_crud_test 12898
+func TestAccAliCloudApigHttpApi_basic12898(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_apig_http_api.default"
-	ra := resourceAttrInit(resourceId, AlicloudApigHttpApiMap9288)
+	ra := resourceAttrInit(resourceId, AlicloudApigHttpApiMap12898)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ApigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeApigHttpApi")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sapighttpapi%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigHttpApiBasicDependence9288)
+	name := fmt.Sprintf("tfaccapig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigHttpApiBasicDependence12898)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"http_api_name": name,
+					"protocols": []string{
+						"HTTP"},
+					"type":              "Rest",
+					"description":       "test description for cspec",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"ai_protocols": []string{
+						"OpenAI"},
+					"base_path":      "/cspec-test",
+					"enable_auth":    "false",
+					"model_category": "LLM",
+					"deploy_configs": []string{
+						"{\\\"autoDeploy\\\":false}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"http_api_name":     name,
+						"protocols.#":       "1",
+						"type":              "Rest",
+						"description":       "test description for cspec",
+						"resource_group_id": CHECKSET,
+						"ai_protocols.#":    "1",
+						"base_path":         "/cspec-test",
+						"enable_auth":       "false",
+						"model_category":    "LLM",
+						"deploy_configs.#":  "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "updated description for cspec",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "updated description for cspec",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocols": []string{
+						"HTTPS"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocols.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocols": []string{
+						"HTTP", "HTTPS"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocols.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocols": []string{
+						"HTTP"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocols.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ai_protocols", "base_path", "deploy_configs", "model_category"},
+			},
+		},
+	})
+}
+
+var AlicloudApigHttpApiMap12898 = map[string]string{}
+
+func AlicloudApigHttpApiBasicDependence12898(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+`, name)
+}
+
+// Case HttpApi测试 6880
+func TestAccAliCloudApigHttpApi_basic6880(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_apig_http_api.default"
+	ra := resourceAttrInit(resourceId, AlicloudApigHttpApiMap6880)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ApigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeApigHttpApi")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccapig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigHttpApiBasicDependence6880)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
@@ -37,19 +155,17 @@ func TestAccAliCloudApigHttpApi_basic9288(t *testing.T) {
 					"http_api_name": name,
 					"protocols": []string{
 						"${var.protocol}"},
-					"base_path":         "/v1",
-					"description":       "zhiwei_pop_testcase",
-					"type":              "Rest",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"base_path":   "/v1",
+					"description": "zhiwei_pop_testcase",
+					"type":        "Rest",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"http_api_name":     name,
-						"protocols.#":       "1",
-						"base_path":         "/v1",
-						"description":       "zhiwei_pop_testcase",
-						"type":              "Rest",
-						"resource_group_id": CHECKSET,
+						"http_api_name": name,
+						"protocols.#":   "1",
+						"base_path":     "/v1",
+						"description":   "zhiwei_pop_testcase",
+						"type":          "Rest",
 					}),
 				),
 			},
@@ -57,16 +173,14 @@ func TestAccAliCloudApigHttpApi_basic9288(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"protocols": []string{
 						"${var.protocol_https}", "${var.protocol}"},
-					"base_path":         "/v2",
-					"description":       "1735184737",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"base_path":   "/v2",
+					"description": "1783585689",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"protocols.#":       "2",
-						"base_path":         "/v2",
-						"description":       CHECKSET,
-						"resource_group_id": CHECKSET,
+						"protocols.#": "2",
+						"base_path":   "/v2",
+						"description": CHECKSET,
 					}),
 				),
 			},
@@ -87,15 +201,15 @@ func TestAccAliCloudApigHttpApi_basic9288(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"ai_protocols", "base_path", "deploy_configs", "enable_auth", "model_category"},
 			},
 		},
 	})
 }
 
-var AlicloudApigHttpApiMap9288 = map[string]string{}
+var AlicloudApigHttpApiMap6880 = map[string]string{}
 
-func AlicloudApigHttpApiBasicDependence9288(name string) string {
+func AlicloudApigHttpApiBasicDependence6880(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -108,8 +222,6 @@ variable "protocol" {
 variable "protocol_https" {
   default = "HTTPS"
 }
-
-data "alicloud_resource_manager_resource_groups" "default" {}
 
 
 `, name)
@@ -126,7 +238,7 @@ func TestAccAliCloudApigHttpApi_basic9287(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sapighttpapi%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccapig%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigHttpApiBasicDependence9287)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -163,7 +275,7 @@ func TestAccAliCloudApigHttpApi_basic9287(t *testing.T) {
 					"protocols": []string{
 						"${var.protocol_https}", "${var.protocol}"},
 					"base_path":         "/v2",
-					"description":       "1735184737",
+					"description":       "1783585689",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -192,7 +304,7 @@ func TestAccAliCloudApigHttpApi_basic9287(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"ai_protocols", "base_path", "deploy_configs", "enable_auth", "model_category"},
 			},
 		},
 	})
@@ -201,6 +313,111 @@ func TestAccAliCloudApigHttpApi_basic9287(t *testing.T) {
 var AlicloudApigHttpApiMap9287 = map[string]string{}
 
 func AlicloudApigHttpApiBasicDependence9287(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "protocol" {
+  default = "HTTP"
+}
+
+variable "protocol_https" {
+  default = "HTTPS"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case HttpApi测试_CCApi_2 9288
+func TestAccAliCloudApigHttpApi_basic9288(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_apig_http_api.default"
+	ra := resourceAttrInit(resourceId, AlicloudApigHttpApiMap9288)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ApigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeApigHttpApi")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccapig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigHttpApiBasicDependence9288)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"http_api_name": name,
+					"protocols": []string{
+						"${var.protocol}"},
+					"base_path":         "/v1",
+					"description":       "zhiwei_pop_testcase",
+					"type":              "Rest",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"http_api_name":     name,
+						"protocols.#":       "1",
+						"base_path":         "/v1",
+						"description":       "zhiwei_pop_testcase",
+						"type":              "Rest",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocols": []string{
+						"${var.protocol_https}", "${var.protocol}"},
+					"base_path":         "/v2",
+					"description":       "1783585689",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocols.#":       "2",
+						"base_path":         "/v2",
+						"description":       CHECKSET,
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocols": []string{
+						"${var.protocol}"},
+					"base_path": "/v1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocols.#": "1",
+						"base_path":   "/v1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ai_protocols", "base_path", "deploy_configs", "enable_auth", "model_category"},
+			},
+		},
+	})
+}
+
+var AlicloudApigHttpApiMap9288 = map[string]string{}
+
+func AlicloudApigHttpApiBasicDependence9288(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -231,7 +448,7 @@ func TestAccAliCloudApigHttpApi_basic9021(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sapighttpapi%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tfaccapig%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigHttpApiBasicDependence9021)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -268,7 +485,7 @@ func TestAccAliCloudApigHttpApi_basic9021(t *testing.T) {
 					"protocols": []string{
 						"${var.protocol_https}", "${var.protocol}"},
 					"base_path":         "/v2",
-					"description":       "1735184737",
+					"description":       "1783585689",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -297,7 +514,7 @@ func TestAccAliCloudApigHttpApi_basic9021(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"ai_protocols", "base_path", "deploy_configs", "enable_auth", "model_category"},
 			},
 		},
 	})
@@ -325,22 +542,26 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name)
 }
 
-// Case HttpApi测试 6880
-func TestAccAliCloudApigHttpApi_basic6880(t *testing.T) {
+// Test Apig HttpApi. <<< Resource test cases, automatically generated.
+
+// Case minimal attribute set: create with only the fields the API requires
+// (http_api_name + protocols + type, plus base_path which is required when type=Rest),
+// to verify that the optional fields have no server-side default that would produce a
+// perpetual diff.
+func TestAccAliCloudApigHttpApi_minimal(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_apig_http_api.default"
-	ra := resourceAttrInit(resourceId, AlicloudApigHttpApiMap6880)
+	ra := resourceAttrInit(resourceId, AlicloudApigHttpApiMapMinimal)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ApigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeApigHttpApi")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sapighttpapi%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigHttpApiBasicDependence6880)
+	name := fmt.Sprintf("tfaccapig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigHttpApiBasicDependenceMinimal)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -351,46 +572,16 @@ func TestAccAliCloudApigHttpApi_basic6880(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"http_api_name": name,
 					"protocols": []string{
-						"${var.protocol}"},
-					"base_path":   "/v1",
-					"description": "zhiwei_pop_testcase",
-					"type":        "Rest",
+						"HTTP"},
+					"type":      "Rest",
+					"base_path": "/v1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"http_api_name": name,
 						"protocols.#":   "1",
-						"base_path":     "/v1",
-						"description":   "zhiwei_pop_testcase",
 						"type":          "Rest",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"protocols": []string{
-						"${var.protocol_https}", "${var.protocol}"},
-					"base_path":   "/v2",
-					"description": "1735184737",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"protocols.#": "2",
-						"base_path":   "/v2",
-						"description": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"protocols": []string{
-						"${var.protocol}"},
-					"base_path": "/v1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"protocols.#": "1",
-						"base_path":   "/v1",
+						"base_path":     "/v1",
 					}),
 				),
 			},
@@ -398,30 +589,18 @@ func TestAccAliCloudApigHttpApi_basic6880(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"ai_protocols", "base_path", "deploy_configs", "model_category"},
 			},
 		},
 	})
 }
 
-var AlicloudApigHttpApiMap6880 = map[string]string{}
+var AlicloudApigHttpApiMapMinimal = map[string]string{}
 
-func AlicloudApigHttpApiBasicDependence6880(name string) string {
+func AlicloudApigHttpApiBasicDependenceMinimal(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
 }
-
-variable "protocol" {
-  default = "HTTP"
-}
-
-variable "protocol_https" {
-  default = "HTTPS"
-}
-
-
 `, name)
 }
-
-// Test Apig HttpApi. <<< Resource test cases, automatically generated.

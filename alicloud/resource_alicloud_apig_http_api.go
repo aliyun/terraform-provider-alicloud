@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -23,22 +24,40 @@ func resourceAliCloudApigHttpApi() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
-			Update: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(6 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"ai_protocols": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"base_path": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"deploy_configs": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"description": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"enable_auth": {
+				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"http_api_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"model_category": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"protocols": {
 				Type:     schema.TypeList,
@@ -52,7 +71,7 @@ func resourceAliCloudApigHttpApi() *schema.Resource {
 			},
 			"type": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 		},
@@ -72,23 +91,48 @@ func resourceAliCloudApigHttpApiCreate(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	query["RegionId"] = StringPointer(client.RegionId)
 
-	if v, ok := d.GetOk("description"); ok {
-		request["description"] = v
-	}
 	if v, ok := d.GetOk("protocols"); ok {
-		protocolsMapsArray := v.([]interface{})
+		protocolsMapsArray := convertToInterfaceArray(v)
+
 		request["protocols"] = protocolsMapsArray
 	}
 
-	if v, ok := d.GetOk("base_path"); ok {
-		request["basePath"] = v
+	if v, ok := d.GetOkExists("enable_auth"); ok {
+		request["enableAuth"] = v
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["resourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["description"] = v
+	}
+	if v, ok := d.GetOk("ai_protocols"); ok {
+		aiProtocolsMapsArray := convertToInterfaceArray(v)
+
+		request["aiProtocols"] = aiProtocolsMapsArray
+	}
+
+	if v, ok := d.GetOk("deploy_configs"); ok {
+		deployConfigsMapsArray := make([]interface{}, 0)
+		for _, item := range v.([]interface{}) {
+			deployConfigMap := make(map[string]interface{})
+			if err := json.Unmarshal([]byte(item.(string)), &deployConfigMap); err != nil {
+				return WrapError(err)
+			}
+			deployConfigsMapsArray = append(deployConfigsMapsArray, deployConfigMap)
+		}
+		request["deployConfigs"] = deployConfigsMapsArray
+	}
+
 	if v, ok := d.GetOk("type"); ok {
 		request["type"] = v
 	}
 	request["name"] = d.Get("http_api_name")
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["resourceGroupId"] = v
+	if v, ok := d.GetOk("base_path"); ok {
+		request["basePath"] = v
+	}
+	if v, ok := d.GetOk("model_category"); ok {
+		request["modelCategory"] = v
 	}
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -129,9 +173,6 @@ func resourceAliCloudApigHttpApiRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	if objectRaw["basePath"] != nil {
-		d.Set("base_path", objectRaw["basePath"])
-	}
 	if objectRaw["description"] != nil {
 		d.Set("description", objectRaw["description"])
 	}
@@ -144,13 +185,16 @@ func resourceAliCloudApigHttpApiRead(d *schema.ResourceData, meta interface{}) e
 	if objectRaw["type"] != nil {
 		d.Set("type", objectRaw["type"])
 	}
-
-	protocols1Raw := make([]interface{}, 0)
-	if objectRaw["protocols"] != nil {
-		protocols1Raw = objectRaw["protocols"].([]interface{})
+	if objectRaw["enableAuth"] != nil {
+		d.Set("enable_auth", objectRaw["enableAuth"])
 	}
 
-	d.Set("protocols", protocols1Raw)
+	protocolsRaw := make([]interface{}, 0)
+	if objectRaw["protocols"] != nil {
+		protocolsRaw = convertToInterfaceArray(objectRaw["protocols"])
+	}
+
+	d.Set("protocols", protocolsRaw)
 
 	return nil
 }
@@ -162,34 +206,44 @@ func resourceAliCloudApigHttpApiUpdate(d *schema.ResourceData, meta interface{})
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
-	d.Partial(true)
 
+	var err error
 	httpApiId := d.Id()
 	action := fmt.Sprintf("/v1/http-apis/%s", httpApiId)
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	request["httpApiId"] = d.Id()
 
-	if d.HasChange("description") {
+	if !d.IsNewResource() && d.HasChange("protocols") {
+		update = true
+	}
+	if v, ok := d.GetOk("protocols"); ok || d.HasChange("protocols") {
+		protocolsMapsArray := convertToInterfaceArray(v)
+
+		request["protocols"] = protocolsMapsArray
+	}
+
+	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 	}
 	if v, ok := d.GetOk("description"); ok || d.HasChange("description") {
 		request["description"] = v
 	}
-	if d.HasChange("protocols") {
+	if !d.IsNewResource() && d.HasChange("deploy_configs") {
 		update = true
-	}
-	if v, ok := d.GetOk("protocols"); ok || d.HasChange("protocols") {
-		protocolsMapsArray := v.([]interface{})
-		request["protocols"] = protocolsMapsArray
+		if v, ok := d.GetOk("deploy_configs"); ok || d.HasChange("deploy_configs") {
+			deployConfigsMapsArray := make([]interface{}, 0)
+			for _, item := range v.([]interface{}) {
+				deployConfigMap := make(map[string]interface{})
+				if err := json.Unmarshal([]byte(item.(string)), &deployConfigMap); err != nil {
+					return WrapError(err)
+				}
+				deployConfigsMapsArray = append(deployConfigsMapsArray, deployConfigMap)
+			}
+			request["deployConfigs"] = deployConfigsMapsArray
+		}
 	}
 
-	if d.HasChange("base_path") {
-		update = true
-	}
-	request["basePath"] = d.Get("base_path")
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -216,7 +270,7 @@ func resourceAliCloudApigHttpApiUpdate(d *schema.ResourceData, meta interface{})
 	body = make(map[string]interface{})
 	query["ResourceId"] = StringPointer(d.Id())
 	query["RegionId"] = StringPointer(client.RegionId)
-	if d.HasChange("resource_group_id") {
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
@@ -242,9 +296,13 @@ func resourceAliCloudApigHttpApiUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		apigServiceV2 := ApigServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 35*time.Second, apigServiceV2.ApigHttpApiStateRefreshFunc(d.Id(), "resourceGroupId", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
-	d.Partial(false)
 	return resourceAliCloudApigHttpApiRead(d, meta)
 }
 
@@ -258,12 +316,10 @@ func resourceAliCloudApigHttpApiDelete(d *schema.ResourceData, meta interface{})
 	query := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
-	request["httpApiId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RoaDelete("APIG", "2024-03-27", action, query, nil, nil, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
