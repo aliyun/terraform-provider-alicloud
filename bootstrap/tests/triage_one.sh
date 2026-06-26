@@ -251,6 +251,49 @@ fi
 rm -f "$LOG4"
 
 # ===========================================================================
+# Test 5 (C1): triage-one registers a real COORD_ID so the checkpoint
+#              owner_instance is non-empty (orphan-visible on crash).
+# ===========================================================================
+echo "Test 5: COORD_ID registered → checkpoint owner_instance non-empty"
+
+LOG5="$(mktemp)"
+COORD_ROOT="$(mktemp -d)"
+mkdir -p "$COORD_ROOT/.my-day/instances" "$COORD_ROOT/.my-day/tasks"
+
+output5=$(env \
+    JARVIS_ROOT="$COORD_ROOT" \
+    TRIAGE_CLAIM_CMD="$STUB_DIR/claim.sh" \
+    TRIAGE_WRAP_CMD="$STUB_DIR/wrap.sh" \
+    TRIAGE_LOG_CMD="$STUB_DIR/log.sh" \
+    STUB_CLAIM_EXIT=0 \
+    STUB_WRAP_EXIT=0 \
+    STUB_LOG="$LOG5" \
+    bash "$TRIAGE_ONE" WI-005 pool-a proj-1 "all done" closed 2>/dev/null)
+
+exit5=$?
+
+if [ "$exit5" -eq 0 ]; then
+    assert_pass "Test5 exit code is 0"
+else
+    assert_fail "Test5 exit code should be 0" "got $exit5"
+fi
+
+task_file="$COORD_ROOT/.my-day/tasks/WI-005.json"
+if [ -f "$task_file" ]; then
+    owner=$(jq -r .owner_instance "$task_file" 2>/dev/null || echo "")
+    if [ -n "$owner" ] && [ "$owner" != "null" ]; then
+        assert_pass "checkpoint owner_instance is non-empty: $owner"
+    else
+        assert_fail "checkpoint owner_instance should be non-empty" "got: '$owner'"
+    fi
+else
+    assert_fail "checkpoint task file should exist" "$task_file missing"
+fi
+
+rm -f "$LOG5"
+rm -rf "$COORD_ROOT"
+
+# ===========================================================================
 # Summary
 # ===========================================================================
 echo ""

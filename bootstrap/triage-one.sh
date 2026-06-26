@@ -53,6 +53,14 @@ status="$5"
 CLAIM_CMD="${TRIAGE_CLAIM_CMD:-$script_dir/claim.sh}"
 WRAP_CMD="${TRIAGE_WRAP_CMD:-$script_dir/wrap.sh}"
 LOG_CMD="${TRIAGE_LOG_CMD:-$script_dir/log.sh}"
+COORD_CMD="${TRIAGE_COORD_CMD:-$script_dir/coord.sh}"
+
+# ---------------------------------------------------------------------------
+# Register this triage instance for coordination tracking so checkpoints
+# have a real owner_instance and crashes leave a resumable record.
+# ---------------------------------------------------------------------------
+COORD_ID=$(bash "$COORD_CMD" register triage 2>/dev/null || true)
+export COORD_ID
 
 # ---------------------------------------------------------------------------
 # Step 1: Claim — lost race → SKIP (not an error)
@@ -62,8 +70,9 @@ if ! "$CLAIM_CMD" claim "$id" "$project"; then
     exit 0
 fi
 
-# Coord: mark instance as having claimed this item (non-blocking)
-bash "$script_dir/coord.sh" checkpoint "$id" claimed || true
+# Coord: mark instance as having claimed this item, with worktree/branch/repo
+# context so a crash leaves a resumable record.
+bash "$COORD_CMD" checkpoint "$id" claimed "$(pwd)" "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" "$(basename "$(pwd)")" || true
 
 # ---------------------------------------------------------------------------
 # Step 2: wrap.sh done — failure → escalate + exit 1 (no release)
@@ -77,7 +86,7 @@ fi
 # Step 3: Release
 # ---------------------------------------------------------------------------
 # Coord: mark item as done before releasing the claim (non-blocking)
-bash "$script_dir/coord.sh" checkpoint "$id" done || true
+bash "$COORD_CMD" checkpoint "$id" done || true
 "$CLAIM_CMD" release "$id" "$project"
 
 # ---------------------------------------------------------------------------

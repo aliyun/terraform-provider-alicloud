@@ -30,9 +30,12 @@ _watchdog_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_watchdog_dir/log.sh"
 
 # ---------------------------------------------------------------------------
-# Escalate each orphaned task
+# Escalate each orphaned task — skip if already escalated (dedup)
 # ---------------------------------------------------------------------------
+_esc_dir="${JARVIS_ESCALATION_DIR:-$JARVIS_ROOT/escalation}"
 while IFS= read -r aid; do
     [ -z "$aid" ] && continue
+    # Only escalate once per aid; if file already exists the task is known.
+    [ -f "$_esc_dir/$aid.md" ] && continue
     escalate "$aid" "owner dead, awaiting adopt"
 done < <(bash "$_watchdog_dir/coord.sh" list-orphans)
