@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Jarvis watchdog LaunchAgent — runs every 90 seconds to escalate orphaned tasks.
+
+  Install:
+    1. Update ProgramArguments[1] below to the absolute path of watchdog.sh.
+    2. cp config/launchd/com.jarvis.watchdog.plist ~/Library/LaunchAgents/
+    3. launchctl load ~/Library/LaunchAgents/com.jarvis.watchdog.plist
+
+  Unload:
+    launchctl unload ~/Library/LaunchAgents/com.jarvis.watchdog.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.jarvis.watchdog</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <!-- Replace with the absolute path to bootstrap/watchdog.sh -->
+        <string>/path/to/jarvis/bootstrap/watchdog.sh</string>
+    </array>
+
+    <key>StartInterval</key>
+    <integer>90</integer>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/jarvis-watchdog.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/jarvis-watchdog.err</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
