@@ -79,7 +79,7 @@ The following arguments are supported:
   * `enterprise_version` - The valid cfw_log_storage is [2, 200] with the step size 1. Default Value: `2`.
   * `ultimate_version` - The valid cfw_log_storage is [5, 500] with the step size 1. Default Value: `5`.
 * `instance_count` - (Optional)  The number of assets.
-* `auto_asset_protection` - (Optional, Computed, Available since v1.282.0) Internet asset protection switch. Valid values: `true`, `false`.
+* `auto_asset_protection` - (Optional, Computed, Available since v1.283.0) Internet asset protection switch. Valid values: `true`, `false`.
 * `cfw_account` - (Optional, Available since v1.209.1, Bool) Whether to use multi-account. Valid values: `true`, `false`.
 * `account_number` - (Optional, Available since v1.209.1, Int) The number of multi account. It will be ignored when `cfw_account = false`.
   * `premium_version` - The valid account number is [1, 20].
