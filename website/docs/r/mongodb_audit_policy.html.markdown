@@ -62,7 +62,7 @@ resource "alicloud_mongodb_instance" "default" {
 
 resource "alicloud_mongodb_audit_policy" "default" {
   db_instance_id = alicloud_mongodb_instance.default.id
-  audit_status   = "disabled"
+  audit_status   = "enable"
 }
 ```
 
@@ -75,9 +75,13 @@ Terraform cannot destroy resource `alicloud_mongodb_audit_policy`. Terraform wil
 ## Argument Reference
 
 The following arguments are supported:
-* `audit_status` - (Required) Audit state, Valid values: `enable`, `disabled`.
+* `audit_status` - (Required) Audit state. Valid values: `enable`, `disabled`. The audit policy cannot be created with `disabled` — the underlying API rejects it. Create the resource with `enable` and switch to `disabled` in a later apply.
 * `db_instance_id` - (Required, ForceNew) Database Instance Id
-* `storage_period` - (Optional, Int) Audit log retention duration. The value range is 1 to 365 days. The default value is 30 days.
+* `storage_period` - (Optional, Int) Audit log retention duration, in days.
+  - When `service_type` is `Standard`, the value range is 1 to 365 days. The default value is 30 days.
+  - When `service_type` is `V2_Standard`, this is the cold storage duration and is required. Valid values: `30`, `180`, `365`, `1095`, `1825`.
+* `service_type` - (Optional, Computed, Available since v1.284.0) The edition of the audit log. Valid values: `Standard`, `V2_Standard`. If omitted, the Provider sends `Standard`. In regions where only the V2 audit log is available, set this to `V2_Standard`. Changes to this field are ignored while `audit_status` is `disabled` — the server switches the edition internally when audit is off and restores the declared value on re-enable.
+* `hot_storage_period` - (Optional, Int, Available since v1.284.0) The hot storage duration of the audit log, in days. The value range is 0 to 7. Only takes effect when `service_type` is `V2_Standard`.
 * `filter` - (Optional, Available since v1.270.0) The type of logs collected by the audit log feature of the instance. Separate multiple types with commas (,). Valid values:
   - `admin`: O & M control operation.
   - `slow`: slow log.

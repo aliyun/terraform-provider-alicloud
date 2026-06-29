@@ -24,6 +24,8 @@ func TestAccAlicloudMongodbAuditPoliciesDataSource(t *testing.T) {
 			"policies.0.id":             CHECKSET,
 			"policies.0.db_instance_id": CHECKSET,
 			"policies.0.audit_status":   "enable",
+			"policies.0.service_type":   "Standard",
+			"policies.0.storage_period": CHECKSET,
 		}
 	}
 	var fakeAlicloudMongodbAuditPoliciesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -74,7 +76,7 @@ resource "alicloud_vswitch" "vswitch" {
 }
 
 resource "alicloud_mongodb_instance" "default" {
-  engine_version      = "3.4"
+  engine_version      = "4.2"
   db_instance_class   = "dds.mongo.mid"
   db_instance_storage = 10
   name                = var.name
