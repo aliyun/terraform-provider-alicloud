@@ -121,6 +121,7 @@ func resourceAlicloudOosExecution() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"tags": tagsSchemaForceNew(),
 			"update_date": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -162,6 +163,14 @@ func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}
 
 	if v, ok := d.GetOk("template_content"); ok {
 		request["TemplateContent"] = v
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		respJson, err := convertMaptoJsonString(v.(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Tags"] = respJson
 	}
 
 	request["TemplateName"] = d.Get("template_name")
@@ -209,20 +218,32 @@ func resourceAlicloudOosExecutionRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("counters", object["Counters"])
 	d.Set("create_date", object["CreateDate"])
+	d.Set("description", object["Description"])
 	d.Set("end_date", object["EndDate"])
 	d.Set("executed_by", object["ExecutedBy"])
 	d.Set("is_parent", object["IsParent"])
+	d.Set("loop_mode", object["LoopMode"])
 	d.Set("mode", object["Mode"])
 	d.Set("outputs", object["Outputs"])
-	d.Set("parameters", object["Parameters"])
+	if v, ok := object["Parameters"].(map[string]interface{}); ok {
+		params, _ := convertMaptoJsonString(v)
+		d.Set("parameters", params)
+	} else {
+		d.Set("parameters", object["Parameters"])
+	}
 	d.Set("parent_execution_id", object["ParentExecutionId"])
 	d.Set("ram_role", object["RamRole"])
+	d.Set("safety_check", object["SafetyCheck"])
 	d.Set("start_date", object["StartDate"])
 	d.Set("status", object["Status"])
 	d.Set("status_message", object["StatusMessage"])
+	d.Set("template_content", object["TemplateContent"])
 	d.Set("template_id", object["TemplateId"])
 	d.Set("template_name", object["TemplateName"])
 	d.Set("template_version", object["TemplateVersion"])
+	if v, ok := object["Tags"].(map[string]interface{}); ok {
+		d.Set("tags", tagsToMap(v))
+	}
 	d.Set("update_date", object["UpdateDate"])
 	return nil
 }
