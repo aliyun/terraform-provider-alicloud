@@ -1,7 +1,45 @@
 ## 1.283.0 (Unreleased)
+
+- **New Resource:** `alicloud_wafv3_address_book` [GH-9874]
+- **New Resource:** `alicloud_threat_detection_service_linked_role` [GH-9888]
+- **New Resource:** `alicloud_resource_manager_resource_directory_sharing` [GH-9890]
+- **New Data Source:** `alicloud_wafv3_address_book` [GH-9874]
+- **New Data Source:** `alicloud_wafv3_defense_rules` [GH-9883]
+
+ENHANCEMENTS:
+
+- provider: widen configuration_source length limit to 1024. [GH-9877]
+- resource/alicloud_esa_transport_layer_application: Fixed the int overflow bug in field application_id; Improved alicloud_esa_transport_layer_application testcase. [GH-9762]
+- resource/alicloud_cloud_firewall_instance: add auto_asset_protection. [GH-9854]
+- resource/alicloud_alikafka_sasl_acl: Added retry strategy for error code BIZ_FIND_CONSUMER_GROUP_INFO_ERROR. [GH-9856]
+- resource/alicloud_message_service_queue: Added the field queue_type. [GH-9860]
+- resource/alicloud_instance: Aadd support for enable_high_density_mode. [GH-9862]
+- resource/alicloud_message_service_topic: Added the field topic_type. [GH-9863]
+- resource/alicloud_db_instance: Retry on IncorrectDBInstanceState and OperationDenied.DBInstanceStatus. [GH-9865]
+- resource/alicloud_cr_ee_repo: support tag_immutability attribute. [GH-9867]
+- resource/alicloud_amqp_instance: support serverless_switch and tags; data-source/alicloud_amqp_instances: support serverless_switch. [GH-9870]
+- resource/alicloud_ecs_launch_template: Add customizeDiff to propagate the update event of latest_version_number and fix template_tags update bug. [GH-9871]
+- resource/alicloud_alidns_record: Added retry strategy for DescribeDomainRecordInfo. [GH-9873]
+- resource/alicloud_rds_custom_disk: Added the field bursting_enabled, delete_with_instance, instance_id, resource_group_id, tags; Removed the ForceNew for field performance_level. [GH-9879]
+- resource/alicloud_wafv3_defense_rule: Added the field gmt_modified; data-source/alicloud_wafv3_domains: Added the field domain_id. [GH-9883]
+- data-source/alicloud_ess_notifications: support time_zone and message_encoding. [GH-9844]
+- docs: alicloud_cr_ee_instance document Economy instance_type and DISABLE image_scanner. [GH-9858]
+- docs: Improved the document esa_cache_reserve_instance. [GH-9885]
+
+BUG FIXES:
+
+- resource/alicloud_rds_instance_cross_backup_policy: fix delete with proper parameters and pre-checks. [GH-9838]
+- resource/alicloud_alikafka_instance: Fixed the update error caused by field serverless_config; Added the field vpc_sasl_domain_endpoint . [GH-9855]
+- resource/alicloud_rds_custom: Fixed the diff error caused by field system_disk.category. [GH-9875]
+- resource/alicloud_ros_stack_instances: Fixed duplicate entries regionids. [GH-9892]
+- resource/alicloud_esa_routine_route: Fixed the int overflow bug in field config_id; Changed the field route_enable, route_name, rule from Optional to Required; Improved alicloud_esa_routine_route testcase. [GH-9893]
+- testcase: fix alicloud_rds_instance_cross_backup_policy test. [GH-9857]
+- docs: fix broken DescribeInstance link in alicloud_wafv3_address_book{,s}. [GH-9880]
+- docs: fix Available since version for auto_asset_protection in alicloud_cloud_firewall_instance. [GH-9894]
+
 ## 1.282.0 (June 15, 2026)
 
-- **New Data Source:**`alicloud_esa_cache_reserve_instances` ([#9841](https://github.com/aliyun/terraform-provider-alicloud/issues/9841))
+- **New Data Source:** `alicloud_esa_cache_reserve_instances` ([#9841](https://github.com/aliyun/terraform-provider-alicloud/issues/9841))
 
 ENHANCEMENTS:
 
