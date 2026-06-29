@@ -7,7 +7,7 @@
 ```bash
 bash bootstrap/install.sh                       # 装依赖（a1/aliyun/cloudspec/gh）
 cp bootstrap/.env.example bootstrap/.env        # 填 GH_TOKEN + 阿里云 AK
-bin/a1id login jarvis && bin/a1id login chenyi  # 两个身份各登一次
+bin/a1id login jarvis && bin/a1id login chenyi && bin/a1id login guozai  # 三个身份各登一次
 ```
 
 钉钉数字员工还需 `cp bridge/jarvis.env.example bridge/jarvis.env`，填钉钉 appKey/appSecret/卡片模板 id。
