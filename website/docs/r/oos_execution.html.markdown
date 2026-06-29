@@ -66,6 +66,10 @@ resource "alicloud_oos_execution" "example" {
   parameters    = <<EOF
 				{"Status":"Running"}
 		  	EOF
+  tags = {
+    "Created" = "TF",
+    "For"     = "execution Test"
+  }
 }
 ```
 
@@ -84,7 +88,8 @@ The following arguments are supported:
 * `template_name` - (Required, ForceNew) The name of execution template.
 * `template_version` - (Optional, ForceNew) The version of execution template.
 * `template_content` - (Optional, ForceNew, Available in v1.114.0+) The content of template. When the user selects an existing template to create and execute a task, it is not necessary to pass in this field.
-                    
+* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
+
 ## Attributes Reference
 
 The following attributes are exported:
