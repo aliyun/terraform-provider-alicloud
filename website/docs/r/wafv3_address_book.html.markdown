@@ -20,6 +20,12 @@ For information about WAFV3 Address Book and how to use it, see [What is Address
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_wafv3_address_book&exampleId=245a643a-4bdf-759b-af6d-59f8f674a71dc93723aa&activeTab=example&spm=docs.r.wafv3_address_book.0.245a643a4b&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -40,6 +46,10 @@ resource "alicloud_wafv3_address_book" "default" {
   address_book_type = "ip"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_wafv3_address_book&spm=docs.r.wafv3_address_book.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
