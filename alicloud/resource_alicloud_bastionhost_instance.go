@@ -50,6 +50,17 @@ func resourceAliCloudBastionhostInstance() *schema.Resource {
 			"bandwidth": {
 				Type:     schema.TypeString,
 				Required: true,
+				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+					value, err := strconv.Atoi(v.(string))
+					if err != nil {
+						errors = append(errors, fmt.Errorf("%q must be a numeric string, got: %s", k, v.(string)))
+						return
+					}
+					if value < 0 || value%5 != 0 {
+						errors = append(errors, fmt.Errorf("%q must be a non-negative multiple of 5, got: %d", k, value))
+					}
+					return
+				},
 			},
 			"public_white_list": {
 				Type:     schema.TypeList,

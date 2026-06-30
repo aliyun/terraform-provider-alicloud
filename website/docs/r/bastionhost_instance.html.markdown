@@ -151,10 +151,16 @@ The following arguments are supported:
 * `plan_code` - (Required, ForceNew, Available since 1.193.0) The plan code of Cloud Bastionhost instance. Valid values:
   - `cloudbastion`: Basic Edition.
   - `cloudbastion_ha`: HA Edition.
-* `storage` - (Required, Available since 1.193.0) The storage of Cloud Bastionhost instance. Valid values: `0` to `500`. Unit: TB. **NOTE:** From version 1.251.0, `storage` can be modified.
-* `bandwidth` - (Required, Available since 1.193.0) The bandwidth of Cloud Bastionhost instance. **NOTE:** From version 1.263.0, `bandwidth` can be modified.
-  If [China-Site Account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account#sign-up-for-an-alibaba-cloud-china-site-account), its valid values: 0 to 150. Unit: Mbit/s. The value must be a multiple of 5.
-  If [International-Site Account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account#sign-up-for-an-alibaba-cloud-international-site-account), its valid values: 0 to 200. Unit: Mbit/s. The value must be a multiple of 10.
+* `storage` - (Required, Available since 1.193.0) The storage of Cloud Bastionhost instance. Valid values: `0` to `500`. Unit: TB.
+
+  ->**NOTE:** From version 1.251.0, `storage` can be modified.
+
+* `bandwidth` - (Required, Available since 1.193.0) The bandwidth of Cloud Bastionhost instance.
+
+  -> **NOTE:** From version 1.263.0, `bandwidth` can be modified.
+
+  - If [China-Site Account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account#sign-up-for-an-alibaba-cloud-china-site-account), its valid values: `0` to `150`. Unit: Mbit/s. The value must be a multiple of 5.
+  - If [International-Site Account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account#sign-up-for-an-alibaba-cloud-international-site-account), its valid values: `0` to `200`. Unit: Mbit/s. The value must be a multiple of 10.
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
 * `period` - (Optional) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. At present, the provider does not support modify "period".
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
