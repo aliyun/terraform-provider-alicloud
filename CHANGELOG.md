@@ -1,4 +1,5 @@
-## 1.283.0 (Unreleased)
+## 1.284.0 (Unreleased)
+## 1.283.0 (June 29, 2026)
 
 - **New Resource:** `alicloud_wafv3_address_book` ([#9874](https://github.com/aliyun/terraform-provider-alicloud/issues/9874))
 - **New Resource:** `alicloud_threat_detection_service_linked_role` ([#9888](https://github.com/aliyun/terraform-provider-alicloud/issues/9888))
