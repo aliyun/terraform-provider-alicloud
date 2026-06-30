@@ -55,9 +55,16 @@ chk aliyun aliyun
 chk cloudspec cloudspec
 
 # Check credentials (each independent PASS/FAIL)
-chk_cred gh "gh auth status"
 chk_cred aliyun "aliyun sts GetCallerIdentity"
 chk_cred a1 "a1 auth whoami"
+
+repo_root="$(git rev-parse --show-toplevel)"
+if "$repo_root/bootstrap/github-identity.sh" check >/dev/null 2>&1; then
+    echo "PASS jarvis-github-token"
+else
+    echo "FAIL jarvis-github-token"
+    ((fail_count++))
+fi
 
 # Check vendored skills
 chk_skill aone-triage
@@ -89,7 +96,6 @@ else
 fi
 
 # Check the 3 agent definition files exist (主会话即总领，不单设 jarvis 子代理)
-repo_root="$(git rev-parse --show-toplevel)"
 for agent in developer reviewer verifier; do
     agent_file="${repo_root}/.claude/agents/${agent}.md"
     if [ -f "$agent_file" ]; then

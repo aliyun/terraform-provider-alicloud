@@ -16,8 +16,8 @@ description: >-
 > **红线:任何代码改动一律新分支 + CR/MR 评审,master 只接已评审合入。评审本身只读,不改任何文件。**
 
 ## 前置
-- `gh auth status` 验登录;无 `gh` 或未登录则停下提示用户,不绕道。
-- 评审看 alicloud(=upstream aliyun)PR;改动若有,落 origin=ChenHanZhang fork(见 `config/workspaces.json` `terraform_provider`)。
+- 先确认 `gh` 命令存在;Jarvis 代表执行 GitHub 写操作(评论/创建 PR/推分支)前必须 `bootstrap/github-identity.sh check`;写操作用 `bootstrap/github-identity.sh gh ...`,推分支用 `bootstrap/github-identity.sh push ...`,登录名必须是 `api-tool-agent`,禁止依赖本机 ambient `gh auth`、个人账号或 ambient git 凭据。
+- 评审看 alicloud(=upstream aliyun)PR;只读查证可读 upstream。改动若有,head/push 落 `api-tool-agent:<branch>`(见 `config/workspaces.json` `terraform_provider`)。
 - 写操作(评论/建单)先授权;低置信不发评论,写 `escalation/`。
 
 ## 1. 读 PR
@@ -51,12 +51,15 @@ gh pr view <url> --json files -q '.files[].path'   # 改了哪些文件
 落 `runs/<UTCdate>-pr-<n>.md`(UTC,如 2026-06-23):结论 → 逐项(字段/import/用例)+ 证据(源码行/OpenAPI/grep) → 风险/建议。`go build`/`vet` 跑了就附,没跑注明局限。
 
 ## 6. 出口(写操作,先授权)
-- 评论:草稿过目 → `gh pr comment <url> --body "..."`(结论→逐项+证据→建议)。**仅授权后**。
+- 评论:草稿过目 → `bootstrap/github-identity.sh gh pr comment <url> --body "..."`(结论→逐项+证据→建议)。**仅授权后**。
 - 无 Aone 工单:ad-hoc PR 默认链 tf_provider 池 **528766**;客户来源用 tf_customer **1086837**。落池前先反问。
 
 ## 开发路径(独立、需另行授权)
-评审命中需改代码 → 切 origin fork 分支开发,绝不在主目录/master 改:
+评审命中需改代码 → 切 worktree 分支开发,绝不在主目录/master 改;推送和 PR 创建必须走 `api-tool-agent` 身份:
 ```
 git -C <workspaces.terraform_provider.path> checkout -b <branch> origin/master
+bootstrap/github-identity.sh check
+bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud HEAD <branch>
+bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicloud --head api-tool-agent:<branch> ...
 ```
-改完 push origin fork → 走评审/CR,不直发正式。
+改完通过 `bootstrap/github-identity.sh push` 推到 `api-tool-agent:<branch>` → 走评审/CR,不直发正式。

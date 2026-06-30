@@ -110,6 +110,10 @@ bootstrap/claim.sh claim <id> <pool-project>
 
 技能完成：读取工单 → 查证（OpenAPI + Cloudspec 映射 + provider 源码）→ 回复 / 打标 / 建需求 / 建 CR。
 
+若单条工单进入 Terraform Provider 资源开发且不走自动化生成链路，先按 `tf_provider` 池创建或复用 **terraform-alicloud** 内部研发单（项目 `528766`，指派 `WORKER_1782379562571`），与客户主单双向关联；研发细节、验证、PR/CI/验收信息写内部研发单，客户主单仅同步关键节点和卡点。需要 cloudspec_gap 或云产品上游协助时，把详细协作问题同步到对应依赖单。
+
+若单条工单会产生 GitHub PR/评论/推分支，写操作前必须执行 `bootstrap/github-identity.sh check`；`gh` 写操作通过 `bootstrap/github-identity.sh gh ...` 执行，推分支通过 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>` 执行；`JARVIS_GITHUB_TOKEN` 登录名必须是 `api-tool-agent`，PR head 使用 `api-tool-agent:<branch>`。
+
 ### 4.3 autonomy 判定（`autonomy.md` 策略）
 
 技能执行后，依据 `autonomy.md` 策略块判断下一步：

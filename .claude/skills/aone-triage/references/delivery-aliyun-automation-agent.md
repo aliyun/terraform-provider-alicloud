@@ -40,7 +40,7 @@ a1 app cr create "3-5行摘要" --branch <suffix> --workitem-ids <需求ID>
 git fetch origin <branch>
 git worktree add .claude/worktrees/<name> <branch>
 ```
-进 worktree 改代码、commit(co-author 行)、`git push origin HEAD`。
+进 worktree 改代码、commit(不得带 AI co-author/署名)、`git push origin HEAD`。
 若为修 bug:补/改一个会因该 bug 失败的用例锁定回归(无可测则在 CR 说明为何),用例随 CR 一并评审。
 
 ## 4. 预发
