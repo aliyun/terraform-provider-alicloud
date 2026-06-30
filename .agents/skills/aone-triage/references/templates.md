@@ -37,6 +37,21 @@ source: <工单 url 或 用户咨询>
 ```
 保持需求导向:写"缺什么/对应哪个API",不罗列现有属性清单。两层正文 + JSON 字段必须一致。
 
+## Requirement skeleton (Terraform 生成器问题/API 工具团队)
+默认池: `api_toolkit` / project `2100304`;产品字段优先选 Terraform;标题聚焦生成器行为,不要写成客户资源诉求。
+```
+background: Terraform 资源 <terraform_resource> 研发中发现 Acube/terraform-generator-v4 生成行为与 Cloudspec resourceTypeCode 配置不一致,影响资源生成验收。
+requirement: 修复 terraform-generator-v4 对 <Cloudspec字段/条件> 的生成逻辑。现状:<实际生成片段/行为>;期望:<应生成片段/行为>。
+evidence: 1. resourceTypeCode/get: <接口/文件路径>,关键配置=<字段和值>. 2. createLocalBuildTask: <任务/文件路径>,生成代码=<文件:行>. 3. 关联资源/工单:<source>。
+acceptance: 1. 给定相同 resourceTypeCode,Acube 重新生成代码符合 Cloudspec 语义。2. 补生成器单测覆盖该条件。3. 关联 Terraform 资源可通过 `tools/terraform_generated_diff.py --acube-dir ...` 语义检查,不再报 WARN。
+deadline: <date>
+source: <源 Aone/PR/CR url>
+
+```json
+{"background":"…","requirement":"…","evidence":"…","acceptance":"…","deadline":"YYYY-MM-DD","source":"…"}
+```
+```
+
 ## Verified ROS facts (本次确认, provider 1.281.0)
 - `alicloud_ros_stack_group` → `ROS::StackGroup`;无 `rd_folder_ids`,变更部署支持。
 - `alicloud_ros_stack_instance` → `ROS::StackInstance`;支持 import `<group>:<account>:<region>`;Create 仅发 AccountIds/RegionIds,无 DeploymentTargets。

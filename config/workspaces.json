@@ -51,6 +51,14 @@
       "pools": ["api_toolkit"],
       "ops": {},
       "desc": "自动化能力管理内部平台; Terraform 自动化测试集成/度量/发布; 池 api_toolkit"
+    },
+    "terraform_generator_v4": {
+      "repo": "terraform-generator-v4",
+      "git_url": "git@gitlab.alibaba-inc.com:opensource-tools/terraform-generator-v4.git",
+      "default_branch": "main",
+      "pools": ["api_toolkit"],
+      "ops": {"test":"composer test", "lint":"composer lint"},
+      "desc": "Terraform generator v4; Acube Terraform 代码生成器问题定位/转单/修复"
     }
   }
 }
