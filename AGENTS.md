@@ -22,6 +22,7 @@
 6) **汇报带链接**：最后总结汇报必须带上 Aone 工作项链接与 MR/CR 链接（有几条带几条）；缺其一视为汇报不完整。
 7) **对外不带 AI 署名**：PR/MR/CR 正文与评论、Aone 工单回复等对外产物禁止出现「🤖 Generated with Codex」等 AI 署名/水印；发出前剥掉，发现存量改掉。**git commit 也不得带 `Co-Authored-By: Codex`/AI 水印**，提交前剥掉。
 8) **a1 身份默认 jarvis**：跑 a1 一律走 `bin/a1id`，默认用 jarvis 身份（`a1id -- <args>`）。辰羿本人身份（chenyi）禁止擅用——仅在仓库主人本轮当面授权时才 `a1id as chenyi -- <args>` 临时切，用完即回，绝不自持。无授权用辰羿身份属红线。
+9) **GitHub PR 身份硬门**：凡 Jarvis 代表自动交付的 GitHub PR/评论/推分支，必须先 `bootstrap/github-identity.sh check`；`gh` 写操作用 `bootstrap/github-identity.sh gh ...`，推分支用 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>`。`JARVIS_GITHUB_TOKEN` 对应账号必须是 `api-tool-agent`。缺 token、账号不匹配、或 `gh api user --jq .login` 失败时一律阻断并升级，禁止回退到本机 ambient `gh auth` 或个人账号。Terraform Provider PR head 必须落到 `api-tool-agent:<branch>`。
 
 @autonomy.md
 @loops/aone-triage.md

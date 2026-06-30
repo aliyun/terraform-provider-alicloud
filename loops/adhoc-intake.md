@@ -38,6 +38,7 @@
 4. **授权后建 + 双向关联**：建工作项 → 工单挂本任务链接，本任务记 Aone id（双向）。
    - **统一建为需求（`--category req`）**：adhoc 接入默认开需求单，不开 task/bug，便于后续走需求→变更→发布链路。确属缺陷再用 bug。
    - ad-hoc PR 无明确归属 → 默认落 **tf_provider (528766)**。
+   - 非自动化生成链路、需要 Jarvis 内部研发处理的 Terraform Provider 资源 → 在 **terraform-alicloud / tf_provider (528766)** 创建或复用内部研发单，指派 `WORKER_1782379562571`，与客户主单双向关联；研发进展、验证细节、PR/CI/验收信息沉淀在内部研发单，客户主单只同步关键节点和卡点。
 5. **凡要写工单(新建 or 复用)都开 bookend**：拿到 id 后(无论第 2 步复用还是第 4 步新建)，**开局即 `bootstrap/claim.sh claim <id> <project>`**(打 jarvis-claimed、入台账)，收尾走 bookend 收口(`triage-one.sh` 或 `wrap.sh done`+`claim.sh release`)。漏 claim = 后续标签/状态/对账全失灵。纯本地只读、不动任何工单的任务可跳过本节直接进四。
 
 保留 **supervised 门**：建/写 Aone 前逐项等授权。
@@ -48,7 +49,8 @@
 
 读 `config/workspaces.json` 取 `workspaces.<key>`（terraform_provider | mcp_server）：`repo` / `path` / remotes / `default_branch` / `pools` / `ops`。
 
-- 评审 alicloud PR：看 `upstream_remote=alicloud`，改在 `origin=ChenHanZhang` fork。
+- GitHub 写操作硬门：凡 Jarvis 代表发 PR/评论/推分支，先 `bootstrap/github-identity.sh check`；`gh` 写操作统一用 `bootstrap/github-identity.sh gh ...`，推分支统一用 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>`，账号必须是 `api-tool-agent`，缺 token 或账号不匹配则 escalate。
+- 评审 alicloud PR：看 `upstream_remote=alicloud`；只读查证可读 upstream，Jarvis 需要提交修复时 push/head 必须落到 `api-tool-agent:<branch>`，禁止依赖本机 ambient `gh auth` 或个人账号。
 - cd 进 `path`，dev 先开 worktree 切分支（CLAUDE.md 工作纪律）。
 
 ---

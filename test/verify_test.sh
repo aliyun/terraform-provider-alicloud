@@ -37,10 +37,18 @@ echo ""
 
 # Check assertions
 echo "=== Assertions ==="
-if echo "$output" | grep -q "FAIL gh-cred"; then
-    echo "PASS: Output contains 'FAIL gh-cred'"
+if echo "$output" | grep -q "gh-cred"; then
+    echo "FAIL: Output should not depend on ambient gh auth"
+    echo "Output was: $output"
+    exit 1
 else
-    echo "FAIL: Output does NOT contain 'FAIL gh-cred'"
+    echo "PASS: Output does not contain ambient gh auth check"
+fi
+
+if echo "$output" | grep -q "FAIL jarvis-github-token"; then
+    echo "PASS: Output contains 'FAIL jarvis-github-token'"
+else
+    echo "FAIL: Output does NOT contain 'FAIL jarvis-github-token'"
     echo "Output was: $output"
     exit 1
 fi

@@ -40,7 +40,7 @@ a1 app cr create "3-5行摘要" --branch <suffix> --workitem-ids <需求ID>
 git fetch origin <branch>
 git worktree add .claude/worktrees/<name> <branch>
 ```
-进 worktree 改代码、commit(co-author 行)、`git push origin HEAD`。
+进 worktree 改代码、commit(不得带 AI co-author/署名)、`git push origin HEAD`。
 若为修 bug:补/改一个会因该 bug 失败的用例锁定回归(无可测则在 CR 说明为何),用例随 CR 一并评审。
 
 ## 4. 预发
@@ -83,4 +83,4 @@ CR FINISH + 正式 SUCCESS 后才清;worktree 干净(已 push)。手建的 workt
 | 应用 | 项目 | app | 预发/正式 pipeline | 链路文件 |
 |------|------|-----|--------------------|----------|
 | aliyun-automation-agent | 2124589 | 283346 | 66 / 67 | 本文件 |
-| (新应用追加) | — | — | — | delivery-<app>.md |
+| cloudspec | 2124589 | 260634 | 420 / 67 | delivery-cloudspec.md |

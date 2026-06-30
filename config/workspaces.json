@@ -3,10 +3,10 @@
     "terraform_provider": {
       "repo": "terraform-provider-alicloud",
       "git_url": "git@github.com:ChenHanZhang/terraform-provider-alicloud.git",
-      "upstream_remote": "alicloud", "origin_remote": "origin", "default_branch": "master",
+      "upstream_remote": "alicloud", "origin_remote": "origin", "jarvis_github_login": "api-tool-agent", "default_branch": "master",
       "pools": ["tf_provider","tf_customer"],
       "ops": {"build":"go build ./...","test":"go test ./alicloud -run <Name>","vet":"go vet ./...","fmt":"gofmt -l alicloud/"},
-      "desc": "alicloud provider 开发/评审; 评审看 alicloud(=upstream aliyun) PR, 改在 origin=ChenHanZhang fork"
+      "desc": "alicloud provider 开发/评审; 评审看 alicloud(=upstream aliyun) PR; Jarvis 写 GitHub PR/评论/推分支必须用 JARVIS_GITHUB_TOKEN(api-tool-agent), head=api-tool-agent:<branch>"
     },
     "automation_agent": {
       "repo": "aliyun-automation-agent",
@@ -37,12 +37,12 @@
     "agent_toolkit": {
       "repo": "alibabacloud-agent-toolkit",
       "git_url": "git@github.com:ChenHanZhang/alibabacloud-agent-toolkit.git",
-      "origin_remote": "origin", "default_branch": "main",
+      "origin_remote": "origin", "jarvis_github_login": "api-tool-agent", "default_branch": "main",
       "pools": ["api_toolkit"],
       "loop": "loops/plugin-dev.md",
       "ops": {"validate":"python3 tools/validate.py","lint":"npx markdownlint-cli2 '**/*.md' '#node_modules'","hooks":"bash tools/dev-hooks/verify-hooks.sh"},
       "test_profile": "TerraformUT",
-      "desc": "Claude Code 插件市场（core/spec-ops/iac-service）; 新插件照搬 core, 见 loops/plugin-dev.md, 实测用 TerraformUT"
+      "desc": "Claude Code 插件市场（core/spec-ops/iac-service）; 新插件照搬 core, 见 loops/plugin-dev.md, 实测用 TerraformUT; Jarvis 写 GitHub PR/评论/推分支必须用 JARVIS_GITHUB_TOKEN(api-tool-agent)"
     },
     "acube": {
       "repo": "a-cube-aliyun-com",

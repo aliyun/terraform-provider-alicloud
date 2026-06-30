@@ -41,6 +41,7 @@ status) need a clear user yes first — confirm before each.
 建需求前查 `config/pools.json` routing[] 选池;命不中先反问。建完按内容分叉:
 - 分析/调研/咨询/统计 → 建需求即停,不拉分支
 - 改代码/接资源/修 bug → 仅命中开发行才进链路(link app→CR→worktree)
+- Terraform Provider 资源若不走自动化生成链路、需要 Jarvis 内部研发 → 在 **terraform-alicloud / tf_provider (528766)** 创建或复用内部研发单,指派 `WORKER_1782379562571`,与客户主单双向关联;研发细节/验证/PR/CI/验收写内部单,客户主单只同步关键节点和卡点;涉及 `cloudspec_gap` 或云产品依赖时,详细协作问题同步到对应依赖单。
 
 ## 工单全流程
 `bootstrap/aone-get.sh <id>`(包 `a1 project workitem get -f json`,3h 缓存,写后自动失效;强制重取加 `JARVIS_CACHE_TTL=0`)→ 概要表(id/标题/类型/状态/指派/工单ID)+ 诉求 → 按类型分诊:
@@ -50,6 +51,9 @@ status) need a clear user yes first — confirm before each.
 4. **自己交付**(改我们自家应用,不转上游)→ 走对应应用的交付链路:建需求→建 CR→worktree 开发→预发→**等用户验证反馈**→正式→关单清 worktree。先按目标应用选链路文件,IDs/坑见 reference:
    - **Agent门户 / AgentRuntime / aliyun-automation-agent / PlayGround**(或 cwd 在该 repo) → `references/delivery-aliyun-automation-agent.md`(app 283346,预发 66/正式 67)
    - **cloudspec / OpenAPI MCP Server / API MCP**(或 cwd 在 cloudspec repo,或工单涉及 ListApis/RunIaC 等 cloudspec 内置能力) → `references/delivery-cloudspec.md`(app 260634,预发 420/正式 67)
+
+## GitHub PR 身份
+Jarvis 代表自动交付的 GitHub PR/评论/推分支,必须先 `bootstrap/github-identity.sh check`;`gh` 写操作用 `bootstrap/github-identity.sh gh ...`,推分支用 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>`;`JARVIS_GITHUB_TOKEN` 登录名必须是 `api-tool-agent`,Terraform Provider PR head 使用 `api-tool-agent:<branch>`。缺 token、账号不匹配或 `gh api user --jq .login` 失败时阻断并升级,不得回退到本机 ambient `gh auth`、个人账号或 ambient git 凭据。
 
 ## 查证(两层,顺序固定,不凭记忆)
 1. **OpenAPI 全集**:解析 product+action(next.api 链接或描述)→ `AlibabaCloud ListApis` / `GetApiDefinition`。JMESPath 用单引号,反引号会失败:`parameters[?name=='X'].schema.properties|[0]|keys(@)`。

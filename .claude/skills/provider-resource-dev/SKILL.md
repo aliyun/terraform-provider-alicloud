@@ -9,10 +9,18 @@ description: Use when developing or diagnosing a NEW alicloud Terraform provider
 
 ## 工具/路径
 - 工作区一律通过 `bootstrap/workspace.sh dir <key>` 解析;provider key=`terraform_provider`;acube key=`acube`;生成器 key=`terraform_generator_v4`。
-- cspec 仓 `cloudspec-model/<Product>_pop_*`;provider fork=ChenHanZhang,upstream=aliyun;acube/terraform-generator-v4 见 `config/workspaces.json`。
+- cspec 仓 `cloudspec-model/<Product>_pop_*`;provider upstream=aliyun;Jarvis 提交 GitHub PR/评论/推分支必须使用 `JARVIS_GITHUB_TOKEN` 对应的 `api-tool-agent` 身份,head=`api-tool-agent:<branch>`;acube/terraform-generator-v4 见 `config/workspaces.json`。
 - Acube 在线生成工具: `tools/acube_terraform_generate.py`。
 - 生成差异/语义检查工具: `tools/terraform_generated_diff.py`。
 - 编码交 developer 子代理,改文件先 worktree,acc 测过才交。
+
+## Aone 分单与同步
+非自动化生成链路、需要 Jarvis 内部研发处理的 Terraform Provider 资源,必须创建或复用 **terraform-alicloud** 内部研发单:
+- 项目: `tf_provider` / `528766`;指派给 Jarvis 自己 `WORKER_1782379562571`。
+- 与 Terraform-客户需求池的客户主单双向关联;拿到内部单 id 后按 bookend 先 claim,收尾 done+release。
+- 主要研发进展、生成/手改差异、验证细节、PR/CI/验收信息优先同步到内部研发单。
+- 客户主单只同步关键节点摘要:已转内部单、发现镇元/Cloudspec/API 卡点、资源模型问题、需要客户感知的决策或阻塞。
+- 如客户主单还关联 `cloudspec_gap` 或云产品上游 Aone,依赖方协作的详细问题同步到对应依赖单,不要混写在客户主单里。
 
 ## 步骤
 1. **查证 Terraform ↔ Cloudspec 身份** — OpenAPI + provider 源码确认缺;`getTerraformResourceSpec` 只看映射,不代表实现,且找不到可能返无关资源,别信。
@@ -22,7 +30,7 @@ description: Use when developing or diagnosing a NEW alicloud Terraform provider
 5. **生成 vs 手写 diff** — 用 `tools/terraform_generated_diff.py` 看 Acube generated 与手写分支差异,先判断缺主体/缺测试/缺文档/缺 provider 注册/缺 service,再看 `resourceNotExistCondition` 等语义风险,最后手改。
 6. **手改生成缺陷** — OSS 等 XML 产品:`client.Do("Oss",xmlParam(...))` 非 Roa(治 `<` 解析错);PUT body 按 schema **固定元素序**(治 MalformedXML);update 删-再-PUT 绕 AlreadyExists。
 7. **验收** — `TF_ACC=1 go test ./alicloud/ -run TestAcc<R> -v -timeout 40m`;过 create+update+import 才算数。
-8. **PR** — fork 分支 → `gh pr create --repo aliyun/terraform-provider-alicloud`;带 resource+test+service+provider注册+website 文档;无 AI 署名。
+8. **PR** — `bootstrap/github-identity.sh check` → `bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud HEAD <branch>` → `bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicloud --head api-tool-agent:<branch>`;带 resource+test+service+provider注册+website 文档;无 AI 署名。缺 `JARVIS_GITHUB_TOKEN` 或登录名不是 `api-tool-agent` 时阻断并升级,禁止回退个人账号或 ambient git 凭据。
 
 ## Terraform 资源名解析
 规则: `alicloud_【产品名下划线】_【资源名下划线】` → product/resourceCode 各自转 PascalCase。
