@@ -4,16 +4,17 @@ a1 凭据固定在 `~/.config/a1/auth.yaml`,**只能持一个身份**(且 a1 写
 
 ## 四个身份
 - **jarvis**(默认,open_jarvis):Jarvis 全程用它。
-- **chenyi**(仓库主人辰羿本人):Jarvis 不得擅用,仅当面授权时临时切。无代码硬门,纪律见 CLAUDE.md「身份纪律」。
-- **guozai**(仓库主人过载本人):同 chenyi,Jarvis 不得擅用,仅当面授权时临时切。
-- **linjun**(李超林,工号 429768):同 chenyi,Jarvis 不得擅用,仅当面授权时临时切。
+- **chenyi**(陈汉璋,工号 320687,chenhanzhang.chz@alibaba-inc.com):Jarvis 不得擅用,仅当面授权时临时切。无代码硬门,纪律见 CLAUDE.md「身份纪律」。
+- **guozai**(郭子龙,工号 484483,guozai.gzl@alibaba-inc.com):同 chenyi,Jarvis 不得擅用,仅当面授权时临时切。
+- **linjun**(李超林,工号 429768,lichaolin.lcl@alibaba-inc.com):同 chenyi,Jarvis 不得擅用,仅当面授权时临时切。
 
 ## 一次性设置
 ```bash
-bin/a1id login jarvis     # 已有 auth.yaml 首跑自动收编为 jarvis
-bin/a1id login chenyi     # 辰羿本人登录一次,存为 chenyi 身份
-bin/a1id login guozai     # 过载本人登录一次,存为 guozai 身份
-bin/a1id login linjun     # 李超林登录一次,存为 linjun 身份
+bin/a1id login jarvis     # 至少登录 jarvis(默认身份;已有 auth.yaml 首跑自动收编)
+# 其他身份按需登录,例如:
+#   bin/a1id login chenyi   # 陈汉璋本人
+#   bin/a1id login guozai   # 郭子龙本人
+#   bin/a1id login linjun   # 李超林本人
 ```
 
 ## 用法

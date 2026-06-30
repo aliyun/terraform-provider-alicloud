@@ -7,10 +7,12 @@
 #
 # 三个身份:
 #   jarvis  —— 默认身份(open_jarvis),Jarvis 全程用它。
-#   chenyi  —— 仓库主人(辰羿)本人。非默认身份,Jarvis 不得擅用,仅当面授权时临时
-#              `as chenyi`,用完即回 jarvis(无代码硬门,纪律见 CLAUDE.md 第8条)。
-#   guozai  —— 仓库主人(过载)本人。非默认身份,Jarvis 不得擅用,仅当面授权时临时
-#              `as guozai`,用完即回 jarvis(无代码硬门,纪律见 CLAUDE.md 第8条)。
+#   chenyi  —— 陈汉璋(工号 320687,chenhanzhang.chz@alibaba-inc.com)。非默认身份,
+#              Jarvis 不得擅用,仅当面授权时临时 `as chenyi`,用完即回 jarvis
+#              (无代码硬门,纪律见 CLAUDE.md 第8条)。
+#   guozai  —— 郭子龙(工号 484483,guozai.gzl@alibaba-inc.com)。非默认身份,
+#              Jarvis 不得擅用,仅当面授权时临时 `as guozai`,用完即回 jarvis
+#              (无代码硬门,纪律见 CLAUDE.md 第8条)。
 #   linjun  —— 李超林(工号 429768,lichaolin.lcl@alibaba-inc.com)。非默认身份,
 #              Jarvis 不得擅用,仅当面授权时临时 `as linjun`,用完即回 jarvis
 #              (无代码硬门,纪律见 CLAUDE.md 第8条)。
