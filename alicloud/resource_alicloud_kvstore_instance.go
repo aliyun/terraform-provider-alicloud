@@ -420,6 +420,14 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"slave_replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"is_auto_upgrade_open": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -568,6 +576,14 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request["SlaveReadOnlyCount"] = v
 	}
 
+	if v, ok := d.GetOkExists("replica_count"); ok {
+		request["ReplicaCount"] = v
+	}
+
+	if v, ok := d.GetOkExists("slave_replica_count"); ok {
+		request["SlaveReplicaCount"] = v
+	}
+
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vpcService := VpcService{client}
@@ -691,6 +707,8 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("shard_count", object["ShardCount"])
 	d.Set("read_only_count", object["ReadOnlyCount"])
 	d.Set("slave_read_only_count", object["SlaveReadOnlyCount"])
+	d.Set("replica_count", object["ReplicaCount"])
+	d.Set("slave_replica_count", object["SlaveReplicaCount"])
 	d.Set("status", object["InstanceStatus"])
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
@@ -1046,6 +1064,14 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		migrateToOtherZoneReq["SlaveReadOnlyCount"] = v
 	}
 
+	if v, ok := d.GetOkExists("replica_count"); ok {
+		migrateToOtherZoneReq["ReplicaCount"] = v
+	}
+
+	if v, ok := d.GetOkExists("slave_replica_count"); ok {
+		migrateToOtherZoneReq["SlaveReplicaCount"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("availability_zone") {
 		update = true
 
@@ -1268,6 +1294,22 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		if v, ok := d.GetOkExists("read_only_count"); ok {
 			modifyInstanceSpecReq["ReadOnlyCount"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("replica_count") {
+		update = true
+
+		if v, ok := d.GetOkExists("replica_count"); ok {
+			modifyInstanceSpecReq["ReplicaCount"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("slave_replica_count") {
+		update = true
+
+		if v, ok := d.GetOkExists("slave_replica_count"); ok {
+			modifyInstanceSpecReq["SlaveReplicaCount"] = v
 		}
 	}
 
