@@ -44,10 +44,11 @@ echo "Test 1: inline Chinese numbered problems become separate list lines"
 inline="结论：生成器已修复；剩余问题：1）测试用例缺失；2）业务语义缺失；3）文档说明缺失。"
 formatted="$(printf '%s' "$inline" | bash "$FORMAT")"
 assert_contains "keeps conclusion text" "$formatted" "结论：生成器已修复"
-assert_contains "splits first problem" "$formatted" $'\n1. 测试用例缺失'
-assert_contains "splits second problem" "$formatted" $'\n2. 业务语义缺失'
-assert_contains "splits third problem" "$formatted" $'\n3. 文档说明缺失。'
+assert_contains "splits first problem with Aone-safe marker" "$formatted" $'\n\n1、测试用例缺失\n\n'
+assert_contains "splits second problem with Aone-safe marker" "$formatted" $'\n\n2、业务语义缺失\n\n'
+assert_contains "splits third problem with Aone-safe marker" "$formatted" $'\n\n3、文档说明缺失。'
 assert_not_contains "does not keep compact 1） marker" "$formatted" "1）测试用例缺失"
+assert_not_contains "does not emit Markdown ordered list marker" "$formatted" $'\n1. 测试用例缺失'
 
 echo "Test 2: markdown headings and bullets become plaintext-safe sections"
 markdown="$(printf '%s\n\n%s\n%s\n\n%s' \
@@ -57,8 +58,9 @@ markdown="$(printf '%s\n\n%s\n%s\n\n%s' \
     "\`go test ./alicloud -run '^$'\`")"
 formatted_markdown="$(printf '%s' "$markdown" | bash "$FORMAT")"
 assert_contains "heading converted" "$formatted_markdown" "【结论】"
-assert_contains "first bullet converted" "$formatted_markdown" $'\n• 第一条问题'
-assert_contains "second bullet converted" "$formatted_markdown" $'\n• 第二条问题'
+assert_contains "first bullet converted with hard paragraph break" "$formatted_markdown" $'\n\n· 第一条问题\n\n'
+assert_contains "second bullet converted with hard paragraph break" "$formatted_markdown" $'\n\n· 第二条问题\n\n'
+assert_not_contains "does not emit UI-collapsible bullet glyph" "$formatted_markdown" "• 第一条问题"
 assert_contains "command preserved" "$formatted_markdown" "go test ./alicloud -run '^$'"
 
 echo "Test 3: mentions and footer stay readable"

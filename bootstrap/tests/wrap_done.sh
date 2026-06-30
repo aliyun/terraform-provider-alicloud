@@ -170,7 +170,7 @@ echo "Test 6: sync formats compact numbered problems before posting"
 A1_FAIL=0 assert_exit "wrap.sh sync formats comment" zero \
     bash "$WRAP" sync "WI-006" "结论：已定位；剩余问题：1）测试缺失；2）文档缺失。"
 
-if grep -q "1. 测试缺失" "$A1_LOG" && grep -q "2. 文档缺失。" "$A1_LOG" && ! grep -q "1）测试缺失" "$A1_LOG"; then
+if grep -q "1、测试缺失" "$A1_LOG" && grep -q "2、文档缺失。" "$A1_LOG" && ! grep -q "1）测试缺失" "$A1_LOG" && ! grep -q "1. 测试缺失" "$A1_LOG"; then
     echo "  PASS: sync posts structured problem list"
     pass_count=$((pass_count + 1))
 else

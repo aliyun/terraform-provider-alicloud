@@ -33,7 +33,7 @@ def convert_inline_numbered(line: str) -> list[str]:
         item = line[start:end].strip()
         item = item.lstrip("；;、,， ")
         item = item.rstrip("；; ")
-        out.append(f"{match.group(1)}. {item}")
+        out.append(f"{match.group(1)}、{item}")
 
     return out
 
@@ -49,7 +49,11 @@ def normalize_line(line: str) -> list[str]:
 
     bullet = re.match(r"^[-*]\s+(.+?)\s*$", stripped)
     if bullet:
-        return [f"• {bullet.group(1)}"]
+        return [f"· {bullet.group(1)}"]
+
+    ordered = re.match(r"^(\d{1,2})[.)）]\s*(.+?)\s*$", stripped)
+    if ordered:
+        return [f"{ordered.group(1)}、{ordered.group(2)}"]
 
     if re.match(r"^```", stripped):
         return []
@@ -64,10 +68,22 @@ for raw in text.split("\n"):
 
 cleaned: list[str] = []
 blank_count = 0
+def is_list_item(line: str) -> bool:
+    return bool(re.match(r"^\d{1,2}、", line) or line.startswith("· "))
+
+
 for line in lines:
     if line.startswith("代码：") and cleaned and cleaned[-1] != "":
         cleaned.append("")
         blank_count = 1
+
+    if is_list_item(line):
+        if cleaned and cleaned[-1] != "":
+            cleaned.append("")
+        cleaned.append(line)
+        cleaned.append("")
+        blank_count = 1
+        continue
 
     if line == "":
         blank_count += 1
