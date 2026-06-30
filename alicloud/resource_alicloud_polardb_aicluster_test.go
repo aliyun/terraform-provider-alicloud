@@ -37,7 +37,7 @@ func TestAccAliCloudPolarDBAICluster_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"region_id":              "cn-beijing",
-					"zone_id":                "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
+					"zone_id":                "${data.alicloud_polardb_node_classes.this.classes.1.zone_id}",
 					"db_node_class":          "polar.mysql.g8.4xlarge.gu50",
 					"db_cluster_description": name,
 					"pay_type":               "Postpaid",
@@ -74,6 +74,8 @@ func TestAccAliCloudPolarDBAICluster_basic(t *testing.T) {
 						"period":                 "Month",
 						"used_time":              "1",
 						"promotion_code":         "",
+						"connection_string":      CHECKSET,
+						"api_key":                CHECKSET,
 					}),
 				),
 			},
@@ -92,7 +94,7 @@ func resourcePolarDBAIClusterConfigDependence(name string) string {
 	}
 
 	resource "alicloud_vswitch" "default" {
-		zone_id  = data.alicloud_polardb_node_classes.this.classes.0.zone_id
+		zone_id  = data.alicloud_polardb_node_classes.this.classes.1.zone_id
 		vpc_id   = alicloud_vpc.default.id
 		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
 	}

@@ -75,6 +75,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `id` - The resource ID (same as the AI cluster ID).
 * `status` - The status of the AI cluster.
 * `model_type` - The model type. Example: `public`.
+* `connection_string` - (Available since 1.284.0) The connection string of the AI cluster endpoint.
+* `api_key` - (Sensitive, Available since 1.284.0) The API key for accessing the AI cluster. This field is marked as sensitive and will be hidden in Terraform plan/apply output. To retrieve its value, use `terraform output` with `-json` flag or read from state file directly.
 
 ## Timeouts
 
