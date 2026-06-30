@@ -2308,3 +2308,36 @@ func (s *PolarDBService) PolarDBAIClusterStateRefreshFunc(id string, failStates 
 		return object, status, nil
 	}
 }
+
+func (s *PolarDBService) DescribeAIDBClusterApiKeys(regionId string) (object map[string]interface{}, err error) {
+	action := "DescribeAIDBClusterApiKeys"
+	request := map[string]interface{}{
+		"RegionId": regionId,
+	}
+	var response map[string]interface{}
+	client := s.client
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, "", action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, "", "$", response)
+	}
+
+	object = v.(map[string]interface{})
+	return object, nil
+}
