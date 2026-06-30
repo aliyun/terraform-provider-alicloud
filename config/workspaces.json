@@ -59,6 +59,14 @@
       "pools": ["api_toolkit"],
       "ops": {"test":"composer test", "lint":"composer lint"},
       "desc": "Terraform generator v4; Acube Terraform 代码生成器问题定位/转单/修复"
+    },
+    "jarvis": {
+      "repo": "jarvis",
+      "git_url": "git@gitlab.alibaba-inc.com:terraflow/jarvis.git",
+      "default_branch": "master",
+      "pools": ["api_toolkit"],
+      "ops": {"test":"bash bootstrap/tests/aone_comment_format.sh && bash bootstrap/tests/wrap_done.sh"},
+      "desc": "Jarvis 自治工作台; Aone triage、流程编排、自我迭代和内部研发提效"
     }
   }
 }

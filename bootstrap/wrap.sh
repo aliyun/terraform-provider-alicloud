@@ -35,6 +35,10 @@ code_footer() {
     printf '\n\n代码：%s @ %s (%s%s)' "$repo" "$branch" "$sha" "${dirty:-}"
 }
 
+format_comment() {
+    bash "$script_dir/aone-comment-format.sh" "$1"
+}
+
 # 触碰台账：任何 sync/done 都记 id，wrap-check 据此抓"碰过但没收尾(无 run_done)"的盲区
 # ——盲区指根本没 claim、claim 台账无记录的工单(see 83498126)。
 touch_ledger() {
@@ -58,6 +62,7 @@ write_done() {
     # 2) 回填 Aone 进展评论（带代码落点页脚）；失败则 exit 1
     local local_summary
     local_summary="${summary}$(code_footer)"
+    local_summary="$(format_comment "$local_summary")"
     a1 project workitem comment create "$tid" -m "$local_summary"
     # 3) 默认改状态；无状态收尾用于当前状态不可转/无需转时避免半失败
     if [ "$update_status" = "1" ]; then
@@ -75,6 +80,7 @@ case "$cmd" in
         [ -n "$id" ] && [ -n "$text" ] || { echo "Usage: wrap.sh sync <id> \"<progress>\"" >&2; exit 1; }
         touch_ledger "$id"
         text="${text}$(code_footer)"
+        text="$(format_comment "$text")"
         a1 project workitem comment create "$id" -m "$text" \
             || echo "wrap.sh: a1 comment 失败（id=${id}），进展未落 Aone，请人工补" >&2
         bash "$script_dir/cache.sh" bust "wi-$id"  # 评论后详情已变，丢缓存
