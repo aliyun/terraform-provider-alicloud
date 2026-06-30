@@ -83,4 +83,4 @@ CR FINISH + 正式 SUCCESS 后才清;worktree 干净(已 push)。手建的 workt
 | 应用 | 项目 | app | 预发/正式 pipeline | 链路文件 |
 |------|------|-----|--------------------|----------|
 | aliyun-automation-agent | 2124589 | 283346 | 66 / 67 | 本文件 |
-| (新应用追加) | — | — | — | delivery-<app>.md |
+| cloudspec | 2124589 | 260634 | 420 / 67 | delivery-cloudspec.md |
