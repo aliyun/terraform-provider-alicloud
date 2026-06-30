@@ -7,18 +7,22 @@
 #
 # 三个身份:
 #   jarvis  —— 默认身份(open_jarvis),Jarvis 全程用它。
-#   chenyi  —— 仓库主人(辰羿)本人。非默认身份,Jarvis 不得擅用,仅当面授权时临时
-#              `as chenyi`,用完即回 jarvis(无代码硬门,纪律见 CLAUDE.md 第8条)。
+#   chenyi  —— 陈汉璋(工号 320687,chenhanzhang.chz@alibaba-inc.com)。非默认身份,
+#              Jarvis 不得擅用,仅当面授权时临时 `as chenyi`,用完即回 jarvis
+#              (无代码硬门,纪律见 CLAUDE.md 第8条)。
+#   guozai  —— 郭子龙(工号 484483,guozai.gzl@alibaba-inc.com)。非默认身份,
+#              Jarvis 不得擅用,仅当面授权时临时 `as guozai`,用完即回 jarvis
+#              (无代码硬门,纪律见 CLAUDE.md 第8条)。
 #   linjun  —— 李超林(工号 429768,lichaolin.lcl@alibaba-inc.com)。非默认身份,
 #              Jarvis 不得擅用,仅当面授权时临时 `as linjun`,用完即回 jarvis
 #              (无代码硬门,纪律见 CLAUDE.md 第8条)。
 #
 # 用法:
-#   a1id login  <jarvis|chenyi|linjun>    登录并保存该身份(交互 BUC SSO)
-#   a1id use    <jarvis|chenyi|linjun>    把 active 持久切到某身份
-#   a1id status                           看当前 active 身份
-#   a1id who                              看 a1 实际登录账号(透传 auth whoami)
-#   a1id as <jarvis|chenyi|linjun> -- ... 以指定身份跑一条 a1,跑完自动还原原身份
+#   a1id login  <jarvis|chenyi|guozai|linjun>    登录并保存该身份(交互 BUC SSO)
+#   a1id use    <jarvis|chenyi|guozai|linjun>    把 active 持久切到某身份
+#   a1id status                                  看当前 active 身份
+#   a1id who                                     看 a1 实际登录账号(透传 auth whoami)
+#   a1id as <jarvis|chenyi|guozai|linjun> -- ... 以指定身份跑一条 a1,跑完自动还原原身份
 #   a1id -- <a1 args...>                  以默认身份(jarvis)跑
 set -euo pipefail
 
@@ -32,7 +36,7 @@ DEFAULT_ID="jarvis"
 mkdir -p "$STORE"
 die(){ echo "a1id: $*" >&2; exit 1; }
 store_for(){ echo "$STORE/$1.auth.yaml"; }
-valid(){ [ "$1" = jarvis ] || [ "$1" = chenyi ] || [ "$1" = linjun ]; }
+valid(){ [ "$1" = jarvis ] || [ "$1" = chenyi ] || [ "$1" = guozai ] || [ "$1" = linjun ]; }
 
 # 首跑迁移:既有 auth.yaml 收编为 jarvis 身份
 [ -f "$LIVE" ] && [ ! -f "$(store_for jarvis)" ] && cp "$LIVE" "$(store_for jarvis)" && echo jarvis > "$ACTIVE"
@@ -41,7 +45,7 @@ cur(){ cat "$ACTIVE" 2>/dev/null || echo "$DEFAULT_ID"; }
 
 # 切 live=该身份 store(若 active 未变则免拷),记 active
 activate(){
-  valid "$1" || die "未知身份 '$1'(jarvis|chenyi|linjun)"
+  valid "$1" || die "未知身份 '$1'(jarvis|chenyi|guozai|linjun)"
   [ -f "$(store_for "$1")" ] || die "身份 '$1' 未登录,先 'a1id login $1'"
   cp "$(store_for "$1")" "$LIVE"; echo "$1" > "$ACTIVE"
 }
@@ -49,7 +53,7 @@ activate(){
 cmd="${1:-status}"; shift || true
 case "$cmd" in
   login)
-    id="${1:-}"; valid "$id" || die "用法: a1id login <jarvis|chenyi|linjun>"
+    id="${1:-}"; valid "$id" || die "用法: a1id login <jarvis|chenyi|guozai|linjun>"
     "$A1" auth login --buc
     cp "$LIVE" "$(store_for "$id")"; echo "$id" > "$ACTIVE"   # 登完落盘到该身份 store
     echo "a1id: '$id' 登录已保存"; "$A1" auth whoami ;;
