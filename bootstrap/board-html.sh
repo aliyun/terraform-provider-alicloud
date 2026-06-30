@@ -8,7 +8,8 @@
 # Writes docs/board.html (gitignored build artifact; rebuild via refresh.sh, served by serve.sh).
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="${JARVIS_ROOT:-$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || (cd "$script_dir/.." && pwd))}"
+source "$script_dir/lib.sh"
+root="$(jarvis_root)"
 docs_out="$root/docs/board.html"
 mkdir -p "$root/docs"
 json_f="$(mktemp)"; trap 'rm -f "$json_f"' EXIT

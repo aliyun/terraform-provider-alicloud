@@ -21,8 +21,9 @@
       "repo": "cloudspec",
       "git_url": "git@gitlab.alibaba-inc.com:cloudspec-mcp/cloudspec.git",
       "app": 260634,
+      "pipelines": { "daily": 65, "prestage": 420, "prod": 67 },
       "default_branch": "master",
-      "ops": {"build":"./mvnw -q -DskipTests package","test":"./mvnw -q -Dtest=AlibabaCloudListApisCallTest test"},
+      "ops": {"build":"mvn -q -DskipTests package","test":"mvn -q -Dtest=AlibabaCloudListApisCallTest test"},
       "desc": "Cloudspec MCP / OpenAPI MCP Server"
     },
     "automation_platform": {

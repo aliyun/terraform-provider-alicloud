@@ -19,10 +19,9 @@ set -uo pipefail
 # ---------------------------------------------------------------------------
 # Resolve JARVIS_ROOT
 # ---------------------------------------------------------------------------
-if [ -z "${JARVIS_ROOT:-}" ]; then
-    JARVIS_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null \
-        || git rev-parse --show-toplevel)"
-fi
+_week_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_week_script_dir/lib.sh"
+JARVIS_ROOT="$(jarvis_root)"
 export JARVIS_ROOT
 
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"

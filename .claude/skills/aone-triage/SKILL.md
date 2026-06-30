@@ -10,8 +10,8 @@ description: >-
   reply → escalate gap to Cloudspec 需求池 → link → set status. 小蜜 is just one source. Trigger even
   with no ticket — a bare API/product link is enough. Also covers the deliver-it-yourself path: 建需求
   → 建变更/CR → worktree 开发 → 预发 → 正式 via a1 CLI, when the fix lands in one of our own apps —
-  trigger when 提需求给自己 / 给 Agent门户 / AgentRuntime / aliyun-automation-agent / PlayGround 提需求,
-  or cwd is the aliyun-automation-agent repo (routes to project 2124589 + app 283346,见 config/pools.json).
+  trigger when 提需求给自己 / 给 Agent门户 / AgentRuntime / aliyun-automation-agent / PlayGround / cloudspec / OpenAPI MCP Server 提需求,
+  or cwd is the aliyun-automation-agent or cloudspec repo (routes to project 2124589,按 repo 选 app,见 config/pools.json mcp_server.apps).
 ---
 
 # Aone 工单 / Terraform 能力查证
@@ -48,8 +48,8 @@ status) need a clear user yes first — confirm before each.
 2. **缺陷** → 复现要点 + 源码定位 → 回复/指派,确认 spec 缺口才转需求
 3. **任务** → 直接执行或拆解
 4. **自己交付**(改我们自家应用,不转上游)→ 走对应应用的交付链路:建需求→建 CR→worktree 开发→预发→**等用户验证反馈**→正式→关单清 worktree。先按目标应用选链路文件,IDs/坑见 reference:
-   - **Agent门户 / AgentRuntime / aliyun-automation-agent / PlayGround**(或 cwd 在该 repo),给自己提需求 → `references/delivery-aliyun-automation-agent.md`(默认项目 2124589 + app 283346)
-   - 其余应用追加同名 `delivery-<app>.md`
+   - **Agent门户 / AgentRuntime / aliyun-automation-agent / PlayGround**(或 cwd 在该 repo) → `references/delivery-aliyun-automation-agent.md`(app 283346,预发 66/正式 67)
+   - **cloudspec / OpenAPI MCP Server / API MCP**(或 cwd 在 cloudspec repo,或工单涉及 ListApis/RunIaC 等 cloudspec 内置能力) → `references/delivery-cloudspec.md`(app 260634,预发 420/正式 67)
 
 ## 查证(两层,顺序固定,不凭记忆)
 1. **OpenAPI 全集**:解析 product+action(next.api 链接或描述)→ `AlibabaCloud ListApis` / `GetApiDefinition`。JMESPath 用单引号,反引号会失败:`parameters[?name=='X'].schema.properties|[0]|keys(@)`。

@@ -10,7 +10,8 @@
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
+source "$script_dir/lib.sh"
+jarvis_root="$(jarvis_root)"
 cache_dir="${JARVIS_CACHE_DIR:-$jarvis_root/.my-day/cache}"
 
 _safe_key() { printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '_'; }

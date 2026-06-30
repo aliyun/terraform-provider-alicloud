@@ -14,7 +14,8 @@
 # Pure python3; no external deps. JARVIS_ROOT overrides repo root.
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="${JARVIS_ROOT:-$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || (cd "$script_dir/.." && pwd))}"
+source "$script_dir/lib.sh"
+root="$(jarvis_root)"
 
 python3 - "$root" <<'PY'
 import sys, os, re, json, glob

@@ -17,19 +17,17 @@ set -uo pipefail
 # ---------------------------------------------------------------------------
 # Resolve JARVIS_ROOT
 # ---------------------------------------------------------------------------
-if [ -z "${JARVIS_ROOT:-}" ]; then
-    JARVIS_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null \
-        || git rev-parse --show-toplevel)"
-fi
+_sweep_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_sweep_script_dir/lib.sh"
+JARVIS_ROOT="$(jarvis_root)"
 export JARVIS_ROOT
 
 # ---------------------------------------------------------------------------
 # Source log.sh (provides escalate function)
 # Prefer the real script directory so log.sh is always co-located with sweep.sh.
 # ---------------------------------------------------------------------------
-_sweep_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=bootstrap/log.sh
-source "$_sweep_dir/log.sh"
+source "$_sweep_script_dir/log.sh"
 
 # ---------------------------------------------------------------------------
 # Read config
