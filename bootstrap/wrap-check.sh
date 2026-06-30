@@ -19,7 +19,8 @@
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
+source "$script_dir/lib.sh"
+jarvis_root="$(jarvis_root)"
 export JARVIS_ROOT="$jarvis_root"
 export JARVIS_RUNS_DIR="${JARVIS_RUNS_DIR:-$jarvis_root/runs}"
 

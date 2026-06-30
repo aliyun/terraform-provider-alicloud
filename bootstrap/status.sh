@@ -4,7 +4,8 @@
 # Columns: ID | 标题(trunc) | 优先级 | 摘要. ANSI color, footer counts.
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || (cd "$script_dir/.." && pwd))"
+source "$script_dir/lib.sh"
+root="$(jarvis_root)"
 
 json_f="$(mktemp)"; trap 'rm -f "$json_f"' EXIT
 "$script_dir/board.sh" > "$json_f"

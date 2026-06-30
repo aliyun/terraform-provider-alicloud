@@ -14,7 +14,8 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
+source "$script_dir/lib.sh"
+jarvis_root="$(jarvis_root)"
 pools_cfg="$jarvis_root/config/pools.json"
 
 [ -f "$pools_cfg" ] || { echo "wrap.sh: config/pools.json not found at $pools_cfg" >&2; exit 1; }

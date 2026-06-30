@@ -9,9 +9,10 @@
 
 set -uo pipefail
 
-# Determine repo root: allow override via JARVIS_ROOT (used in tests), else derive from script location.
+# Determine repo root: allow override via JARVIS_ROOT (used in tests), else derive via git-common-dir.
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
+source "$script_dir/lib.sh"
+jarvis_root="$(jarvis_root)"
 
 # 30min TTL gate: serve cached scan.json if younger than TTL, unless --force (or JARVIS_SCAN_TTL=0).
 out_f="$jarvis_root/.my-day/scan.json"

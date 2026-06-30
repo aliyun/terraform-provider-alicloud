@@ -18,8 +18,8 @@
 # Path resolution
 # ---------------------------------------------------------------------------
 _log_repo_root() {
-    git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null \
-        || git rev-parse --show-toplevel 2>/dev/null
+    source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+    jarvis_root
 }
 
 _log_runs_dir() {

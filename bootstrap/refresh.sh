@@ -3,7 +3,8 @@
 # scan.sh --force (bypass 30min TTL) → board-html.sh → print done + scan.json category split.
 set -uo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
+source "$script_dir/lib.sh"
+root="$(jarvis_root)"
 
 echo "refresh: rescanning Aone (--force)…" >&2
 bash "$script_dir/scan.sh" --force >/dev/null || { echo "refresh: scan failed" >&2; exit 1; }

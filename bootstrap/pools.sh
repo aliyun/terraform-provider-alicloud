@@ -6,7 +6,8 @@
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
+source "$script_dir/lib.sh"
+jarvis_root="$(jarvis_root)"
 pools_cfg="$jarvis_root/config/pools.json"
 
 if [ ! -f "$pools_cfg" ]; then

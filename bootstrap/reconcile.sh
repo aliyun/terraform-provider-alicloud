@@ -27,16 +27,10 @@ set -uo pipefail
 # ---------------------------------------------------------------------------
 # Resolve JARVIS_ROOT
 # ---------------------------------------------------------------------------
-if [ -z "${JARVIS_ROOT:-}" ]; then
-    JARVIS_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null \
-        || git rev-parse --show-toplevel)"
-fi
-export JARVIS_ROOT
-
-# ---------------------------------------------------------------------------
-# Resolve script dir and co-located helpers
-# ---------------------------------------------------------------------------
 _reconcile_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_reconcile_dir/lib.sh"
+JARVIS_ROOT="$(jarvis_root)"
+export JARVIS_ROOT
 
 # Source log.sh for the `seen` function
 # shellcheck source=bootstrap/log.sh
