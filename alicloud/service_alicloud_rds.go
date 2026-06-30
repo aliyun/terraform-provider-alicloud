@@ -846,7 +846,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 	}
 
 	retentionPeriod := "7"
-	if v, ok := d.GetOk("backup_retention_period"); ok && v.(int) != 7 {
+	if v, ok := d.GetOk("backup_retention_period"); ok {
 		retentionPeriod = strconv.Itoa(v.(int))
 	} else if v, ok := d.GetOk("retention_period"); ok && v.(int) != 0 {
 		retentionPeriod = strconv.Itoa(v.(int))
@@ -915,7 +915,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 	if v, ok := d.GetOk("category"); ok {
 		category = v.(string)
 	}
-	backupInterval := "-1"
+	backupInterval := ""
 	if v, ok := d.GetOk("backup_interval"); ok {
 		backupInterval = v.(string)
 	}
@@ -952,15 +952,23 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			"ReleasedKeepPolicy":    releasedKeepPolicy,
 			"Category":              category,
 		}
+		if instance["Engine"] == "MySQL" && instance["DBInstanceStorageType"] == "local_ssd" && enableIncrementDataBackup {
+			if v, ok := d.GetOk("inc_backup_interval"); ok {
+				request["IncBackupInterval"] = v.(int)
+			}
+		}
 		if instance["Engine"] == "SQLServer" && instance["Category"] == "AlwaysOn" {
 			if v, ok := d.GetOk("backup_priority"); ok {
 				request["BackupPriority"] = v.(int)
 			}
 
 		}
-		if instance["Engine"] == "SQLServer" && instance["DBInstanceStorageType"] != "local_ssd" {
+		if (instance["Engine"] == "SQLServer" && instance["DBInstanceStorageType"] != "local_ssd") ||
+			(instance["Engine"] == "MySQL" && instance["DBInstanceStorageType"] == "local_ssd") {
 			request["EnableIncrementDataBackup"] = enableIncrementDataBackup
-			request["BackupMethod"] = backupMethod
+			if instance["Engine"] == "SQLServer" {
+				request["BackupMethod"] = backupMethod
+			}
 		}
 		if instance["Engine"] == "SQLServer" && logBackupFrequency == "LogInterval" {
 			request["LogBackupFrequency"] = logBackupFrequency
@@ -971,7 +979,14 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			request["ArchiveBackupKeepPolicy"] = archiveBackupKeepPolicy
 		}
 		if (instance["Engine"] == "MySQL" || instance["Engine"] == "PostgreSQL") && instance["DBInstanceStorageType"] != "local_ssd" {
-			request["BackupInterval"] = backupInterval
+			if backupInterval != "" {
+				request["BackupInterval"] = backupInterval
+			}
+		}
+		if instance["Engine"] == "MySQL" && d.Get("enable_backup_log").(bool) {
+			if v, ok := d.GetOkExists("enable_pitr_protection"); ok {
+				request["EnablePitrProtection"] = v.(bool)
+			}
 		}
 
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
