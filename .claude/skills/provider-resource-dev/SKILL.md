@@ -8,17 +8,18 @@ description: Use when developing or diagnosing a NEW alicloud Terraform provider
 从客户需求到 provider PR。真源=镇元(Zhenyuan)`ResourceTypeSchema`;生成器吃镇元料出一整套(resource.go + _test.go + service + provider.go 注册行 + website 文档 markdown),但它可能空生成/部分生成;**只信 acc 测**。
 
 ## 工具/路径
-- 工作区一律通过 `bootstrap/workspace.sh dir <key>` 解析;provider key=`terraform_provider`;acube key=`acube`。
-- cspec 仓 `cloudspec-model/<Product>_pop_*`;provider fork=ChenHanZhang,upstream=aliyun;acube 见 `config/workspaces.json`。
-- 生成差异工具: `tools/terraform_generated_diff.py`。
+- 工作区一律通过 `bootstrap/workspace.sh dir <key>` 解析;provider key=`terraform_provider`;acube key=`acube`;生成器 key=`terraform_generator_v4`。
+- cspec 仓 `cloudspec-model/<Product>_pop_*`;provider fork=ChenHanZhang,upstream=aliyun;acube/terraform-generator-v4 见 `config/workspaces.json`。
+- Acube 在线生成工具: `tools/acube_terraform_generate.py`。
+- 生成差异/语义检查工具: `tools/terraform_generated_diff.py`。
 - 编码交 developer 子代理,改文件先 worktree,acc 测过才交。
 
 ## 步骤
 1. **查证 Terraform ↔ Cloudspec 身份** — OpenAPI + provider 源码确认缺;`getTerraformResourceSpec` 只看映射,不代表实现,且找不到可能返无关资源,别信。
 2. **查 acube resourceTypeCode** — 通过 Terraform 资源名推 product/resourceCode 后,先 get,再 list 降级;get 只有 `SUCCESS` 无 `data` 就按未命中处理。
 3. **镇元建模/发布判断** — 如果 get/list 都找不到,说明资源未进预发/线上 resourceTypeCode;先回复 Aone 推动镇元发布或确认别名,除非本地已有 cspec 分支可继续验证。
-4. **生成** — 本地 `cloudspec terraform -r <terraform_resource>` 优先;报 `no that resource` 时用 `<CloudspecResourceCode>` 重试并记录 partial output。
-5. **生成 vs 手写 diff** — 用 `tools/terraform_generated_diff.py` 看生成目录与手写分支差异,先判断缺主体/缺文档/缺 provider 注册,再手改。
+4. **生成** — 标准入口走 Acube `createLocalBuildTask`:先 `resourceTypeCode/get` 取料,再 `createMapping`,再 `createLocalBuildTask`,用 `tools/acube_terraform_generate.py` 落盘 raw JSON/logs/files/generated/summary。只有 Acube 不可用或需验证本地 cspec 分支时,才 fallback 到本地 `cloudspec terraform -r <terraform_resource> -e pre -o <dir>`;报 `no that resource` 时用 `<CloudspecResourceCode>` 重试并记录 partial output。
+5. **生成 vs 手写 diff** — 用 `tools/terraform_generated_diff.py` 看 Acube generated 与手写分支差异,先判断缺主体/缺测试/缺文档/缺 provider 注册/缺 service,再看 `resourceNotExistCondition` 等语义风险,最后手改。
 6. **手改生成缺陷** — OSS 等 XML 产品:`client.Do("Oss",xmlParam(...))` 非 Roa(治 `<` 解析错);PUT body 按 schema **固定元素序**(治 MalformedXML);update 删-再-PUT 绕 AlreadyExists。
 7. **验收** — `TF_ACC=1 go test ./alicloud/ -run TestAcc<R> -v -timeout 40m`;过 create+update+import 才算数。
 8. **PR** — fork 分支 → `gh pr create --repo aliyun/terraform-provider-alicloud`;带 resource+test+service+provider注册+website 文档;无 AI 署名。
@@ -72,13 +73,22 @@ cloudspec terraform -r alicloud_oss_bucket_inventory -e pre -o ./gen_out
 ```
 namespace/code 用 PascalCase;比对现成:`getTerraformResourceSpec?terraformResourceType=alicloud_oss_bucket` → OSS/Bucket。
 
+优先用封装工具,避免漏保存 raw 证据:
+```bash
+python3 tools/acube_terraform_generate.py \
+  --resource alicloud_resource_manager_handshake_acceptance \
+  --env pre \
+  --out-dir /tmp/acube-handshake-acceptance
+```
+若 Python urllib 报内部证书链校验失败,在确认目标是内部 Acube 预发/线上域名后加 `--insecure`;默认仍校验证书。
+
 ## 生成差异工具
 对比生成目录和 provider 手写分支:
 ```bash
 provider_repo="$(bootstrap/workspace.sh dir terraform_provider)"
 python3 tools/terraform_generated_diff.py \
   --resource alicloud_resource_manager_handshake_acceptance \
-  --generated-dir /tmp/gen-resource-code \
+  --acube-dir /tmp/acube-handshake-acceptance \
   --provider-repo "$provider_repo" \
   --handwritten-ref origin/f/resource_manager_handshake_acceptance
 ```
@@ -87,8 +97,11 @@ python3 tools/terraform_generated_diff.py \
 - `alicloud/resource_<resource>.go`
 - `alicloud/resource_<resource>_test.go`
 - `website/docs/r/<resource-without-alicloud>.html.markdown`
+- Acube 生成目录中的 `alicloud/service_*.go`
 
 输出看三块:
+- `Structured summary`: 主体/测试/文档/provider/service 的 generated/handwritten 覆盖情况。
+- `Semantic checks`: 从 `resourceTypeCode/get` raw JSON 检查生成代码语义;例如 `resourceNotExistCondition.notExistCheckTargetValueType=assertNotEqual` 时,生成代码应在 `!= <target>` 时返回 NotFound,若生成成 `== <target>` 要转 generator 问题。
 - `Only in handwritten`: 生成器缺主体/测试/文档,常见于 resourceTypeCode 未发布或 partial generation。
 - `Only in generated`: 生成器多出的文件,确认是否需要保留。
 - `Diff`: 共同文件的 unified diff,左边 generated,右边 handwritten。
@@ -112,6 +125,7 @@ python3 tools/terraform_generated_diff.py \
 
 ## 常见坑
 - 生成空/`获取spec数据失败` → env 没到预发镇元(查 createLocalBuildTask Env 是否 online)。
+- Acube 生成的 NotFound 条件与 Cloudspec `resourceNotExistCondition` 相反 → 优先查 `resourceTypeCode/get` raw JSON;若 Cloudspec 为 `assertNotEqual` 而生成 Go 为 `==`,按 generator bug 转 `api_toolkit` 池并关联源 Aone。
 - `cloudspec terraform -r alicloud_x` 报 `no that resource` → 先查 resourceTypeCode;本地 cspec 分支存在时可尝试 `-r <ResourceCode>`。
 - get 接口 `SUCCESS` 但无 `data` → 未命中,不是成功获取定义。
 - 产品列表只命中近似资源(如 `Handshake`),没命中目标(如 `HandshakeAcceptance`) → 目标未发布/未同步。

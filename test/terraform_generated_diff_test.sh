@@ -8,6 +8,7 @@ trap 'rm -rf "$tmpdir"' EXIT
 
 provider_repo="$tmpdir/provider"
 generated_dir="$tmpdir/generated"
+resource_type_json="$tmpdir/resource_type_code_get.json"
 out="$tmpdir/out.txt"
 
 mkdir -p "$provider_repo/alicloud" "$provider_repo/website/docs/r"
@@ -41,10 +42,47 @@ package alicloud
 
 // generated test
 EOF
+cat > "$generated_dir/alicloud/service_alicloud_example.go" <<'EOF'
+package alicloud
+
+import "fmt"
+
+func checkStatus(currentStatus interface{}) bool {
+	if fmt.Sprint(currentStatus) == "Accepted" {
+		return true
+	}
+	return false
+}
+EOF
+
+cat > "$resource_type_json" <<'EOF'
+{
+  "code": "SUCCESS",
+  "data": {
+    "operations": {
+      "gets": [
+        {
+          "resourceNotExistCondition": {
+            "allOf": [
+              {
+                "notExistCheckType": "checkProperty",
+                "notExistCheckProperty": "$.Status",
+                "notExistCheckTargetValueType": "assertNotEqual",
+                "notExistCheckTargetValue": "Accepted"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+EOF
 
 python3 "$repo_root/tools/terraform_generated_diff.py" \
   --resource alicloud_example_thing \
   --generated-dir "$generated_dir" \
+  --resource-type-json "$resource_type_json" \
   --provider-repo "$provider_repo" \
   --handwritten-ref handwritten > "$out"
 
@@ -53,9 +91,14 @@ cat "$out"
 echo
 
 grep -q "Resource: alicloud_example_thing" "$out"
+grep -q "Structured summary:" "$out"
+grep -q "Semantic checks:" "$out"
+grep -q "WARN: resourceNotExistCondition \\$.Status assertNotEqual 'Accepted'" "$out"
 grep -q "Only in handwritten" "$out"
 grep -q "alicloud/resource_alicloud_example_thing.go" "$out"
 grep -q "website/docs/r/example_thing.html.markdown" "$out"
+grep -q "Only in generated" "$out"
+grep -q "alicloud/service_alicloud_example.go" "$out"
 grep -q "Diff: alicloud/resource_alicloud_example_thing_test.go" "$out"
 grep -q -- "-// generated test" "$out"
 grep -q -- "+// handwritten test" "$out"

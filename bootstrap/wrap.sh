@@ -4,6 +4,8 @@
 # Usage:
 #   wrap.sh sync <id> "<progress>"            — 中途报进展（评论），不改状态、不写 run_done
 #   wrap.sh done <id> "<summary>" <status>     — 收尾：评论 + run_done + 改状态（status 必填）
+#   wrap.sh done-no-status <id> "<summary>"    — 收尾：评论 + run_done，不改状态
+#   wrap.sh done <id> "<summary>" --no-status  — 同 done-no-status
 #
 # done 是每条 dev/adhoc/plugin-dev 路径在宣告 Done 前的必经收尾。
 # done: 本地审计先落盘（审计不丢），再 a1 调用——失败则 exit 1（Aone 真源强制）。
@@ -14,7 +16,8 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
+source "$script_dir/lib.sh"
+jarvis_root="$(jarvis_root)"
 pools_cfg="$jarvis_root/config/pools.json"
 
 [ -f "$pools_cfg" ] || { echo "wrap.sh: config/pools.json not found at $pools_cfg" >&2; exit 1; }
@@ -33,6 +36,10 @@ code_footer() {
     printf '\n\n代码：%s @ %s (%s%s)' "$repo" "$branch" "$sha" "${dirty:-}"
 }
 
+format_comment() {
+    bash "$script_dir/aone-comment-format.sh" "$1"
+}
+
 # 触碰台账：任何 sync/done 都记 id，wrap-check 据此抓"碰过但没收尾(无 run_done)"的盲区
 # ——盲区指根本没 claim、claim 台账无记录的工单(see 83498126)。
 touch_ledger() {
@@ -41,6 +48,28 @@ touch_ledger() {
     local tmp; tmp="$(mktemp "$dir/.touched-tmp.XXXXXX")"
     if [ -f "$f" ]; then jq --arg id "$tid" 'if any(.[]; .==$id) then . else .+[$id] end' "$f" >"$tmp" && mv "$tmp" "$f"
     else echo "[\"$tid\"]" >"$f"; rm -f "$tmp"; fi
+}
+
+write_done() {
+    local tid="$1"
+    local summary="$2"
+    local status="${3:-}"
+    local update_status="${4:-1}"
+
+    touch_ledger "$tid"
+    # 1) 本地审计先写，审计绝不丢（即使 Aone 调用失败）
+    jq -e '.claim' "$pools_cfg" >/dev/null 2>&1 || echo "wrap.sh: pools.json .claim 缺失" >&2
+    bash "$script_dir/log.sh" run_done "$tid" "$summary"
+    # 2) 回填 Aone 进展评论（带代码落点页脚）；失败则 exit 1
+    local local_summary
+    local_summary="${summary}$(code_footer)"
+    local_summary="$(format_comment "$local_summary")"
+    a1 project workitem comment create "$tid" -m "$local_summary"
+    # 3) 默认改状态；无状态收尾用于当前状态不可转/无需转时避免半失败
+    if [ "$update_status" = "1" ]; then
+        a1 project workitem update "$tid" --status "$status"
+    fi
+    bash "$script_dir/cache.sh" bust "wi-$tid"  # 收尾改动后详情已变，丢缓存
 }
 
 cmd="${1:-}"
@@ -52,6 +81,7 @@ case "$cmd" in
         [ -n "$id" ] && [ -n "$text" ] || { echo "Usage: wrap.sh sync <id> \"<progress>\"" >&2; exit 1; }
         touch_ledger "$id"
         text="${text}$(code_footer)"
+        text="$(format_comment "$text")"
         a1 project workitem comment create "$id" -m "$text" \
             || echo "wrap.sh: a1 comment 失败（id=${id}），进展未落 Aone，请人工补" >&2
         bash "$script_dir/cache.sh" bust "wi-$id"  # 评论后详情已变，丢缓存
@@ -59,20 +89,20 @@ case "$cmd" in
     done)
         summary="${3:-}"
         status="${4:-}"
-        [ -n "$id" ] && [ -n "$summary" ] && [ -n "$status" ] || { echo "Usage: wrap.sh done <id> \"<summary>\" <status>" >&2; exit 1; }
-        touch_ledger "$id"
-        # 1) 本地审计先写，审计绝不丢（即使 Aone 调用失败）
-        jq -e '.claim' "$pools_cfg" >/dev/null 2>&1 || echo "wrap.sh: pools.json .claim 缺失" >&2
-        bash "$script_dir/log.sh" run_done "$id" "$summary"
-        # 2) 回填 Aone 进展评论（带代码落点页脚）；失败则 exit 1
-        local_summary="${summary}$(code_footer)"
-        a1 project workitem comment create "$id" -m "$local_summary"
-        # 3) 改状态；失败则 exit 1
-        a1 project workitem update "$id" --status "$status"
-        bash "$script_dir/cache.sh" bust "wi-$id"  # 收尾改动后详情已变，丢缓存
+        [ -n "$id" ] && [ -n "$summary" ] && [ -n "$status" ] || { echo "Usage: wrap.sh done <id> \"<summary>\" <status|--no-status>" >&2; exit 1; }
+        if [ "$status" = "--no-status" ]; then
+            write_done "$id" "$summary" "" 0
+        else
+            write_done "$id" "$summary" "$status" 1
+        fi
+        ;;
+    done-no-status)
+        summary="${3:-}"
+        [ -n "$id" ] && [ -n "$summary" ] || { echo "Usage: wrap.sh done-no-status <id> \"<summary>\"" >&2; exit 1; }
+        write_done "$id" "$summary" "" 0
         ;;
     *)
-        echo "Usage: wrap.sh {sync|done} <id> \"<text>\" [status]" >&2
+        echo "Usage: wrap.sh {sync|done|done-no-status} <id> \"<text>\" [status|--no-status]" >&2
         exit 1
         ;;
 esac

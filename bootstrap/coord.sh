@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
-d="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; R="${JARVIS_ROOT:-$d}"
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"; R="$(jarvis_root)"
 I="$R/.my-day/instances"; T="$R/.my-day/tasks"; TTL="${COORD_TTL:-180}"
 mkdir -p "$I" "$T"; cmd="${1:-}"
 case "$cmd" in

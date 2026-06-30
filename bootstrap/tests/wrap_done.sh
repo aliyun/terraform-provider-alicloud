@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # bootstrap/tests/wrap_done.sh — unit tests for wrap.sh done subcommand
-# Tests: missing status→nonzero, full args+a1 ok→0, A1_FAIL=1→nonzero
+# Tests: missing status→nonzero, full args+a1 ok→0, no-status done→0, A1_FAIL=1→nonzero
 # Run: bash bootstrap/tests/wrap_done.sh
 # Prints PASS and exits 0 on success; prints FAIL and exits 1 on any failure.
 
@@ -14,10 +14,13 @@ JARVIS_ROOT="$(cd "$BOOTSTRAP_DIR/.." && pwd)"
 # Fake a1 binary: exits 0 normally, exits 1 when A1_FAIL=1
 # ---------------------------------------------------------------------------
 FAKE_BIN_DIR="$(mktemp -d)"
-trap 'rm -rf "$FAKE_BIN_DIR" "$RUNS_DIR" "$POOLS_TMP"' EXIT
+A1_LOG="$(mktemp)"
+export A1_LOG
+trap 'rm -rf "$FAKE_BIN_DIR" "$RUNS_DIR" "$POOLS_TMP" "$A1_LOG"' EXIT
 
 cat > "$FAKE_BIN_DIR/a1" <<'EOF'
 #!/usr/bin/env bash
+echo "$*" >> "${A1_LOG:-/dev/null}"
 if [ "${A1_FAIL:-0}" = "1" ]; then
     echo "a1: simulated failure" >&2
     exit 1
@@ -127,11 +130,65 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Test 3: A1_FAIL=1 → nonzero exit (a1 failures now exit 1)
+# Test 3: done-no-status → zero, no status update call
 # ---------------------------------------------------------------------------
-echo "Test 3: A1_FAIL=1 → nonzero"
+echo "Test 3: done-no-status → zero"
+: > "$A1_LOG"
+A1_FAIL=0 assert_exit "wrap.sh done-no-status ok" zero \
+    bash "$WRAP" done-no-status "WI-004" "no status update"
+
+if grep -q "project workitem comment create WI-004" "$A1_LOG" && ! grep -q "project workitem update WI-004" "$A1_LOG"; then
+    echo "  PASS: done-no-status writes comment without status update"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: done-no-status did not preserve no-status contract"
+    fail_count=$((fail_count + 1))
+fi
+
+echo "Test 4: done --no-status → zero"
+: > "$A1_LOG"
+A1_FAIL=0 assert_exit "wrap.sh done --no-status ok" zero \
+    bash "$WRAP" done "WI-005" "no status update via flag" "--no-status"
+
+if grep -q "project workitem comment create WI-005" "$A1_LOG" && ! grep -q "project workitem update WI-005" "$A1_LOG"; then
+    echo "  PASS: done --no-status writes comment without status update"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: done --no-status did not preserve no-status contract"
+    fail_count=$((fail_count + 1))
+fi
+
+# ---------------------------------------------------------------------------
+# Test 5: A1_FAIL=1 → nonzero exit (a1 failures now exit 1)
+# ---------------------------------------------------------------------------
+echo "Test 5: A1_FAIL=1 → nonzero"
 assert_exit "wrap.sh done a1 failure exits nonzero" nonzero \
     env A1_FAIL=1 bash "$WRAP" done "WI-003" "some summary" "done"
+
+echo "Test 6: sync formats compact numbered problems before posting"
+: > "$A1_LOG"
+A1_FAIL=0 assert_exit "wrap.sh sync formats comment" zero \
+    bash "$WRAP" sync "WI-006" "结论：已定位；剩余问题：1）测试缺失；2）文档缺失。"
+
+if grep -q "1、测试缺失" "$A1_LOG" && grep -q "2、文档缺失。" "$A1_LOG" && ! grep -q "1）测试缺失" "$A1_LOG" && ! grep -q "1. 测试缺失" "$A1_LOG"; then
+    echo "  PASS: sync posts structured problem list"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: sync did not structure compact numbered list"
+    echo "  a1 log:"
+    cat "$A1_LOG"
+    fail_count=$((fail_count + 1))
+fi
+
+if grep -q "^代码：" "$A1_LOG"; then
+    echo "  PASS: code footer remains its own paragraph"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: code footer was not separated"
+    echo "  a1 log:"
+    cat "$A1_LOG"
+    fail_count=$((fail_count + 1))
+fi
 
 # ---------------------------------------------------------------------------
 # Summary

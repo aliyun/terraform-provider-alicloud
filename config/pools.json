@@ -48,15 +48,25 @@
       "project": 2124589,
       "name": "MCP Server",
       "line": "agentic_tools",
-      "app": 283346,
+      "apps": [
+        {
+          "app": 283346,
+          "name": "aliyun-automation-agent",
+          "repo": "aliyun-automation-agent",
+          "pipelines": { "daily": 65, "prestage": 66, "prod": 67 },
+          "delivery": "delivery-aliyun-automation-agent.md"
+        },
+        {
+          "app": 260634,
+          "name": "cloudspec",
+          "repo": "cloudspec",
+          "pipelines": { "daily": 65, "prestage": 420, "prod": 67 },
+          "delivery": "delivery-cloudspec.md"
+        }
+      ],
       "assignee": 320687,
       "dev": true,
-      "pipelines": {
-        "prestage": 66,
-        "prod": 67
-      },
       "version_cfs": 100340,
-      "delivery": "delivery-aliyun-automation-agent.md",
       "exclude_status": [
         "Closed",
         "需求撤回",
