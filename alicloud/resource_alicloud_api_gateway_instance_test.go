@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -28,9 +30,9 @@ func TestAccAliCloudApiGatewayInstance_basic5800(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -147,9 +149,9 @@ func TestAccAliCloudApiGatewayInstance_basic5806(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -258,9 +260,9 @@ func TestAccAliCloudApiGatewayInstance_basic5800_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -313,9 +315,9 @@ func TestAccAliCloudApiGatewayInstance_basic5806_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -417,9 +419,9 @@ func TestAccAliCloudApiGatewayVpcConnectInstance(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -564,9 +566,9 @@ func TestAccAliCloudApiGatewayVpcConnectInstance_twin1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -638,9 +640,9 @@ func TestAccAliCloudApiGatewayVpcConnectInstance_twin2(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -698,4 +700,245 @@ func TestAccAliCloudApiGatewayVpcConnectInstance_twin2(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestApiGatewayInstanceStateUpgradeV0(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    map[string]interface{}
+		expected []interface{}
+	}{
+		{
+			name: "map with data",
+			input: map[string]interface{}{
+				"id":            "api-inst-123",
+				"instance_name": "test-instance",
+				"to_connect_vpc_ip_block": map[string]interface{}{
+					"cidr_block": "172.16.0.0/24",
+					"customized": "true",
+				},
+			},
+			expected: []interface{}{
+				map[string]interface{}{
+					"cidr_block": "172.16.0.0/24",
+					"customized": "true",
+				},
+			},
+		},
+		{
+			name: "empty map",
+			input: map[string]interface{}{
+				"id":                      "api-inst-456",
+				"to_connect_vpc_ip_block": map[string]interface{}{},
+			},
+			expected: []interface{}{},
+		},
+		{
+			name: "nil value",
+			input: map[string]interface{}{
+				"id":                      "api-inst-789",
+				"to_connect_vpc_ip_block": nil,
+			},
+			expected: nil,
+		},
+		{
+			name: "field not present",
+			input: map[string]interface{}{
+				"id": "api-inst-000",
+			},
+			expected: nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := resourceAliCloudApiGatewayInstanceStateUpgradeV0(context.Background(), tc.input, nil)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			got := result["to_connect_vpc_ip_block"]
+			if tc.expected == nil {
+				if got != nil {
+					t.Errorf("expected nil, got %v", got)
+				}
+				return
+			}
+			gotList, ok := got.([]interface{})
+			if !ok {
+				t.Fatalf("expected []interface{}, got %T", got)
+			}
+			if len(gotList) != len(tc.expected) {
+				t.Fatalf("expected length %d, got %d", len(tc.expected), len(gotList))
+			}
+			for i, item := range gotList {
+				gotMap := item.(map[string]interface{})
+				expMap := tc.expected[i].(map[string]interface{})
+				for k, v := range expMap {
+					if gotMap[k] != v {
+						t.Errorf("item[%d].%s: expected %v, got %v", i, k, v, gotMap[k])
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestApiGatewayInstanceSchemaVersionV0ToV1(t *testing.T) {
+	r := resourceAliCloudApiGatewayInstance()
+	if r.SchemaVersion != 1 {
+		t.Errorf("expected SchemaVersion 1, got %d", r.SchemaVersion)
+	}
+	if len(r.StateUpgraders) != 1 {
+		t.Fatalf("expected 1 StateUpgrader, got %d", len(r.StateUpgraders))
+	}
+	if r.StateUpgraders[0].Version != 0 {
+		t.Errorf("expected StateUpgrader version 0, got %d", r.StateUpgraders[0].Version)
+	}
+}
+
+func TestAccAliCloudApiGatewayInstance_StateMigrationV0ToV1(t *testing.T) {
+	if os.Getenv("ALICLOUD_STATE_MIGRATION_V0_V1") == "" {
+		t.Skip("ALICLOUD_STATE_MIGRATION_V0_V1 not set. Test for V0 -> V1 state migration")
+	}
+	var v map[string]interface{}
+	resourceId := "alicloud_api_gateway_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ApiGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeApiGatewayInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-statemig-%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"alicloud": {
+						Source:            "aliyun/alicloud",
+						VersionConstraint: "1.282.0",
+					},
+				},
+				Config: testAccApiGatewayInstanceStateMigrationConfigV0(name),
+			},
+			{
+				ProviderFactories: testAccProviderFactory,
+				Config:            testAccApiGatewayInstanceStateMigrationConfigV1(name),
+				//PlanOnly:          true,
+			},
+		},
+	})
+}
+
+func testAccApiGatewayInstanceStateMigrationConfigV0(name string) string {
+	return testAccApiGatewayInstanceStateMigrationDeps(name) + fmt.Sprintf(`
+resource "alicloud_api_gateway_instance" "default" {
+  instance_name           = "%s"
+  instance_spec           = "api.s1.small"
+  https_policy            = "HTTPS2_TLS1_0"
+  zone_id                 = "cn-hangzhou-MAZ6(i,j,k)"
+  payment_type            = "PayAsYouGo"
+  instance_type           = "vpc_connect"
+  user_vpc_id             = alicloud_vpc.vpc.id
+  vpc_slb_intranet_enable = "true"
+  ipv6_enabled            = "true"
+  to_connect_vpc_ip_block = {
+    cidr_block = "10.1.0.0/24"
+    customized = "true"
+  }
+  zone_vswitch_security_group {
+    zone_id        = alicloud_vswitch.vswitch_1.zone_id
+    vswitch_id     = alicloud_vswitch.vswitch_1.id
+    cidr_block     = alicloud_vswitch.vswitch_1.cidr_block
+    security_group = alicloud_security_group.security_group_1.id
+  }
+  zone_vswitch_security_group {
+    zone_id        = alicloud_vswitch.vswitch_2.zone_id
+    vswitch_id     = alicloud_vswitch.vswitch_2.id
+    cidr_block     = alicloud_vswitch.vswitch_2.cidr_block
+    security_group = alicloud_security_group.security_group_2.id
+  }
+}
+
+output "to_connect_vpc_ip_block" {
+  value = alicloud_api_gateway_instance.default.to_connect_vpc_ip_block["cidr_block"]
+}
+`, name)
+}
+
+func testAccApiGatewayInstanceStateMigrationConfigV1(name string) string {
+	return testAccApiGatewayInstanceStateMigrationDeps(name) + fmt.Sprintf(`
+resource "alicloud_api_gateway_instance" "default" {
+  instance_name           = "%s"
+  instance_spec           = "api.s1.small"
+  https_policy            = "HTTPS2_TLS1_0"
+  zone_id                 = "cn-hangzhou-MAZ6(i,j,k)"
+  payment_type            = "PayAsYouGo"
+  instance_type           = "vpc_connect"
+  user_vpc_id             = alicloud_vpc.vpc.id
+  vpc_slb_intranet_enable = "true"
+  ipv6_enabled            = "true"
+  to_connect_vpc_ip_block {
+    cidr_block = "10.1.0.0/24"
+    customized = true
+  }
+  zone_vswitch_security_group {
+    zone_id        = alicloud_vswitch.vswitch_1.zone_id
+    vswitch_id     = alicloud_vswitch.vswitch_1.id
+    cidr_block     = alicloud_vswitch.vswitch_1.cidr_block
+    security_group = alicloud_security_group.security_group_1.id
+  }
+  zone_vswitch_security_group {
+    zone_id        = alicloud_vswitch.vswitch_2.zone_id
+    vswitch_id     = alicloud_vswitch.vswitch_2.id
+    cidr_block     = alicloud_vswitch.vswitch_2.cidr_block
+    security_group = alicloud_security_group.security_group_2.id
+  }
+}
+
+output "to_connect_vpc_ip_block" {
+  value = alicloud_api_gateway_instance.default.to_connect_vpc_ip_block.0.cidr_block
+}
+`, name)
+}
+
+func testAccApiGatewayInstanceStateMigrationDeps(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+resource "alicloud_vpc" "vpc" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "vswitch_1" {
+  vpc_id       = alicloud_vpc.vpc.id
+  cidr_block   = "172.16.0.0/16"
+  zone_id      = "cn-hangzhou-j"
+  vswitch_name = "${var.name}_1"
+}
+
+resource "alicloud_vswitch" "vswitch_2" {
+  vpc_id       = alicloud_vpc.vpc.id
+  cidr_block   = "172.17.0.0/16"
+  zone_id      = "cn-hangzhou-k"
+  vswitch_name = "${var.name}_2"
+}
+
+resource "alicloud_security_group" "security_group_1" {
+  vpc_id              = alicloud_vpc.vpc.id
+  security_group_name = "${var.name}_1"
+}
+
+resource "alicloud_security_group" "security_group_2" {
+  vpc_id              = alicloud_vpc.vpc.id
+  security_group_name = "${var.name}_2"
+}
+`, name)
 }

@@ -1,7 +1,7 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -26,6 +26,14 @@ func resourceAliCloudApiGatewayInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(25 * time.Minute),
 			Update: schema.DefaultTimeout(25 * time.Minute),
 			Delete: schema.DefaultTimeout(25 * time.Minute),
+		},
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Version: 0,
+				Type:    resourceAliCloudApiGatewayInstanceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceAliCloudApiGatewayInstanceStateUpgradeV0,
+			},
 		},
 		Schema: map[string]*schema.Schema{
 			"create_time": {
@@ -556,4 +564,171 @@ func convertApiGatewayInstanceChargeTypeRequest(source interface{}) interface{} 
 		return "PREPAY"
 	}
 	return source
+}
+
+func resourceAliCloudApiGatewayInstanceV0() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"egress_ipv6_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"ipv6_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"https_policy": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"instance_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"instance_spec": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"payment_type": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"pricing_cycle": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"support_ipv6": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"user_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc_slb_intranet_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"instance_cidr": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"zone_vswitch_security_group": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"zone_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"cidr_block": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"security_group": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"connect_cidr_blocks": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			// lintignore: S022
+			"to_connect_vpc_ip_block": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cidr_block": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"customized": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"delete_vpc_ip_block": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"skip_wait_switch": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"ingress_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ingress_vpc_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ingress_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudApiGatewayInstanceStateUpgradeV0(_ context.Context, rawState map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+	if v, ok := rawState["to_connect_vpc_ip_block"]; ok && v != nil {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			if len(val) > 0 {
+				rawState["to_connect_vpc_ip_block"] = []interface{}{val}
+			} else {
+				rawState["to_connect_vpc_ip_block"] = []interface{}{}
+			}
+		}
+	}
+	return rawState, nil
 }
