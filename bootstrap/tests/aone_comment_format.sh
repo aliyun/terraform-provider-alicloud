@@ -50,18 +50,35 @@ assert_contains "splits third problem with Aone-safe marker" "$formatted" $'\n\n
 assert_not_contains "does not keep compact 1） marker" "$formatted" "1）测试用例缺失"
 assert_not_contains "does not emit Markdown ordered list marker" "$formatted" $'\n1. 测试用例缺失'
 
-echo "Test 2: markdown headings and bullets become plaintext-safe sections"
-markdown="$(printf '%s\n\n%s\n%s\n\n%s' \
-    "## 结论" \
-    "- 第一条问题" \
-    "- 第二条问题" \
-    "\`go test ./alicloud -run '^$'\`")"
+echo "Test 2: markdown headings, emphasis, inline code, and fenced code blocks are preserved"
+markdown="$(cat <<'EOF'
+## 结论
+
+**重点：标题和加粗可以保留 Markdown。**
+
+提示：不要把 `##` 和 `**` 去掉。
+
+- 第一条问题
+- 第二条问题
+
+```go
+currentStatus := object["Status"]
+if currentStatus != "Accepted" {
+    return NotFound
+}
+```
+EOF
+)"
 formatted_markdown="$(printf '%s' "$markdown" | bash "$FORMAT")"
-assert_contains "heading converted" "$formatted_markdown" "【结论】"
+assert_contains "heading preserved" "$formatted_markdown" "## 结论"
+assert_contains "bold emphasis preserved" "$formatted_markdown" "**重点：标题和加粗可以保留 Markdown。**"
+assert_contains "inline code preserved" "$formatted_markdown" '`##`'
 assert_contains "first bullet converted with hard paragraph break" "$formatted_markdown" $'\n\n· 第一条问题\n\n'
 assert_contains "second bullet converted with hard paragraph break" "$formatted_markdown" $'\n\n· 第二条问题\n\n'
+assert_contains "fenced code block preserved" "$formatted_markdown" $'```go\ncurrentStatus := object["Status"]\nif currentStatus != "Accepted" {\n    return NotFound\n}\n```'
+assert_not_contains "does not convert headings to plaintext markers" "$formatted_markdown" "【结论】"
 assert_not_contains "does not emit UI-collapsible bullet glyph" "$formatted_markdown" "• 第一条问题"
-assert_contains "command preserved" "$formatted_markdown" "go test ./alicloud -run '^$'"
+assert_not_contains "does not keep Markdown bullet marker" "$formatted_markdown" $'\n- 第一条问题'
 
 echo "Test 3: mentions and footer stay readable"
 with_footer=$'@谜拟 请看下\n代码：jarvis @ codex/aone-comment-format (abc123)'

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# aone-comment-format.sh — normalize Jarvis Aone comments into readable plaintext.
+# aone-comment-format.sh — normalize Jarvis Aone comments into readable Markdown.
 #
-# Aone's API stores Markdown-ish text, but the UI rendering can vary. Keep the
-# output readable even when rendered as plain text.
+# Aone renders Markdown headings, emphasis, inline code, and fenced code blocks.
+# Normalize list syntax that is easy to collapse in the UI, while preserving
+# Markdown features that the UI renders correctly.
 
 set -euo pipefail
 
@@ -43,10 +44,6 @@ def normalize_line(line: str) -> list[str]:
     if not stripped:
         return [""]
 
-    heading = re.match(r"^#{1,6}\s+(.+?)\s*$", stripped)
-    if heading:
-        return [f"【{heading.group(1)}】"]
-
     bullet = re.match(r"^[-*]\s+(.+?)\s*$", stripped)
     if bullet:
         return [f"· {bullet.group(1)}"]
@@ -55,16 +52,22 @@ def normalize_line(line: str) -> list[str]:
     if ordered:
         return [f"{ordered.group(1)}、{ordered.group(2)}"]
 
-    if re.match(r"^```", stripped):
-        return []
-
-    line = re.sub(r"`([^`\n]+)`", r"\1", line)
     return convert_inline_numbered(line.rstrip())
 
 
-lines: list[str] = []
+lines: list[tuple[str, bool]] = []
+in_fence = False
 for raw in text.split("\n"):
-    lines.extend(normalize_line(raw))
+    stripped = raw.strip()
+    if re.match(r"^```", stripped):
+        lines.append((raw.rstrip(), True))
+        in_fence = not in_fence
+        continue
+    if in_fence:
+        lines.append((raw.rstrip(), True))
+        continue
+
+    lines.extend((line, False) for line in normalize_line(raw))
 
 cleaned: list[str] = []
 blank_count = 0
@@ -72,7 +75,12 @@ def is_list_item(line: str) -> bool:
     return bool(re.match(r"^\d{1,2}、", line) or line.startswith("· "))
 
 
-for line in lines:
+for line, raw_markdown in lines:
+    if raw_markdown:
+        cleaned.append(line)
+        blank_count = 0
+        continue
+
     if line.startswith("代码：") and cleaned and cleaned[-1] != "":
         cleaned.append("")
         blank_count = 1
