@@ -165,6 +165,31 @@ echo "Test 5: A1_FAIL=1 → nonzero"
 assert_exit "wrap.sh done a1 failure exits nonzero" nonzero \
     env A1_FAIL=1 bash "$WRAP" done "WI-003" "some summary" "done"
 
+echo "Test 6: sync formats compact numbered problems before posting"
+: > "$A1_LOG"
+A1_FAIL=0 assert_exit "wrap.sh sync formats comment" zero \
+    bash "$WRAP" sync "WI-006" "结论：已定位；剩余问题：1）测试缺失；2）文档缺失。"
+
+if grep -q "1、测试缺失" "$A1_LOG" && grep -q "2、文档缺失。" "$A1_LOG" && ! grep -q "1）测试缺失" "$A1_LOG" && ! grep -q "1. 测试缺失" "$A1_LOG"; then
+    echo "  PASS: sync posts structured problem list"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: sync did not structure compact numbered list"
+    echo "  a1 log:"
+    cat "$A1_LOG"
+    fail_count=$((fail_count + 1))
+fi
+
+if grep -q "^代码：" "$A1_LOG"; then
+    echo "  PASS: code footer remains its own paragraph"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: code footer was not separated"
+    echo "  a1 log:"
+    cat "$A1_LOG"
+    fail_count=$((fail_count + 1))
+fi
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
