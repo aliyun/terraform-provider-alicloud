@@ -53,6 +53,7 @@ cat > "$POOLS_TMP" <<'EOF'
 {
   "claim": {
     "label": "jarvis-claimed",
+    "idle_label": "jarvis-idle",
     "done_label": "jarvis-done",
     "ttl_min": 45
   }

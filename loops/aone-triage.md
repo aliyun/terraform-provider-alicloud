@@ -183,7 +183,8 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/wrap.sh sync/done` | 进展回填 Aone（唯一真源）+收尾审计 |
 | `bootstrap/log.sh escalate` | 记录上报 |
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项（输赢竞争锁）；退码 1 = 输了跳过 |
-| `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-done 标签） |
+| `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-idle 标签：本轮处理完，等待人或下一个 jarvis 接手；不动 Aone status） |
+| `bootstrap/claim.sh finish <id> <project>` | jarvis 判断真完成（打 jarvis-done 标签 + status 改为 .claim.done_status，默认"已发布待需求排期"） |
 | `bootstrap/sweep.sh` | 清扫超时认领（>45min）→ 写入 `escalation/` |
 | `bootstrap/triage-one.sh <id>` | 单条工单 bookend 编排：claim→子代理→wrap done（**status 必填**）→release |
 | `bootstrap/wrap-check.sh` | Stop 闸门：会话结束时校验未完工工单是否已回填，失败则阻断 |

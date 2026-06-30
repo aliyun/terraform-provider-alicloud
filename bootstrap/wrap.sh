@@ -27,9 +27,13 @@ pools_cfg="$jarvis_root/config/pools.json"
 code_footer() {
     local dir="${CODE_DIR:-$PWD}"
     git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+    # jarvis 仓内调用属于查证/编排，不是开发库提交，footer 无意义且会污染评论；跳过
+    local toplevel
+    toplevel=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)
+    [ "$toplevel" = "$jarvis_root" ] && return 0
     local repo branch sha dirty
     repo=$(basename -s .git "$(git -C "$dir" remote get-url origin 2>/dev/null)" 2>/dev/null)
-    [ -n "$repo" ] || repo=$(basename "$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)")
+    [ -n "$repo" ] || repo=$(basename "$toplevel")
     branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
     sha=$(git -C "$dir" rev-parse --short HEAD 2>/dev/null)
     [ -n "$(git -C "$dir" status --porcelain 2>/dev/null)" ] && dirty="+dirty"
@@ -50,6 +54,16 @@ touch_ledger() {
     else echo "[\"$tid\"]" >"$f"; rm -f "$tmp"; fi
 }
 
+# 消费 claim.sh 冻结的 jarvis-claim 痕迹（.my-day/claim-prefix-<id>.txt）。
+# 找到就输出内容并删除文件，让第一条业务评论吸收这条痕迹；找不到输出空。
+claim_prefix_pop() {
+    local tid="$1"; local dir="${JARVIS_ROOT:-$jarvis_root}/.my-day"
+    local f="$dir/claim-prefix-$tid.txt"
+    [ -f "$f" ] || return 0
+    cat "$f"
+    rm -f "$f"
+}
+
 write_done() {
     local tid="$1"
     local summary="$2"
@@ -60,9 +74,12 @@ write_done() {
     # 1) 本地审计先写，审计绝不丢（即使 Aone 调用失败）
     jq -e '.claim' "$pools_cfg" >/dev/null 2>&1 || echo "wrap.sh: pools.json .claim 缺失" >&2
     bash "$script_dir/log.sh" run_done "$tid" "$summary"
-    # 2) 回填 Aone 进展评论（带代码落点页脚）；失败则 exit 1
-    local local_summary
-    local_summary="${summary}$(code_footer)"
+    # 2) 回填 Aone 进展评论（带 claim 痕迹前缀 + 代码落点页脚 → 格式化）；失败则 exit 1
+    local prefix local_summary
+    prefix="$(claim_prefix_pop "$tid")"
+    local_summary="$summary"
+    [ -n "$prefix" ] && local_summary="${prefix}"$'\n\n'"${local_summary}"
+    local_summary="${local_summary}$(code_footer)"
     local_summary="$(format_comment "$local_summary")"
     a1 project workitem comment create "$tid" -m "$local_summary"
     # 3) 默认改状态；无状态收尾用于当前状态不可转/无需转时避免半失败
@@ -80,6 +97,8 @@ case "$cmd" in
         text="${3:-}"
         [ -n "$id" ] && [ -n "$text" ] || { echo "Usage: wrap.sh sync <id> \"<progress>\"" >&2; exit 1; }
         touch_ledger "$id"
+        prefix="$(claim_prefix_pop "$id")"
+        [ -n "$prefix" ] && text="${prefix}"$'\n\n'"${text}"
         text="${text}$(code_footer)"
         text="$(format_comment "$text")"
         a1 project workitem comment create "$id" -m "$text" \
