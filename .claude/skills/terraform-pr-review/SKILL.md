@@ -63,3 +63,9 @@ bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud HEA
 bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicloud --head api-tool-agent:<branch> ...
 ```
 改完通过 `bootstrap/github-identity.sh push` 推到 `api-tool-agent:<branch>` → 走评审/CR,不直发正式。
+
+### PR 修复/验证补充
+- GitHub 写操作若在 provider worktree shell 里缺 `JARVIS_GITHUB_TOKEN`,不要回退个人账号;回到 Jarvis 已认证 shell 调 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>`。
+- 上游 master 前进后,CI 若报 `jitterbit/get-changed-files` / `head commit ... is not ahead of the base commit`,先 `fetch` upstream,确认 PR commit 后 rebase 到最新 `origin/master`/`alicloud/master`,保持单提交再 force update `api-tool-agent:<branch>`。
+- PR 评论要求“可用 Example”时,先在本地用 PR provider 包/override 验证 `terraform init/validate`。示例必须含 `required_providers`,跨账号资源用 aliased providers;AK/SK 只通过 `sensitive` 变量或环境变量传入,禁止写真实值。
+- 跨账号 AccTest 不只看 `TF_ACC`:先隔离 ambient `ALICLOUD_ACCESS_KEY`/`ALICLOUD_SECRET_KEY`,再显式检查 `ALICLOUD_ACCESS_KEY_1/2` 解析到的账号是否符合预期。测试前置清理只用于清历史脏关系,不能替代 provider Delete;若 CLI/API 能清理关系,资源 Delete 也应实现同等删除并校验幂等。

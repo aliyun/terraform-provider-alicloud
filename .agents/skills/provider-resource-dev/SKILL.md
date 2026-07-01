@@ -29,7 +29,7 @@ description: Use when developing or diagnosing a NEW alicloud Terraform provider
 4. **生成** — 标准入口走 Acube `createLocalBuildTask`:先 `resourceTypeCode/get` 取料,再 `createMapping`,再 `createLocalBuildTask`,用 `tools/acube_terraform_generate.py` 落盘 raw JSON/logs/files/generated/summary。只有 Acube 不可用或需验证本地 cspec 分支时,才 fallback 到本地 `cloudspec terraform -r <terraform_resource> -e pre -o <dir>`;报 `no that resource` 时用 `<CloudspecResourceCode>` 重试并记录 partial output。
 5. **生成 vs 手写 diff** — 用 `tools/terraform_generated_diff.py` 看 Acube generated 与手写分支差异,先判断缺主体/缺测试/缺文档/缺 provider 注册/缺 service,再看 `resourceNotExistCondition` 等语义风险,最后手改。
 6. **手改生成缺陷** — OSS 等 XML 产品:`client.Do("Oss",xmlParam(...))` 非 Roa(治 `<` 解析错);PUT body 按 schema **固定元素序**(治 MalformedXML);update 删-再-PUT 绕 AlreadyExists。
-7. **验收** — `TF_ACC=1 go test ./alicloud/ -run TestAcc<R> -v -timeout 40m`;过 create+update+import 才算数。
+7. **验收** — `TF_ACC=1 go test ./alicloud/ -run TestAcc<R> -v -timeout 40m`;过 create+update+import 才算数。跨账号/企业账号资源要隔离 ambient `ALICLOUD_ACCESS_KEY`/`ALICLOUD_SECRET_KEY`,显式传入测试要求的多把 AK,并用 STS/CLI 验证每把 AK 的 caller account。
 8. **PR** — `bootstrap/github-identity.sh check` → `bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud HEAD <branch>` → `bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicloud --head api-tool-agent:<branch>`;带 resource+test+service+provider注册+website 文档;无 AI 署名。缺 `JARVIS_GITHUB_TOKEN` 或登录名不是 `api-tool-agent` 时阻断并升级,禁止回退个人账号或 ambient git 凭据。
 
 ## Terraform 资源名解析
@@ -139,6 +139,9 @@ python3 tools/terraform_generated_diff.py \
 - 产品列表只命中近似资源(如 `Handshake`),没命中目标(如 `HandshakeAcceptance`) → 目标未发布/未同步。
 - `MalformedXML` → body map 随机序;`invalid character '<'` → 用了 Roa(JSON)发 XML。
 - 直接发生成版不验收 → 必踩 OSS XML;acc 不过别交付。
+- ResourceManager handshake/成员账号类资源:若存在删除/移除关系 API,provider Delete 必须实现真实删除并校验幂等;AccTest 前置清理只用于清历史脏关系,不能替代资源 Delete。清理或删除后轮询 NotFound/终态并等待一致性后再 invite。
+- 多 AK 测试脚本不要假设 `aliyun` 环境变量一定覆盖默认 profile;优先显式传 `--mode AK --access-key-id ... --access-key-secret ... --region ... --endpoint ...`,避免把 AK1/AK2 都打到同一个默认账号。
+- 可复制 Example 必须能 `terraform init/validate`:包含 `required_providers`,跨账号资源用 provider alias 区分管理账号/受邀账号;真实 AK/SK 不写进文档、评论或仓库,只用 sensitive variables/env。
 
 ## 红线
 不碰 master;无可评审 diff 不空发;对外无 AI 署名;Aone 唯一真源(进展 sync/完工 done)。
