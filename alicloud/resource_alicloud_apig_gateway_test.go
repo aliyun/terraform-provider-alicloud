@@ -499,3 +499,104 @@ resource "alicloud_vswitch" "j" {
 }
 
 // Test Apig Gateway. <<< Resource test cases, automatically generated.
+
+// Test Apig Gateway. gateway_edition coverage.
+func TestAccAliCloudApigGateway_basic_edition(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_apig_gateway.default"
+	ra := resourceAttrInit(resourceId, AliCloudApigGatewayEditionMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ApigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeApigGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sapiggwedition%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudApigGatewayEditionDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"gateway_name":    name,
+					"gateway_edition": "Professional",
+					"spec":            "apigw.small.x1",
+					"vpc": []map[string]interface{}{
+						{
+							"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
+						},
+					},
+					"network_access_config": []map[string]interface{}{
+						{
+							"type": "Intranet",
+						},
+					},
+					"zone_config": []map[string]interface{}{
+						{
+							"select_option": "Auto",
+						},
+					},
+					"vswitch": []map[string]interface{}{
+						{
+							"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
+						},
+					},
+					"log_config": []map[string]interface{}{
+						{
+							"sls": []map[string]interface{}{
+								{
+									"enable": "false",
+								},
+							},
+						},
+					},
+					"payment_type":      "PayAsYouGo",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"gateway_name":    name,
+						"gateway_edition": "Professional",
+						"spec":            "apigw.small.x1",
+						"payment_type":    "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"log_config", "network_access_config", "zone_config"},
+			},
+		},
+	})
+}
+
+var AliCloudApigGatewayEditionMap = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AliCloudApigGatewayEditionDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+`, name)
+}
