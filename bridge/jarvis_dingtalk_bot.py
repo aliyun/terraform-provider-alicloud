@@ -138,6 +138,10 @@ JARVIS_SENTINEL = re.compile(r"^\s*\[\[JARVIS\]\]\s*(.+)$", re.MULTILINE)
 # Tata 偶尔即便闲聊也甩哨兵, 任务文写成"无需转交"。兜底: 含否定词/过短一律不升级。
 TASK_REJECT = re.compile(r"无需|不需要|不用|纯打招呼|闲聊|没有真活|无须|不必|没真活")
 
+# Scan scheduler authorization commands: "处理 #12345" or "全部处理"/"批量处理"
+AUTH_SINGLE = re.compile(r"处理\s*#?(\d+)")
+AUTH_ALL = re.compile(r"全部处理|批量处理")
+
 
 def _valid_task(task):
     """哨兵任务是否真要升级: 非空、>=4 字、不含否定词。否则视为无任务。"""
@@ -433,6 +437,104 @@ class TataPool:
         self._warm = []
 
 
+class ScanScheduler:
+    """Periodically run scan.sh, diff for new items, push summary card to DingTalk group.
+
+    New items land in ``pending`` dict awaiting user authorization ("处理 #ID" or
+    "全部处理").  Authorized items are dispatched to Jarvis via the handler.
+
+    Runs as a daemon thread; errors are logged and skipped, never crash the bridge.
+    """
+
+    def __init__(self, handler):
+        self.handler = handler
+        self.interval = int(os.environ.get("JARVIS_SCAN_INTERVAL", "1800"))
+        self.notify_target = os.environ.get("JARVIS_NOTIFY_GROUP", "")
+        self._prev_ids = set()           # IDs seen in previous scan cycle
+        self.pending = {}                # id -> item dict, awaiting authorization
+        self._lock = threading.Lock()    # guards self.pending
+        self._thread = None
+
+    # -- public API ----------------------------------------------------------
+
+    def start(self):
+        self._thread = threading.Thread(target=self._loop, daemon=True, name="ScanScheduler")
+        self._thread.start()
+
+    def authorize(self, item_id):
+        """Authorize a single pending item.  Returns the item dict or None."""
+        with self._lock:
+            return self.pending.pop(str(item_id), None)
+
+    def authorize_all(self):
+        """Authorize all pending items.  Returns list of item dicts (may be empty)."""
+        with self._lock:
+            items = list(self.pending.values())
+            self.pending.clear()
+            return items
+
+    # -- internals -----------------------------------------------------------
+
+    def _loop(self):
+        while True:
+            try:
+                self._tick()
+            except Exception:  # noqa: BLE001 — never crash
+                log.exception("ScanScheduler tick failed; will retry next interval")
+            time.sleep(self.interval)
+
+    def _tick(self):
+        """Run scan.sh --force, diff against previous, notify new items."""
+        cmd = [str(REPO_ROOT / "bootstrap" / "scan.sh"), "--force"]
+        result = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True,
+                                text=True, timeout=120)
+        if result.returncode != 0:
+            log.warning("scan.sh failed (rc=%d): %s", result.returncode,
+                        result.stderr.strip()[:300])
+            return
+
+        try:
+            items = json.loads(result.stdout)
+        except (ValueError, TypeError):
+            log.warning("scan.sh output is not valid JSON: %s", result.stdout[:200])
+            return
+        if not isinstance(items, list):
+            log.warning("scan.sh returned non-list: %s", type(items).__name__)
+            return
+
+        cur_ids = {str(it.get("id", "")) for it in items if it.get("id")}
+        items_by_id = {str(it["id"]): it for it in items if it.get("id")}
+
+        with self._lock:
+            pending_ids = set(self.pending.keys())
+
+        # Truly new = not in previous scan AND not already pending authorization
+        new_ids = cur_ids - self._prev_ids - pending_ids
+        self._prev_ids = cur_ids
+
+        if not new_ids:
+            return
+
+        new_items = {iid: items_by_id[iid] for iid in new_ids if iid in items_by_id}
+        with self._lock:
+            self.pending.update(new_items)
+
+        # Build notification card text
+        lines = ["**新工单到达 (%d)**\n" % len(new_items)]
+        for iid, it in new_items.items():
+            pri = it.get("priority", "")
+            title = it.get("title", "(无标题)")
+            lines.append("- #%s %s%s" % (iid, title, (" [%s]" % pri) if pri else ""))
+        lines.append("")
+        lines.append('回复「处理 #ID」授权单条，或「全部处理」批量授权')
+        text = "\n".join(lines)
+
+        try:
+            self.handler._quick_card(self.notify_target, text, "group")
+        except Exception:  # noqa: BLE001
+            log.exception("ScanScheduler failed to push notification card")
+
+
 class JarvisHandler(AsyncChatbotHandler):
     # process() runs in a ThreadPoolExecutor (sync, NOT async) so blocking
     # subprocess calls never freeze the WS event loop / keepalive ack.
@@ -444,6 +546,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
         self.pool = TataPool()                    # 常驻 idea 进程保温, 消 Tata 冷启
+        self.scanner = ScanScheduler(self) if os.environ.get("JARVIS_NOTIFY_GROUP") else None
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
                  claude_bin(), skill_path())
@@ -488,6 +591,49 @@ class JarvisHandler(AsyncChatbotHandler):
         if not text:
             return AckMessage.STATUS_OK, "empty"
 
+        # Authorization interception: "处理 #ID" or "全部处理" → dispatch to Jarvis directly
+        if self.scanner and staff == master_staff():
+            auth_m = AUTH_SINGLE.match(text)
+            if auth_m:
+                item = self.scanner.authorize(auth_m.group(1))
+                if item:
+                    jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
+                    jresume = staff in self.jarvis_started
+                    self.jarvis_started.add(staff)
+                    pool = item.get("pool", "")
+                    dispatch_prompt = (
+                        "[dispatch] 工单 #%s (%s)\n"
+                        "直接按 loops/adhoc-intake.md 处理此工单，跳过 scan/plan。\n"
+                        "池: %s" % (item["id"], item.get("title", ""), pool)
+                    )
+                    self._stream_round(card_target, dispatch_prompt, jsid, jresume,
+                                       lambda t, s, r: run_claude_stream(t, s, r),
+                                       target_type=card_type)
+                    return AckMessage.STATUS_OK, "dispatched"
+                else:
+                    self._quick_card(card_target, "工单 #%s 不在待处理列表中。" % auth_m.group(1), card_type)
+                    return AckMessage.STATUS_OK, "not_pending"
+            if AUTH_ALL.match(text):
+                items = self.scanner.authorize_all()
+                if items:
+                    for item in items:
+                        jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
+                        jresume = staff in self.jarvis_started
+                        self.jarvis_started.add(staff)
+                        pool = item.get("pool", "")
+                        dispatch_prompt = (
+                            "[dispatch] 工单 #%s (%s)\n"
+                            "直接按 loops/adhoc-intake.md 处理此工单，跳过 scan/plan。\n"
+                            "池: %s" % (item["id"], item.get("title", ""), pool)
+                        )
+                        self._stream_round(card_target, dispatch_prompt, jsid, jresume,
+                                           lambda t, s, r: run_claude_stream(t, s, r),
+                                           target_type=card_type)
+                    return AckMessage.STATUS_OK, "dispatched_all"
+                else:
+                    self._quick_card(card_target, "当前没有待处理的工单。", card_type)
+                    return AckMessage.STATUS_OK, "nothing_pending"
+
         lock = self.locks[staff]
         if not lock.acquire(blocking=False):
             self._quick_card(card_target, "🟠 上一条还在处理中, 请稍候再发。", card_type)
@@ -510,7 +656,8 @@ class JarvisHandler(AsyncChatbotHandler):
                 jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
                 jresume = staff in self.jarvis_started
                 self.jarvis_started.add(staff)
-                self._stream_round(card_target, task, jsid, jresume,
+                dispatch_task = "[dispatch] %s" % task
+                self._stream_round(card_target, dispatch_task, jsid, jresume,
                                    lambda t, s, r: run_claude_stream(t, s, r),
                                    target_type=card_type)
             elif task:
@@ -587,6 +734,10 @@ def main():
     handler = JarvisHandler()
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
     handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
+    if handler.scanner:
+        handler.scanner.start()
+        log.info("scan scheduler started (interval=%ss target=%s)",
+                 handler.scanner.interval, handler.scanner.notify_target)
     log.info("starting DingTalk stream listener…")
     try:
         client.start_forever()

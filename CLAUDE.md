@@ -8,6 +8,7 @@
 
 ## 开局动作
 
+0) **[dispatch] fast-path**：如果 prompt 以 `[dispatch]` 开头（Tata 转派的即时任务），跳过步骤 1-2（scan/plan/授权循环），直接按 loops/adhoc-intake.md 处理单条任务。preflight 仍走缓存检查（通常命中 24h 闸门，<1s）。
 1) 跑 bootstrap/preflight.sh（install+verify 的日级闸门，24h 跑过即跳过；强制重跑加 --force），全绿才干活；
 2) 跑 bootstrap/scan.sh → bootstrap/plan.sh 出计划 → supervised 等用户逐条授权 → 按 loops/aone-triage.md 处理授权项；用户临时丢来的任意任务（查证/评审/开发/运维，带不带 Aone）走 loops/adhoc-intake.md（建/补单→进工作区→只读默认）；
 3) 低置信或验收不过→起草不发出，入 escalation/。
