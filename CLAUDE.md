@@ -9,7 +9,7 @@
 ## 开局动作
 
 1) 跑 bootstrap/preflight.sh（install+verify 的日级闸门，24h 跑过即跳过；强制重跑加 --force），全绿才干活；
-2) 跑 bootstrap/scan.sh → bootstrap/plan.sh 出计划 → supervised 等用户逐条授权 → 按 loops/aone-triage.md 处理授权项；用户临时丢来的任意任务（查证/评审/开发/运维，带不带 Aone）走 loops/adhoc-intake.md（建/补单→进工作区→只读默认）；
+2) 等任务：用户直接给任务或 Tata 转派 → 按 loops/adhoc-intake.md 处理（建/补单→进工作区→只读默认）；扫描/计划/授权由 bridge 进程定时执行（见 bridge/jarvis_dingtalk_bot.py ScanScheduler），Jarvis 不再主动扫池。
 3) 低置信或验收不过→起草不发出，入 escalation/。
 
 ## 工作纪律
