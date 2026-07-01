@@ -132,6 +132,8 @@ def jarvis_cmd():
     return [claude_bin(), "--settings", settings]
 
 
+AT_BOT_PREFIX = re.compile(r"^\s*@\S+\s*")
+
 JARVIS_SENTINEL = re.compile(r"^\s*\[\[JARVIS\]\]\s*(.+)$", re.MULTILINE)
 # Tata 偶尔即便闲聊也甩哨兵, 任务文写成"无需转交"。兜底: 含否定词/过短一律不升级。
 TASK_REJECT = re.compile(r"无需|不需要|不用|纯打招呼|闲聊|没有真活|无须|不必|没真活")
@@ -455,14 +457,14 @@ class JarvisHandler(AsyncChatbotHandler):
             log.warning("tata pool fallback (%s); 一次性冷起", e)
             yield from run_tata_stream(text, sid, resume)
 
-    def _quick_card(self, target, text):
+    def _quick_card(self, target, text, target_type="user"):
         """One-shot card (no live stream): create then finalize once. Best-effort."""
         if not self.sm:
             return
         try:
             tok = self.sm.get_access_token(os.environ["DINGTALK_APP_KEY"], os.environ["DINGTALK_APP_SECRET"])
             tid = os.environ.get("DINGTALK_TEMPLATE_ID")
-            otid = self.sm.create_and_deliver_card(tok, tid, robot_code(), target, "user")
+            otid = self.sm.create_and_deliver_card(tok, tid, robot_code(), target, target_type)
             self.sm.streaming_update(tok, otid, CARD_KEY, truncate(text), is_finalize=True)
         except Exception as e:  # noqa: BLE001
             log.error("quick_card failed: %s", e)
@@ -471,26 +473,36 @@ class JarvisHandler(AsyncChatbotHandler):
         msg = ChatbotMessage.from_dict(callback.data)
         staff = msg.sender_staff_id or ""
         text = (msg.text.content if msg.text else "").strip()
+        is_group = str(msg.conversation_type) == "2"
+        if is_group:
+            text = AT_BOT_PREFIX.sub("", text).strip()
+            card_target = msg.conversation_id
+            card_type = "group"
+        else:
+            card_target = staff
+            card_type = "user"
         # 受众闸：名单空=全员放行；非空=仅名单内可与 Tata 聊。
         if self.audience and staff not in self.audience:
-            log.warning("ignore off-audience staff=%s nick=%s", staff, msg.sender_nick)
+            log.warning("ignore off-audience staff=%s nick=%s group=%s", staff, msg.sender_nick, is_group)
             return AckMessage.STATUS_OK, "ignored"
         if not text:
             return AckMessage.STATUS_OK, "empty"
 
         lock = self.locks[staff]
         if not lock.acquire(blocking=False):
-            self._quick_card(staff, "🟠 上一条还在处理中, 请稍候再发。")
+            self._quick_card(card_target, "🟠 上一条还在处理中, 请稍候再发。", card_type)
             return AckMessage.STATUS_OK, "busy"
         try:
-            log.info("staff=%s msg=%r", staff, text[:200])
+            log.info("staff=%s group=%s conv=%s msg=%r", staff, is_group,
+                     msg.conversation_id if is_group else "-", text[:200])
             t0 = time.time()
             # 第一层：Tata 门面，全文先建卡流推；哨兵剥行不上屏。常驻进程即会话, 键=staff。
             full = self._stream_round(
-                staff, text, staff, False,
+                card_target, text, staff, False,
                 self._tata_runner,
                 clean_sentinel=True,
-                tail_on_handoff="\n\n交给 Jarvis 处理…")
+                tail_on_handoff="\n\n交给 Jarvis 处理…",
+                target_type=card_type)
             _, task = extract_jarvis_task(full)
             # master 闸：仅辰羿且 Tata 发了哨兵任务，才升级第二层重型 Jarvis。
             if task and staff == master_staff():
@@ -498,20 +510,21 @@ class JarvisHandler(AsyncChatbotHandler):
                 jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
                 jresume = staff in self.jarvis_started
                 self.jarvis_started.add(staff)
-                self._stream_round(staff, task, jsid, jresume,
-                                   lambda t, s, r: run_claude_stream(t, s, r))
+                self._stream_round(card_target, task, jsid, jresume,
+                                   lambda t, s, r: run_claude_stream(t, s, r),
+                                   target_type=card_type)
             elif task:
                 log.info("staff=%s sent sentinel but not master; ignored", staff)
             log.info("staff=%s done in %.1fs", staff, time.time() - t0)
         except Exception as e:  # noqa: BLE001 — never crash the loop
             log.exception("process error: %s", e)
-            self._quick_card(staff, "⚠️ 内部错误, 已记录。")
+            self._quick_card(card_target, "⚠️ 内部错误, 已记录。", card_type)
         finally:
             lock.release()
         return AckMessage.STATUS_OK, "ok"
 
     def _stream_round(self, target, text, sid, resume, runner,
-                      clean_sentinel=False, tail_on_handoff=""):
+                      clean_sentinel=False, tail_on_handoff="", target_type="user"):
         """建一张卡, 把 runner yield 的累积文本边流边 PUT, finalize。返回终文(含哨兵)。
 
         clean_sentinel: 上屏前剥掉 [[JARVIS]] 哨兵行(交接信号别给用户看)。
@@ -521,7 +534,7 @@ class JarvisHandler(AsyncChatbotHandler):
             return ""
         tok = self.sm.get_access_token(os.environ["DINGTALK_APP_KEY"], os.environ["DINGTALK_APP_SECRET"])
         tid = os.environ.get("DINGTALK_TEMPLATE_ID")
-        otid = self.sm.create_and_deliver_card(tok, tid, robot_code(), target, "user")
+        otid = self.sm.create_and_deliver_card(tok, tid, robot_code(), target, target_type)
         acc, last_put, last_len, first = "", 0.0, 0, True
 
         def shown(raw):
