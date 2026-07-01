@@ -446,7 +446,7 @@ func polardbXengineDiffSuppressFunc(k, old, new string, d *schema.ResourceData) 
 
 func polardbAndCreationDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	creationCategory, categoryOk := d.GetOk("creation_category")
-	if dbType, ok := d.GetOk("db_type"); ok && dbType.(string) == "MySQL" && (creationCategory == "Normal" || creationCategory == "NormalMultimaster" || !categoryOk) {
+	if creationCategory == "Normal" || creationCategory == "NormalMultimaster" || !categoryOk {
 		return false
 	}
 	return true
