@@ -602,8 +602,7 @@ class JarvisHandler(AsyncChatbotHandler):
                     self.jarvis_started.add(staff)
                     pool = item.get("pool", "")
                     dispatch_prompt = (
-                        "[dispatch] 工单 #%s (%s)\n"
-                        "直接按 loops/adhoc-intake.md 处理此工单，跳过 scan/plan。\n"
+                        "工单 #%s (%s)\n"
                         "池: %s" % (item["id"], item.get("title", ""), pool)
                     )
                     self._stream_round(card_target, dispatch_prompt, jsid, jresume,
@@ -622,8 +621,7 @@ class JarvisHandler(AsyncChatbotHandler):
                         self.jarvis_started.add(staff)
                         pool = item.get("pool", "")
                         dispatch_prompt = (
-                            "[dispatch] 工单 #%s (%s)\n"
-                            "直接按 loops/adhoc-intake.md 处理此工单，跳过 scan/plan。\n"
+                            "工单 #%s (%s)\n"
                             "池: %s" % (item["id"], item.get("title", ""), pool)
                         )
                         self._stream_round(card_target, dispatch_prompt, jsid, jresume,
@@ -656,8 +654,7 @@ class JarvisHandler(AsyncChatbotHandler):
                 jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
                 jresume = staff in self.jarvis_started
                 self.jarvis_started.add(staff)
-                dispatch_task = "[dispatch] %s" % task
-                self._stream_round(card_target, dispatch_task, jsid, jresume,
+                self._stream_round(card_target, task, jsid, jresume,
                                    lambda t, s, r: run_claude_stream(t, s, r),
                                    target_type=card_type)
             elif task:
