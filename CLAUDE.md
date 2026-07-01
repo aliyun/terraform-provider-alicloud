@@ -23,6 +23,7 @@
 7) **对外不带 AI 署名**：PR/MR/CR 正文与评论、Aone 工单回复等对外产物禁止出现「🤖 Generated with Claude Code」等 AI 署名/水印；发出前剥掉，发现存量改掉。**git commit 也不得带 `Co-Authored-By: Claude`/AI 水印**，提交前剥掉。
 8) **a1 身份默认 jarvis**：跑 a1 一律走 `bin/a1id`，默认用 jarvis 身份（`a1id -- <args>`）。仓库主人或其他个人身份（`chenyi`=辰羿本人、`guozai`=过载本人、`linjun`=李超林等）禁止擅用——仅在仓库主人本轮当面授权时才 `a1id as <id> -- <args>` 临时切，用完即回，绝不自持。无授权用个人身份属红线。
 9) **GitHub PR 身份硬门**：凡 Jarvis 代表自动交付的 GitHub PR/评论/推分支，必须先 `bootstrap/github-identity.sh check`；`gh` 写操作用 `bootstrap/github-identity.sh gh ...`，推分支用 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>`。`JARVIS_GITHUB_TOKEN` 对应账号必须是 `api-tool-agent`。缺 token、账号不匹配、或 `gh api user --jq .login` 失败时一律阻断并升级，禁止回退到本机 ambient `gh auth` 或个人账号。Terraform Provider PR head 必须落到 `api-tool-agent:<branch>`。
+10) **auto-memory 只存 personal/machine 上下文，技术知识入 skill**：save memory 前扫 `.claude/skills/**/*.md`（含 references），已覆盖则**不写 memory**；属技术/团队/项目类且 skill 未覆盖 → 补入相关 skill/reference（必要时新建 reference 或 skill），不落 auto-memory；仅当内容真属个人偏好、机器状态、软性背景、临时状态时才走 auto-memory。**why**：auto-memory 只 per-machine 存（`~/.claude/projects/<proj>/memory/`），不跨设备；skill 走 git 天然跨设备并在 trigger 时自然加载。重复维护两处是幻觉。清理策略见 `escalation/cap-auto-memory-save-policy.md`。
 
 @autonomy.md
 @loops/aone-triage.md
