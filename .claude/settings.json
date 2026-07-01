@@ -3,6 +3,17 @@
     "Stop": [
       { "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/bootstrap/wrap-check.sh\"" } ] }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/bootstrap/worktree-guard.sh\""
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",

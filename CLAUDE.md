@@ -14,7 +14,7 @@
 
 ## 工作纪律
 
-1) **改文件先开 worktree，严禁直接合入主干**：任何涉及修改文件的动作，必须基于 worktree 切到新分支（或上下文已给出的分支）上进行修改与验证，禁止直接在主工作目录改文件；分支只走 PR/MR 待仓库主人人工合并，主 Agent 严禁自行 `git merge`/`push` 入 master。例外：仓库主人当面授权的指定文件可直接改 master。**切 worktree 前先 `git pull` 主干；任务完成清理 worktree 后再 `git pull` 同步 master**，保证每轮都基于最新。
+1) **改文件先开 worktree，严禁直接合入主干**：任何涉及修改文件的动作，必须基于 worktree 切到新分支（或上下文已给出的分支）上进行修改与验证，禁止直接在主工作目录改文件；分支只走 PR/MR 待仓库主人人工合并，主 Agent 严禁自行 `git merge`/`push` 入 master。**例外仅当仓库主人本轮明说「go on master」/「直接改 <path>」/「不用 worktree」等指令级授权**——任务级委托（如「帮我沉淀 skill」「refactor 这段代码」）**不含直改 master 授权**，仍需先开 worktree；不确定就先问再动。授权后一律通过 `JARVIS_MASTER_OK=1 <单次工具调用>` 显式带 env 执行，与本仓 PreToolUse `bootstrap/worktree-guard.sh` 对齐（长期免管路径入 `bootstrap/master-allowlist` 并走评审）。**切 worktree 前先 `git pull` 主干；任务完成清理 worktree 后再 `git pull` 同步 master**，保证每轮都基于最新。
 2) **编码交子代理**：尽量用 SubAgent 处理具体编码/调试工作，主会话即编排者，只编排，保持上下文干净，不被开发细节和代码污染。本仓内置 `.claude/agents/` 三类（developer / reviewer / verifier）作首选;但主会话**不限于**这三类——可自由委派任意可用子代理（内置 general-purpose/Explore/Plan、全局 claude-code-guide、superpowers 等），按任务挑最合适的。单条工单执行由 `bootstrap/triage-one.sh` 做首尾 bookend，主会话调度它即可。
 3) **工作区按登记走**：repo/池/构建命令以 config/workspaces.json 为准；缺登记→escalate（missing_capability），勿臆造。**本地路径用 `bootstrap/workspace.sh dir <key>` 拿，别自己拼**（base 不存绝对路径，本机覆盖放 gitignored `workspaces.local.json`，多数机只需设 `JARVIS_WORKSPACE_ROOT`）。
 4) **自我迭代**：流程/能力缺口按 loops/self-improve.md 沉淀回策略文档，别只口头修。
