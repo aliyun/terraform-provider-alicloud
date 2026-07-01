@@ -520,11 +520,17 @@ class ScanScheduler:
             self.pending.update(new_items)
 
         # Build notification card text
+        aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
         lines = ["**新工单到达 (%d)**\n" % len(new_items)]
         for iid, it in new_items.items():
             pri = it.get("priority", "")
             title = it.get("title", "(无标题)")
-            lines.append("- #%s %s%s" % (iid, title, (" [%s]" % pri) if pri else ""))
+            proj = it.get("pool_project", "")
+            if proj:
+                id_link = "[#%s](%s)" % (iid, aone_url % (proj, iid))
+            else:
+                id_link = "#%s" % iid
+            lines.append("- %s %s%s" % (id_link, title, (" [%s]" % pri) if pri else ""))
         lines.append("")
         lines.append('回复「处理 #ID」授权单条，或「全部处理」批量授权')
         text = "\n".join(lines)

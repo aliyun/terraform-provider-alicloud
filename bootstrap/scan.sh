@@ -77,7 +77,7 @@ if $has_pools; then
         page=$((page+1))
       done
     done
-    echo "$pool_out" | jq --arg pool "$pool_key" '[.[] | {id:.identifier,title:.subject,type:(.categoryIdentifier // .workitemType),status,pool:$pool,priority,tag,category}]'
+    echo "$pool_out" | jq --arg pool "$pool_key" --arg proj "$pool_project" '[.[] | {id:.identifier,title:.subject,type:(.categoryIdentifier // .workitemType),status,pool:$pool,pool_project:$proj,priority,tag,category}]'
   }
 
   tmpd=$(mktemp -d); trap 'rm -rf "$tmpd"' EXIT
