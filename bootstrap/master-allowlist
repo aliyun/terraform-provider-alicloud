@@ -1,0 +1,23 @@
+# worktree-guard allowlist — paths that may be edited directly on master.
+# One pattern per line; supports:
+#   - exact path                (README.md)
+#   - directory prefix ending / (runs/)
+#   - shell glob                (.my-day/**  |  **/*.log)
+# Lines starting with # and blank lines are ignored.
+#
+# Everything else on master triggers a PreToolUse block; open a worktree first.
+
+# runs/ — 台账/审计输出，wrap.sh / log.sh 每轮写，不适合每次都开分支
+runs/
+
+# .my-day/ — gitignored 每日临时状态；guard 只针对 tracked+跟踪路径，保底加一行
+.my-day/
+
+# escalation/ — 升级队列写入，同上属于每轮产出而非受评审代码
+escalation/
+
+# bootstrap/master-allowlist / worktree-guard.sh 自身 —— 升级 guard 时需要能改
+# 只在真的要动 guard 本体/白名单时才留后门；这两行删掉即等于封死。
+# 保留是因为 chicken-and-egg：白名单更新本身也是"改文件"，要能自解封一次。
+bootstrap/master-allowlist
+bootstrap/worktree-guard.sh
