@@ -21,6 +21,8 @@ Env:
   JARVIS_ROOT                              cwd for Jarvis claude (default repo root, two up).
   DINGTALK_SKILL                           override path to streaming.py.
   CLAUDE_BIN                               claude binary (default: PATH / ~/.local/bin/claude).
+  JARVIS_CC                                override full Jarvis launch command (default: claude --settings).
+  JARVIS_SETTINGS                          override settings file for Jarvis (default: ~/.claude/idea_settings.json).
   CLAUDE_TIMEOUT                           per-round seconds (default 300).
 """
 
@@ -121,8 +123,13 @@ def tata_cmd():
 
 
 def jarvis_cmd():
-    """Jarvis 基命令 = cc = ~/claude-start.sh（预检后 exec claude）。JARVIS_CC 可覆盖。"""
-    return [os.environ.get("JARVIS_CC") or str(Path.home() / "claude-start.sh")]
+    """Jarvis 基命令 = claude --settings idea_settings.json（走 idealab 网关）。JARVIS_CC 可覆盖完整命令。"""
+    cc = os.environ.get("JARVIS_CC")
+    if cc:
+        return [cc]
+    settings = os.environ.get("JARVIS_SETTINGS") or str(
+        Path.home() / ".claude" / "idea_settings.json")
+    return [claude_bin(), "--settings", settings]
 
 
 JARVIS_SENTINEL = re.compile(r"^\s*\[\[JARVIS\]\]\s*(.+)$", re.MULTILINE)
