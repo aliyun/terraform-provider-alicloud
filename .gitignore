@@ -16,4 +16,8 @@ runs/*.md
 
 # 开发用 worktree(临时分支工作区)
 .claude/worktrees/
+.worktrees/
 bridge/jarvis.env
+
+# Python bytecode
+__pycache__/
