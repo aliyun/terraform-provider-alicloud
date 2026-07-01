@@ -449,7 +449,7 @@ class ScanScheduler:
     def __init__(self, handler):
         self.handler = handler
         self.interval = int(os.environ.get("JARVIS_SCAN_INTERVAL", "1800"))
-        self.notify_target = os.environ.get("JARVIS_NOTIFY_GROUP", "")
+        self.notify_target = os.environ.get("JARVIS_NOTIFY_GROUP", "cidy1mv+qvMEybkqTXcsXTOeQ==")
         self._prev_ids = set()           # IDs seen in previous scan cycle
         self.pending = {}                # id -> item dict, awaiting authorization
         self._lock = threading.Lock()    # guards self.pending
@@ -546,7 +546,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
         self.pool = TataPool()                    # 常驻 idea 进程保温, 消 Tata 冷启
-        self.scanner = ScanScheduler(self) if os.environ.get("JARVIS_NOTIFY_GROUP") else None
+        self.scanner = ScanScheduler(self)
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
                  claude_bin(), skill_path())
@@ -731,10 +731,9 @@ def main():
     handler = JarvisHandler()
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
     handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
-    if handler.scanner:
-        handler.scanner.start()
-        log.info("scan scheduler started (interval=%ss target=%s)",
-                 handler.scanner.interval, handler.scanner.notify_target)
+    handler.scanner.start()
+    log.info("scan scheduler started (interval=%ss target=%s)",
+             handler.scanner.interval, handler.scanner.notify_target)
     log.info("starting DingTalk stream listener…")
     try:
         client.start_forever()
