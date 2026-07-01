@@ -312,3 +312,116 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 关联单不双向 —— `a1 relation add` 必须调两次(A→B, B→A),否则一侧看不到对方
 - ❌ 状态用 `--status 已完成` / `方案功能已存在` 兜底 —— 前者不在合法值,后者语义错(客户真诉求还没解决)
 - ❌ 强行 `--assignee` 指派专属名单以外的产品到过载/谜拟 —— 违反分工表,让本团队背不该背的锅
+
+## 常见客户单 canned 追问 / 科普回复
+
+决策树跑不下去时(诉求不清 / 用法误用 / 环境问题)的高频回复模板。多数只 comment,不建关联单、不改状态,等客户补料或云产品回帖再走决策树。
+
+### 场景 1 — 工单信息不完整
+
+**判定**:客户只贴报错标题或截图,没有完整 tf 代码 / 完整报错 / 期望结果;description 里无法抽出真实诉求。
+
+```
+请与我们确认清楚您的需求是什么、期望是什么;如有报错,请提供完整的 tf
+代码和完整报错信息。
+```
+
+status 不动,等客户回帖。
+
+### 场景 2 — OpenAPI 报错含 RequestId
+
+**判定**:工单里贴了 RequestId + 具体错误码(如 `InvalidParameter.XXX`)。这类是上游 API 返回的错误,Provider 只是透传,应由云产品定位。
+
+```
+OpenAPI 返回的报错,请拉云产品的研发看一下,为什么报 <错误码>,哪个属性的
+值引起的,正确应该传什么。
+RequestId: <XXXXXX>
+```
+
+后续路由:【专属维护名单】产品 → 分支 A 直接指派;非专属 → @提单人协助转对应云产品研发,不建关联单(等同分支 F)。
+
+### 场景 3 — 询问「TF 是否支持某功能」
+
+**判定**:诉求形如"能不能通过 TF 实现 <某功能>",且我们不确定上游 API 有无。走 Step 2 决策树分支 B 前的预筛。
+
+```
+请问一下云产品的研发,针对您描述的需求,当前是否有接口支持?如果有,通过
+哪个接口 / 哪个属性实现的,请提供接口文档链接;如果没有接口支持,那 TF
+也无法支持。
+```
+
+云产品回帖后:API 支持 → 走分支 C 我们接入;API 不支持 → 走分支 F 上游缺口。
+
+### 场景 4 — 控制台改动导致 TF diff
+
+**判定**:客户报 `terraform plan` 出现非预期 diff,排查发现是控制台上手动改过 TF 管理的资源。
+
+```
+Terraform 是全生命周期管理的,除非特殊情况,不建议在控制台上对 TF 创建的
+资源进行修改操作;这样会造成本地状态与云上实际数据不一致,从而 plan 出
+diff。建议要么统一在 TF 侧管理,要么将控制台的最新数据 import 回 TF state
+或 apply 覆盖。
+```
+
+### 场景 5 — `hashicorp/alicloud` vs `aliyun/alicloud` source
+
+**判定**:客户问两个 source 有什么区别、该用哪个。
+
+```
+两个 source 背后对应的是同一套 provider 代码:
+- `hashicorp/alicloud` 是历史路径,当时 provider 在社区 GitHub org 维护;
+- 后来 transfer 到我们自己维护,新增了 `aliyun/alicloud` 路径。
+- 为保持兼容,`hashicorp/alicloud` 依然可用,功能与 `aliyun/alicloud` 完全一致。
+- 更推荐使用 `hashicorp/alicloud`。
+```
+
+### 场景 6 — 本地无法复现客户问题
+
+**判定**:客户报 error 但我们本地跑同 tf 不复现;需要客户抓完整 debug 日志。
+
+```
+麻烦配置一下环境变量,重新跑一次并把生成的 terraform.log 发上来:
+
+export TF_ACC=1
+export TF_LOG=DEBUG
+export TF_LOG_PATH=terraform.log
+export DEBUG=terraform
+```
+
+### 场景 7 — `Post "https://xxx.aliyuncs.com/?..."` 连接超时
+
+**判定**:报错形如 `Post "https://<product>.aliyuncs.com/?AccessKeyId=...": dial tcp: i/o timeout` 或 `context deadline exceeded`。网络问题,非 TF/API 本身。
+
+```
+网络问题,连接超时了,两种解决方案:
+1. 切换网络环境 / 挂代理后重试;
+2. 显式配置 endpoint。endpoint 值向对应云产品确认(region 为地域名如
+   cn-hangzhou 的内网 endpoint):
+
+provider "alicloud" {
+  region     = var.region
+  access_key = ""
+  secret_key = ""
+  endpoints {
+    <product_key> = "<endpoint 值>"
+  }
+}
+```
+
+### 场景 8 — 「为什么 TF 不支持某功能」科普
+
+**判定**:客户抱怨 TF 缺某功能,需要澄清职责边界(与场景 3 不同:这里更偏理念澄清,而不是我们代问)。
+
+```
+Terraform 只是一个客户端资源编排工具,所有功能特性都基于云产品的接口
+实现。云产品接口如果支持,且 TF 评估之后认为可以接入,那 TF 就可以支持;
+如果云产品本身接口不支持,那 TF 也无法支持。
+```
+
+### TF 文档三件套(引导客户自学)
+
+对不熟 TF 语法/用法的客户,先引导读文档,别兜住所有基础问题:
+
+- TF 官方文档: https://developer.hashicorp.com/terraform/language
+- TF 中文文档: https://lonegunmanb.github.io/introduction-terraform/
+- 阿里云 provider 资源文档: https://registry.terraform.io/providers/aliyun/alicloud/latest/docs
