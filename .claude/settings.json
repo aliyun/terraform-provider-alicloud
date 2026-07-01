@@ -2,6 +2,17 @@
   "hooks": {
     "Stop": [
       { "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/bootstrap/wrap-check.sh\"" } ] }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; [ -n \"$f\" ] && bash \"$CLAUDE_PROJECT_DIR/bootstrap/sync-to-codex.sh\" \"$f\"; } 2>/dev/null || true"
+          }
+        ]
+      }
     ]
   }
 }

@@ -5,9 +5,11 @@
 #
 # Logic:
 #   For each project pool, list all claimed (jarvis-claimed) items that are
-#   NOT yet marked done (NOT tag=jarvis-done). For each such item:
+#   NOT yet released/finished (NOT tag=jarvis-idle AND NOT tag=jarvis-done).
+#   For each such item:
 #     - If a local runs/<date>-<id>.md exists (log.sh seen) → work finished but
-#       release was missed. Call claim.sh release to apply jarvis-done tag.
+#       release was missed. Conservatively call claim.sh release to apply
+#       jarvis-idle tag (人或下一轮 jarvis 决定是否升级 finish/done)。
 #       Print: RECONCILED: <id>
 #     - If NO run file → leave it alone (sweep.sh handles stale-escalation).
 #
@@ -42,6 +44,7 @@ source "$_reconcile_dir/log.sh"
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
 CLAIM_TAG="$(jq -r '.claim.tag' "$POOLS_JSON")"
+IDLE_TAG="$(jq -r '.claim.idle_tag' "$POOLS_JSON")"
 DONE_TAG="$(jq -r '.claim.done_tag' "$POOLS_JSON")"
 
 # Collect all project IDs from pools (mirrors sweep.sh pattern)
@@ -56,11 +59,11 @@ RECONCILED_IDS=()
 while IFS= read -r project; do
     [ -z "$project" ] && continue
 
-    # List all jarvis-claimed items in this project, excluding those marked done
+    # 排除 idle/done 两类已收尾的工单
     claimed_json=$(a1 project workitem list \
         --project "$project" \
         --tag "$CLAIM_TAG" \
-        --filter "NOT tag=$DONE_TAG" \
+        --filter "NOT tag=$IDLE_TAG AND NOT tag=$DONE_TAG" \
         -f json 2>/dev/null || echo "[]")
 
     # Extract item identifiers (use 'identifier' key, fall back to 'id')
@@ -81,7 +84,7 @@ except Exception:
 
         # Check if a run file exists: work finished but release was missed
         if seen "$item_id"; then
-            # Release the claim: apply jarvis-done tag.
+            # Release the claim: apply jarvis-idle tag (保守，不擅自升级 finish/done)。
             # Default to co-located claim.sh; override via RECONCILE_CLAIM_CMD for tests.
             _claim_cmd="${RECONCILE_CLAIM_CMD:-$_reconcile_dir/claim.sh}"
             $_claim_cmd release "$item_id" "$project"

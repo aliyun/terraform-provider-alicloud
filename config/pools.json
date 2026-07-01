@@ -155,7 +155,9 @@
   "claim": {
     "tag": "jarvis-claimed",
     "fallback": "title",
+    "idle_tag": "jarvis-idle",
     "done_tag": "jarvis-done",
+    "done_status": "已发布待需求排期",
     "ttl_min": 45
   }
 }

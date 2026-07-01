@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # bootstrap/board.sh — classify scan.json (single source = Aone tags/status) into one status array.
 # Emits JSON to stdout: [{id,title,state,summary,priority,pool,project,url,ts}].
-#   state: escalated > merged > done > inflight > pool (precedence on id collision)
+#   state: escalated > merged > done > idle > inflight > pool (precedence on id collision)
 #   escalated ← escalation/<id>.md exists                 (first body line = reason)
-#   merged    ← tag jarvis-done  + status 已发布/验收通过/已完成/已发布待需求方验收
+#   merged    ← tag jarvis-done  + status 已发布/验收通过/已完成/已发布待需求方验收/已发布待需求排期
 #   done      ← tag jarvis-done  + any other status        (审核中)
+#   idle      ← tag jarvis-idle                            (jarvis 本轮释放,等待人或下一个 jarvis)
 #   inflight  ← tag jarvis-claimed                         (进行中)
 #   pool      ← untagged scan candidate (scan already applied exclude_status); cap 2000/pool by 紧急>高>中>低, pool_total=full count + req/bug/task split
 # runs/<id>.md is NO LONGER source of done/merged — only enriches summary text;
@@ -77,22 +78,25 @@ def enrich(item):
     item["ts"] = item.get("ts") or r.get("ts") or ""
     return item
 
-items = {}  # id -> record ; precedence escalated>merged>done>inflight>pool
-RANK = {"pool": 0, "inflight": 1, "done": 2, "merged": 3, "escalated": 4}
+items = {}  # id -> record ; precedence escalated>merged>done>idle>inflight>pool
+RANK = {"pool": 0, "inflight": 1, "idle": 2, "done": 3, "merged": 4, "escalated": 5}
 def put(rec):
     old = items.get(rec["id"])
     if old is None or RANK[rec["state"]] >= RANK[old["state"]]:
         items[rec["id"]] = rec
 
-# Aone tags = single source for done/merged/inflight.
-MERGED_STATUS = {"已发布", "验收通过", "已完成", "已发布待需求方验收"}
+# Aone tags = single source for done/merged/idle/inflight.
+# 优先级：done > idle > claimed（同时存在时取真完成状态）
+MERGED_STATUS = {"已发布", "验收通过", "已完成", "已发布待需求方验收", "已发布待需求排期"}
 for i, s in scan.items():
     tag = s.get("tag") or ""
-    if "jarvis-claimed" in tag:
-        put(enrich({"id": i, "state": "inflight", "summary": s.get("status", ""), "ts": ""}))
-    elif "jarvis-done" in tag:
+    if "jarvis-done" in tag:
         st = "merged" if s.get("status") in MERGED_STATUS else "done"
         put(enrich({"id": i, "state": st, "summary": "", "ts": ""}))
+    elif "jarvis-idle" in tag:
+        put(enrich({"id": i, "state": "idle", "summary": s.get("status", ""), "ts": ""}))
+    elif "jarvis-claimed" in tag:
+        put(enrich({"id": i, "state": "inflight", "summary": s.get("status", ""), "ts": ""}))
 
 # escalated from escalation/ (overrides tag-derived state)
 for f in glob.glob(os.path.join(root, "escalation", "*.md")):

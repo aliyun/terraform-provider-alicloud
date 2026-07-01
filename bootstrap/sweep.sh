@@ -36,6 +36,7 @@ POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
 TTL_MIN="$(jq -r '.claim.ttl_min' "$POOLS_JSON")"
 CLAIM_TAG="$(jq -r '.claim.tag' "$POOLS_JSON")"
+IDLE_TAG="$(jq -r '.claim.idle_tag' "$POOLS_JSON")"
 DONE_TAG="$(jq -r '.claim.done_tag' "$POOLS_JSON")"
 
 # Collect all project IDs from pools
@@ -94,8 +95,8 @@ STALE_IDS=()
 while IFS= read -r project; do
     [ -z "$project" ] && continue
 
-    # List all jarvis-claimed items in this project, excluding those marked done
-    claimed_json=$(a1 project workitem list --project "$project" --tag "$CLAIM_TAG" --filter "NOT tag=$DONE_TAG" -f json 2>/dev/null || echo "[]")
+    # 排除 idle/done 两类已收尾的工单（jarvis-claimed AND NOT (jarvis-idle OR jarvis-done)）
+    claimed_json=$(a1 project workitem list --project "$project" --tag "$CLAIM_TAG" --filter "NOT tag=$IDLE_TAG AND NOT tag=$DONE_TAG" -f json 2>/dev/null || echo "[]")
 
     # Extract item identifiers (use 'identifier' key, fall back to 'id' for compatibility)
     item_ids=$(printf '%s' "$claimed_json" | python3 -c "

@@ -78,11 +78,23 @@ else
     ((fail_count++))
 fi
 
-# Check claim.done_tag is set to expected value
+# Check claim.idle_tag / done_tag / done_status are set to expected values
+if jq -e '.claim.idle_tag=="jarvis-idle"' "$pools_cfg" >/dev/null 2>&1; then
+    echo "PASS claim.idle_tag"
+else
+    echo "FAIL claim.idle_tag"
+    ((fail_count++))
+fi
 if jq -e '.claim.done_tag=="jarvis-done"' "$pools_cfg" >/dev/null 2>&1; then
     echo "PASS claim.done_tag"
 else
     echo "FAIL claim.done_tag"
+    ((fail_count++))
+fi
+if jq -e '.claim.done_status!=null and (.claim.done_status|length)>0' "$pools_cfg" >/dev/null 2>&1; then
+    echo "PASS claim.done_status"
+else
+    echo "FAIL claim.done_status"
     ((fail_count++))
 fi
 
