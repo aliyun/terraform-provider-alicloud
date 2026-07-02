@@ -1,9 +1,13 @@
 ---
 name: provider-resource-dev
-description: Use when developing or diagnosing a NEW alicloud Terraform provider resource end-to-end (Terraform 资源名解析 → 镇元/Cloudspec resourceTypeCode 查证 → acube 映射/生成 → 生成代码 vs 手写代码 diff → 手改 → acc 验收 → PR). Trigger when a customer/Aone req asks to 接入/支持 a resource (e.g. alicloud_oss_bucket_inventory), a generated resource is empty/missing, cloudspec terraform reports no resource, or you must take 镇元 spec to provider code. NOT for reviewing an existing PR (use terraform-pr-review) or answering simple 是否支持 (use aone-triage 查证).
+description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform provider resource — either (a) NEW resource end-to-end (Terraform 资源名解析 → 镇元/Cloudspec resourceTypeCode 查证 → acube 映射/生成 → 生成代码 vs 手写代码 diff → 手改 → acc 验收 → PR), OR (b) **修/改一个非自动化生成（hand-written 或历史遗留 generated-but-mutated）的既有资源** — 补属性、修 bug、补重试、修 schema drift、加 import 支持等。触发场景：客户/Aone 需求要 接入/支持 一个资源(e.g. alicloud_oss_bucket_inventory)；生成资源空/缺；cloudspec terraform 无资源；要拿 镇元 spec 落 provider 代码；**或既有资源出现 bug（错误码未重试 / attribute 缺失 / CRUD 不对齐 API / import 断链 等）**。NOT for 现有 PR 评审(用 terraform-pr-review)或简单 是否支持 查询(用 aone-triage 查证)。
 ---
 
 # Provider 资源开发全流程
+
+**两种模式，共用后半段（手改 → 回归用例 → 验收 → PR）**：
+- **新增资源模式**：走完全部 8 步，`getTerraformResourceSpec` / acube 生成 / 生成-手写 diff 是必经。
+- **修复/补丁模式**（非自动化生成资源的 bug fix / 属性补齐）：跳过步骤 1–5（不走生成），直接 **步骤 6（手改）→ 6.5（补/改回归用例）→ 7（AccTest）→ 8（PR）**；且 **6.5 是硬门**：修 bug 必须补/改一个"未打 patch 前会 fail、打 patch 后 pass"的锁定回归用例，随 PR 一并交付；确实无法测（如概率事件、需实体网关、外部依赖）则在 PR body 明写原因 + 已做的替代验证（静态查证 / 逻辑推演 / 同类资源对比）。
 
 从客户需求到 provider PR。真源=镇元(Zhenyuan)`ResourceTypeSchema`;生成器吃镇元料出一整套(resource.go + _test.go + service + provider.go 注册行 + website 文档 markdown),但它可能空生成/部分生成;**只信 acc 测**。
 
@@ -28,8 +32,12 @@ description: Use when developing or diagnosing a NEW alicloud Terraform provider
 3. **镇元建模/发布判断** — 如果 get/list 都找不到,说明资源未进预发/线上 resourceTypeCode;先回复 Aone 推动镇元发布或确认别名,除非本地已有 cspec 分支可继续验证。
 4. **生成** — 标准入口走 Acube `createLocalBuildTask`:先 `resourceTypeCode/get` 取料,再 `createMapping`,再 `createLocalBuildTask`,用 `tools/acube_terraform_generate.py` 落盘 raw JSON/logs/files/generated/summary。只有 Acube 不可用或需验证本地 cspec 分支时,才 fallback 到本地 `cloudspec terraform -r <terraform_resource> -e pre -o <dir>`;报 `no that resource` 时用 `<CloudspecResourceCode>` 重试并记录 partial output。
 5. **生成 vs 手写 diff** — 用 `tools/terraform_generated_diff.py` 看 Acube generated 与手写分支差异,先判断缺主体/缺测试/缺文档/缺 provider 注册/缺 service,再看 `resourceNotExistCondition` 等语义风险,最后手改。
-6. **手改生成缺陷** — OSS 等 XML 产品:`client.Do("Oss",xmlParam(...))` 非 Roa(治 `<` 解析错);PUT body 按 schema **固定元素序**(治 MalformedXML);update 删-再-PUT 绕 AlreadyExists。
-7. **验收** — 真实 AccTest 优先用 `invoke-terraform-acc-test-remote` 走 ACube/FC 远程执行,避免长时间占用本机;本地只跑 `go test ./alicloud -run '^$'`、小单测、lint、示例 `terraform validate` 等轻量检查。远程 AccTest 过 create+update+import 才算数;跨账号/企业账号资源要隔离 ambient `ALICLOUD_ACCESS_KEY`/`ALICLOUD_SECRET_KEY`,显式声明测试需要的多把 AK 环境变量,并用 STS/CLI 验证每把 AK 的 caller account,但任何文档/评论/示例都不能泄露真实 AK/SK。
+6. **手改生成缺陷 / bug fix** — OSS 等 XML 产品:`client.Do("Oss",xmlParam(...))` 非 Roa(治 `<` 解析错);PUT body 按 schema **固定元素序**(治 MalformedXML);update 删-再-PUT 绕 AlreadyExists。**修复模式**下,查证根因(OpenAPI 错误码/schema/CRUD 语义)后照同 package 已有正确写法照抄,不 refactor 无关代码。
+6.5. **补/改回归用例(修复模式硬门)** — 修 bug 时必须在同 PR 补/改一个"未打 patch 前会 fail、打 patch 后 pass"的用例(unit 或 acc,能锁定回归即可),随 CR/PR 一并评审。选型:
+   - 若可用小并发/构造错误码/mock RPC 稳定复现,写 unit 或 acc 用例。
+   - 若是概率事件(如服务端锁冲突、限流),可用同一 Config 里 declare N 个 resource 让 Terraform 并发 apply 触发。参照本 PR 9916 `TestAccAliCloudESARoutineRoute_lockRetry` 模式:同一 SiteId+RoutineName 下起 N 个 route,未打 patch 会 LockFailed 挂;打 patch 后 apply/destroy 全过。
+   - 真无法测(需实体网关/外部依赖/无稳定复现路径)才允许豁免:在 PR body 明写"无法用例复现:<原因>",并列出替代验证(同类资源对比 / 静态查证 / manual repro log)。审阅人可拒。
+7. **验收** — 真实 AccTest 优先用 `invoke-terraform-acc-test-remote` 走 ACube/FC 远程执行,避免长时间占用本机;本地只跑 `go test ./alicloud -run '^$'`、小单测、lint、示例 `terraform validate` 等轻量检查。远程 AccTest 过 create+update+import 才算数(**修复模式**至少要过 6.5 补的回归用例 + 原有主用例);跨账号/企业账号资源要隔离 ambient `ALICLOUD_ACCESS_KEY`/`ALICLOUD_SECRET_KEY`,显式声明测试需要的多把 AK 环境变量,并用 STS/CLI 验证每把 AK 的 caller account,但任何文档/评论/示例都不能泄露真实 AK/SK。
 8. **PR** — `bootstrap/github-identity.sh check` → `bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud HEAD <branch>` → `bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicloud --head api-tool-agent:<branch>`;带 resource+test+service+provider注册+website 文档;无 AI 署名。缺 `JARVIS_GITHUB_TOKEN` 或登录名不是 `api-tool-agent` 时阻断并升级,禁止回退个人账号或 ambient git 凭据。
 
 ## Terraform 资源名解析
@@ -143,4 +151,4 @@ python3 tools/terraform_generated_diff.py \
 - 可复制 Example 必须能 `terraform init/validate`:包含 `required_providers`,跨账号资源用 provider alias 区分管理账号/受邀账号;真实 AK/SK 不写进文档、评论或仓库,只用 sensitive variables/env。
 
 ## 红线
-不碰 master;无可评审 diff 不空发;对外无 AI 署名;Aone 唯一真源(进展 sync/完工 done)。
+不碰 master;无可评审 diff 不空发;对外无 AI 署名;Aone 唯一真源(进展 sync/完工 done);**修 bug 无回归用例又不写豁免原因 = 空发**。
