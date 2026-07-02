@@ -8,6 +8,12 @@
 ┌── 读单 + 抽真实诉求 (末段"限制/差异/仍需/不支持类似 X" 是真实诉求) ──┐
 │                                                                    │
 ▼                                                                    │
+诉求范围: 单一云产品/资源 vs Provider 侧全局改造?                     │
+├─ Provider 全局改造 (不涉及单一 alicloud_xxx 资源:region 白名单 /   │
+│   框架 utility / 公共 endpoint / provider.go 基础 / SDK bump 等)   │
+│   → 关联单指派 新山(521957) [分支 G,end]                           │
+└─ 单一产品/资源 ↓                                                    │
+                                                                     │
 产品 in 【专属维护名单】?                                              │
 ├─ YES → 直接指派对应负责人, status=问题解决中, @负责人 [end]         │
 └─ NO ↓                                                              │
@@ -19,8 +25,11 @@
 │         └─ Provider 侧适配 → 我们团队可复制路径 → 走下方镇元分支    │
 └─ NO (纯接入新资源 / 修 provider bug) ↓                             │
                                                                      │
-镇元 schema 建模 + 测试覆盖度 100%?                                   │
-├─ NO ↓                                                              │
+镇元 OK? (三条件全满足才算 OK:                                        │
+  ① API 在镇元已定义并发布                                            │
+  ② 当前资源 schema 属性满足客户诉求(不缺字段)                        │
+  ③ acube V2 覆盖度 CoverageScore == 1.0)                             │
+├─ NO (三条件任一不满足) ↓                                            │
 │     优先级=紧急 OR 距计划截止 < 14 天?                              │
 │     ├─ YES → 关联单指派 新山(521957)                                │
 │     └─ NO  → 关联单指派 谜拟(479782)                                │
@@ -58,10 +67,18 @@
 
 | 场景 | 花名 | 工号 |
 |---|---|---|
-| 镇元 schema/覆盖度未 OK,非紧急且距 DDL ≥14 天 | 谜拟 | 479782 |
-| 镇元 schema/覆盖度未 OK,紧急 或 距 DDL <14 天 | 新山 | 521957 |
+| **Provider 侧全局改造**(非单一产品/资源:region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump) | 新山 | 521957 |
+| 镇元 NOT OK(资源未定义 / 属性不满足诉求 / 覆盖度<100%),非紧急且距 DDL ≥14 天 | 谜拟 | 479782 |
+| 镇元 NOT OK(同上),紧急 或 距 DDL <14 天 | 新山 | 521957 |
 | 镇元 OK + provider 代码由生成器产出 | 临钧 | 429768 |
 | 镇元 OK + provider 代码手写(默认兜底) | 过载 | 484483 |
+
+**镇元 OK 三条件**(全满足才算 OK,任一不满足即视为 NOT OK):
+1. **API 在镇元有对应资源**:资源已在镇元定义并发布(get 返回 data 且 released list 命中)
+2. **当前资源属性满足客户诉求**:比对客户抽取的真实诉求字段,镇元资源 schema 的 properties **全覆盖**(缺字段=NOT OK,即便覆盖度分再高也不算 OK)
+3. **测试覆盖度 100%**:acube V2 `CoverageDetail.CoverageScore == 1.0`
+
+详见 Step 2 分支 D 前的判定说明。
 
 ### 上游 API 缺口(纯上游产品团队问题)
 
@@ -288,9 +305,15 @@ print("  Property/Operation/PrimaryOperation:",
 '
 ```
 
+**镇元 OK 三条件**(全满足才算 OK,任一不满足即 NOT OK):
+
+1. **API 在镇元有对应资源**:`get` 返回 data 且 `released` list 命中(资源已定义并发布)
+2. **当前资源属性满足客户诉求**:比对 Step 1 抽取的真实诉求字段,镇元资源 schema 的 properties **全覆盖** —— 缺字段即视为 NOT OK(即便覆盖度分再高也不算 OK,因为覆盖度只测已建 schema 的属性,客户想要新字段时属性不覆盖=缺口在镇元)
+3. **测试覆盖度 100%**:`CoverageDetail.CoverageScore == 1.0`(V2 已不返回 PASS/FAIL 用例计数,仅以覆盖度综合分判定)
+
 **判定**:
-- 镇元 get 有 data + released list 命中 + `CoverageDetail.CoverageScore == 1.0` → **镇元 OK**,走分支 D
-- 否则 → **镇元 NOT OK**,走分支 E(V2 已不返回 PASS/FAIL 用例计数,仅以覆盖度综合分判定)
+- 三条件全满足 → **镇元 OK**,走分支 D
+- 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0) → **镇元 NOT OK**,走分支 E
 
 **环境说明**:V2 已发布到 acube 正式(`acube.aliyun-inc.com`),默认走线上;需要预发数据把域名换成 `pre-acube.aliyun-inc.com` 即可(路径 / 参数 / 返回结构一致)。服务端实现见邻仓 `a-cube-aliyun-com` 里 `acube-auto-generator/.../ProductMetaUtil.java#getResourceQualityDetailCoverageScoreV2ByCommon`。
 
@@ -367,6 +390,14 @@ bin/a1id -- project workitem update <源工单ID> --assignee <工号>
 bin/a1id -- project workitem update <源工单ID> --status 问题处理中
 # (专属名单产品用 "问题解决中"——名字接近,别写混)
 ```
+
+**分支 G · Provider 全局改造(→ 新山 521957)**:适用于"诉求不涉及单一 alicloud_xxx 资源、而是 provider 侧全局改动"的场景(region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump 等)。**落地脚本与上面完全一致**,只需 3 处微调:
+- `--assignee` 填 `521957`(新山)
+- `--category` 填 `task`(全局改造多为工程任务,而非缺陷/需求)
+- `--title` 与 `--description` 注明"provider 全局改造"字样(例:"provider 支持 ap-southeast-8 region"),便于新山识别范围
+- 源单 `--assignee 521957` + `--status 问题处理中`
+
+分支 G **不走镇元查证**(镇元管资源 schema,不管 provider 基础),Step 2 分支 D/E 的 acube 覆盖度检查可跳过,直接进入 Step 3 建单流程。
 
 ### 分支 D-临钧(生成器产出):走 acube V2 接口,jarvis 不手动建单
 
@@ -532,3 +563,5 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 跳过 Step 1.5 共通 gate 直接发 canned —— 分类误建 / 重复单情形下会与承接单重复打搅客户
 - ❌ 生成器产出(临钧)场景还手动 `a1 workitem create` 建关联单 —— acube V2 createBuildTaskV2 已自动建单+指派临钧,重复建会双单,污染临钧研发队列
 - ❌ acube 60s 未返回 aoneId 就"降级"回手动 `a1 workitem create` —— 可能 acube 已建成功只是查询未及时,回退会双建;正确做法是升级 escalation 由人排查
+- ❌ Provider 全局改造(region 白名单/框架 utility/公共 endpoint/SDK bump)走"镇元 OK/NOT OK"判定 —— 镇元管资源 schema,不管 provider 基础;直接分支 G → 新山(521957),不必查 acube 覆盖度
+- ❌ 只按 acube V2 `CoverageScore==1.0` 判"镇元 OK",忽略"当前 schema 属性是否覆盖客户诉求字段" —— 覆盖度分只反映已建 schema 的属性测试完备度,客户想要新字段而 schema 未建时,覆盖度分再高也是 NOT OK(缺口在镇元)
