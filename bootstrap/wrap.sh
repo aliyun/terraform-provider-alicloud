@@ -16,7 +16,10 @@
 # done 是每条 dev/adhoc/plugin-dev 路径在宣告 Done 前的必经收尾。
 # done: 本地审计先落盘（审计不丢），再 a1 调用——失败则 exit 1（Aone 真源强制）。
 # sync: a1 调用失败仅告警，本地不写 run_done。
-# 评论自动追加代码落点（repo @ 分支 commit）：在开发库目录调用，或 CODE_DIR 指定。
+# 评论自动追加代码落点（repo @ 分支 commit）：在开发库目录调用，或经以下环境变量指定：
+#   CODE_DIR_KEY=<workspace-key>  — 走 bootstrap/workspace.sh dir <key> 解析（对齐 CLAUDE.md 纪律 4，本地路径不手拼）
+#   CODE_DIR=<abs-path>           — 直接绝对路径（向后兼容 / 临时路径）
+# 未设 → 用 PWD。
 # 标签/状态约定读 config/pools.json；JARVIS_ROOT 可覆盖仓库根。
 
 set -euo pipefail
@@ -29,9 +32,14 @@ pools_cfg="$jarvis_root/config/pools.json"
 [ -f "$pools_cfg" ] || { echo "wrap.sh: config/pools.json not found at $pools_cfg" >&2; exit 1; }
 
 # 代码落点页脚：从开发库当前 git 目录采 repo/分支/commit 自动追加，回填进展即定位代码。
-# 取 CODE_DIR（默认 PWD）；非 git 目录则静默跳过，不阻断回填。
+# 取源优先级 CODE_DIR_KEY > CODE_DIR > PWD；非 git 目录静默跳过不阻断回填。
 code_footer() {
-    local dir="${CODE_DIR:-$PWD}"
+    local dir=""
+    if [ -n "${CODE_DIR_KEY:-}" ]; then
+        # 走 workspace.sh 解析(对齐 CLAUDE.md 纪律 4:本地路径经 workspaces 登记,不手拼)
+        dir="$(bash "$script_dir/workspace.sh" dir "$CODE_DIR_KEY" 2>/dev/null)" || return 0
+    fi
+    [ -n "$dir" ] || dir="${CODE_DIR:-$PWD}"
     git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
     # jarvis 仓内调用属于查证/编排，不是开发库提交，footer 无意义且会污染评论；跳过
     local toplevel
