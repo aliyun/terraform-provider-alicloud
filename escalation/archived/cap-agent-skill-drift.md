@@ -1,5 +1,7 @@
 # cap-agent-skill-drift
 
+> **[归档]** 本 cap 描述的 skill mirror drift(dingtalk-ai-card 路径漂移 / .agents ↔ .claude 双端同步)已由 P0 CR #28348286 全部解决:mirror.sh 补 .claude/skills/ sed 规则、反向 mirror invoke-terraform-acc-test-remote、修 skills-mirror-check 早退 bug。归档保留正文作历史缺口记录。
+
 ## 缺口类型
 
 skill / agent canonical source 不清晰,存在重复目录漂移。
