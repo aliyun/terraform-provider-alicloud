@@ -15,12 +15,13 @@ source "$script_dir/lib.sh"
 jarvis_root="$(jarvis_root)"
 
 # 30min TTL gate: serve cached scan.json if younger than TTL, unless --force (or JARVIS_SCAN_TTL=0).
+# 走 cache.sh age 消除内嵌 stat -f %m/-c %Y 跨平台重实现(P1.d)。
 out_f="$jarvis_root/.my-day/scan.json"
 ttl="${JARVIS_SCAN_TTL:-1800}"   # 30min
 [ "${1:-}" = "--force" ] && ttl=0
 if [ "$ttl" -gt 0 ] && [ -s "$out_f" ]; then
-  m=$(stat -f %m "$out_f" 2>/dev/null || stat -c %Y "$out_f" 2>/dev/null)
-  if [ -n "$m" ] && [ $(( $(date +%s) - m )) -lt "$ttl" ]; then
+  age=$(bash "$script_dir/cache.sh" age "$out_f" 2>/dev/null) || age=""
+  if [ -n "$age" ] && [ "$age" -lt "$ttl" ]; then
     echo "scan.sh: skip (scan.json < $((ttl/60))min old; --force to rescan)" >&2
     cat "$out_f"; exit 0
   fi
