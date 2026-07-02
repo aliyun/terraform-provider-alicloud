@@ -235,7 +235,7 @@ Provider 源码查证**不能只 grep 本地 workspace**——workspace 可能�
 
 ```bash
 # 1) 强制同步 workspace 到 upstream master 最新
-bash .claude/skills/aone-triage/scripts/sync-provider.sh
+bash .Codex/skills/aone-triage/scripts/sync-provider.sh
 
 # 2) 扫 upstream open + recent merged PR,命中同题关键字 → 直接命中已有改动
 bash bootstrap/github-identity.sh gh pr list \
