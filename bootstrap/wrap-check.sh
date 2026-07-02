@@ -19,10 +19,11 @@
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=bootstrap/lib.sh
 source "$script_dir/lib.sh"
 jarvis_root="$(jarvis_root)"
 export JARVIS_ROOT="$jarvis_root"
-export JARVIS_RUNS_DIR="${JARVIS_RUNS_DIR:-$jarvis_root/runs}"
+export JARVIS_RUNS_DIR="$(lib_runs_dir)"
 
 # Source log.sh so we can call seen() directly (mirrors sweep.sh pattern)
 # shellcheck source=bootstrap/log.sh

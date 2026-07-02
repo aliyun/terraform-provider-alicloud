@@ -18,16 +18,13 @@
 set -uo pipefail
 
 # ---------------------------------------------------------------------------
-# Path resolution
+# Path resolution (P1.e:走 lib.sh 统一,消除 _plan_repo_root 样板)
 # ---------------------------------------------------------------------------
-_plan_repo_root() {
-    source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-    jarvis_root
-}
-
-repo_root="$(_plan_repo_root)"
+# shellcheck source=bootstrap/lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+repo_root="$(jarvis_root)"
 bootstrap_dir="$repo_root/bootstrap"
-runs_dir="${JARVIS_RUNS_DIR:-$repo_root/runs}"
+runs_dir="$(lib_runs_dir)"
 autonomy_file="${JARVIS_AUTONOMY_FILE:-$repo_root/autonomy.md}"
 
 mkdir -p "$runs_dir"

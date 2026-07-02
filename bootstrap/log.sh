@@ -15,20 +15,10 @@
 # Guard: callable both sourced and as direct script (bash log.sh <fn> <args>).
 
 # ---------------------------------------------------------------------------
-# Path resolution
+# Path resolution (P1.e:走 lib.sh helper 消除 _log_repo_root/_log_*_dir 三样板)
 # ---------------------------------------------------------------------------
-_log_repo_root() {
-    source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-    jarvis_root
-}
-
-_log_runs_dir() {
-    echo "${JARVIS_RUNS_DIR:-$(_log_repo_root)/runs}"
-}
-
-_log_escalation_dir() {
-    echo "${JARVIS_ESCALATION_DIR:-$(_log_repo_root)/escalation}"
-}
+# shellcheck source=bootstrap/lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 # ---------------------------------------------------------------------------
 # run_done <id> <summary> [state]
@@ -40,7 +30,7 @@ run_done() {
     local summary="$2"
     local state="${3:-}"; state="${state:-pending}"
     local runs_dir
-    runs_dir="$(_log_runs_dir)"
+    runs_dir="$(lib_runs_dir)"
     local utc_date
     utc_date="$(date -u +%F)"
     local filepath="$runs_dir/${utc_date}-${id}.md"
@@ -67,7 +57,7 @@ escalate() {
     local id="$1"
     local reason="$2"
     local esc_dir
-    esc_dir="$(_log_escalation_dir)"
+    esc_dir="$(lib_escalation_dir)"
     local filepath="$esc_dir/${id}.md"
 
     mkdir -p "$esc_dir"
@@ -97,7 +87,7 @@ EOF
 seen() {
     local id="$1"
     local runs_dir
-    runs_dir="$(_log_runs_dir)"
+    runs_dir="$(lib_runs_dir)"
     # Use glob; if any file matches *-<id>.md, return success
     local matches
     matches=$(ls "$runs_dir"/*-"${id}".md 2>/dev/null | wc -l | tr -d ' ')
