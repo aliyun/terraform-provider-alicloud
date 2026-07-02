@@ -19,5 +19,11 @@ runs/*.md
 .worktrees/
 bridge/jarvis.env
 
+# IDE 元数据
+.idea/
+
+# 本地凭据(chmod 600,双保险 gitignore;bootstrap/.env.example 是模板)
+bootstrap/.env
+
 # Python bytecode
 __pycache__/
