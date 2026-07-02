@@ -33,12 +33,12 @@
 │     优先级=紧急 OR 距计划截止 < 14 天?                              │
 │     ├─ YES → 关联单指派 新山(521957)                                │
 │     └─ NO  → 关联单指派 谜拟(479782)                                │
-│     原单同步指派 + status=问题处理中 + @指派人                       │
+│     原单同步指派 + status=问题解决中 + @指派人                       │
 └─ YES → provider 代码类型:                                          │
         ├─ 自动生成 (`This file is generated automatically`) →       │
         │   关联单指派 临钧(429768)                                   │
         └─ 手写 → 关联单指派 过载(484483)                             │
-        原单同步指派 + status=问题处理中 + @指派人                     │
+        原单同步指派 + status=问题解决中 + @指派人                     │
 ```
 
 关联单一律建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。**例外:临钧路由(生成器产出)不由 jarvis `a1 workitem create` 手动建单**——走 acube `createBuildTaskV2` 接口,acube 内部自动建单+指派临钧+触发生成/PR 工作流,jarvis 只查回 aoneId 做关联,详见 Step 3。
@@ -371,31 +371,59 @@ echo "days_left=$days_left"
 ### 分支 A / D-过载(手写) / E(jarvis 手动建关联单+指派)
 
 ```bash
-# 1. 建关联单在 terraform-alicloud (528766),category 视诉求
+# 0. 从原单读优先级 + DDL,关联单继承
+#    - 优先级直接复制原单
+#    - 截止日期:原单 DDL 提前 2 天(留余量给下一棒);原单无 DDL 时 today+3
+src_json=$(bash bootstrap/aone-get.sh <源工单ID>)
+src_prio=$(echo "$src_json" | python3 -c 'import json,sys
+d=json.load(sys.stdin)
+for f in d.get("fields",[]):
+  if f.get("identifier")=="priority": print(f.get("value") or "")')
+src_ddl=$(echo "$src_json" | python3 -c 'import json,sys
+d=json.load(sys.stdin)
+for f in d.get("fields",[]):
+  if f.get("identifier")=="80": print(f.get("value") or "")')
+new_ddl=$(python3 -c "
+from datetime import date,timedelta
+src='$src_ddl'.strip()
+if src:
+  d=date.fromisoformat(src)-timedelta(days=2)   # 短于原单 2 天,给下一棒留余量
+  today=date.today()
+  if d<=today: d=today+timedelta(days=1)         # 防倒挂
+else:
+  d=date.today()+timedelta(days=3)               # 原单无 DDL,默认 today+3
+print(d.isoformat())")
+
+# 1. 建关联单在 terraform-alicloud (528766)
+#    正文用 --body 或 --body-file(a1 不吃 --description,会报 unknown flag)
+#    tf_provider(528766) 校验必填:计划开始/截止日期 + 实际工时,通过 --cfs 传
 bin/a1id -- project workitem create \
   --project 528766 \
   --category <req|bug|task> \
   --title "<清晰标题:资源/属性/诉求>" \
   --assignee <工号> \
-  --description "@<花名>(<工号>) 客户 <URL/ID> 请求 <诉求>;详见源单描述与本单描述..."
-# 记下返回的新单 id
+  --priority "$src_prio" \
+  --body-file <path-to-body.txt> \
+  --cfs "计划开始日期=$(date +%Y-%m-%d)" \
+  --cfs "计划截止日期=$new_ddl" \
+  --cfs "实际工时=0" \
+  --quiet
+# --quiet 输出只有 "<id>\t<title>\t<status>\t<assignee>",取第一列作 NEW_ID
 NEW_ID=<新单 id>
 
-# 2. 双向关联
+# 2. 关联(aone 自动双向,单次 relation add 即建 A↔B;第二次会 400 已存在)
 bin/a1id -- project workitem relation add <源工单ID> relate:$NEW_ID
-bin/a1id -- project workitem relation add $NEW_ID relate:<源工单ID>
 
-# 3. 源工单指派 + 状态
+# 3. 源工单指派 + 状态(原单优先级 / DDL 保持不动)
 bin/a1id -- project workitem update <源工单ID> --assignee <工号>
-bin/a1id -- project workitem update <源工单ID> --status 问题处理中
-# (专属名单产品用 "问题解决中"——名字接近,别写混)
+bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 ```
 
 **分支 G · Provider 全局改造(→ 新山 521957)**:适用于"诉求不涉及单一 alicloud_xxx 资源、而是 provider 侧全局改动"的场景(region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump 等)。**落地脚本与上面完全一致**,只需 3 处微调:
 - `--assignee` 填 `521957`(新山)
 - `--category` 填 `task`(全局改造多为工程任务,而非缺陷/需求)
-- `--title` 与 `--description` 注明"provider 全局改造"字样(例:"provider 支持 ap-southeast-8 region"),便于新山识别范围
-- 源单 `--assignee 521957` + `--status 问题处理中`
+- `--title` 与 `--body-file` 正文注明"provider 全局改造"字样(例:"provider 支持 ap-southeast-8 region"),便于新山识别范围
+- 源单 `--assignee 521957` + `--status 问题解决中`
 
 分支 G **不走镇元查证**(镇元管资源 schema,不管 provider 基础),Step 2 分支 D/E 的 acube 覆盖度检查可跳过,直接进入 Step 3 建单流程。
 
@@ -457,13 +485,12 @@ if [ -z "$NEW_ID" ]; then
 fi
 echo "临钧关联单 aoneId=$NEW_ID"
 
-# 3. 双向关联到源客户单
+# 3. 关联到源客户单(aone 自动双向,单次 relation add 即建 A↔B)
 bin/a1id -- project workitem relation add <源工单ID> relate:$NEW_ID
-bin/a1id -- project workitem relation add $NEW_ID relate:<源工单ID>
 
 # 4. 源工单同步指派临钧 + 状态(评论 @临钧 走 Step 4 模板 B)
 bin/a1id -- project workitem update <源工单ID> --assignee 429768
-bin/a1id -- project workitem update <源工单ID> --status 问题处理中
+bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 ```
 
 **环境**:
@@ -513,7 +540,7 @@ Terraform Provider / 镇元(Cloudspec)侧可闭环。
 ### 结论
 客户诉求「<一句话诉求重述>」应由 <指派人所在层:镇元 schema/provider 代码>
 侧承接。已建关联单 <NEW_ID> 到 terraform-alicloud 项目,指派 @<花名>(<工号>)
-跟进,源工单同步指派并改状态为「问题处理中」。
+跟进,源工单同步指派并改状态为「问题解决中」。
 
 ### 查证依据
 1. **镇元**:<get: 有/无 data | list released 是否命中 | CoverageScore=<x>>
@@ -557,7 +584,7 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 上游 API 缺口场景建了关联单 —— 应该只 @提单人 + 待上游排期,别拖谜拟/过载/临钧下水
 - ❌ 专属名单产品还去查镇元覆盖度 —— 不接镇元,直接指派
 - ❌ 花名 @ 不带工号(`@谜拟`) —— a1 有时能补,有时不能,显式 `@谜拟(479782)` 保险
-- ❌ 关联单不双向 —— `a1 relation add` 必须调两次(A→B, B→A),否则一侧看不到对方
+- ❌ 建完关联单调两次 `a1 relation add`(A→B + B→A) —— aone 自动双向,第二次会 400 "关联失败该条记录已存在";单次 `add <源> relate:<新>` 即建 A↔B
 - ❌ 状态用 `--status 已完成` / `方案功能已存在` 兜底 —— 前者不在合法值,后者语义错(客户真诉求还没解决)
 - ❌ 强行 `--assignee` 指派专属名单以外的产品到过载/谜拟 —— 违反分工表,让本团队背不该背的锅
 - ❌ 跳过 Step 1.5 共通 gate 直接发 canned —— 分类误建 / 重复单情形下会与承接单重复打搅客户
@@ -565,3 +592,7 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ acube 60s 未返回 aoneId 就"降级"回手动 `a1 workitem create` —— 可能 acube 已建成功只是查询未及时,回退会双建;正确做法是升级 escalation 由人排查
 - ❌ Provider 全局改造(region 白名单/框架 utility/公共 endpoint/SDK bump)走"镇元 OK/NOT OK"判定 —— 镇元管资源 schema,不管 provider 基础;直接分支 G → 新山(521957),不必查 acube 覆盖度
 - ❌ 只按 acube V2 `CoverageScore==1.0` 判"镇元 OK",忽略"当前 schema 属性是否覆盖客户诉求字段" —— 覆盖度分只反映已建 schema 的属性测试完备度,客户想要新字段而 schema 未建时,覆盖度分再高也是 NOT OK(缺口在镇元)
+- ❌ 状态改成"问题处理中" —— tf_customer(1086837) 池合法枚举没这个值,合法名是"问题解决中";写错 a1 会 `unsupported target status` 阻断。合法枚举:需求待补充/待处理/评估中/待上游排期/问题讨论/长期跟进/待排期/已排期/问题解决中/已发布待需求方验收/验收中/验收通过/验收不通过/客户未响应/方案功能已存在/需求撤回/已拒绝
+- ❌ 转单不复制原单优先级 / 不设短于原单 DDL 的截止日期 —— 关联单接手方无优先级参考,DDL 与原单齐会让下一棒无余量;规则:`--priority` 复制原单,`--cfs 计划截止日期` = 原单 DDL - 2 天(至少 today+1);原单无 DDL 时默认 today+3
+- ❌ 建关联单用 `--description` —— a1 CLI 不吃(报 `unknown flag: --description`),正文用 `--body` 或 `--body-file`
+- ❌ 在 tf_provider(528766)建单不传"计划开始日期 / 计划截止日期 / 实际工时" cfs —— 池校验必填,漏传会 400 `【计划开始日期】不能为空...`;用 `--cfs "计划开始日期=YYYY-MM-DD"` 等传入
