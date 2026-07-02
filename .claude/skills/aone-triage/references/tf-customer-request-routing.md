@@ -261,29 +261,40 @@ done
 curl -s "https://acube.aliyun-inc.com/api/v1/terraform/generator/cloudspec/resourceTypeCode/list?product=${product}&released=true" \
   -H "accept: */*" | python3 -c "import json,sys; d=json.load(sys.stdin); print('in released list:',('${resourceCode}' in (d.get('data') or [])))"
 
-# ② 测试覆盖度 - POP API GetResourceModelTestCaseQualityByResource,须 --force + AK/SK
-for env in online pre daily; do
-  echo "=== Env=$env ==="
-  aliyun --product APISpecInner --version 2021-07-13 \
-         --endpoint apispec-share.cn-zhangjiakou.aliyuncs.com \
-         --method POST --force \
-         APISpecInner GetResourceModelTestCaseQualityByResource \
-         --ServiceCode "$product" --ResourceCode "$resourceCode" --Env "$env" 2>&1 | python3 -c '
+# ② 资源质量覆盖度 - acube V2 GET,内网直连,无需 AK/SK
+# 口径变化(相较旧 GetResourceModelTestCaseQualityByResource):POP 三元组代替 product/resourceCode
+#   popCode      POP 产品代码,常 UPPER,如 APIG;与 cloudspec product(Apig)可能不同
+#   popVersion   POP 接口版本,如 2024-03-27;从 aliyun CLI meta 或 next.api 取
+#   resourceName POP 资源名,PascalCase,多数场景同 ① 的 resourceCode
+popCode=<PopCode>
+popVersion=<PopVersion>
+resourceName="$resourceCode"
+
+curl -sSG 'https://pre-acube.aliyun-inc.com/api/v1/terraform/generator/getResourceQualityDetailCoverageScoreV2' \
+  --data-urlencode "popCode=${popCode}" \
+  --data-urlencode "popVersion=${popVersion}" \
+  --data-urlencode "resourceName=${resourceName}" \
+  -H "accept: application/json" | python3 -c '
 import json,sys
-try:
-    d=json.loads(sys.stdin.read())
-    cov=d.get("CoverageDetail") or {}; tc=d.get("TotalCases") or {}
-    print("RequestId:",d.get("RequestId"),"| Message:",d.get("Message"))
-    print("CoverageScore:",cov.get("CoverageScore"),"| PASS/FAIL:",len(tc.get("PASS") or []),"/",len(tc.get("FAIL") or []))
-except Exception as e: print("parse error:",e)'
-done
+d=json.load(sys.stdin)
+if d.get("code") != "SUCCESS":
+    print("acube:", d.get("code"), d.get("message")); sys.exit(0)
+cov = ((d.get("data") or {}).get("data") or {}).get("CoverageDetail") or {}
+print("CoverageScore:", cov.get("CoverageScore"))
+print("  Property/Operation/PrimaryOperation:",
+      cov.get("PropertyCoverageScore"), "/",
+      cov.get("OperationCoverageScore"), "/",
+      cov.get("PrimaryOperationCoverageScore"))
+'
 ```
 
 **判定**:
-- 镇元 get 有 data + released list 命中 + CoverageScore == 1.0 + PASS>0 → **镇元 OK**,走分支 D
-- 否则 → **镇元 NOT OK**,走分支 E
+- 镇元 get 有 data + released list 命中 + `CoverageDetail.CoverageScore == 1.0` → **镇元 OK**,走分支 D
+- 否则 → **镇元 NOT OK**,走分支 E(V2 已不返回 PASS/FAIL 用例计数,仅以覆盖度综合分判定)
 
-**sanity check(必跑)**:拿同产品已发布的其他资源(如查同一 product 的 list,取 released=true 里另一个)以相同接口/env 复查,拿到完整 CoverageDetail 说明凭据/接口正常;否则先排查凭据(`aliyun configure list` default 是否 Valid)。
+**环境说明**:acube 后端目前把 V2 请求强制打到 POP 预发(`popunify-inner-pre.cn-zhangjiakou.aliyuncs.com`,伪装 Host=`apispec-share.aliyuncs.com`),即使请求线上 `acube.aliyun-inc.com` 也走预发;想核对线上覆盖度需 acube 侧改配置(参见邻仓 `a-cube-aliyun-com` 里 `acube-auto-generator/.../ProductMetaUtil.java#getResourceQualityDetailCoverageScoreV2ByCommon`)。
+
+**sanity check(必跑)**:拿同产品已发布的其他资源(如查 ① released list 里另一项)以相同接口复查,能拿到 `CoverageDetail` 说明内网/接口正常;否则先排查内网访问(`pre-acube.aliyun-inc.com` 需办公网/VPN;`/api/v1/**` 免鉴权,但走内网 DNS)。
 
 ### 分支 D:镇元 OK,判定 provider 代码类型
 
@@ -399,8 +410,8 @@ Terraform Provider / 镇元(Cloudspec)侧可闭环。
 
 ### 查证依据
 1. **镇元**:<get: 有/无 data | list released 是否命中 | CoverageScore=<x>>
-   - Env=online: <Message>(RequestId: <...>)
-   - Env=pre:    <Message>(RequestId: <...>)
+   - acube V2 覆盖度(POP 预发):CoverageScore=<x>
+   - Property/Operation/PrimaryOperation=<>/<>/<>
 2. **provider 代码类型**:<自动生成 / 手写>(依据 `alicloud/resource_...go:1-3`
    <是否有 generated automatically 注释>)
 3. **紧急度**:priority=<>, 计划截止=<>, 剩余=<>天,故路由到 <人>
