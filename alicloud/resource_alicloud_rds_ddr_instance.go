@@ -1526,7 +1526,9 @@ func resourceAlicloudRdsDdrInstanceRead(d *schema.ResourceData, meta interface{}
 		if response != nil && len(items) > 0 {
 			renew := items[0].(map[string]interface{})
 			d.Set("auto_renew", renew["AutoRenew"] == "True")
-			d.Set("auto_renew_period", renew["Duration"])
+			if formatInt(renew["Duration"]) > 0 {
+				d.Set("auto_renew_period", renew["Duration"])
+			}
 		}
 	}
 
