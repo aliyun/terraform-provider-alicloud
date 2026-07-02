@@ -312,6 +312,48 @@ func resourceAliCloudEfloCluster() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"key_pair_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"login_password": {
+							Type:      schema.TypeString,
+							Optional:  true,
+							Sensitive: true,
+						},
+						"bond_num": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"file_system_mount_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"hpn_zone": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"system_disk": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"size": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"performance_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"category": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
 						"nodes": {
 							Type:     schema.TypeList,
 							Optional: true,
@@ -355,6 +397,11 @@ func resourceAliCloudEfloCluster() *schema.Resource {
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"node_group_ids": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"tags": tagsSchema(),
 		},
@@ -578,6 +625,35 @@ func resourceAliCloudEfloClusterCreate(d *schema.ResourceData, meta interface{})
 			dataLoop8Map["NodeGroupName"] = dataLoop8Tmp["node_group_name"]
 			dataLoop8Map["MachineType"] = dataLoop8Tmp["machine_type"]
 			dataLoop8Map["ImageId"] = dataLoop8Tmp["image_id"]
+			if v, ok := dataLoop8Tmp["key_pair_name"]; ok && v.(string) != "" {
+				dataLoop8Map["KeyPairName"] = v
+			}
+			if v, ok := dataLoop8Tmp["login_password"]; ok && v.(string) != "" {
+				dataLoop8Map["LoginPassword"] = v
+			}
+			if v, ok := dataLoop8Tmp["hpn_zone"]; ok && v.(string) != "" {
+				dataLoop8Map["HpnZone"] = v
+			}
+			if v, ok := dataLoop8Tmp["bond_num"]; ok && v.(int) > 0 {
+				dataLoop8Map["BondNum"] = v
+			}
+			if v, ok := dataLoop8Tmp["file_system_mount_enabled"]; ok {
+				dataLoop8Map["FileSystemMountEnabled"] = v
+			}
+			if v, ok := dataLoop8Tmp["system_disk"].([]interface{}); ok && len(v) > 0 && v[0] != nil {
+				sdm := v[0].(map[string]interface{})
+				systemDisk := make(map[string]interface{})
+				if x, ok := sdm["size"]; ok && x.(int) > 0 {
+					systemDisk["Size"] = x
+				}
+				if x, ok := sdm["performance_level"]; ok && x.(string) != "" {
+					systemDisk["PerformanceLevel"] = x
+				}
+				if x, ok := sdm["category"]; ok && x.(string) != "" {
+					systemDisk["Category"] = x
+				}
+				dataLoop8Map["SystemDisk"] = systemDisk
+			}
 			nodeGroupsMapsArray = append(nodeGroupsMapsArray, dataLoop8Map)
 		}
 		nodeGroupsMapsJson, err := json.Marshal(nodeGroupsMapsArray)
@@ -699,6 +775,33 @@ func resourceAliCloudEfloClusterRead(d *schema.ResourceData, meta interface{}) e
 
 	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
+
+	nodeGroupIds := make(map[string]interface{})
+	listReq := map[string]interface{}{"ClusterId": d.Id(), "RegionId": client.RegionId}
+	for {
+		listResp, listErr := client.RpcPost("eflo-controller", "2022-12-15", "ListNodeGroups", nil, listReq, true)
+		if listErr != nil {
+			break
+		}
+		groups, _ := listResp["Groups"].([]interface{})
+		for _, g := range groups {
+			gm, ok := g.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name, _ := gm["GroupName"].(string)
+			gid, _ := gm["GroupId"].(string)
+			if name != "" {
+				nodeGroupIds[name] = gid
+			}
+		}
+		next, _ := listResp["NextToken"].(string)
+		if next == "" {
+			break
+		}
+		listReq["NextToken"] = next
+	}
+	d.Set("node_group_ids", nodeGroupIds)
 
 	return nil
 }
