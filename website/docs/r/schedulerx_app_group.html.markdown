@@ -21,7 +21,7 @@ For information about Schedulerx App Group and how to use it, see [What is App G
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_schedulerx_app_group&exampleId=7c4026fb-fc32-b667-2eb4-7dc928fd7538610bd0b9&activeTab=example&spm=docs.r.schedulerx_app_group.0.7c4026fbfc&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_schedulerx_app_group&exampleId=0e641d36-d54e-e4f5-97e1-7dfcc47b79c3d98e3e34&activeTab=example&spm=docs.r.schedulerx_app_group.0.0e641d36d5&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
