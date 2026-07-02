@@ -569,7 +569,7 @@ WAIT_TIERS = [
     (2 * 3600,      600),    # 30 min–2 h:   every 10 min
     (float('inf'),  1800),   # 2 h+:         every 30 min
 ]
-WAIT_EXPIRE_SEC = 48 * 3600  # 48 h
+WAIT_EXPIRE_SEC = 14 * 24 * 3600  # 14 days
 
 
 class WaitWatcher:

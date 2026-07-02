@@ -17,7 +17,7 @@
 - **自主权高**：自动执行项（auto 列表）全部免授权直接执行。
 - **身份约束不变**：默认 jarvis 身份；需使用 chenyi/guozai/linjun 等个人身份时，必须在 Aone 工单评论中 @对应人并获得明确授权回复后方可使用。
 - **遇阻挂起**：遇到必须人类确认/决策的点时，在 Aone 工单评论中 @对应人，输出 `[[SUSPEND:...]]` 哨兵信号后退出进程。bridge 的 WaitWatcher 轮询评论，检测到回复后用 `--resume` 唤醒 Jarvis 继续。
-- **超时**：单轮执行上限 12 小时（`JARVIS_DISPATCH_TIMEOUT`）；挂起等待上限 48 小时。
+- **超时**：单轮执行上限 12 小时（`JARVIS_DISPATCH_TIMEOUT`）；挂起等待上限 14 天。
 
 ---
 
@@ -72,5 +72,5 @@ Escalate 行为：暂停执行，输出摘要，通知用户决策。
 ## 机读策略块
 
 ```json
-{"mode":"supervised","modes":{"supervised":"逐项授权","unattended":"高置信自动","headless":"bridge委派,高自主+挂起唤醒"},"auto":["reply","create_req","tag","create_cr","worktree","prestage","adhoc_aone","pr_review","wrap"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability"],"headless":{"dispatch_timeout":43200,"suspend_expire":172800,"suspend_signal":"[[SUSPEND:{...}]]"}}
+{"mode":"supervised","modes":{"supervised":"逐项授权","unattended":"高置信自动","headless":"bridge委派,高自主+挂起唤醒"},"auto":["reply","create_req","tag","create_cr","worktree","prestage","adhoc_aone","pr_review","wrap"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability"],"headless":{"dispatch_timeout":43200,"suspend_expire":1209600,"suspend_signal":"[[SUSPEND:{...}]]"}}
 ```
