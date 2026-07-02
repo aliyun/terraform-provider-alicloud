@@ -1065,6 +1065,13 @@ func (s *ResourceManagerServiceV2) DescribeResourceManagerHandshake(id string) (
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"HandshakeStatusMismatch"}) {
+			// The handshake can no longer be read normally after it has been accepted.
+			return map[string]interface{}{
+				"HandshakeId": id,
+				"Status":      "Accepted",
+			}, nil
+		}
 		if IsExpectedErrors(err, []string{"EntityNotExists.Handshake"}) {
 			return object, WrapErrorf(NotFoundErr("Handshake", id), NotFoundMsg, response)
 		}
@@ -1114,6 +1121,93 @@ func (s *ResourceManagerServiceV2) ResourceManagerHandshakeStateRefreshFunc(id s
 }
 
 // DescribeResourceManagerHandshake >>> Encapsulated.
+// DescribeResourceManagerHandshakeAcceptance <<< Encapsulated get interface for ResourceManager HandshakeAcceptance.
+
+func (s *ResourceManagerServiceV2) DescribeResourceManagerHandshakeAcceptance(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["HandshakeId"] = id
+
+	action := "GetHandshake"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"HandshakeStatusMismatch"}) {
+			// The invited account can no longer read the consumed handshake after a successful acceptance.
+			return map[string]interface{}{
+				"HandshakeId": id,
+				"Status":      "Accepted",
+			}, nil
+		}
+		if IsExpectedErrors(err, []string{"EntityNotExists.Handshake"}) {
+			return object, WrapErrorf(NotFoundErr("HandshakeAcceptance", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Handshake", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Handshake", response)
+	}
+
+	currentStatus := v.(map[string]interface{})["Status"]
+	if fmt.Sprint(currentStatus) != "Accepted" {
+		return object, WrapErrorf(NotFoundErr("HandshakeAcceptance", id), NotFoundMsg, response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerHandshakeAcceptanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ResourceManagerHandshakeAcceptanceStateRefreshFuncWithApi(id, field, failStates, s.DescribeResourceManagerHandshakeAcceptance)
+}
+
+func (s *ResourceManagerServiceV2) ResourceManagerHandshakeAcceptanceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeResourceManagerHandshakeAcceptance >>> Encapsulated.
 // DescribeResourceManagerControlPolicy <<< Encapsulated get interface for ResourceManager ControlPolicy.
 
 func (s *ResourceManagerServiceV2) DescribeResourceManagerControlPolicy(id string) (object map[string]interface{}, err error) {

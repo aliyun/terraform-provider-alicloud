@@ -12,6 +12,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+var resourceManagerHandshakeRpcPost = func(client *connectivity.AliyunClient, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+	return client.RpcPost(apiProductCode, apiVersion, apiName, query, body, autoRetry)
+}
+
 func resourceAliCloudResourceManagerHandshake() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudResourceManagerHandshakeCreate,
@@ -90,9 +94,9 @@ func resourceAliCloudResourceManagerHandshakeCreate(d *schema.ResourceData, meta
 	request["TargetEntity"] = d.Get("target_entity")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+		response, err = resourceManagerHandshakeRpcPost(client, "ResourceManager", "2020-03-31", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "LimitExceeded.InvitationRate", "LimitExceeded.SameTargetInvitationRate"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -153,7 +157,7 @@ func resourceAliCloudResourceManagerHandshakeDelete(d *schema.ResourceData, meta
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+		response, err = resourceManagerHandshakeRpcPost(client, "ResourceManager", "2020-03-31", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -167,10 +171,81 @@ func resourceAliCloudResourceManagerHandshakeDelete(d *schema.ResourceData, meta
 	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"HandshakeStatusMismatch", "EntityNotExists.Handshake"}) || NotFoundError(err) {
+		if IsExpectedErrors(err, []string{"HandshakeStatusMismatch"}) {
+			return resourceAliCloudResourceManagerHandshakeRemoveAcceptedAccount(d, meta)
+		}
+		if IsExpectedErrors(err, []string{"EntityNotExists.Handshake"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
+
+func resourceAliCloudResourceManagerHandshakeRemoveAcceptedAccount(d *schema.ResourceData, meta interface{}) error {
+	targetType := d.Get("target_type").(string)
+	accountId := d.Get("target_entity").(string)
+	if targetType != "Account" || accountId == "" {
+		log.Printf("[WARN] Cannot remove accepted Resource Manager handshake %s because target_type is %q and target_entity is %q. Terraform will remove this resource from the state file, however resources may remain.", d.Id(), targetType, accountId)
+		return nil
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "RemoveCloudAccount"
+	request := map[string]interface{}{
+		"AccountId": accountId,
+	}
+	query := make(map[string]interface{})
+	var response map[string]interface{}
+	var err error
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = resourceManagerHandshakeRpcPost(client, "ResourceManager", "2020-03-31", action, query, request, true)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"EntityNotExists.Account", "EntityNotExists.ResourceDirectory"}) || NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, accountId, action, AlibabaCloudSdkGoERROR)
+	}
+
+	action = "GetAccount"
+	request = map[string]interface{}{
+		"AccountId": accountId,
+	}
+	response = nil
+	wait = incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = resourceManagerHandshakeRpcPost(client, "ResourceManager", "2020-03-31", action, query, request, true)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"EntityNotExists.Account", "EntityNotExists.ResourceDirectory"}) || NotFoundError(err) {
+				return nil
+			}
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		wait()
+		return resource.RetryableError(fmt.Errorf("Resource Manager member account %s is still attached", accountId))
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, accountId, "GetAccount", AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
