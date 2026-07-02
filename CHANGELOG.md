@@ -1,4 +1,24 @@
-## 1.284.0 (Unreleased)
+## 1.285.0 (Unreleased)
+## 1.284.0 (July 2, 2026)
+
+- **New Resource:** `alicloud_resource_manager_handshake_acceptance` ([#9907](https://github.com/aliyun/terraform-provider-alicloud/issues/9907))
+
+ENHANCEMENTS:
+
+- resource/alicloud_instance: Added the field network_interface_id, source_dest_check, network_interfaces.source_dest_check. ([#9897](https://github.com/aliyun/terraform-provider-alicloud/issues/9897))
+- resource/alicloud_mongodb_audit_policy: support service_type and hot_storage_period; data-source/alicloud_mongodb_audit_policies: support service_type, storage_period and hot_storage_period. ([#9899](https://github.com/aliyun/terraform-provider-alicloud/issues/9899))
+- resource/alicloud_oos_execution: support tags attribute; data-source/alicloud_oos_executions: support tags attribute. ([#9901](https://github.com/aliyun/terraform-provider-alicloud/issues/9901))
+- resource/alicloud_polardb_aicluster: support conn string and api key. ([#9902](https://github.com/aliyun/terraform-provider-alicloud/issues/9902))
+- resource/alicloud_bastionhost_instance: Add bandwidth validation. ([#9903](https://github.com/aliyun/terraform-provider-alicloud/issues/9903))
+- resource/alicloud_resource_manager_handshake: remove accepted account. ([#9907](https://github.com/aliyun/terraform-provider-alicloud/issues/9907))
+- provider: add support for ap-southeast-8 region validation. ([#9909](https://github.com/aliyun/terraform-provider-alicloud/issues/9909))
+- docs: wafv3_defense_rule - list in-list and not-in-list op_value enums. ([#9904](https://github.com/aliyun/terraform-provider-alicloud/issues/9904))
+
+BUG FIXES:
+
+- resource/alicloud_ess_scaling_configuration: Ensure system_disk_size is not updated to 0. ([#9859](https://github.com/aliyun/terraform-provider-alicloud/issues/9859))
+- resource/alicloud_schedulerx_job: fix panic on empty contact_info block in job_monitor_info. ([#9912](https://github.com/aliyun/terraform-provider-alicloud/issues/9912))
+
 ## 1.283.0 (June 29, 2026)
 
 - **New Resource:** `alicloud_wafv3_address_book` ([#9874](https://github.com/aliyun/terraform-provider-alicloud/issues/9874))
