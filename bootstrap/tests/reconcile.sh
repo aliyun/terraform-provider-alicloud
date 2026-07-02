@@ -113,7 +113,7 @@ output=$(env \
     STUB_LOG="$STUB_LOG1" \
     A1_LIST_JSON="$A1_LIST_JSON" \
     RECONCILE_CLAIM_CMD="$FAKE_BIN/claim.sh" \
-    bash "$RECONCILE" 2>/dev/null)
+    bash "$RECONCILE" drift 2>/dev/null)
 
 # Check output contains RECONCILED: WI-999
 if echo "$output" | grep -q "RECONCILED: $ITEM_ID"; then
@@ -146,7 +146,7 @@ output2=$(env \
     STUB_LOG="$STUB_LOG2" \
     A1_LIST_JSON="$A1_LIST_JSON" \
     RECONCILE_CLAIM_CMD="$FAKE_BIN/claim.sh" \
-    bash "$RECONCILE" 2>/dev/null)
+    bash "$RECONCILE" drift 2>/dev/null)
 
 if echo "$output2" | grep -q "RECONCILED: none"; then
     assert_pass "output contains RECONCILED: none when no run file"
@@ -174,7 +174,7 @@ output3=$(env \
     JARVIS_RUNS_DIR="$ROOT3/runs" \
     JARVIS_ESCALATION_DIR="$ROOT3/escalation" \
     A1_LIST_JSON="$A1_LIST_JSON" \
-    bash "$RECONCILE" 2>/dev/null)
+    bash "$RECONCILE" drift 2>/dev/null)
 
 if echo "$output3" | grep -q "RECONCILED: none"; then
     assert_pass "empty list → RECONCILED: none"
