@@ -298,7 +298,10 @@ func resourceAliCloudSchedulerxJobCreate(d *schema.ResourceData, meta interface{
 		}
 		contactInfoMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range localData.([]interface{}) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopTmp, ok := dataLoop.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["Ding"] = dataLoopTmp["ding"]
 			dataLoopMap["UserName"] = dataLoopTmp["user_name"]
@@ -511,7 +514,10 @@ func resourceAliCloudSchedulerxJobRead(d *schema.ResourceData, meta interface{})
 		if contactInfo1Raw != nil {
 			for _, contactInfoChild1Raw := range contactInfo1Raw.([]interface{}) {
 				contactInfoMap := make(map[string]interface{})
-				contactInfoChild1Raw := contactInfoChild1Raw.(map[string]interface{})
+				contactInfoChild1Raw, ok := contactInfoChild1Raw.(map[string]interface{})
+				if !ok {
+					continue
+				}
 				contactInfoMap["ding"] = contactInfoChild1Raw["Ding"]
 				contactInfoMap["user_mail"] = contactInfoChild1Raw["UserMail"]
 				contactInfoMap["user_name"] = contactInfoChild1Raw["UserName"]
@@ -731,7 +737,10 @@ func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{
 			}
 			contactInfoMapsArray := make([]interface{}, 0)
 			for _, dataLoop := range localData.([]interface{}) {
-				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopTmp, ok := dataLoop.(map[string]interface{})
+				if !ok {
+					continue
+				}
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["Ding"] = dataLoopTmp["ding"]
 				dataLoopMap["UserName"] = dataLoopTmp["user_name"]
