@@ -1,107 +1,201 @@
 #!/usr/bin/env bash
-# bootstrap/reconcile.sh — collection drift reconciler
+# bootstrap/reconcile.sh — 收敛族统一入口(P1.c 合并了 sweep + watchdog + 原 reconcile)
 #
-# Finds work items left jarvis-claimed but never released, and closes them.
+# 子命令:
+#   stale   — 清扫 jarvis-claimed 超 TTL 的工单 → escalate(原 sweep.sh)
+#   orphan  — owner_instance 已死的 task → escalate(原 watchdog.sh)
+#   drift   — 台账 vs Aone 对账,claim+seen 但缺 release → 补 release(原 reconcile.sh)
+#   all     — 顺跑 stale → orphan → drift(默认)
 #
-# Logic:
-#   For each project pool, list all claimed (jarvis-claimed) items that are
-#   NOT yet released/finished (NOT tag=jarvis-idle AND NOT tag=jarvis-done).
-#   For each such item:
-#     - If a local runs/<date>-<id>.md exists (log.sh seen) → work finished but
-#       release was missed. Conservatively call claim.sh release to apply
-#       jarvis-idle tag (人或下一轮 jarvis 决定是否升级 finish/done)。
-#       Print: RECONCILED: <id>
-#     - If NO run file → leave it alone (sweep.sh handles stale-escalation).
+# 用法:
+#   reconcile.sh                  # 默认 all
+#   reconcile.sh {stale|orphan|drift|all}
 #
-# End: print RECONCILED: none if zero items were reconciled.
+# 环境变量:
+#   JARVIS_ROOT           — repo root(默认 git rev-parse --show-toplevel)
+#   JARVIS_ESCALATION_DIR — escalation dir(默认 <root>/escalation)
+#   JARVIS_RUNS_DIR       — runs dir(默认 <root>/runs)
+#   RECONCILE_CLAIM_CMD   — 覆盖 claim.sh 路径(测试用)
 #
-# Usage: bash bootstrap/reconcile.sh
-#
-# Environment overrides (for testing):
-#   JARVIS_ROOT           — repo root (default: git rev-parse --show-toplevel)
-#   JARVIS_RUNS_DIR       — runs dir (default: <JARVIS_ROOT>/runs)
-#   JARVIS_ESCALATION_DIR — escalation dir (default: <JARVIS_ROOT>/escalation)
-#
-# Read-mostly; only writes are missed claim.sh release calls.
+# Read-mostly;仅 drift 分支可能触发 claim.sh release。
 
 set -uo pipefail
 
-# ---------------------------------------------------------------------------
-# Resolve JARVIS_ROOT
-# ---------------------------------------------------------------------------
 _reconcile_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=bootstrap/lib.sh
 source "$_reconcile_dir/lib.sh"
 JARVIS_ROOT="$(jarvis_root)"
 export JARVIS_ROOT
-
-# Source log.sh for the `seen` function
 # shellcheck source=bootstrap/log.sh
 source "$_reconcile_dir/log.sh"
 
-# ---------------------------------------------------------------------------
-# Read config from pools.json
-# ---------------------------------------------------------------------------
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
-CLAIM_TAG="$(jq -r '.claim.tag' "$POOLS_JSON")"
-IDLE_TAG="$(jq -r '.claim.idle_tag' "$POOLS_JSON")"
-DONE_TAG="$(jq -r '.claim.done_tag' "$POOLS_JSON")"
+# ==== 共享 helpers ====
 
-# Collect all project IDs from pools (mirrors sweep.sh pattern)
-# Guard against pools that have no project field (would emit literal "null")
-PROJECTS="$(jq -r '.pools[].project | select(. != null)' "$POOLS_JSON")"
+_read_claim_tags() {
+    CLAIM_TAG="$(jq -r '.claim.tag' "$POOLS_JSON")"
+    IDLE_TAG="$(jq -r '.claim.idle_tag' "$POOLS_JSON")"
+    DONE_TAG="$(jq -r '.claim.done_tag' "$POOLS_JSON")"
+}
 
-# ---------------------------------------------------------------------------
-# Main reconcile loop
-# ---------------------------------------------------------------------------
-RECONCILED_IDS=()
+_projects() {
+    jq -r '.pools[].project | select(. != null)' "$POOLS_JSON"
+}
 
-while IFS= read -r project; do
-    [ -z "$project" ] && continue
-
-    # 排除 idle/done 两类已收尾的工单
-    claimed_json=$(a1 project workitem list \
+_claimed_items() {
+    local project="$1"
+    a1 project workitem list \
         --project "$project" \
         --tag "$CLAIM_TAG" \
         --filter "NOT tag=$IDLE_TAG AND NOT tag=$DONE_TAG" \
-        -f json 2>/dev/null || echo "[]")
+        -f json 2>/dev/null || echo "[]"
+}
 
-    # Extract item identifiers (use 'identifier' key, fall back to 'id')
-    item_ids=$(printf '%s' "$claimed_json" | python3 -c "
+_extract_ids() {
+    python3 -c "
 import json, sys
 try:
     items = json.loads(sys.stdin.read())
     for item in items:
         item_id = item.get('identifier', item.get('id', ''))
-        if item_id:
-            print(str(item_id))
+        if item_id: print(str(item_id))
+except Exception:
+    pass
+" 2>/dev/null || true
+}
+
+# ==== stale (原 sweep.sh) ====
+
+_parse_utc_epoch() {
+    local ts="$1" epoch=""
+    if epoch=$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$ts" +%s 2>/dev/null); then echo "$epoch"; return; fi
+    if epoch=$(date -u -d "$ts" +%s 2>/dev/null); then echo "$epoch"; return; fi
+    if epoch=$(python3 -c "
+import sys, calendar, datetime
+try:
+    dt = datetime.datetime.strptime('$ts', '%Y-%m-%dT%H:%M:%SZ')
+    print(int(calendar.timegm(dt.timetuple())))
+except Exception:
+    sys.exit(1)
+" 2>/dev/null); then echo "$epoch"; return; fi
+    echo ""
+}
+
+_cmd_stale() {
+    _read_claim_tags
+    local TTL_MIN
+    TTL_MIN="$(jq -r '.claim.ttl_min' "$POOLS_JSON")"
+    local TTL_SECS=$((TTL_MIN * 60))
+    local NOW_EPOCH
+    NOW_EPOCH=$(date -u +%s)
+
+    local STALE_IDS=()
+
+    while IFS= read -r project; do
+        [ -z "$project" ] && continue
+        local claimed_json item_ids
+        claimed_json=$(_claimed_items "$project")
+        item_ids=$(printf '%s' "$claimed_json" | _extract_ids)
+
+        while IFS= read -r item_id; do
+            [ -z "$item_id" ] && continue
+            local comments_json latest_ts claim_epoch age_secs age_min
+            comments_json=$(a1 project workitem comment list "$item_id" -f json 2>/dev/null || echo "[]")
+            latest_ts=$(printf '%s' "$comments_json" | python3 -c "
+import json, sys, re
+try:
+    comments = json.loads(sys.stdin.read())
+    pattern = re.compile(r'jarvis-claim\s+\S+\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)')
+    timestamps = []
+    for c in comments:
+        content = c.get('content', '')
+        m = pattern.search(content)
+        if m: timestamps.append(m.group(1))
+    if timestamps: print(sorted(timestamps)[-1])
 except Exception:
     pass
 " 2>/dev/null || true)
+            [ -z "$latest_ts" ] && continue
+            claim_epoch=$(_parse_utc_epoch "$latest_ts")
+            if [ -z "$claim_epoch" ]; then
+                echo "WARN: could not parse claim timestamp '$latest_ts' for item $item_id, skipping" >&2
+                continue
+            fi
+            age_secs=$(( NOW_EPOCH - claim_epoch ))
+            if [ "$age_secs" -gt "$TTL_SECS" ]; then
+                age_min=$(( age_secs / 60 ))
+                escalate "$item_id" "stale claim >${TTL_MIN}min (age: ${age_min}min)"
+                STALE_IDS+=("$item_id")
+            fi
+        done <<< "$item_ids"
+    done <<< "$(_projects)"
 
-    while IFS= read -r item_id; do
-        [ -z "$item_id" ] && continue
+    if [ "${#STALE_IDS[@]}" -gt 0 ]; then
+        echo "STALE_CLAIMS: ${STALE_IDS[*]}"
+    else
+        echo "STALE_CLAIMS: none"
+    fi
+}
 
-        # Check if a run file exists: work finished but release was missed
-        if seen "$item_id"; then
-            # Release the claim: apply jarvis-idle tag (保守，不擅自升级 finish/done)。
-            # Default to co-located claim.sh; override via RECONCILE_CLAIM_CMD for tests.
-            _claim_cmd="${RECONCILE_CLAIM_CMD:-$_reconcile_dir/claim.sh}"
-            $_claim_cmd release "$item_id" "$project"
-            echo "RECONCILED: $item_id"
-            RECONCILED_IDS+=("$item_id")
-        fi
-        # If no run file: leave it — sweep.sh handles stale escalation
+# ==== orphan (原 watchdog.sh) ====
 
-    done <<< "$item_ids"
+_cmd_orphan() {
+    local _esc_dir="${JARVIS_ESCALATION_DIR:-$JARVIS_ROOT/escalation}"
+    local escaped=0
+    while IFS= read -r aid; do
+        [ -z "$aid" ] && continue
+        [ -f "$_esc_dir/$aid.md" ] && continue
+        escalate "$aid" "owner dead, awaiting adopt"
+        escaped=1
+    done < <(bash "$_reconcile_dir/coord.sh" list-orphans)
+    [ "$escaped" -eq 0 ] && echo "ORPHANS: none"
+}
 
-done <<< "$PROJECTS"
+# ==== drift (原 reconcile.sh) ====
 
-# ---------------------------------------------------------------------------
-# Summary
-# ---------------------------------------------------------------------------
-if [ "${#RECONCILED_IDS[@]}" -eq 0 ]; then
-    echo "RECONCILED: none"
-fi
+_cmd_drift() {
+    _read_claim_tags
+    local RECONCILED_IDS=()
+
+    while IFS= read -r project; do
+        [ -z "$project" ] && continue
+        local claimed_json item_ids
+        claimed_json=$(_claimed_items "$project")
+        item_ids=$(printf '%s' "$claimed_json" | _extract_ids)
+
+        while IFS= read -r item_id; do
+            [ -z "$item_id" ] && continue
+            if seen "$item_id"; then
+                local _claim_cmd="${RECONCILE_CLAIM_CMD:-$_reconcile_dir/claim.sh}"
+                $_claim_cmd release "$item_id" "$project"
+                echo "RECONCILED: $item_id"
+                RECONCILED_IDS+=("$item_id")
+            fi
+            # 无 run 文件 → 留给 stale 处理
+        done <<< "$item_ids"
+    done <<< "$(_projects)"
+
+    if [ "${#RECONCILED_IDS[@]}" -eq 0 ]; then
+        echo "RECONCILED: none"
+    fi
+}
+
+# ==== CLI dispatch ====
+
+_help() { sed -n '2,21p' "$0"; }
+
+cmd="${1:-all}"
+case "$cmd" in
+    stale)  _cmd_stale ;;
+    orphan) _cmd_orphan ;;
+    drift)  _cmd_drift ;;
+    all)    _cmd_stale; _cmd_orphan; _cmd_drift ;;
+    -h|--help) _help ;;
+    *)
+        echo "reconcile: unknown command '$cmd'" >&2
+        _help
+        exit 1 ;;
+esac
 
 exit 0

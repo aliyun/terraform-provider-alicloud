@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# bootstrap/tests/watchdog.sh — unit tests for bootstrap/watchdog.sh
+# bootstrap/tests/watchdog.sh — unit tests for bootstrap/reconcile.sh orphan(原 watchdog.sh)
 #
 # Sets JARVIS_ROOT + JARVIS_ESCALATION_DIR to temp dirs, creates a task owned
-# by dead instance "nohost-999999", runs watchdog, and asserts that an
-# escalation file is written for the orphaned task.
+# by dead instance "nohost-999999", runs reconcile.sh orphan, and asserts that
+# an escalation file is written for the orphaned task.
 #
 # Run: bash bootstrap/tests/watchdog.sh
 # Prints PASS/FAIL per assertion; exits 0 on all-pass, 1 on any failure.
@@ -13,7 +13,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-WATCHDOG="$BOOTSTRAP_DIR/watchdog.sh"
+WATCHDOG="$BOOTSTRAP_DIR/reconcile.sh"
 
 # ── Isolated temp roots ──────────────────────────────────────────────────────
 export JARVIS_ROOT
@@ -43,7 +43,7 @@ printf '{"aone_id":"%s","owner_instance":"%s","stage":"coding","worktree":"","br
     "$AID" "$DEAD_OWNER" > "$JARVIS_ROOT/.my-day/tasks/$AID.json"
 
 # ── Run watchdog ─────────────────────────────────────────────────────────────
-bash "$WATCHDOG"
+bash "$WATCHDOG" orphan
 
 # ── Assert escalation file was created ──────────────────────────────────────
 esc_file="$JARVIS_ESCALATION_DIR/$AID.md"
@@ -61,11 +61,11 @@ mkdir -p "$JARVIS_ROOT/.my-day/tasks"
 printf '{"aone_id":"%s","owner_instance":"%s","stage":"coding","worktree":"","branch":"","repo":"","updated":"2024-01-01T00:00:00Z"}' \
     "$AID2" "$DEAD_OWNER" > "$JARVIS_ROOT/.my-day/tasks/$AID2.json"
 
-bash "$WATCHDOG"   # first run — creates escalation file
+bash "$WATCHDOG" orphan   # first run — creates escalation file
 esc2="$JARVIS_ESCALATION_DIR/$AID2.md"
 size_after_first=$(wc -c < "$esc2" | tr -d ' ')
 
-bash "$WATCHDOG"   # second run — must be a no-op (file already exists)
+bash "$WATCHDOG" orphan   # second run — must be a no-op (file already exists)
 size_after_second=$(wc -c < "$esc2" | tr -d ' ')
 
 ck "dedup-no-append" "$size_after_first" "$size_after_second"

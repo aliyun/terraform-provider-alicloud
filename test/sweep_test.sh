@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test/sweep_test.sh – TDD tests for bootstrap/sweep.sh
+# test/sweep_test.sh – TDD tests for bootstrap/reconcile.sh stale(原 sweep.sh)
 # Stubs a1; asserts stale jarvis-claimed items produce escalation/<id>.md,
 # and fresh claims do not.
 
@@ -60,7 +60,7 @@ chmod +x "$tmpbin/a1"
 output1=$(PATH="$tmpbin:$PATH" \
     JARVIS_ROOT="$tmproot" \
     JARVIS_ESCALATION_DIR="$tmpesc" \
-    bash "$proj_root/bootstrap/sweep.sh" 2>&1)
+    bash "$proj_root/bootstrap/reconcile.sh" stale 2>&1)
 exit1=$?
 
 echo "Output: $output1"
@@ -73,9 +73,9 @@ else
 fi
 
 if [ "$exit1" -eq 0 ]; then
-    assert_pass "sweep exits 0"
+    assert_pass "reconcile stale exits 0"
 else
-    assert_fail "sweep should exit 0, got $exit1"
+    assert_fail "reconcile stale should exit 0, got $exit1"
 fi
 
 # stale id should appear in stdout
@@ -115,7 +115,7 @@ chmod +x "$tmpbin/a1"
 output2=$(PATH="$tmpbin:$PATH" \
     JARVIS_ROOT="$tmproot" \
     JARVIS_ESCALATION_DIR="$tmpesc" \
-    bash "$proj_root/bootstrap/sweep.sh" 2>&1)
+    bash "$proj_root/bootstrap/reconcile.sh" stale 2>&1)
 exit2=$?
 
 echo "Output: $output2"
@@ -128,9 +128,9 @@ else
 fi
 
 if [ "$exit2" -eq 0 ]; then
-    assert_pass "sweep exits 0 on fresh claim"
+    assert_pass "reconcile stale exits 0 on fresh claim"
 else
-    assert_fail "sweep should exit 0 on fresh claim, got $exit2"
+    assert_fail "reconcile stale should exit 0 on fresh claim, got $exit2"
 fi
 
 # ---------------------------------------------------------------------------
@@ -159,7 +159,7 @@ chmod +x "$tmpbin/a1"
 output3=$(PATH="$tmpbin:$PATH" \
     JARVIS_ROOT="$tmproot" \
     JARVIS_ESCALATION_DIR="$tmpesc" \
-    bash "$proj_root/bootstrap/sweep.sh" 2>&1)
+    bash "$proj_root/bootstrap/reconcile.sh" stale 2>&1)
 exit3=$?
 
 echo "Output: $output3"
@@ -172,9 +172,9 @@ else
 fi
 
 if [ "$exit3" -eq 0 ]; then
-    assert_pass "sweep exits 0 when no claim comment found"
+    assert_pass "reconcile stale exits 0 when no claim comment found"
 else
-    assert_fail "sweep should exit 0 when no claim comment found, got $exit3"
+    assert_fail "reconcile stale should exit 0 when no claim comment found, got $exit3"
 fi
 
 # ---------------------------------------------------------------------------
@@ -203,13 +203,13 @@ chmod +x "$tmpbin/a1"
 output4=$(PATH="$tmpbin:$PATH" \
     JARVIS_ROOT="$tmproot" \
     JARVIS_ESCALATION_DIR="$tmpesc" \
-    bash "$proj_root/bootstrap/sweep.sh" 2>&1)
+    bash "$proj_root/bootstrap/reconcile.sh" stale 2>&1)
 exit4=$?
 # Capture stderr separately for the WARN check
 err4=$(PATH="$tmpbin:$PATH" \
     JARVIS_ROOT="$tmproot" \
     JARVIS_ESCALATION_DIR="$tmpesc" \
-    bash "$proj_root/bootstrap/sweep.sh" 2>&1 1>/dev/null)
+    bash "$proj_root/bootstrap/reconcile.sh" stale 2>&1 1>/dev/null)
 output4_full="$output4"$'\n'"$err4"
 
 echo "Output: $output4"
@@ -222,9 +222,9 @@ else
 fi
 
 if [ "$exit4" -eq 0 ]; then
-    assert_pass "sweep exits 0 on malformed timestamp (graceful)"
+    assert_pass "reconcile stale exits 0 on malformed timestamp (graceful)"
 else
-    assert_fail "sweep should exit 0 on malformed timestamp, got $exit4"
+    assert_fail "reconcile stale should exit 0 on malformed timestamp, got $exit4"
 fi
 
 # Should see a WARN message about parse failure
