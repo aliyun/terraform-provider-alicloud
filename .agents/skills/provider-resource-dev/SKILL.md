@@ -33,16 +33,14 @@ description: Use when developing or diagnosing a NEW alicloud Terraform provider
 8. **PR** — `bootstrap/github-identity.sh check` → `bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud HEAD <branch>` → `bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicloud --head api-tool-agent:<branch>`;带 resource+test+service+provider注册+website 文档;无 AI 署名。缺 `JARVIS_GITHUB_TOKEN` 或登录名不是 `api-tool-agent` 时阻断并升级,禁止回退个人账号或 ambient git 凭据。
 
 ## Terraform 资源名解析
-规则: `alicloud_【产品名下划线】_【资源名下划线】` → product/resourceCode 各自转 PascalCase。
+优先查 Acube Terraform 映射接口,不要维护固定映射表:
 
-示例:
-```text
-alicloud_resource_manager_handshake_acceptance
-=> product=ResourceManager
-=> resourceCode=HandshakeAcceptance
+```bash
+curl -s "https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformResourceSpec?terraformResourceType=<terraform_resource>" \
+  -H "accept: */*"
 ```
 
-如果边界不确定,结合客户描述/Next API/OpenAPI product 先确定 product;仍不确定时对 `alicloud_` 后缀做最长 product 前缀试探,逐个调用 resourceTypeCode get/list,不要凭命名猜死。
+读取 `data.terraformResourceSpecModel.namespace` / `data.terraformResourceSpecModel.resourceTypeCode` 作为 product/resourceCode。接口查不到时,再把 `alicloud_【产品名下划线】_【资源名下划线】` → product/resourceCode 各自转 PascalCase 作为候选,并进入下方 resourceTypeCode get/list 查证;边界不确定时结合客户描述/Next API/OpenAPI product 先确定 product,不要凭命名猜死。
 
 ## acube resourceTypeCode 查证
 ```bash

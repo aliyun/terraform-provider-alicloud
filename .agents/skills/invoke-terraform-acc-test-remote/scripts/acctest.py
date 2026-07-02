@@ -3,12 +3,12 @@
 Terraform AccTest CLI - ACube AccTest API client
 
 Usage:
-  acctest.py upload     --namespace NS --resource RES --dir PATH [--test-case NAME] [--base-url URL]
-  acctest.py status     --task-id ID [--log-limit N] [--log-since TS] [--base-url URL]
-  acctest.py logs       --task-id ID [--base-url URL] [--download-dir DIR]
-  acctest.py download   --url URL [--download-dir DIR]
-  acctest.py cancel     --task-id ID [--base-url URL]
-  acctest.py upload-run --namespace NS --resource RES --dir PATH [--test-case NAME] [--base-url URL] [--poll-interval SEC] [--download-dir DIR]
+  acctest.py [--insecure] upload     (--namespace NS --resource RES | --terraform-resource NAME) --dir PATH [--test-case NAME[,NAME...]] [--base-url URL]
+  acctest.py [--insecure] status     --task-id ID [--log-limit N] [--log-since TS] [--base-url URL]
+  acctest.py [--insecure] logs       --task-id ID [--base-url URL] [--download-dir DIR]
+  acctest.py [--insecure] download   --url URL [--download-dir DIR]
+  acctest.py [--insecure] cancel     --task-id ID [--base-url URL]
+  acctest.py [--insecure] upload-run (--namespace NS --resource RES | --terraform-resource NAME) --dir PATH [--test-case NAME[,NAME...]] [--base-url URL] [--poll-interval SEC] [--download-dir DIR]
 
 Commands:
   upload      Upload local code zip and submit AccTest task
@@ -26,6 +26,8 @@ import argparse
 import io
 import json
 import os
+import re
+import ssl
 import sys
 import tempfile
 import time
@@ -39,14 +41,15 @@ DEFAULT_POLL_INTERVAL = 60
 DEFAULT_DOWNLOAD_DIR = "./acctest_logs"
 
 
-def api_request(method, url, data=None):
+def api_request(method, url, data=None, insecure=False):
     """Make HTTP request and return parsed JSON response."""
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     body = json.dumps(data).encode("utf-8") if data else None
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    context = ssl._create_unverified_context() if insecure else None
 
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30, context=context) as resp:
             raw = resp.read().decode("utf-8")
             return json.loads(raw)
     except urllib.error.HTTPError as e:
@@ -55,13 +58,19 @@ def api_request(method, url, data=None):
         sys.exit(1)
     except urllib.error.URLError as e:
         print(f"Connection error: {e.reason}", file=sys.stderr)
+        if not insecure and "CERTIFICATE_VERIFY_FAILED" in str(e.reason):
+            print("[AccTest] Hint: retry with --insecure when using internal ACube certificates.",
+                  file=sys.stderr)
         sys.exit(1)
 
 
-def download_file(url, dest_path):
+def download_file(url, dest_path, insecure=False):
     """Download a file from URL to local path."""
+    context = ssl._create_unverified_context() if insecure else None
     try:
-        urllib.request.urlretrieve(url, dest_path)
+        with urllib.request.urlopen(url, timeout=120, context=context) as resp:
+            with open(dest_path, "wb") as f:
+                f.write(resp.read())
         size = os.path.getsize(dest_path)
         return size
     except Exception as e:
@@ -74,7 +83,7 @@ def download_file(url, dest_path):
 def cmd_status(args):
     """Query task status."""
     url = f"{args.base_url}/api/v1/terraform_acc_test/{args.task_id}"
-    resp = api_request("GET", url)
+    resp = api_request("GET", url, insecure=args.insecure)
 
     if resp.get("code") != "SUCCESS":
         print(json.dumps(resp, indent=2, ensure_ascii=False), file=sys.stderr)
@@ -88,7 +97,7 @@ def cmd_status(args):
 def cmd_logs(args):
     """Get presigned download URLs, optionally download files."""
     url = f"{args.base_url}/api/v1/terraform_acc_test/{args.task_id}/logs"
-    resp = api_request("GET", url)
+    resp = api_request("GET", url, insecure=args.insecure)
 
     if resp.get("code") != "SUCCESS":
         print(json.dumps(resp, indent=2, ensure_ascii=False), file=sys.stderr)
@@ -106,7 +115,7 @@ def cmd_logs(args):
                 continue
             filename = "run.log" if key == "runLog" else "tf-debug.log"
             dest = os.path.join(download_dir, f"{args.task_id}_{filename}")
-            size = download_file(dl_url, dest)
+            size = download_file(dl_url, dest, insecure=args.insecure)
             if size >= 0:
                 downloaded[key] = {"path": os.path.abspath(dest), "size": size}
                 print(f"[AccTest] Downloaded {filename}: {dest} ({size} bytes)", file=sys.stderr)
@@ -130,7 +139,7 @@ def cmd_download(args):
     dest = os.path.join(download_dir, filename)
 
     print(f"[AccTest] Downloading: {filename}", file=sys.stderr)
-    size = download_file(dl_url, dest)
+    size = download_file(dl_url, dest, insecure=args.insecure)
     if size < 0:
         print(f"[AccTest] Download failed", file=sys.stderr)
         sys.exit(1)
@@ -149,7 +158,7 @@ def cmd_cancel(args):
     Idempotency: cancelling a terminal task returns an error from the server.
     """
     url = f"{args.base_url}/api/v1/terraform_acc_test/{args.task_id}/cancel"
-    resp = api_request("POST", url)
+    resp = api_request("POST", url, insecure=args.insecure)
 
     if resp.get("code") != "SUCCESS":
         print(json.dumps(resp, indent=2, ensure_ascii=False), file=sys.stderr)
@@ -182,6 +191,81 @@ LARGE_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 # Required string in go.mod for a directory to be considered the alicloud Terraform provider.
 PROVIDER_MODULE_MARKER = "terraform-provider-alicloud"
+
+# The remote FC runner expects this canonical zip root. Do not use the local
+# worktree directory name; it may be an arbitrary temp/worktree name.
+REMOTE_PROVIDER_ZIP_ROOT = "terraform-provider-alicloud"
+
+def mapping_lookup_url(base_url, terraform_resource):
+    query = urllib.parse.urlencode({"terraformResourceType": terraform_resource})
+    return f"{base_url}/api/v1/terraform/generator/getTerraformResourceSpec?{query}"
+
+
+def extract_acc_test_target(mapping_response, terraform_resource):
+    data = (mapping_response or {}).get("data") or {}
+    spec = data.get("terraformResourceSpecModel") or {}
+    namespace = spec.get("namespace") or data.get("namespace") or data.get("product")
+    resource = spec.get("resourceTypeCode") or data.get("resourceTypeCode") or data.get("resourceCode")
+
+    if not namespace or not resource:
+        raise ValueError(
+            f"Acube getTerraformResourceSpec did not return namespace/resourceTypeCode "
+            f"for {terraform_resource}"
+        )
+    return namespace, resource
+
+
+def fetch_acc_test_target(terraform_resource, base_url, insecure=False):
+    """Resolve ACube namespace/resourceTypeCode from Acube Terraform mapping API."""
+    value = (terraform_resource or "").strip()
+    if not value.startswith("alicloud_"):
+        raise ValueError("terraform resource must start with 'alicloud_'")
+    response = api_request("GET", mapping_lookup_url(base_url.rstrip("/"), value), insecure=insecure)
+    if response.get("code") != "SUCCESS":
+        raise ValueError(
+            f"Acube getTerraformResourceSpec failed for {value}: "
+            f"{response.get('message') or response.get('code')}"
+        )
+    return extract_acc_test_target(response, value)
+
+
+def normalize_test_case_name(test_case):
+    """Keep one exact case as-is; turn comma-separated exact cases into go test regex."""
+    if not test_case:
+        return None
+    cases = [c.strip() for c in test_case.split(",") if c.strip()]
+    if not cases:
+        return None
+    if len(cases) == 1:
+        return cases[0]
+    return "^(" + "|".join(re.escape(c) for c in cases) + ")$"
+
+
+def resolve_acc_test_target(args):
+    if getattr(args, "terraform_resource", None):
+        try:
+            namespace, resource = fetch_acc_test_target(
+                args.terraform_resource,
+                args.base_url,
+                insecure=getattr(args, "insecure", False),
+            )
+        except ValueError as e:
+            print(f"[AccTest] Error: {e}", file=sys.stderr)
+            print("[AccTest] Hint: pass explicit --namespace and --resource if Acube mapping is missing.",
+                  file=sys.stderr)
+            sys.exit(2)
+        print(
+            f"[AccTest] Resolved target from {args.terraform_resource}: "
+            f"--namespace {namespace} --resource {resource}",
+            file=sys.stderr,
+        )
+        return namespace, resource
+
+    if not args.namespace or not args.resource:
+        print("[AccTest] Error: pass either --terraform-resource or both --namespace and --resource.",
+              file=sys.stderr)
+        sys.exit(2)
+    return args.namespace, args.resource
 
 
 def validate_provider_dir(dir_path):
@@ -264,7 +348,7 @@ def create_code_zip(dir_path):
         sys.exit(1)
 
     buf = io.BytesIO()
-    base_name = os.path.basename(dir_path)
+    base_name = REMOTE_PROVIDER_ZIP_ROOT
     file_count = 0
     skipped_large = []
 
@@ -328,11 +412,12 @@ def create_code_zip(dir_path):
     return buf
 
 
-def multipart_upload(url, namespace, resource, zip_buf, test_case=None):
+def multipart_upload(url, namespace, resource, zip_buf, test_case=None, insecure=False):
     """Send multipart/form-data POST with zip file.
 
     test_case (optional): appended as query parameter (per backend convention).
     """
+    test_case = normalize_test_case_name(test_case)
     if test_case:
         sep = "&" if "?" in url else "?"
         url = f"{url}{sep}testCaseName={urllib.parse.quote(test_case)}"
@@ -362,9 +447,10 @@ def multipart_upload(url, namespace, resource, zip_buf, test_case=None):
         "Accept": "application/json",
     }
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    context = ssl._create_unverified_context() if insecure else None
 
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=120, context=context) as resp:
             raw = resp.read().decode("utf-8")
             return json.loads(raw)
     except urllib.error.HTTPError as e:
@@ -373,12 +459,16 @@ def multipart_upload(url, namespace, resource, zip_buf, test_case=None):
         sys.exit(1)
     except urllib.error.URLError as e:
         print(f"Connection error: {e.reason}", file=sys.stderr)
+        if not insecure and "CERTIFICATE_VERIFY_FAILED" in str(e.reason):
+            print("[AccTest] Hint: retry with --insecure when using internal ACube certificates.",
+                  file=sys.stderr)
         sys.exit(1)
 
 
 def cmd_upload(args):
     """Upload local code zip and submit AccTest task."""
     dir_path = args.dir
+    namespace, resource = resolve_acc_test_target(args)
     validate_provider_dir(dir_path)
     print(f"[AccTest] Zipping directory: {dir_path}", file=sys.stderr)
     zip_buf = create_code_zip(dir_path)
@@ -387,8 +477,9 @@ def cmd_upload(args):
 
     url = f"{args.base_url}/api/v1/terraform_acc_test/upload"
     print(f"[AccTest] Uploading to: {url}", file=sys.stderr)
-    resp = multipart_upload(url, args.namespace, args.resource, zip_buf,
-                            test_case=getattr(args, "test_case", None))
+    resp = multipart_upload(url, namespace, resource, zip_buf,
+                            test_case=getattr(args, "test_case", None),
+                            insecure=args.insecure)
 
     if resp.get("code") != "SUCCESS":
         print(json.dumps(resp, indent=2, ensure_ascii=False), file=sys.stderr)
@@ -404,6 +495,7 @@ def cmd_upload_run(args):
     """Full workflow: upload local code -> poll until done -> download logs."""
     # 1. Upload
     dir_path = args.dir
+    namespace, resource = resolve_acc_test_target(args)
     validate_provider_dir(dir_path)
     print(f"[AccTest] Zipping directory: {dir_path}", file=sys.stderr)
     zip_buf = create_code_zip(dir_path)
@@ -412,8 +504,9 @@ def cmd_upload_run(args):
 
     url = f"{args.base_url}/api/v1/terraform_acc_test/upload"
     print(f"[AccTest] Uploading to: {url}", file=sys.stderr)
-    resp = multipart_upload(url, args.namespace, args.resource, zip_buf,
-                            test_case=getattr(args, "test_case", None))
+    resp = multipart_upload(url, namespace, resource, zip_buf,
+                            test_case=getattr(args, "test_case", None),
+                            insecure=args.insecure)
 
     if resp.get("code") != "SUCCESS":
         print(json.dumps(resp, indent=2, ensure_ascii=False), file=sys.stderr)
@@ -448,7 +541,7 @@ def cmd_upload_run(args):
         query = "&".join(f"{k}={urllib.parse.quote(v)}" for k, v in params.items())
         poll_url = f"{base_status_url}?{query}"
 
-        status_resp = api_request("GET", poll_url)
+        status_resp = api_request("GET", poll_url, insecure=args.insecure)
         if status_resp.get("code") != "SUCCESS":
             print(f"[AccTest] Poll error: {json.dumps(status_resp)}", file=sys.stderr)
             continue
@@ -500,7 +593,7 @@ def cmd_upload_run(args):
 
     # 3. Get log URLs
     logs_url = f"{args.base_url}/api/v1/terraform_acc_test/{task_id}/logs"
-    logs_resp = api_request("GET", logs_url)
+    logs_resp = api_request("GET", logs_url, insecure=args.insecure)
     log_urls = logs_resp.get("data", {}) if logs_resp.get("code") == "SUCCESS" else {}
 
     # 4. Download logs
@@ -513,7 +606,7 @@ def cmd_upload_run(args):
             continue
         filename = "run.log" if key == "runLog" else "tf-debug.log"
         dest = os.path.join(download_dir, f"{task_id}_{filename}")
-        size = download_file(dl_url, dest)
+        size = download_file(dl_url, dest, insecure=args.insecure)
         if size >= 0:
             downloaded[key] = {"path": dest, "size": size}
             print(f"[AccTest] Downloaded {filename}: {dest} ({size} bytes)", file=sys.stderr)
@@ -539,6 +632,8 @@ def main():
     )
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL,
                         help=f"ACube API base URL (default: {DEFAULT_BASE_URL})")
+    parser.add_argument("--insecure", action="store_true",
+                        help="Skip TLS certificate verification for internal ACube endpoints")
 
     sub = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -564,20 +659,26 @@ def main():
 
     # upload
     p_upload = sub.add_parser("upload", help="Upload local code zip and submit AccTest task")
-    p_upload.add_argument("--namespace", required=True, help="Product namespace (e.g. VPC, ECS)")
-    p_upload.add_argument("--resource", required=True, help="Resource type code (e.g. VSwitch, Instance)")
+    p_upload.add_argument("--namespace", default=None, help="Product namespace (e.g. VPC, ECS)")
+    p_upload.add_argument("--resource", default=None, help="Resource type code (e.g. VSwitch, Instance)")
+    p_upload.add_argument("--terraform-resource", default=None,
+                          help="Terraform resource name to resolve namespace/resource via Acube mapping "
+                               "(e.g. alicloud_schedulerx_job)")
     p_upload.add_argument("--dir", required=True, help="Path to terraform-provider-alicloud directory")
     p_upload.add_argument("--test-case", default=None,
-                          help="Optional: run a single test case by exact name "
-                               "(e.g. TestAccAliCloudVPCVSwitch_basic). If unset, runs all matching cases.")
+                          help="Optional: run exact test case(s); comma-separated names are converted to a regex. "
+                               "If unset, runs all matching cases.")
 
     # upload-run (all-in-one from local code)
     p_upload_run = sub.add_parser("upload-run", help="Full workflow: upload local code -> poll -> download logs")
-    p_upload_run.add_argument("--namespace", required=True, help="Product namespace (e.g. VPC, ECS)")
-    p_upload_run.add_argument("--resource", required=True, help="Resource type code (e.g. VSwitch, Instance)")
+    p_upload_run.add_argument("--namespace", default=None, help="Product namespace (e.g. VPC, ECS)")
+    p_upload_run.add_argument("--resource", default=None, help="Resource type code (e.g. VSwitch, Instance)")
+    p_upload_run.add_argument("--terraform-resource", default=None,
+                              help="Terraform resource name to resolve namespace/resource via Acube mapping "
+                                   "(e.g. alicloud_schedulerx_job)")
     p_upload_run.add_argument("--dir", required=True, help="Path to terraform-provider-alicloud directory")
     p_upload_run.add_argument("--test-case", default=None,
-                               help="Optional: run a single test case by exact name")
+                               help="Optional: run exact test case(s); comma-separated names are converted to a regex")
     p_upload_run.add_argument("--poll-interval", type=int, default=DEFAULT_POLL_INTERVAL,
                                help=f"Poll interval in seconds (default: {DEFAULT_POLL_INTERVAL})")
     p_upload_run.add_argument("--download-dir", default=DEFAULT_DOWNLOAD_DIR,
