@@ -1,4 +1,4 @@
-name: Terrafrom Basic Checks
+name: Terraform Basic Checks
 on:
   pull_request:
     paths:
@@ -14,10 +14,10 @@ jobs:
       contents: read
     steps:
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
@@ -32,10 +32,10 @@ jobs:
       contents: read
     steps:
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
@@ -49,12 +49,12 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
       - name: Set up Go Version
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
 
@@ -99,12 +99,12 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           # Checkout as many commits as needed for the diff
           fetch-depth: 2
       - name: Set up Go Version
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
       - name: vet

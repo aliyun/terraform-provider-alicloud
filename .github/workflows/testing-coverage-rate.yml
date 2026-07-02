@@ -4,13 +4,12 @@ on:
     branches:
       - master
   pull_request:
-    pull_request_target:
-      types:
-        - opened
-      paths:
-        - .github/workflows/testing-coverage-rate.yml
-        - .go-version
-        - alicloud/*.go
+    types:
+      - opened
+    paths:
+      - .github/workflows/testing-coverage-rate.yml
+      - .go-version
+      - alicloud/*.go
 
 jobs:
   TestingCoverageRate:
@@ -18,14 +17,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.24.x'
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 2
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
       - name: Checking testing coverage rate
         run: |
           git diff HEAD^ HEAD > diff.out
