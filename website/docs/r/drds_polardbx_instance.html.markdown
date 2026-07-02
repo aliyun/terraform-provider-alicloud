@@ -65,11 +65,12 @@ resource "alicloud_drds_polardbx_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cn_class` - (Required, ForceNew) Compute node specifications.
+* `cn_class` - (Required) Compute node specifications. Since v1.276.0 the field is mutable and triggers `ModifyDBInstanceClass` when changed.
 * `cn_node_count` - (Required, Int) Number of computing nodes.
 * `description` - (Optional, Available since v1.268.0) Instance remarks
-* `dn_class` - (Required, ForceNew) Storage node specifications.
+* `dn_class` - (Required) Storage node specifications. Since v1.276.0 the field is mutable and triggers `ModifyDBInstanceClass` when changed.
 * `dn_node_count` - (Required, Int) The number of storage nodes.
+* `dn_storage_space` - (Optional, Computed, Available since v1.285.0) Storage space per storage node. Applicable when `storage_type` is `cloud_auto`.
 * `engine_version` - (Optional, ForceNew, Computed, Available since v1.268.0) Engine version, default 5.7
 * `is_read_db_instance` - (Optional, Available since v1.268.0) Whether the instance is read-only.
   - `true`: Yes
@@ -84,6 +85,13 @@ The following arguments are supported:
 * `primary_zone` - (Required, ForceNew) Primary Availability Zone.
 * `resource_group_id` - (Optional, Computed) The resource group ID can be empty. This parameter is not supported for the time being.
 * `secondary_zone` - (Optional, ForceNew) Secondary availability zone.
+* `specified_dn_scale` - (Optional, Available since v1.285.0) Whether the storage-node specifications should be customized during class change. Only used together with `specified_dn_spec_map_json` and only applies during class updates.
+* `specified_dn_spec_map_json` - (Optional, Available since v1.285.0) JSON string describing the per-storage-node target specification during class change. Only applies during class updates.
+* `storage_type` - (Optional, ForceNew, Computed, Available since v1.285.0) Storage type of the instance. Valid values:
+  - `custom_local_ssd`: local disk;
+  - `cloud_auto`: cloud disk.
+* `switch_time` - (Optional, Available since v1.285.0) The scheduled switch time in `yyyy-MM-ddTHH:mm:ssZ` (UTC) used when `switch_time_mode` is set. Only applies during class updates.
+* `switch_time_mode` - (Optional, Available since v1.285.0) Effective time policy for a class change. Only applies during class updates.
 * `tertiary_zone` - (Optional, ForceNew) Third Availability Zone.
 * `topology_type` - (Required, ForceNew) Topology type:
   - `3azones`: three available areas;
