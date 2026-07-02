@@ -69,10 +69,12 @@
 ## 六、审计
 
 ```bash
-bootstrap/wrap.sh done <id> "<任务+落点>" "<status>"
+bootstrap/wrap.sh done <id> --summary-stdin "<status>" <<'EOF'
+<任务+落点>
+EOF
 ```
 
-收尾回填 Aone（评论+改状态）并落 `runs/`；dev 中途用 `wrap.sh sync <id> "<进展>"` 报进展。临时数据走 `.my-day/`，禁往仓库根甩 scratch。Aone 唯一真源——禁止只在本地推进不落 Aone。
+收尾回填 Aone（评论+改状态）并落 `runs/`；dev 中途用 `wrap.sh sync <id> --summary-stdin <<'EOF' ... EOF` 或 `--summary-file <path>` 报多行进展。临时数据走 `.my-day/`，禁往仓库根甩 scratch。Aone 唯一真源——禁止只在本地推进不落 Aone。
 
 > **收尾必走 bookend，禁裸 `log.sh run_done`**：凡 claim 过的工单(新建/复用都算)，收尾用 `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>`(claim→done→release 一把成对)，或手跑 `wrap.sh done` + `claim.sh release` 两步。裸 run_done 只落本地审计：标签停 claimed/状态不动/release 漏。claim 开头、release 收尾闭合，`wrap-check.sh`+`reconcile.sh` 才兜得住。
 
@@ -93,5 +95,5 @@ bootstrap/wrap.sh done <id> "<任务+落点>" "<status>"
 |------|------|
 | `config/workspaces.json` | 工作区 canonical schema → repo/path/remotes/ops |
 | `config/pools.json` | 池路由（ad-hoc PR→tf_provider 528766，客户 1086837） |
-| `bootstrap/wrap.sh sync/done` | 进展实时回填 Aone（真源）+收尾审计 |
+| `bootstrap/wrap.sh sync/done` | 进展实时回填 Aone（真源）+收尾审计；多行正文用 `--summary-stdin`/`--summary-file` |
 | `loops/self-improve.md` | 缺口→escalation→补丁 |

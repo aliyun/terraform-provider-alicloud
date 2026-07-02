@@ -65,7 +65,7 @@ profile=TerraformUT 走端到端，记真实体验+卡点，回写文档与 skil
 | 完成 | 门禁绿+实测通过 → push 分支，收尾必 `bootstrap/wrap.sh done <id>` 回填 Aone 状态+关联，run_done 入 runs/ |
 | escalation | 缺接口/低置信 → escalation/ + self-improve；**正式合 marketplace=红线永停** |
 
-中途进展实时 `wrap.sh sync <id> "<进展>"` 落 Aone；Aone 唯一真源，禁止只在本地推进不回填。
+中途进展实时 `wrap.sh sync <id> --summary-stdin <<'EOF' ... EOF` 或 `--summary-file <path>` 落 Aone；Aone 唯一真源，禁止只在本地推进不回填。
 
 ---
 
@@ -78,4 +78,4 @@ profile=TerraformUT 走端到端，记真实体验+卡点，回写文档与 skil
 | tools/validate.py / verify-hooks.sh | 门禁 |
 | TerraformUT profile | 实测凭证 |
 | config/workspaces.json `agent_toolkit` | 工作区登记 |
-| bootstrap/wrap.sh sync/done | 进展+收尾回填 Aone（唯一真源） |
+| bootstrap/wrap.sh sync/done | 进展+收尾回填 Aone（唯一真源）；多行正文用 `--summary-stdin`/`--summary-file` |
