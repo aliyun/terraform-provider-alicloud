@@ -17,6 +17,7 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
 - Acube 在线生成工具: `tools/acube_terraform_generate.py`。
 - 生成差异/语义检查工具: `tools/terraform_generated_diff.py`。
 - **错误码语义查证**(客户 acc/apply 报错、retry 白名单决策):读 `.Codex/skills/aone-triage/references/aliyun-error-code-lookup.md`(跨 skill 复用,给定 product+code 出 HTTP/中英 message/官方 retry 建议/相邻错误码)。
+- **镇元查证与路由分支**(诊断资源在哪一层缺、按决策树选执行分支):读 `references/zhenyuan-verification.md`(P3.a 从 aone-triage 抽出的跨 skill 单点维护,aone-triage tf-customer 路由与本 skill 资源开发都读它)。
 - 编码交 developer 子代理,改文件先 worktree,acc 测过才交。
 
 ## Aone 分单与同步
