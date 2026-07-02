@@ -30,7 +30,7 @@
 
 ## 自我迭代
 
-流程/能力缺口按 [loops/self-improve.md](loops/self-improve.md) 沉淀，别只口头修；跨轮结构性重构走 `escalation/cap-*.md` 路线图（当前在跑：[escalation/cap-repo-structure-cleanup.md](escalation/cap-repo-structure-cleanup.md)）。
+流程/能力缺口按 [loops/self-improve.md](loops/self-improve.md) 沉淀，别只口头修；跨轮结构性重构走 `escalation/cap-*.md` 路线图。
 
 @autonomy.md
 @loops/aone-triage.md
