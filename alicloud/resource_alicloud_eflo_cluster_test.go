@@ -114,6 +114,7 @@ func TestAccAliCloudEfloCluster_basic10311(t *testing.T) {
 							"machine_type":           "efg1.nvga1n",
 							"image_id":               "i190982651690986913088",
 							"zone_id":                "cn-wulanchabu-b",
+							"key_pair_name":          "${alicloud_ecs_key_pair.default.key_pair_name}",
 						},
 					},
 					"nimiz_vswitches": []string{
@@ -122,15 +123,17 @@ func TestAccAliCloudEfloCluster_basic10311(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"hpn_zone":                 "B1",
-						"ignore_failed_node_tasks": "true",
-						"cluster_type":             "Lite",
-						"cluster_name":             name,
-						"cluster_description":      "cluster-resource-test",
-						"resource_group_id":        CHECKSET,
-						"node_groups.#":            "1",
-						"nimiz_vswitches.#":        "1",
-						"open_eni_jumbo_frame":     "false",
+						"hpn_zone":                    "B1",
+						"ignore_failed_node_tasks":    "true",
+						"cluster_type":                "Lite",
+						"cluster_name":                name,
+						"cluster_description":         "cluster-resource-test",
+						"resource_group_id":           CHECKSET,
+						"node_groups.#":               "1",
+						"node_groups.0.key_pair_name": CHECKSET,
+						"node_group_ids.%":            "1",
+						"nimiz_vswitches.#":           "1",
+						"open_eni_jumbo_frame":        "false",
 					}),
 				),
 			},
@@ -226,6 +229,10 @@ resource "alicloud_security_group" "create_security_group" {
   security_group_name = "cluster-resoure-test"
   security_group_type = "normal"
   vpc_id              = alicloud_vpc.create_vpc.id
+}
+
+resource "alicloud_ecs_key_pair" "default" {
+  key_pair_name = "${var.name}-kp"
 }
 
 
