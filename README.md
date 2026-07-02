@@ -39,4 +39,4 @@ bootstrap/serve.sh        # 起服务并打开 http://localhost:8787（未生成
 bootstrap/serve.sh 9000   # 换端口
 ```
 
-页内点「立即同步」或 `POST /refresh` 强制重扫 Aone 并重建；离线重建用 `bootstrap/refresh.sh`。
+页内点「立即同步」或 `POST /refresh` 强制重扫 Aone 并重建；离线重建用 `bash bootstrap/board-html.sh --refresh`。

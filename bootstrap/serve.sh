@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # bootstrap/serve.sh — tiny stdlib http server for the board.
-# GET / → docs/board.html (未生成则自动 build) ; POST /refresh → run refresh.sh, 200 on success.
+# GET / → docs/board.html (未生成则自动 build) ; POST /refresh → run board-html.sh --refresh, 200 on success.
 # Default port 8787; override: serve.sh [port]. Pure python3 http.server, no deps.
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,7 +14,7 @@ import sys, os, subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root, port = sys.argv[1], int(sys.argv[2])
 board = os.path.join(root, "docs", "board.html")
-refresh = os.path.join(root, "bootstrap", "refresh.sh")
+board_html = os.path.join(root, "bootstrap", "board-html.sh")
 
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
@@ -34,7 +34,7 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path != "/refresh": return self._send(404, b"not found")
         try:
-            subprocess.run(["bash", refresh], cwd=root, check=True,
+            subprocess.run(["bash", board_html, "--refresh"], cwd=root, check=True,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             self._send(200, b"refreshed")
         except Exception as ex:
