@@ -45,8 +45,27 @@ func resourceAliCloudMongodbAuditPolicy() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"service_type": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ValidateFunc:     StringInSlice([]string{"Standard", "V2_Standard"}, false),
+				DiffSuppressFunc: mongodbAuditPolicyServiceTypeDiffSuppress,
+			},
+			"hot_storage_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
+}
+
+// mongodbAuditPolicyServiceTypeDiffSuppress ignores service_type drift once the audit log is disabled:
+// disabling the audit log resets the server-side type to Trial, which would otherwise diff against the
+// declared value. This is a temporary workaround until the read path can report the type unconditionally.
+func mongodbAuditPolicyServiceTypeDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
+	return d.Get("audit_status").(string) == "disabled"
 }
 
 func resourceAliCloudMongodbAuditPolicyCreate(d *schema.ResourceData, meta interface{}) error {
@@ -67,7 +86,16 @@ func resourceAliCloudMongodbAuditPolicyCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOkExists("storage_period"); ok {
 		request["StoragePeriod"] = v
 	}
-	request["ServiceType"] = "Standard"
+	if v, ok := d.GetOkExists("hot_storage_period"); ok {
+		request["HotStoragePeriod"] = v
+	}
+	// service_type is Optional+Computed with no schema Default; fall back to Standard so pre-schema
+	// HCL that omits the field keeps the historical behavior of enabling the Standard edition.
+	serviceType := d.Get("service_type").(string)
+	if serviceType == "" {
+		serviceType = "Standard"
+	}
+	request["ServiceType"] = serviceType
 	request["AuditStatus"] = convertMongodbAuditPolicyAuditStatusRequest(d.Get("audit_status").(string))
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -113,13 +141,21 @@ func resourceAliCloudMongodbAuditPolicyRead(d *schema.ResourceData, meta interfa
 	}
 
 	d.Set("storage_period", objectRaw["TtlForStandard"])
+	d.Set("hot_storage_period", objectRaw["HotTtlForV2Standard"])
+	serviceType := objectRaw["ServiceType"]
 
 	objectRaw, err = mongodbServiceV2.DescribeAuditPolicyDescribeAuditPolicy(d.Id())
 	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
-	d.Set("audit_status", convertMongodbAuditPolicyLogAuditStatusResponse(objectRaw["LogAuditStatus"]))
+	auditStatus := convertMongodbAuditPolicyLogAuditStatusResponse(objectRaw["LogAuditStatus"])
+	d.Set("audit_status", auditStatus)
+	// Disabling the audit log flips the server-side service_type to Trial; keep the declared value so it can be
+	// restored on re-enable without a perpetual diff.
+	if auditStatus != "disabled" {
+		d.Set("service_type", serviceType)
+	}
 
 	d.Set("db_instance_id", d.Id())
 
@@ -155,11 +191,28 @@ func resourceAliCloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta inter
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("hot_storage_period") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("hot_storage_period"); ok {
+		request["HotStoragePeriod"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("service_type") {
+		update = true
+	}
+
 	if !d.IsNewResource() && d.HasChange("audit_status") {
 		update = true
 	}
 	request["AuditStatus"] = convertMongodbAuditPolicyAuditStatusRequest(d.Get("audit_status").(string))
-	request["ServiceType"] = "Standard"
+	// service_type is Optional+Computed with no schema Default; fall back to Standard so pre-schema
+	// HCL that omits the field keeps the historical behavior of the Standard edition on Update as well.
+	serviceType := d.Get("service_type").(string)
+	if serviceType == "" {
+		serviceType = "Standard"
+	}
+	request["ServiceType"] = serviceType
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {

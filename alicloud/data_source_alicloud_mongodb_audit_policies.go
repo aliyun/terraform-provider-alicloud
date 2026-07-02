@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -38,6 +37,18 @@ func dataSourceAlicloudMongodbAuditPolicies() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"service_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"storage_period": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"hot_storage_period": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -48,9 +59,11 @@ func dataSourceAlicloudMongodbAuditPolicies() *schema.Resource {
 func dataSourceAlicloudMongodbAuditPoliciesRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	MongoDBService := MongoDBService{client}
-	dbInstanceId := d.Get("db_instance_id")
-	object, err := MongoDBService.DescribeMongodbAuditPolicy(dbInstanceId.(string))
+	mongodbServiceV2 := MongodbServiceV2{client}
+	dbInstanceId := d.Get("db_instance_id").(string)
+
+	// DescribeMongoDBLogConfig — provides ServiceType, TtlForStandard, HotTtlForV2Standard.
+	logConfig, err := mongodbServiceV2.DescribeMongodbAuditPolicy(dbInstanceId)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("MongodbAuditPolicy")
@@ -59,14 +72,24 @@ func dataSourceAlicloudMongodbAuditPoliciesRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
-	s := make([]map[string]interface{}, 0)
-	mapping := map[string]interface{}{
-		"id":             fmt.Sprint(object["DBInstanceId"]),
-		"db_instance_id": fmt.Sprint(object["DBInstanceId"]),
-		"audit_status":   convertMongodbAuditPolicyResponse(object["LogAuditStatus"].(string)),
+	// DescribeAuditPolicy — provides LogAuditStatus (enable/disabled).
+	auditPolicy, err := mongodbServiceV2.DescribeAuditPolicyDescribeAuditPolicy(dbInstanceId)
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
 	}
-	s = append(s, mapping)
 
+	mapping := map[string]interface{}{
+		"id":                 dbInstanceId,
+		"db_instance_id":     dbInstanceId,
+		"service_type":       logConfig["ServiceType"],
+		"storage_period":     logConfig["TtlForStandard"],
+		"hot_storage_period": logConfig["HotTtlForV2Standard"],
+	}
+	if v, ok := auditPolicy["LogAuditStatus"].(string); ok {
+		mapping["audit_status"] = convertMongodbAuditPolicyResponse(v)
+	}
+
+	s := []map[string]interface{}{mapping}
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
 
 	if err := d.Set("policies", s); err != nil {
