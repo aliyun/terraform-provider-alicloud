@@ -105,7 +105,7 @@ plan_file="$runs_dir/plan-${utc_date}.md"
       (if (.type|test("bug|Bug")) then "reply + create_req"
        elif (.type|test("req|Req|需求")) then "create_req + create_cr"
        else "reply" end) as $a |
-      (($pp[.pool] // 0) | tostring) as $proj |
+      (($pp[(.pool // "")] // 0) | tostring) as $proj |
       "| [\(.id)](https://project.aone.alibaba-inc.com/v2/project/\($proj)/req/\(.id)) | \(.title) | \(.priority // "P2") | \($a) | low_conf | escalate | create_cr / release_prod |"'
 
     echo ""
