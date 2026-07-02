@@ -32,7 +32,7 @@
         原单同步指派 + status=问题处理中 + @指派人                     │
 ```
 
-关联单一律建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。
+关联单一律建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。**例外:临钧路由(生成器产出)不由 jarvis `a1 workitem create` 手动建单**——走 acube `createBuildTaskV2` 接口,acube 内部自动建单+指派临钧+触发生成/PR 工作流,jarvis 只查回 aoneId 做关联,详见 Step 3。
 
 ## 团队分工速查
 
@@ -303,10 +303,10 @@ provider_repo="$(bash bootstrap/workspace.sh dir terraform_provider)"
 head -3 "$provider_repo/alicloud/resource_alicloud_<product>_<resource>.go" 2>/dev/null
 ```
 
-- 首行有类似 `// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!` → **生成器产出** → 指派 临钧(429768)
-- 无该注释(手写) → 指派 过载(484483)
+- 首行有类似 `// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!` → **生成器产出** → 走 acube V2 接口触发临钧工作流(见 Step 3 · 分支 D-临钧)
+- 无该注释(手写) → 指派 过载(484483)(见 Step 3 · 分支 A / D-过载 / E)
 
-若文件不存在:说明 provider 代码尚未合入(镇元 OK 但 provider 未生成/合入)——按"生成器产出待跑"处理 → 指派 临钧(429768),comment 里注明"资源代码尚未合入,请触发生成 + PR"。
+若文件不存在:说明 provider 代码尚未合入(镇元 OK 但 provider 未生成/合入)——按"生成器产出待跑"处理,同样走 Step 3 · 分支 D-临钧 的 acube V2 接口(接口内部会跑生成器 + PR),不必 jarvis 手动 comment 提醒生成。
 
 ### 分支 E:镇元 NOT OK,判定紧急度
 
@@ -345,7 +345,7 @@ echo "days_left=$days_left"
 
 ## Step 3 — 执行路由动作(写操作,先授权)
 
-### 分支 A / D / E(需要指派我方或产品专属人员)
+### 分支 A / D-过载(手写) / E(jarvis 手动建关联单+指派)
 
 ```bash
 # 1. 建关联单在 terraform-alicloud (528766),category 视诉求
@@ -367,6 +367,82 @@ bin/a1id -- project workitem update <源工单ID> --assignee <工号>
 bin/a1id -- project workitem update <源工单ID> --status 问题处理中
 # (专属名单产品用 "问题解决中"——名字接近,别写混)
 ```
+
+### 分支 D-临钧(生成器产出):走 acube V2 接口,jarvis 不手动建单
+
+生成器产出资源交给 acube 的 `TerraformVendorBuildTaskOpenapiController#createBuildTaskV2` 接口——接口内部**自动**在 terraform-alicloud (528766) 建关联单、指派临钧(429768)、触发生成/PR 工作流,jarvis 只负责查回 aoneId 并做源单关联+指派。**严禁**同时走上面 `a1 workitem create` 手动建单流程,否则双单污染临钧队列。
+
+服务端实现见邻仓 `a-cube-aliyun-com`:
+- `POST /api/v1/terraform_vendor_build/createBuildTaskV2` — body `TerraformVendorBuildTaskDTO`,返回 `ResultDTO<Long>` (taskId,同步返回)
+- `GET  /api/v1/terraform_vendor_build/queryAoneByTaskId?taskId={taskId}` — 返回 `{taskId, aoneId, aoneUrl}`,aoneId 异步产生(acube 内部建单完成后回写),需轮询
+
+```bash
+# 0. 拿 jarvis 工号(acube 侧 workId/workName 用当前 a1 身份,便于事后追溯)
+jarvis_empid=$(bin/a1id -- auth whoami 2>/dev/null | python3 -c '
+import sys,re,json
+raw=sys.stdin.read()
+# 兼容 whoami 输出的多种格式,取第一个 5-11 位数字/WB 前缀作为工号
+m=re.search(r"\b(WB\d+|\d{5,11})\b", raw)
+print(m.group(1) if m else "")')
+[ -z "$jarvis_empid" ] && echo "jarvis 未登录 a1(bin/a1id login jarvis),阻断" && exit 1
+
+# 1. 触发 build 任务(acube 自动建单+指派临钧+跑生成器)
+#    必填字段: namespace / resourceTypeCode / resourceTypeVersion / osType / flowType / workId / workName
+#    resourceTypeVersion 走"生成器产出待跑"场景填 0.0.0(acube 会跑首版生成)
+task_id=$(curl -s -X POST "https://acube.aliyun-inc.com/api/v1/terraform_vendor_build/createBuildTaskV2" \
+  -H "Content-Type: application/json" -H "accept: */*" \
+  -d "{
+    \"namespace\":\"<product>\",
+    \"resourceTypeCode\":\"<PascalCase Resource>\",
+    \"resourceTypeVersion\":\"0.0.0\",
+    \"osType\":\"Linux\",
+    \"flowType\":\"ACubeRelease\",
+    \"workId\":\"$jarvis_empid\",
+    \"workName\":\"jarvis\"
+  }" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+if d.get("code")!="SUCCESS":
+  sys.stderr.write(f"createBuildTaskV2 failed: {d.get(\"code\")} {d.get(\"message\")}\n"); sys.exit(1)
+print(d.get("data"))')
+[ -z "$task_id" ] && echo "acube createBuildTaskV2 未返回 taskId,阻断" && exit 1
+echo "taskId=$task_id"
+
+# 2. 轮询查 aoneId(taskId 立返,aoneId 需等 acube 异步建单完成;60s 内应有值)
+NEW_ID=""
+for i in 1 2 3 4 5 6; do
+  NEW_ID=$(curl -s "https://acube.aliyun-inc.com/api/v1/terraform_vendor_build/queryAoneByTaskId?taskId=${task_id}" \
+    -H "accept: */*" | python3 -c '
+import json,sys
+d=json.load(sys.stdin); data=(d.get("data") or {})
+print(data.get("aoneId") or "")')
+  [ -n "$NEW_ID" ] && break
+  sleep 10
+done
+if [ -z "$NEW_ID" ]; then
+  echo "acube 60s 内未返回 aoneId,升级 escalation/(不要回退到手动 a1 workitem create,可能双建)"
+  bootstrap/log.sh escalate <源工单ID> "acube build task $task_id 60s 内未返回 aoneId,人工排查"
+  exit 1
+fi
+echo "临钧关联单 aoneId=$NEW_ID"
+
+# 3. 双向关联到源客户单
+bin/a1id -- project workitem relation add <源工单ID> relate:$NEW_ID
+bin/a1id -- project workitem relation add $NEW_ID relate:<源工单ID>
+
+# 4. 源工单同步指派临钧 + 状态(评论 @临钧 走 Step 4 模板 B)
+bin/a1id -- project workitem update <源工单ID> --assignee 429768
+bin/a1id -- project workitem update <源工单ID> --status 问题处理中
+```
+
+**环境**:
+- 正式走 `acube.aliyun-inc.com`,预发把域名换成 `pre-acube.aliyun-inc.com`(路径/参数/返回结构一致)
+- `/api/v1/**` 免鉴权,内网 DNS(需办公网/VPN)
+
+**关键纪律**:
+- acube 自动建单+指派+触发工作流是**原子动作**,jarvis 只做"查 aoneId + 关联源单"善后
+- 60s 内没查到 aoneId → 直接升级 escalation,**禁**回退手动 `a1 workitem create`,双建会污染临钧研发队列
+- workId/workName 填当前 jarvis 身份工号,acube 侧任务日志能追到调用方
 
 ### 分支 F(上游 API 缺口,只 @提单人)
 
@@ -418,6 +494,7 @@ Terraform Provider / 镇元(Cloudspec)侧可闭环。
 
 ### 关联单
 - <NEW_ID>: <标题>,项目 528766 terraform-alicloud
+  (临钧场景:aoneId 由 acube V2 createBuildTaskV2 接口异步创建;taskId=<>)
 - 双向关联已加
 
 @<花名>(<工号>) 烦请跟进上述查证结论,进度请在两侧工单同步回帖。
@@ -453,3 +530,5 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 状态用 `--status 已完成` / `方案功能已存在` 兜底 —— 前者不在合法值,后者语义错(客户真诉求还没解决)
 - ❌ 强行 `--assignee` 指派专属名单以外的产品到过载/谜拟 —— 违反分工表,让本团队背不该背的锅
 - ❌ 跳过 Step 1.5 共通 gate 直接发 canned —— 分类误建 / 重复单情形下会与承接单重复打搅客户
+- ❌ 生成器产出(临钧)场景还手动 `a1 workitem create` 建关联单 —— acube V2 createBuildTaskV2 已自动建单+指派临钧,重复建会双单,污染临钧研发队列
+- ❌ acube 60s 未返回 aoneId 就"降级"回手动 `a1 workitem create` —— 可能 acube 已建成功只是查询未及时,回退会双建;正确做法是升级 escalation 由人排查
