@@ -229,6 +229,38 @@ Terraform 只是一个客户端资源编排工具,所有功能特性都基于云
 
 ## Step 2 — 定位缺口(按决策树)
 
+### 前置 · upstream PR / commit 前扫(涉及 provider 源码的分支必跑)
+
+Provider 源码查证**不能只 grep 本地 workspace**——workspace 可能停在旧 HEAD、本地磁盘可能滞后 upstream 数十小时。`sync-provider.sh` 已 hardened 为 `fetch + reset --hard FETCH_HEAD` 强对齐 upstream master,但即便如此仍要额外扫 upstream PR,防止漏掉刚 merged / 正在 review 的同题改动。
+
+```bash
+# 1) 强制同步 workspace 到 upstream master 最新
+bash .claude/skills/aone-triage/scripts/sync-provider.sh
+
+# 2) 扫 upstream open + recent merged PR,命中同题关键字 → 直接命中已有改动
+bash bootstrap/github-identity.sh gh pr list \
+  --repo aliyun/terraform-provider-alicloud \
+  --search "<关键字,如 ap-southeast-8 / <alicloud_xxx> / <属性名>>" \
+  --state all --limit 10 \
+  --json number,title,state,mergedAt,url
+
+# 3) 若关心某个具体文件的 upstream master 实际内容,gh api 直取(不受本地 workspace 影响):
+bash bootstrap/github-identity.sh gh api \
+  "repos/aliyun/terraform-provider-alicloud/contents/alicloud/<file>?ref=master" \
+  -q '.content' | base64 -d | grep -n <关键字>
+```
+
+**命中处理**:
+
+- **MERGED PR**:记 PR 链接,查 `mergedAt` vs 最新 release `publishedAt`:
+  - `mergedAt < 最新 release publishedAt` → 已发版,客户升级到该 release 或更新即可
+  - `mergedAt > 最新 release publishedAt` → 待下一版本发版,客户先按临时方案(如 `skip_region_validation`)或等 release
+  - 回复直接引用 PR,**不必再建关联单**、不必查镇元;分支 A/B/C/D/E/G 建单流程直接跳过
+- **OPEN PR**:贴 PR 链接 + 状态到源单评论,让客户/提单人可跟进;是否建关联单看 PR 进度(已 review 中可先等)
+- **无命中**:才走下方决策树的分支 A/B/C/D/E/F/G 查证 + 建单流程
+
+**为什么放前置**:避免"以为 provider 没支持,建了关联单指派团队做,结果同题 PR 昨天刚 merged"。参见工单 83718139 教训——PR 9909 merged 21 小时后 jarvis 才处理仍未命中,是本 skill 的历史缺口。
+
 ### 分支 A:产品在专属维护名单
 
 直接跳 Step 3,指派对应负责人。**不查镇元 / 不做类比分析**——这批产品的 schema/代码流程与镇元无关。
@@ -596,3 +628,4 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 转单不复制原单优先级 / 不设短于原单 DDL 的截止日期 —— 关联单接手方无优先级参考,DDL 与原单齐会让下一棒无余量;规则:`--priority` 复制原单,`--cfs 计划截止日期` = 原单 DDL - 2 天(至少 today+1);原单无 DDL 时默认 today+3
 - ❌ 建关联单用 `--description` —— a1 CLI 不吃(报 `unknown flag: --description`),正文用 `--body` 或 `--body-file`
 - ❌ 在 tf_provider(528766)建单不传"计划开始日期 / 计划截止日期 / 实际工时" cfs —— 池校验必填,漏传会 400 `【计划开始日期】不能为空...`;用 `--cfs "计划开始日期=YYYY-MM-DD"` 等传入
+- ❌ Provider 源码查证跳过 Step 2 前置的 upstream PR 前扫,只 grep 本地 workspace 磁盘 —— workspace 的本地 branch 可能滞后 upstream 数十小时,或 sync-provider.sh 未 hardened 时只 fetch 不 reset;必先跑 `gh pr list --search` + `gh api contents?ref=master`,同题 recently-merged PR 直接引用避免重复建单;参见工单 83718139 教训(PR 9909 merged 21h 后 jarvis 才处理仍未命中)
