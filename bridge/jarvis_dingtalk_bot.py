@@ -24,6 +24,8 @@ Env:
   JARVIS_CC                                override full Jarvis launch command (default: claude --settings).
   JARVIS_SETTINGS                          override settings file for Jarvis (default: ~/.claude/idea_settings.json).
   CLAUDE_TIMEOUT                           per-round seconds (default 300).
+  JARVIS_DISPATCH_TIMEOUT                  headless dispatch timeout (default 43200 = 12h).
+  JARVIS_DISPATCH_MAX                      max concurrent dispatch workers (default 3).
 """
 
 import os
@@ -35,6 +37,7 @@ import time
 import logging
 import subprocess
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from collections import defaultdict
 
@@ -142,6 +145,9 @@ TASK_REJECT = re.compile(r"无需|不需要|不用|纯打招呼|闲聊|没有真
 AUTH_SINGLE = re.compile(r"处理\s*#?(\d+)")
 AUTH_ALL = re.compile(r"全部处理|批量处理")
 
+# Headless suspend sentinel: [[SUSPEND:{"aone_id":"12345","wait_for":"chenyi",...}]]
+SUSPEND_RE = re.compile(r'\[\[SUSPEND:(.*?)\]\]', re.DOTALL)
+
 
 def _valid_task(task):
     """哨兵任务是否真要升级: 非空、>=4 字、不含否定词。否则视为无任务。"""
@@ -160,6 +166,21 @@ def extract_jarvis_task(text):
     clean = JARVIS_SENTINEL.sub("", text).strip()
     task = tasks[-1].strip()
     return clean, (task if _valid_task(task) else None)
+
+
+def extract_suspend(text):
+    """Scan for ``[[SUSPEND:{...}]]`` sentinel. Returns (clean_text, info_dict|None)."""
+    m = SUSPEND_RE.search(text)
+    if not m:
+        return text, None
+    clean = SUSPEND_RE.sub("", text).strip()
+    try:
+        info = json.loads(m.group(1))
+    except (ValueError, TypeError):
+        return clean, None
+    if not info.get("aone_id"):
+        return clean, None
+    return clean, info
 
 
 def truncate(text, limit=MAX_REPLY):
@@ -204,12 +225,13 @@ def parse_stream_lines(lines):
             yield acc
 
 
-def run_claude_stream(text, session_id, resume):
+def run_claude_stream(text, session_id, resume, timeout=None):
     """Spawn claude streaming round; yield accumulated answer text as it grows.
 
     On timeout the process is killed and a notice yielded; stderr is captured
     for a fallback error message. First turn --session-id, later turns --resume."""
-    timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
+    if timeout is None:
+        timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
     cmd = jarvis_cmd() + ["-p", text, "--output-format", "stream-json",
            "--include-partial-messages", "--verbose"]
     cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
@@ -541,6 +563,140 @@ class ScanScheduler:
             log.exception("ScanScheduler failed to push notification card")
 
 
+# Gradual poll tiers: (age_threshold_sec, poll_interval_sec)
+WAIT_TIERS = [
+    (30 * 60,       120),    # first 30 min: every 2 min
+    (2 * 3600,      600),    # 30 min–2 h:   every 10 min
+    (float('inf'),  1800),   # 2 h+:         every 30 min
+]
+WAIT_EXPIRE_SEC = 48 * 3600  # 48 h
+
+
+class WaitWatcher:
+    """Poll Aone comments for suspended headless tasks; wake Jarvis on reply.
+
+    Gradual polling: 2 min → 10 min → 30 min based on suspend age.
+    Persists to .my-day/suspended/ so bridge restart recovers waiting tasks."""
+
+    PERSIST_DIR = ".my-day/suspended"
+
+    def __init__(self, handler):
+        self.handler = handler
+        self.suspended = {}   # aone_id(str) -> entry dict
+        self._lock = threading.Lock()
+        self._thread = None
+        self._load_persisted()
+
+    def start(self):
+        self._thread = threading.Thread(target=self._loop, daemon=True, name="WaitWatcher")
+        self._thread.start()
+
+    def suspend(self, aone_id, session_id, wait_for, last_comment_id, target, target_type):
+        now = time.time()
+        entry = {"session_id": session_id, "wait_for": wait_for,
+                 "last_comment_id": last_comment_id, "target": target,
+                 "target_type": target_type, "suspended_at": now, "last_poll": 0}
+        with self._lock:
+            self.suspended[str(aone_id)] = entry
+        self._persist(aone_id, entry)
+        log.info("WaitWatcher: suspended #%s waiting for %s", aone_id, wait_for)
+
+    def count(self):
+        with self._lock:
+            return len(self.suspended)
+
+    # -- poll loop -------------------------------------------------------------
+
+    def _loop(self):
+        while True:
+            try:
+                self._tick()
+            except Exception:  # noqa: BLE001
+                log.exception("WaitWatcher tick failed")
+            time.sleep(30)
+
+    @staticmethod
+    def _poll_interval(entry):
+        age = time.time() - entry["suspended_at"]
+        for threshold, interval in WAIT_TIERS:
+            if age < threshold:
+                return interval
+        return WAIT_TIERS[-1][1]
+
+    def _tick(self):
+        now = time.time()
+        with self._lock:
+            snapshot = list(self.suspended.items())
+        for aone_id, task in snapshot:
+            if now - task["last_poll"] < self._poll_interval(task):
+                continue
+            task["last_poll"] = now
+            if now - task["suspended_at"] > WAIT_EXPIRE_SEC:
+                self._expire(aone_id, task)
+                continue
+            comments = self._fetch_comments(aone_id)
+            if comments is None:
+                continue
+            new = [c for c in comments
+                   if c.get("id", 0) > task["last_comment_id"]
+                   and c.get("creator", "") != "open-jarvis"]
+            if new:
+                log.info("WaitWatcher: #%s got %d new comment(s), waking", aone_id, len(new))
+                with self._lock:
+                    self.suspended.pop(aone_id, None)
+                self._remove_persisted(aone_id)
+                self.handler._wake(aone_id, task, new)
+
+    def _fetch_comments(self, aone_id):
+        try:
+            r = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--",
+                 "project", "workitem", "comment", "list", str(aone_id), "-f", "json"],
+                capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
+            return json.loads(r.stdout) if r.returncode == 0 else None
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _expire(self, aone_id, task):
+        log.warning("WaitWatcher: #%s suspended >48h, expiring", aone_id)
+        with self._lock:
+            self.suspended.pop(aone_id, None)
+        self._remove_persisted(aone_id)
+        self.handler._quick_card(
+            task["target"],
+            "⏰ 工单 #%s 挂起超 48h 未收到回复，已升级。" % aone_id,
+            task["target_type"])
+
+    # -- persistence -----------------------------------------------------------
+
+    def _persist_dir(self):
+        d = Path(REPO_ROOT) / self.PERSIST_DIR
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def _persist(self, aone_id, entry):
+        p = self._persist_dir() / ("%s.json" % aone_id)
+        p.write_text(json.dumps({**entry, "aone_id": str(aone_id)},
+                                ensure_ascii=False, default=str))
+
+    def _remove_persisted(self, aone_id):
+        p = self._persist_dir() / ("%s.json" % aone_id)
+        p.unlink(missing_ok=True)
+
+    def _load_persisted(self):
+        d = Path(REPO_ROOT) / self.PERSIST_DIR
+        if not d.exists():
+            return
+        for f in d.glob("*.json"):
+            try:
+                entry = json.loads(f.read_text())
+                aid = entry.pop("aone_id", f.stem)
+                self.suspended[str(aid)] = entry
+                log.info("WaitWatcher: restored suspended #%s from disk", aid)
+            except Exception:  # noqa: BLE001
+                log.warning("WaitWatcher: bad persisted file %s", f)
+
+
 class JarvisHandler(AsyncChatbotHandler):
     # process() runs in a ThreadPoolExecutor (sync, NOT async) so blocking
     # subprocess calls never freeze the WS event loop / keepalive ack.
@@ -553,9 +709,14 @@ class JarvisHandler(AsyncChatbotHandler):
         self.sm = _load_streaming_module()        # imported streaming.py helpers
         self.pool = TataPool()                    # 常驻 idea 进程保温, 消 Tata 冷启
         self.scanner = ScanScheduler(self)
-        log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s",
+        self.dispatch_pool = ThreadPoolExecutor(
+            max_workers=int(os.environ.get("JARVIS_DISPATCH_MAX", "3")),
+            thread_name_prefix="dispatch")
+        self.dispatch_active = {}                 # item_id -> {target, started, future}
+        self.watcher = WaitWatcher(self)
+        log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s dispatch_max=%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
-                 claude_bin(), skill_path())
+                 claude_bin(), skill_path(), self.dispatch_pool._max_workers)
 
     def _tata_runner(self, text, sid, resume):
         """Tata 一轮: 优先常驻进程保温(self.pool.send), 起不来回退一次性 run_tata_stream。
@@ -577,6 +738,64 @@ class JarvisHandler(AsyncChatbotHandler):
             self.sm.streaming_update(tok, otid, CARD_KEY, truncate(text), is_finalize=True)
         except Exception as e:  # noqa: BLE001
             log.error("quick_card failed: %s", e)
+
+    def _dispatch_bg(self, target, target_type, prompt, item_id, sid, resume):
+        """Background worker: stream Jarvis into a card; detect suspend sentinel."""
+        dispatch_timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
+        try:
+            log.info("dispatch_bg #%s start (timeout=%ds)", item_id, dispatch_timeout)
+            result = self._stream_round(
+                target, prompt, sid, resume,
+                lambda t, s, r: run_claude_stream(t, s, r, timeout=dispatch_timeout),
+                target_type=target_type)
+            _, suspend_info = extract_suspend(result)
+            if suspend_info:
+                last_cid = self._last_comment_id(suspend_info["aone_id"])
+                self.watcher.suspend(
+                    suspend_info["aone_id"], sid,
+                    suspend_info.get("wait_for", ""),
+                    last_cid, target, target_type)
+                self._quick_card(target,
+                    "⏸️ 工单 #%s 已挂起，等待 @%s 回复" % (
+                        suspend_info["aone_id"], suspend_info.get("wait_for", "?")),
+                    target_type)
+            else:
+                log.info("dispatch_bg #%s done", item_id)
+        except Exception as e:  # noqa: BLE001
+            log.exception("dispatch_bg #%s failed: %s", item_id, e)
+            self._quick_card(target, "⚠️ 工单 #%s 后台处理异常: %s" % (item_id, e), target_type)
+        finally:
+            self.dispatch_active.pop(str(item_id), None)
+
+    def _wake(self, aone_id, task, new_comments):
+        """Called by WaitWatcher when a suspended task gets a reply."""
+        reply_text = "\n".join(
+            "@%s: %s" % (c.get("creator", "?"), c.get("content", "")) for c in new_comments)
+        prompt = "工单 #%s 收到新回复:\n%s\n\n请继续处理。" % (aone_id, reply_text)
+        self._quick_card(
+            task["target"],
+            "🔔 工单 #%s 收到回复，正在唤醒 Jarvis…" % aone_id,
+            task["target_type"])
+        fut = self.dispatch_pool.submit(
+            self._dispatch_bg, task["target"], task["target_type"],
+            prompt, aone_id, task["session_id"], True)
+        self.dispatch_active[str(aone_id)] = {
+            "target": task["target"], "started": time.time(), "future": fut}
+
+    @staticmethod
+    def _last_comment_id(aone_id):
+        """Get the highest comment ID for an Aone workitem (for suspend baseline)."""
+        try:
+            r = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--",
+                 "project", "workitem", "comment", "list", str(aone_id), "-f", "json"],
+                capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
+            if r.returncode == 0:
+                comments = json.loads(r.stdout)
+                return max((c.get("id", 0) for c in comments), default=0)
+        except Exception:  # noqa: BLE001
+            pass
+        return 0
 
     def process(self, callback):
         msg = ChatbotMessage.from_dict(callback.data)
@@ -611,9 +830,13 @@ class JarvisHandler(AsyncChatbotHandler):
                         "工单 #%s (%s)\n"
                         "池: %s" % (item["id"], item.get("title", ""), pool)
                     )
-                    self._stream_round(card_target, dispatch_prompt, jsid, jresume,
-                                       lambda t, s, r: run_claude_stream(t, s, r),
-                                       target_type=card_type)
+                    self._quick_card(card_target,
+                                     "⚙️ 已接收工单 #%s，后台处理中…" % item["id"], card_type)
+                    fut = self.dispatch_pool.submit(
+                        self._dispatch_bg, card_target, card_type,
+                        dispatch_prompt, item["id"], jsid, jresume)
+                    self.dispatch_active[str(item["id"])] = {
+                        "target": card_target, "started": time.time(), "future": fut}
                     return AckMessage.STATUS_OK, "dispatched"
                 else:
                     self._quick_card(card_target, "工单 #%s 不在待处理列表中。" % auth_m.group(1), card_type)
@@ -621,6 +844,7 @@ class JarvisHandler(AsyncChatbotHandler):
             if AUTH_ALL.match(text):
                 items = self.scanner.authorize_all()
                 if items:
+                    ids = []
                     for item in items:
                         jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
                         jresume = staff in self.jarvis_started
@@ -630,9 +854,16 @@ class JarvisHandler(AsyncChatbotHandler):
                             "工单 #%s (%s)\n"
                             "池: %s" % (item["id"], item.get("title", ""), pool)
                         )
-                        self._stream_round(card_target, dispatch_prompt, jsid, jresume,
-                                           lambda t, s, r: run_claude_stream(t, s, r),
-                                           target_type=card_type)
+                        fut = self.dispatch_pool.submit(
+                            self._dispatch_bg, card_target, card_type,
+                            dispatch_prompt, item["id"], jsid, jresume)
+                        self.dispatch_active[str(item["id"])] = {
+                            "target": card_target, "started": time.time(), "future": fut}
+                        ids.append(str(item["id"]))
+                    self._quick_card(card_target,
+                                     "⚙️ 已提交 %d 条工单后台处理: %s" % (
+                                         len(ids), ", ".join("#" + i for i in ids)),
+                                     card_type)
                     return AckMessage.STATUS_OK, "dispatched_all"
                 else:
                     self._quick_card(card_target, "当前没有待处理的工单。", card_type)
@@ -654,15 +885,18 @@ class JarvisHandler(AsyncChatbotHandler):
                 tail_on_handoff="\n\n交给 Jarvis 处理…",
                 target_type=card_type)
             _, task = extract_jarvis_task(full)
-            # master 闸：仅辰羿且 Tata 发了哨兵任务，才升级第二层重型 Jarvis。
+            # master 闸：仅辰羿且 Tata 发了哨兵任务，才升级第二层重型 Jarvis（异步）。
             if task and staff == master_staff():
-                log.info("staff=%s handoff -> jarvis: %r", staff, task[:200])
+                log.info("staff=%s handoff -> jarvis (async): %r", staff, task[:200])
                 jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
                 jresume = staff in self.jarvis_started
                 self.jarvis_started.add(staff)
-                self._stream_round(card_target, task, jsid, jresume,
-                                   lambda t, s, r: run_claude_stream(t, s, r),
-                                   target_type=card_type)
+                handoff_id = "handoff-%s" % int(time.time())
+                fut = self.dispatch_pool.submit(
+                    self._dispatch_bg, card_target, card_type,
+                    task, handoff_id, jsid, jresume)
+                self.dispatch_active[handoff_id] = {
+                    "target": card_target, "started": time.time(), "future": fut}
             elif task:
                 log.info("staff=%s sent sentinel but not master; ignored", staff)
             log.info("staff=%s done in %.1fs", staff, time.time() - t0)
@@ -738,12 +972,15 @@ def main():
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
     handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
     handler.scanner.start()
+    handler.watcher.start()
     log.info("scan scheduler started (interval=%ss target=%s)",
              handler.scanner.interval, handler.scanner.notify_target)
+    log.info("wait watcher started (suspended=%d)", handler.watcher.count())
     log.info("starting DingTalk stream listener…")
     try:
         client.start_forever()
     finally:
+        handler.dispatch_pool.shutdown(wait=False, cancel_futures=True)
         handler.pool.shutdown()  # 收尾全 kill 常驻 Tata 进程
 
 
