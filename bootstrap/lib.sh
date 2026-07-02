@@ -20,3 +20,15 @@ jarvis_root() {
     # git-common-dir returns /path/to/repo/.git — strip trailing /.git
     echo "${git_common%/.git}"
 }
+
+# Standard runs/ dir(P1.e 抽出:plan.sh + log.sh + wrap-check.sh 曾各自重复实现)。
+# 尊重 JARVIS_RUNS_DIR env override(测试用)。
+lib_runs_dir() {
+    echo "${JARVIS_RUNS_DIR:-$(jarvis_root)/runs}"
+}
+
+# Standard escalation/ dir(P1.e 抽出:log.sh + sweep/watchdog 曾各自重复实现)。
+# 尊重 JARVIS_ESCALATION_DIR env override(测试用)。
+lib_escalation_dir() {
+    echo "${JARVIS_ESCALATION_DIR:-$(jarvis_root)/escalation}"
+}

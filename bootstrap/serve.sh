@@ -4,7 +4,9 @@
 # Default port 8787; override: serve.sh [port]. Pure python3 http.server, no deps.
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="${JARVIS_ROOT:-$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || (cd "$script_dir/.." && pwd))}"
+# shellcheck source=bootstrap/lib.sh
+source "$script_dir/lib.sh"
+root="$(jarvis_root)"
 port="${1:-8787}"
 # 未 build 则起服前先 build 一次（避免首屏 404）；失败也照常起服，可走 /refresh 重试。
 [ -f "$root/docs/board.html" ] || { echo "serve: board.html 未生成，首次 build 中…" >&2; bash "$script_dir/board-html.sh" >/dev/null 2>&1 || true; }
