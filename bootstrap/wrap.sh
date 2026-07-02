@@ -3,8 +3,14 @@
 # Aone = 唯一真源：任何 jarvis 工作都得在 Aone 留痕；中途 sync，收尾 done。
 # Usage:
 #   wrap.sh sync <id> "<progress>"            — 中途报进展（评论），不改状态、不写 run_done
+#   wrap.sh sync <id> --summary-file <path>   — 从文件读取多行进展
+#   wrap.sh sync <id> --summary-stdin         — 从 stdin 读取多行进展
 #   wrap.sh done <id> "<summary>" <status>     — 收尾：评论 + run_done + 改状态（status 必填）
+#   wrap.sh done <id> --summary-file <path> <status|--no-status>
+#   wrap.sh done <id> --summary-stdin <status|--no-status>
 #   wrap.sh done-no-status <id> "<summary>"    — 收尾：评论 + run_done，不改状态
+#   wrap.sh done-no-status <id> --summary-file <path>
+#   wrap.sh done-no-status <id> --summary-stdin
 #   wrap.sh done <id> "<summary>" --no-status  — 同 done-no-status
 #
 # done 是每条 dev/adhoc/plugin-dev 路径在宣告 Done 前的必经收尾。
@@ -44,6 +50,22 @@ format_comment() {
     bash "$script_dir/aone-comment-format.sh" "$1"
 }
 
+summary_from_file() {
+    local path="${1:-}"
+    [ -n "$path" ] || { echo "wrap.sh: --summary-file requires a path" >&2; exit 1; }
+    [ -f "$path" ] || { echo "wrap.sh: summary file not found: $path" >&2; exit 1; }
+    cat -- "$path"
+}
+
+reject_literal_newline() {
+    local text="$1"
+    local literal_newline='\n'
+    if [ "${JARVIS_ALLOW_LITERAL_NEWLINE:-0}" != "1" ] && [[ "$text" == *"$literal_newline"* ]]; then
+        printf 'wrap.sh: summary contains literal \\n; use heredoc/file/stdin or --summary-file/--summary-stdin for real multiline text. Set JARVIS_ALLOW_LITERAL_NEWLINE=1 only when literal \\n text is intentional.\n' >&2
+        exit 1
+    fi
+}
+
 # 触碰台账：任何 sync/done 都记 id，wrap-check 据此抓"碰过但没收尾(无 run_done)"的盲区
 # ——盲区指根本没 claim、claim 台账无记录的工单(see 83498126)。
 touch_ledger() {
@@ -70,6 +92,7 @@ write_done() {
     local status="${3:-}"
     local update_status="${4:-1}"
 
+    reject_literal_newline "$summary"
     touch_ledger "$tid"
     # 1) 本地审计先写，审计绝不丢（即使 Aone 调用失败）
     jq -e '.claim' "$pools_cfg" >/dev/null 2>&1 || echo "wrap.sh: pools.json .claim 缺失" >&2
@@ -94,8 +117,15 @@ id="${2:-}"
 
 case "$cmd" in
     sync)
-        text="${3:-}"
-        [ -n "$id" ] && [ -n "$text" ] || { echo "Usage: wrap.sh sync <id> \"<progress>\"" >&2; exit 1; }
+        if [ "${3:-}" = "--summary-file" ]; then
+            text="$(summary_from_file "${4:-}")"
+        elif [ "${3:-}" = "--summary-stdin" ]; then
+            text="$(cat)"
+        else
+            text="${3:-}"
+        fi
+        [ -n "$id" ] && [ -n "$text" ] || { echo "Usage: wrap.sh sync <id> \"<progress>\" | --summary-file <path> | --summary-stdin" >&2; exit 1; }
+        reject_literal_newline "$text"
         touch_ledger "$id"
         prefix="$(claim_prefix_pop "$id")"
         [ -n "$prefix" ] && text="${prefix}"$'\n\n'"${text}"
@@ -106,9 +136,17 @@ case "$cmd" in
         bash "$script_dir/cache.sh" bust "wi-$id"  # 评论后详情已变，丢缓存
         ;;
     done)
-        summary="${3:-}"
-        status="${4:-}"
-        [ -n "$id" ] && [ -n "$summary" ] && [ -n "$status" ] || { echo "Usage: wrap.sh done <id> \"<summary>\" <status|--no-status>" >&2; exit 1; }
+        if [ "${3:-}" = "--summary-file" ]; then
+            summary="$(summary_from_file "${4:-}")"
+            status="${5:-}"
+        elif [ "${3:-}" = "--summary-stdin" ]; then
+            summary="$(cat)"
+            status="${4:-}"
+        else
+            summary="${3:-}"
+            status="${4:-}"
+        fi
+        [ -n "$id" ] && [ -n "$summary" ] && [ -n "$status" ] || { echo "Usage: wrap.sh done <id> \"<summary>\"|--summary-file <path>|--summary-stdin <status|--no-status>" >&2; exit 1; }
         if [ "$status" = "--no-status" ]; then
             write_done "$id" "$summary" "" 0
         else
@@ -116,12 +154,18 @@ case "$cmd" in
         fi
         ;;
     done-no-status)
-        summary="${3:-}"
-        [ -n "$id" ] && [ -n "$summary" ] || { echo "Usage: wrap.sh done-no-status <id> \"<summary>\"" >&2; exit 1; }
+        if [ "${3:-}" = "--summary-file" ]; then
+            summary="$(summary_from_file "${4:-}")"
+        elif [ "${3:-}" = "--summary-stdin" ]; then
+            summary="$(cat)"
+        else
+            summary="${3:-}"
+        fi
+        [ -n "$id" ] && [ -n "$summary" ] || { echo "Usage: wrap.sh done-no-status <id> \"<summary>\" | --summary-file <path> | --summary-stdin" >&2; exit 1; }
         write_done "$id" "$summary" "" 0
         ;;
     *)
-        echo "Usage: wrap.sh {sync|done|done-no-status} <id> \"<text>\" [status|--no-status]" >&2
+        echo "Usage: wrap.sh {sync|done|done-no-status} <id> \"<text>\"|--summary-file <path>|--summary-stdin [status|--no-status]" >&2
         exit 1
         ;;
 esac

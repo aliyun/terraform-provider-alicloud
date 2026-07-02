@@ -15,8 +15,9 @@ JARVIS_ROOT="$(cd "$BOOTSTRAP_DIR/.." && pwd)"
 # ---------------------------------------------------------------------------
 FAKE_BIN_DIR="$(mktemp -d)"
 A1_LOG="$(mktemp)"
+SUMMARY_TMP_DIR="$(mktemp -d)"
 export A1_LOG
-trap 'rm -rf "$FAKE_BIN_DIR" "$RUNS_DIR" "$POOLS_TMP" "$A1_LOG"' EXIT
+trap 'rm -rf "$FAKE_BIN_DIR" "$RUNS_DIR" "$POOLS_TMP" "$A1_LOG" "$SUMMARY_TMP_DIR" "$FAKE_JARVIS_ROOT"' EXIT
 
 cat > "$FAKE_BIN_DIR/a1" <<'EOF'
 #!/usr/bin/env bash
@@ -187,6 +188,112 @@ if grep -q "^代码：" "$A1_LOG"; then
 else
     echo "  FAIL: code footer was not separated"
     echo "  a1 log:"
+    cat "$A1_LOG"
+    fail_count=$((fail_count + 1))
+fi
+
+echo "Test 7: literal backslash-n fails before side effects"
+: > "$A1_LOG"
+literal_err="$SUMMARY_TMP_DIR/literal.err"
+literal_exit=0
+bash "$WRAP" done "WI-007" 'bad\ntext' "done" > /dev/null 2>"$literal_err" || literal_exit=$?
+if [ "$literal_exit" -ne 0 ]; then
+    echo "  PASS: literal backslash-n rejected"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: literal backslash-n was accepted"
+    fail_count=$((fail_count + 1))
+fi
+
+if grep -q "heredoc/file/stdin" "$literal_err" || grep -q -- "--summary-file" "$literal_err"; then
+    echo "  PASS: literal rejection explains safe multiline input"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: literal rejection message did not explain safe multiline input"
+    echo "  stderr:"
+    cat "$literal_err"
+    fail_count=$((fail_count + 1))
+fi
+
+if ! grep -q "project workitem comment create WI-007" "$A1_LOG"; then
+    echo "  PASS: literal rejection did not call a1 comment"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: literal rejection called a1 comment"
+    cat "$A1_LOG"
+    fail_count=$((fail_count + 1))
+fi
+
+literal_run_count=$(find "$RUNS_DIR" -name '*-WI-007.md' -type f | wc -l | tr -d ' ')
+if [ "$literal_run_count" -eq 0 ]; then
+    echo "  PASS: literal rejection did not write run_done"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: literal rejection wrote run_done"
+    fail_count=$((fail_count + 1))
+fi
+
+echo "Test 8: done --summary-file reads real multiline text"
+: > "$A1_LOG"
+summary_file="$SUMMARY_TMP_DIR/summary.txt"
+cat > "$summary_file" <<'EOF_SUMMARY'
+第一行
+第二行
+EOF_SUMMARY
+A1_FAIL=0 assert_exit "wrap.sh done --summary-file ok" zero \
+    bash "$WRAP" done "WI-008" --summary-file "$summary_file" "done"
+
+if grep -q "第一行" "$A1_LOG" && grep -q "第二行" "$A1_LOG" && ! grep -Fq '\n' "$A1_LOG"; then
+    echo "  PASS: summary-file posts multiline text without literal backslash-n"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: summary-file did not post expected multiline text"
+    echo "  a1 log:"
+    cat "$A1_LOG"
+    fail_count=$((fail_count + 1))
+fi
+
+if grep -q "project workitem update WI-008 --status done" "$A1_LOG"; then
+    echo "  PASS: summary-file keeps status argument"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: summary-file did not keep status argument"
+    cat "$A1_LOG"
+    fail_count=$((fail_count + 1))
+fi
+
+echo "Test 9: sync --summary-stdin reads and formats real multiline text"
+: > "$A1_LOG"
+stdin_exit=0
+printf '结论：已定位\n1）测试缺失\n2）文档缺失。\n' | bash "$WRAP" sync "WI-009" --summary-stdin >/dev/null 2>&1 || stdin_exit=$?
+if [ "$stdin_exit" -eq 0 ]; then
+    echo "  PASS: sync --summary-stdin exits zero"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: sync --summary-stdin exits nonzero ($stdin_exit)"
+    fail_count=$((fail_count + 1))
+fi
+
+if grep -q "1、测试缺失" "$A1_LOG" && grep -q "2、文档缺失。" "$A1_LOG" && ! grep -Fq '\n' "$A1_LOG"; then
+    echo "  PASS: sync --summary-stdin formats multiline list without literal backslash-n"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: sync --summary-stdin did not format expected multiline list"
+    echo "  a1 log:"
+    cat "$A1_LOG"
+    fail_count=$((fail_count + 1))
+fi
+
+echo "Test 10: JARVIS_ALLOW_LITERAL_NEWLINE=1 allows literal backslash-n"
+: > "$A1_LOG"
+JARVIS_ALLOW_LITERAL_NEWLINE=1 A1_FAIL=0 assert_exit "wrap.sh literal allowed by env" zero \
+    bash "$WRAP" done-no-status "WI-010" 'bad\ntext'
+
+if grep -q "project workitem comment create WI-010" "$A1_LOG" && grep -Fq '\n' "$A1_LOG"; then
+    echo "  PASS: literal opt-out posts literal backslash-n"
+    pass_count=$((pass_count + 1))
+else
+    echo "  FAIL: literal opt-out did not post expected literal text"
     cat "$A1_LOG"
     fail_count=$((fail_count + 1))
 fi

@@ -101,7 +101,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 
 | 动作 | 命令 |
 |---|---|
-| 回复评论 | 走 wrap.sh done(见 bookend),别单独 `a1 comment create`(会与 wrap 里的重复,a1 无 delete) |
+| 回复评论 | 走 wrap.sh done(见 bookend;多行用 `--summary-stdin`/`--summary-file`),别单独 `a1 comment create`(会与 wrap 里的重复,a1 无 delete) |
 | 转需求(Cloudspec 缺口) | `bin/a1id -- project workitem create --project 2165097 --category req --assignee 479782 -m "<7 字段模板+机读 JSON,见 references/templates.md>"` |
 | 建关联单(自家团队接手) | tf_customer 域走 `references/tf-customer-request-routing.md` 分工表 |
 | 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **调两次**(A→B, B→A) |
@@ -118,7 +118,9 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 bash bootstrap/claim.sh claim <id> <pool-project>
 
 # 2. wrap.sh done —— 一次发完整评论 + run_done + (可选)改状态
-bash bootstrap/wrap.sh done <id> "<完整回复>" <status|--no-status>
+bash bootstrap/wrap.sh done <id> --summary-stdin <status|--no-status> <<'EOF'
+<完整回复>
+EOF
 
 # 3. release / finish 二选一
 bash bootstrap/claim.sh release <id> <pool-project>   # 本轮释放,等对方接手 → jarvis-idle
@@ -126,7 +128,9 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 ```
 
 **wrap.sh 参数陷阱**(memory `wrap-done-single-comment`):
-- **位置参数**,不吃 `--summary-file` / `--status` 命名参数;写错会解析成字面串产生空评论
+- 单行可继续用位置参数: `bash bootstrap/wrap.sh done <id> "<完整回复>" <status|--no-status>`
+- 多行正文用 `--summary-stdin` heredoc 或先写文件再 `--summary-file <path>`;不要把换行写成字面量 `\n`
+- 不支持 `--status` 命名参数;status 仍放在最后一个位置参数
 - 用之前**先起草完整评论内容**,一次发完(先手动 `a1 comment create` 再 wrap.sh done 会重复,a1 无 comment delete)
 
 **release vs finish**:默认 release(路由 ≠ 真闭环,需下游响应);仅当查证发现"其实已支持 + 只是客户版本旧"这类无缺口场景走 finish。
@@ -169,7 +173,7 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 - ❌ 用 next.api 网页 curl 拿 API meta —— SPA 拿不到 JSON,用 `aliyun <product> <Action> --help` 或 MCP `ListApis/GetApiDefinition`
 - ❌ 写操作跳过用户授权(supervised 模式) —— 每一步 comment/create/relation/status 都先给草稿等 yes
 - ❌ 用 wrap.sh done 之前先手动 `a1 comment create` —— 重复评论且 a1 无 delete
-- ❌ wrap.sh done 用命名参数 `--summary-file` / `--status` —— 只吃位置,会产生空评论
+- ❌ 多行 wrap 评论写成 `"第一行\n第二行"` —— 字面量 `\n` 会被拦截;用 heredoc 的 `--summary-stdin` 或 `--summary-file`
 - ❌ 关联单不双向 —— `relation add` 必须调两次
 - ❌ jarvis 自行 push master / merge PR / release_prod —— 永久停止项(autonomy.md `stop`)
 - ❌ 对外产物带 AI 署名 —— AGENTS.md 工作纪律 #7,发出前剥掉
