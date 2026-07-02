@@ -6,6 +6,7 @@
 #   cache.sh bust <key>                        — 删该 key（写操作后调用，丢陈旧详情）
 #   cache.sh fresh <key> <ttl_sec>             — 仅判时效：新鲜退 0、否则退 1（不取内容）
 #   cache.sh path <key>                        — 打印缓存文件路径
+#   cache.sh age  <file_path>                  — 打印任意文件 mtime 距今秒数(跨平台,消除 stat -f %m/-c %Y 重实现);文件不存在退 1
 # 命中走缓存的 get 会在 stderr 注 "cache hit <key>"；cmd 失败/空输出不落盘，下次重取。
 set -uo pipefail
 
@@ -33,6 +34,11 @@ case "$cmd" in
         [ "$age" -lt "$ttl" ] && exit 0 || exit 1
         ;;
     path) _cache_file "${2:-}" ;;
+    age)
+        f="${2:-}"
+        [ -f "$f" ] || exit 1
+        _age_sec "$f" || exit 1
+        ;;
     bust) rm -f "$(_cache_file "${2:-}")" 2>/dev/null; exit 0 ;;
     get)
         key="${2:-}"; ttl="${3:-0}"; shift 3
@@ -51,5 +57,5 @@ case "$cmd" in
         printf '%s' "$out"
         exit "$rc"
         ;;
-    *) echo "Usage: cache.sh {get|bust|fresh|path} <key> [ttl] [-- cmd...]" >&2; exit 2 ;;
+    *) echo "Usage: cache.sh {get|bust|fresh|path|age} <key|path> [ttl] [-- cmd...]" >&2; exit 2 ;;
 esac
