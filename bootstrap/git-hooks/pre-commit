@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# bootstrap/git-hooks/pre-commit
+# 通过 core.hooksPath=bootstrap/git-hooks 启用(在 preflight.sh 里 idempotent 设置)。
+#
+# 责任:阻断"改一份 skill 忘改另一份"导致 .claude/skills 与 .agents/skills 漂移的 commit。
+# 只在 staged 涉及这两个目录时才跑,普通 commit 无感。
+set -uo pipefail
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
+
+if echo "$staged" | grep -qE '^(\.claude|\.agents)/skills/'; then
+    repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+    [ -n "$repo_root" ] || exit 0
+    if ! bash "$repo_root/bootstrap/skills-mirror-check.sh" check; then
+        exit 1
+    fi
+fi
+
+exit 0

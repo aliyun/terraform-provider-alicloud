@@ -5,6 +5,17 @@
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+
+# 保证 git 用仓库内的 hook(bootstrap/git-hooks/*);防止 skill 双份等漂移。
+# git config 极廉价,每次跑都 idempotent 检查一次(TTL 命中跳过 install/verify 时也保这条)。
+if git -C "$repo_root" rev-parse --git-dir >/dev/null 2>&1 && [ -d "$repo_root/bootstrap/git-hooks" ]; then
+    if [ "$(git -C "$repo_root" config --local core.hooksPath 2>/dev/null)" != "bootstrap/git-hooks" ]; then
+        git -C "$repo_root" config --local core.hooksPath bootstrap/git-hooks
+        echo "preflight: set core.hooksPath=bootstrap/git-hooks"
+    fi
+fi
+
 ttl="${JARVIS_PREFLIGHT_TTL:-86400}"   # 24h
 [ "${1:-}" = "--force" ] && ttl=0
 
