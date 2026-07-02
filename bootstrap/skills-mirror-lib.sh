@@ -11,6 +11,7 @@
 #   Claude Code             ↔ Codex
 #   Co-Authored-By: Claude  ↔ Co-Authored-By: Codex
 #   .claude/agents/         ↔ .Codex/agents/
+#   .claude/skills/         ↔ .Codex/skills/     (含 ~/.claude/skills/ 等硬编码路径)
 #   claude-code-guide       ↔ codex-guide
 #   CLAUDE.md               ↔ AGENTS.md
 #
@@ -25,6 +26,7 @@ mirror_sed_claude_to_codex() {
         -e 's|Claude Code|Codex|g' \
         -e 's|Co-Authored-By: Claude|Co-Authored-By: Codex|g' \
         -e 's|\.claude/agents/|.Codex/agents/|g' \
+        -e 's|\.claude/skills/|.Codex/skills/|g' \
         -e 's|claude-code-guide|codex-guide|g' \
         -e 's|CLAUDE\.md|AGENTS.md|g'
 }
@@ -34,6 +36,7 @@ mirror_sed_codex_to_claude() {
     sed \
         -e 's|Co-Authored-By: Codex|Co-Authored-By: Claude|g' \
         -e 's|\.Codex/agents/|.claude/agents/|g' \
+        -e 's|\.Codex/skills/|.claude/skills/|g' \
         -e 's|codex-guide|claude-code-guide|g' \
         -e 's|AGENTS\.md|CLAUDE.md|g' \
         -e 's|Codex|Claude Code|g'

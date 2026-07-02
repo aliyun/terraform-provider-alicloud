@@ -1,7 +1,7 @@
 # Templates & verified facts
 
 ## 同步 provider 源码(查证前)
-`bash .claude/skills/aone-triage/scripts/sync-provider.sh` —— 无库 clone,有库只 fetch 不重置(保护本地开发);repo 路径取 config/workspaces.json 的 terraform_provider.path（改这里即可换路径）。
+`bash .Codex/skills/aone-triage/scripts/sync-provider.sh` —— 无库 clone,有库只 fetch 不重置(保护本地开发);repo 路径取 config/workspaces.json 的 terraform_provider.path（改这里即可换路径）。
 
 ## 缺陷骨架
 复现要点 → `~/go/src/github.com/chenhanzhang/terraform-provider-alicloud` 源码定位(资源.go + 行号)→ 根因 → 修复/绕过 → **补/改一个会因该 bug 失败的用例锁定回归(无可测则在 CR 说明为何)** → 仅 spec 缺口才转需求。

@@ -87,17 +87,18 @@ _check_pair() {
 drift=0
 
 if [ "$#" -eq 0 ]; then
-    # 全量 check:遍历两侧 skills + 顶层 md
-    {
+    # 全量 check:遍历两侧 skills + 顶层 md;累积全部 drift(不首错即退,
+    # 用 process substitution 避免管道子 shell 吞掉 drift 变量修改)
+    while IFS= read -r f; do
+        _check_pair "$f"
+        rc=$?
+        [ "$rc" -eq 1 ] && drift=1
+    done < <(
         [ -d "$jarvis_root/.claude/skills" ] && find "$jarvis_root/.claude/skills" -type f
         [ -d "$jarvis_root/.agents/skills" ] && find "$jarvis_root/.agents/skills" -type f
         [ -f "$jarvis_root/CLAUDE.md" ] && echo "$jarvis_root/CLAUDE.md"
         [ -f "$jarvis_root/AGENTS.md" ] && echo "$jarvis_root/AGENTS.md"
-    } | while IFS= read -r f; do
-        _check_pair "$f"
-        rc=$?
-        [ "$rc" -eq 1 ] && exit 1
-    done || drift=1
+    )
 else
     # 指定文件模式(pre-commit hook 用):只 check 传入的路径
     for f in "$@"; do
