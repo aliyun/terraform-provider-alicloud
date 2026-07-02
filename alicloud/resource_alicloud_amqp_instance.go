@@ -26,6 +26,11 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auth_model": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"ram", "openSource"}, false),
+			},
 			"auto_renew": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -236,6 +241,9 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	}
 	if v, ok := d.GetOk("instance_type"); ok {
 		request["InstanceType"] = v
+	}
+	if v, ok := d.GetOk("auth_model"); ok {
+		request["AuthModel"] = v
 	}
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request["RenewStatus"] = v

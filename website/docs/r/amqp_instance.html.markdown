@@ -94,6 +94,12 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+* `auth_model` - (Optional, Available since v1.285.0) The authentication mode of the instance. Default value: `ram`. Valid values:
+  - `ram`: RAM authentication.
+  - `openSource`: Open source authentication.
+
+-> **NOTE:** `auth_model` only takes effect when creating a new instance. It cannot be modified or queried on an existing instance.
+
 * `auto_renew` - (Optional, Available since v1.129.0) Renewal method. Automatic renewal: true; Manual renewal: false. When RenewalStatus has a value, the value of RenewalStatus shall prevail.
 * `edition` - (Optional, Available since v1.266.0) The deployment architecture for Serverless instances. Valid values:
   - `shared`: Shared architecture, applicable to reserved + elastic (shared) and pay-as-you-go editions.
