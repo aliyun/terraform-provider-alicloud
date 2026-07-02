@@ -42,14 +42,14 @@ resource "alicloud_schedulerx_namespace" "CreateNameSpace" {
 
 resource "alicloud_schedulerx_app_group" "default" {
   max_jobs              = "100"
-  monitor_contacts_json = jsonencode([{ "userName" : "name1", "userPhone" : "89756******" }, { "userName" : "name2", "ding" : "http://www.example.com" }])
+  monitor_contacts_json = jsonencode([{ "name" : "contact-group-1" }, { "name" : "contact-group-2" }])
   delete_jobs           = "false"
   app_type              = "1"
   namespace_source      = "schedulerx"
   group_id              = "example-appgroup-pop-autoexample"
   namespace_name        = "default"
   description           = var.name
-  monitor_config_json   = jsonencode({ "sendChannel" : "sms,ding" })
+  monitor_config_json   = jsonencode({ "sendChannel" : "sms,ding", "alarmType" : "Contacts", "webhookIsAtAll" : "false" })
   app_version           = "1"
   app_name              = "example-appgroup-pop-autoexample"
   namespace             = alicloud_schedulerx_namespace.CreateNameSpace.namespace_uid
@@ -78,8 +78,8 @@ The following arguments are supported:
 * `group_id` - (Required, ForceNew) Application ID
 * `max_concurrency` - (Optional, Int) The maximum number of instances running at the same time. The default value is 1, that is, the last trigger is not completed, and the next trigger will not be performed even at the running time.
 * `max_jobs` - (Optional, ForceNew, Int) Application Grouping Configurable Maximum Number of Tasks
-* `monitor_config_json` - (Optional) Alarm configuration JSON field. For more information about this field, see **Request Parameters * *.
-* `monitor_contacts_json` - (Optional) Alarm contact JSON format.
+* `monitor_config_json` - (Optional) Alarm configuration JSON field. Supported keys include `sendChannel` (alarm channels, e.g. `"sms,ding"`), `alarmType` (alarm type, e.g. `"Contacts"` or `"CustomContacts"`), and `webhookIsAtAll` (whether webhook @all). **Note:** When `monitor_contacts_json` is specified, `alarmType` must be explicitly included in `monitor_config_json` (typically `"CustomContacts"` for custom contacts or `"Contacts"` for contact groups); otherwise the API will automatically append `alarmType` which causes configuration drift on subsequent plans.
+* `monitor_contacts_json` - (Optional) Alarm contact JSON format. **Note:** This field only takes effect when `monitor_config_json` contains an `alarmType` value (e.g. `"CustomContacts"` or `"Contacts"`). The format depends on `alarmType`: for `"CustomContacts"`, use `[{"userName":"name","userPhone":"phone","ding":"webhook_url"}]`; for `"Contacts"`, use `[{"name":"contact_group_name"}]`.
 * `namespace` - (Required, ForceNew) The namespace ID, which is obtained on the namespace page of the console.
 * `namespace_name` - (Required) The namespace name.
 * `namespace_source` - (Optional) Not supported for the time being, no need to fill in.

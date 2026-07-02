@@ -48,7 +48,7 @@ func (s *SchedulerxServiceV2) DescribeSchedulerxJob(id string) (object map[strin
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"groupid not exist"}) {
+		if IsExpectedErrors(err, []string{"groupId not exist", "-10003"}) {
 			return object, WrapErrorf(NotFoundErr("Job", id), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
