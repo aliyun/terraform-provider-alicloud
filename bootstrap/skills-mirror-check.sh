@@ -17,8 +17,8 @@
 #   bash bootstrap/skills-mirror-check.sh                    # 全量 check
 #   bash bootstrap/skills-mirror-check.sh <file> [file...]   # 只 check 指定文件对
 #
-# ** SED 规则必须与 sync-to-codex.sh / sync-to-claude.sh 保持完全一致 **
-# 未来重构为共享 lib。改此处必同改那两个脚本。
+# SED 规则来自共享 lib(bootstrap/skills-mirror-lib.sh),与 sync-to-codex.sh
+# 和 sync-to-claude.sh 复用同一份 source of truth。
 #
 # 修复:
 #   bash bootstrap/sync-to-codex.sh --all    # 以 .claude 为准全量推到 .agents
@@ -28,25 +28,13 @@ set -uo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 jarvis_root="$(cd "$script_dir/.." && pwd)"
 
-# Claude 侧文本 → Codex 侧文本(与 sync-to-codex.sh#_sed_transform 一致)
-_sed_claude_to_codex() {
-    sed \
-        -e 's|Claude Code|Codex|g' \
-        -e 's|Co-Authored-By: Claude|Co-Authored-By: Codex|g' \
-        -e 's|\.claude/agents/|.Codex/agents/|g' \
-        -e 's|claude-code-guide|codex-guide|g' \
-        -e 's|CLAUDE\.md|AGENTS.md|g'
-}
+# 共享 sed transform 规则(sync-to-codex / sync-to-claude / skills-mirror-check 复用同一份)
+# shellcheck source=bootstrap/skills-mirror-lib.sh
+source "$script_dir/skills-mirror-lib.sh"
 
-# Codex 侧文本 → Claude 侧文本(与 sync-to-claude.sh#_sed_transform 一致)
-_sed_codex_to_claude() {
-    sed \
-        -e 's|Co-Authored-By: Codex|Co-Authored-By: Claude|g' \
-        -e 's|\.Codex/agents/|.claude/agents/|g' \
-        -e 's|codex-guide|claude-code-guide|g' \
-        -e 's|AGENTS\.md|CLAUDE.md|g' \
-        -e 's|Codex|Claude Code|g'
-}
+# 局部别名:保留旧函数名让下文 _check_pair 里的 case 无需改
+_sed_claude_to_codex() { mirror_sed_claude_to_codex; }
+_sed_codex_to_claude() { mirror_sed_codex_to_claude; }
 
 # 输入 mirror 源文件(绝对或相对),输出:目标绝对路径 + transform 方向
 # 无映射时输出空,返回码 1
