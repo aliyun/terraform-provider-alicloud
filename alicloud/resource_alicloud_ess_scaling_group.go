@@ -57,6 +57,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"scaling_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"health_check_type": {
 				Type:          schema.TypeString,
