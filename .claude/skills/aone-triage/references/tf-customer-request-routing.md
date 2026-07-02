@@ -270,7 +270,7 @@ popCode=<PopCode>
 popVersion=<PopVersion>
 resourceName="$resourceCode"
 
-curl -sSG 'https://pre-acube.aliyun-inc.com/api/v1/terraform/generator/getResourceQualityDetailCoverageScoreV2' \
+curl -sSG 'https://acube.aliyun-inc.com/api/v1/terraform/generator/getResourceQualityDetailCoverageScoreV2' \
   --data-urlencode "popCode=${popCode}" \
   --data-urlencode "popVersion=${popVersion}" \
   --data-urlencode "resourceName=${resourceName}" \
@@ -292,7 +292,7 @@ print("  Property/Operation/PrimaryOperation:",
 - 镇元 get 有 data + released list 命中 + `CoverageDetail.CoverageScore == 1.0` → **镇元 OK**,走分支 D
 - 否则 → **镇元 NOT OK**,走分支 E(V2 已不返回 PASS/FAIL 用例计数,仅以覆盖度综合分判定)
 
-**环境说明**:acube 后端目前把 V2 请求强制打到 POP 预发(`popunify-inner-pre.cn-zhangjiakou.aliyuncs.com`,伪装 Host=`apispec-share.aliyuncs.com`),即使请求线上 `acube.aliyun-inc.com` 也走预发;想核对线上覆盖度需 acube 侧改配置(参见邻仓 `a-cube-aliyun-com` 里 `acube-auto-generator/.../ProductMetaUtil.java#getResourceQualityDetailCoverageScoreV2ByCommon`)。
+**环境说明**:V2 已发布到 acube 正式(`acube.aliyun-inc.com`),默认走线上;需要预发数据把域名换成 `pre-acube.aliyun-inc.com` 即可(路径 / 参数 / 返回结构一致)。服务端实现见邻仓 `a-cube-aliyun-com` 里 `acube-auto-generator/.../ProductMetaUtil.java#getResourceQualityDetailCoverageScoreV2ByCommon`。
 
 **sanity check(必跑)**:拿同产品已发布的其他资源(如查 ① released list 里另一项)以相同接口复查,能拿到 `CoverageDetail` 说明内网/接口正常;否则先排查内网访问(`pre-acube.aliyun-inc.com` 需办公网/VPN;`/api/v1/**` 免鉴权,但走内网 DNS)。
 
@@ -410,7 +410,7 @@ Terraform Provider / 镇元(Cloudspec)侧可闭环。
 
 ### 查证依据
 1. **镇元**:<get: 有/无 data | list released 是否命中 | CoverageScore=<x>>
-   - acube V2 覆盖度(POP 预发):CoverageScore=<x>
+   - acube V2 覆盖度(线上):CoverageScore=<x>
    - Property/Operation/PrimaryOperation=<>/<>/<>
 2. **provider 代码类型**:<自动生成 / 手写>(依据 `alicloud/resource_...go:1-3`
    <是否有 generated automatically 注释>)
