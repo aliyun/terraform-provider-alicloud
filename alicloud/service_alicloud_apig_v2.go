@@ -98,10 +98,10 @@ func (s *ApigServiceV2) DescribeApigDomain(id string) (object map[string]interfa
 	var response map[string]interface{}
 	var query map[string]*string
 	domainId := id
-	action := fmt.Sprintf("/v1/domains/%s", domainId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["domainId"] = id
+
+	action := fmt.Sprintf("/v1/domains/%s", domainId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -117,11 +117,12 @@ func (s *ApigServiceV2) DescribeApigDomain(id string) (object map[string]interfa
 		return nil
 	})
 	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"DatabaseError.RecordNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, err)
-		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	if response == nil {
+		return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
+	}
+	code, _ := jsonpath.Get("$.code", response)
+	if InArray(fmt.Sprint(code), []string{"DatabaseError.RecordNotFound"}) {
+		return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
 	}
 
 	v, err := jsonpath.Get("$.data", response)
@@ -133,15 +134,18 @@ func (s *ApigServiceV2) DescribeApigDomain(id string) (object map[string]interfa
 }
 
 func (s *ApigServiceV2) ApigDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigDomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigDomain)
+}
+
+func (s *ApigServiceV2) ApigDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigDomain(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
