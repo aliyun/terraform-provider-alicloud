@@ -67,26 +67,7 @@ Source URLs:
 - **不省略 HTTP 状态**:HTTP 400/409/429/503 语义差别大,retry 语义与之强相关;缺 HTTP 就回补,不补就标 `HTTP: unknown`,别猜。
 - **不合并"相邻错误码"进结论**:例如 `LockFailed` 与 `TooManyRequests` / `Site.ServiceBusy` 虽都触发"重试",但触发路径/接口层/退避策略完全不同,分列列出,一句话说清区别。
 
-## 五、实例:ESA `LockFailed`(2025-10 查证复盘)
-
-```
-Product: ESA(边缘安全加速) (2024-09-10)
-Code: LockFailed
-HTTP: 400
-EN msg: "The system is handling requests you previously submitted. Try again later."
-ZH msg: "您有其他请求正在处理中,请稍后再进行重试。"
-Retry advice (official): yes —— 原文明确 "Try again later" / "请稍后再进行重试",但**未给退避间隔/最大重试次数**。
-相邻/相关错误码:
-  - Site.ServiceBusy —— 站点粒度的服务繁忙(不是同一请求排队,是站点整体压力)
-  - TooManyRequests —— 用户配额/限流(429 侧),与 LockFailed 的 400 语义线不同
-Source URLs:
-  - https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-errorcodes
-  - https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/api-esa-2024-09-10-errorcodes
-```
-
-**结论纪律**:这条错误码官方只写"上一请求未完成,稍后重试",**没有任何"乐观锁 / optimistic locking / CAS / revision 冲突"字样**。对客户回复只能说"服务端未完成上一请求,建议客户端串行化或指数退避重试",不能定性为"乐观锁"。
-
-## 六、谁应该读这个
+## 五、谁应该读这个
 
 - **aone-triage**:工单里出现具体错误码(客户贴报错、SDK/CLI 报错、Terraform apply 报错)且需要判断"这是什么/该怎么回"时。
 - **terraform-pr-review**:PR diff 涉及错误码补丁(NeedRetry / retryable errors 白名单 / IsExpectedErrors 等),核对补的 code 是否与官方 message 语义一致、HTTP 是否匹配。
