@@ -1,5 +1,7 @@
 # cap-auto-memory-save-policy
 
+> **[归档]** 本 cap 的策略已 landed 到 CLAUDE.md 工作纪律 7(save memory 前扫本仓 skills 全集,已覆盖则不写)。归档保留正文作历史决策记录。
+
 ## 缺口类型
 
 auto-memory 的**保存决策**错位:技术性 / 团队性 / 项目性知识被存入 `~/.claude/projects/-Users-gzzz-Workplace-jarvis/memory/`(per-machine,不落 git,不跨设备),而这类知识本应入相关 skill/reference(落 git,跨设备,并且能通过 skill trigger 自然出现在使用场景)。

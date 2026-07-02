@@ -1,5 +1,16 @@
 # cap-repo-structure-cleanup
 
+> **[归档]** 路线图 P0-P6 全部 landed 到 master + fix CR 收尾 test drift:
+> - **P0** skill mirror drift #28348286
+> - **P1.a-f** bootstrap 40 → 34 脚本合并 #28349000 / #28349284 / #28349783 / #28349786 / #28349791 / #28349846
+> - **P2** test 目录合并 #28350205
+> - **P3.a-c** skill 拆分与去重 #28350625 / #28350664 / #28350773
+> - **P6** AGENTS.md hook 生成化 + tools/ 归属注释 #28351925
+> - **Fix** plan_test + scan_test #28352279
+> - **P4/P5** 决策放弃独立 CR:plugin-dev 保留 loops/(暂不归档);4 个 cap 一并归档到本 CR 收尾
+>
+> 归档保留正文作路线图历史记录。
+
 ## 缺口类型
 
 仓库结构累积 drift：40 个 bootstrap 脚本、双端 skill mirror 部分漂移、两个测试目录并存、topdir 有 79M 误落 provider clone、CLAUDE.md 与 loop/skill/cap 正文双写。2026-07-02 一轮只读审计整理清单如下，先记 cap，分批授权推进，避免只口头修。

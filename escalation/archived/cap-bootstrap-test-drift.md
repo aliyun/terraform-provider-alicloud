@@ -1,5 +1,11 @@
 # cap-bootstrap-test-drift
 
+> **[归档]** 两 OPEN 项(plan_test / scan_test)均由 fix CR #28352279 全 close:
+> - plan_test:一行 fix jq `$pp[.pool]` null-index bug → 17/0 通过
+> - scan_test:8 处断言对齐 scan.sh P1 refactor 后行为(3-category 展开 / 移除 claim-tag exclusion / no-pools 无 pool 字段)+ cache 隔离(全局 JARVIS_SCAN_TTL=0 + tmpdir)→ 45/0 通过
+>
+> 归档保留正文作历史缺口记录。
+
 ## 缺口类型
 
 bootstrap 测试与当前脚本行为漂移。

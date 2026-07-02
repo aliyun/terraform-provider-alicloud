@@ -26,7 +26,7 @@
 
 6. **身份纪律**：a1 一律走 `bin/a1id`，默认 jarvis（`a1id -- <args>`）；个人身份（chenyi/guozai/linjun）禁擅用，仅仓库主人本轮当面授权时才 `a1id as <id> -- <args>` 临时切，用完即回。GitHub PR/评论/推分支必须先 `bootstrap/github-identity.sh check`（token 账号必须 `api-tool-agent`，PR head `api-tool-agent:<branch>`），缺 token/账号不匹配一律阻断升级，禁回退 ambient `gh auth`。terraform-pr-review skill 有完整清单。
 
-7. **auto-memory 只存 personal/machine，技术知识入 skill**：save memory 前扫本仓 skills 全集，已覆盖则不写；技术/团队/项目类且 skill 未覆盖 → 补入相关 skill/reference，不落 memory；仅个人偏好/机器状态/临时上下文才走 auto-memory。**why**：auto-memory per-machine 不跨设备，skill 走 git 天然跨设备并在 trigger 时自然加载。策略与已清理清单见 [escalation/cap-auto-memory-save-policy.md](escalation/cap-auto-memory-save-policy.md)。
+7. **auto-memory 只存 personal/machine，技术知识入 skill**：save memory 前扫本仓 skills 全集，已覆盖则不写；技术/团队/项目类且 skill 未覆盖 → 补入相关 skill/reference，不落 memory；仅个人偏好/机器状态/临时上下文才走 auto-memory。**why**：auto-memory per-machine 不跨设备，skill 走 git 天然跨设备并在 trigger 时自然加载。策略与已清理清单见 [escalation/archived/cap-auto-memory-save-policy.md](escalation/archived/cap-auto-memory-save-policy.md)（已归档）。
 
 ## 自我迭代
 
