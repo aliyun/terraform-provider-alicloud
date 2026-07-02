@@ -1909,7 +1909,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_snapshot_group":                                    resourceAlicloudEcsSnapshotGroup(),
 			"alicloud_alb_listener_additional_certificate_attachment":        resourceAlicloudAlbListenerAdditionalCertificateAttachment(),
 			"alicloud_vpn_ipsec_server":                                      resourceAlicloudVpnIpsecServer(),
-			"alicloud_cr_chain":                                              resourceAlicloudCrChain(),
+			"alicloud_cr_chain":                                              resourceAliCloudCrChain(),
 			"alicloud_vpn_pbr_route_entry":                                   resourceAlicloudVpnPbrRouteEntry(),
 			"alicloud_slb_acl_entry_attachment":                              resourceAlicloudSlbAclEntryAttachment(),
 			"alicloud_mse_znode":                                             resourceAlicloudMseZnode(),

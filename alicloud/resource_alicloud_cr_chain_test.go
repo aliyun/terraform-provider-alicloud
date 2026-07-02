@@ -159,6 +159,167 @@ func testSweepCRChain(region string) error {
 	return nil
 }
 
+// Test Cr Chain. >>> Resource test cases, automatically generated.
+// Case Chain用例 2521
+func TestAccAliCloudCrChain_basic2521(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_chain.default"
+	ra := resourceAttrInit(resourceId, AlicloudCrChainMap2521)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCrChain")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccr%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCrChainBasicDependence2521)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"repo_namespace_name": "aliyun",
+					"chain_name":          name,
+					"description":         "Description",
+					"instance_id":         "cri-d49smkknzihhme5a",
+					"repo_name":           "namespacealiyun1",
+					"chain_config": []map[string]interface{}{
+						{
+							"chain_config_id": "cci-5ej3bksnpcasiona",
+							"is_active":       "false",
+							"version":         "1",
+							"routers": []map[string]interface{}{
+								{
+									"from": []map[string]interface{}{
+										{
+											"node_name": "DOCKER_IMAGE_BUILD",
+										},
+									},
+									"to": []map[string]interface{}{
+										{
+											"node_name": "DOCKER_IMAGE_PUSH",
+										},
+									},
+								},
+							},
+							"nodes": []map[string]interface{}{
+								{
+									"node_name": "VULNERABILITY_SCANNING",
+									"enable":    "true",
+									"node_config": []map[string]interface{}{
+										{
+											"deny_policy": []map[string]interface{}{
+												{
+													"logic":  "AND",
+													"action": "BLOCK",
+												},
+											},
+											"timeout": "1",
+											"retry":   "1",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"repo_namespace_name": "aliyun",
+						"chain_name":          name,
+						"description":         "Description",
+						"instance_id":         "cri-d49smkknzihhme5a",
+						"repo_name":           "namespacealiyun1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "Description11",
+					"chain_config": []map[string]interface{}{
+						{
+							"chain_config_id": "cci-5ej3bksnpcasiona",
+							"is_active":       "true",
+							"version":         "1",
+							"routers": []map[string]interface{}{
+								{
+									"from": []map[string]interface{}{
+										{
+											"node_name": "DOCKER_IMAGE_BUILD",
+										},
+									},
+									"to": []map[string]interface{}{
+										{
+											"node_name": "DOCKER_IMAGE_PUSH",
+										},
+									},
+								},
+							},
+							"nodes": []map[string]interface{}{
+								{
+									"node_name": "DOCKER_IMAGE_BUILD",
+									"enable":    "true",
+									"node_config": []map[string]interface{}{
+										{
+											"timeout": "2",
+											"retry":   "2",
+											"deny_policy": []map[string]interface{}{
+												{
+													"action": "BLOCK",
+													"logic":  "AND",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "Description11",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCrChainMap2521 = map[string]string{
+	"scope_type":    CHECKSET,
+	"is_success":    CHECKSET,
+	"create_time":   CHECKSET,
+	"scope_id":      CHECKSET,
+	"code":          CHECKSET,
+	"modified_time": CHECKSET,
+	"chain_id":      CHECKSET,
+}
+
+func AlicloudCrChainBasicDependence2521(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test Cr Chain. <<< Resource test cases, automatically generated.
+
 func TestAccAlicloudCRChain_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cr_chain.default"

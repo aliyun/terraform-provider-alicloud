@@ -2,7 +2,6 @@
 subcategory: "Container Registry (CR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cr_chain"
-sidebar_current: "docs-alicloud-resource-cr-chain"
 description: |-
   Provides a Alicloud CR Chain resource.
 ---
@@ -11,6 +10,8 @@ description: |-
 
 Provides a CR Chain resource.
 
+
+
 For information about CR Chain and how to use it, see [What is Chain](https://www.alibabacloud.com/help/en/acr/developer-reference/api-cr-2018-12-01-createchain).
 
 -> **NOTE:** Available since v1.161.0.
@@ -18,12 +19,6 @@ For information about CR Chain and how to use it, see [What is Chain](https://ww
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_cr_chain&exampleId=045b97ca-e86a-dc23-3218-7c62847ab87ccfd100d3&activeTab=example&spm=docs.r.cr_chain.0.045b97cae8&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -174,70 +169,83 @@ resource "alicloud_cr_chain" "default" {
 }
 ```
 
-📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_cr_chain&spm=docs.r.cr_chain.example&intl_lang=EN_US)
-
 ## Argument Reference
 
 The following arguments are supported:
-
-* `chain_name` - (Required) The name of delivery chain. The length of the name is 1-64 characters, lowercase English letters and numbers, and the separators "_", "-", "." can be used, noted that the separator cannot be at the first or last position.
-* `description` - (Optional) The description delivery chain.
-* `repo_name` - (Optional, ForceNew) The name of CR Enterprise Edition repository. **NOTE:** This parameter must specify a correct value, otherwise the created resource will be incorrect.
-* `repo_namespace_name` - (Optional, ForceNew) The name of CR Enterprise Edition namespace. **NOTE:** This parameter must specify the correct value, otherwise the created resource will be incorrect.
-* `instance_id` - (Required, ForceNew) The ID of CR Enterprise Edition instance.
-* `chain_config` - (Optional) The configuration of delivery chain. See [`chain_config`](#chain_config) below. **NOTE:** This parameter must specify the correct value, otherwise the created resource will be incorrect.
+* `chain_config` - (Optional, Set) Delivery chain configuration description See [`chain_config`](#chain_config) below.
+* `chain_name` - (Required) Delivery chain name
+* `description` - (Optional) Delivery chain description
+* `instance_id` - (Required, ForceNew) Instance ID
+* `repo_name` - (Required, ForceNew) Warehouse name
+* `repo_namespace_name` - (Required, ForceNew) Namespace name
 
 ### `chain_config`
 
-The `chain_config` block supports the following:
-
-* `routers` - (Optional) Execution sequence relationship between delivery chain nodes. See [`routers`](#chain_config-routers) below. 
-* `nodes` - (Optional) Each node in the delivery chain. See [`nodes`](#chain_config-nodes) below.
-
--> **NOTE:** The `from` and `to` fields are all fixed, and their structure and the value of `node_name` are fixed. You can refer to the template given in the example for configuration.
-
-### `chain_config-routers`
-
-The `routers` block supports the following:
-* `from` - (Optional) Source node. See [`from`](#chain_config-routers-from) below.
-* `to` - (Optional) Destination node. See [`to`](#chain_config-routers-to) below.
-
-### `chain_config-routers-from`
-
-The `from` block supports the following:
-* `node_name` - (Optional) The name of node. Valid values: `DOCKER_IMAGE_BUILD`, `DOCKER_IMAGE_PUSH`, `VULNERABILITY_SCANNING`, `ACTIVATE_REPLICATION`, `TRIGGER`, `SNAPSHOT`, `TRIGGER_SNAPSHOT`.
-
-### `chain_config-routers-to`
-
-The `to` block supports the following:
-* `node_name` - (Optional) The name of node. Valid values: `DOCKER_IMAGE_BUILD`, `DOCKER_IMAGE_PUSH`, `VULNERABILITY_SCANNING`, `ACTIVATE_REPLICATION`, `TRIGGER`, `SNAPSHOT`, `TRIGGER_SNAPSHOT`.
+The chain_config supports the following:
+* `nodes` - (Optional, List) Each node in the delivery chain See [`nodes`](#chain_config-nodes) below.
+* `routers` - (Optional, List) Execution sequence relationship between delivery chain nodes See [`routers`](#chain_config-routers) below.
 
 ### `chain_config-nodes`
 
-The `nodes` block supports the following:
-* `node_name` - (Optional) The name of delivery chain node.
-* `enable` - (Optional) Whether to enable the delivery chain node. Valid values: `true`, `false`.
-* `node_config` - (Optional) The configuration of delivery chain node. See [`node_config`](#chain_config-nodes-node_config) below.
+The chain_config-nodes supports the following:
+* `enable` - (Optional) Whether to enable the delivery chain node. Valid values:
+  -'true': Enable delivery chain nodes
+  -'false': do not enable the delivery chain node
+* `node_config` - (Optional, ForceNew, Set) Delivery chain node configuration See [`node_config`](#chain_config-nodes-node_config) below.
+* `node_name` - (Optional) Delivery chain node name
+
+### `chain_config-routers`
+
+The chain_config-routers supports the following:
+* `from` - (Optional, ForceNew, Set) Source node See [`from`](#chain_config-routers-from) below.
+* `to` - (Optional, ForceNew, Set) Destination node See [`to`](#chain_config-routers-to) below.
+
+### `chain_config-routers-from`
+
+The chain_config-routers-from supports the following:
+* `node_name` - (Optional) Source node name
+
+### `chain_config-routers-to`
+
+The chain_config-routers-to supports the following:
+* `node_name` - (Optional) Destination node name
 
 ### `chain_config-nodes-node_config`
 
-The `node_config` block supports the following:
-* `deny_policy` - (Optional) Blocking rules for scanning nodes in delivery chain nodes. See [`deny_policy`](#chain_config-nodes-node_config-deny_policy) below. **Note:** When `node_name` is `VULNERABILITY_SCANNING`, the parameters in `deny_policy` need to be filled in.
-
-### `chain_config-nodes-node_config-deny_policy`
-
-The `deny_policy` block supports the following:
-* `issue_count` - (Optional) The count of scanning vulnerabilities that triggers blocking.
-* `issue_level` - (Optional) The level of scanning vulnerability that triggers blocking. Valid values: `LOW`, `MEDIUM`, `HIGH`, `UNKNOWN`.
-* `logic` - (Optional) The logic of trigger blocking. Valid values: `AND`, `OR`.
-* `action` - (Optional) The action of trigger blocking. Valid values: `BLOCK`, `BLOCK_RETAG`, `BLOCK_DELETE_TAG`. While `Block` means block the delivery chain from continuing to execute, `BLOCK_RETAG` means block overwriting push image tag, `BLOCK_DELETE_TAG` means block deletion of mirror tags.
+The chain_config-nodes-node_config supports the following:
+* `scan_engine` - (Optional, Available since v1.283.0) Delivery chain scan node engine
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID of Chain. The value formats as `<instance_id>:<chain_id>`.
+* `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<chain_id>`.
+* `chain_config` - Delivery chain configuration description.
+  * `chain_config_id` - Delivery chain configuration ID.
+  * `is_active` - Whether the delivery chain configuration takes effect.
+  * `nodes` - Each node in the delivery chain.
+    * `node_config` - Delivery chain node configuration.
+        * `deny_policy` - Blocking Rules for Scanning Nodes in Delivery Chain Nodes.
+            * `action` - Blocking action, value:.
+            * `issue_count` - Trigger blocking when the number of scanning vulnerabilities reaches.
+            * `issue_level` - Trigger blocking when scanning vulnerability level reaches.
+            * `logic` - Scan logic that triggers blocking.
+        * `retry` - Number of retries.
+        * `timeout` - Timeout.
+  * `version` - Delivery chain version.
 * `chain_id` - Delivery chain ID.
+* `code` - Return code.
+* `create_time` - Delivery chain creation time.
+* `is_success` - Success.
+* `modified_time` - Delivery chain description modification time.
+* `scope_id` - Delivery chain scope ID.
+* `scope_type` - Delivery chain scope type.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Chain.
+* `delete` - (Defaults to 5 mins) Used when delete the Chain.
+* `update` - (Defaults to 5 mins) Used when update the Chain.
 
 ## Import
 
