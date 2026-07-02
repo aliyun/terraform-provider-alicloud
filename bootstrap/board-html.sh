@@ -5,12 +5,22 @@
 # 任务池 col = pool-state candidates (ALL rendered; col body scrolls vertically). 5 equal
 # 300px cols overflow-x scroll. Pool filter = dropdown w/ checkboxes (names from pools.json),
 # default all checked, hide/show by data-pool, live counts. data-pool=key, label=name.
-# Writes docs/board.html (gitignored build artifact; rebuild via refresh.sh, served by serve.sh).
+# Writes docs/board.html (gitignored build artifact; served by serve.sh).
+# --refresh: force scan.sh --force then rebuild (原 refresh.sh 折入)。
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib.sh"
 root="$(jarvis_root)"
 docs_out="$root/docs/board.html"
+
+force_scan=0
+if [ "${1:-}" = "--refresh" ]; then
+    force_scan=1
+    echo "refresh: rescanning Aone (--force)…" >&2
+    bash "$script_dir/scan.sh" --force >/dev/null || { echo "refresh: scan failed" >&2; exit 1; }
+    echo "refresh: rebuilding board…" >&2
+fi
+
 mkdir -p "$root/docs"
 json_f="$(mktemp)"; trap 'rm -f "$json_f"' EXIT
 "$script_dir/board.sh" > "$json_f"
@@ -95,7 +105,7 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 {nav("全部")}{nav("Manager")}{nav("收件箱")}{nav("自动化")}<div class="grp">Workspace</div>
 {nav("工作板"," act")}{nav("Agents")}{nav("Skills")}{nav("知识·记忆")}<div class="grp">管理</div>
 {nav("Workspace管理")}{nav("应用管理")}<div class="sf"><span class="av">辰</span>辰羿<span class="ico">⚙</span></div></aside>
-<main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><input class="srch" id=srch type=search placeholder="搜索工作项…" autocomplete=off><button class="btn" id=refresh title="运行 bootstrap/refresh.sh 重扫 Aone 并重建">刷新</button><button class="btn k">+ 新增任务</button></div></div>
+<main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><input class="srch" id=srch type=search placeholder="搜索工作项…" autocomplete=off><button class="btn" id=refresh title="运行 bash bootstrap/board-html.sh --refresh 重扫 Aone 并重建">刷新</button><button class="btn k">+ 新增任务</button></div></div>
 <div class="fl"><div class="dd"><button class="ddb" id=ddb>工作池 ▾</button><div class="ddp" id=ddp><label class="dr ddh"><input type=checkbox id=pfall checked><span class="nm">全选</span><span class="cnt">{TOTAL}</span></label>{rows}</div></div>{pills}<span class="gen">{gen} · agent runs {arun}</span></div>
 <div class="bd">{board}</div></main></div>
 <script>
@@ -116,8 +126,15 @@ var R=document.getElementById('refresh');R.onclick=function(){{
 if(location.protocol==='file:'){{alert('未通过服务运行,请跑 bootstrap/serve.sh 后从 http://localhost:8787 打开');return;}}
 R.disabled=true;R.textContent='刷新中…';
 fetch('/refresh',{{method:'POST'}}).then(r=>{{if(r.ok)location.reload();else throw 0;}})
-.catch(()=>{{alert('刷新失败,请手动运行 bootstrap/refresh.sh');R.disabled=false;R.textContent='刷新';}});}};
+.catch(()=>{{alert('刷新失败,请手动运行 bash bootstrap/board-html.sh --refresh');R.disabled=false;R.textContent='刷新';}});}};
 sync();
 </script>'''
 open(docs_out,"w",encoding="utf-8").write(doc); print(docs_out)
 PY
+
+if [ "$force_scan" = "1" ]; then
+    scan_f="$root/.my-day/scan.json"
+    total=$(jq 'length' "$scan_f" 2>/dev/null || echo 0)
+    dist=$(jq -r 'group_by(.category)|map("\(.[0].category // "—"):\(length)")|join(" ")' "$scan_f" 2>/dev/null)
+    echo "refresh: done — $total items ($dist)" >&2
+fi
