@@ -37,6 +37,7 @@ gh pr view <url> --json files -q '.files[].path'   # 改了哪些文件
 3. **实现以源码为准**:`scripts/sync-provider.sh` 同步,在 path(go fork)grep 资源 .go,核 schema/`Importer`/Create 下发参数。单复数陷阱:`*_instances` 多半是数据源。同族资源对照(如 wafv3_defense_rule)判惯例 vs 新坑。
 4. **文档兜底**:GitHub raw markdown。
 - OpenAPI 与源码冲突 / 缺映射 / 命不中 → low_conf,不发评论,escalate。
+- **错误码语义查证**(PR 涉及 retry 白名单 / `IsExpectedErrors` / 错误码补丁等) → 读 `.claude/skills/aone-triage/references/aliyun-error-code-lookup.md`(跨 skill 复用,给定 product+code 出 HTTP/中英 message/官方 retry 建议/相邻错误码)。
 
 ## 4. 看点
 - 字段名/类型对齐 OpenAPI;required/optional/computed 合理;set vs list 正确。

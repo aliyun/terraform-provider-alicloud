@@ -37,6 +37,7 @@ gh pr view <url> --json files -q '.files[].path'   # 改了哪些文件
 3. **实现以源码为准**:`scripts/sync-provider.sh` 同步,在 path(go fork)grep 资源 .go,核 schema/`Importer`/Create 下发参数。单复数陷阱:`*_instances` 多半是数据源。同族资源对照(如 wafv3_defense_rule)判惯例 vs 新坑。
 4. **文档兜底**:GitHub raw markdown。
 - OpenAPI 与源码冲突 / 缺映射 / 命不中 → low_conf,不发评论,escalate。
+- **错误码语义查证**(PR 涉及 retry 白名单 / `IsExpectedErrors` / 错误码补丁等) → 读 `.claude/skills/aone-triage/references/aliyun-error-code-lookup.md`(跨 skill 复用,给定 product+code 出 HTTP/中英 message/官方 retry 建议/相邻错误码)。
 
 ## 4. 看点
 - 字段名/类型对齐 OpenAPI;required/optional/computed 合理;set vs list 正确。
@@ -68,7 +69,6 @@ bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicl
 - GitHub 写操作若在 provider worktree shell 里缺 `JARVIS_GITHUB_TOKEN`,不要回退个人账号;回到 Jarvis 已认证 shell 调 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>`。
 - 上游 master 前进后,CI 若报 `jitterbit/get-changed-files` / `head commit ... is not ahead of the base commit`,先 `fetch` upstream,确认 PR commit 后 rebase 到最新 `origin/master`/`alicloud/master`,保持单提交再 force update `api-tool-agent:<branch>`。
 - 推送前先做单提交门禁: `git rev-list --count <base>..HEAD` 必须是 `1`;若 GitHub CI `Pull Request Max Commits` 报 `commitNum>1`,不要叠加修复提交,应 squash 成一个提交后再 force-with-lease 更新 `api-tool-agent:<branch>`。
-- PR 需要跑真实 AccTest 时,优先使用 `invoke-terraform-acc-test-remote` 通过 ACube/FC 远程执行;本地只跑编译空测、小单测、lint、Example `terraform validate` 等轻量验证。远程日志下载后必须读 `run.log` / `tf-debug.log` 再下结论。
 - PR 评论要求“可用 Example”时,先在本地用 PR provider 包/override 验证 `terraform init/validate`。示例必须含 `required_providers`,跨账号资源用 aliased providers;AK/SK 只通过 `sensitive` 变量或环境变量传入,禁止写真实值。
 - 跨账号 AccTest 不只看 `TF_ACC`:先隔离 ambient `ALICLOUD_ACCESS_KEY`/`ALICLOUD_SECRET_KEY`,再显式检查 `ALICLOUD_ACCESS_KEY_1/2` 解析到的账号是否符合预期。测试前置清理只用于清历史脏关系,不能替代 provider Delete;若 CLI/API 能清理关系,资源 Delete 也应实现同等删除并校验幂等。
 - CI 失败诊断必须按失败 check 的 job id 拉日志:先 `gh pr checks --json name,link,state,bucket,workflow`,从失败项 URL 拿 run/job,再用 `gh run view <run_id> --job <job_id> --log`;同一个 workflow 里的其它 job 日志不能替代失败 job。

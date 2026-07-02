@@ -12,6 +12,7 @@ description: >-
   · references/delivery-aliyun-automation-agent.md — 自家应用 Agent门户/AgentRuntime/
     aliyun-automation-agent/PlayGround 交付(app 283346)
   · references/delivery-cloudspec.md — 自家应用 cloudspec / OpenAPI MCP Server 交付(app 260634)
+  · references/aliyun-error-code-lookup.md — 阿里云错误码官方定义查证(跨 skill 复用,给定 product+code 出 HTTP/message/retry 建议)
   · references/templates.md — 回复/需求骨架、机读 JSON
   NOT for: terraform-provider-alicloud GitHub PR 评审(用 terraform-pr-review)/ 资源从零开发
   (用 provider-resource-dev)/ 特定客户单接入进度催办不属 tf_customer(视场景自定)。
