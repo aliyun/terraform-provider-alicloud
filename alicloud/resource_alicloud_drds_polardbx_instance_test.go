@@ -579,4 +579,190 @@ data "alicloud_vswitches" "default" {
 `, name)
 }
 
+// Case ModifyDBInstanceClass in-place class upgrade
+func TestAccAliCloudDrdsPolardbxInstance_basic83815836(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_drds_polardbx_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap83815836)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDrdsPolardbxInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccdrds%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence83815836)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"topology_type":  "1azone",
+					"vswitch_id":     "${data.alicloud_vswitches.default.ids.0}",
+					"primary_zone":   "cn-beijing-f",
+					"cn_node_count":  "2",
+					"dn_class":       "mysql.n4.medium.25",
+					"cn_class":       "polarx.x4.medium.2e",
+					"dn_node_count":  "2",
+					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
+					"engine_version": "8.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"topology_type":  "1azone",
+						"vswitch_id":     CHECKSET,
+						"primary_zone":   "cn-beijing-f",
+						"cn_node_count":  CHECKSET,
+						"dn_class":       "mysql.n4.medium.25",
+						"cn_class":       "polarx.x4.medium.2e",
+						"dn_node_count":  CHECKSET,
+						"vpc_id":         CHECKSET,
+						"engine_version": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cn_class": "polarx.x4.large.2e",
+					"dn_class": "mysql.n4.large.25",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cn_class": "polarx.x4.large.2e",
+						"dn_class": "mysql.n4.large.25",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test_modify_class",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test_modify_class",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"specified_dn_scale",
+					"specified_dn_spec_map_json",
+					"switch_time",
+					"switch_time_mode",
+				},
+			},
+		},
+	})
+}
+
+var AlicloudDrdsPolardbxInstanceMap83815836 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudDrdsPolardbxInstanceBasicDependence83815836(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = "cn-beijing-f"
+}
+
+`, name)
+}
+
+// Case cloud_auto storage + ModifyDBInstanceClass class change with dn_storage_space grow
+// Requires a region + class combination that has an active price plan for the c25/c2e cloud-disk family.
+// Not part of the default matrix — enable per region when pricing is available.
+func TestAccAliCloudDrdsPolardbxInstance_basic83815836_cloudauto(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_drds_polardbx_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap83815836)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDrdsPolardbxInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccdrds%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence83815836)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+			testAccPreCheckWithEnvVariable(t, "ALICLOUD_TEST_DRDS_POLARDBX_CLOUDAUTO")
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"topology_type":              "1azone",
+					"vswitch_id":                 "${data.alicloud_vswitches.default.ids.0}",
+					"primary_zone":               "cn-beijing-f",
+					"cn_node_count":              "2",
+					"dn_class":                   "polarx.mysql.x4.large.c25",
+					"cn_class":                   "polarx.x4.large.c2e",
+					"dn_node_count":              "2",
+					"vpc_id":                     "${data.alicloud_vpcs.default.ids.0}",
+					"engine_version":             "8.0",
+					"storage_type":               "cloud_auto",
+					"dn_storage_space":           "50",
+					"specified_dn_scale":         "false",
+					"specified_dn_spec_map_json": "{}",
+					"switch_time_mode":           "Immediate",
+					"switch_time":                "2029-01-01T00:00:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_type":     "cloud_auto",
+						"dn_storage_space": "50",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dn_storage_space": "100",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dn_storage_space": "100",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"specified_dn_scale",
+					"specified_dn_spec_map_json",
+					"switch_time",
+					"switch_time_mode",
+				},
+			},
+		},
+	})
+}
+
 // Test Drds PolardbxInstance. <<< Resource test cases, automatically generated.
