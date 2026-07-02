@@ -69,6 +69,17 @@ python3 {SKILL_DIR}/scripts/acctest.py upload-run \
   --download-dir ./acctest_logs
 ```
 
+### 推荐：按 Terraform 资源名查映射
+
+优先传 `--terraform-resource`，脚本会调用 Acube `getTerraformResourceSpec` 读取 `namespace` / `resourceTypeCode`，不要在本 skill 中维护固定映射表。映射查证规则引用 `provider-resource-dev` skill 的「Terraform 资源名解析」小节；接口查不到映射时，改用显式 `--namespace` / `--resource`。
+
+```bash
+python3 {SKILL_DIR}/scripts/acctest.py upload-run \
+  --terraform-resource alicloud_schedulerx_job \
+  --dir "$(bootstrap/workspace.sh dir terraform_provider)" \
+  --download-dir ./acctest_logs
+```
+
 ### 匹配一类用例
 
 ```bash
@@ -78,7 +89,7 @@ python3 {SKILL_DIR}/scripts/acctest.py upload-run \
   --download-dir ./acctest_logs
 ```
 
-不传 `--test-case` 时，远程 runner 按 `TestAccAliCloud{Namespace}{ResourceTypeCode}*` 匹配并去重执行。
+不传 --test-case（即不设置该参数）时，远程 runner 按 `TestAccAliCloud{Namespace}{ResourceTypeCode}*` 匹配并去重执行，也就是一个任务跑该资源全部 TestAcc 用例。传 `--test-case` 时只跑指定精确函数名；可用逗号分隔多个用例，脚本会转换为 Go test 正则，例如 `A,B,C` → `^(A|B|C)$`。
 
 ### 参数
 
@@ -86,18 +97,21 @@ python3 {SKILL_DIR}/scripts/acctest.py upload-run \
 |-----------|-------------|---------|
 | `--namespace` | Product namespace | `VPC`, `ECS`, `SLB`, `RDS` |
 | `--resource` | Resource type code | `VSwitch`, `Instance`, `Listener` |
+| `--terraform-resource` | Terraform resource name; resolves namespace/resource via Acube mapping | `alicloud_schedulerx_job` |
 | `--dir` | Path to local `terraform-provider-alicloud` directory | `./terraform-provider-alicloud` |
-| `--test-case` | Optional: exact test function name to run | `TestAccAliCloudVPCVSwitch_basic` |
+| `--test-case` | Optional: exact test function name(s); comma-separated names become regex | `TestA,TestB` |
 | `--download-dir` | Local dir for downloaded logs | `./acctest_logs` |
+| `--insecure` | Skip TLS certificate verification for internal ACube endpoints when Python cert verification fails | flag |
 
 `upload-run` 会：
 
 1. 只打包 `go.mod`、`go.sum`、`alicloud/`
-2. 上传到 ACube，服务端注入 `config.json`
-3. 触发 FC 异步执行
-4. 每 60 秒轮询状态，并增量打印 `run.log`
-5. 终态后下载 `run.log` / `tf-debug.log`
-6. 输出包含 taskId、状态、日志路径的 JSON
+2. zip 根目录固定为 `terraform-provider-alicloud`，不使用本地 worktree 目录名
+3. 上传到 ACube，服务端注入 `config.json`
+4. 触发 FC 异步执行
+5. 每 60 秒轮询状态，并增量打印 `run.log`
+6. 终态后下载 `run.log` / `tf-debug.log`
+7. 输出包含 taskId、状态、日志路径的 JSON
 
 ## 3. 长时间无日志
 
@@ -179,7 +193,10 @@ grep -n "^func TestAcc" alicloud/resource_alicloud_<name>_test.go
 | Symptom | Likely Cause | Action |
 |---------|-------------|--------|
 | 0 tests run | Name mismatch (see Step 4) | Fix test function names or pass exact `--test-case` |
+| FC 解压后找不到 `terraform-provider-alicloud` | 本地打包根目录错误或旧版脚本使用了 worktree 目录名 | 更新/使用本 skill 的 `acctest.py`; zip root 必须固定为 `terraform-provider-alicloud` |
 | `指定的测试用例 X 在 alicloud/ 中未找到` | `--test-case` value misspelled | grep local test file for actual names |
+| 需要跑多个具体用例 | 旧写法把 `A,B` 当作一个函数名 | 用逗号分隔多个用例；脚本会转成 `^(A|B|C)$`;或不传 `--test-case` 跑该资源全部用例 |
+| `CERTIFICATE_VERIFY_FAILED` | 本机 Python 证书链不信任内网 ACube 证书 | 在 `acctest.py` 后、子命令前加 `--insecure` |
 | `Unsupported argument "X"` | Test HCL references a deleted field | Update test config to use the replacement field |
 | `daring resource` / destroy timeout | Subscription resource can't be destroyed | Treat as PASS if all Apply/Read steps succeeded |
 | Cloud API error with RequestId | API-side issue | Check RequestId in `tf-debug.log`, investigate params |
