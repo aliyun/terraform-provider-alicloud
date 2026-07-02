@@ -3,7 +3,7 @@
 # (.workspaces.terraform_provider.path) — edit there to relocate. No repo -> clone;
 # existing repo -> fetch + reset --hard FETCH_HEAD (强制对齐 upstream HEAD).
 #
-# workspace 定位:只读查证镜像。开发/评审改动必须走 worktree(见工作纪律 #1);
+# workspace 定位:只读查证镜像。开发/评审改动必须走 worktree(AGENTS.md 纪律 1);
 # 主目录任何 in-progress 状态都会被本脚本的 reset --hard 清掉。
 set -euo pipefail
 

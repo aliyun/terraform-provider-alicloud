@@ -1,95 +1,138 @@
 #!/usr/bin/env bash
-# bootstrap/skills-mirror-check.sh — .claude/skills 与 .agents/skills 双份镜像门禁
+# bootstrap/skills-mirror-check.sh — .claude/skills 与 .agents/skills 双份镜像兜底门禁
 #
-# 背景:本仓 skills 手工双份维护——.claude/skills(Claude Code 加载)与
-# .agents/skills(codex 加载)历史上并行副本。任何单向改动会导致漂移;参见工单
-# 83718139 教训:改 .claude 忘改 .agents 造成 codex 侧路由用旧版规则。
+# 主线机制:PostToolUse hook(.claude/settings.json + .codex/hooks.json)在每次
+# Edit/Write/MultiEdit 后跑 sync-to-{codex,claude}.sh,实时双向同步 + agent-specific
+# token 替换:
+#   Claude Code             ↔ Codex
+#   CLAUDE.md               ↔ AGENTS.md
+#   .claude/agents/         ↔ .Codex/agents/
+#   claude-code-guide       ↔ codex-guide
+#   Co-Authored-By: Claude  ↔ Co-Authored-By: Codex
 #
-# 但两份**不是完全 mirror**——SKILL.md 入口文案、agent-specific 引用(AGENTS.md
-# vs CLAUDE.md)、脚本路径(~/.Codex/ vs ~/.claude/)、AI 水印(Codex vs Claude Code)
-# 都是必然的合法分歧,不能强制一致。
-#
-# 所以只对 **allowlist**(bootstrap/skills-mirror-allowlist)里列出的文件做严格
-# 比对。allowlist 只应含"两侧完全同内容"的纯规则/脚本;其它文件由人工同步。
+# 本脚本**只兜底**主线没接住的场景:Bash cp/sed/echo>、外部编辑器、其它 agent、
+# hook 静默失败、跨会话遗留。**不改任何文件**——只做 check,drift 时打印列表 + exit 1。
 #
 # 用法:
-#   bash bootstrap/skills-mirror-check.sh                   # = check
-#   bash bootstrap/skills-mirror-check.sh check             # drift → exit 1 + diff
-#   bash bootstrap/skills-mirror-check.sh sync-claude-to-agents
-#                                                           # 强制以 .claude 覆盖 .agents(仅 allowlist 文件)
+#   bash bootstrap/skills-mirror-check.sh                    # 全量 check
+#   bash bootstrap/skills-mirror-check.sh <file> [file...]   # 只 check 指定文件对
 #
-# 由 pre-commit hook(bootstrap/git-hooks/pre-commit)调用 check 模式。
+# ** SED 规则必须与 sync-to-codex.sh / sync-to-claude.sh 保持完全一致 **
+# 未来重构为共享 lib。改此处必同改那两个脚本。
+#
+# 修复:
+#   bash bootstrap/sync-to-codex.sh --all    # 以 .claude 为准全量推到 .agents
+#   bash bootstrap/sync-to-claude.sh --all   # 以 .agents 为准全量推到 .claude
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$script_dir/.." && pwd)"
+jarvis_root="$(cd "$script_dir/.." && pwd)"
 
-CLAUDE_DIR="$repo_root/.claude/skills"
-AGENTS_DIR="$repo_root/.agents/skills"
-ALLOWLIST="$script_dir/skills-mirror-allowlist"
+# Claude 侧文本 → Codex 侧文本(与 sync-to-codex.sh#_sed_transform 一致)
+_sed_claude_to_codex() {
+    sed \
+        -e 's|Claude Code|Codex|g' \
+        -e 's|Co-Authored-By: Claude|Co-Authored-By: Codex|g' \
+        -e 's|\.claude/agents/|.Codex/agents/|g' \
+        -e 's|claude-code-guide|codex-guide|g' \
+        -e 's|CLAUDE\.md|AGENTS.md|g'
+}
 
-if [ ! -d "$CLAUDE_DIR" ] || [ ! -d "$AGENTS_DIR" ]; then
-    exit 0    # 任一侧不存在 → 本机不启用双份,跳过
-fi
-if [ ! -f "$ALLOWLIST" ]; then
-    echo "skills-mirror-check: allowlist missing: $ALLOWLIST" >&2
-    exit 0    # 无 allowlist 时静默跳过,避免误伤
-fi
+# Codex 侧文本 → Claude 侧文本(与 sync-to-claude.sh#_sed_transform 一致)
+_sed_codex_to_claude() {
+    sed \
+        -e 's|Co-Authored-By: Codex|Co-Authored-By: Claude|g' \
+        -e 's|\.Codex/agents/|.claude/agents/|g' \
+        -e 's|codex-guide|claude-code-guide|g' \
+        -e 's|AGENTS\.md|CLAUDE.md|g' \
+        -e 's|Codex|Claude Code|g'
+}
 
-cmd="${1:-check}"
+# 输入 mirror 源文件(绝对或相对),输出:目标绝对路径 + transform 方向
+# 无映射时输出空,返回码 1
+_map() {
+    local src="$1"
+    [[ "$src" != /* ]] && src="$jarvis_root/$src"
+    local rel="${src#$jarvis_root/}"
+    case "$rel" in
+        .claude/skills/*)  echo "$jarvis_root/.agents/skills/${rel#.claude/skills/} claude_to_codex" ;;
+        CLAUDE.md)         echo "$jarvis_root/AGENTS.md claude_to_codex" ;;
+        .agents/skills/*)  echo "$jarvis_root/.claude/skills/${rel#.agents/skills/} codex_to_claude" ;;
+        AGENTS.md)         echo "$jarvis_root/CLAUDE.md codex_to_claude" ;;
+        *) return 1 ;;
+    esac
+}
+
+# 检查一对文件的 mirror 关系
+# 返回:0 通过 / 1 drift(并打印) / 2 非 mirror 路径(静默)
+_check_pair() {
+    local src="$1"
+    [[ "$src" != /* ]] && src="$jarvis_root/$src"
+    [ -f "$src" ] || return 0    # 文件被删/不存在,不 flag(sync 脚本也会跳过)
+
+    local mapping
+    mapping="$(_map "$src")" || return 2
+    local dst="${mapping% *}"
+    local direction="${mapping##* }"
+
+    if [ ! -f "$dst" ]; then
+        echo "mirror-missing: $dst" >&2
+        echo "  (expected mirror of $src)" >&2
+        return 1
+    fi
+
+    local expected actual
+    case "$direction" in
+        claude_to_codex) expected="$(_sed_claude_to_codex < "$src")" ;;
+        codex_to_claude) expected="$(_sed_codex_to_claude < "$src")" ;;
+    esac
+    actual="$(cat "$dst")"
+
+    if [ "$expected" != "$actual" ]; then
+        echo "mirror-drift: $dst" >&2
+        echo "  (source: $src, direction: $direction)" >&2
+        return 1
+    fi
+    return 0
+}
+
 drift=0
 
-while IFS= read -r rel; do
-    # 跳过空行/注释
-    rel="${rel%%#*}"
-    rel="$(echo "$rel" | tr -d '[:space:]')"
-    [ -z "$rel" ] && continue
+if [ "$#" -eq 0 ]; then
+    # 全量 check:遍历两侧 skills + 顶层 md
+    {
+        [ -d "$jarvis_root/.claude/skills" ] && find "$jarvis_root/.claude/skills" -type f
+        [ -d "$jarvis_root/.agents/skills" ] && find "$jarvis_root/.agents/skills" -type f
+        [ -f "$jarvis_root/CLAUDE.md" ] && echo "$jarvis_root/CLAUDE.md"
+        [ -f "$jarvis_root/AGENTS.md" ] && echo "$jarvis_root/AGENTS.md"
+    } | while IFS= read -r f; do
+        _check_pair "$f"
+        rc=$?
+        [ "$rc" -eq 1 ] && exit 1
+    done || drift=1
+else
+    # 指定文件模式(pre-commit hook 用):只 check 传入的路径
+    for f in "$@"; do
+        _check_pair "$f"
+        rc=$?
+        [ "$rc" -eq 1 ] && drift=1
+    done
+fi
 
-    claude_file="$CLAUDE_DIR/$rel"
-    agents_file="$AGENTS_DIR/$rel"
-
-    # 两侧任一缺失 → drift
-    if [ ! -f "$claude_file" ] || [ ! -f "$agents_file" ]; then
-        drift=1
-        if [ "$cmd" = "sync-claude-to-agents" ] && [ -f "$claude_file" ]; then
-            echo "sync: create $rel  (.claude → .agents)"
-            mkdir -p "$(dirname "$agents_file")"
-            cp "$claude_file" "$agents_file"
-        else
-            echo "mirror-missing: $rel (claude=$([ -f "$claude_file" ] && echo Y || echo N) agents=$([ -f "$agents_file" ] && echo Y || echo N))" >&2
-        fi
-        continue
-    fi
-
-    if cmp -s "$claude_file" "$agents_file"; then
-        continue    # 已一致
-    fi
-
-    drift=1
-    if [ "$cmd" = "sync-claude-to-agents" ]; then
-        echo "sync: $rel  (.claude → .agents)"
-        cp "$claude_file" "$agents_file"
-    else
-        echo "mirror-drift: $rel" >&2
-    fi
-done < "$ALLOWLIST"
-
-if [ "$drift" -eq 1 ] && [ "$cmd" = "check" ]; then
+if [ "$drift" -eq 1 ]; then
     {
         echo ""
-        echo "skills allowlist mirror out of sync between .claude and .agents."
-        echo "Files under check are listed in bootstrap/skills-mirror-allowlist."
-        echo "Resolve by one of:"
-        echo "  1) bash bootstrap/skills-mirror-check.sh sync-claude-to-agents"
-        echo "     (以 .claude 为准强覆盖 .agents 侧 allowlist 文件)"
-        echo "  2) 手工同步差异,如果 codex 侧有意保留独有内容"
-        echo "然后 git add 变更并重跑 commit。"
+        echo "skills mirror drift detected between .claude and .agents."
+        echo "主线机制是 PostToolUse hook(.claude/settings.json + .codex/hooks.json)"
+        echo "在 Edit/Write/MultiEdit 后跑 sync-to-{codex,claude}.sh 实时双向同步 + token"
+        echo "替换。本次 drift 通常是 Bash cp/sed/echo>、外部编辑器、其它 agent、或"
+        echo "hook 静默失败造成。"
         echo ""
-        echo "Note:allowlist 只应含 agent-specific 无差异的纯内容文件"
-        echo "(SKILL.md 入口文案、AGENTS.md/CLAUDE.md 引用、~/.Codex/vs ~/.claude/"
-        echo " 路径、Codex/Claude 水印所在文件禁止入 allowlist)。"
+        echo "修复:"
+        echo "  bash bootstrap/sync-to-codex.sh --all      # 以 .claude 为准 → .agents"
+        echo "  bash bootstrap/sync-to-claude.sh --all     # 以 .agents 为准 → .claude"
+        echo "然后 git add 变更并重跑 commit。"
     } >&2
     exit 1
 fi
-
 exit 0

@@ -2,18 +2,27 @@
 # bootstrap/git-hooks/pre-commit
 # 通过 core.hooksPath=bootstrap/git-hooks 启用(在 preflight.sh 里 idempotent 设置)。
 #
-# 责任:阻断"改一份 skill 忘改另一份"导致 .claude/skills 与 .agents/skills 漂移的 commit。
-# 只在 staged 涉及这两个目录时才跑,普通 commit 无感。
+# 责任:兜底 .claude/skills 与 .agents/skills 双份镜像门禁。主线是 PostToolUse
+# hook(.claude/settings.json + .codex/hooks.json)实时同步 + token 替换,本 hook
+# 只接住主线漏掉的场景(Bash 改文件 / 外部编辑器 / 其它 agent / hook 静默失败)。
+#
+# 只 check **本次 staged 涉及的 mirror 路径**,避免 baseline 里既有 drift 阻断无关
+# commit。普通 commit(未触到 skills / CLAUDE.md / AGENTS.md)无感通过。
 set -uo pipefail
 
 staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 
-if echo "$staged" | grep -qE '^(\.claude|\.agents)/skills/'; then
-    repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
-    [ -n "$repo_root" ] || exit 0
-    if ! bash "$repo_root/bootstrap/skills-mirror-check.sh" check; then
-        exit 1
-    fi
-fi
+# 过滤 mirror 相关路径
+mirror_staged=$(echo "$staged" | grep -E '^\.claude/skills/|^\.agents/skills/|^CLAUDE\.md$|^AGENTS\.md$' || true)
+[ -z "$mirror_staged" ] && exit 0
 
-exit 0
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+[ -n "$repo_root" ] || exit 0
+
+# portable(macOS bash 3.2 无 mapfile):把换行分隔的路径读进数组
+files=()
+while IFS= read -r f; do
+    [ -n "$f" ] && files+=("$f")
+done <<< "$mirror_staged"
+[ "${#files[@]}" -eq 0 ] && exit 0
+exec bash "$repo_root/bootstrap/skills-mirror-check.sh" "${files[@]}"
