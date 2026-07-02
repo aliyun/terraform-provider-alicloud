@@ -2,12 +2,13 @@
 name: terraform-changelog
 description: >-
   Generate CHANGELOG.md entries for terraform-provider-alicloud by aggregating merged GitHub PRs
-  since the last release, and optionally cut a release (stamp the date, bump providerVersion,
-  open the next Unreleased block). Categorizes PRs into New Resources / Data Sources, ENHANCEMENTS,
-  and BUG FIXES. Trigger on: generate changelog, update changelog, changelog entry, release notes,
+  since the last release, cut the release (stamp the date, bump providerVersion, open the next
+  Unreleased block), and submit a PR with proper conventions (single commit, rebase, title CHANGELOG).
+  Categorizes PRs into New Resources / Data Sources, ENHANCEMENTS, and BUG FIXES.
+  Trigger on: generate changelog, update changelog, changelog entry, release notes,
   cut release, 发布版本, 生成changelog, 更新changelog.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   domain: terraform-provider
   triggers: generate changelog, update changelog, changelog entry, release notes, cut release, 发布版本, 生成changelog, 更新changelog
 ---
@@ -181,9 +182,9 @@ Items needing manual review:
   - ...
 ```
 
-## Step 9: Cut the Release (optional)
+## Step 9: Cut the Release (default)
 
-Run this step only when the user explicitly asks to **cut / publish / release** the version, or supplies a release date. It is independent of Steps 1-8 and can also run on its own when the Unreleased block is already populated by hand.
+**Always perform this step** unless the user explicitly says they only want the Unreleased block populated without cutting (e.g., "don't cut the release" / "just add entries"). After populating the Unreleased block (Steps 1-8), ask the user to confirm the release date (default: today) and proceed. This step can also run on its own when the Unreleased block is already populated by hand.
 
 ### 9.1 Inputs
 
@@ -230,12 +231,67 @@ Pre-existing diagnostics in unrelated files (e.g., `go.mod` vendor warnings) are
 
 ### 9.5 Do NOT
 
-- Do **not** commit, tag, or push -- that's the maintainer's job (typically a `make release` / `make commit` flow)
+- Do **not** tag -- tagging is the maintainer's job
 - Do **not** modify any other version-bearing file unless the user names it explicitly. The only auto-edit targets are `CHANGELOG.md` and `alicloud/connectivity/client.go`
+
+## Step 10: Submit PR
+
+After all edits (CHANGELOG entries + release cut) are verified, submit a PR to the upstream repo. Follow these conventions strictly -- the repo CI enforces them:
+
+### 10.1 Commit
+
+Squash all changes into a **single commit**. The repo has a `Pull Request Max Commits` CI check that fails if the PR contains more than one commit.
+
+```bash
+git checkout -b changelog/<release_version>
+git add CHANGELOG.md alicloud/connectivity/client.go
+git commit -m "CHANGELOG"
+```
+
+Commit message must be exactly `CHANGELOG` -- no extra description needed. Do **not** add `Co-Authored-By` or any AI signature to the commit.
+
+### 10.2 Rebase
+
+Before pushing, **always rebase** onto the latest upstream master to avoid merge conflicts and ensure CI runs against current code:
+
+```bash
+git fetch origin master
+git rebase origin/master
+```
+
+If rebase produces conflicts, resolve them (CHANGELOG conflicts are typically additive and straightforward), then continue.
+
+### 10.3 Push and Create PR
+
+Push via `bootstrap/github-identity.sh` (required for Jarvis identity). The PR head must be on `api-tool-agent`'s fork:
+
+```bash
+bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud changelog/<version> changelog/<version>
+```
+
+Create the PR with title **exactly `CHANGELOG`** -- this matches the repo's convention and avoids triggering the `Pull Request Title` CI check:
+
+```bash
+bootstrap/github-identity.sh gh pr create \
+  --repo aliyun/terraform-provider-alicloud \
+  --head api-tool-agent:changelog/<version> \
+  --base master \
+  --title "CHANGELOG" \
+  --body "<brief summary: N new resources, N enhancements, N bug fixes>"
+```
+
+### 10.4 Post-push fixes
+
+If CI fails (e.g., because of a force-push race or new commits landed on master):
+
+1. Rebase again: `git fetch origin master && git rebase origin/master`
+2. Force-push: `bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud +changelog/<version> changelog/<version>` (note the `+` prefix for force push)
+
+Always verify the PR has exactly 1 commit after any rebase/squash operation.
 
 ## Important Notes
 
-1. **Do NOT push or commit** -- leave the change in working tree for the maintainer to inspect, edit, and commit themselves
+1. **Single commit, title `CHANGELOG`** -- the repo CI enforces max 1 commit per PR and checks the PR title. Always squash and use the exact title.
 2. **Issue link format**: always `/issues/N`, not `/pull/N`. GitHub redirects, but stay consistent with the existing CHANGELOG
 3. **Don't invent entries**: every bullet must trace back to a real merged PR in the JSON output
 4. **Don't paraphrase titles**: the maintainer expects the PR title (lightly normalized). Only rewrite Conventional Commit prefixes -- leave the rest verbatim
@@ -249,6 +305,8 @@ Pre-existing diagnostics in unrelated files (e.g., `go.mod` vendor warnings) are
 3. PR links use `/issues/N` and resolve correctly
 4. Release-cut PRs and PRs already listed are excluded
 5. Breaking changes and ambiguous items are surfaced in the report (not silently merged)
+6. Release is cut by default (Unreleased stamped with date, providerVersion bumped, next Unreleased opened)
+7. PR submitted with exactly 1 commit, title `CHANGELOG`, rebased on latest master, pushed to `api-tool-agent` fork
 
 ## Example Workflow
 
