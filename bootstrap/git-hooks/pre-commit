@@ -25,4 +25,11 @@ while IFS= read -r f; do
     [ -n "$f" ] && files+=("$f")
 done <<< "$mirror_staged"
 [ "${#files[@]}" -eq 0 ] && exit 0
+
+# CLAUDE.md staged 时自动从 CLAUDE.md sync 一次 AGENTS.md 到 disk(P6.a:AGENTS.md
+# gitignored,不入 index;若外部编辑器改 CLAUDE.md 未触发 PostToolUse hook,这里兜底)。
+if printf '%s\n' "${files[@]}" | grep -qxF 'CLAUDE.md'; then
+    bash "$repo_root/bootstrap/mirror.sh" to-codex "$repo_root/CLAUDE.md" >/dev/null 2>&1 || true
+fi
+
 exec bash "$repo_root/bootstrap/mirror.sh" check "${files[@]}"

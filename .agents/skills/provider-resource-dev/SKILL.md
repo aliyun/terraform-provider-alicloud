@@ -14,8 +14,8 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
 ## 工具/路径
 - 工作区一律通过 `bootstrap/workspace.sh dir <key>` 解析;provider key=`terraform_provider`;acube key=`acube`;生成器 key=`terraform_generator_v4`。
 - cspec 仓 `cloudspec-model/<Product>_pop_*`;provider upstream=aliyun;Jarvis 提交 GitHub PR/评论/推分支必须使用 `JARVIS_GITHUB_TOKEN` 对应的 `api-tool-agent` 身份,head=`api-tool-agent:<branch>`;acube/terraform-generator-v4 见 `config/workspaces.json`。
-- Acube 在线生成工具: `tools/acube_terraform_generate.py`。
-- 生成差异/语义检查工具: `tools/terraform_generated_diff.py`。
+- Acube 在线生成工具: `tools/acube_terraform_generate.py`(注:tools/ 是 repo 顶层的 Python 工具目录,不在 skill scripts/ 内,是为便于跨会话共享 + 测试独立;归属见 escalation/cap-repo-structure-cleanup.md P6)。
+- 生成差异/语义检查工具: `tools/terraform_generated_diff.py`(同上)。
 - **错误码语义查证**(客户 acc/apply 报错、retry 白名单决策):读 `.Codex/skills/aone-triage/references/aliyun-error-code-lookup.md`(跨 skill 复用,给定 product+code 出 HTTP/中英 message/官方 retry 建议/相邻错误码)。
 - **镇元查证与路由分支**(诊断资源在哪一层缺、按决策树选执行分支):读 `references/zhenyuan-verification.md`(P3.a 从 aone-triage 抽出的跨 skill 单点维护,aone-triage tf-customer 路由与本 skill 资源开发都读它)。
 - 编码交 developer 子代理,改文件先 worktree,acc 测过才交。

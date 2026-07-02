@@ -25,5 +25,9 @@ bridge/jarvis.env
 # 本地凭据(chmod 600,双保险 gitignore;bootstrap/.env.example 是模板)
 bootstrap/.env
 
+# AGENTS.md 由 hook 生成(P6.a):preflight.sh 兜底 + PostToolUse hook 实时 sync,
+# 内容 = mirror_sed_claude_to_codex(CLAUDE.md);不再 tracked,避免手工同步漂移
+AGENTS.md
+
 # Python bytecode
 __pycache__/
