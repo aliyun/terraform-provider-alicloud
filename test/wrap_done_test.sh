@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# bootstrap/tests/wrap_done.sh — unit tests for wrap.sh done subcommand
+# test/wrap_done_test.sh — unit tests for wrap.sh done subcommand
 # Tests: missing status→nonzero, full args+a1 ok→0, no-status done→0, A1_FAIL=1→nonzero
-# Run: bash bootstrap/tests/wrap_done.sh
+# Run: bash test/wrap_done_test.sh
 # Prints PASS and exits 0 on success; prints FAIL and exits 1 on any failure.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 JARVIS_ROOT="$(cd "$BOOTSTRAP_DIR/.." && pwd)"
 
 # ---------------------------------------------------------------------------

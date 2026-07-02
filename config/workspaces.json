@@ -66,7 +66,7 @@
       "git_url": "git@gitlab.alibaba-inc.com:terraflow/jarvis.git",
       "default_branch": "master",
       "pools": ["api_toolkit"],
-      "ops": {"test":"bash bootstrap/tests/aone_comment_format.sh && bash bootstrap/tests/wrap_done.sh"},
+      "ops": {"test":"bash test/aone_comment_format_test.sh && bash test/wrap_done_test.sh"},
       "desc": "Jarvis 自治工作台; Aone triage、流程编排、自我迭代和内部研发提效"
     }
   }

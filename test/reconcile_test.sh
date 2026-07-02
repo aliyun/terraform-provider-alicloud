@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# bootstrap/tests/reconcile.sh — unit tests for reconcile.sh
+# test/reconcile_test.sh — unit tests for reconcile.sh
 #
 # Scenarios:
 #   1. One claimed id with a runs/ file → reconcile calls claim.sh release, prints RECONCILED: <id>
 #   2. One claimed id with NO runs/ file → skip (sweep handles it), prints RECONCILED: none
 #   3. No claimed items at all → prints RECONCILED: none
 #
-# Run: bash bootstrap/tests/reconcile.sh
+# Run: bash test/reconcile_test.sh
 # Prints PASS and exits 0 on success; prints FAIL and exits 1 on any failure.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 
 RECONCILE="$BOOTSTRAP_DIR/reconcile.sh"
 

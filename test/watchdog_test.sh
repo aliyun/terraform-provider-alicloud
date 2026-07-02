@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# bootstrap/tests/watchdog.sh — unit tests for bootstrap/reconcile.sh orphan(原 watchdog.sh)
+# test/watchdog_test.sh — unit tests for bootstrap/reconcile.sh orphan(原 watchdog.sh)
 #
 # Sets JARVIS_ROOT + JARVIS_ESCALATION_DIR to temp dirs, creates a task owned
 # by dead instance "nohost-999999", runs reconcile.sh orphan, and asserts that
 # an escalation file is written for the orphaned task.
 #
-# Run: bash bootstrap/tests/watchdog.sh
+# Run: bash test/watchdog_test.sh
 # Prints PASS/FAIL per assertion; exits 0 on all-pass, 1 on any failure.
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 
 WATCHDOG="$BOOTSTRAP_DIR/reconcile.sh"
 

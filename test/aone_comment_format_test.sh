@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# bootstrap/tests/aone_comment_format.sh — unit tests for Aone-safe comment formatting.
+# test/aone_comment_format_test.sh — unit tests for Aone-safe comment formatting.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 FORMAT="$BOOTSTRAP_DIR/aone-comment-format.sh"
 
 pass_count=0

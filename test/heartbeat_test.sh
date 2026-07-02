@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# bootstrap/tests/heartbeat.sh — unit tests for bootstrap/heartbeat.sh
+# test/heartbeat_test.sh — unit tests for bootstrap/heartbeat.sh
 #
 # Registers an instance, starts a short-lived follow_pid, runs heartbeat sidecar
 # with HB_INT=1, verifies hb file mtime advances, then kills follow_pid and
 # asserts the heartbeat loop exits within 2 seconds.
 #
-# Run: bash bootstrap/tests/heartbeat.sh
+# Run: bash test/heartbeat_test.sh
 # Prints PASS/FAIL per assertion; exits 0 on all-pass, 1 on any failure.
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 
 COORD="$BOOTSTRAP_DIR/coord.sh"
 HB="$BOOTSTRAP_DIR/heartbeat.sh"
