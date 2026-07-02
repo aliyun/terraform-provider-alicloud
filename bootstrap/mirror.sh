@@ -8,6 +8,10 @@
 #
 # sed 规则仍在 bootstrap/skills-mirror-lib.sh(source-only)。
 #
+# 注:P6.a 起 AGENTS.md 不 tracked(.gitignore),由 bootstrap/preflight.sh 兜底生成
+# + PostToolUse hook 实时 sync;check 依然能对齐 disk 上的 AGENTS.md(hook 主线保证),
+# 或首次 codex checkout 后跑 preflight 一次即可。
+#
 # 用法:
 #   mirror.sh to-codex <file>...    # Claude → Codex 单文件 sync(hook 场景)
 #   mirror.sh to-codex --all        # 全量 sync
