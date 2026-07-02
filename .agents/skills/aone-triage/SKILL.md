@@ -12,6 +12,7 @@ description: >-
   · references/delivery-aliyun-automation-agent.md — 自家应用 Agent门户/AgentRuntime/
     aliyun-automation-agent/PlayGround 交付(app 283346)
   · references/delivery-cloudspec.md — 自家应用 cloudspec / OpenAPI MCP Server 交付(app 260634)
+  · references/aliyun-error-code-lookup.md — 阿里云错误码官方定义查证(跨 skill 复用,给定 product+code 出 HTTP/message/retry 建议)
   · references/templates.md — 回复/需求骨架、机读 JSON
   NOT for: terraform-provider-alicloud GitHub PR 评审(用 terraform-pr-review)/ 资源从零开发
   (用 provider-resource-dev)/ 特定客户单接入进度催办不属 tf_customer(视场景自定)。
@@ -140,6 +141,26 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 - `references/delivery-cloudspec.md`(app 260634,预发 420/正式 67)
 
 **红线**:worktree 上开发,分支只走 CR/PR/MR;master 只接已评审合入;正式发布(release_prod)永远人工确认后触发。
+
+## 无头模式挂起（headless suspend）
+
+当 Jarvis 由 bridge/Tata 后台委派（无终端交互）且遇到必须等待人类确认/决策的点时：
+
+1. 先在 Aone 工单上评论你的问题，使用 `@花名(工号)` 格式 @需要回答的人
+2. 在**本轮最终回复的末尾**单独一行输出挂起哨兵：
+   ```
+   [[SUSPEND:{"aone_id":"<工单ID>","wait_for":"<花名>","reason":"<一句话说明等什么>"}]]
+   ```
+3. 输出哨兵后**立即停止工作**——系统会自动挂起你的会话、释放进程资源
+4. 对方在 Aone 工单评论回复后，系统会用 `--resume` 唤醒你继续处理，上下文完整保留
+
+**触发挂起的典型场景**：
+- 需确认走生成器链路还是手写代码
+- 需要使用非 jarvis 身份（chenyi/guozai 等），须在工单上获得本人授权
+- 查证结果矛盾，需要人类判断
+- 方案有多个可行路径，需要决策
+
+**注意**：只有在无头模式下才使用 `[[SUSPEND:...]]`。交互模式（终端）直接在终端提问即可。
 
 ## 反模式
 

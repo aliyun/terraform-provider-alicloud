@@ -16,6 +16,7 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
 - cspec 仓 `cloudspec-model/<Product>_pop_*`;provider upstream=aliyun;Jarvis 提交 GitHub PR/评论/推分支必须使用 `JARVIS_GITHUB_TOKEN` 对应的 `api-tool-agent` 身份,head=`api-tool-agent:<branch>`;acube/terraform-generator-v4 见 `config/workspaces.json`。
 - Acube 在线生成工具: `tools/acube_terraform_generate.py`。
 - 生成差异/语义检查工具: `tools/terraform_generated_diff.py`。
+- **错误码语义查证**(客户 acc/apply 报错、retry 白名单决策):读 `.claude/skills/aone-triage/references/aliyun-error-code-lookup.md`(跨 skill 复用,给定 product+code 出 HTTP/中英 message/官方 retry 建议/相邻错误码)。
 - 编码交 developer 子代理,改文件先 worktree,acc 测过才交。
 
 ## Aone 分单与同步
