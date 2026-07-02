@@ -209,3 +209,87 @@ resource "alicloud_esa_routine" "default" {
 }
 
 // Test ESA RoutineRoute. <<< Resource test cases, automatically generated.
+
+// ESA enforces a server-side optimistic lock on the same SiteId +
+// RoutineName; concurrent RoutineRoute writes surface as LockFailed /
+// Site.ServiceBusy / TooManyRequests, which NeedRetry() does not cover.
+// Without the IsExpectedErrors(...) wrap on Create / Update / Delete,
+// terraform apply with N routes under one routine drops mid-flight; with
+// the wrap, the retry+incrementalWait loop absorbs the collision and
+// apply/destroy both go green.
+func TestAccAliCloudEsaRoutineRoute_lockRetry(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_routine_route.concurrent"
+	ra := resourceAttrInit(resourceId, AliCloudEsaRoutineRouteMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEsaRoutineRoute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%serrlk%d", defaultRegionToTest, rand)
+	const routeCount = 20
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create N routes concurrently under one Routine — stresses Create-side LockFailed.
+				Config: testAccAliCloudEsaRoutineRouteLockRetryConfig(name, routeCount, "on"),
+				Check: resource.ComposeTestCheckFunc(
+					checkAliCloudEsaRoutineRoutesConcurrent(routeCount),
+				),
+			},
+			{
+				// Update all N routes concurrently — stresses Update-side LockFailed.
+				Config: testAccAliCloudEsaRoutineRouteLockRetryConfig(name, routeCount, "off"),
+				Check: resource.ComposeTestCheckFunc(
+					checkAliCloudEsaRoutineRoutesConcurrent(routeCount),
+				),
+			},
+		},
+		// Framework's post-test destroy runs Delete on all N routes concurrently —
+		// implicit stress on Delete-side LockFailed. Any leftover on the routine
+		// after test tear-down fails the run.
+	})
+}
+
+func testAccAliCloudEsaRoutineRouteLockRetryConfig(name string, routeCount int, enable string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_esa_sites" "default" {
+  plan_subscribe_type = "enterpriseplan"
+}
+
+resource "alicloud_esa_routine" "default" {
+  name = var.name
+}
+
+resource "alicloud_esa_routine_route" "concurrent" {
+  count        = %d
+  site_id      = data.alicloud_esa_sites.default.sites.0.id
+  routine_name = alicloud_esa_routine.default.id
+  route_name   = "${var.name}-${count.index}"
+  route_enable = "%s"
+  rule         = "(http.host eq \"concurrent${count.index}.example.com\")"
+}
+`, name, routeCount, enable)
+}
+
+func checkAliCloudEsaRoutineRoutesConcurrent(routeCount int) resource.TestCheckFunc {
+	checks := make([]resource.TestCheckFunc, 0, routeCount)
+	for i := 0; i < routeCount; i++ {
+		checks = append(checks, resource.TestCheckResourceAttrSet(
+			fmt.Sprintf("alicloud_esa_routine_route.concurrent.%d", i), "config_id",
+		))
+	}
+	return resource.ComposeTestCheckFunc(checks...)
+}
