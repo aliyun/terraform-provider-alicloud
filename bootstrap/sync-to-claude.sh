@@ -24,15 +24,12 @@ set -uo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
 
-# Codex → Claude 关键词替换（顺序敏感：更长的先替换避免误伤）
-_sed_transform() {
-    sed \
-        -e 's|Co-Authored-By: Codex|Co-Authored-By: Claude|g' \
-        -e 's|\.Codex/agents/|.claude/agents/|g' \
-        -e 's|codex-guide|claude-code-guide|g' \
-        -e 's|AGENTS\.md|CLAUDE.md|g' \
-        -e 's|Codex|Claude Code|g'
-}
+# 共享 sed transform 规则(sync-to-codex / sync-to-claude / skills-mirror-check 复用同一份)
+# shellcheck source=bootstrap/skills-mirror-lib.sh
+source "$script_dir/skills-mirror-lib.sh"
+
+# Codex → Claude 关键词替换
+_sed_transform() { mirror_sed_codex_to_claude; }
 
 _transform_file() {
     local src="$1" dst="$2" transform="${3:-1}"
