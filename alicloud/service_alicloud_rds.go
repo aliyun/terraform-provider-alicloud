@@ -191,6 +191,10 @@ func (s *RdsService) DescribeDBDatabase(id string) (object map[string]interface{
 			return resource.NonRetryableError(WrapErrorf(NotFoundErr("DBDatabase", dbName), NotFoundMsg, ProviderERROR))
 		}
 		ds = v.([]interface{})[0].(map[string]interface{})
+		engine, ok := ds["Engine"].(string)
+		if ok && string(MySQL) == engine && ds["CharacterSetName"] == "utf8mb3" {
+			ds["CharacterSetName"] = "utf8"
+		}
 		return nil
 	})
 	return ds, err
