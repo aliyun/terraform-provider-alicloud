@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read -r f; [ -n \"$f\" ] && bash \"$CLAUDE_PROJECT_DIR/bootstrap/sync-to-claude.sh\" \"$f\"; } 2>/dev/null || true"
+            "command": "jq -r '.tool_input.file_path' | { read -r f; [ -n \"$f\" ] && bash \"$CLAUDE_PROJECT_DIR/bootstrap/mirror.sh\" to-claude \"$f\"; } 2>/dev/null || true"
           }
         ]
       }

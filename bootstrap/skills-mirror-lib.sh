@@ -3,9 +3,7 @@
 # 共享 sed transform 规则。**不是可执行脚本;只通过 source 引入**。
 #
 # 消费者:
-#   bootstrap/sync-to-codex.sh       (Claude → Codex 单向)
-#   bootstrap/sync-to-claude.sh      (Codex → Claude 单向)
-#   bootstrap/skills-mirror-check.sh (双向 in-memory 对比)
+#   bootstrap/mirror.sh {to-codex|to-claude|check}  (P1.b 合并的统一入口)
 #
 # 关键词替换规则(顺序敏感:更长的先替换避免误伤;两个方向互为逆):
 #   Claude Code             ↔ Codex
