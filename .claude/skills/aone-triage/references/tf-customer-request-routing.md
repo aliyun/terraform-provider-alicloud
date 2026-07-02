@@ -262,7 +262,7 @@ curl -s "https://acube.aliyun-inc.com/api/v1/terraform/generator/cloudspec/resou
   -H "accept: */*" | python3 -c "import json,sys; d=json.load(sys.stdin); print('in released list:',('${resourceCode}' in (d.get('data') or [])))"
 
 # ② 资源质量覆盖度 - acube V2 GET,内网直连,无需 AK/SK
-# 口径变化(相较旧 GetResourceModelTestCaseQualityByResource):POP 三元组代替 product/resourceCode
+# 参数口径:POP 三元组(popCode/popVersion/resourceName),与 ① 的 product/resourceCode 不同
 #   popCode      POP 产品代码,常 UPPER,如 APIG;与 cloudspec product(Apig)可能不同
 #   popVersion   POP 接口版本,如 2024-03-27;从 aliyun CLI meta 或 next.api 取
 #   resourceName POP 资源名,PascalCase,多数场景同 ① 的 resourceCode
