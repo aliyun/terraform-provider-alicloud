@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bootstrap/tests/lib.sh — unit tests for lib.sh jarvis_root()
+# test/lib_test.sh — unit tests for lib.sh jarvis_root()
 #
 # Scenarios:
 #   1. JARVIS_ROOT env override → returns that value
@@ -7,13 +7,13 @@
 #   3. From a git worktree → returns main repo root (not worktree root)
 #   4. jarvis_root is idempotent (multiple source + call = same result)
 #
-# Run: bash bootstrap/tests/lib.sh
+# Run: bash test/lib_test.sh
 # Prints PASS and exits 0 on success; prints FAIL and exits 1 on any failure.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 LIB_SH="$BOOTSTRAP_DIR/lib.sh"
 
 # ---------------------------------------------------------------------------

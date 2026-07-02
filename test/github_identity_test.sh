@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# bootstrap/tests/github_identity.sh - unit tests for bootstrap/github-identity.sh
+# test/github_identity_test.sh - unit tests for bootstrap/github-identity.sh
 #
-# Run: bash bootstrap/tests/github_identity.sh
+# Run: bash test/github_identity_test.sh
 # Prints PASS/FAIL per assertion; exits 0 on all-pass, 1 on any failure.
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 GITHUB_IDENTITY="$BOOTSTRAP_DIR/github-identity.sh"
 
 if [ ! -f "$GITHUB_IDENTITY" ]; then

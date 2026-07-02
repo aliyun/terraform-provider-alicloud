@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bootstrap/tests/wrap_check.sh — unit tests for wrap-check.sh
+# test/wrap_check_test.sh — unit tests for wrap-check.sh
 #
 # Scenarios:
 #   1. done:false id with no runs/ file → exit 2
@@ -7,13 +7,13 @@
 #   3. done:true id with no runs/ file → exit 0 (done:true is exempt)
 #   4. no claims file → exit 0
 #
-# Run: bash bootstrap/tests/wrap_check.sh
+# Run: bash test/wrap_check_test.sh
 # Prints PASS and exits 0 on success; prints FAIL and exits 1 on any failure.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 
 WRAP_CHECK="$BOOTSTRAP_DIR/wrap-check.sh"
 

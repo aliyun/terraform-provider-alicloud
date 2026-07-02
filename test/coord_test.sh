@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
-D="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; COORD="$D/coord.sh"
+D="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bootstrap" && pwd)"; COORD="$D/coord.sh"
 export JARVIS_ROOT="$(mktemp -d)"; pass=0; fail=0
 ck(){ [ "$2" = "$3" ] && { echo "PASS $1"; pass=$((pass+1)); } || { echo "FAIL $1: $2 != $3"; fail=$((fail+1)); }; }
 

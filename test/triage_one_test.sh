@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bootstrap/tests/triage_one.sh — unit tests for triage-one.sh
+# test/triage_one_test.sh — unit tests for triage-one.sh
 #
 # Scenarios:
 #   1. Happy path: claim succeeds, wrap done succeeds → claim,done,release in order + prints DONE
@@ -7,13 +7,13 @@
 #   3. wrap done fails → escalate called, release NOT called, exit 1
 #   4. Claim lost race (exit 1) → prints SKIP, exits 0 (no escalate, no release, no done)
 #
-# Run: bash bootstrap/tests/triage_one.sh
+# Run: bash test/triage_one_test.sh
 # Prints PASS and exits 0 on success; prints FAIL and exits 1 on any failure.
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 
 TRIAGE_ONE="$BOOTSTRAP_DIR/triage-one.sh"
 
