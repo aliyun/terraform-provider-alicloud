@@ -5,6 +5,9 @@
 
 set -u
 
+# Bypass scan.sh 30min TTL cache in tests (P1.d cache infra) — 避免用例串扰读旧 scan.json
+export JARVIS_SCAN_TTL=0
+
 test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 proj_root="$(cd "$test_dir/.." && pwd)"
 
@@ -46,8 +49,11 @@ chmod +x "$tmpbin/a1"
 
 export PATH="$tmpbin:$PATH"
 
-output=$(bash "$proj_root/bootstrap/scan.sh" 2>&1)
+# Test 1 走 no-pools fallback path:tmpdir 无 config/pools.json → global assignee list
+tmpconfig1=$(mktemp -d)
+output=$(JARVIS_ROOT="$tmpconfig1" bash "$proj_root/bootstrap/scan.sh" 2>&1)
 exit_code=$?
+rm -rf "$tmpconfig1"
 
 echo "=== Test 1: single-item list ==="
 echo "Output: $output"
@@ -109,19 +115,19 @@ else
     assert_fail "tag field missing or wrong (expected [\"p0\",\"urgent\"])"
 fi
 
-# Validate fields: id, title, type, status, pool, priority, tag (7 fields)
+# Validate fields: no-pools fallback outputs id,title,type,status,priority,tag,category (7 字段,无 pool)
 field_count=$(echo "$output" | jq -e '.[0] | keys | length' 2>/dev/null)
 if [ "$field_count" -eq 7 ]; then
-    assert_pass "output object has exactly 7 fields (id,title,type,status,pool,priority,tag)"
+    assert_pass "output object has exactly 7 fields (id,title,type,status,priority,tag,category)"
 else
-    assert_fail "output object has $field_count fields (expected 7 including pool,priority,tag)"
+    assert_fail "output object has $field_count fields (expected 7:id,title,type,status,priority,tag,category)"
 fi
 
-# Validate pool field present
-if echo "$output" | jq -e '.[0].pool != null' > /dev/null 2>&1; then
-    assert_pass "pool field present"
+# Validate category field present (no-pools fallback stamps category:null)
+if echo "$output" | jq -e '.[0] | has("category")' > /dev/null 2>&1; then
+    assert_pass "category field present (no-pools fallback stamps null)"
 else
-    assert_fail "pool field missing"
+    assert_fail "category field missing in no-pools output"
 fi
 
 # ---------------------------------------------------------------------------
@@ -143,8 +149,11 @@ STUB
 chmod +x "$tmpbin/a1"
 
 echo "=== Test 2: empty inbox ==="
-output=$(bash "$proj_root/bootstrap/scan.sh" 2>&1)
+# 独立 tmpdir:no-pools fallback,避免读主 repo pools.json 或 cache
+tmpconfig2_empty=$(mktemp -d)
+output=$(JARVIS_ROOT="$tmpconfig2_empty" bash "$proj_root/bootstrap/scan.sh" 2>&1)
 exit_code=$?
+rm -rf "$tmpconfig2_empty"
 echo "Output: $output"
 echo "Exit code: $exit_code"
 echo ""
@@ -228,8 +237,11 @@ STUB
 chmod +x "$tmpbin/a1"
 
 echo "=== Test 4: whoami failure exits non-zero ==="
-output=$(bash "$proj_root/bootstrap/scan.sh" 2>&1)
+# 独立 tmpdir:避免读主 repo pools.json;whoami fail → scan.sh 应 exit 1
+tmpconfig4=$(mktemp -d)
+output=$(JARVIS_ROOT="$tmpconfig4" bash "$proj_root/bootstrap/scan.sh" 2>&1)
 exit_code=$?
+rm -rf "$tmpconfig4"
 echo "Exit code: $exit_code"
 echo ""
 
@@ -293,16 +305,18 @@ else
     assert_fail "exit code should be 0 with pools.json tag, got $exit_code"
 fi
 
+# pools.json 只有 claim.tag 无 pools block → scan.sh 走 no-pools fallback,不生成 --filter
+# (P1 refactor 后 scan.sh 也从 pool-scoped path 移除 claim-tag exclusion,dedup 下推到 triage)
 if echo "$recorded_args" | grep -q -- '--filter'; then
-    assert_pass "--filter flag passed to a1 list"
+    assert_fail "--filter should NOT be passed (no-pools fallback + P1 refactor): $recorded_args"
 else
-    assert_fail "--filter flag not found in a1 args: $recorded_args"
+    assert_pass "no --filter passed (no-pools fallback + claim-tag exclusion removed)"
 fi
 
 if echo "$recorded_args" | grep -q 'NOT tag=jarvis-claimed'; then
-    assert_pass "NOT tag=jarvis-claimed present in a1 args"
+    assert_fail "NOT tag=jarvis-claimed should NOT be in args (P1 refactor removed claim-tag exclusion): $recorded_args"
 else
-    assert_fail "NOT tag=jarvis-claimed not found in a1 args: $recorded_args"
+    assert_pass "no NOT tag=jarvis-claimed in a1 args (claim-tag exclusion removed)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -417,12 +431,13 @@ else
     assert_fail "exit code should be 0 for 2-pool scan, got $exit_code7"
 fi
 
-# Should have exactly 2 items merged
+# scan.sh 展开 3 categories (req/bug/task) per pool;stub 无视 category 每次都返同一 item,
+# 所以 2 pool × 3 category = 6 items(stub 简化;真实场景每 category 应返不同 items)
 item_count7=$(echo "$output7" | jq 'length' 2>/dev/null || echo 0)
-if [ "$item_count7" -eq 2 ]; then
-    assert_pass "2-pool scan produces 2 merged items"
+if [ "$item_count7" -eq 6 ]; then
+    assert_pass "2-pool × 3-category scan produces 6 items (stub returns same item per category)"
 else
-    assert_fail "2-pool scan should produce 2 items, got $item_count7"
+    assert_fail "2-pool × 3-category scan should produce 6 items, got $item_count7"
 fi
 
 # Both pool items present by id
@@ -471,12 +486,13 @@ else
     assert_fail "--project 222 not found in a1 args"
 fi
 
-# --filter NOT tag=jarvis-claimed passed for both pools
-filter_count7=$(echo "$recorded_args7" | grep -c 'NOT tag=jarvis-claimed' || echo 0)
-if [ "$filter_count7" -ge 2 ]; then
-    assert_pass "--filter NOT tag=jarvis-claimed passed for both pools ($filter_count7 times)"
+# scan.sh:P1 refactor 后无 claim-tag exclusion(dedup 下推到 triage);不应有 NOT tag=jarvis-claimed
+# 注:`grep -c` 无匹配 exit 1 但 stdout 已是 "0",不加 `|| echo 0`(避免追加 "0\n0" 让整数比较失败)
+filter_count7=$(echo "$recorded_args7" | grep -c 'NOT tag=jarvis-claimed')
+if [ "$filter_count7" -eq 0 ]; then
+    assert_pass "no NOT tag=jarvis-claimed (P1 refactor removed claim-tag exclusion from scan)"
 else
-    assert_fail "--filter NOT tag=jarvis-claimed should appear twice (once per pool), got $filter_count7 times"
+    assert_fail "NOT tag=jarvis-claimed should NOT appear (removed by refactor), got $filter_count7 times"
 fi
 
 # --assignee flag passed for both pools
@@ -543,11 +559,12 @@ else
     assert_fail "exit code should be 0 when one pool fails (skipped), got $exit_code8"
 fi
 
+# scan.sh 展开 3 categories,healthy pool 每 category 返同一 stub item = 3 items;failing pool 跳过
 item_count8=$(echo "$output8" | jq 'length' 2>/dev/null || echo 0)
-if [ "$item_count8" -eq 1 ]; then
-    assert_pass "healthy pool item returned despite failing pool"
+if [ "$item_count8" -eq 3 ]; then
+    assert_pass "healthy pool × 3 categories = 3 items despite failing pool"
 else
-    assert_fail "should return 1 item from healthy pool, got $item_count8: $output8"
+    assert_fail "should return 3 items from healthy pool (3 categories), got $item_count8: $output8"
 fi
 
 # ---------------------------------------------------------------------------
