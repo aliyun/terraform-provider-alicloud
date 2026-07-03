@@ -7,6 +7,28 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib.sh"
 jarvis_root="$(jarvis_root)"
 
+load_env_defaults() {
+    local env_file="$jarvis_root/bootstrap/.env"
+    [ -f "$env_file" ] || return 0
+
+    local line key value
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            ""|\#*) continue ;;
+            *=*) ;;
+            *) continue ;;
+        esac
+        key="${line%%=*}"
+        value="${line#*=}"
+        [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+        if [ -z "${!key+x}" ]; then
+            export "$key=$value"
+        fi
+    done < "$env_file"
+}
+
+load_env_defaults
+
 DEFAULT_BASE_URL="${JARVIS_HTML_REPORT_BASE_URL:-https://pre-agent.aliyun-inc.com}"
 CURL_BIN="${JARVIS_CURL_BIN:-curl}"
 A1_BIN="${JARVIS_A1_BIN:-$jarvis_root/bin/a1id}"

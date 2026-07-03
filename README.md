@@ -58,4 +58,4 @@ bash bootstrap/html-report-preview.sh from-aone 83843879 --all --base-url https:
 ```
 
 默认目标是 `https://pre-agent.aliyun-inc.com`；也可用 `JARVIS_HTML_REPORT_BASE_URL` 或 `--base-url` 覆盖。
-AutomationAgent 的上传接口需配置 `JARVIS_HTML_REPORT_TOKEN`，脚本会自动发送 `Authorization: Bearer <token>`。
+AutomationAgent 的上传接口需配置 `JARVIS_HTML_REPORT_TOKEN`，脚本会自动发送 `Authorization: Bearer <token>`；脚本会读取 `bootstrap/.env` 作为默认值，显式环境变量优先。
