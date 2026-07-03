@@ -16,7 +16,7 @@
 
 | 类型 | 判定特征(读正文) | 处理路径 |
 |------|------------------|----------|
-| **provider 代码修** | 修复建议指向 schema / ValidateFunc / CRUD 逻辑 / 重试 / import 等**代码** | `provider-resource-dev` skill:fork 分支 → 改 + 单测 → `invoke-terraform-acc-test-remote` 验收 → GitHub PR。**`github-identity` 硬门**:PR/推分支前 `bootstrap/github-identity.sh check`,token 账号必须 `api-tool-agent`,PR head `api-tool-agent:<branch>` |
+| **provider 代码修** | 修复建议指向 schema / ValidateFunc / CRUD 逻辑 / 重试 / import 等**代码** | `provider-resource-dev` skill:fork 分支 → 改 + 单测 → `invoke-terraform-acc-test-remote` 验收 → GitHub PR。**`github-identity` 硬门**:提交走 `bootstrap/github-identity.sh commit`(commit 作者必须 `api-tool-agent <cloudspec_bot@alibaba-inc.com>`,否则 `license/cla` 挂);PR/推分支前 `bootstrap/github-identity.sh check`,token 账号必须 `api-tool-agent`,PR head `api-tool-agent:<branch>` |
 | **TF 文档修** | 仅 `website/docs` 变更(doc gap / 字段说明 / 废弃标注) | 同 PR 路径 **docs-only**;**可多单打包一个 PR**,PR 正文里逐单列 Aone 链接 |
 | **上游协作** | 问题在 **OpenAPI 文档 / 云产品侧**,不在 provider | **不改 provider**;按 `config/pools.json` upstream(`submit_only`)渠道或工单评论**明确转交**,标注「上游依赖」后 release(等待时不空占) |
 | **需实验定性** | 处置建议含「tier-1 变体实测」/ 需实证才能定类 | 先 `bootstrap/probe.sh run <变体场景>`(按工单建变体场景),拿实证后**归入前三类**;实证(verdict 摘录)写回工单评论 |
