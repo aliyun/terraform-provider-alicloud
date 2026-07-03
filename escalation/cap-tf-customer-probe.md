@@ -70,7 +70,7 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
   PrePaid/Subscription 默认阻断(包年包月多数无法 API 销毁,破坏零残留);场景 `allow_prepaid:true` 或
   `prepaid_guard=false` 豁免。强制 `destroy`(trap EXIT 兜底);`sweep` 残留核查;**残留即停并升级**。
 - **工单**：draft 冷启动(当前不写 Aone);建单前去重(a1 标签 + GitHub issue 只读);日上限
-  `daily_new_tickets`(默认 3);统一 `jarvis-probe` 标签。
+  `daily_new_tickets`(默认 100);统一 `jarvis-probe` 标签。
 - **身份/账号**：a1 一律 jarvis(`bin/a1id`);probe 会话不 claim 工单;**只用环境注入的测试 AK/SK,绝不用生产账号**。
 - **凭证**：AK/SK 绝不落日志 / verdict / draft / 工单;doctor 只报 set/unset。
 - **tier-0 范围红线**:只核对已接入 TF 的面;未接入的资源/参数不报 gap(需求非 bug,走 tf_customer 需求路径)。

@@ -66,4 +66,4 @@ status: pending-review
 | priority | 按 severity-rubric 映射（枚举值首次建单时用 a1 查证项目字段固化） |
 
 > 客户来源的问题若需与客户主单双向关联，按 loops/aone-triage.md §4.2 的 tf_provider 池纪律处理。
-> daily 新建上限 `config.limits.daily_new_tickets`（默认 3），超限的顺延下一轮。
+> daily 新建上限 `config.limits.daily_new_tickets`（默认 100），超限的顺延下一轮。
