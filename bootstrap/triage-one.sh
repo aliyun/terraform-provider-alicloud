@@ -59,7 +59,10 @@ COORD_CMD="${TRIAGE_COORD_CMD:-$script_dir/coord.sh}"
 # Register this triage instance for coordination tracking so checkpoints
 # have a real owner_instance and crashes leave a resumable record.
 # ---------------------------------------------------------------------------
-COORD_ID=$(bash "$COORD_CMD" register triage 2>/dev/null || true)
+# Pass $$ (this bookend's real pid) so coord.sh dead can check liveness via kill -0;
+# without it register embeds coord.sh's own short-lived pid and the instance reads dead
+# immediately (see coord.sh register comment).
+COORD_ID=$(bash "$COORD_CMD" register triage "$$" 2>/dev/null || true)
 export COORD_ID
 
 # ---------------------------------------------------------------------------

@@ -563,6 +563,51 @@ class ScanScheduler:
             log.exception("ScanScheduler failed to push notification card")
 
 
+class ReconcileScheduler:
+    """Periodically run reconcile.sh all so the claim-discipline safety net actually fires.
+
+    reconcile (stale/orphan/drift) is the after-the-fact backstop:
+      · wrap-check.sh (Stop hook) only catches unwrapped claims on a *graceful* session
+        exit; a hard kill (SIGKILL / power loss / closed terminal) bypasses it.
+      · after the owner-scoped Stop gate, a foreign instance's in-flight claim is
+        downgraded from a hard block to "WARN + hand off to reconcile" — which is an
+        empty promise unless reconcile is actually running.
+    Nothing invoked reconcile automatically before; this daemon covers the always-on
+    bridge host (other machines use bootstrap/cron.example).
+
+    Runs as a daemon thread; errors are logged and skipped, never crash the bridge.
+    """
+
+    def __init__(self, handler):
+        self.handler = handler
+        self.interval = int(os.environ.get("JARVIS_RECONCILE_INTERVAL", "1200"))
+        self._thread = None
+
+    def start(self):
+        self._thread = threading.Thread(target=self._loop, daemon=True, name="ReconcileScheduler")
+        self._thread.start()
+
+    def _loop(self):
+        while True:
+            # Sleep first: at startup the fleet is fresh; give it an interval before sweeping.
+            time.sleep(self.interval)
+            try:
+                self._tick()
+            except Exception:  # noqa: BLE001 — never crash
+                log.exception("ReconcileScheduler tick failed; will retry next interval")
+
+    def _tick(self):
+        cmd = [str(REPO_ROOT / "bootstrap" / "reconcile.sh"), "all"]
+        result = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True,
+                                text=True, timeout=300)
+        summary = (result.stdout or "").strip().replace("\n", " | ")[:500]
+        if result.returncode != 0:
+            log.warning("reconcile.sh all failed (rc=%d): %s", result.returncode,
+                        (result.stderr or "").strip()[:300])
+        else:
+            log.info("reconcile.sh all: %s", summary or "(no output)")
+
+
 # Gradual poll tiers: (age_threshold_sec, poll_interval_sec)
 WAIT_TIERS = [
     (30 * 60,       120),    # first 30 min: every 2 min
@@ -709,6 +754,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.sm = _load_streaming_module()        # imported streaming.py helpers
         self.pool = TataPool()                    # 常驻 idea 进程保温, 消 Tata 冷启
         self.scanner = ScanScheduler(self)
+        self.reconciler = ReconcileScheduler(self)
         self.dispatch_pool = ThreadPoolExecutor(
             max_workers=int(os.environ.get("JARVIS_DISPATCH_MAX", "3")),
             thread_name_prefix="dispatch")
@@ -972,9 +1018,11 @@ def main():
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
     handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
     handler.scanner.start()
+    handler.reconciler.start()
     handler.watcher.start()
     log.info("scan scheduler started (interval=%ss target=%s)",
              handler.scanner.interval, handler.scanner.notify_target)
+    log.info("reconcile scheduler started (interval=%ss)", handler.reconciler.interval)
     log.info("wait watcher started (suspended=%d)", handler.watcher.count())
     log.info("starting DingTalk stream listener…")
     try:

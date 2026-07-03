@@ -17,6 +17,13 @@ bash "$COORD" dead "$live_id"; ck alive-self $? 1   # self pid alive -> not dead
 
 ck dead-missing "$(bash "$COORD" dead nohost-999999; echo $?)" 0
 
+# B fix: register with the caller's real pid ($$) → embedded pid is live → dead reports
+# alive (exit 1) WITHOUT a manually-forged hb. This is what triage-one/run.sh now do.
+reg_live=$(bash "$COORD" register triage "$$")
+ck reg-embeds-caller-pid "$(jq -r .pid "$JARVIS_ROOT/.my-day/instances/$reg_live.json")" "$$"
+ck reg-id-has-pid "$(echo "$reg_live" | grep -c -- "-$$\$")" 1
+bash "$COORD" dead "$reg_live"; ck reg-pid-alive $? 1   # registered with live pid -> not dead
+
 # Checkpoint with live_id so 9001 is NOT an orphan during orphan-list test
 COORD_ID=$live_id bash "$COORD" checkpoint 9001 coding /wt b1 repoX
 ck cp-stage "$(jq -r .stage "$JARVIS_ROOT/.my-day/tasks/9001.json")" coding
@@ -36,6 +43,11 @@ ck empty-owner-invisible "$(bash "$COORD" list-orphans | grep -c 9003 || true)" 
 # C1: dead-owner task IS surfaced by list-orphans (non-empty dead owner)
 COORD_ID=nohost-999999 bash "$COORD" checkpoint 9004 coding /wt b1 repoX
 ck dead-owner-surfaces "$(bash "$COORD" list-orphans | grep -c 9004 || true)" 1
+
+# B fix: a completed task (stage=done) is NOT surfaced even with a dead owner —
+# otherwise triage-one's own finished task would be re-adopted after it exits.
+COORD_ID=nohost-999999 bash "$COORD" checkpoint 9006 done /wt b1 repoX
+ck done-stage-skipped "$(bash "$COORD" list-orphans | grep -c 9006 || true)" 0
 
 # I2: stale hb file (mtime > TTL) → dead even if pid happened to be recycled
 _stale_id="stalehost-$$"

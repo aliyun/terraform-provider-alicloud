@@ -13,3 +13,8 @@
 #
 # Run at 09:00 every weekday (Mon–Fri), supervised by default:
 # 0 9 * * 1-5 cd /path/to/jarvis && claude --no-ui "run the triage loop"
+#
+# 注:reconcile(stale/orphan/drift)兜底不走 cron —— 常驻 bridge 进程内置
+# ReconcileScheduler 已周期自动跑(见 bridge/jarvis_dingtalk_bot.py,随 bridge/run.sh
+# start 起来即生效,无需手动装 crontab)。只在「不跑 bridge 的机器」上才需要在这里
+# 自行加 `bash bootstrap/reconcile.sh all` 的定时行。

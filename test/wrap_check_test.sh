@@ -76,7 +76,9 @@ ROOT8=""
 ROOT9=""
 ROOT10=""
 ROOT11=""
-trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" "$ROOT6" "$ROOT7" "$ROOT8" "$ROOT9" "$ROOT10" "$ROOT11" 2>/dev/null; exit' INT TERM EXIT
+ROOT12=""
+ROOT13=""
+trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" "$ROOT6" "$ROOT7" "$ROOT8" "$ROOT9" "$ROOT10" "$ROOT11" "$ROOT12" "$ROOT13" 2>/dev/null; exit' INT TERM EXIT
 
 # ---------------------------------------------------------------------------
 # Test 1: done:false id, no runs/ file → exit 2
@@ -228,6 +230,32 @@ ROOT11="$(make_jarvis_root)"
 printf '["WI-T11"]\n' > "$ROOT11/.my-day/touched-${today}.json"
 assert_exit_code "touched ownerless id, no run_done → exit 2" 2 \
     env COORD_ID="$SELF" JARVIS_ROOT="$ROOT11" JARVIS_RUNS_DIR="$ROOT11/runs" bash "$WRAP_CHECK"
+
+# ===========================================================================
+# D2: interactive sessions derive owner from CLAUDE_CODE_SESSION_ID (cc-<sid>)
+# via coord_self(). Two different sessions get distinct owners and must not block
+# each other; a session is still held to account for its own claims.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Test 12: claim owned by session A; session B (no COORD_ID, different sid) → skip (0)
+# ---------------------------------------------------------------------------
+echo "Test 12: interactive — other session's claim → exit 0 (skip)"
+ROOT12="$(make_jarvis_root)"
+printf '[{"id":"WI-T12","done":false,"owner":"cc-sess-A"}]\n' \
+    > "$ROOT12/.my-day/claims-${today}.json"
+assert_exit_code "interactive foreign-session claim → skip exit 0" 0 \
+    env CLAUDE_CODE_SESSION_ID="sess-B" JARVIS_ROOT="$ROOT12" JARVIS_RUNS_DIR="$ROOT12/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 13: session A runs wrap-check on its OWN claim, no run_done → block (exit 2)
+# ---------------------------------------------------------------------------
+echo "Test 13: interactive — own session claim, no run file → exit 2 (no regression)"
+ROOT13="$(make_jarvis_root)"
+printf '[{"id":"WI-T13","done":false,"owner":"cc-sess-A"}]\n' \
+    > "$ROOT13/.my-day/claims-${today}.json"
+assert_exit_code "interactive own-session claim, no run_done → exit 2" 2 \
+    env CLAUDE_CODE_SESSION_ID="sess-A" JARVIS_ROOT="$ROOT13" JARVIS_RUNS_DIR="$ROOT13/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Summary

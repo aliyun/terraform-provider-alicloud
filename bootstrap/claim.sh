@@ -59,20 +59,44 @@ _claim_prefix_path() { echo "$myday_dir/claim-prefix-$1.txt"; }
 # Atomically append/update entry in the claims ledger.
 # Usage: _ledger_upsert <id> <done_value>   (done_value: true|false)
 #
-# Each entry records the owning instance: {"id","done","owner"}. owner is taken
-# from ${COORD_ID:-} (the coord.sh instance id exported by the triage loop; empty
-# for interactive/no-coord sessions). wrap-check.sh scopes its Stop block by owner
-# so a session only hard-blocks on its own (or ownerless legacy) claims.
+# Each entry records the owning instance: {"id","done","owner"}. owner comes from
+# coord_self() (lib.sh): COORD_ID if set, else cc-<CLAUDE_CODE_SESSION_ID> for an
+# interactive/headless Claude session, else "". wrap-check.sh scopes its Stop block by
+# owner (via the same coord_self) so a session only hard-blocks on its own (or
+# ownerless legacy) claims — and, since D2, two different interactive sessions get
+# distinct cc-<sid> owners and stop blocking each other.
 #
 # INSERT writes owner. UPDATE (release/finish calling _ledger_upsert id true)
-# COALESCE-preserves the original owner: only backfills the current COORD_ID when
-# the existing owner is empty/missing, so a different instance closing a claim never
+# COALESCE-preserves the original owner: only backfills the current owner when the
+# existing owner is empty/missing, so a different instance closing a claim never
 # overwrites the original claimer. Legacy entries lacking an owner field read as "".
+#
+# Concurrency (D1): the read-modify-write is guarded by a mkdir lock (macOS has no
+# flock). mv is atomic per-write, but without the lock two processes could each read
+# the pre-update ledger and the later mv would clobber the earlier one (lost update).
+# A stale lock (>10s, holder likely died mid-write) is stolen; after ~5s of contention
+# we proceed unlocked rather than hang a claim.
 _ledger_upsert() {
     local id="$1"
     local done_val="$2"
-    local owner="${COORD_ID:-}"
+    local owner
+    owner="$(coord_self)"
     mkdir -p "$myday_dir"
+
+    local lock="$myday_dir/.claims.lock" acquired="" waited=0
+    while [ "$waited" -lt 50 ]; do
+        if mkdir "$lock" 2>/dev/null; then acquired=1; break; fi
+        # Steal only a provably-old lock (holder likely died mid-write). If stat can't
+        # read the mtime (lock just vanished / transient), DO NOT steal — a failed stat
+        # must not read as "ancient" or we'd yank a live holder's lock and lose updates.
+        local lock_mtime
+        lock_mtime="$(stat -f %m "$lock" 2>/dev/null || stat -c %Y "$lock" 2>/dev/null || echo "")"
+        if [ -n "$lock_mtime" ] && [ "$(( $(date +%s) - lock_mtime ))" -gt 10 ]; then
+            rm -rf "$lock" 2>/dev/null
+        fi
+        sleep 0.1; waited=$((waited + 1))
+    done
+
     local tmp
     tmp="$(mktemp "$myday_dir/.claims-tmp.XXXXXX")"
     # Seed tmp with existing ledger or empty array; never create a partial ledger_file first
@@ -88,6 +112,8 @@ _ledger_upsert() {
         jq -n --arg id "$id" --argjson done "$done_val" --arg owner "$owner" \
             '[{"id": $id, "done": $done, "owner": $owner}]' > "$tmp" && mv "$tmp" "$ledger_file"
     fi
+
+    [ -n "$acquired" ] && rmdir "$lock" 2>/dev/null
 }
 
 # ---------------------------------------------------------------------------

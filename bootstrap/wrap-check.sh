@@ -87,7 +87,10 @@ fi
 # that carries a non-empty owner. Legacy entries without an owner field, or with an
 # empty owner, are omitted → they resolve to "" on lookup (bash 3.2: no assoc array,
 # so a flat temp file + awk first-match is used for a stable, portable map).
-self="${COORD_ID:-}"
+# self via coord_self() (lib.sh): COORD_ID, else cc-<CLAUDE_CODE_SESSION_ID>, else "".
+# Must match how claim.sh stamps owner so this session recognizes its own claims — and
+# so two different interactive sessions (distinct cc-<sid>) don't block each other (D2).
+self="$(coord_self)"
 owner_map="$(mktemp)"
 trap 'rm -f "$owner_map"' EXIT
 for ledger_file in ${ledger_files[@]+"${ledger_files[@]}"}; do
