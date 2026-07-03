@@ -22,8 +22,8 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
 
 ## Aone 分单与同步
 非自动化生成链路、需要 Jarvis 内部研发处理的 Terraform Provider 资源,必须创建或复用 **terraform-alicloud** 内部研发单:
-- 项目: `tf_provider` / `528766`;指派给 Jarvis 自己 `WORKER_1782379562571`。
-- 与 Terraform-客户需求池的客户主单双向关联;拿到内部单 id 后按 bookend 先 claim,收尾 done+release。
+- 项目: `tf_provider` / `528766`;**指派按 aone-triage skill `references/tf-customer-request-routing.md` 分工表路由到具体人**(即便由 jarvis 代为开发,单据也挂具体人名下,方便其注意到;不自派 `WORKER_1782379562571`)。
+- 与 Terraform-客户需求池的客户主单双向关联。**指派给过载(484483)的关联单,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单**(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人的关联单不 claim,建单 + @对方等接手;无客户主单的 adhoc 场景按 loops/adhoc-intake.md 走。
 - 主要研发进展、生成/手改差异、验证细节、PR/CI/验收信息优先同步到内部研发单。
 - 客户主单只同步关键节点摘要:已转内部单、发现镇元/Cloudspec/API 卡点、资源模型问题、需要客户感知的决策或阻塞。
 - 如客户主单还关联 `cloudspec_gap` 或云产品上游 Aone,依赖方协作的详细问题同步到对应依赖单,不要混写在客户主单里。
