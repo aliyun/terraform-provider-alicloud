@@ -40,3 +40,21 @@ bootstrap/serve.sh 9000   # 换端口
 ```
 
 页内点「立即同步」或 `POST /refresh` 强制重扫 Aone 并重建；离线重建用 `bash bootstrap/board-html.sh --refresh`。
+
+## HTML 报告在线预览
+
+Jarvis 可把本地 HTML、zip 内 HTML、或 Aone 附件中的 HTML 报告上传到 AutomationAgent，并返回可贴回 Aone 的在线预览链接。
+
+```bash
+# 上传本地 HTML / zip / 目录
+bash bootstrap/html-report-preview.sh upload 83843879 ./report.html
+bash bootstrap/html-report-preview.sh upload 83843879 ./reports.zip --comment
+
+# 从 Aone 附件中选择最新的 .html/.htm/.zip，提取 HTML 后上传并回贴评论
+bash bootstrap/html-report-preview.sh from-aone 83843879 --comment
+
+# 上传所有匹配附件；默认预发，可通过 --base-url 切换环境
+bash bootstrap/html-report-preview.sh from-aone 83843879 --all --base-url https://pre-agent.aliyun-inc.com
+```
+
+默认目标是 `https://pre-agent.aliyun-inc.com`；也可用 `JARVIS_HTML_REPORT_BASE_URL` 或 `--base-url` 覆盖。
