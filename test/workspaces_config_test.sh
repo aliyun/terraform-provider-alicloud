@@ -15,6 +15,18 @@ jq -e '.workspaces.jarvis.git_url=="git@gitlab.alibaba-inc.com:terraflow/jarvis.
 jq -e '.workspaces.jarvis.default_branch=="master"' \
   "$repo_root/config/workspaces.json" >/dev/null
 
+# terraform_provider remote registration must reflect the real machine layout:
+# origin = upstream aliyun, fork = api-tool-agent (F1 fix — the old ChenHanZhang /
+# upstream_remote=alicloud registration was stale and contradicted sync-provider.sh).
+jq -e '.workspaces.terraform_provider.git_url=="https://github.com/aliyun/terraform-provider-alicloud.git"' \
+  "$repo_root/config/workspaces.json" >/dev/null
+jq -e '.workspaces.terraform_provider.upstream_remote=="origin"' \
+  "$repo_root/config/workspaces.json" >/dev/null
+jq -e '.workspaces.terraform_provider.fork_remote=="fork"' \
+  "$repo_root/config/workspaces.json" >/dev/null
+jq -e '.workspaces.terraform_provider.jarvis_github_login=="api-tool-agent"' \
+  "$repo_root/config/workspaces.json" >/dev/null
+
 mkdir -p "$tmpdir/terraform-generator-v4"
 resolved="$(JARVIS_WORKSPACE_ROOT="$tmpdir" bash "$repo_root/bootstrap/workspace.sh" dir terraform_generator_v4)"
 

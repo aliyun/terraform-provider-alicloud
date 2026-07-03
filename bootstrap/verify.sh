@@ -59,11 +59,36 @@ chk_cred aliyun "aliyun sts GetCallerIdentity"
 chk_cred a1 "a1 auth whoami"
 
 repo_root="$(git rev-parse --show-toplevel)"
+# GitHub token daily check — WARN, NOT FAIL. A stale/missing JARVIS_GITHUB_TOKEN only
+# blocks the GitHub escalation path (PR/评论/推分支); it must not fail preflight and
+# thereby block Aone-only work. So we print a WARN line, do NOT increment fail_count,
+# and drop an idempotent escalation note so the stale token stays visible/actionable.
+# (github-identity.sh check itself is unchanged — it stays a hard gate at use time.)
 if "$repo_root/bootstrap/github-identity.sh" check >/dev/null 2>&1; then
     echo "PASS jarvis-github-token"
 else
-    echo "FAIL jarvis-github-token"
-    ((fail_count++))
+    echo "WARN jarvis-github-token — JARVIS_GITHUB_TOKEN 失效/缺失；GitHub 升级路径(PR/评论/推分支)会被阻断，Aone-only 工作不受影响"
+    echo "     修复: 刷新 api-tool-agent 的 GitHub token，更新 bootstrap/.env 的 JARVIS_GITHUB_TOKEN(或其环境来源)，再跑 bootstrap/github-identity.sh check 复验"
+    esc_dir="${JARVIS_ESCALATION_DIR:-$repo_root/escalation}"
+    esc_file="$esc_dir/github-token-invalid-$(date -u +%F).md"
+    if [ ! -f "$esc_file" ]; then
+        mkdir -p "$esc_dir"
+        {
+            echo "# GitHub token 失效/缺失 — $(date -u +%F)"
+            echo ""
+            echo "## 现象"
+            echo "\`bootstrap/verify.sh\` 的 GitHub token 日检失败：\`bootstrap/github-identity.sh check\` 非零退出（JARVIS_GITHUB_TOKEN 过期 401 或缺失）。"
+            echo ""
+            echo "## 影响面"
+            echo "仅阻断 GitHub 升级路径（terraform-provider-alicloud PR/评论/推分支，head=api-tool-agent:<branch>）。Aone-only 工作不受影响，故 verify 记 WARN 不硬失败。"
+            echo ""
+            echo "## 修复步骤"
+            echo "1. 用 api-tool-agent 账号刷新 GitHub token（需 repo/workflow 权限）。"
+            echo "2. 更新 \`bootstrap/.env\` 的 \`JARVIS_GITHUB_TOKEN\`（或其环境来源），确保 \`GH_TOKEN=\$JARVIS_GITHUB_TOKEN gh api user --jq .login\` 返回 \`api-tool-agent\`。"
+            echo "3. 复验：\`bootstrap/github-identity.sh check\` 应打印 \`api-tool-agent\` 并退 0。"
+        } > "$esc_file"
+        echo "     已落 escalation 提示: $esc_file"
+    fi
 fi
 
 # Check vendored skills
