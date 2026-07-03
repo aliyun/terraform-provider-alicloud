@@ -50,7 +50,7 @@
 读 `config/workspaces.json` 取 `workspaces.<key>`（terraform_provider | mcp_server）：`repo` / `path` / remotes / `default_branch` / `pools` / `ops`。
 
 - GitHub 写操作硬门：凡 Jarvis 代表发 PR/评论/推分支，先 `bootstrap/github-identity.sh check`；`gh` 写操作统一用 `bootstrap/github-identity.sh gh ...`，推分支统一用 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>`，账号必须是 `api-tool-agent`，缺 token 或账号不匹配则 escalate。
-- 评审 alicloud PR：看 `upstream_remote=alicloud`；只读查证可读 upstream，Jarvis 需要提交修复时 push/head 必须落到 `api-tool-agent:<branch>`，禁止依赖本机 ambient `gh auth` 或个人账号。
+- 评审 alicloud PR：实机远端布局 `upstream_remote=origin`（origin=上游 aliyun）、`fork_remote=fork`（api-tool-agent fork）；只读查证读 origin(upstream)，Jarvis 需要提交修复时 push/head 必须落到 `api-tool-agent:<branch>`（经 `bootstrap/github-identity.sh push`），禁止依赖本机 ambient `gh auth` 或个人账号。
 - cd 进 `path`，dev 先开 worktree 切分支（CLAUDE.md 工作纪律）。
 
 ---
