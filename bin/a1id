@@ -6,7 +6,7 @@
 # live,登录=登完把 live 复制回该身份 store。串行切换(a1 本就不支持并发)。
 #
 # 三个身份:
-#   jarvis  —— 默认身份(open_jarvis),Jarvis 全程用它。
+#   jarvis  —— 默认身份(Aone 数字员工,BUC Account 字段=WORKER_1782379562571),Jarvis 全程用它。
 #   chenyi  —— 陈汉璋(工号 320687,chenhanzhang.chz@alibaba-inc.com)。非默认身份,
 #              Jarvis 不得擅用,仅当面授权时临时 `as chenyi`,用完即回 jarvis
 #              (无代码硬门,纪律见 CLAUDE.md 第8条)。
@@ -40,7 +40,7 @@ valid(){ [ "$1" = jarvis ] || [ "$1" = chenyi ] || [ "$1" = guozai ] || [ "$1" =
 # label → 期望 BUC 账号(护栏基线;login 后 whoami 必须回来匹配,否则不落盘)
 expected_account_for(){
   case "$1" in
-    jarvis) echo "open_jarvis" ;;
+    jarvis) echo "WORKER_1782379562571" ;;
     chenyi) echo "chenhanzhang.chz" ;;
     guozai) echo "guozai.gzl" ;;
     linjun) echo "lichaolin.lcl" ;;

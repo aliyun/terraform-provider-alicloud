@@ -3,7 +3,7 @@
 a1 凭据固定在 `~/.config/a1/auth.yaml`,**只能持一个身份**(且 a1 写入用临时文件 rename,符号链接会被替换)。`a1id` 把各身份的 auth.yaml 各存一份真文件,切换=复制覆盖 live,串行切换(a1 本就不支持并发)。
 
 ## 四个身份
-- **jarvis**(默认,open_jarvis):Jarvis 全程用它。
+- **jarvis**(默认,Aone 数字员工;BUC Account 字段 = `WORKER_1782379562571`):Jarvis 全程用它。
 - **chenyi**(陈汉璋,工号 320687,chenhanzhang.chz@alibaba-inc.com):Jarvis 不得擅用,仅当面授权时临时切。无代码硬门,纪律见 CLAUDE.md「身份纪律」。
 - **guozai**(郭子龙,工号 484483,guozai.gzl@alibaba-inc.com):同 chenyi,Jarvis 不得擅用,仅当面授权时临时切。
 - **linjun**(李超林,工号 429768,lichaolin.lcl@alibaba-inc.com):同 chenyi,Jarvis 不得擅用,仅当面授权时临时切。

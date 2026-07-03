@@ -47,8 +47,8 @@ if [ "${1:-}" = "auth" ] && [ "${2:-}" = "login" ]; then
 version: 1
 current:
     user:
-        account: ${FAKE_A1_LOGIN_ACCOUNT:-open_jarvis}
-        user: ${FAKE_A1_LOGIN_ACCOUNT:-open_jarvis}
+        account: ${FAKE_A1_LOGIN_ACCOUNT:-WORKER_1782379562571}
+        user: ${FAKE_A1_LOGIN_ACCOUNT:-WORKER_1782379562571}
 EOF
     exit 0
 fi
@@ -103,8 +103,8 @@ prime_existing_jarvis() {
 version: 1
 current:
     user:
-        account: open_jarvis
-        user: open_jarvis
+        account: WORKER_1782379562571
+        user: WORKER_1782379562571
         marker: $marker
 EOF
     cp "$A1_CFG_DIR/identities/jarvis.auth.yaml" "$A1_CFG_DIR/auth.yaml"
@@ -158,12 +158,12 @@ assert_file_contains() {
 
 echo "Test 1: happy path — 期望账号与 whoami 匹配,落盘成功"
 reset_env
-export FAKE_A1_LOGIN_ACCOUNT="open_jarvis"
+export FAKE_A1_LOGIN_ACCOUNT="WORKER_1782379562571"
 run_a1id login jarvis
 assert_eq "exit 0" "0" "$LAST_STATUS"
-assert_contains "stdout 报成功并带账号" "$LAST_STDOUT" "'jarvis'(open_jarvis) 登录已保存"
+assert_contains "stdout 报成功并带账号" "$LAST_STDOUT" "'jarvis'(WORKER_1782379562571) 登录已保存"
 assert_file_exists "jarvis.auth.yaml 已创建" "$A1_CFG_DIR/identities/jarvis.auth.yaml"
-assert_file_contains "jarvis.auth.yaml 内容为 open_jarvis" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "open_jarvis"
+assert_file_contains "jarvis.auth.yaml 内容为 WORKER_1782379562571" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "WORKER_1782379562571"
 assert_eq ".active == jarvis" "jarvis" "$(cat "$A1_CFG_DIR/identities/.active" 2>/dev/null)"
 
 echo ""
@@ -175,14 +175,14 @@ export FAKE_A1_LOGIN_ACCOUNT="guozai.gzl"
 run_a1id login jarvis
 assert_ne "exit 非零" "0" "$LAST_STATUS"
 assert_contains "stderr 报身份不匹配" "$LAST_STDERR" "身份不匹配"
-assert_contains "stderr 显示期望账号 open_jarvis" "$LAST_STDERR" "open_jarvis"
+assert_contains "stderr 显示期望账号 WORKER_1782379562571" "$LAST_STDERR" "WORKER_1782379562571"
 assert_contains "stderr 显示实际账号 guozai.gzl" "$LAST_STDERR" "guozai.gzl"
 assert_contains "stderr 给恢复步骤" "$LAST_STDERR" "登出 BUC"
 # 核心不变量:jarvis.auth.yaml 未被 guozai 凭据覆盖(marker 保留)
 assert_file_contains "jarvis.auth.yaml 保留原 marker(未被覆盖)" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "TEST2_MARKER"
 assert_not_contains "jarvis.auth.yaml 未泄漏 guozai.gzl" "$(cat "$A1_CFG_DIR/identities/jarvis.auth.yaml")" "guozai.gzl"
 # live 也回滚干净
-assert_file_contains "live auth.yaml 已回滚到 open_jarvis" "$A1_CFG_DIR/auth.yaml" "open_jarvis"
+assert_file_contains "live auth.yaml 已回滚到 WORKER_1782379562571" "$A1_CFG_DIR/auth.yaml" "WORKER_1782379562571"
 assert_not_contains "live auth.yaml 不含 guozai.gzl 泄漏" "$(cat "$A1_CFG_DIR/auth.yaml")" "guozai.gzl"
 
 echo ""
@@ -192,13 +192,13 @@ cat > "$A1_CFG_DIR/auth.yaml" <<EOF
 version: 1
 current:
     user:
-        account: open_jarvis
-        user: open_jarvis
+        account: WORKER_1782379562571
+        user: WORKER_1782379562571
 EOF
 run_a1id login unknown
 assert_ne "exit 非零" "0" "$LAST_STATUS"
 assert_contains "stderr 提示用法" "$LAST_STDERR" "用法"
-assert_file_contains "live 未被动过" "$A1_CFG_DIR/auth.yaml" "open_jarvis"
+assert_file_contains "live 未被动过" "$A1_CFG_DIR/auth.yaml" "WORKER_1782379562571"
 
 echo ""
 echo "Test 4: a1 auth login 本身失败 — trap 回滚 live,不落盘"
@@ -208,7 +208,7 @@ export FAKE_A1_LOGIN_STATUS="42"
 run_a1id login jarvis
 assert_ne "exit 非零" "0" "$LAST_STATUS"
 assert_file_contains "jarvis.auth.yaml marker 保留" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "TEST4_MARKER"
-assert_file_contains "live auth.yaml 保持原样(open_jarvis)" "$A1_CFG_DIR/auth.yaml" "open_jarvis"
+assert_file_contains "live auth.yaml 保持原样(WORKER_1782379562571)" "$A1_CFG_DIR/auth.yaml" "WORKER_1782379562571"
 
 echo ""
 echo "Test 5: guozai 身份 happy path — 映射表覆盖到非默认身份"
@@ -224,7 +224,7 @@ echo "Test 6: whoami 返空(a1 输出格式变化) — 视为不匹配,回滚"
 reset_env
 prime_existing_jarvis "TEST6_MARKER"
 # SSO 部分正常,但 whoami 拿不到 Account: 行(模拟 a1 输出结构变了)
-export FAKE_A1_LOGIN_ACCOUNT="open_jarvis"
+export FAKE_A1_LOGIN_ACCOUNT="WORKER_1782379562571"
 export FAKE_A1_WHOAMI_EMPTY="1"
 run_a1id login jarvis
 assert_ne "exit 非零" "0" "$LAST_STATUS"
@@ -232,22 +232,22 @@ assert_contains "stderr 提到 <空>" "$LAST_STDERR" "<空>"
 assert_file_contains "jarvis.auth.yaml marker 保留" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "TEST6_MARKER"
 
 echo ""
-echo "Test 7: migration happy — live 是 open_jarvis 且 store 空,首跑迁移应成功"
+echo "Test 7: migration happy — live 是 WORKER_1782379562571 且 store 空,首跑迁移应成功"
 reset_env
 # 预置:live 是合法的 jarvis 会话,store 里还没有 jarvis.auth.yaml
 cat > "$A1_CFG_DIR/auth.yaml" <<EOF
 version: 1
 current:
     user:
-        account: open_jarvis
-        user: open_jarvis
+        account: WORKER_1782379562571
+        user: WORKER_1782379562571
 EOF
 # 触发迁移(status 不 activate,只跑顶层迁移代码路径,再走到 case);
 # 用 -- auth whoami 端到端跑一次,顺带验证迁移后 activate 能通
 run_a1id -- auth whoami
 assert_eq "exit 0" "0" "$LAST_STATUS"
 assert_file_exists "jarvis.auth.yaml 迁移成功" "$A1_CFG_DIR/identities/jarvis.auth.yaml"
-assert_file_contains "jarvis.auth.yaml 内容是 open_jarvis" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "open_jarvis"
+assert_file_contains "jarvis.auth.yaml 内容是 WORKER_1782379562571" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "WORKER_1782379562571"
 assert_eq ".active == jarvis" "jarvis" "$(cat "$A1_CFG_DIR/identities/.active" 2>/dev/null)"
 
 echo ""
@@ -269,7 +269,7 @@ assert_contains "stderr 显示 live 的实际账号 guozai.gzl" "$LAST_STDERR" "
 assert_contains "stderr 追加提示要 login jarvis" "$LAST_STDERR" "bin/a1id login jarvis"
 assert_contains "activate 后续 die 提示未登录" "$LAST_STDERR" "身份 'jarvis' 未登录"
 assert_file_absent "jarvis.auth.yaml 未被 guozai 污染" "$A1_CFG_DIR/identities/jarvis.auth.yaml"
-assert_not_contains "live auth.yaml 未被 activate 覆盖(还是 guozai)" "$(cat "$A1_CFG_DIR/auth.yaml")" "open_jarvis"
+assert_not_contains "live auth.yaml 未被 activate 覆盖(还是 guozai)" "$(cat "$A1_CFG_DIR/auth.yaml")" "WORKER_1782379562571"
 
 echo ""
 echo "Test 9: migration 边界 — live 缺失,不迁移不 warn(纯静默)"
