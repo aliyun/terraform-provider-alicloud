@@ -5,13 +5,31 @@ set -euo pipefail
 
 prog="$(basename "$0")"
 
+# Commit identity for jarvis-authored contributions. CLA-assistant keys on the
+# COMMIT AUTHOR email (not the push token / PR opener), so commits must be
+# authored as the CLA-signed api-tool-agent identity or the license/cla check
+# fails. Overridable via env for other identities.
+: "${JARVIS_GIT_AUTHOR_NAME:=api-tool-agent}"
+: "${JARVIS_GIT_AUTHOR_EMAIL:=cloudspec_bot@alibaba-inc.com}"
+
 usage() {
     cat >&2 <<EOF
 Usage:
   $prog check
   $prog gh <args...>
+  $prog commit <git-commit-args...>
   $prog push <owner/repo> <local-ref> <remote-ref>
 EOF
+}
+
+# Commit with the CLA-signed author+committer identity. Pass through any git
+# commit args (-m / --amend / --no-edit / -F ...). Local op, no token needed.
+run_commit() {
+    GIT_AUTHOR_NAME="$JARVIS_GIT_AUTHOR_NAME" \
+    GIT_AUTHOR_EMAIL="$JARVIS_GIT_AUTHOR_EMAIL" \
+    GIT_COMMITTER_NAME="$JARVIS_GIT_AUTHOR_NAME" \
+    GIT_COMMITTER_EMAIL="$JARVIS_GIT_AUTHOR_EMAIL" \
+        git commit --author="$JARVIS_GIT_AUTHOR_NAME <$JARVIS_GIT_AUTHOR_EMAIL>" "$@"
 }
 
 check_identity() {
@@ -74,6 +92,19 @@ run_push() {
         return $?
     fi
 
+    # Backstop: CLA-assistant keys on the commit author email. Warn (do not
+    # block) if the tip commit of the ref being pushed is not authored by the
+    # CLA-signed identity, so license/cla failures are caught before review.
+    local tip_ref tip_email
+    tip_ref="${local_ref#+}"        # strip force-push '+' prefix (e.g. +HEAD)
+    tip_email="$(git log -1 --format='%ae' "$tip_ref" 2>/dev/null || true)"
+    if [ -n "$tip_email" ] && [ "$tip_email" != "$JARVIS_GIT_AUTHOR_EMAIL" ]; then
+        echo "github-identity: WARNING: tip commit author <$tip_email> != <$JARVIS_GIT_AUTHOR_EMAIL>." >&2
+        echo "github-identity: CLA-assistant keys on the commit author; license/cla will likely fail." >&2
+        echo "github-identity: re-author before pushing, e.g.:" >&2
+        echo "  $prog commit --amend --no-edit    # or: git commit --amend --author=\"$JARVIS_GIT_AUTHOR_NAME <$JARVIS_GIT_AUTHOR_EMAIL>\" --no-edit" >&2
+    fi
+
     local askpass status
     askpass="$(mktemp "${TMPDIR:-/tmp}/jarvis-git-askpass.XXXXXX")"
     cat > "$askpass" <<'EOF'
@@ -115,6 +146,10 @@ case "$mode" in
     gh)
         shift
         run_gh "$@"
+        ;;
+    commit)
+        shift
+        run_commit "$@"
         ;;
     push)
         shift
