@@ -2240,6 +2240,451 @@ resource "alicloud_vswitch" "defaultVSwitch" {
 `, name)
 }
 
+// Case Tair 克隆实例_备份集恢复 clone-from-backup: covers src_db_instance_id / backup_id / cluster_backup_id
+var AlicloudRedisTairInstanceCloneFromBackupMap = map[string]string{
+	"port":           CHECKSET,
+	"status":         CHECKSET,
+	"engine_version": CHECKSET,
+	"payment_type":   "PayAsYouGo",
+	"create_time":    CHECKSET,
+}
+
+func AlicloudRedisTairInstanceCloneFromBackupDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zone_id" {
+  default = "cn-hangzhou-h"
+}
+
+variable "region_id" {
+  default = "cn-hangzhou"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  zone_id = var.zone_id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = var.zone_id
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
+# Source instance that is backed up and cloned from; all references are dynamic.
+# Dual-replica (default MASTER_SLAVE) is required: CreateBackup rejects
+# STAND_ALONE instances with InstanceType.NotSupport.
+resource "alicloud_redis_tair_instance" "source" {
+  payment_type       = "PayAsYouGo"
+  instance_type      = "tair_rdb"
+  zone_id            = var.zone_id
+  instance_class     = "tair.rdb.1g"
+  tair_instance_name = "${var.name}Src"
+  vswitch_id         = local.vswitch_id
+  vpc_id             = data.alicloud_vpcs.default.ids.0
+  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
+  password           = "123456Tf"
+  engine_version     = "5.0"
+  port               = "6379"
+}
+
+# Backup of the source instance, providing a real backup_id to clone from.
+resource "alicloud_redis_backup" "default" {
+  instance_id             = alicloud_redis_tair_instance.source.id
+  backup_retention_period = "7"
+}
+
+
+`, name)
+}
+
+func TestAccAliCloudRedisTairInstance_cloneFromBackup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceCloneFromBackupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceCloneFromBackupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Clone a new instance from the source instance's backup set. src_db_instance_id
+				// and backup_id point at the dynamically created source instance and its
+				// alicloud_redis_backup (no hardcoded ids). These create-only attributes are
+				// asserted with CHECKSET and live in a single create step because
+				// CreateTairInstance consumes them only at creation.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${var.zone_id}",
+					"instance_class":     "tair.rdb.1g",
+					"tair_instance_name": name,
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"password":           "123456Tf",
+					"engine_version":     "5.0",
+					"port":               "6379",
+					"node_type":          "STAND_ALONE",
+					"src_db_instance_id": "${alicloud_redis_tair_instance.source.id}",
+					"backup_id":          "${alicloud_redis_backup.default.backup_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":       "PayAsYouGo",
+						"instance_type":      "tair_rdb",
+						"zone_id":            CHECKSET,
+						"instance_class":     "tair.rdb.1g",
+						"tair_instance_name": name,
+						"vswitch_id":         CHECKSET,
+						"vpc_id":             CHECKSET,
+						"resource_group_id":  CHECKSET,
+						"password":           "123456Tf",
+						"engine_version":     "5.0",
+						"port":               "6379",
+						"node_type":          "STAND_ALONE",
+						"src_db_instance_id": CHECKSET,
+						"backup_id":          CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
+			},
+		},
+	})
+}
+
+// Case Tair 克隆实例_集群备份集恢复 clone-from-cluster-backup: covers cluster_backup_id
+var AlicloudRedisTairInstanceCloneFromClusterBackupMap = map[string]string{
+	"port":           CHECKSET,
+	"status":         CHECKSET,
+	"engine_version": CHECKSET,
+	"payment_type":   "PayAsYouGo",
+	"create_time":    CHECKSET,
+}
+
+func AlicloudRedisTairInstanceCloneFromClusterBackupDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zone_id" {
+  default = "cn-hangzhou-h"
+}
+
+variable "region_id" {
+  default = "cn-hangzhou"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  zone_id = var.zone_id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = var.zone_id
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
+# Cloud-native cluster source instance (shard_count >= 2) whose backup yields a cluster
+# backup set id (cb-*); all references are dynamic.
+resource "alicloud_redis_tair_instance" "source" {
+  payment_type       = "PayAsYouGo"
+  instance_type      = "tair_rdb"
+  zone_id            = var.zone_id
+  instance_class     = "tair.rdb.2g"
+  shard_count        = 2
+  tair_instance_name = "${var.name}Src"
+  vswitch_id         = local.vswitch_id
+  vpc_id             = data.alicloud_vpcs.default.ids.0
+  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
+  password           = "123456Tf"
+  engine_version     = "5.0"
+  port               = "6379"
+}
+
+# Backup of the cluster source instance, exposing cluster_backup_id (cb-*).
+resource "alicloud_redis_backup" "default" {
+  instance_id             = alicloud_redis_tair_instance.source.id
+  backup_retention_period = "7"
+}
+
+
+`, name)
+}
+
+func TestAccAliCloudRedisTairInstance_cloneFromClusterBackup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceCloneFromClusterBackupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceCloneFromClusterBackupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Clone a cloud-native cluster instance from a cluster backup set.
+				// cluster_backup_id is wired to the dynamically created cluster source
+				// instance's alicloud_redis_backup.cluster_backup_id (cb-*), with no hardcoded
+				// id. Per CreateTairInstance semantics ClusterBackupId is used on its own (it
+				// already identifies the source), so src_db_instance_id / backup_id are omitted.
+				// It is create-only, so it lives in the create step and is asserted with CHECKSET.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${var.zone_id}",
+					"instance_class":     "tair.rdb.2g",
+					"shard_count":        "2",
+					"tair_instance_name": name,
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"password":           "123456Tf",
+					"engine_version":     "5.0",
+					"port":               "6379",
+					"cluster_backup_id":  "${alicloud_redis_backup.default.cluster_backup_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":       "PayAsYouGo",
+						"instance_type":      "tair_rdb",
+						"zone_id":            CHECKSET,
+						"instance_class":     "tair.rdb.2g",
+						"shard_count":        "2",
+						"tair_instance_name": name,
+						"vswitch_id":         CHECKSET,
+						"vpc_id":             CHECKSET,
+						"resource_group_id":  CHECKSET,
+						"password":           "123456Tf",
+						"engine_version":     "5.0",
+						"port":               "6379",
+						"cluster_backup_id":  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
+			},
+		},
+	})
+}
+
+// Case Tair 多安全组回归 multi-security-group: guards the perpetual-diff fix for a
+// comma-separated security_group_id. It is a dedicated case rather than a step hosted in
+// an existing one because basic6823_raw (tair_scm) is no longer purchasable and basic8729
+// depends on TDE/KMS whose environment is currently broken, so neither can actually run.
+// cn-hangzhou tair_rdb is proven end-to-end creatable and carries no TDE/KMS dependency.
+var AlicloudRedisTairInstanceMultiSecurityGroupMap = map[string]string{
+	"port":           CHECKSET,
+	"status":         CHECKSET,
+	"engine_version": CHECKSET,
+	"payment_type":   "PayAsYouGo",
+	"create_time":    CHECKSET,
+}
+
+func AlicloudRedisTairInstanceMultiSecurityGroupDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "zone_id" {
+  default = "cn-hangzhou-h"
+}
+
+variable "region_id" {
+  default = "cn-hangzhou"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  zone_id = var.zone_id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = var.zone_id
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
+# Two security groups so the instance can bind a comma-separated list; references are dynamic.
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_security_group" "default2" {
+  name   = format("%%s2", var.name)
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+
+`, name)
+}
+
+func TestAccAliCloudRedisTairInstance_multiSecurityGroup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMultiSecurityGroupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceMultiSecurityGroupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Step 0: create bound to a single security group.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${var.zone_id}",
+					"instance_class":     "tair.rdb.1g",
+					"tair_instance_name": name,
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"password":           "123456Tf",
+					"engine_version":     "5.0",
+					"port":               "6379",
+					"node_type":          "STAND_ALONE",
+					"security_group_id":  "${alicloud_security_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":       "PayAsYouGo",
+						"instance_type":      "tair_rdb",
+						"zone_id":            CHECKSET,
+						"instance_class":     "tair.rdb.1g",
+						"tair_instance_name": name,
+						"vswitch_id":         CHECKSET,
+						"vpc_id":             CHECKSET,
+						"resource_group_id":  CHECKSET,
+						"password":           "123456Tf",
+						"engine_version":     "5.0",
+						"port":               "6379",
+						"node_type":          "STAND_ALONE",
+						"security_group_id":  CHECKSET,
+					}),
+				),
+			},
+			{
+				// Step 1 (regression core): bind two security groups. Before the read-side
+				// join fix this leaves a permanent non-empty post-apply plan because state
+				// kept only the first id.
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": "${alicloud_security_group.default.id},${alicloud_security_group.default2.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				// Step 2: same set, reversed order — exercises the order-insensitive
+				// DiffSuppressFunc; the plan must stay empty (no diff, no update).
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": "${alicloud_security_group.default2.id},${alicloud_security_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
+			},
+		},
+	})
+}
+
 // Test Redis TairInstance. <<< Resource test cases, automatically generated.
 
 func TestUnitRedisTairInstanceCreateRetryLogic(t *testing.T) {

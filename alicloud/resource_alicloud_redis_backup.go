@@ -31,6 +31,10 @@ func resourceAliCloudRedisBackup() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"cluster_backup_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"backup_retention_period": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -110,6 +114,18 @@ func resourceAliCloudRedisBackupCreate(d *schema.ResourceData, meta interface{})
 					if backupID, ok := backup["BackupId"]; ok {
 						// Update ID with the actual BackupId
 						d.SetId(fmt.Sprintf("%v:%v", instanceID, backupID))
+
+						// For cluster-architecture instances, resolve the cluster backup
+						// set id (cb-*) that this backup belongs to by matching the shard
+						// backups inside each DescribeClusterBackupList entry. Standard
+						// instances have no cluster backup set, so an empty result is
+						// expected and must not fail the create.
+						clusterBackupID, cbErr := redisServiceV2.DescribeRedisClusterBackupId(instanceID, fmt.Sprint(backupID))
+						if cbErr != nil {
+							log.Printf("[WARN] alicloud_redis_backup: DescribeClusterBackupList for %s failed, cluster_backup_id left empty: %v", d.Id(), cbErr)
+						} else if clusterBackupID != "" {
+							d.Set("cluster_backup_id", clusterBackupID)
+						}
 					}
 				}
 			}

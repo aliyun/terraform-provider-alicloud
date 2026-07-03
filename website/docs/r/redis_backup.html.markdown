@@ -95,6 +95,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<backup_id>`.
 * `backup_id` - Backup ID.
+* `cluster_backup_id` - The cluster backup set ID (`cb-*`) that this backup belongs to. Returned when the instance is a cluster-architecture instance; empty otherwise. It can be used as the `cluster_backup_id` of `alicloud_redis_tair_instance` to clone a cloud-native cluster instance.
 * `status` - Backup status.
 
 ## Timeouts

@@ -48,7 +48,7 @@ func TestAccAliCloudRedisBackup_basic11970(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"backup_retention_period"},
+				ImportStateVerifyIgnore: []string{"backup_retention_period", "cluster_backup_id"},
 			},
 		},
 	})

@@ -185,11 +185,24 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeSecurityGroupConfiguration(
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.EcsSecurityGroupRelation[*]", response)
 	}
 
-	if len(v.([]interface{})) == 0 {
+	relations := v.([]interface{})
+	if len(relations) == 0 {
 		return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	// The instance can be bound to multiple security groups (comma-separated on the
+	// write side). Keep the first relation's map as the base (callers still read
+	// RegionId from it) but join every EcsSecurityGroupRelation[*].SecurityGroupId
+	// in API return order so state reflects all bound security groups instead of only
+	// the first one, which otherwise causes a perpetual diff.
+	object = relations[0].(map[string]interface{})
+	securityGroupIds := make([]string, 0, len(relations))
+	for _, relation := range relations {
+		securityGroupIds = append(securityGroupIds, fmt.Sprint(relation.(map[string]interface{})["SecurityGroupId"]))
+	}
+	object["SecurityGroupId"] = strings.Join(securityGroupIds, ",")
+
+	return object, nil
 }
 func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceTDEStatus(id string) (object map[string]interface{}, err error) {
 	client := s.client
@@ -722,3 +735,88 @@ func (s *RedisServiceV2) DescribeAsyncDescribeBackups(d *schema.ResourceData, re
 }
 
 // DescribeAsyncDescribeBackups >>> Encapsulated.
+
+// DescribeRedisClusterBackupId <<< Resolve the cluster backup set id for a backup.
+
+// DescribeRedisClusterBackupId returns the cluster backup set id (cb-*) that owns the
+// given per-shard BackupId. It calls DescribeClusterBackupList over a UTC time window
+// around now and matches the backup set whose shard-level Backups contain backupId.
+// Cluster-architecture instances produce a cluster backup set per backup; standard
+// instances produce none, in which case it returns an empty id and no error.
+func (s *RedisServiceV2) DescribeRedisClusterBackupId(instanceId string, backupId string) (string, error) {
+	client := s.client
+	var response map[string]interface{}
+	var query map[string]interface{}
+	var err error
+	query = make(map[string]interface{})
+	query["InstanceId"] = instanceId
+	query["RegionId"] = client.RegionId
+	// DescribeClusterBackupList requires a UTC time window truncated to the minute.
+	now := time.Now().UTC()
+	query["StartTime"] = now.Add(-2 * time.Hour).Format("2006-01-02T15:04Z")
+	query["EndTime"] = now.Add(10 * time.Minute).Format("2006-01-02T15:04Z")
+	query["PageSize"] = 100
+	action := "DescribeClusterBackupList"
+
+	// DescribeClusterBackupList only accepts GET (RpcPost is rejected with 403
+	// UnsupportedHTTPMethod), so all parameters go in the query and the body is nil.
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("R-kvstore", "2015-01-01", action, query, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, query)
+	if err != nil {
+		return "", WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// Match the backup set whose shard Backups contain backupId. The RPC response wraps
+	// lists inconsistently across products, so accept both the flat ([...]) and wrapped
+	// ({"<Elem>": [...]}) shapes.
+	for _, item := range redisRpcList(response["ClusterBackups"], "ClusterBackup") {
+		clusterBackup, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		clusterBackupId := fmt.Sprint(clusterBackup["ClusterBackupId"])
+		if clusterBackupId == "" || clusterBackupId == "<nil>" {
+			continue
+		}
+		for _, shard := range redisRpcList(clusterBackup["Backups"], "Backup") {
+			shardBackup, ok := shard.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if fmt.Sprint(shardBackup["BackupId"]) == backupId {
+				return clusterBackupId, nil
+			}
+		}
+	}
+
+	return "", nil
+}
+
+// redisRpcList normalizes an R-kvstore RPC list field that may arrive either as a flat
+// JSON array or wrapped in a single-key object ({"<elementKey>": [...]}).
+func redisRpcList(v interface{}, elementKey string) []interface{} {
+	switch t := v.(type) {
+	case []interface{}:
+		return t
+	case map[string]interface{}:
+		if inner, ok := t[elementKey]; ok {
+			if list, ok := inner.([]interface{}); ok {
+				return list
+			}
+		}
+	}
+	return nil
+}
+
+// DescribeRedisClusterBackupId >>> Encapsulated.
