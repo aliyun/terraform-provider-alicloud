@@ -232,6 +232,55 @@ assert_contains "stderr 提到 <空>" "$LAST_STDERR" "<空>"
 assert_file_contains "jarvis.auth.yaml marker 保留" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "TEST6_MARKER"
 
 echo ""
+echo "Test 7: migration happy — live 是 open_jarvis 且 store 空,首跑迁移应成功"
+reset_env
+# 预置:live 是合法的 jarvis 会话,store 里还没有 jarvis.auth.yaml
+cat > "$A1_CFG_DIR/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: open_jarvis
+        user: open_jarvis
+EOF
+# 触发迁移(status 不 activate,只跑顶层迁移代码路径,再走到 case);
+# 用 -- auth whoami 端到端跑一次,顺带验证迁移后 activate 能通
+run_a1id -- auth whoami
+assert_eq "exit 0" "0" "$LAST_STATUS"
+assert_file_exists "jarvis.auth.yaml 迁移成功" "$A1_CFG_DIR/identities/jarvis.auth.yaml"
+assert_file_contains "jarvis.auth.yaml 内容是 open_jarvis" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "open_jarvis"
+assert_eq ".active == jarvis" "jarvis" "$(cat "$A1_CFG_DIR/identities/.active" 2>/dev/null)"
+
+echo ""
+echo "Test 8: migration guard — live 是 guozai.gzl,首跑迁移应跳过 + warn"
+reset_env
+# 预置:live 是残留的 guozai 会话(实际就是本次踩坑的复现)
+cat > "$A1_CFG_DIR/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: guozai.gzl
+        user: guozai.gzl
+EOF
+# 任何 a1id 命令都会跑迁移;这里用 -- 端到端跑,期望 activate 因 store 空而 die
+run_a1id -- auth whoami
+assert_ne "exit 非零" "0" "$LAST_STATUS"
+assert_contains "stderr 报跳过迁移" "$LAST_STDERR" "跳过首跑迁移"
+assert_contains "stderr 显示 live 的实际账号 guozai.gzl" "$LAST_STDERR" "guozai.gzl"
+assert_contains "stderr 追加提示要 login jarvis" "$LAST_STDERR" "bin/a1id login jarvis"
+assert_contains "activate 后续 die 提示未登录" "$LAST_STDERR" "身份 'jarvis' 未登录"
+assert_file_absent "jarvis.auth.yaml 未被 guozai 污染" "$A1_CFG_DIR/identities/jarvis.auth.yaml"
+assert_not_contains "live auth.yaml 未被 activate 覆盖(还是 guozai)" "$(cat "$A1_CFG_DIR/auth.yaml")" "open_jarvis"
+
+echo ""
+echo "Test 9: migration 边界 — live 缺失,不迁移不 warn(纯静默)"
+reset_env
+# store 空 + live 也不存在:干净初始状态
+run_a1id status
+assert_eq "exit 0" "0" "$LAST_STATUS"
+assert_file_absent "jarvis.auth.yaml 未被创建" "$A1_CFG_DIR/identities/jarvis.auth.yaml"
+assert_not_contains "stderr 不应该有跳过迁移 warn" "$LAST_STDERR" "跳过首跑迁移"
+
+echo ""
 echo "Results: $pass passed, $fail failed"
 if [ "$fail" -eq 0 ]; then
     echo "PASS"

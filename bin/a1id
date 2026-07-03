@@ -48,8 +48,17 @@ expected_account_for(){
   esac
 }
 
-# 首跑迁移:既有 auth.yaml 收编为 jarvis 身份
-[ -f "$LIVE" ] && [ ! -f "$(store_for jarvis)" ] && cp "$LIVE" "$(store_for jarvis)" && echo jarvis > "$ACTIVE"
+# 首跑迁移:仅当 live account 确为 jarvis 期望账号(open_jarvis)才收编。
+# 与 login 分支 P0 护栏同源思想:防止 live 中残留的个人身份被静默灌进 jarvis 槽位。
+if [ -f "$LIVE" ] && [ ! -f "$(store_for jarvis)" ]; then
+  _live_acct=$(awk '/^ *account:/ {print $2; exit}' "$LIVE" 2>/dev/null || echo "")
+  if [ "$_live_acct" = "$(expected_account_for jarvis)" ]; then
+    cp "$LIVE" "$(store_for jarvis)" && echo jarvis > "$ACTIVE"
+  else
+    echo "a1id: 跳过首跑迁移(live account='${_live_acct:-<空>}' != jarvis 期望 '$(expected_account_for jarvis)'),需显式 'bin/a1id login jarvis'" >&2
+  fi
+  unset _live_acct
+fi
 
 cur(){ cat "$ACTIVE" 2>/dev/null || echo "$DEFAULT_ID"; }
 
