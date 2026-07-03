@@ -61,7 +61,12 @@ if [ "${1:-}" = "auth" ] && [ "${2:-}" = "whoami" ]; then
     fi
     live="${A1_CONFIG_DIR:-$HOME/.config/a1}/auth.yaml"
     acct=""
-    if [ -f "$live" ]; then
+    # 现实中 a1 auth whoami 的 Account 字段(BUC token 解出)可以与 yaml 的
+    # account 字段不同(jarvis:WORKER_id vs open_jarvis)。测试要能复现这一层,
+    # 允许 FAKE_A1_WHOAMI_ACCOUNT 独立覆盖,不设时回落读 yaml。
+    if [ -n "${FAKE_A1_WHOAMI_ACCOUNT:-}" ]; then
+        acct="$FAKE_A1_WHOAMI_ACCOUNT"
+    elif [ -f "$live" ]; then
         acct=$(awk '/^ *account:/ {print $2; exit}' "$live" 2>/dev/null || echo "")
     fi
     if [ -z "$acct" ]; then
@@ -90,7 +95,7 @@ pass=0
 fail=0
 
 reset_env() {
-    unset FAKE_A1_LOGIN_ACCOUNT FAKE_A1_LOGIN_STATUS FAKE_A1_WHOAMI_EMPTY
+    unset FAKE_A1_LOGIN_ACCOUNT FAKE_A1_LOGIN_STATUS FAKE_A1_WHOAMI_EMPTY FAKE_A1_WHOAMI_ACCOUNT
     rm -rf "$A1_CFG_DIR"
     mkdir -p "$A1_CFG_DIR/identities"
 }
@@ -279,6 +284,47 @@ run_a1id status
 assert_eq "exit 0" "0" "$LAST_STATUS"
 assert_file_absent "jarvis.auth.yaml 未被创建" "$A1_CFG_DIR/identities/jarvis.auth.yaml"
 assert_not_contains "stderr 不应该有跳过迁移 warn" "$LAST_STDERR" "跳过首跑迁移"
+
+echo ""
+echo "Test 10: alias 不对称 — yaml account=open_jarvis 但 whoami Account=WORKER_id,应视同 jarvis 允许迁移"
+reset_env
+# 真实 jarvis live yaml:内容里 account 字段是 open_jarvis(RAM/user 层),
+# 但 BUC token 解出来的 whoami Account 字段是 WORKER_1782379562571。
+# 修复前 migration 读 yaml 会拿 open_jarvis 与 WORKER_id 比对 → 误拦。
+# 修复后 migration 走 whoami → 拿 WORKER_id 与 WORKER_id 比对 → 通过。
+cat > "$A1_CFG_DIR/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: open_jarvis
+        user: open_jarvis
+EOF
+export FAKE_A1_WHOAMI_ACCOUNT="WORKER_1782379562571"
+run_a1id -- auth whoami
+assert_eq "exit 0(合法 jarvis live 不被误拦)" "0" "$LAST_STATUS"
+assert_file_exists "jarvis.auth.yaml 迁移成功落盘" "$A1_CFG_DIR/identities/jarvis.auth.yaml"
+assert_file_contains "落盘内容保留 yaml 原样(account: open_jarvis)" "$A1_CFG_DIR/identities/jarvis.auth.yaml" "open_jarvis"
+assert_eq ".active == jarvis" "jarvis" "$(cat "$A1_CFG_DIR/identities/.active" 2>/dev/null)"
+assert_not_contains "stderr 不应该有跳过迁移 warn" "$LAST_STDERR" "跳过首跑迁移"
+
+echo ""
+echo "Test 11: alias 不对称的反例 — yaml account=WORKER_id 但 whoami=guozai.gzl(token 被冒充),应拦"
+reset_env
+# 病态场景:yaml 看起来是 jarvis(account=WORKER_id),但底下 BUC token 其实
+# 是 guozai(whoami 说的算)。修复后 migration 相信 whoami 而不是 yaml → 拦。
+cat > "$A1_CFG_DIR/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: WORKER_1782379562571
+        user: WORKER_1782379562571
+EOF
+export FAKE_A1_WHOAMI_ACCOUNT="guozai.gzl"
+run_a1id -- auth whoami
+assert_ne "exit 非零(activate 后续 die)" "0" "$LAST_STATUS"
+assert_contains "stderr 报跳过迁移" "$LAST_STDERR" "跳过首跑迁移"
+assert_contains "stderr 显示 whoami 拿到的实际账号 guozai.gzl" "$LAST_STDERR" "guozai.gzl"
+assert_file_absent "jarvis.auth.yaml 未落盘(不信 yaml 表象)" "$A1_CFG_DIR/identities/jarvis.auth.yaml"
 
 echo ""
 echo "Results: $pass passed, $fail failed"
