@@ -65,11 +65,12 @@ resource "alicloud_drds_polardbx_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cn_class` - (Required, ForceNew) Compute node specifications.
+* `cn_class` - (Required) Compute node (CN) specifications. Since v1.285.0 the field is mutable and supports in-place class change. Refer to the `CnClass` parameter in the [CreateDBInstance API reference](https://www.alibabacloud.com/help/en/polardb/polardb-for-xscale/api-createdbinstance-1) for the list of valid values.
 * `cn_node_count` - (Required, Int) Number of computing nodes.
 * `description` - (Optional, Available since v1.268.0) Instance remarks
-* `dn_class` - (Required, ForceNew) Storage node specifications.
+* `dn_class` - (Required) Storage node (DN) specifications. Since v1.285.0 the field is mutable and supports in-place class change. Refer to the `DnClass` parameter in the [CreateDBInstance API reference](https://www.alibabacloud.com/help/en/polardb/polardb-for-xscale/api-createdbinstance-1) for the list of valid values.
 * `dn_node_count` - (Required, Int) The number of storage nodes.
+* `dn_storage_space` - (Optional, Computed, Available since v1.285.0) Storage space per storage node, in GB. Only applicable when `storage_type` is `cloud_auto`; leave unset for `custom_local_ssd` instances. Since v1.285.0 the field is mutable and supports in-place resize.
 * `engine_version` - (Optional, ForceNew, Computed, Available since v1.268.0) Engine version, default 5.7
 * `is_read_db_instance` - (Optional, Available since v1.268.0) Whether the instance is read-only.
   - `true`: Yes
@@ -84,6 +85,18 @@ The following arguments are supported:
 * `primary_zone` - (Required, ForceNew) Primary Availability Zone.
 * `resource_group_id` - (Optional, Computed) The resource group ID can be empty. This parameter is not supported for the time being.
 * `secondary_zone` - (Optional, ForceNew) Secondary availability zone.
+* `specified_dn_scale` - (Optional, Available since v1.285.0) Whether the storage node specification is customized per DN during a class change. Used together with `specified_dn_spec_map_json`.
+* `specified_dn_spec_map_json` - (Optional, Available since v1.285.0) JSON string describing the per-DN target specification during a class change.
+* `storage_type` - (Optional, ForceNew, Computed, Available since v1.285.0) Storage type of the instance. Valid values:
+  - `custom_local_ssd`: local disk;
+  - `cloud_auto`: cloud disk.
+* `switch_time` - (Optional, Available since v1.285.0) Scheduled switch start time in `yyyy-MM-ddTHH:mm:ssZ` (UTC); the actual switch runs during `[T, T + 30m]`.
+* `switch_time_mode` - (Optional, Available since v1.285.0) Effective time policy applied to a class change. Valid values:
+  - `0`: apply immediately;
+  - `1`: apply in the maintenance window.
+
+-> **NOTE:** `specified_dn_scale`, `specified_dn_spec_map_json`, `switch_time_mode` and `switch_time` are auxiliary parameters attached to a class change. They only take effect when one of `cn_class`, `dn_class` or `dn_storage_space` also changes; modifying only these four fields in isolation is silently ignored on Update.
+
 * `tertiary_zone` - (Optional, ForceNew) Third Availability Zone.
 * `topology_type` - (Required, ForceNew) Topology type:
   - `3azones`: three available areas;

@@ -348,6 +348,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_elasticsearch_instances":                          dataSourceAlicloudElasticsearch(),
 			"alicloud_elasticsearch_zones":                              dataSourceAlicloudElaticsearchZones(),
 			"alicloud_drds_instances":                                   dataSourceAlicloudDRDSInstances(),
+			"alicloud_drds_polardbx_instances":                          dataSourceAliCloudDrdsPolardbxInstances(),
 			"alicloud_nas_service":                                      dataSourceAlicloudNasService(),
 			"alicloud_nas_access_groups":                                dataSourceAlicloudNasAccessGroups(),
 			"alicloud_nas_access_rules":                                 dataSourceAlicloudAccessRules(),
