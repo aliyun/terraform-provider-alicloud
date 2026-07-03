@@ -14,6 +14,7 @@ description: >-
   · references/delivery-cloudspec.md — 自家应用 cloudspec / OpenAPI MCP Server 交付(app 260634)
   · references/aliyun-error-code-lookup.md — 阿里云错误码官方定义查证(跨 skill 复用,给定 product+code 出 HTTP/message/retry 建议)
   · references/templates.md — 回复/需求骨架、机读 JSON
+  · references/probe-ticket-routing.md — jarvis-probe 探测工单(标签 jarvis-probe/标题 [probe],528766 池):四分类路由/复验关单/场景回灌
   NOT for: terraform-provider-alicloud GitHub PR 评审(用 terraform-pr-review)/ 资源从零开发
   (用 provider-resource-dev)/ 特定客户单接入进度催办不属 tf_customer(视场景自定)。
 ---

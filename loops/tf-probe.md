@@ -117,6 +117,12 @@ aone-triage loop 扫到该单 → claim → provider-resource-dev/修复 → PR 
 
 真实客户工单也应回灌为 `regression-<aone-id>` 场景(probes/README.md),成为发版前回归项。
 
+### 修复侧衔接
+
+probe 单指派 jarvis,会被 `scan.sh` 自然扫到进 triage;aone-triage 按 **四分类路由**(provider 代码修 / TF 文档修 /
+上游协作 / 需实验定性)修复,PR 合并后按溯源**复验关单**,并回灌 regression 场景——完整飞轮见
+`escalation/cap-probe-fix-flywheel.md`,路由与复验状态机见 `.claude/skills/aone-triage/references/probe-ticket-routing.md`。
+
 ---
 
 ## 九、工具链速查

@@ -83,8 +83,9 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
   **源码 schema 嵌套深层解析**(当前只顶层,深挖 Elem 内层字段);terraform 二进制入 `bootstrap/install.sh` 依赖;
   工单回灌机制落地;`sweep` 接 aliyun CLI 按标签扫真实孤儿资源;自动建单毕业条件(累计 ≥10 draft 且采纳率 ≥90% 后
   `ticket.mode` 切 `file`);a1 建单命令与优先级枚举固化。
-- **P2**：cron/bridge 定时接入;场景库批量扩容(website docs 全量 tier-0 覆盖);发布前 RC 门禁
-  (接 terraform-changelog 发版流程,发版前全资源 tier-0 + 全场景 tier-1 过一遍);upgrader persona(版本升级 state 兼容探测)。
+- **P2**：cron/bridge 定时接入(**调度与修复闭环统一由 `cap-probe-fix-flywheel` F2 承接**);场景库批量扩容
+  (website docs 全量 tier-0 覆盖);发布前 RC 门禁(接 terraform-changelog 发版流程,发版前全资源 tier-0 + 全场景
+  tier-1 过一遍);upgrader persona(版本升级 state 兼容探测)。
 - **P3**：cloudspec/OpenAPI 覆盖矩阵驱动属性组合生成(优先探从未被示例覆盖的属性);真实架构级组合场景;
   度量看板(发现数/采纳率/发现→修复周期,接 board.sh)。
 
@@ -112,6 +113,7 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
 
 ## 关联
 
+- **修复侧闭环设计**：见 `escalation/cap-probe-fix-flywheel.md`(探测→建单→修复→验证→发布→回灌 六段飞轮 + F0–F4 阶段计划)。
 - probe 发现的 provider 问题单：落 tf_provider 池 528766，指派 WORKER_1782379562571，标签 jarvis-probe。
 - 相关文件：`config/probe.json`、`bootstrap/probe.sh`、`probes/`、`.claude/skills/tf-customer-probe/`、
   `loops/tf-probe.md`、`test/probe_test.sh`。
