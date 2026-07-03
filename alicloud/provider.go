@@ -927,8 +927,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_monitor_service_hybrid_double_writes":       dataSourceAliCloudCloudMonitorServiceHybridDoubleWrites(),
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
+			"alicloud_das_sql_log_configs":                              dataSourceAliCloudDasSqlLogConfigs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_das_sql_log_config":                                   resourceAliCloudDasSqlLogConfig(),
 			"alicloud_oss_bucket_inventory":                                 resourceAliCloudOssBucketInventory(),
 			"alicloud_resource_manager_resource_directory_sharing":          resourceAliCloudResourceManagerResourceDirectorySharing(),
 			"alicloud_wafv3_address_book":                                   resourceAliCloudWafv3AddressBook(),
