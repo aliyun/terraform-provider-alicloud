@@ -175,7 +175,7 @@ upload_one() {
     local aone_id="$1"
     local file="$2"
     local label="$3"
-    local endpoint="${base_url%/}/buc/reports/aone/$aone_id"
+    local endpoint="${base_url%/}/api/reports/aone/$aone_id"
     local response
     local curl_args=(-fsS -X POST)
 
