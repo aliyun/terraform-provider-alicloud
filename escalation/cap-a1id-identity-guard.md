@@ -9,7 +9,7 @@
 `/aone-triage` 开局身份验证阶段发现:
 
 - 本机 `~/.config/a1/identities/` 只存了 `jarvis.auth.yaml`,但内容是 `guozai.gzl`(过载本人)的凭据(sha256 与浏览器 live BUC 会话完全一致,`diff` 为空)。
-- 意味着 jarvis 公用身份(`open_jarvis`)在本机**根本没登进过**——所谓"jarvis 已登录"是假象。
+- 意味着 jarvis 公用身份(BUC Account = `WORKER_1782379562571`,Aone 数字员工)在本机**根本没登进过**——所谓"jarvis 已登录"是假象。
 - 直接跑 `/aone-triage` 会以 guozai 名义扫入箱 + claim + 回复,踩 CLAUDE.md 工作纪律 #6 红线。
 
 已做的即时修复:备份 `~/.config/a1/identities/` 到 `.my-day/a1id-store-backup-<ts>/`,删除污染的 `jarvis.auth.yaml`,清空 `.active`。下次任何 a1id 命令(`use jarvis` / `--`)都会 `die` 提示"身份 'jarvis' 未登录",强制走 `bin/a1id login jarvis`。
@@ -58,7 +58,7 @@ login)
 ```bash
 expected_account_for(){
   case "$1" in
-    jarvis) echo "open_jarvis" ;;
+    jarvis) echo "WORKER_1782379562571" ;;   # BUC Account:字段,Aone 数字员工 ID
     chenyi) echo "chenhanzhang.chz" ;;
     guozai) echo "guozai.gzl" ;;
     linjun) echo "lichaolin.lcl" ;;
