@@ -37,6 +37,16 @@ mkdir -p "$STORE"
 die(){ echo "a1id: $*" >&2; exit 1; }
 store_for(){ echo "$STORE/$1.auth.yaml"; }
 valid(){ [ "$1" = jarvis ] || [ "$1" = chenyi ] || [ "$1" = guozai ] || [ "$1" = linjun ]; }
+# label → 期望 BUC 账号(护栏基线;login 后 whoami 必须回来匹配,否则不落盘)
+expected_account_for(){
+  case "$1" in
+    jarvis) echo "open_jarvis" ;;
+    chenyi) echo "chenhanzhang.chz" ;;
+    guozai) echo "guozai.gzl" ;;
+    linjun) echo "lichaolin.lcl" ;;
+    *) return 1 ;;
+  esac
+}
 
 # 首跑迁移:既有 auth.yaml 收编为 jarvis 身份
 [ -f "$LIVE" ] && [ ! -f "$(store_for jarvis)" ] && cp "$LIVE" "$(store_for jarvis)" && echo jarvis > "$ACTIVE"
@@ -54,9 +64,24 @@ cmd="${1:-status}"; shift || true
 case "$cmd" in
   login)
     id="${1:-}"; valid "$id" || die "用法: a1id login <jarvis|chenyi|guozai|linjun>"
+    expected="$(expected_account_for "$id")" || die "内部错误:label '$id' 无期望账号映射"
+    # 备份 live,失败/不匹配时回滚,保证"login 未成功 → live 不受影响"
+    live_bak=""
+    if [ -f "$LIVE" ]; then live_bak="$(mktemp)"; cp "$LIVE" "$live_bak"; fi
+    trap '{ if [ -n "${live_bak:-}" ] && [ -f "$live_bak" ]; then cp "$live_bak" "$LIVE" 2>/dev/null || true; rm -f "$live_bak"; fi; }' EXIT
     "$A1" auth login --buc
+    got=$("$A1" auth whoami 2>/dev/null | awk '/Account:/{print $2}' || true)
+    if [ "$got" != "$expected" ]; then
+      die "身份不匹配:请求登入 '$id'(期望账号 $expected),实际浏览器 BUC 会话是 '${got:-<空>}'。
+     修:1) 浏览器登出 BUC (https://buc.alibaba-inc.com/);
+        2) 或用无痕/其它浏览器登 '$expected';
+        3) 重跑 'bin/a1id login $id'。
+     已回滚 live auth.yaml,原身份未受影响。"
+    fi
+    trap - EXIT
+    [ -n "$live_bak" ] && rm -f "$live_bak"
     cp "$LIVE" "$(store_for "$id")"; echo "$id" > "$ACTIVE"   # 登完落盘到该身份 store
-    echo "a1id: '$id' 登录已保存"; "$A1" auth whoami ;;
+    echo "a1id: '$id'($got) 登录已保存"; "$A1" auth whoami ;;
   use)  id="${1:-}"; activate "$id"; echo "a1id: active=$id" ;;
   status) echo "active : $(cur)" ;;
   who) "$A1" auth whoami ;;
