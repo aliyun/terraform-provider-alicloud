@@ -25,9 +25,9 @@ done
 [ "$(jq '[.pools[]|select(.line==null)]|length' "$POOLS_JSON")" = "0" ] \
   && ok "every pool has a line" || bad "a pool lacks line"
 
-# S5: mcp_server keeps delivery facts
-[ "$(jq -r '.pools.mcp_server.app' "$POOLS_JSON")" = "283346" ] \
-  && ok "mcp_server.app preserved" || bad "mcp_server.app lost"
+# S5: mcp_server keeps delivery facts (schema evolved single .app → .apps[]; assert on apps[])
+[ "$(jq -r '.pools.mcp_server.apps[0].app' "$POOLS_JSON")" = "283346" ] \
+  && ok "mcp_server.apps[0].app preserved" || bad "mcp_server.apps[0].app lost"
 
 # S6: claim.tag
 [ "$(jq -r '.claim.tag' "$POOLS_JSON")" = "jarvis-claimed" ] \
