@@ -43,7 +43,7 @@ bootstrap/serve.sh 9000   # 换端口
 
 ## HTML 报告在线预览
 
-Jarvis 可把本地 HTML、zip 内 HTML、或 Aone 附件中的 HTML 报告上传到 AutomationAgent，并返回可贴回 Aone 的在线预览链接。
+Jarvis 可把本地 HTML、zip 内 HTML、或 Aone 附件中的 HTML 报告上传到 AutomationAgent，并返回可贴回 Aone 的在线预览链接。接口走 AutomationAgent 的 `/buc/reports/aone/*` BUC 组。
 
 ```bash
 # 上传本地 HTML / zip / 目录

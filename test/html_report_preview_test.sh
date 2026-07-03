@@ -47,8 +47,8 @@ make_fake_curl() {
 echo "$@" >> "$CURL_LOG"
 target="${@: -1}"
 case "$target" in
-  */api/reports/aone/*)
-    echo '{"success":true,"code":"SUCCESS","message":"成功","data":{"aoneId":"83843879","reportId":"rid-123","objectKey":"reports/aone/83843879/rid-123.html","viewUrl":"/api/reports/aone/83843879/rid-123/view","size":42}}'
+  */buc/reports/aone/*)
+    echo '{"success":true,"code":"SUCCESS","message":"成功","data":{"aoneId":"83843879","reportId":"rid-123","objectKey":"reports/aone/83843879/rid-123.html","viewUrl":"/buc/reports/aone/83843879/rid-123/view","size":42}}'
     ;;
   *)
     echo "unexpected curl target: $target" >&2
@@ -115,9 +115,9 @@ output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" \
 exit_code=$?
 echo "$output"
 if [ "$exit_code" -eq 0 ]; then assert_pass "upload exits 0"; else assert_fail "upload should exit 0, got $exit_code"; fi
-assert_contains "$output" "https://pre.example/api/reports/aone/83843879/rid-123/view" "upload prints absolute view URL"
+assert_contains "$output" "https://pre.example/buc/reports/aone/83843879/rid-123/view" "upload prints absolute view URL"
 assert_file_contains "$curl_log" "file=@$html;type=text/html" "upload sends multipart file field"
-assert_file_contains "$curl_log" "https://pre.example/api/reports/aone/83843879" "upload posts to AutomationAgent upload endpoint"
+assert_file_contains "$curl_log" "https://pre.example/buc/reports/aone/83843879" "upload posts to AutomationAgent upload endpoint"
 
 echo "=== Test 2: reject non-HTML before curl ==="
 txt="$tmpdir/report.txt"
@@ -139,7 +139,7 @@ output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" \
 exit_code=$?
 echo "$output"
 if [ "$exit_code" -eq 0 ]; then assert_pass "zip upload exits 0"; else assert_fail "zip upload should exit 0, got $exit_code"; fi
-upload_calls=$(grep -c "api/reports/aone/83843879" "$curl_log" || true)
+upload_calls=$(grep -c "buc/reports/aone/83843879" "$curl_log" || true)
 if [ "$upload_calls" -eq 2 ]; then assert_pass "zip uploads two HTML files"; else assert_fail "zip should upload 2 HTML files, got $upload_calls"; fi
 assert_contains "$output" "report-a.html" "zip output includes first member label"
 assert_contains "$output" "report-b.htm" "zip output includes nested member label"
@@ -157,7 +157,7 @@ if [ "$exit_code" -eq 0 ]; then assert_pass "from-aone exits 0"; else assert_fai
 assert_file_contains "$a1_log" "project workitem attachment list 83843879 -f json" "from-aone lists attachments"
 assert_file_contains "$a1_log" "project workitem attachment download 83843879 222" "from-aone downloads latest attachment"
 assert_file_contains "$a1_log" "project workitem comment create 83843879 -m" "from-aone comments when requested"
-assert_contains "$output" "https://pre.example/api/reports/aone/83843879/rid-123/view" "from-aone prints absolute preview URL"
+assert_contains "$output" "https://pre.example/buc/reports/aone/83843879/rid-123/view" "from-aone prints absolute preview URL"
 
 echo ""
 echo "=== Summary ==="
