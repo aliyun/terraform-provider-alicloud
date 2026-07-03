@@ -89,7 +89,7 @@ python3 {SKILL_DIR}/scripts/acctest.py upload-run \
   --download-dir ./acctest_logs
 ```
 
-不传 --test-case（即不设置该参数）时，远程 runner 按 `TestAccAliCloud{Namespace}{ResourceTypeCode}*` 匹配并去重执行，也就是一个任务跑该资源全部 TestAcc 用例。传 `--test-case` 时只跑指定精确函数名；可用逗号分隔多个用例，脚本会转换为 Go test 正则，例如 `A,B,C` → `^(A|B|C)$`。
+不传 --test-case（即不设置该参数）时，远程 runner 按 `TestAccAliCloud{Namespace}{ResourceTypeCode}*` 匹配并去重执行，也就是一个任务跑该资源全部 TestAcc 用例。传 `--test-case` 时只跑指定精确函数名：单用例走 `testCaseName=<name>`，多用例（逗号分隔）经 `testCaseNames` 重复 query 参数提交（`testCaseNames=A&testCaseNames=B`）。服务端把每个值当作字面函数名，自行做 `^...$` 锚定并在 `alicloud/` 中校验存在性；客户端不再拼正则。
 
 ### 参数
 
@@ -99,7 +99,7 @@ python3 {SKILL_DIR}/scripts/acctest.py upload-run \
 | `--resource` | Resource type code | `VSwitch`, `Instance`, `Listener` |
 | `--terraform-resource` | Terraform resource name; resolves namespace/resource via Acube mapping | `alicloud_schedulerx_job` |
 | `--dir` | Path to local `terraform-provider-alicloud` directory | `./terraform-provider-alicloud` |
-| `--test-case` | Optional: exact test function name(s); comma-separated names become regex | `TestA,TestB` |
+| `--test-case` | Optional: exact test function name(s). 单用例 → `testCaseName`；逗号分隔多用例 → `testCaseNames` 重复参数（服务端自行锚定精确函数名） | `TestA,TestB` |
 | `--download-dir` | Local dir for downloaded logs | `./acctest_logs` |
 | `--insecure` | Skip TLS certificate verification for internal ACube endpoints when Python cert verification fails | flag |
 
@@ -195,7 +195,7 @@ grep -n "^func TestAcc" alicloud/resource_alicloud_<name>_test.go
 | 0 tests run | Name mismatch (see Step 4) | Fix test function names or pass exact `--test-case` |
 | FC 解压后找不到 `terraform-provider-alicloud` | 本地打包根目录错误或旧版脚本使用了 worktree 目录名 | 更新/使用本 skill 的 `acctest.py`; zip root 必须固定为 `terraform-provider-alicloud` |
 | `指定的测试用例 X 在 alicloud/ 中未找到` | `--test-case` value misspelled | grep local test file for actual names |
-| 需要跑多个具体用例 | 旧写法把 `A,B` 当作一个函数名 | 用逗号分隔多个用例；脚本会转成 `^(A|B|C)$`;或不传 `--test-case` 跑该资源全部用例 |
+| 需要跑多个具体用例 | 旧写法把 `A,B` 当作一个函数名 | 用逗号分隔多个用例；脚本经 `testCaseNames` 重复参数提交，服务端锚定各自精确函数名;或不传 `--test-case` 跑该资源全部用例 |
 | `CERTIFICATE_VERIFY_FAILED` | 本机 Python 证书链不信任内网 ACube 证书 | 在 `acctest.py` 后、子命令前加 `--insecure` |
 | `Unsupported argument "X"` | Test HCL references a deleted field | Update test config to use the replacement field |
 | `daring resource` / destroy timeout | Subscription resource can't be destroyed | Treat as PASS if all Apply/Read steps succeeded |

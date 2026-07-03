@@ -26,7 +26,6 @@ import argparse
 import io
 import json
 import os
-import re
 import ssl
 import sys
 import tempfile
@@ -62,6 +61,26 @@ def api_request(method, url, data=None, insecure=False):
             print("[AccTest] Hint: retry with --insecure when using internal ACube certificates.",
                   file=sys.stderr)
         sys.exit(1)
+
+
+# Keys in the logs API `data` map that carry a downloadable log URL. The same map
+# also mixes in non-URL fields (e.g. status: "failed"), so callers must guard on
+# both the key and an http(s) value before handing anything to the downloader.
+LOG_URL_KEYS = ("runLog", "tfDebugLog")
+
+
+def is_downloadable_log_url(key, value):
+    """True only for known log keys whose value is a real http(s) URL.
+
+    Guards the download loops against non-URL fields the logs API mixes into the
+    same data map — passing e.g. "failed" to the downloader raises
+    'unknown url type: failed'.
+    """
+    return (
+        key in LOG_URL_KEYS
+        and isinstance(value, str)
+        and value.startswith(("http://", "https://"))
+    )
 
 
 def download_file(url, dest_path, insecure=False):
@@ -111,7 +130,7 @@ def cmd_logs(args):
         os.makedirs(download_dir, exist_ok=True)
         downloaded = {}
         for key, dl_url in data.items():
-            if not dl_url:
+            if not is_downloadable_log_url(key, dl_url):
                 continue
             filename = "run.log" if key == "runLog" else "tf-debug.log"
             dest = os.path.join(download_dir, f"{args.task_id}_{filename}")
@@ -230,15 +249,40 @@ def fetch_acc_test_target(terraform_resource, base_url, insecure=False):
 
 
 def normalize_test_case_name(test_case):
-    """Keep one exact case as-is; turn comma-separated exact cases into go test regex."""
+    """Parse comma-separated exact case names into a cleaned list of names.
+
+    Returns list[str] of exact function names, or None when empty. Does NOT build a
+    regex: the remote runner treats each value as a literal function name, anchors it
+    (^...$) itself, and validates its existence under alicloud/. Multiple names are
+    carried by repeated testCaseNames query params (see build_test_case_query).
+    """
     if not test_case:
         return None
     cases = [c.strip() for c in test_case.split(",") if c.strip()]
     if not cases:
         return None
+    return cases
+
+
+def build_test_case_query(url, test_case):
+    """Append the test-case query parameter(s) to the upload URL per backend contract.
+
+    - single case   → testCaseName=<name>                (compatible with legacy servers)
+    - multiple cases → testCaseNames=A&testCaseNames=B    (repeated same-name params;
+      unambiguous vs comma-encoding, each treated as a literal function name that the
+      runner anchors ^...$ itself)
+
+    Returns the URL unchanged when no test case is given.
+    """
+    cases = normalize_test_case_name(test_case)
+    if not cases:
+        return url
     if len(cases) == 1:
-        return cases[0]
-    return "^(" + "|".join(re.escape(c) for c in cases) + ")$"
+        param = f"testCaseName={urllib.parse.quote(cases[0])}"
+    else:
+        param = "&".join(f"testCaseNames={urllib.parse.quote(c)}" for c in cases)
+    sep = "&" if "?" in url else "?"
+    return f"{url}{sep}{param}"
 
 
 def resolve_acc_test_target(args):
@@ -415,12 +459,11 @@ def create_code_zip(dir_path):
 def multipart_upload(url, namespace, resource, zip_buf, test_case=None, insecure=False):
     """Send multipart/form-data POST with zip file.
 
-    test_case (optional): appended as query parameter (per backend convention).
+    test_case (optional): single name → testCaseName query param (legacy-compatible);
+    multiple comma-separated names → repeated testCaseNames query params. The remote
+    runner treats each value as a literal function name and anchors it itself.
     """
-    test_case = normalize_test_case_name(test_case)
-    if test_case:
-        sep = "&" if "?" in url else "?"
-        url = f"{url}{sep}testCaseName={urllib.parse.quote(test_case)}"
+    url = build_test_case_query(url, test_case)
 
     boundary = "----AccTestBoundary" + str(int(time.time()))
     body = io.BytesIO()
@@ -602,7 +645,7 @@ def cmd_upload_run(args):
 
     downloaded = {}
     for key, dl_url in log_urls.items():
-        if not dl_url:
+        if not is_downloadable_log_url(key, dl_url):
             continue
         filename = "run.log" if key == "runLog" else "tf-debug.log"
         dest = os.path.join(download_dir, f"{task_id}_{filename}")
@@ -666,8 +709,9 @@ def main():
                                "(e.g. alicloud_schedulerx_job)")
     p_upload.add_argument("--dir", required=True, help="Path to terraform-provider-alicloud directory")
     p_upload.add_argument("--test-case", default=None,
-                          help="Optional: run exact test case(s); comma-separated names are converted to a regex. "
-                               "If unset, runs all matching cases.")
+                          help="Optional: exact test function name(s). One name -> testCaseName; "
+                               "comma-separated names -> repeated testCaseNames params (server anchors "
+                               "each name itself). If unset, runs all matching cases.")
 
     # upload-run (all-in-one from local code)
     p_upload_run = sub.add_parser("upload-run", help="Full workflow: upload local code -> poll -> download logs")
@@ -678,7 +722,9 @@ def main():
                                    "(e.g. alicloud_schedulerx_job)")
     p_upload_run.add_argument("--dir", required=True, help="Path to terraform-provider-alicloud directory")
     p_upload_run.add_argument("--test-case", default=None,
-                               help="Optional: run exact test case(s); comma-separated names are converted to a regex")
+                               help="Optional: exact test function name(s). One name -> testCaseName; "
+                                    "comma-separated names -> repeated testCaseNames params (server "
+                                    "anchors each name itself)")
     p_upload_run.add_argument("--poll-interval", type=int, default=DEFAULT_POLL_INTERVAL,
                                help=f"Poll interval in seconds (default: {DEFAULT_POLL_INTERVAL})")
     p_upload_run.add_argument("--download-dir", default=DEFAULT_DOWNLOAD_DIR,
