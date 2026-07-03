@@ -73,7 +73,7 @@ bootstrap/claim.sh claim <id> <pool-project>
 
 技能完成：读取工单 → 查证（OpenAPI + Cloudspec 映射 + provider 源码）→ 回复 / 打标 / 建需求 / 建 CR。
 
-若单条工单进入 Terraform Provider 资源开发且不走自动化生成链路，先按 `tf_provider` 池创建或复用 **terraform-alicloud** 内部研发单（项目 `528766`），**指派按 aone-triage skill `references/tf-customer-request-routing.md` 分工表路由到具体人**——即便由 jarvis 代为开发，关联单也挂具体人名下，方便其注意到；关联单不 claim（jarvis 无 tf_provider 池管理权），与客户主单双向关联，bookend 挂客户主单。研发细节、验证、PR/CI/验收信息写内部研发单，客户主单仅同步关键节点和卡点。需要 cloudspec_gap 或云产品上游协助时，把详细协作问题同步到对应依赖单。
+若单条工单进入 Terraform Provider 资源开发且不走自动化生成链路，先按 `tf_provider` 池创建或复用 **terraform-alicloud** 内部研发单（项目 `528766`），**指派按 aone-triage skill `references/tf-customer-request-routing.md` 分工表路由到具体人**——即便由 jarvis 代为开发，关联单也挂具体人名下，方便其注意到；与客户主单双向关联。**指派给过载（484483）的关联单，jarvis 直接 claim 跟进解决，bookend 同时处理客户主单与关联单**（研发细节 wrap 关联单、客户主单只 wrap 关键节点，收尾两边各自 done+release）；指派给其他人的关联单不 claim，建单 + @对方等接手。研发细节、验证、PR/CI/验收信息写内部研发单，客户主单仅同步关键节点和卡点。需要 cloudspec_gap 或云产品上游协助时，把详细协作问题同步到对应依赖单。
 
 GitHub PR/评论/推分支的身份纪律见 CLAUDE.md 工作纪律 #6（`bootstrap/github-identity.sh`，账号必须 `api-tool-agent`）。
 

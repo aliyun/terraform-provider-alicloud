@@ -407,7 +407,7 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - 仍不支持 `--status` 命名参数;status 放在最后一个位置参数
 - 字面量 `\n` 默认会被 wrap.sh 拦截;确认要发送反斜杠+n 文本时才临时设 `JARVIS_ALLOW_LITERAL_NEWLINE=1`
 - **status 枚举随工单类型走两套流**:需求/任务类是池自定义状态(tf_customer 合法值见下方反模式清单);bug 类(功能缺陷/线上问题/性能瓶颈)是 Aone 缺陷独立枚举 `Open/Fixed/Won'tfix/Later/Worksforme/Duplicate/Invalid/External/ByDesign`——给 bug 单传「问题解决中」会报 `unsupported target status`,承接中传 `Open`,修复合入后传 `Fixed`(工单 83679740 实测)
-- 关联单(528766)一律**不 claim** —— jarvis 无 tf_provider 池管理权,建单 + @对方即可
+- 关联单(528766)claim 规则:**指派给过载(484483)的,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单**(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人的不 claim,建单 + @对方即可
 - 分支 F 的评论 + 状态修改不需要建关联单,直接 wrap.sh done + 单独一次 status update
 
 ## 反模式

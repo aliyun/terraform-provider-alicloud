@@ -136,7 +136,7 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 
 **release vs finish**:默认 release(路由 ≠ 真闭环,需下游响应);仅当查证发现"其实已支持 + 只是客户版本旧"这类无缺口场景走 finish。
 
-**关联单不 claim**:jarvis 无 tf_provider(528766) / Cloudspec(2165097) 池管理权,建单 + @ 即可,不 touch 标签。
+**关联单 claim 规则**:指派给过载(484483)的关联单,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人(谜拟/新山/临钧等)或 Cloudspec(2165097)池的关联单不 claim,建单 + @ 即可,不 touch 标签。
 
 ## 自己交付(改自家应用)
 
