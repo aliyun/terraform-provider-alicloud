@@ -1,7 +1,6 @@
 id: import-vpc
 title: VPC 导入往返(create → state rm → import → plan)
 persona: importer
-tier: 1
 products: VPC
 resources: alicloud_vpc
 cost: free

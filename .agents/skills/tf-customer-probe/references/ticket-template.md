@@ -1,6 +1,6 @@
 # ticket-template —— probe 工单/草稿骨架
 
-probe 发现的 provider 问题按此骨架落 `escalation/probe-drafts/<日期>-<场景>-<code>.md`（P0 draft 模式），
+probe 发现的 provider 问题按此骨架落 `escalation/probe-drafts/<日期>-<资源或场景>-<code>.md`（draft 模式），
 或未来毕业后按此建 Aone 需求单。
 
 ## 硬规则（写之前先记）
@@ -50,8 +50,8 @@ status: pending-review
 - 建议 Aone 优先级：紧急/高/中/低
 
 ## 溯源
-- 场景：probes/scenarios/<id>/
-- verdict：runs/probe/<日期>-<id>.json
+- tier-1:场景 probes/scenarios/<id>/ + verdict runs/probe/<日期>-<id>.json
+- tier-0:资源 <alicloud_xxx> + verdict runs/probe/<日期>-tier0.json(含 doc/source 位置、judgment_queue)
 - 来源：jarvis tf-customer-probe
 ```
 

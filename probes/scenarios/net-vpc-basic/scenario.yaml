@@ -1,7 +1,6 @@
 id: net-vpc-basic
 title: VPC 基础组网(新手照抄文档示例组合)
 persona: beginner
-tier: 1
 products: VPC,ECS
 resources: alicloud_vpc,alicloud_vswitch,alicloud_security_group,alicloud_security_group_rule
 cost: free

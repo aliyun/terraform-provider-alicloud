@@ -26,6 +26,8 @@ probe 发现的 finding 先落 detector 的 `severity_hint`（机判，见下表
 
 ## detector 默认 severity_hint（runner 机判，Claude 可改）
 
+### tier-1（真实 apply 生命周期）
+
 | finding code | 默认 | 语义 |
 |--------------|------|------|
 | `validate_fail` | S3 | 官方示例组合 validate 不过 |
@@ -38,6 +40,24 @@ probe 发现的 finding 先落 detector 的 `severity_hint`（机判，见下表
 | `destroy_fail` | S1 | destroy 失败 |
 | `state_residue` | S1 | destroy 后 state 仍残留资源 |
 
+### tier-0（静态三方一致性扫描）
+
+机械 diff(文档↔源码)产出:
+
+| finding code | 默认 | 语义 |
+|--------------|------|------|
+| `doc_gap_phantom` | S3 | 文档有此参数但源码 schema 无(文档幻影参数) |
+| `doc_gap_undocumented` | S3 | 源码有此参数但文档未记(未文档化参数) |
+| `doc_gap_flag_mismatch` | S3 | Required/Optional 标注文档≠源码 |
+| `doc_gap_forcenew` | S2 | ForceNew 标注文档≠源码(客户会被意外重建;仅查活跃非废弃字段) |
+| `doc_gap_deprecated` | S4 | 源码已 Deprecated 但文档仍作正常参数列出(未标注废弃) |
+
+OpenAPI 侧判定(skill 层查 `judgment_queue`,非机械)产出:
+
+| finding code | 默认 | 语义 |
+|--------------|------|------|
+| `doc_api_gap` | S2–S4 | provider 实际调用的 API 的参数/枚举/行为与 TF 文档不一致,severity 由判定按影响面给。**只核对已接入面**;未接入 TF 的资源/参数不报(需求非 bug) |
+
 ## 升降级判则（Claude 复核时应用）
 
 - **安全类资源升一级**：安全组/RAM/密钥/网络 ACL 等，其 `perpetual_diff` / 更新不生效影响安全边界 → S2 升 S1。
@@ -46,4 +66,6 @@ probe 发现的 finding 先落 detector 的 `severity_hint`（机判，见下表
   建单走文档修正而非代码修复。
 - **已修复未发布不建单**：finding 若对应 provider 仓 CHANGELOG `Unreleased` 段已合入的修复 → 不建单，
   在 draft 里标注「已在 master 修复，待 vX.Y.Z 发布」，转为发版后回归复跑项。
-- **env_issue 永不升级为 finding**：鉴权/网络/allowlist/tier 降级是环境噪声，不进危害分级、不建单。
+- **废弃字段的 flag/forcenew 差异不报**：tier-0 机械 diff 已把 `flag_mismatch`/`forcenew` 限定在活跃(非废弃)字段;
+  废弃字段的标注差异是低价值噪声,只留 `doc_gap_deprecated`。
+- **env_issue 永不升级为 finding**：鉴权/网络/`prepaid_block`/`tier1_disabled_plan_only` 都是环境噪声,不进危害分级、不建单。

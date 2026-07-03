@@ -11,12 +11,16 @@ Terraform 官方文档，用 terraform 创建真实资源，主动把潜在问�
 
 ## 能力定义与闭环
 
-**合成客户探测（synthetic customer probing）**：以不同 persona（新手/组合/更新/导入）为视角，参考
-`website/docs` 官方示例写 HCL，跑 terraform 生命周期（init→validate→plan→apply→re-plan→import→destroy），
-用行为差异（validate/plan/apply 失败、永久 diff、意外重建、import 断链、destroy 残留）暴露 provider 潜在 bug。
+**合成客户探测（synthetic customer probing）**,两条腿(2026-07-03 重定义):
+
+- **tier-0 静态三方一致性扫描**(以资源为单位):核对 **TF 文档 ↔ OpenAPI 文档 ↔ provider 源码**。机械部分做本地
+  文档↔源码 diff(五类 gap);OpenAPI 一侧留 `judgment_queue` 交 skill 层双层查证。**只测已接入 TF 的面**。
+- **tier-1 真实 apply 生命周期探测**(以场景为单位):以不同 persona 参考 `website/docs` 写 HCL,跑
+  init→validate→plan→apply→re-plan→step2→import→destroy,用行为差异(validate/plan/apply 失败、永久 diff、
+  意外重建、import 断链、destroy 残留)暴露 provider 潜在 bug。默认开启,region 默认 focus=eu-central-1。
 
 ```
-probe 发现 → 建单(tf_provider 528766) → aone-triage 认领 → 修复 → 发布 → 场景回归复跑 → 闭环
+probe 发现(tier-0 doc gap / tier-1 生命周期 bug) → 建单(tf_provider 528766) → aone-triage 认领 → 修复 → 发布 → 复跑回归 → 闭环
 ```
 
 ## 五层防线中的定位
@@ -35,23 +39,25 @@ probe 发现 → 建单(tf_provider 528766) → aone-triage 认领 → 修复 �
 
 | 组件 | 路径 | 职责 |
 |------|------|------|
-| 配置 | `config/probe.json` | provider/tf 版本、tier 开关、tier1_allowlist、limits、ticket、paths |
-| runner | `bootstrap/probe.sh` | doctor / list / run / sweep;分层执行 + findings/env 分流 + verdict 落盘 |
-| 场景语料库 | `probes/scenarios/<id>/` | scenario.yaml + main.tf + checks.md (+ step2/) |
-| 技能 | `.claude/skills/tf-customer-probe/` | 单场景全流程 + severity/ticket/authoring references |
-| 循环 | `loops/tf-probe.md` | 触发→预检→选场景→执行→分流→清理→Done runbook |
-| 审计 | `runs/probe/<日期>-<id>.{json,md}` | verdict 落盘（本地缓存,真源在 Aone） |
-| draft 队列 | `escalation/probe-drafts/` | P0 工单草稿（未跟踪文件 = 待审信号） |
+| 配置 | `config/probe.json` | provider/tf 版本、regions(focus/matrix)、tiers(tier1.enabled/prepaid_guard)、limits、ticket、paths |
+| runner | `bootstrap/probe.sh` | doctor / list / **tier0** / run / sweep;分层执行 + findings/env 分流 + verdict 落盘 |
+| 场景语料库 | `probes/scenarios/<id>/` | scenario.yaml(无 tier 键) + main.tf + checks.md (+ step2/) |
+| tier-0 fixture | `test/fixtures/probe/` | 手造迷你 doc + go,供解析器 hermetic 单测(五类 gap) |
+| 技能 | `.claude/skills/tf-customer-probe/` | 全流程 + severity/ticket/authoring references |
+| 循环 | `loops/tf-probe.md` | 触发→预检→tier0→tier1→分流→清理→Done runbook |
+| 审计 | `runs/probe/<日期>-<id>.{json,md}` + `<日期>-tier0.{json,md}` | verdict 落盘(本地缓存,真源在 Aone) |
+| draft 队列 | `escalation/probe-drafts/` | 工单草稿(未跟踪文件 = 待审信号) |
 
-## tier 分层与当前开关
+## tier 分层与当前开关(2026-07-03 重定义)
 
-| tier | 动作 | 成本 | 当前 |
+| tier | 动作 | 单位 | 当前 |
 |------|------|------|------|
-| tier-0 | init / validate / plan | 零资源创建 | **默认开** |
-| tier-1 | apply / re-plan / import / destroy（免费 allowlist 资源） | 免费资源 | **骨架就绪，默认关**（`tiers.tier1_enabled=false`） |
-| tier-2 | 付费资源 | 计费 | **永不**（P0 硬封顶，绝不放行） |
+| tier-0 | 静态三方一致性扫描(TF 文档 ↔ OpenAPI 文档 ↔ 源码,只测已接入面) | 资源 | **默认可跑**(需本地 provider 仓) |
+| tier-1 | 真实 apply 全生命周期(init→…→destroy) | 场景 | **默认开**(`tiers.tier1.enabled=true`) |
 
-有效 tier = min(场景声明, `--tier` 请求, 配置允许最高)。`tier1_enabled=false` 时一律降级 tier-0 并记 `tier_downgraded`。
+- tier-1 关掉(`enabled=false`)→ **封顶 plan-only**(init/validate/plan,不 apply,记 `tier1_disabled_plan_only`),非「降级 tier-0」。
+- **成本白名单(tier1_allowlist)已撤销**——测试账号付费不设限;换 **prepaid 销毁性守门**:命中 PrePaid/Subscription 默认阻断(`prepaid_block`)。
+- region:默认 `regions.focus`(eu-central-1,重点方向),`--region` 可切,`regions.matrix` 为未来矩阵候选。
 
 ## 危害分级 → 优先级映射
 
@@ -60,39 +66,49 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
 
 ## 护栏
 
-- **成本**：只 `cost: free` 资源；tier-1 双门（config 开关 + allowlist 硬门）；强制 `destroy`（trap EXIT 兜底）；
-  `sweep` 残留核查；**残留即停并升级**。
-- **工单**：draft 冷启动（P0 不写 Aone）；建单前去重（a1 标签 + GitHub issue 只读）；日上限
-  `daily_new_tickets`（默认 3）；统一 `jarvis-probe` 标签。
-- **身份**：a1 一律 jarvis（`bin/a1id`）；probe 会话不 claim 工单。
-- **凭证**：AK/SK 绝不落日志 / verdict / draft / 工单；doctor 只报 set/unset。
-- **红线**：绝不碰生产存量资源；state 隔离在 `.my-day/probe/<ts>-<id>/`；只 destroy 本 run 自建 state 内的资源。
+- **销毁性(替代成本门)**：**prepaid 守门**——apply 前扫 plan 的 `*charge_type`/`*payment_type`,命中
+  PrePaid/Subscription 默认阻断(包年包月多数无法 API 销毁,破坏零残留);场景 `allow_prepaid:true` 或
+  `prepaid_guard=false` 豁免。强制 `destroy`(trap EXIT 兜底);`sweep` 残留核查;**残留即停并升级**。
+- **工单**：draft 冷启动(当前不写 Aone);建单前去重(a1 标签 + GitHub issue 只读);日上限
+  `daily_new_tickets`(默认 3);统一 `jarvis-probe` 标签。
+- **身份/账号**：a1 一律 jarvis(`bin/a1id`);probe 会话不 claim 工单;**只用环境注入的测试 AK/SK,绝不用生产账号**。
+- **凭证**：AK/SK 绝不落日志 / verdict / draft / 工单;doctor 只报 set/unset。
+- **tier-0 范围红线**:只核对已接入 TF 的面;未接入的资源/参数不报 gap(需求非 bug,走 tf_customer 需求路径)。
+- **红线**：绝不碰生产存量资源;state 隔离在 `.my-day/probe/<ts>-<id>/`;只 destroy 本 run 自建 state 内的资源。
 
 ## 路线图
 
-- **P0（本 MR）**：骨架 + 5 免费场景 + draft 模式 + tier-0 默认（tier-1 骨架就绪默认关）。
-- **P1**：主人授权后开 tier-1；terraform 二进制入 `bootstrap/install.sh` 依赖；工单回灌机制落地；
-  `sweep` 接 aliyun CLI 按标签扫真实孤儿资源；自动建单毕业条件（累计 ≥10 draft 且采纳率 ≥90% 后
-  `ticket.mode` 切 `file`）；a1 建单命令与优先级枚举固化。
-- **P2**：cron/bridge 定时接入；场景库批量扩容（website docs 全量生成 tier-0 语料）；发布前 RC 门禁
-  （接 terraform-changelog 发版流程，发版前全场景过一遍）；upgrader persona（provider 版本升级 state 兼容探测）。
-- **P3**：cloudspec/OpenAPI 覆盖矩阵驱动属性组合生成（优先探从未被示例覆盖的属性）；真实架构级组合场景；
-  度量看板（发现数/采纳率/发现→修复周期，接 board.sh）。
+- **P0（本 MR）**：骨架 + 5 场景 + draft 模式 + tier-0 静态扫描(文档↔源码机械 diff)+ tier-1 默认真实 apply。
+- **P1**：**tier-0 OpenAPI 侧机械化**(接 cloudspec/镇元 spec 自动 diff,让 `judgment_queue` 从人判走向机判);
+  **源码 schema 嵌套深层解析**(当前只顶层,深挖 Elem 内层字段);terraform 二进制入 `bootstrap/install.sh` 依赖;
+  工单回灌机制落地;`sweep` 接 aliyun CLI 按标签扫真实孤儿资源;自动建单毕业条件(累计 ≥10 draft 且采纳率 ≥90% 后
+  `ticket.mode` 切 `file`);a1 建单命令与优先级枚举固化。
+- **P2**：cron/bridge 定时接入;场景库批量扩容(website docs 全量 tier-0 覆盖);发布前 RC 门禁
+  (接 terraform-changelog 发版流程,发版前全资源 tier-0 + 全场景 tier-1 过一遍);upgrader persona(版本升级 state 兼容探测)。
+- **P3**：cloudspec/OpenAPI 覆盖矩阵驱动属性组合生成(优先探从未被示例覆盖的属性);真实架构级组合场景;
+  度量看板(发现数/采纳率/发现→修复周期,接 board.sh)。
 
 ## 置信度
 
-- **high**：全部组件本轮 hermetic 测试覆盖（`test/probe_test.sh`：config 键、场景键齐全、tier-1 resources ⊆
-  allowlist、pin 版本、list、`--dry` 降级、allowlist 拒绝、doctor 缺 terraform、sweep 残留）。
-- **待验**：tier-1 真实执行路径（apply/import/destroy）待真实凭证 + `tier1_enabled=true` 环境验证；本机当前
-  为 tier-0/dry 覆盖。
+- **high**：机械组件本轮 hermetic 测试覆盖(`test/probe_test.sh` 154 断言):新 config schema、场景键齐全且无 tier 键、
+  pin 版本、list、run `--dry`、`tier1.enabled=false → plan-only` 封顶、region 解析优先级、prepaid 守门(阻断/放行/豁免)、
+  **tier-0 解析器五类 gap 全抓 + 嵌套字段不误报**(fixture)、doctor 缺 terraform、sweep 残留。tier-0 亦对真实 provider 仓
+  试扫验证(alicloud_vpc 等)。
+- **待验**：tier-1 真实执行路径(apply/import/destroy)待真实测试账号凭证环境端到端验证;tier-0 OpenAPI 侧判定当前靠 skill 层人判(P1 机械化)。
 
-## 决策记录（2026-07-02）
+## 决策记录
 
-三项默认值（供仓库主人追认）：
-1. **范围**：P0 全套骨架（config + runner + 5 场景 + skill + loop + cap + test），不只做最小 PoC。
-2. **云资源**：只到 tier-0（免 apply）为止；tier-1 骨架完整但默认关，等主人授权再开。
-3. **本轮不写 Aone**：工单走 draft 落 `escalation/probe-drafts/`；本能力的**建设单**与 MR 待主人追认，
-   建设单目标池 api_toolkit（2100304）。
+### 2026-07-02（P0 初版）
+1. **范围**：P0 全套骨架(config + runner + 5 场景 + skill + loop + cap + test)。
+2. **云资源**：初版 tier-1 骨架完整但默认关。
+3. **不写 Aone**：工单走 draft;建设单目标池 api_toolkit(2100304)。
+
+### 2026-07-03（仓库主人分层重定义指令）
+1. **tier-0 重定义**：从「init/validate/plan」改为**静态三方一致性扫描**(TF 文档 ↔ OpenAPI 文档 ↔ 源码),
+   机械只做本地 文档↔源码 diff,OpenAPI 侧留 `judgment_queue`;**范围红线=只测已接入 TF 的面**。
+2. **tier-1 重定义**：**必须真实 apply,默认开启**(不再「骨架就绪默认关」,授权已给);region 多选、eu-central-1 重点。
+3. **成本门撤销**：测试账号费用不设限,删 `tier1_allowlist`;保留 **prepaid 销毁性守门**(PrePaid/Subscription 阻断)。
+   建设单与 MR 仍待主人追认(目标池 api_toolkit 2100304)。
 
 ## 关联
 

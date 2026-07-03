@@ -1,19 +1,15 @@
 {
   "provider": { "source": "aliyun/alicloud", "version": "1.284.0" },
   "terraform": { "required_version": ">= 1.5.0" },
-  "region_fallback": "cn-hangzhou",
+  "regions": {
+    "focus": "eu-central-1",
+    "matrix": ["eu-central-1", "cn-hangzhou", "cn-beijing", "ap-southeast-1"]
+  },
   "name_prefix": "jvp",
-  "tiers": { "tier1_enabled": false, "tier2_enabled": false },
-  "tier1_allowlist": [
-    "alicloud_vpc",
-    "alicloud_vswitch",
-    "alicloud_security_group",
-    "alicloud_security_group_rule",
-    "alicloud_ram_role",
-    "alicloud_ram_policy",
-    "alicloud_ram_role_policy_attachment",
-    "alicloud_oss_bucket"
-  ],
+  "tiers": {
+    "tier0": { "desc": "静态三方一致性扫描: TF文档↔OpenAPI文档↔provider源码, 只测TF已支持面" },
+    "tier1": { "enabled": true, "prepaid_guard": true, "desc": "真实 apply 全生命周期探测" }
+  },
   "limits": { "max_scenarios_per_run": 3, "step_timeout_min": 20, "daily_new_tickets": 3 },
   "ticket": {
     "mode": "draft",

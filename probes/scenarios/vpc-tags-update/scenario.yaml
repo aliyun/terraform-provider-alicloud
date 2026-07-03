@@ -1,7 +1,6 @@
 id: vpc-tags-update
 title: VPC 标签+名称更新(客户改配置后重跑)
 persona: updater
-tier: 1
 products: VPC
 resources: alicloud_vpc
 cost: free

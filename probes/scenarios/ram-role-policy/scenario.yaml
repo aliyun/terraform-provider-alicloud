@@ -1,7 +1,6 @@
 id: ram-role-policy
 title: RAM 角色+自定义策略+附加(全局资源,region 无关)
 persona: composer
-tier: 1
 products: RAM
 resources: alicloud_ram_role,alicloud_ram_policy,alicloud_ram_role_policy_attachment
 cost: free

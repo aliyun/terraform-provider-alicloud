@@ -1,30 +1,32 @@
 #!/usr/bin/env bash
 # bootstrap/probe.sh — tf-customer-probe 分层探测 runner
 #
-# 像真实客户一样,参考 provider website/docs 写 HCL、跑 terraform 生命周期,
-# 主动发现 terraform-provider-alicloud 潜在且未暴露的问题。
+# 分层(2026-07-03 重定义):
+#   tier-0 = 静态三方一致性扫描(TF 文档 ↔ OpenAPI 文档 ↔ provider 源码),不跑 terraform。
+#            机械部分只做本地 文档↔源码 diff;OpenAPI 一侧留 judgment_queue 交给 skill 层查证。
+#            范围红线:只测 provider 已接入(TF 已支持)的面,云产品未接入 TF 的资源/参数一律不报 gap。
+#   tier-1 = 真实 apply 全生命周期探测(默认开启)。撤销免费白名单成本门,换 PrePaid/Subscription 销毁性守门。
 #
 # 子命令:
-#   doctor                 — 环境预检(terraform/jq/凭证 set-unset/config 可解析);缺 terraform 退非零
-#   list                   — 扫 probes/scenarios/*/scenario.yaml 输出表格
-#   run <id> [opts]        — 核心:分层跑一个场景,落 verdict.json + runs/probe 审计
-#     --tier N   请求 tier(默认取场景声明 tier,再被配置开关封顶)
-#     --dry      只解析+打印步骤计划,不需 terraform 二进制(测试主路径)
-#     --keep     tier-1 跑完不 destroy(留资源人工排查;慎用)
-#   sweep                  — 扫 .my-day/probe/*/terraform.tfstate 报告残留 state
+#   doctor                          — 环境预检(terraform/jq/凭证/config/本地 provider 仓)
+#   list                            — 扫 probes/scenarios/*/scenario.yaml 输出表格
+#   tier0 [alicloud_xxx ...] [--dry] — 静态三方一致性扫描(默认扫全部场景 resources 并集)
+#   run <scenario-id> [--region r] [--dry] [--keep] — tier-1 真实 apply 生命周期探测
+#   sweep                           — 扫 .my-day/probe/*/terraform.tfstate 报告残留 state
 #
-# 退出码约定(run):0=无 findings;1=有 findings;2=runner 自身错误/env 阻断;3=清理失败(最高优先级人工介入)。
+# 退出码(run/tier0):0=无 findings;1=有 findings;2=runner 自身错误/env 阻断;3=清理失败(run 专属,最高优先级人工介入)。
 #
-# 分流纪律(建单准确率命门):findings=provider 疑似 bug;env_issues=环境问题(凭证/网络/allowlist/降级)。
-#   鉴权/网络类错误永远归 env_issues,绝不进 findings。凭证值绝不落日志/verdict。
+# 分流纪律(建单准确率命门):findings=provider 疑似 bug;env_issues=环境问题(凭证/网络/prepaid/plan-only)。
+#   鉴权/网络类错误永远归 env_issues,绝不进 findings。凭证值绝不落日志/verdict。测试账号边界:只用环境注入的测试 AK/SK。
 #
 # 环境变量(多数仅测试用):
-#   JARVIS_ROOT           — repo root(见 lib.sh)
-#   PROBE_CONFIG          — config/probe.json 路径(默认 <root>/config/probe.json)
-#   PROBE_SCENARIOS_DIR   — 场景目录(默认 <root>/probes/scenarios)
-#   PROBE_WORKDIR         — 工作/state 目录(默认 <root>/.my-day/probe)
-#   PROBE_AUDIT_DIR       — 审计落盘目录(默认 <root>/runs/probe)
-#   ALICLOUD_REGION       — 运行 region(缺省用 config.region_fallback)
+#   JARVIS_ROOT              — repo root(见 lib.sh)
+#   PROBE_CONFIG             — config/probe.json 路径(默认 <root>/config/probe.json)
+#   PROBE_SCENARIOS_DIR      — 场景目录(默认 <root>/probes/scenarios)
+#   PROBE_WORKDIR            — 工作/state 目录(默认 <root>/.my-day/probe)
+#   PROBE_AUDIT_DIR          — 审计落盘目录(默认 <root>/runs/probe)
+#   JARVIS_PROBE_PROVIDER_DIR — 本地 provider 仓(默认 bootstrap/workspace.sh dir terraform_provider)
+#   ALICLOUD_REGION          — region 兜底(优先级最低)
 #
 # 被 source 时不执行 main(便于单测内部函数)。
 set -uo pipefail
@@ -43,7 +45,21 @@ probe_audit_dir()     { echo "${PROBE_AUDIT_DIR:-$(probe_root)/runs/probe}"; }
 # cfg <jq-filter> — 读一个 config 值(-r 原始输出)
 cfg() { jq -r "$1" "$(probe_config)" 2>/dev/null; }
 
-probe_region() { echo "${ALICLOUD_REGION:-$(cfg '.region_fallback')}"; }
+# provider 仓路径:env 覆盖 > workspace.sh 解析
+probe_provider_dir() {
+    if [ -n "${JARVIS_PROBE_PROVIDER_DIR:-}" ]; then echo "$JARVIS_PROBE_PROVIDER_DIR"; return; fi
+    bash "$_probe_dir/workspace.sh" dir terraform_provider 2>/dev/null
+}
+
+# region 解析优先级:--region > scenario.yaml region > config regions.focus > 环境 ALICLOUD_REGION
+_resolve_region() { # cli_region scenario_region
+    local cli="$1" scn="$2" focus
+    [ -n "$cli" ] && { echo "$cli"; return; }
+    [ -n "$scn" ] && { echo "$scn"; return; }
+    focus="$(cfg '.regions.focus')"
+    [ -n "$focus" ] && [ "$focus" != "null" ] && { echo "$focus"; return; }
+    echo "${ALICLOUD_REGION:-}"
+}
 
 # ── scenario.yaml 扁平解析(grep/sed,不引入 python/yq) ───────────────
 # _yaml_get <file> <key> — 打印标量值(去首尾空白);缺失打印空串
@@ -57,28 +73,28 @@ _have_terraform() { command -v terraform >/dev/null 2>&1; }
 # 只判断凭证是否 set,绝不读/打印其值
 _have_creds() { [ -n "${ALICLOUD_ACCESS_KEY:-}" ] && [ -n "${ALICLOUD_SECRET_KEY:-}" ]; }
 
-# ── allowlist 硬门 ──────────────────────────────────────────────────
-# _plan_resource_types <plan.json> — 从 `terraform show -json` plan 抽 managed 资源类型
-#   只取 mode==managed(排除 data 源,data 源不创建云资源,不该被 allowlist 拦)。
-_plan_resource_types() {
-    jq -r '[.resource_changes[]? | select(.mode=="managed") | .type] | unique | .[]' "$1" 2>/dev/null
-}
-
-# _allowlist_check <plan.json> — 全部 managed 资源类型 ⊆ tier1_allowlist 则退 0;否则退 1 并 stderr 列出越界项
-_allowlist_check() {
-    local plan_json="$1" allow t offenders=()
-    allow="$(cfg '.tier1_allowlist[]')"
-    while IFS= read -r t; do
-        [ -z "$t" ] && continue
-        if ! grep -qxF "$t" <<<"$allow"; then
-            offenders+=("$t")
-        fi
-    done < <(_plan_resource_types "$plan_json")
-    if [ "${#offenders[@]}" -gt 0 ]; then
-        echo "allowlist_block: 越界资源 ${offenders[*]}" >&2
-        return 1
-    fi
+# ── prepaid 守门(替代原免费 allowlist 成本门) ──────────────────────
+# 原因不是钱(测试账号)——是包年包月/订阅资源多数无法 API 销毁,会破坏「零残留」纪律。
+# _prepaid_check <plan.json> — 扫 planned after 值里 *charge_type/*payment_type 字段;0=干净,1=发现 PrePaid/Subscription
+_prepaid_check() {
+    local v
+    while IFS= read -r v; do
+        [ -z "$v" ] && continue
+        case "$(printf '%s' "$v" | tr '[:upper:]' '[:lower:]')" in
+            prepaid|subscription) return 1 ;;
+        esac
+    done < <(jq -r '[ .resource_changes[]?.change.after? // {}
+                      | to_entries[]?
+                      | select(.key|test("(?i)(instance_charge_type|payment_type|charge_type)$"))
+                      | .value | select(type=="string") ] | .[]' "$1" 2>/dev/null)
     return 0
+}
+# _prepaid_should_block <plan.json> <allow_prepaid> — 0=应阻断,1=放行
+#   守门关(config prepaid_guard!=true)或场景 allow_prepaid=true → 放行;否则发现 prepaid → 阻断。
+_prepaid_should_block() {
+    [ "$(cfg '.tiers.tier1.prepaid_guard')" = "true" ] || return 1
+    [ "$2" = "true" ] && return 1
+    if _prepaid_check "$1"; then return 1; else return 0; fi
 }
 
 # ── 超时兜底 ────────────────────────────────────────────────────────
@@ -99,13 +115,6 @@ _with_timeout() {
     fi
 }
 
-# ── tier 判定 ───────────────────────────────────────────────────────
-# 配置允许的最高 tier:tier1_enabled=true → 1;否则 0。P0 绝不放行 tier-2(硬封顶)。
-_config_max_tier() {
-    [ "$(cfg '.tiers.tier1_enabled')" = "true" ] && echo 1 || echo 0
-}
-_min() { [ "$1" -le "$2" ] && echo "$1" || echo "$2"; }
-
 # ── verdict 累加器(jsonl → 末尾 slurp 成数组) ──────────────────────
 _emit_step() { # name exit dur log
     jq -nc --arg name "$1" --argjson exit "$2" --argjson dur "$3" --arg log "$4" \
@@ -120,6 +129,11 @@ _emit_env() { # code detail
     jq -nc --arg code "$1" --arg detail "$2" '{code:$code, detail:$detail}' >> "$ENV_FILE"
     echo "ENV_ISSUE $1: $2" >&2
 }
+
+# 日志关键词分类(鉴权/网络永远归 env,不进 findings)
+_is_auth_error()    { grep -qiE 'InvalidAccessKeyId|SignatureDoesNotMatch|Forbidden|NoPermission|InvalidSecurityToken|Unauthorized' "$1" 2>/dev/null; }
+_is_network_error() { grep -qiE 'registry\.terraform\.io|dial tcp|no such host|i/o timeout|connection refused|TLS handshake|could not (download|query|retrieve)' "$1" 2>/dev/null; }
+_has_panic()        { grep -qiE 'panic:|goroutine [0-9]+ \[running\]|runtime error' "$1" 2>/dev/null; }
 
 # ── 单步执行(在 PRUN_WD 内跑命令,输出 append 到 step 日志,回填全局 STEP_RC/STEP_DURATION) ──
 # 注意:cd 只包住命令本身的子 shell,STEP_RC=$? 在函数作用域赋值,能传回调用方(全局变量)。
@@ -137,15 +151,10 @@ _run_step() { # name logfile -- cmd...
     return "$STEP_RC"
 }
 
-# 日志关键词分类(鉴权/网络永远归 env,不进 findings)
-_is_auth_error()    { grep -qiE 'InvalidAccessKeyId|SignatureDoesNotMatch|Forbidden|NoPermission|InvalidSecurityToken|Unauthorized' "$1" 2>/dev/null; }
-_is_network_error() { grep -qiE 'registry\.terraform\.io|dial tcp|no such host|i/o timeout|connection refused|TLS handshake|could not (download|query|retrieve)' "$1" 2>/dev/null; }
-_has_panic()        { grep -qiE 'panic:|goroutine [0-9]+ \[running\]|runtime error' "$1" 2>/dev/null; }
-
 # ── doctor ──────────────────────────────────────────────────────────
 _report_env_flag() { # NAME
     local name="$1"
-    if [ -n "${!name:-}" ]; then echo "OK   $name: set"; else echo "WARN $name: unset (tier-0 可跑,tier-1 需要)"; fi
+    if [ -n "${!name:-}" ]; then echo "OK   $name: set"; else echo "WARN $name: unset (tier-1 apply 需要)"; fi
 }
 _cmd_doctor() {
     local rc=0
@@ -164,6 +173,13 @@ _cmd_doctor() {
         echo "MISS config: $(probe_config) 不可解析"
         rc=1
     fi
+    # 本地 provider 仓(tier-0 静态扫描依赖;缺失只 WARN,不阻断——tier-1 不需要)
+    local pdir; pdir="$(probe_provider_dir)"
+    if [ -n "$pdir" ] && [ -d "$pdir/website/docs/r" ] && [ -d "$pdir/alicloud" ]; then
+        echo "OK   provider 仓: $pdir (website/docs + alicloud 齐备)"
+    else
+        echo "WARN provider 仓不可解析或缺 website/docs(tier-0 静态扫描不可用): ${pdir:-未解析}"
+    fi
     return "$rc"
 }
 
@@ -171,29 +187,288 @@ _cmd_doctor() {
 _cmd_list() {
     local sdir d y
     sdir="$(probe_scenarios_dir)"
-    printf '%-18s %-4s %-9s %-70s %s\n' ID TIER PERSONA RESOURCES DETECT
+    printf '%-18s %-9s %-70s %s\n' ID PERSONA RESOURCES DETECT
     shopt -s nullglob
     for d in "$sdir"/*/; do
         y="$d/scenario.yaml"
         [ -f "$y" ] || continue
-        printf '%-18s %-4s %-9s %-70s %s\n' \
+        printf '%-18s %-9s %-70s %s\n' \
             "$(_yaml_get "$y" id)" \
-            "$(_yaml_get "$y" tier)" \
             "$(_yaml_get "$y" persona)" \
             "$(_yaml_get "$y" resources)" \
             "$(_yaml_get "$y" detect)"
     done
 }
 
-# ── run:全局运行态(供 cleanup/finalize 在 trap 后仍可见) ───────────
-PRUN_SID=""; PRUN_WD=""; PRUN_RUN_ID=""
-PRUN_TIER_REQ=0; PRUN_TIER_EFF=0
+# ════════════════════════════════════════════════════════════════════
+# tier0 — 静态三方一致性扫描(文档 ↔ 源码机械 diff + OpenAPI judgment_queue)
+# ════════════════════════════════════════════════════════════════════
+
+# _parse_doc_args <docfile> — 从 ## Argument Reference 抽顶层参数(到首个 ## / ### 子节为止)
+#   输出 TSV: name<TAB>req(Required|Optional|?)<TAB>forcenew(0|1)<TAB>deprecated(0|1)
+_parse_doc_args() {
+    awk '
+    /^## Argument Reference/ { inarg=1; inattr=0; next }
+    /^## Attributes? Reference/ { inarg=0; inattr=1; next }
+    (inarg || inattr) && /^###? / { inarg=0; inattr=0; next }
+    inarg && /^\* `/ {
+        line=$0
+        name=line; sub(/^\* `/,"",name); sub(/`.*/,"",name)
+        flags=""
+        if (match(line, /\([^)]*\)/)) flags=substr(line, RSTART+1, RLENGTH-2)
+        req = (flags ~ /Required/) ? "Required" : ((flags ~ /Optional/) ? "Optional" : "?")
+        fn  = (flags ~ /ForceNew/) ? 1 : 0
+        dep = (flags ~ /Deprecated/) ? 1 : 0
+        print name "\t" req "\t" fn "\t" dep
+    }' "$1" 2>/dev/null
+}
+
+# _parse_doc_attrs <docfile> — 从 ## Attribute(s) Reference 抽导出属性名(每行一个)
+_parse_doc_attrs() {
+    awk '
+    /^## Argument Reference/ { inarg=1; inattr=0; next }
+    /^## Attributes? Reference/ { inarg=0; inattr=1; next }
+    (inarg || inattr) && /^###? / { inarg=0; inattr=0; next }
+    inattr && /^\* `/ {
+        name=$0; sub(/^\* `/,"",name); sub(/`.*/,"",name); print name
+    }' "$1" 2>/dev/null
+}
+
+# _parse_source_schema <srcfile> — 抽顶层 Schema 键 + 标志(按大括号深度追踪,只顶层)
+#   局限(P0):嵌套 Elem 内层字段跳过;首个 map[string]*schema.Schema{} 视为资源顶层 schema。P1 再深挖。
+#   输出 TSV: name<TAB>optional(0|1)<TAB>required(0|1)<TAB>forcenew(0|1)<TAB>computed(0|1)<TAB>deprecated(0|1)
+_parse_source_schema() {
+    awk '
+    function pf(k, line) {
+        if (line ~ /Optional:[ \t]*true/)   opt[k]=1
+        if (line ~ /Required:[ \t]*true/)   reqd[k]=1
+        if (line ~ /ForceNew:[ \t]*true/)   fn[k]=1
+        if (line ~ /Computed:[ \t]*true/)   comp[k]=1
+        if (line ~ /Deprecated:/)           dep[k]=1
+    }
+    {
+        # 在副本上数括号,$0 不动(避免影响后续匹配)
+        t=$0; o=gsub(/\{/,"\\&",t); t=$0; c=gsub(/\}/,"\\&",t)
+        if (!inschema) {
+            if ($0 ~ /map\[string\]\*schema\.Schema\{/) { inschema=1; depth=o-c; base=depth }
+            next
+        }
+        sd = depth
+        if (sd == base && $0 ~ /^[ \t]*"[^"]+"[ \t]*:/) {
+            name=$0; sub(/^[ \t]*"/,"",name); sub(/".*/,"",name)
+            curkey=name
+            if (!(name in seen)) { order[++n]=name; seen[name]=1 }
+            pf(name, $0)
+        } else if (curkey != "" && sd == base+1) {
+            pf(curkey, $0)
+        }
+        depth = sd + o - c
+        if (depth < base) inschema=0
+    }
+    END {
+        for (i=1;i<=n;i++){ k=order[i]
+            printf "%s\t%d\t%d\t%d\t%d\t%d\n", k, opt[k]+0, reqd[k]+0, fn[k]+0, comp[k]+0, dep[k]+0 }
+    }' "$1" 2>/dev/null
+}
+
+# _count_lines <file> — 非空行数(grep -c 在 0 匹配时退非零,单独封装避免 || echo 0 双打印)
+_count_lines() { local n; n=$(grep -c . "$1" 2>/dev/null); echo "${n:-0}"; }
+
+# _source_api_actions <srcfile> — best-effort 抽 source 里实际调用的 API action 名
+_source_api_actions() {
+    grep -oE 'action[[:space:]]*:?=[[:space:]]*"[A-Za-z0-9]+"' "$1" 2>/dev/null \
+        | grep -oE '"[A-Za-z0-9]+"' | tr -d '"' | sort -u
+}
+
+# _tier0_diff <docargs.tsv> <srckeys.tsv> — 五类 gap → TSV: code<TAB>attr<TAB>severity<TAB>summary(已按 code,attr 排序)
+_tier0_diff() {
+    awk -F'\t' '
+    FNR==NR { darg[$1]=1; dreq[$1]=$2; dfn[$1]=$3; ddep[$1]=$4; next }
+    {
+        sall[$1]=1; sopt[$1]=$2; sreqd[$1]=$3; sfn[$1]=$4; scomp[$1]=$5; sdep[$1]=$6
+        sinput[$1] = ($2==1 || $3==1) ? 1 : 0
+    }
+    END {
+        for (n in darg) if (!(n in sall))
+            print "doc_gap_phantom\t" n "\tS3\t文档有参数但源码 schema 无(文档幻影参数)"
+        for (n in sall) if (sinput[n] && !(n in darg))
+            print "doc_gap_undocumented\t" n "\tS3\t源码有参数但文档未记(未文档化参数)"
+        # flag/forcenew 只查活跃(非废弃)字段——废弃字段的标注差异非可行动噪声
+        for (n in darg) if ((n in sall) && !sdep[n] && !ddep[n]) {
+            sreq = sreqd[n] ? "Required" : (sopt[n] ? "Optional" : "Computed")
+            if (dreq[n] != "?" && sreq != "Computed" && dreq[n] != sreq)
+                print "doc_gap_flag_mismatch\t" n "\tS3\t文档标 " dreq[n] " 但源码标 " sreq
+            if (dfn[n] != sfn[n])
+                print "doc_gap_forcenew\t" n "\tS2\t文档 ForceNew=" dfn[n] " 但源码 ForceNew=" sfn[n] "(可能意外重建)"
+        }
+        for (n in darg) if ((n in sall) && sdep[n] && !ddep[n])
+            print "doc_gap_deprecated\t" n "\tS4\t源码已 Deprecated 但文档仍作正常参数列出(未标注废弃)"
+    }' "$1" "$2" 2>/dev/null | sort
+}
+
+# tier0 findings/judgment 累加器
+_emit_t0finding() { # code resource attribute summary severity
+    jq -nc --arg code "$1" --arg res "$2" --arg attr "$3" --arg summary "$4" --arg sev "$5" \
+        '{code:$code, resource:$res, attribute:$attr, summary:$summary, severity_hint:$sev}' >> "$FINDINGS_FILE"
+    echo "FINDING[$5] $1 $2.$3: $4" >&2
+}
+
+_cmd_tier0() {
+    local dry=0; local reslist=()
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --dry) dry=1; shift ;;
+            -*) echo "tier0: 未知参数 '$1'" >&2; return 2 ;;
+            *) reslist+=("$1"); shift ;;
+        esac
+    done
+
+    local pdir; pdir="$(probe_provider_dir)"
+    if [ -z "$pdir" ] || [ ! -d "$pdir/website/docs/r" ] || [ ! -d "$pdir/alicloud" ]; then
+        echo "tier0: 本地 provider 仓不可用(需 website/docs/r + alicloud): ${pdir:-未解析}" >&2
+        echo "  设 JARVIS_PROBE_PROVIDER_DIR 或 bootstrap/workspace.sh dir terraform_provider 可解析后重试。" >&2
+        return 2
+    fi
+
+    # 无参 → 扫全部场景 resources 并集(去重)
+    if [ "${#reslist[@]}" -eq 0 ]; then
+        local sdir d y r
+        sdir="$(probe_scenarios_dir)"
+        shopt -s nullglob
+        local acc=""
+        for d in "$sdir"/*/; do
+            y="$d/scenario.yaml"; [ -f "$y" ] || continue
+            acc="$acc,$(_yaml_get "$y" resources)"
+        done
+        while IFS= read -r r; do [ -n "$r" ] && reslist+=("$r"); done \
+            < <(printf '%s' "$acc" | tr ',' '\n' | sed 's/[[:space:]]//g' | grep . | sort -u)
+    fi
+    [ "${#reslist[@]}" -gt 0 ] || { echo "tier0: 无资源可扫(场景 resources 为空且未传参)" >&2; return 2; }
+
+    if [ "$dry" -eq 1 ]; then
+        echo "tier0 plan: provider_dir=$pdir"
+        echo "  将扫描资源(文档↔源码机械 diff + OpenAPI judgment_queue):"
+        local res name docf srcf
+        for res in "${reslist[@]}"; do
+            name="${res#alicloud_}"
+            docf="$pdir/website/docs/r/${name}.html.markdown"
+            srcf="$pdir/alicloud/resource_${res}.go"
+            echo "    - $res  doc:$([ -f "$docf" ] && echo ok || echo MISSING)  src:$([ -f "$srcf" ] && echo ok || echo MISSING)"
+        done
+        echo "  范围红线:只核对已接入 TF 的面;未接入资源/参数不报 gap。"
+        return 0
+    fi
+
+    # 累加器
+    local tmp; tmp="$(mktemp -d)"
+    STEPS_FILE="$tmp/.steps.jsonl";       : > "$STEPS_FILE"
+    FINDINGS_FILE="$tmp/.findings.jsonl"; : > "$FINDINGS_FILE"
+    local JQUEUE_FILE="$tmp/.judgment.jsonl"; : > "$JQUEUE_FILE"
+
+    local start_epoch; start_epoch=$(date +%s)
+    local started_at; started_at="$(date -u +%FT%TZ)"
+    local doc_args_total=0 src_keys_total=0 res_ok=0
+
+    local res name docf srcf
+    for res in "${reslist[@]}"; do
+        name="${res#alicloud_}"
+        docf="$pdir/website/docs/r/${name}.html.markdown"
+        srcf="$pdir/alicloud/resource_${res}.go"
+        if [ ! -f "$docf" ] || [ ! -f "$srcf" ]; then
+            # 文档或源码缺失 → 交 judgment(可能是 data 源/命名差异/未接入),不当机械 finding
+            jq -nc --arg res "$res" --argjson actions '[]' \
+                --arg note "文档或源码文件缺失(doc:$([ -f "$docf" ] && echo ok || echo missing) src:$([ -f "$srcf" ] && echo ok || echo missing)),需人工确认资源名映射或是否为 data 源;不当 gap 报。" \
+                '{resource:$res, api_actions:$actions, note:$note}' >> "$JQUEUE_FILE"
+            continue
+        fi
+        _parse_doc_args "$docf" > "$tmp/doc.tsv"
+        _parse_source_schema "$srcf" > "$tmp/src.tsv"
+        local da; da=$(_count_lines "$tmp/doc.tsv")
+        local sk; sk=$(_count_lines "$tmp/src.tsv")
+        doc_args_total=$(( doc_args_total + da )); src_keys_total=$(( src_keys_total + sk )); res_ok=$(( res_ok + 1 ))
+
+        # diff → findings
+        local code attr sev summary
+        while IFS=$'\t' read -r code attr sev summary; do
+            [ -z "$code" ] && continue
+            _emit_t0finding "$code" "$res" "$attr" "$summary" "$sev"
+        done < <(_tier0_diff "$tmp/doc.tsv" "$tmp/src.tsv")
+
+        # judgment_queue：OpenAPI 侧待查证(source 实际 API action + 范围红线)
+        local actions_json
+        actions_json="$(_source_api_actions "$srcf" | jq -R . | jq -s .)"
+        jq -nc --arg res "$res" --argjson actions "$actions_json" \
+            --arg note "对照 OpenAPI 文档核验:上列 API action 的请求/响应参数、枚举值、行为是否与 TF 文档一致。范围红线=只核对已接入的 API/参数面;未接入 TF 的资源/参数不报 gap(那是需求不是 bug)。" \
+            '{resource:$res, api_actions:$actions, note:$note}' >> "$JQUEUE_FILE"
+    done
+
+    # 三个聚合 step
+    _emit_step doc_parse 0 0 "解析 $res_ok 个资源文档,共 $doc_args_total 个 Argument"
+    _emit_step source_parse 0 0 "解析 $res_ok 个资源源码,共 $src_keys_total 个顶层 schema 键"
+    local nf; nf=$(_count_lines "$FINDINGS_FILE")
+    _emit_step diff 0 0 "文档↔源码 diff → $nf findings"
+
+    # verdict
+    local audit; audit="$(probe_audit_dir)"; mkdir -p "$audit"
+    local dur=$(( $(date +%s) - start_epoch ))
+    local reslist_json; reslist_json="$(printf '%s\n' "${reslist[@]}" | jq -R . | jq -s .)"
+    local verdict="$tmp/verdict.json"
+    jq -n \
+        --argjson schema 1 \
+        --arg mode "tier0" \
+        --arg pv "$(cfg '.provider.version')" \
+        --arg pdir "$pdir" \
+        --arg started "$started_at" \
+        --argjson dur "$dur" \
+        --argjson resources "$reslist_json" \
+        --slurpfile steps "$STEPS_FILE" \
+        --slurpfile findings "$FINDINGS_FILE" \
+        --slurpfile judgment "$JQUEUE_FILE" \
+        --argjson stats "$(jq -nc --argjson r "$res_ok" --argjson da "$doc_args_total" --argjson sk "$src_keys_total" --argjson f "$nf" '{resources:$r, doc_args_total:$da, source_keys_total:$sk, findings:$f}')" \
+        '{schema_version:$schema, mode:$mode, provider_version:$pv, provider_dir:$pdir,
+          started_at:$started, duration_s:$dur, resources_scanned:$resources,
+          steps:$steps, findings:$findings, judgment_queue:$judgment, stats:$stats}' \
+        > "$verdict" 2>/dev/null
+
+    local day; day="$(date -u +%Y%m%d)"
+    cp "$verdict" "$audit/${day}-tier0.json" 2>/dev/null
+    _write_tier0_md "$verdict" "$audit/${day}-tier0.md"
+    echo "verdict: $audit/${day}-tier0.json"
+    echo "findings: $nf / resources: $res_ok / judgment_queue: $(_count_lines "$JQUEUE_FILE")"
+
+    rm -rf "$tmp"
+    [ "$nf" -gt 0 ] && return 1 || return 0
+}
+
+_write_tier0_md() { # verdict.json out.md
+    local v="$1" out="$2"
+    {
+        echo "# probe tier-0 三方一致性扫描"
+        echo
+        echo "- provider: $(jq -r '.provider_version' "$v") / dir: $(jq -r '.provider_dir' "$v")"
+        echo "- started: $(jq -r '.started_at' "$v") / duration: $(jq -r '.duration_s' "$v")s"
+        echo "- 扫描资源: $(jq -r '.resources_scanned | join(", ")' "$v")"
+        echo
+        echo "## findings ($(jq '.findings|length' "$v"))"
+        jq -r '.findings[]? | "- [\(.severity_hint)] `\(.code)` \(.resource).\(.attribute): \(.summary)"' "$v"
+        echo
+        echo "## judgment_queue (OpenAPI 侧待 skill 层查证, $(jq '.judgment_queue|length' "$v"))"
+        jq -r '.judgment_queue[]? | "- \(.resource): api_actions=[\(.api_actions|join(","))]\n  \(.note)"' "$v"
+        echo
+        echo "来源:jarvis tf-customer-probe (tier-0)"
+    } > "$out"
+}
+
+# ════════════════════════════════════════════════════════════════════
+# run — tier-1 真实 apply 生命周期探测
+# ════════════════════════════════════════════════════════════════════
+PRUN_SID=""; PRUN_WD=""; PRUN_RUN_ID=""; PRUN_REGION=""
 PRUN_STARTED_AT=""; PRUN_START_EPOCH=0; PRUN_TF_VERSION="unknown"
 PRUN_APPLIED=false; PRUN_KEEP=0; PRUN_DESTROYED=null; PRUN_STATE_EMPTY=null
 PRUN_CLEANED=0
 STEP_RC=0; STEP_DURATION=0
 
-_usage_run() { echo "用法: probe.sh run <scenario-id> [--tier N] [--dry] [--keep]" >&2; }
+_usage_run() { echo "用法: probe.sh run <scenario-id> [--region <r>] [--dry] [--keep]" >&2; }
 
 # findings 计数码:destroy_fail/state_residue → 3;其它 findings → 1;无 → 0
 _verdict_exit() {
@@ -203,7 +478,7 @@ _verdict_exit() {
     if [ -s "$FINDINGS_FILE" ]; then echo 1; else echo 0; fi
 }
 
-# tier-1 清理:只要 apply 执行过就 destroy(除非 --keep);幂等(重入即返回)
+# 清理:只要 apply 执行过就 destroy(除非 --keep);幂等(重入即返回)
 _probe_cleanup() {
     [ "$PRUN_CLEANED" -eq 1 ] && return 0
     PRUN_CLEANED=1
@@ -215,7 +490,7 @@ _probe_cleanup() {
     _run_step destroy "$PRUN_WD/destroy.log" -- terraform destroy -auto-approve -var "run_id=$PRUN_RUN_ID"
     if [ "$STEP_RC" -ne 0 ]; then
         PRUN_DESTROYED=false
-        _emit_finding destroy_fail cleanup "destroy 失败,可能残留计费资源,需人工清理" "$PRUN_WD/destroy.log" S1
+        _emit_finding destroy_fail cleanup "destroy 失败,可能残留资源,需人工清理" "$PRUN_WD/destroy.log" S1
         return 0
     fi
     PRUN_DESTROYED=true
@@ -234,10 +509,10 @@ _probe_cleanup() {
 _probe_on_exit() { _probe_cleanup; }
 
 _cmd_run() {
-    local sid="" tier_req="" dry=0 keep=0
+    local sid="" cli_region="" dry=0 keep=0
     while [ $# -gt 0 ]; do
         case "$1" in
-            --tier) tier_req="${2:-}"; shift 2 ;;
+            --region) cli_region="${2:-}"; shift 2 ;;
             --dry)  dry=1; shift ;;
             --keep) keep=1; shift ;;
             -*) echo "run: 未知参数 '$1'" >&2; _usage_run; return 2 ;;
@@ -254,48 +529,40 @@ _cmd_run() {
         return 2
     fi
 
-    # tier 判定:effective = min(场景 tier, 请求 tier, 配置允许最高 tier)
-    local scenario_tier config_max intent effective downgraded=0
-    scenario_tier="$(_yaml_get "$yaml" tier)"; scenario_tier="${scenario_tier:-0}"
-    [ -n "$tier_req" ] || tier_req="$scenario_tier"
-    config_max="$(_config_max_tier)"
-    intent="$(_min "$scenario_tier" "$tier_req")"
-    effective="$(_min "$intent" "$config_max")"
-    [ "$effective" -lt "$intent" ] && downgraded=1
-
-    local update_step import_check import_address import_id_output
+    local scn_region update_step import_check import_address import_id_output allow_prepaid
+    scn_region="$(_yaml_get "$yaml" region)"
     update_step="$(_yaml_get "$yaml" update_step)"
     import_check="$(_yaml_get "$yaml" import_check)"
     import_address="$(_yaml_get "$yaml" import_address)"
     import_id_output="$(_yaml_get "$yaml" import_id_output)"
+    allow_prepaid="$(_yaml_get "$yaml" allow_prepaid)"
 
+    local region; region="$(_resolve_region "$cli_region" "$scn_region")"
+    local tier1_enabled; tier1_enabled="$(cfg '.tiers.tier1.enabled')"
     local have_creds=0; _have_creds && have_creds=1
 
     # ── --dry:只打印计划,不碰 terraform ──
     if [ "$dry" -eq 1 ]; then
         echo "probe plan: scenario=$sid persona=$(_yaml_get "$yaml" persona)"
-        echo "  tier: scenario=$scenario_tier requested=$tier_req config_max=$config_max → effective=tier-$effective"
-        if [ "$downgraded" -eq 1 ]; then
-            echo "  tier_downgraded: 配置 tiers.tier1_enabled=false,intent=tier-$intent 封顶为 tier-$effective"
-        fi
-        echo "  region: $(probe_region)"
+        echo "  region 解析: --region='${cli_region}' scenario='${scn_region}' focus=$(cfg '.regions.focus') env='${ALICLOUD_REGION:-}' → $region"
+        echo "  tier1.enabled=$tier1_enabled  prepaid_guard=$(cfg '.tiers.tier1.prepaid_guard')  allow_prepaid=${allow_prepaid:-false}"
         echo "  steps:"
         echo "    - init"
         echo "    - validate"
-        if [ "$have_creds" -eq 1 ]; then
-            echo "    - plan -out=tf.plan"
+        if [ "$have_creds" -eq 1 ]; then echo "    - plan -out=tf.plan"; else echo "    - plan: 将跳过(未设置 ALICLOUD 凭证 → env_issue no_creds)"; fi
+        if [ "$tier1_enabled" != "true" ]; then
+            echo "    - (tier1.enabled=false → plan-only 封顶,不 apply;env_issue tier1_disabled_plan_only)"
         else
-            echo "    - plan: 将跳过(未设置 ALICLOUD 凭证 → env_issue no_creds)"
-        fi
-        if [ "$effective" -ge 1 ]; then
-            echo "    - allowlist-gate: plan managed 资源 ⊆ config.tier1_allowlist(越界 → env_issue allowlist_block,终止)"
+            if [ "$allow_prepaid" = "true" ] || [ "$(cfg '.tiers.tier1.prepaid_guard')" != "true" ]; then
+                echo "    - prepaid-gate: 跳过(allow_prepaid 或 prepaid_guard=false)"
+            else
+                echo "    - prepaid-gate: plan 出现 PrePaid/Subscription 计费类型 → env_issue prepaid_block,不 apply(销毁性守门)"
+            fi
             echo "    - apply -auto-approve"
-            echo "    - plan -detailed-exitcode(退2 → finding perpetual_diff)"
+            echo "    - plan -detailed-exitcode(退2 → perpetual_diff)"
             [ "$update_step" = "true" ] && echo "    - step2 覆盖 apply + re-plan(抓 更新不生效)"
-            [ "$import_check" = "true" ] && echo "    - state rm $import_address → import(id 取自 output $import_id_output) → plan(退2 → finding import_diff)"
-            echo "    - destroy -auto-approve + state-empty 校验(--keep 时跳过;destroy 失败/残留 → finding + 退3)"
-        else
-            echo "  (tier-0: 只静态校验,不创建任何云资源)"
+            [ "$import_check" = "true" ] && echo "    - state rm $import_address → import(id 取自 output $import_id_output) → plan(退2 → import_diff)"
+            echo "    - destroy -auto-approve + state-empty 校验(--keep 跳过;destroy 失败/残留 → finding + 退3)"
         fi
         return 0
     fi
@@ -312,33 +579,29 @@ _cmd_run() {
     PRUN_SID="$sid"
     PRUN_WD="$(probe_workdir_base)/${ts}-${sid}"
     PRUN_RUN_ID="$(cfg '.name_prefix')-${sid}-${short}"
-    PRUN_TIER_REQ="$tier_req"
-    PRUN_TIER_EFF="$effective"
+    PRUN_REGION="$region"
     PRUN_KEEP="$keep"
     PRUN_APPLIED=false; PRUN_DESTROYED=null; PRUN_STATE_EMPTY=null; PRUN_CLEANED=0
     mkdir -p "$PRUN_WD"
 
-    # verdict 累加器文件
     STEPS_FILE="$PRUN_WD/.steps.jsonl";      : > "$STEPS_FILE"
     FINDINGS_FILE="$PRUN_WD/.findings.jsonl"; : > "$FINDINGS_FILE"
     ENV_FILE="$PRUN_WD/.env.jsonl";           : > "$ENV_FILE"
 
-    # 拷贝场景 tf(绝不在 probes/ 场景目录里跑 terraform)
     cp "$sdir"/*.tf "$PRUN_WD"/ 2>/dev/null
 
-    # terraform 自动化环境
+    # terraform 自动化环境 + region 注入(场景 tf 不写显式 region,沿用 ALICLOUD_REGION)
     export TF_IN_AUTOMATION=1 TF_INPUT=0 TF_CLI_ARGS=-no-color
+    [ -n "$region" ] && export ALICLOUD_REGION="$region"
     TF_PLUGIN_CACHE_DIR="$(probe_workdir_base)/.plugin-cache"; export TF_PLUGIN_CACHE_DIR
     mkdir -p "$TF_PLUGIN_CACHE_DIR"
-
-    [ "$downgraded" -eq 1 ] && _emit_env tier_downgraded "配置 tier1_enabled=false,intent=tier-$intent 封顶为 tier-$effective"
 
     PRUN_STARTED_AT="$(date -u +%FT%TZ)"; PRUN_START_EPOCH=$(date +%s)
     PRUN_TF_VERSION="$(terraform version 2>/dev/null | head -1)"
 
     trap _probe_on_exit EXIT
 
-    # ── tier-0 链:init → validate → (有凭证)plan ──
+    # init → validate → (有凭证)plan
     _run_step init "$PRUN_WD/init.log" -- terraform init -input=false
     if [ "$STEP_RC" -ne 0 ]; then
         if _is_network_error "$PRUN_WD/init.log"; then
@@ -353,7 +616,7 @@ _cmd_run() {
     [ "$STEP_RC" -ne 0 ] && _emit_finding validate_fail validate "官方文档示例组合 validate 不通过" "$PRUN_WD/validate.log" S3
 
     if [ "$have_creds" -eq 0 ]; then
-        _emit_env no_creds "未设置 ALICLOUD 凭证,跳过 plan/apply(tier-0 静态校验完成)"
+        _emit_env no_creds "未设置 ALICLOUD 凭证,跳过 plan/apply"
         _finalize_verdict; return "$(_verdict_exit)"
     fi
 
@@ -369,15 +632,16 @@ _cmd_run() {
         _finalize_verdict; return "$(_verdict_exit)"
     fi
 
-    # ── tier-0 到此为止 ──
-    if [ "$effective" -lt 1 ]; then
+    # tier1.enabled=false → plan-only 封顶(语义已变:不再叫降级 tier-0)
+    if [ "$tier1_enabled" != "true" ]; then
+        _emit_env tier1_disabled_plan_only "配置 tiers.tier1.enabled=false,封顶 plan-only,不 apply"
         _finalize_verdict; return "$(_verdict_exit)"
     fi
 
-    # ── tier-1 链 ──
+    # prepaid 销毁性守门(替代原免费 allowlist 成本门)
     ( cd "$PRUN_WD" && terraform show -json tf.plan > "$PRUN_WD/plan.json" 2>/dev/null )
-    if ! _allowlist_check "$PRUN_WD/plan.json"; then
-        _emit_env allowlist_block "plan 含 tier1_allowlist 之外的资源,终止(不 apply)"
+    if _prepaid_should_block "$PRUN_WD/plan.json" "$allow_prepaid"; then
+        _emit_env prepaid_block "plan 出现 PrePaid/Subscription 计费类型资源(多数无法 API 销毁,破坏零残留纪律),终止不 apply;场景可声明 allow_prepaid:true 豁免"
         _finalize_verdict; return 2
     fi
 
@@ -449,12 +713,11 @@ _finalize_verdict() {
     local verdict="$PRUN_WD/verdict.json"
     jq -n \
         --argjson schema 1 \
+        --arg mode "tier1" \
         --arg sid "$PRUN_SID" \
-        --argjson treq "$PRUN_TIER_REQ" \
-        --argjson teff "$PRUN_TIER_EFF" \
         --arg pv "$(cfg '.provider.version')" \
         --arg tv "${PRUN_TF_VERSION:-unknown}" \
-        --arg region "$(probe_region)" \
+        --arg region "$PRUN_REGION" \
         --arg started "$PRUN_STARTED_AT" \
         --argjson dur "$dur" \
         --slurpfile steps "$STEPS_FILE" \
@@ -463,7 +726,7 @@ _finalize_verdict() {
         --argjson applied "$PRUN_APPLIED" \
         --argjson destroyed "$PRUN_DESTROYED" \
         --argjson state_empty "$PRUN_STATE_EMPTY" \
-        '{schema_version:$schema, scenario_id:$sid, tier_requested:$treq, tier_effective:$teff,
+        '{schema_version:$schema, mode:$mode, scenario_id:$sid,
           provider_version:$pv, terraform_version:$tv, region:$region,
           started_at:$started, duration_s:$dur,
           steps:$steps, findings:$findings, env_issues:$envs,
@@ -480,10 +743,10 @@ _finalize_verdict() {
 _write_summary_md() { # verdict.json out.md
     local v="$1" out="$2"
     {
-        echo "# probe verdict: $(jq -r '.scenario_id' "$v")"
+        echo "# probe verdict: $(jq -r '.scenario_id' "$v") (tier-1)"
         echo
         echo "- provider: $(jq -r '.provider_version' "$v") / terraform: $(jq -r '.terraform_version' "$v")"
-        echo "- tier: requested=$(jq -r '.tier_requested' "$v") effective=$(jq -r '.tier_effective' "$v") / region: $(jq -r '.region' "$v")"
+        echo "- region: $(jq -r '.region' "$v")"
         echo "- started: $(jq -r '.started_at' "$v") / duration: $(jq -r '.duration_s' "$v")s"
         echo
         echo "## findings ($(jq '.findings|length' "$v"))"
@@ -528,6 +791,7 @@ main() {
     case "$cmd" in
         doctor) _cmd_doctor "$@" ;;
         list)   _cmd_list "$@" ;;
+        tier0)  _cmd_tier0 "$@" ;;
         run)    _cmd_run "$@" ;;
         sweep)  _cmd_sweep "$@" ;;
         -h|--help|"") _usage ;;
