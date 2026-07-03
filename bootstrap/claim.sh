@@ -41,6 +41,18 @@ IDLE_TAG=$(jq -r '.claim.idle_tag' "$pools_cfg")
 DONE_TAG=$(jq -r '.claim.done_tag' "$pools_cfg")
 DONE_STATUS=$(jq -r '.claim.done_status' "$pools_cfg")
 
+# Resolve the done status for a project: a per-pool .done_status (matched by project id)
+# overrides the global .claim.done_status. Different Aone projects have different status
+# enums (e.g. 2100304 only allows 处理中/已完成/已取消, not the global "已发布待需求排期"),
+# so finish must use the target project's own completion status. Echoes "" if neither set.
+_pool_done_status() {
+    local project="$1" ps
+    ps="$(jq -r --arg p "$project" \
+        '(.pools[]? | select((.project|tostring) == $p) | .done_status) // empty' \
+        "$pools_cfg" 2>/dev/null)"
+    if [ -n "$ps" ]; then echo "$ps"; else jq -r '.claim.done_status // empty' "$pools_cfg" 2>/dev/null; fi
+}
+
 cmd="${1:-}"
 workitem_id="${2:-}"
 project_id="${3:-}"
@@ -216,10 +228,24 @@ case "$cmd" in
         ;;
 
     finish)
-        # Tag as done, preserving other tags: existing − {claimed, idle} ∪ {done}；同时改 status
-        _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG" --status "$DONE_STATUS"
+        # Tag as done, preserving other tags: existing − {claimed, idle} ∪ {done}.
+        # Tag FIRST and status SEPARATELY: previously tag+status went in one a1 update, so
+        # an unsupported status (project enum mismatch) failed the whole call and left the
+        # workitem stuck as idle with no done tag. Now the done tag always lands; a rejected
+        # status is a WARN, not fatal.
+        eff_status="$(_pool_done_status "$project_id")"
+        _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG"
         rm -f "$(_claim_prefix_path "$workitem_id")"
-        echo "claim.sh: finished workitem $workitem_id in project $project_id (status=$DONE_STATUS)"
+        if [ -n "$eff_status" ]; then
+            if a1 project workitem update "$workitem_id" --status "$eff_status" >/dev/null 2>&1; then
+                echo "claim.sh: finished workitem $workitem_id in project $project_id (status=$eff_status)"
+            else
+                echo "claim.sh: warning: finished (tagged $DONE_TAG) but status '$eff_status' was rejected for $workitem_id — set a valid status manually or add a per-pool done_status in pools.json" >&2
+                echo "claim.sh: finished workitem $workitem_id in project $project_id (status unchanged)"
+            fi
+        else
+            echo "claim.sh: finished workitem $workitem_id in project $project_id (no done_status configured)"
+        fi
         _ledger_upsert "$workitem_id" true
         exit 0
         ;;

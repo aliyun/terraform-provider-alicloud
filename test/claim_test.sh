@@ -17,7 +17,7 @@ tmplog=$(mktemp)
 tmpstate=$(mktemp)
 tmpcapture=$(mktemp)
 tmpgetcnt=$(mktemp)
-trap 'rm -rf "$tmpbin" "$tmpconfig"; rm -f "$tmplog" "$tmpstate" "$tmpcapture" "$tmpgetcnt"' EXIT
+trap 'rm -rf "$tmpbin" "$tmpconfig"; rm -f "$tmplog" "$tmpstate" "$tmpcapture" "$tmpgetcnt" "${tmpstatuscap:-}"' EXIT
 
 PASS=0
 FAIL=0
@@ -37,6 +37,10 @@ cat > "$tmpconfig/config/pools.json" << 'JSON'
     "done_tag": "jarvis-done",
     "done_status": "已发布待需求排期",
     "ttl_min": 45
+  },
+  "pools": {
+    "with_override": { "project": 2100304, "name": "override pool", "done_status": "已完成" },
+    "no_override":   { "project": 1086837, "name": "plain pool" }
   }
 }
 JSON
@@ -49,6 +53,9 @@ JSON
 #   A1_GETCNT     – counter file for GET_FAIL=first
 #   A1_GET_FAIL   – "all" | "first" | unset
 #   A1_UPDATE_NOOP – "1" → update captures but does NOT persist (lost-race sim)
+#   A1_STATUS_CAPTURE – file to record the --status value of an update (optional)
+#   A1_REJECT_STATUS  – if set and equals the update's --status value, exit 1 (enum mismatch sim)
+# A --tag-less update (e.g. finish's separate --status call) must NOT clobber A1_STATE tags.
 # ---------------------------------------------------------------------------
 cat > "$tmpbin/a1" << 'STUB'
 #!/bin/bash
@@ -64,20 +71,30 @@ if [ "$1 $2 $3" = "project workitem get" ]; then
     exit 0
 fi
 if [ "$1 $2 $3" = "project workitem update" ]; then
-    args=("$@"); tagval=""; i=0
+    args=("$@"); tagval=""; statusval=""; has_tag=""; has_status=""; i=0
     while [ $i -lt ${#args[@]} ]; do
-        if [ "${args[$i]}" = "--tag" ]; then j=$((i + 1)); tagval="${args[$j]}"; fi
+        if [ "${args[$i]}" = "--tag" ]; then j=$((i + 1)); tagval="${args[$j]}"; has_tag=1; fi
+        if [ "${args[$i]}" = "--status" ]; then j=$((i + 1)); statusval="${args[$j]}"; has_status=1; fi
         i=$((i + 1))
     done
-    printf '%s' "$tagval" > "$A1_CAPTURE"
-    if [ -z "${A1_UPDATE_NOOP:-}" ]; then printf '%s' "$tagval" > "$A1_STATE"; fi
+    if [ -n "$has_status" ]; then
+        [ -n "${A1_STATUS_CAPTURE:-}" ] && printf '%s' "$statusval" > "$A1_STATUS_CAPTURE"
+        if [ -n "${A1_REJECT_STATUS:-}" ] && [ "$statusval" = "$A1_REJECT_STATUS" ]; then
+            echo "Error: unsupported target status \"$statusval\"" >&2; exit 1
+        fi
+    fi
+    if [ -n "$has_tag" ]; then
+        printf '%s' "$tagval" > "$A1_CAPTURE"
+        if [ -z "${A1_UPDATE_NOOP:-}" ]; then printf '%s' "$tagval" > "$A1_STATE"; fi
+    fi
     exit 0
 fi
 exit 0
 STUB
 chmod +x "$tmpbin/a1"
 
-export A1_LOG="$tmplog" A1_STATE="$tmpstate" A1_CAPTURE="$tmpcapture" A1_GETCNT="$tmpgetcnt"
+tmpstatuscap=$(mktemp)
+export A1_LOG="$tmplog" A1_STATE="$tmpstate" A1_CAPTURE="$tmpcapture" A1_GETCNT="$tmpgetcnt" A1_STATUS_CAPTURE="$tmpstatuscap"
 
 WORKITEM_ID="9001"
 PROJECT_ID="1086837"
@@ -371,6 +388,43 @@ if [ "$cnt" = "$N" ]; then
 else
     assert_fail "lost update under concurrency: $cnt/$N entries in ledger"
 fi
+
+# ---------------------------------------------------------------------------
+# Test 14: finish uses per-pool done_status override (project 2100304 → 已完成)
+# ---------------------------------------------------------------------------
+echo "=== Test 14: finish uses per-pool done_status override ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 2100304 2>&1); rc=$?
+cap=$(cat "$tmpstatuscap" 2>/dev/null); state=$(cat "$tmpstate" 2>/dev/null)
+echo "rc=$rc status_set='$cap' tags='$state'"
+if [ "$cap" = "已完成" ]; then assert_pass "per-pool: status set to 已完成"; else assert_fail "per-pool status should be 已完成, got '$cap'"; fi
+if printf '%s' "$state" | grep -q "jarvis-done"; then assert_pass "per-pool: tagged jarvis-done"; else assert_fail "per-pool: expected jarvis-done, got '$state'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 15: finish falls back to global done_status when pool has no override
+# ---------------------------------------------------------------------------
+echo "=== Test 15: finish falls back to global done_status ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+unset A1_REJECT_STATUS
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 2>&1); rc=$?
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc status_set='$cap'"
+if [ "$cap" = "已发布待需求排期" ]; then assert_pass "global fallback: status set to 已发布待需求排期"; else assert_fail "global fallback wrong, got '$cap'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 16: rejected status is non-fatal — finish still tags done + exits 0 + warns
+# ---------------------------------------------------------------------------
+echo "=== Test 16: finish resilient to a rejected status ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+export A1_REJECT_STATUS="已发布待需求排期"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 2>&1); rc=$?
+state=$(cat "$tmpstate" 2>/dev/null)
+unset A1_REJECT_STATUS
+echo "rc=$rc tags='$state'"
+if [ "$rc" = "0" ]; then assert_pass "rejected status: finish still exits 0"; else assert_fail "rejected status: exit $rc"; fi
+if printf '%s' "$state" | grep -q "jarvis-done"; then assert_pass "rejected status: still tagged jarvis-done (not stuck idle)"; else assert_fail "rejected status: done tag lost, got '$state'"; fi
+if printf '%s' "$out" | grep -qi "warning"; then assert_pass "rejected status: emits warning"; else assert_fail "rejected status: no warning emitted"; fi
 
 # ---------------------------------------------------------------------------
 # Summary
