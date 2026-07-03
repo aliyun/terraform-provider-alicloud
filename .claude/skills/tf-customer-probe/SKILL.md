@@ -10,7 +10,10 @@ description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reporte
 
 - 能力全景/路线图:`escalation/cap-tf-customer-probe.md`
 - 循环 runbook:`loops/tf-probe.md`
-- 场景语料库:`probes/`（`probes/README.md`）
+- 场景语料库(**外置 jarvis 仓外**):`terraform_playground/`,按云产品维度两级归档 `<product>/<id>/`
+  (scenario.yaml + main.tf + checks.md,可选 step2/)。默认路径 `<jarvis 根目录的父目录>/terraform_playground`,
+  可用 `JARVIS_TF_PLAYGROUND`(env,最高优先)或 `config/probe.json` 的 `paths.playground_dir` 覆盖;
+  README 与场景规范见 playground 仓 README + `references/scenario-authoring.md`。
 - runner:`bootstrap/probe.sh`;配置:`config/probe.json`
 
 ## 分层(2026-07-03 重定义)

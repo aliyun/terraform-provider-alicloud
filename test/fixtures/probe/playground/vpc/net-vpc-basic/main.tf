@@ -1,0 +1,20 @@
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    alicloud = { source = "aliyun/alicloud", version = "1.284.0" }
+  }
+}
+
+variable "run_id" { type = string }
+
+resource "alicloud_vpc" "main" {
+  vpc_name   = "probe-${var.run_id}"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "main" {
+  vpc_id       = alicloud_vpc.main.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = "eu-central-1a"
+  vswitch_name = "probe-${var.run_id}"
+}

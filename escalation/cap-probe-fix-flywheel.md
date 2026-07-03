@@ -36,7 +36,7 @@
 | ③ 修复 Fix | bridge ScanScheduler 扫池(probe 单指派 jarvis 被 `scan.sh` 自然扫到) → headless dispatch → aone-triage 认领 → **按 `probe-ticket-routing` 路由** | (a) provider 代码修 → `provider-resource-dev` → fork+UT → `invoke-terraform-acc-test-remote` 验收 → GitHub PR(`github-identity` 硬门,`api-tool-agent`);(b) TF 文档修 → 同 PR 路径 docs-only;(c) 上游协作 → cloudspec_gap 等 `submit_only` 转发;(d) 需实验定性 → 先跑 tier-1 变体场景再归入 a/b/c | 机件**全部已存在** | 只缺**路由规范**(本 commit 落地) | upstream PR merge(maintainer) |
 | ④ 验证 Verify-fix | PR 合并 → master 复验 | tier-0 重扫该项应消失 / tier-1 场景复跑应绿 →「已修未发布」→ 发布后复跑绿 → `claim.sh finish`(jarvis-done) | 靠工单溯源字段映射回场景/资源,无需新 runner 子命令 | 复验编排规范(routing reference 内定义)+ 状态机落 tag/评论 | 无 |
 | ⑤ 发布 Release | changelog 聚合 → 发版 | `terraform-changelog` skill(已有) | 已有 | 发布前 RC 门禁 = 全场景语料过一遍(P2) | release_prod(autonomy.md 永久停止项) |
-| ⑥ 回灌 Regress | 每张修复完成的 probe 单 + 每张真实客户单 | `regression-<aone-id>` 场景草稿 → `escalation/scenario-drafts/` → 周批 MR 入 `probes/scenarios/` | 规则已立 | 收尾清单挂钩 | jarvis 仓 MR 合并(仓库主人) |
+| ⑥ 回灌 Regress | 每张修复完成的 probe 单 + 每张真实客户单 | `regression-<aone-id>` 场景**直落**外置 `terraform_playground/<product>/regression-<aone-id>/`(仓外,无需 worktree/MR)+ 工单评论报备场景路径 | 规则已立(2026-07-03 外置简化) | 收尾清单挂钩 | 工单评论报备(仓库主人查验) |
 
 ## 三个永久人工硬门（其余全自动）
 

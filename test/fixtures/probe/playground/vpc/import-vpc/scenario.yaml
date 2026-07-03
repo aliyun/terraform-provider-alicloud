@@ -1,10 +1,10 @@
 id: import-vpc
-title: VPC 导入往返(create → state rm → import → plan)
+title: VPC import 纳管存量资源
 persona: importer
 products: VPC
 resources: alicloud_vpc
 cost: free
-detect: validate_fail,plan_fail,apply_fail,import_diff,perpetual_diff,destroy_fail
+detect: import_diff,perpetual_diff
 update_step: false
 import_check: true
 import_address: alicloud_vpc.main
