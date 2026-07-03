@@ -25,7 +25,31 @@ Env:
   JARVIS_SETTINGS                          override settings file for Jarvis (default: ~/.claude/idea_settings.json).
   CLAUDE_TIMEOUT                           per-round seconds (default 300).
   JARVIS_DISPATCH_TIMEOUT                  headless dispatch timeout (default 43200 = 12h).
-  JARVIS_DISPATCH_MAX                      max concurrent dispatch workers (default 3).
+
+  --- F2 池调度 dispatcher (scan 自动派发 + probe/revisit 每日轮) ---
+  JARVIS_AUTO_DISPATCH                     1=scan 发现新工单直接并发派发 headless jarvis (默认);
+                                           0=回退授权前置模式 (钉钉「处理 #id / 全部处理」才派发).
+                                           冷启动(bridge 重启后首个 tick): auto 模式照常消化合格积压单
+                                           (靠 tag skip + DispatchPool 去重台账, 不靠 diff, 受并发上限约束);
+                                           回退模式首个 tick 只建 _prev_ids 基线、不推通知(fc2a7ea).
+  JARVIS_DISPATCH_MAX                      max concurrent headless dispatch workers (default 2).
+  JARVIS_DISPATCH_QUEUE_MAX                pending queue depth beyond the concurrency cap
+                                           before new dispatches are dropped (default 20).
+  JARVIS_DISPATCH_DEDUP_TTL                soft-dedup window in seconds: same id not re-dispatched
+                                           within this window (default 86400 = 24h).
+  JARVIS_BROADCAST_TARGET                  where auto-dispatch/probe/revisit broadcasts land
+                                           (default = JARVIS_NOTIFY_GROUP).
+  JARVIS_BROADCAST_TYPE                    broadcast conversation type (default "group").
+  JARVIS_PROBE_SCHED                       1=enable daily tf-probe round (default); 0=off.
+  JARVIS_PROBE_HOUR                        local-time hour to fire the probe round (default "10").
+  JARVIS_REVISIT_SCHED                     1=enable daily jarvis-idle revisit round (default); 0=off.
+  JARVIS_REVISIT_HOUR                      local-time hour to fire the revisit round (default "9").
+  JARVIS_REVISIT_MAX                       max jarvis-idle items revisited per round (default 5).
+
+CLI:
+  --dry-run-once                           run one scan tick + revisit query, print the
+                                           dispatch/skip decisions, and exit — no DingTalk,
+                                           no claude spawn. Real verification entry point.
 """
 
 import os
@@ -40,11 +64,30 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from collections import defaultdict
+from datetime import datetime
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
-import dingtalk_stream
-from dingtalk_stream import AckMessage, AsyncChatbotHandler, ChatbotMessage, Credential, DingTalkStreamClient
+# The DingTalk SDK is only needed by the live WebSocket path in main(). Guard the
+# import so the module still loads for the hermetic test suite and --dry-run-once
+# on hosts without the SDK; JarvisHandler subclasses the base at class-def time, so
+# supply a minimal shim when the SDK is absent (the real client is only built live).
+try:
+    import dingtalk_stream
+    from dingtalk_stream import AckMessage, AsyncChatbotHandler, ChatbotMessage, Credential, DingTalkStreamClient
+except Exception:  # noqa: BLE001 — SDK not installed (tests / dry-run hosts)
+    dingtalk_stream = None
+
+    class AckMessage:  # type: ignore
+        STATUS_OK = "OK"
+
+    class AsyncChatbotHandler:  # type: ignore
+        def __init__(self, *a, **k):
+            pass
+
+    ChatbotMessage = None  # type: ignore
+    Credential = None      # type: ignore
+    DingTalkStreamClient = None  # type: ignore
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SKILL = Path.home() / ".claude" / "skills" / "dingtalk-ai-card" / "scripts" / "streaming.py"
@@ -207,6 +250,79 @@ def truncate(text, limit=MAX_REPLY):
 
 def robot_code():
     return os.environ.get("DINGTALK_ROBOT_CODE") or os.environ.get("DINGTALK_APP_KEY") or ""
+
+
+def broadcast_target():
+    """Where auto-dispatch / probe / revisit播报 land. Defaults to the scan notify group
+    (existing owner/master 目标配置). Not an authorization prompt — informational只."""
+    return (os.environ.get("JARVIS_BROADCAST_TARGET")
+            or os.environ.get("JARVIS_NOTIFY_GROUP")
+            or "cidy1mv+qvMEybkqTXcsXTOeQ==")
+
+
+def broadcast_type():
+    return os.environ.get("JARVIS_BROADCAST_TYPE", "group")
+
+
+def _tagset(item):
+    """Normalize an item's ``tag`` field (list | comma-string | None) to a set of strings."""
+    t = item.get("tag")
+    if isinstance(t, list):
+        return {str(x).strip() for x in t if str(x).strip()}
+    if isinstance(t, str):
+        return {s.strip() for s in t.split(",") if s.strip()}
+    return set()
+
+
+def _ticket_prompt(item_id, title, pool_key, pool_project):
+    """Prompt for a headless auto-dispatched Aone ticket: run the aone-triage loop with
+    the claim→bookend discipline, and suspend (not block) on a human gate."""
+    proj = str(pool_project or "")
+    return (
+        "【headless 自动派发】你是一个 Jarvis headless 实例，本轮只处理这一条 Aone 工单，"
+        "全程默认 jarvis 身份、按 autonomy.md headless 模式(auto 列表免授权)。\n"
+        "工单 #%s（%s）  池:%s  project:%s\n\n"
+        "按 loops/aone-triage.md「二、逐项执行」：\n"
+        "1) bootstrap/log.sh seen %s 去重；已处理则直接退出。\n"
+        "2) bootstrap/claim.sh claim %s %s 认领；退码 1(被别的实例抢先)即退出，勿硬闯。\n"
+        "3) 调 .claude/skills/aone-triage 技能查证并处理（回复/打标/建需求/建 CR/开发走 worktree）。\n"
+        "4) 收尾 bookend：bootstrap/wrap.sh done（status 必填）+ bootstrap/claim.sh release；"
+        "开 MR/CR 立刻 wrap.sh sync 贴链回工单。\n"
+        "遇必须人类确认/决策的点：在工单评论 @对应人，末尾单起一行输出 "
+        "[[SUSPEND:{\"aone_id\":\"%s\",\"wait_for\":\"<staffId>\"}]] 后退出，由 bridge 挂起等回复唤醒。"
+        % (item_id, title, pool_key or "?", proj or "?", item_id, item_id, proj, item_id)
+    )
+
+
+def _probe_prompt(round_id):
+    """Prompt for the daily tf-probe round (pure探测轮, no Aone bookend)."""
+    return (
+        "【headless 探测轮 %s】你是 Jarvis headless 实例，按 loops/tf-probe.md 跑一轮合成客户探测：\n"
+        "1) bootstrap/probe.sh doctor 预检（不绿则记缺口后退出）。\n"
+        "2) tier-0：bootstrap/probe.sh tier0 增量扫本轮涉及资源，judgment_queue 走双层查证。\n"
+        "3) tier-1：bootstrap/probe.sh list 挑最久未跑的 ≤ config.limits.max_scenarios_per_run 个场景，"
+        "逐个 bootstrap/probe.sh run <id>（region 默认 focus）。\n"
+        "4) findings 去重后按建单纪律落 draft 到 escalation/probe-drafts/（当前 mode=draft，人审后建单）。\n"
+        "5) bootstrap/probe.sh sweep 清残留（残留退 1 即停并升级）。\n"
+        "这是纯探测轮，不持有工单、免 bookend；结束把轮次摘要"
+        "（tier0 资源数/findings、tier1 场景数/draft 数/env 数）汇报即可。"
+        % round_id
+    )
+
+
+def _revisit_prompt(item_id, title, pool_project):
+    """Prompt for revisiting a jarvis-idle (human-gated) ticket: check whether the gate
+    cleared; continue if so, otherwise exit fast without spinning."""
+    return (
+        "【headless 人工门重访】工单 #%s（%s）project:%s 处于 jarvis-idle（等待人工门，如 PR 合并/"
+        "maintainer 回复）。按 .claude/skills/aone-triage references/probe-ticket-routing.md 复验流程：\n"
+        "1) bootstrap/claim.sh claim %s %s 认领（退码 1 即退出）。\n"
+        "2) 检查人工门是否已解锁（PR 是否合并 / 依赖是否就绪 / 评论是否有新回复）。\n"
+        "3) 已解锁：继续复验（tier-0 重扫/tier-1 复跑该资源或场景），通过则 bootstrap/claim.sh finish 关单；"
+        "仍未解锁：wrap.sh sync 记一句「门仍未开」后 release，快速退出，不空耗。\n"
+        "全程 headless auto 免授权；遇必须人类决策点输出 [[SUSPEND:{...}]] 挂起。"
+        % (item_id, title, str(pool_project or ""), item_id, str(pool_project or ""))
+    )
 
 
 def parse_stream_lines(lines):
@@ -475,21 +591,31 @@ class TataPool:
 
 
 class ScanScheduler:
-    """Periodically run scan.sh, diff for new items, push summary card to DingTalk group.
+    """Periodically run scan.sh, diff for new items, and act on them.
 
-    New items land in ``pending`` dict awaiting user authorization ("处理 #ID" or
-    "全部处理").  Authorized items are dispatched to Jarvis via the handler.
+    Two modes (``JARVIS_AUTO_DISPATCH``):
+
+    · auto (default, =1): new items are dispatched straight into the DispatchPool —
+      one headless jarvis per ticket, bounded by the pool's concurrency cap. The
+      DingTalk card becomes a broadcast ("已自动派发 #id 〈标题〉"), not an authorization
+      prompt. The soft-dedup ledger + active-set (in DispatchPool) prevent re-dispatch
+      / restart storms; the real mutex stays claim.sh inside each jarvis instance.
+
+    · fallback (=0): the legacy authorization-front behaviour — new items land in
+      ``pending`` awaiting "处理 #ID" / "全部处理" before dispatch.
 
     Runs as a daemon thread; errors are logged and skipped, never crash the bridge.
     """
 
-    def __init__(self, handler):
+    def __init__(self, handler, pool=None):
         self.handler = handler
+        self.pool = pool if pool is not None else (getattr(handler, "dispatch_pool", None))
+        self.auto = os.environ.get("JARVIS_AUTO_DISPATCH", "1") != "0"
         self.interval = int(os.environ.get("JARVIS_SCAN_INTERVAL", "1800"))
         self.notify_target = os.environ.get("JARVIS_NOTIFY_GROUP", "cidy1mv+qvMEybkqTXcsXTOeQ==")
-        self._prev_snapshot = {}         # id -> {modified, ...} full item snapshot
-        self._cold = True                # first tick: seed snapshot only, no notification
-        self.pending = {}                # id -> item dict, awaiting authorization
+        self._prev_snapshot = {}         # id -> full item snapshot (new/updated diff via modified)
+        self._cold = True                # first tick: seed baseline (see _tick cold-start)
+        self.pending = {}                # id -> item dict, awaiting authorization (fallback mode)
         self._lock = threading.Lock()    # guards self.pending
         self._thread = None
 
@@ -500,18 +626,87 @@ class ScanScheduler:
         self._thread.start()
 
     def authorize(self, item_id):
-        """Authorize a single pending item.  Returns the item dict or None."""
+        """Authorize a single pending item (fallback mode).  Returns the item dict or None."""
         with self._lock:
             return self.pending.pop(str(item_id), None)
 
     def authorize_all(self):
-        """Authorize all pending items.  Returns list of item dicts (may be empty)."""
+        """Authorize all pending items (fallback mode).  Returns list of item dicts."""
         with self._lock:
             items = list(self.pending.values())
             self.pending.clear()
             return items
 
-    # -- internals -----------------------------------------------------------
+    # -- scan + decide (pure-ish, unit-testable) -----------------------------
+
+    def _scan(self):
+        """Run scan.sh --force → list of item dicts, or None on any failure."""
+        cmd = [str(REPO_ROOT / "bootstrap" / "scan.sh"), "--force"]
+        try:
+            result = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True,
+                                    text=True, timeout=120)
+        except Exception as e:  # noqa: BLE001
+            log.warning("scan.sh invocation failed: %s", e)
+            return None
+        if result.returncode != 0:
+            log.warning("scan.sh failed (rc=%d): %s", result.returncode,
+                        result.stderr.strip()[:300])
+            return None
+        try:
+            items = json.loads(result.stdout)
+        except (ValueError, TypeError):
+            log.warning("scan.sh output is not valid JSON: %s", result.stdout[:200])
+            return None
+        if not isinstance(items, list):
+            log.warning("scan.sh returned non-list: %s", type(items).__name__)
+            return None
+        return items
+
+    def _decide(self, items):
+        """Cheap pre-dispatch triage for auto mode. Returns a list of
+        {id,title,item,action,reason}. action ∈ {dispatch, skip}; the claim tag /
+        done tag are skipped without spending an instance, and the DispatchPool's
+        active-set + 24h ledger provide soft-dedup (claim stays the real mutex)."""
+        out = []
+        for it in items:
+            iid = str(it.get("id", ""))
+            if not iid:
+                continue
+            title = it.get("title", "")
+            tags = _tagset(it)
+            if "jarvis-claimed" in tags:
+                action, reason = "skip", "claimed"
+            elif "jarvis-done" in tags:
+                action, reason = "skip", "done"
+            elif "jarvis-idle" in tags:
+                # Parked / human-gated item — the daily RevisitScheduler owns it; the
+                # 30-min scan must not re-spin a full-triage instance on it every tick.
+                action, reason = "skip", "idle"
+            elif self.pool is not None:
+                ok, reason = self.pool.status(iid)
+                action = "dispatch" if ok else "skip"
+                reason = "new" if ok else reason
+            else:
+                action, reason = "dispatch", "new"
+            out.append({"id": iid, "title": title, "item": it,
+                        "action": action, "reason": reason})
+        return out
+
+    def _dispatch(self, item):
+        """Submit one ticket to the DispatchPool as a headless jarvis instance.
+        Fresh session per ticket (每单一实例). Returns (accepted, reason)."""
+        iid = str(item.get("id", ""))
+        title = item.get("title", "")
+        pool_key = item.get("pool", "")
+        pool_project = item.get("pool_project") or ""
+        sid = str(uuid.uuid4())
+        prompt = _ticket_prompt(iid, title, pool_key, pool_project)
+        tgt, ttype = broadcast_target(), broadcast_type()
+        notify = self.handler._broadcast if self.handler else (lambda t: None)
+        work = (lambda: self.handler.dispatch_item(iid, prompt, sid, False, notify, tgt, ttype))
+        return self.pool.submit(iid, work, notify=notify, kind="ticket")
+
+    # -- loop / tick ---------------------------------------------------------
 
     def _loop(self):
         while True:
@@ -526,42 +721,46 @@ class ScanScheduler:
             time.sleep(self.interval)
 
     def _tick(self):
-        """Run scan.sh --force, diff against previous, notify new AND updated items."""
-        cmd = [str(REPO_ROOT / "bootstrap" / "scan.sh"), "--force"]
-        result = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True,
-                                text=True, timeout=120)
-        if result.returncode != 0:
-            log.warning("scan.sh failed (rc=%d): %s", result.returncode,
-                        result.stderr.strip()[:300])
+        """Run scan.sh --force, diff against the previous snapshot; dispatch/notify new
+        items and surface (sensing only) externally-updated ones."""
+        items = self._scan()
+        if items is None:
             return
-
-        try:
-            items = json.loads(result.stdout)
-        except (ValueError, TypeError):
-            log.warning("scan.sh output is not valid JSON: %s", result.stdout[:200])
-            return
-        if not isinstance(items, list):
-            log.warning("scan.sh returned non-list: %s", type(items).__name__)
-            return
-
         cur_snapshot = {str(it["id"]): it for it in items if it.get("id")}
         cur_ids = set(cur_snapshot.keys())
 
-        # Cold start: seed snapshot only, no notification.
+        # Cold start (bridge just (re)started). Semantics diverge by mode:
+        # · supervised/fallback: the first tick only seeds the baseline snapshot and pushes
+        #   NO notification, so a restart never floods 钉钉 with the whole backlog as "new"
+        #   (fc2a7ea). Its new/updated detection depends on the prev-snapshot diff, so seeding
+        #   the baseline is required.
+        # · auto-dispatch: the 派发决策不依赖 diff —— it is driven by tag-skip + the DispatchPool
+        #   soft-dedup ledger —— so the first tick DOES dispatch the qualifying backlog (bounded
+        #   by the concurrency cap + queue). That is intended: a parked probe backlog should be
+        #   consumed on startup, and the persisted ledger still stops a restart from re-dispatching
+        #   what was already handled inside the 24h window. Leave _prev_snapshot empty here so
+        #   every current item is "new" this tick; it is seeded below.
         if self._cold:
-            self._prev_snapshot = cur_snapshot
             self._cold = False
-            log.info("ScanScheduler cold start: seeded %d existing IDs, no notification", len(cur_ids))
-            return
+            if not self.auto:
+                self._prev_snapshot = cur_snapshot
+                log.info("ScanScheduler cold start (supervised): seeded %d IDs, no notification",
+                         len(cur_ids))
+                return
+            log.info("ScanScheduler cold start (auto): dispatching qualifying backlog from %d items",
+                     len(cur_ids))
 
         prev_ids = set(self._prev_snapshot.keys())
         with self._lock:
             pending_ids = set(self.pending.keys())
 
-        # New = not in previous scan AND not already pending authorization
-        new_ids = cur_ids - prev_ids - pending_ids
+        # New = not seen before (and, in fallback mode, not already pending authorization).
+        new_ids = cur_ids - prev_ids - (set() if self.auto else pending_ids)
 
-        # Updated = existed before, modified time changed
+        # Updated = seen before with a changed modified (gmtModified) time. Sensing/notification
+        # path ONLY — never wired to auto-dispatch: an updated ticket is almost always already
+        # claimed/idle (which the dispatch decision skips), and semantically an external update
+        # → 播报通知, not a fresh headless instance (master 6de3d06 语义原样保留).
         updated_ids = set()
         for iid in (cur_ids & prev_ids):
             cur_mod = cur_snapshot[iid].get("modified", "")
@@ -571,45 +770,104 @@ class ScanScheduler:
 
         self._prev_snapshot = cur_snapshot
 
-        new_items = {iid: cur_snapshot[iid] for iid in new_ids if iid in cur_snapshot}
+        new_items = [cur_snapshot[iid] for iid in new_ids if iid in cur_snapshot]
         updated_items = {iid: cur_snapshot[iid] for iid in updated_ids if iid in cur_snapshot}
-
-        if new_items:
-            with self._lock:
-                self.pending.update(new_items)
-
         if not new_items and not updated_items:
             return
 
-        # Build notification card text
+        if self.auto:
+            self._tick_auto(new_items, updated_items)
+        else:
+            self._tick_supervised(new_items, updated_items)
+
+    def _tick_auto(self, new_items, updated_items=None):
+        """Auto-dispatch new items into the pool (broadcast, not authorize). Externally-updated
+        tickets are surfaced as a 「有更新」broadcast only — never dispatched (sensing path)."""
+        if self.pool is None:
+            log.warning("auto-dispatch on but no DispatchPool; skipping tick")
+            return
+        dispatched, dropped = [], []
+        for d in self._decide(new_items):
+            if d["action"] != "dispatch":
+                log.info("scan auto: skip #%s (%s)", d["id"], d["reason"])
+                continue
+            ok, reason = self._dispatch(d["item"])
+            if ok:
+                dispatched.append(d)
+                log.info("scan auto: dispatched #%s %s", d["id"], d["title"][:80])
+            else:
+                dropped.append((d["id"], reason))
+                log.warning("scan auto: #%s not dispatched (%s)", d["id"], reason)
+
+        if not self.handler:
+            return
+        aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
+        if dispatched:
+            lines = ["**已自动派发 %d 条工单 (headless)**\n" % len(dispatched)]
+            for d in dispatched:
+                it = d["item"]
+                proj = it.get("pool_project", "")
+                idl = ("[#%s](%s)" % (d["id"], aone_url % (proj, d["id"]))) if proj else ("#%s" % d["id"])
+                pri = it.get("priority", "")
+                lines.append("- %s %s%s" % (idl, d["title"], (" [%s]" % pri) if pri else ""))
+            try:
+                self.handler._broadcast("\n".join(lines))
+            except Exception:  # noqa: BLE001
+                log.exception("ScanScheduler failed to broadcast dispatch summary")
+        if dropped:
+            qf = [i for i, r in dropped if r == "queue_full"]
+            if qf:
+                try:
+                    self.handler._broadcast(
+                        "🟠 派发队列已满，%d 条本轮跳过（将下轮重试）：%s"
+                        % (len(qf), ", ".join("#" + i for i in qf)))
+                except Exception:  # noqa: BLE001
+                    log.exception("ScanScheduler failed to broadcast drop notice")
+        if updated_items:
+            lines = ["**有更新 (%d)**\n" % len(updated_items)]
+            for iid, it in updated_items.items():
+                proj = it.get("pool_project", "")
+                idl = ("[#%s](%s)" % (iid, aone_url % (proj, iid))) if proj else ("#%s" % iid)
+                lines.append("- %s %s [%s]" % (idl, it.get("title", "(无标题)"), it.get("pool", "")))
+            try:
+                self.handler._broadcast("\n".join(lines))
+            except Exception:  # noqa: BLE001
+                log.exception("ScanScheduler failed to broadcast update notice")
+
+    def _tick_supervised(self, new_items, updated_items=None):
+        """Fallback (JARVIS_AUTO_DISPATCH=0): stage new items for authorization + push a card.
+        Preserves master's dual-section card — 新工单 (into pending, authorizable) and 有更新
+        (existing tickets whose modified time changed; notify only, not staged)."""
+        updated_items = updated_items or {}
+        new_by_id = {str(it["id"]): it for it in new_items if it.get("id")}
+        if new_by_id:
+            with self._lock:
+                self.pending.update(new_by_id)
+        if not new_by_id and not updated_items:
+            return
+
         aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
         lines = []
-
-        if new_items:
-            lines.append("**新工单 (%d)**\n" % len(new_items))
-            for iid, it in new_items.items():
+        if new_by_id:
+            lines.append("**新工单 (%d)**\n" % len(new_by_id))
+            for iid, it in new_by_id.items():
                 pri = it.get("priority", "")
                 title = it.get("title", "(无标题)")
                 proj = it.get("pool_project", "")
-                id_link = "[#%s](%s)" % (iid, aone_url % (proj, iid)) if proj else "#%s" % iid
+                id_link = ("[#%s](%s)" % (iid, aone_url % (proj, iid))) if proj else ("#%s" % iid)
                 lines.append("- %s %s%s" % (id_link, title, (" [%s]" % pri) if pri else ""))
             lines.append("")
-
         if updated_items:
             lines.append("**有更新 (%d)**\n" % len(updated_items))
             for iid, it in updated_items.items():
                 title = it.get("title", "(无标题)")
                 proj = it.get("pool_project", "")
-                pool = it.get("pool", "")
-                id_link = "[#%s](%s)" % (iid, aone_url % (proj, iid)) if proj else "#%s" % iid
-                lines.append("- %s %s [%s]" % (id_link, title, pool))
+                id_link = ("[#%s](%s)" % (iid, aone_url % (proj, iid))) if proj else ("#%s" % iid)
+                lines.append("- %s %s [%s]" % (id_link, title, it.get("pool", "")))
             lines.append("")
-
-        if new_items:
+        if new_by_id:
             lines.append('回复「处理 #ID」授权单条，或「全部处理」批量授权')
-
         text = "\n".join(lines)
-
         try:
             self.handler._quick_card(self.notify_target, text, "group")
         except Exception:  # noqa: BLE001
@@ -861,6 +1119,339 @@ class WaitWatcher:
                 log.warning("WaitWatcher: bad persisted file %s", f)
 
 
+class DispatchPool:
+    """Bounded concurrent worker pool for headless jarvis dispatch, with soft-dedup.
+
+    · concurrency cap = JARVIS_DISPATCH_MAX (default 2); extra jobs queue FIFO inside
+      the executor. Beyond ``max_workers + queue_max`` (default 20) outstanding jobs,
+      submit is rejected ("queue_full") so a scan burst cannot spawn unbounded
+      instances.
+    · soft-dedup: an id with an active worker, or one dispatched within ``dedup_ttl``
+      (default 24h), is not re-dispatched. ``force=True`` (human / wake) overrides the
+      ledger but never the active-set. The ledger persists to
+      .my-day/bridge/dispatched.json so a bridge restart recovers it and avoids
+      re-dispatch storms. claim.sh stays the real mutex — this is only a cheap
+      pre-filter.
+
+    submit(item_id, work, *, notify, force, kind) runs the zero-arg ``work`` callable in
+    a worker thread; ``work`` owns its own result播报 through ``notify``. The pool only
+    tracks capacity/dedup and cleans up the active-set when the worker returns.
+    """
+
+    DEFAULT_LEDGER = ".my-day/bridge/dispatched.json"
+
+    def __init__(self, max_workers=None, queue_max=None, dedup_ttl=None, ledger_path=None):
+        self.max_workers = int(max_workers if max_workers is not None
+                               else os.environ.get("JARVIS_DISPATCH_MAX", "2"))
+        self.queue_max = int(queue_max if queue_max is not None
+                             else os.environ.get("JARVIS_DISPATCH_QUEUE_MAX", "20"))
+        self.dedup_ttl = int(dedup_ttl if dedup_ttl is not None
+                             else os.environ.get("JARVIS_DISPATCH_DEDUP_TTL", "86400"))
+        self._ledger_path = Path(ledger_path) if ledger_path else (Path(REPO_ROOT) / self.DEFAULT_LEDGER)
+        self._executor = ThreadPoolExecutor(max_workers=max(1, self.max_workers),
+                                            thread_name_prefix="dispatch")
+        self._active = {}     # id -> {started, kind, future}
+        self._ledger = {}     # id -> last-dispatch epoch seconds
+        self._lock = threading.Lock()
+        self._load_ledger()
+
+    # -- dedup / capacity decision -------------------------------------------
+
+    def _fresh_ledger(self, iid):
+        ts = self._ledger.get(iid)
+        return bool(ts) and (time.time() - ts) < self.dedup_ttl
+
+    def status(self, item_id, force=False):
+        """Read-only: would submit(item_id, force) be accepted? → (bool, reason).
+        Reasons: ok / active / deduped / queue_full. Used by ScanScheduler._decide and
+        --dry-run-once (no side effects)."""
+        iid = str(item_id)
+        with self._lock:
+            if iid in self._active:
+                return False, "active"
+            if not force and self._fresh_ledger(iid):
+                return False, "deduped"
+            if len(self._active) >= self.max_workers + self.queue_max:
+                return False, "queue_full"
+        return True, "ok"
+
+    def active_count(self):
+        with self._lock:
+            return len(self._active)
+
+    # -- submit ---------------------------------------------------------------
+
+    def submit(self, item_id, work, *, notify=None, force=False, kind="ticket"):
+        """Accept a job unless deduped / at capacity. Returns (accepted, reason)."""
+        iid = str(item_id)
+        with self._lock:
+            if iid in self._active:
+                return False, "active"
+            if not force and self._fresh_ledger(iid):
+                return False, "deduped"
+            if len(self._active) >= self.max_workers + self.queue_max:
+                return False, "queue_full"
+            self._ledger[iid] = time.time()
+            self._persist_ledger()
+            self._active[iid] = {"started": time.time(), "kind": kind, "future": None}
+
+        def _wrapped():
+            try:
+                return work()
+            except Exception as e:  # noqa: BLE001 — a crashed worker must not kill the pool
+                log.exception("DispatchPool worker #%s crashed: %s", iid, e)
+                if notify:
+                    try:
+                        notify("⚠️ #%s 后台处理异常: %s" % (iid, e))
+                    except Exception:  # noqa: BLE001
+                        pass
+                return "error"
+            finally:
+                with self._lock:
+                    self._active.pop(iid, None)
+
+        fut = self._executor.submit(_wrapped)
+        with self._lock:
+            ent = self._active.get(iid)
+            if ent is not None:
+                ent["future"] = fut
+        return True, "dispatched"
+
+    def shutdown(self, wait=False, cancel_futures=False):
+        try:
+            self._executor.shutdown(wait=wait, cancel_futures=cancel_futures)
+        except TypeError:  # pragma: no cover — <3.9 lacks cancel_futures
+            self._executor.shutdown(wait=wait)
+
+    # -- ledger persistence ---------------------------------------------------
+
+    def _persist_ledger(self):
+        # caller holds self._lock; prune expired entries so the file stays small.
+        now = time.time()
+        self._ledger = {k: v for k, v in self._ledger.items() if now - v < self.dedup_ttl}
+        try:
+            self._ledger_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self._ledger_path.parent / (self._ledger_path.name + ".tmp")
+            tmp.write_text(json.dumps(self._ledger, default=str))
+            tmp.replace(self._ledger_path)
+        except Exception as e:  # noqa: BLE001
+            log.warning("DispatchPool: could not persist ledger: %s", e)
+
+    def _load_ledger(self):
+        try:
+            if self._ledger_path.exists():
+                raw = json.loads(self._ledger_path.read_text())
+                now = time.time()
+                self._ledger = {str(k): float(v) for k, v in raw.items()
+                                if now - float(v) < self.dedup_ttl}
+                if self._ledger:
+                    log.info("DispatchPool: restored %d dedup entries from disk", len(self._ledger))
+        except Exception as e:  # noqa: BLE001
+            log.warning("DispatchPool: could not load ledger %s: %s", self._ledger_path, e)
+            self._ledger = {}
+
+
+class _DailyScheduler:
+    """Fire ``_run_once()`` at most once per local-time day, at/after a target hour.
+
+    Persists the last-run date to a state file so a restart within the same day does not
+    re-fire. Subclasses override ``_run_once()``. Poll cadence is coarse (5 min) — hour
+    granularity is the contract, not the minute. Skeleton mirrors ReconcileScheduler."""
+
+    CHECK_INTERVAL = 300
+
+    def __init__(self, name, hour, enabled, state_file):
+        self.name = name
+        self.hour = int(hour)
+        self.enabled = bool(enabled)
+        self.state_file = Path(REPO_ROOT) / state_file  # absolute state_file overrides the join
+        self._thread = None
+
+    def _last_run_date(self):
+        try:
+            return self.state_file.read_text().strip()
+        except Exception:  # noqa: BLE001
+            return ""
+
+    def _mark_run(self, when=None):
+        d = (when or datetime.now()).date().isoformat()
+        try:
+            self.state_file.parent.mkdir(parents=True, exist_ok=True)
+            self.state_file.write_text(d)
+        except Exception as e:  # noqa: BLE001
+            log.warning("%s: could not persist run date: %s", self.name, e)
+
+    def _due(self, now=None):
+        if not self.enabled:
+            return False
+        now = now or datetime.now()
+        if now.hour < self.hour:
+            return False
+        return self._last_run_date() != now.date().isoformat()
+
+    def start(self):
+        if not self.enabled:
+            log.info("%s disabled (set its *_SCHED=1 to enable)", self.name)
+            return
+        self._thread = threading.Thread(target=self._loop, daemon=True, name=self.name)
+        self._thread.start()
+
+    def _loop(self):
+        while True:
+            try:
+                if self._due():
+                    log.info("%s: firing daily round", self.name)
+                    self._run_once()
+                    self._mark_run()
+            except Exception:  # noqa: BLE001 — never crash
+                log.exception("%s tick failed", self.name)
+            time.sleep(self.CHECK_INTERVAL)
+
+    def _run_once(self):
+        raise NotImplementedError
+
+
+class ProbeScheduler(_DailyScheduler):
+    """Daily tf-probe round: submit one探测任务 to the DispatchPool. Pure探测轮 — the
+    jarvis instance runs loops/tf-probe.md and files drafts; it holds no ticket, so no
+    bookend (免 claim/wrap)."""
+
+    def __init__(self, handler, pool=None, hour=None, enabled=None, state_file=None):
+        super().__init__(
+            name="ProbeScheduler",
+            hour=hour if hour is not None else os.environ.get("JARVIS_PROBE_HOUR", "10"),
+            enabled=enabled if enabled is not None else (os.environ.get("JARVIS_PROBE_SCHED", "1") != "0"),
+            state_file=state_file or ".my-day/bridge/probe.last")
+        self.handler = handler
+        self.pool = pool if pool is not None else (getattr(handler, "dispatch_pool", None))
+
+    def round_id(self, when=None):
+        return "probe-%s" % (when or datetime.now()).date().isoformat()
+
+    def _run_once(self):
+        if self.pool is None or self.handler is None:
+            log.warning("ProbeScheduler: no pool/handler; skip")
+            return
+        rid = self.round_id()
+        prompt = _probe_prompt(rid)
+        tgt, ttype = broadcast_target(), broadcast_type()
+        notify = self.handler._broadcast
+        sid = str(uuid.uuid4())
+        work = (lambda: self.handler.dispatch_item(rid, prompt, sid, False, notify, tgt, ttype))
+        ok, reason = self.pool.submit(rid, work, notify=notify, kind="probe")
+        if ok:
+            notify("🔎 已启动每日探测轮 %s（tf-probe tier0 + tier1 轮换，纯探测无单）" % rid)
+        else:
+            log.info("ProbeScheduler: round %s not submitted (%s)", rid, reason)
+
+
+class RevisitScheduler(_DailyScheduler):
+    """Daily human-gate revisit: query each pool's ``jarvis-idle`` items and re-dispatch
+    the ones parked on a human gate (title ``[probe]`` or 待续条件/等待 maintainer 描述),
+    up to REVISIT_MAX. Query failures are skipped (WARN), never fatal to the main scan."""
+
+    IDLE_TAG = "jarvis-idle"
+
+    def __init__(self, handler, pool=None, hour=None, enabled=None, state_file=None, max_n=None):
+        super().__init__(
+            name="RevisitScheduler",
+            hour=hour if hour is not None else os.environ.get("JARVIS_REVISIT_HOUR", "9"),
+            enabled=enabled if enabled is not None else (os.environ.get("JARVIS_REVISIT_SCHED", "1") != "0"),
+            state_file=state_file or ".my-day/bridge/revisit.last")
+        self.handler = handler
+        self.pool = pool if pool is not None else (getattr(handler, "dispatch_pool", None))
+        self.max_n = int(max_n if max_n is not None else os.environ.get("JARVIS_REVISIT_MAX", "5"))
+
+    def _pool_projects(self):
+        cfg = Path(REPO_ROOT) / "config" / "pools.json"
+        try:
+            pools = json.loads(cfg.read_text()).get("pools", {})
+        except Exception as e:  # noqa: BLE001
+            log.warning("RevisitScheduler: cannot read pools.json: %s", e)
+            return []
+        out = []
+        for key, p in pools.items():
+            proj = p.get("project")
+            if proj:
+                out.append((key, str(proj)))
+        return out
+
+    @staticmethod
+    def _is_revisit_candidate(item):
+        title = str(item.get("title") or item.get("subject") or "")
+        desc = str(item.get("description") or item.get("body") or "")
+        blob = title + " " + desc
+        if "[probe]" in title.lower():
+            return True
+        for kw in ("待续条件", "等待 maintainer", "等待maintainer", "待 maintainer", "等待合并"):
+            if kw in blob:
+                return True
+        return False
+
+    def _query_pool(self, key, project):
+        try:
+            r = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem", "list",
+                 "--project", project, "--filter", "tag=%s" % self.IDLE_TAG,
+                 "--columns", "id,title,status,tag", "-f", "json"],
+                capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
+            if r.returncode != 0:
+                log.warning("RevisitScheduler: idle query failed for pool %s (rc=%d): %s",
+                            key, r.returncode, (r.stderr or "").strip()[:200])
+                return None
+            data = json.loads(r.stdout)
+            if not isinstance(data, list):
+                return []
+            return [{"id": it.get("identifier") or it.get("id"),
+                     "title": it.get("subject") or it.get("title") or "",
+                     "pool": key, "pool_project": project,
+                     "description": it.get("description") or ""}
+                    for it in data]
+        except Exception as e:  # noqa: BLE001
+            log.warning("RevisitScheduler: idle query error for pool %s: %s", key, e)
+            return None
+
+    def _query(self):
+        """Collect revisit candidates across pools (≤ max_n). Best-effort per pool."""
+        cands = []
+        for key, project in self._pool_projects():
+            rows = self._query_pool(key, project)
+            if rows is None:
+                continue
+            for it in rows:
+                if it.get("id") and self._is_revisit_candidate(it):
+                    cands.append(it)
+                    if len(cands) >= self.max_n:
+                        return cands
+        return cands
+
+    def _run_once(self):
+        if self.pool is None or self.handler is None:
+            log.warning("RevisitScheduler: no pool/handler; skip")
+            return
+        cands = self._query()
+        notify = self.handler._broadcast
+        tgt, ttype = broadcast_target(), broadcast_type()
+        if not cands:
+            log.info("RevisitScheduler: no jarvis-idle revisit candidates this round")
+            return
+        submitted = []
+        for it in cands:
+            iid = str(it["id"])
+            prompt = _revisit_prompt(iid, it.get("title", ""), it.get("pool_project", ""))
+            sid = str(uuid.uuid4())
+            work = (lambda p=prompt, i=iid, s=sid:
+                    self.handler.dispatch_item(i, p, s, False, notify, tgt, ttype))
+            ok, reason = self.pool.submit(iid, work, notify=notify, kind="revisit")
+            if ok:
+                submitted.append(iid)
+            else:
+                log.info("RevisitScheduler: #%s not submitted (%s)", iid, reason)
+        if submitted:
+            notify("🔁 人工门重访：已投 %d 条 jarvis-idle 工单复查：%s"
+                   % (len(submitted), ", ".join("#" + i for i in submitted)))
+
+
 class JarvisHandler(AsyncChatbotHandler):
     # process() runs in a ThreadPoolExecutor (sync, NOT async) so blocking
     # subprocess calls never freeze the WS event loop / keepalive ack.
@@ -872,17 +1463,20 @@ class JarvisHandler(AsyncChatbotHandler):
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
         self.pool = TataPool()                    # 常驻 idea 进程保温, 消 Tata 冷启
-        self.scanner = ScanScheduler(self)
+        # One bounded pool + soft-dedup ledger shared by every dispatch path
+        # (auto-dispatch / probe / revisit / authorize / handoff / wake).
+        self.dispatch_pool = DispatchPool()
+        self.scanner = ScanScheduler(self, self.dispatch_pool)
         self.reconciler = ReconcileScheduler(self)
-        self.board = BoardScheduler(self)
-        self.dispatch_pool = ThreadPoolExecutor(
-            max_workers=int(os.environ.get("JARVIS_DISPATCH_MAX", "3")),
-            thread_name_prefix="dispatch")
-        self.dispatch_active = {}                 # item_id -> {target, started, future}
+        self.board = BoardScheduler(self)         # pushes board.sh JSON after each scan tick
+        self.prober = ProbeScheduler(self, self.dispatch_pool)
+        self.reviser = RevisitScheduler(self, self.dispatch_pool)
         self.watcher = WaitWatcher(self)
-        log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s dispatch_max=%s",
+        log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s "
+                 "auto_dispatch=%s dispatch_max=%s probe=%s@%s revisit=%s@%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
-                 claude_bin(), skill_path(), self.dispatch_pool._max_workers)
+                 claude_bin(), skill_path(), self.scanner.auto, self.dispatch_pool.max_workers,
+                 self.prober.enabled, self.prober.hour, self.reviser.enabled, self.reviser.hour)
 
     def _tata_runner(self, text, sid, resume):
         """Tata 一轮: 优先常驻进程保温(self.pool.send), 起不来回退一次性 run_tata_stream。
@@ -905,8 +1499,30 @@ class JarvisHandler(AsyncChatbotHandler):
         except Exception as e:  # noqa: BLE001
             log.error("quick_card failed: %s", e)
 
+    def _broadcast(self, text):
+        """Fire-and-forget播报 to the configured broadcast target (auto-dispatch / probe /
+        revisit status). Best-effort; never raises."""
+        try:
+            self._quick_card(broadcast_target(), text, broadcast_type())
+        except Exception:  # noqa: BLE001
+            log.exception("broadcast failed")
+
+    def _maybe_suspend(self, final_text, sid, target, target_type):
+        """Shared core: if the round emitted a [[SUSPEND:{...}]] sentinel, register it
+        with the WaitWatcher (which wakes on the next Aone reply) and return the info;
+        else None. Used by both the card path (_dispatch_bg) and headless (dispatch_item)."""
+        _, info = extract_suspend(final_text or "")
+        if not info:
+            return None
+        last_cid = self._last_comment_id(info["aone_id"])
+        self.watcher.suspend(info["aone_id"], sid, info.get("wait_for", ""),
+                             last_cid, target, target_type)
+        return info
+
     def _dispatch_bg(self, target, target_type, prompt, item_id, sid, resume):
-        """Background worker: stream Jarvis into a card; detect suspend sentinel."""
+        """Card path (interactive authorize / handoff / wake): stream Jarvis into a live
+        card, detect the suspend sentinel. Returns an outcome string. Active-set cleanup
+        is owned by DispatchPool, not here."""
         dispatch_timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
         try:
             log.info("dispatch_bg #%s start (timeout=%ds)", item_id, dispatch_timeout)
@@ -914,24 +1530,55 @@ class JarvisHandler(AsyncChatbotHandler):
                 target, prompt, sid, resume,
                 lambda t, s, r: run_claude_stream(t, s, r, timeout=dispatch_timeout),
                 target_type=target_type)
-            _, suspend_info = extract_suspend(result)
-            if suspend_info:
-                last_cid = self._last_comment_id(suspend_info["aone_id"])
-                self.watcher.suspend(
-                    suspend_info["aone_id"], sid,
-                    suspend_info.get("wait_for", ""),
-                    last_cid, target, target_type)
+            info = self._maybe_suspend(result, sid, target, target_type)
+            if info:
                 self._quick_card(target,
                     "⏸️ 工单 #%s 已挂起，等待 @%s 回复" % (
-                        suspend_info["aone_id"], suspend_info.get("wait_for", "?")),
+                        info["aone_id"], info.get("wait_for", "?")),
                     target_type)
-            else:
-                log.info("dispatch_bg #%s done", item_id)
+                return "suspended"
+            log.info("dispatch_bg #%s done", item_id)
+            return "done"
         except Exception as e:  # noqa: BLE001
             log.exception("dispatch_bg #%s failed: %s", item_id, e)
             self._quick_card(target, "⚠️ 工单 #%s 后台处理异常: %s" % (item_id, e), target_type)
-        finally:
-            self.dispatch_active.pop(str(item_id), None)
+            return "error"
+
+    def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type):
+        """Headless path (auto-dispatch / probe / revisit): run one Jarvis instance to
+        completion WITHOUT a live card (no "回复某人" binding); broadcast the result via
+        ``notify``. Shares the SUSPEND + WaitWatcher core with the card path. Returns an
+        outcome string (done / suspended / error)."""
+        dispatch_timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
+        try:
+            log.info("dispatch_item #%s start (timeout=%ds)", item_id, dispatch_timeout)
+            final = ""
+            for acc in run_claude_stream(prompt, sid, resume, timeout=dispatch_timeout):
+                final = acc
+            info = self._maybe_suspend(final, sid, target, target_type)
+            if info:
+                notify("⏸️ 工单 #%s 已挂起，等待 @%s 回复" % (
+                    info["aone_id"], info.get("wait_for", "?")))
+                return "suspended"
+            notify("✅ 工单 #%s 处理完成（headless）" % item_id)
+            log.info("dispatch_item #%s done", item_id)
+            return "done"
+        except Exception as e:  # noqa: BLE001
+            log.exception("dispatch_item #%s failed: %s", item_id, e)
+            notify("⚠️ 工单 #%s 后台处理异常: %s" % (item_id, e))
+            return "error"
+
+    def _submit_card(self, item_id, target, target_type, prompt, sid, resume, force=True):
+        """Submit a card-path dispatch through the shared pool. Human/wake/handoff paths
+        pass force=True (override the 24h ledger, but never a live active worker). If the
+        pool rejects (active / queue_full), tell the requester on the same card target."""
+        work = (lambda: self._dispatch_bg(target, target_type, prompt, item_id, sid, resume))
+        ok, reason = self.dispatch_pool.submit(
+            item_id, work, force=force, kind="card",
+            notify=lambda t: self._quick_card(target, t, target_type))
+        if not ok:
+            self._quick_card(target, "🟠 工单 #%s 未派发（%s）。" % (item_id, reason), target_type)
+        return ok, reason
 
     def _wake(self, aone_id, task, new_comments):
         """Called by WaitWatcher when a suspended task gets a reply."""
@@ -942,11 +1589,9 @@ class JarvisHandler(AsyncChatbotHandler):
             task["target"],
             "🔔 工单 #%s 收到回复，正在唤醒 Jarvis…" % aone_id,
             task["target_type"])
-        fut = self.dispatch_pool.submit(
-            self._dispatch_bg, task["target"], task["target_type"],
-            prompt, aone_id, task["session_id"], True)
-        self.dispatch_active[str(aone_id)] = {
-            "target": task["target"], "started": time.time(), "future": fut}
+        # force=True: a resumed ticket may still sit inside the 24h dedup ledger window.
+        self._submit_card(aone_id, task["target"], task["target_type"],
+                          prompt, task["session_id"], True, force=True)
 
     @staticmethod
     def _last_comment_id(aone_id):
@@ -982,27 +1627,21 @@ class JarvisHandler(AsyncChatbotHandler):
         if not text:
             return AckMessage.STATUS_OK, "empty"
 
-        # Authorization interception: "处理 #ID" or "全部处理" → dispatch to Jarvis directly
+        # Authorization interception (fallback mode / manual override): "处理 #ID" or
+        # "全部处理" → dispatch the pending item(s) as headless jarvis, one fresh session
+        # per ticket (每单一实例). In auto mode pending is normally empty (items go
+        # straight to the pool); this path stays as the JARVIS_AUTO_DISPATCH=0 fallback.
         if self.scanner and staff == master_staff():
             auth_m = AUTH_SINGLE.match(text)
             if auth_m:
                 item = self.scanner.authorize(auth_m.group(1))
                 if item:
-                    jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
-                    jresume = staff in self.jarvis_started
-                    self.jarvis_started.add(staff)
-                    pool = item.get("pool", "")
-                    dispatch_prompt = (
-                        "工单 #%s (%s)\n"
-                        "池: %s" % (item["id"], item.get("title", ""), pool)
-                    )
+                    prompt = _ticket_prompt(item["id"], item.get("title", ""),
+                                            item.get("pool", ""), item.get("pool_project", ""))
                     self._quick_card(card_target,
                                      "⚙️ 已接收工单 #%s，后台处理中…" % item["id"], card_type)
-                    fut = self.dispatch_pool.submit(
-                        self._dispatch_bg, card_target, card_type,
-                        dispatch_prompt, item["id"], jsid, jresume)
-                    self.dispatch_active[str(item["id"])] = {
-                        "target": card_target, "started": time.time(), "future": fut}
+                    self._submit_card(item["id"], card_target, card_type,
+                                      prompt, str(uuid.uuid4()), False)
                     return AckMessage.STATUS_OK, "dispatched"
                 else:
                     self._quick_card(card_target, "工单 #%s 不在待处理列表中。" % auth_m.group(1), card_type)
@@ -1012,19 +1651,10 @@ class JarvisHandler(AsyncChatbotHandler):
                 if items:
                     ids = []
                     for item in items:
-                        jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
-                        jresume = staff in self.jarvis_started
-                        self.jarvis_started.add(staff)
-                        pool = item.get("pool", "")
-                        dispatch_prompt = (
-                            "工单 #%s (%s)\n"
-                            "池: %s" % (item["id"], item.get("title", ""), pool)
-                        )
-                        fut = self.dispatch_pool.submit(
-                            self._dispatch_bg, card_target, card_type,
-                            dispatch_prompt, item["id"], jsid, jresume)
-                        self.dispatch_active[str(item["id"])] = {
-                            "target": card_target, "started": time.time(), "future": fut}
+                        prompt = _ticket_prompt(item["id"], item.get("title", ""),
+                                                item.get("pool", ""), item.get("pool_project", ""))
+                        self._submit_card(item["id"], card_target, card_type,
+                                          prompt, str(uuid.uuid4()), False)
                         ids.append(str(item["id"]))
                     self._quick_card(card_target,
                                      "⚙️ 已提交 %d 条工单后台处理: %s" % (
@@ -1064,15 +1694,13 @@ class JarvisHandler(AsyncChatbotHandler):
             # master 闸：仅辰羿且 Tata 发了哨兵任务，才升级第二层重型 Jarvis（异步）。
             if task and staff == master_staff():
                 log.info("staff=%s handoff -> jarvis (async): %r", staff, task[:200])
+                # Handoff continues the master's conversational Jarvis session (reuse
+                # jsid/resume), unlike per-ticket dispatch which is一单一会话.
                 jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
                 jresume = staff in self.jarvis_started
                 self.jarvis_started.add(staff)
                 handoff_id = "handoff-%s" % int(time.time())
-                fut = self.dispatch_pool.submit(
-                    self._dispatch_bg, card_target, card_type,
-                    task, handoff_id, jsid, jresume)
-                self.dispatch_active[handoff_id] = {
-                    "target": card_target, "started": time.time(), "future": fut}
+                self._submit_card(handoff_id, card_target, card_type, task, jsid, jresume)
             elif task:
                 log.info("staff=%s sent sentinel but not master; ignored", staff)
             log.info("staff=%s done in %.1fs", staff, time.time() - t0)
@@ -1133,7 +1761,50 @@ def load_env_file():
         os.environ.setdefault(k.strip(), v.strip())
 
 
+def run_dry_once():
+    """--dry-run-once: run one scan tick + revisit query, print the dispatch/skip
+    decisions, and exit. No DingTalk connection, no claude spawn. This is the real
+    verification entry point for the编排层 (it does call scan.sh / a1id for real)."""
+    load_env_file()
+    print("=== bridge dispatcher dry-run (no dingtalk, no claude spawn) ===")
+    pool = DispatchPool()
+    scanner = ScanScheduler(handler=None, pool=pool)
+    print("auto_dispatch=%s  dispatch_max=%d  queue_max=%d  dedup_ttl=%ds  ledger=%d entries"
+          % (scanner.auto, pool.max_workers, pool.queue_max, pool.dedup_ttl, len(pool._ledger)))
+
+    items = scanner._scan()
+    print("\n--- SCAN DISPATCH DECISIONS ---")
+    if items is None:
+        print("  scan.sh failed (see WARN above)")
+    elif not items:
+        print("  (inbox empty)")
+    else:
+        for d in scanner._decide(items):
+            mark = "DISPATCH" if d["action"] == "dispatch" else "skip    "
+            print("  [%s] #%s %s — %s" % (mark, d["id"], (d["title"] or "")[:60], d["reason"]))
+
+    print("\n--- REVISIT CANDIDATES (jarvis-idle) ---")
+    reviser = RevisitScheduler(handler=None, pool=pool)
+    cands = reviser._query()
+    if not cands:
+        print("  (none / query skipped)")
+    else:
+        for it in cands[:reviser.max_n]:
+            print("  #%s %s [pool=%s]" % (it.get("id"), (it.get("title") or "")[:60], it.get("pool")))
+
+    print("\n--- DAILY ROUNDS ---")
+    prober = ProbeScheduler(handler=None, pool=pool)
+    print("  probe:   enabled=%s hour=%s due_now=%s id=%s"
+          % (prober.enabled, prober.hour, prober._due(), prober.round_id()))
+    print("  revisit: enabled=%s hour=%s due_now=%s max=%d"
+          % (reviser.enabled, reviser.hour, reviser._due(), reviser.max_n))
+    pool.shutdown(wait=False)
+    return 0
+
+
 def main():
+    if "--dry-run-once" in sys.argv:
+        sys.exit(run_dry_once())
     load_env_file()
     key = os.environ.get("DINGTALK_APP_KEY")
     secret = os.environ.get("DINGTALK_APP_SECRET")
@@ -1150,11 +1821,19 @@ def main():
     handler.scanner.start()
     handler.reconciler.start()
     handler.board.start()
+    handler.prober.start()
+    handler.reviser.start()
     handler.watcher.start()
-    log.info("scan scheduler started (interval=%ss target=%s)",
-             handler.scanner.interval, handler.scanner.notify_target)
+    log.info("scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
+             handler.scanner.interval, handler.scanner.auto,
+             handler.scanner.notify_target, broadcast_target())
     log.info("reconcile scheduler started (interval=%ss)", handler.reconciler.interval)
-    log.info("board scheduler started (target=%s)", handler.board.base_url)
+    log.info("board scheduler %s (target=%s)",
+             "started" if handler.board.enabled and handler.board.base_url else "disabled",
+             handler.board.base_url or "<empty>")
+    log.info("probe scheduler: enabled=%s hour=%s | revisit scheduler: enabled=%s hour=%s max=%d",
+             handler.prober.enabled, handler.prober.hour,
+             handler.reviser.enabled, handler.reviser.hour, handler.reviser.max_n)
     log.info("wait watcher started (suspended=%d)", handler.watcher.count())
     log.info("starting DingTalk stream listener…")
     try:
