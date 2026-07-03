@@ -40,7 +40,8 @@
         "已取消",
         "已完成",
         "已拒绝",
-        "Won'tfix"
+        "Won'tfix",
+        "Fixed"
       ],
       "exclude_title": []
     },

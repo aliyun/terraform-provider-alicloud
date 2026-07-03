@@ -48,14 +48,16 @@ expected_account_for(){
   esac
 }
 
-# 首跑迁移:仅当 live account 确为 jarvis 期望账号(open_jarvis)才收编。
-# 与 login 分支 P0 护栏同源思想:防止 live 中残留的个人身份被静默灌进 jarvis 槽位。
+# 首跑迁移:仅当 live 会话 a1 auth whoami 返回 jarvis 期望账号(WORKER_...)才收编。
+# 与 login 分支 P0 护栏同源:两处都以 whoami 的 Account 字段为准,避免 yaml
+# account 字段(open_jarvis)与 BUC Account 字段(WORKER_...)的 alias 不对称导
+# 致合法 jarvis live 被误拦。
 if [ -f "$LIVE" ] && [ ! -f "$(store_for jarvis)" ]; then
-  _live_acct=$(awk '/^ *account:/ {print $2; exit}' "$LIVE" 2>/dev/null || echo "")
+  _live_acct=$("$A1" auth whoami 2>/dev/null | awk '/Account:/{print $2}' || true)
   if [ "$_live_acct" = "$(expected_account_for jarvis)" ]; then
     cp "$LIVE" "$(store_for jarvis)" && echo jarvis > "$ACTIVE"
   else
-    echo "a1id: 跳过首跑迁移(live account='${_live_acct:-<空>}' != jarvis 期望 '$(expected_account_for jarvis)'),需显式 'bin/a1id login jarvis'" >&2
+    echo "a1id: 跳过首跑迁移(live whoami Account='${_live_acct:-<空>}' != jarvis 期望 '$(expected_account_for jarvis)'),需显式 'bin/a1id login jarvis'" >&2
   fi
   unset _live_acct
 fi
