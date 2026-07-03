@@ -1,0 +1,11 @@
+id: ram-role-policy
+title: RAM 角色+自定义策略+附加(全局资源,region 无关)
+persona: composer
+tier: 1
+products: RAM
+resources: alicloud_ram_role,alicloud_ram_policy,alicloud_ram_role_policy_attachment
+cost: free
+detect: validate_fail,plan_fail,apply_fail,perpetual_diff,unexpected_replace,destroy_fail
+update_step: false
+import_check: false
+source_docs: https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ram_role

@@ -1,0 +1,11 @@
+id: net-vpc-basic
+title: VPC 基础组网(新手照抄文档示例组合)
+persona: beginner
+tier: 1
+products: VPC,ECS
+resources: alicloud_vpc,alicloud_vswitch,alicloud_security_group,alicloud_security_group_rule
+cost: free
+detect: validate_fail,plan_fail,apply_fail,perpetual_diff,unexpected_replace,destroy_fail
+update_step: false
+import_check: false
+source_docs: https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/vpc

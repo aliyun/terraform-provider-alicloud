@@ -1,0 +1,13 @@
+id: import-vpc
+title: VPC 导入往返(create → state rm → import → plan)
+persona: importer
+tier: 1
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: validate_fail,plan_fail,apply_fail,import_diff,perpetual_diff,destroy_fail
+update_step: false
+import_check: true
+import_address: alicloud_vpc.main
+import_id_output: vpc_id
+source_docs: https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/vpc

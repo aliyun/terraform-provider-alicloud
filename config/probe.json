@@ -1,0 +1,31 @@
+{
+  "provider": { "source": "aliyun/alicloud", "version": "1.284.0" },
+  "terraform": { "required_version": ">= 1.5.0" },
+  "region_fallback": "cn-hangzhou",
+  "name_prefix": "jvp",
+  "tiers": { "tier1_enabled": false, "tier2_enabled": false },
+  "tier1_allowlist": [
+    "alicloud_vpc",
+    "alicloud_vswitch",
+    "alicloud_security_group",
+    "alicloud_security_group_rule",
+    "alicloud_ram_role",
+    "alicloud_ram_policy",
+    "alicloud_ram_role_policy_attachment",
+    "alicloud_oss_bucket"
+  ],
+  "limits": { "max_scenarios_per_run": 3, "step_timeout_min": 20, "daily_new_tickets": 3 },
+  "ticket": {
+    "mode": "draft",
+    "pool": "tf_provider",
+    "project": 528766,
+    "assignee": "WORKER_1782379562571",
+    "tag": "jarvis-probe",
+    "category": "req"
+  },
+  "paths": {
+    "workdir": ".my-day/probe",
+    "audit": "runs/probe",
+    "drafts": "escalation/probe-drafts"
+  }
+}
