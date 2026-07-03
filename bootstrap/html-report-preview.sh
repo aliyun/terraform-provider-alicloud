@@ -19,6 +19,7 @@ Usage:
 
 Defaults:
   --base-url defaults to $JARVIS_HTML_REPORT_BASE_URL or https://pre-agent.aliyun-inc.com
+  Set $JARVIS_HTML_REPORT_TOKEN to send Authorization: Bearer <token>.
   from-aone uploads the newest .html/.htm/.zip attachment unless --attachment-id or --all is set.
 EOF
 }
@@ -176,8 +177,13 @@ upload_one() {
     local label="$3"
     local endpoint="${base_url%/}/buc/reports/aone/$aone_id"
     local response
+    local curl_args=(-fsS -X POST)
 
-    response="$("$CURL_BIN" -fsS -X POST -F "file=@$file;type=text/html" "$endpoint")" \
+    if [ -n "${JARVIS_HTML_REPORT_TOKEN:-}" ]; then
+        curl_args+=(-H "Authorization: Bearer $JARVIS_HTML_REPORT_TOKEN")
+    fi
+
+    response="$("$CURL_BIN" "${curl_args[@]}" -F "file=@$file;type=text/html" "$endpoint")" \
         || die "upload failed for $label"
     if ! jq -e '.success == true and .data.viewUrl != null' >/dev/null <<<"$response"; then
         die "upload failed for $label: $response"

@@ -119,7 +119,16 @@ assert_contains "$output" "https://pre.example/buc/reports/aone/83843879/rid-123
 assert_file_contains "$curl_log" "file=@$html;type=text/html" "upload sends multipart file field"
 assert_file_contains "$curl_log" "https://pre.example/buc/reports/aone/83843879" "upload posts to AutomationAgent upload endpoint"
 
-echo "=== Test 2: reject non-HTML before curl ==="
+echo "=== Test 2: upload sends server token when configured ==="
+: > "$curl_log"
+output=$(CURL_LOG="$curl_log" JARVIS_CURL_BIN="$tmpbin/curl" JARVIS_HTML_REPORT_TOKEN="test-token" \
+    bash "$proj_root/bootstrap/html-report-preview.sh" upload 83843879 "$html" --base-url https://pre.example 2>&1)
+exit_code=$?
+echo "$output"
+if [ "$exit_code" -eq 0 ]; then assert_pass "token upload exits 0"; else assert_fail "token upload should exit 0, got $exit_code"; fi
+assert_file_contains "$curl_log" "Authorization: Bearer test-token" "upload sends Authorization bearer token"
+
+echo "=== Test 3: reject non-HTML before curl ==="
 txt="$tmpdir/report.txt"
 printf 'not html' > "$txt"
 : > "$curl_log"
@@ -130,7 +139,7 @@ echo "$output"
 if [ "$exit_code" -ne 0 ]; then assert_pass "non-html exits nonzero"; else assert_fail "non-html should fail"; fi
 if [ ! -s "$curl_log" ]; then assert_pass "non-html does not call curl"; else assert_fail "non-html should not call curl (log: $(cat "$curl_log"))"; fi
 
-echo "=== Test 3: zip upload extracts all HTML members ==="
+echo "=== Test 4: zip upload extracts all HTML members ==="
 zip_path="$tmpdir/reports.zip"
 make_zip "$zip_path"
 : > "$curl_log"
@@ -144,7 +153,7 @@ if [ "$upload_calls" -eq 2 ]; then assert_pass "zip uploads two HTML files"; els
 assert_contains "$output" "report-a.html" "zip output includes first member label"
 assert_contains "$output" "report-b.htm" "zip output includes nested member label"
 
-echo "=== Test 4: from-aone uses latest attachment and can comment links back ==="
+echo "=== Test 5: from-aone uses latest attachment and can comment links back ==="
 make_fake_a1id
 : > "$curl_log"
 : > "$a1_log"
