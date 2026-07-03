@@ -1,6 +1,6 @@
 # aone-triage 无人值守到预发 triage loop
 
-> Plan #2 Task 4 — 将各组件串成完整的 unattended-to-prestage 闭环。
+> 单条工单怎么处理在 `.claude/skills/aone-triage`(读单/归类/查证/回复/bookend);本文件只管 **loop 编排**:实例协调、触发入口、认领竞争、autonomy 判定、收敛维护。
 
 ---
 
@@ -25,68 +25,31 @@ done
 
 ---
 
-## 一、触发
+## 一、触发与输入
 
 | 方式 | 说明 |
 |------|------|
-| 定时触发 | cron / 调度器定期调用本 runbook |
-| 手动触发 | 用户在 Claude Code 会话中执行 `/aone-triage` 或直接发指令 |
+| bridge 定时扫池 | bridge ScanScheduler 周期跑 `bootstrap/scan.sh --force`，diff 出新工作项推钉钉卡片、授权前置（见 `bridge/jarvis_dingtalk_bot.py`）。**Jarvis 不再主动扫**（CLAUDE.md 开局动作 #3） |
+| bridge dispatch | Tata 委派单工单，headless 执行（autonomy.md headless 模式：auto 列表免授权、遇阻 `[[SUSPEND:...]]` 挂起） |
+| 用户指令 | 会话里给 Aone URL / 工单 id → 直接进「二、逐项执行」单条流程 |
+| 手动兜底 | `/aone-triage` 或手动跑 `bootstrap/scan.sh`（排查/对账用；`plan.sh` 供 bridge/serve 流程出计划） |
 
----
-
-## 二、输入扫描
-
-```bash
-bootstrap/scan.sh
-```
-
-输出：标准 JSON 数组，格式 `[{id, title, type, status}]`，代表当前分配给本账号的所有工作项。
-
-- 若 scan.sh 返回非零退出码，终止本轮，输出错误信息，等待下次触发。
-- 若结果为空数组，本轮结束，不做任何写操作。
-
----
-
-## 三、出执行计划（supervised 授权关口）
-
-```bash
-bootstrap/plan.sh
-```
-
-plan.sh 分析扫描结果，输出本轮拟执行的逐项计划。
-
-- **supervised 模式（默认）**：plan.sh 退出码 2 表示计划等待授权；输出计划后**暂停**，逐项向用户请求授权。
-  - 用户回复"可行 / 允许 / 授权"后，该条目进入下一阶段。
-  - 未授权条目本轮跳过。
-- **unattended 模式**：需用户显式以 `--mode unattended` 开启，计划直接进入执行阶段，无需逐条等待。
-
----
-
-### 阶段3说明：分诊与授权的流程
-
-流程是：
-1. **scan（全集，带 priority/tag）** → 扫描所有工作项，带优先级和标签信息
-2. **plan（去重，不重扫）** → 生成计划，仅去重不重新扫描
-3. **Claude 按优先级/标题/标签/状态排序+折叠噪声** → 由 Claude 进行分诊和排序，推荐 N 条工作项
-4. **逐条授权** → 用户对推荐项逐条确认
-
-**关键点：分诊是 Claude 做，不是脚本扫表；plan 只去重不重扫。**
-
-保留 **supervised 门**与 **release_prod 硬门**两道关口。
+- **supervised（默认交互模式）**：Aone 写操作逐项等用户授权后执行；unattended/headless 按 `autonomy.md` auto 列表放行。
+- **分诊是 Claude 做，不是脚本扫表**：按优先级/标题/标签/状态排序 + 折叠噪声，脚本只出数据。
 
 ### 产物落点纪律
 
-- 计划/审计走 `runs/`（scan→plan 的 stdout，run_done/escalate 记录）。
+- 计划/审计走 `runs/`（run_done/escalate 记录）。
 - 临时数据用 `.my-day/`（gitignored）或 `mktemp`，**禁止**往仓库根甩 `scratch_*`/`*.tmp`。
 - 开发不在 master：worktree 切分支 → MR → 人工合并；`.gitignore` 兜底脏文件。
 
 ---
 
-## 四、逐项执行
+## 二、逐项执行
 
-对每条**已授权**的工作项，按以下顺序处理：
+对每条已授权（或 headless auto）的工作项，按以下顺序处理：
 
-### 4.1 去重检查
+### 2.1 去重检查
 
 ```bash
 bootstrap/log.sh seen <id>
@@ -95,7 +58,7 @@ bootstrap/log.sh seen <id>
 - `seen` 返回 0（已处理）→ 跳过本条，继续下一条。
 - `seen` 返回 1（未处理）→ 进入认领。
 
-### 4.1.5 认领（并发竞争锁）
+### 2.2 认领（并发竞争锁）
 
 ```bash
 bootstrap/claim.sh claim <id> <pool-project>
@@ -104,17 +67,17 @@ bootstrap/claim.sh claim <id> <pool-project>
 - 退出码 0 → 认领成功，继续 triage。
 - 退出码 1 → 其他实例已抢先认领，**跳过本条**，继续下一条。
 
-### 4.2 单条 triage（技能调用）
+### 2.3 单条 triage（技能调用）
 
 调用 `.claude/skills/aone-triage` 技能，传入当前工作项 id。
 
 技能完成：读取工单 → 查证（OpenAPI + Cloudspec 映射 + provider 源码）→ 回复 / 打标 / 建需求 / 建 CR。
 
-若单条工单进入 Terraform Provider 资源开发且不走自动化生成链路，先按 `tf_provider` 池创建或复用 **terraform-alicloud** 内部研发单（项目 `528766`，指派 `WORKER_1782379562571`），与客户主单双向关联；研发细节、验证、PR/CI/验收信息写内部研发单，客户主单仅同步关键节点和卡点。需要 cloudspec_gap 或云产品上游协助时，把详细协作问题同步到对应依赖单。
+若单条工单进入 Terraform Provider 资源开发且不走自动化生成链路，先按 `tf_provider` 池创建或复用 **terraform-alicloud** 内部研发单（项目 `528766`），**指派按 aone-triage skill `references/tf-customer-request-routing.md` 分工表路由到具体人**——即便由 jarvis 代为开发，关联单也挂具体人名下，方便其注意到；关联单不 claim（jarvis 无 tf_provider 池管理权），与客户主单双向关联，bookend 挂客户主单。研发细节、验证、PR/CI/验收信息写内部研发单，客户主单仅同步关键节点和卡点。需要 cloudspec_gap 或云产品上游协助时，把详细协作问题同步到对应依赖单。
 
-若单条工单会产生 GitHub PR/评论/推分支，写操作前必须执行 `bootstrap/github-identity.sh check`；`gh` 写操作通过 `bootstrap/github-identity.sh gh ...` 执行，推分支通过 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>` 执行；`JARVIS_GITHUB_TOKEN` 登录名必须是 `api-tool-agent`，PR head 使用 `api-tool-agent:<branch>`。
+GitHub PR/评论/推分支的身份纪律见 CLAUDE.md 工作纪律 #6（`bootstrap/github-identity.sh`，账号必须 `api-tool-agent`）。
 
-### 4.3 autonomy 判定（`autonomy.md` 策略）
+### 2.4 autonomy 判定（`autonomy.md` 策略）
 
 技能执行后，依据 `autonomy.md` 策略块判断下一步：
 
@@ -136,7 +99,7 @@ bootstrap/claim.sh release <id> <pool-project>
 
 ---
 
-## 四点五、定期维护（僵尸清扫）
+## 三、定期维护（僵尸清扫）
 
 定期（建议每次 loop 结束后，或按 cron 独立触发）运行：
 
@@ -149,7 +112,7 @@ bootstrap/reconcile.sh stale    # 只跑僵尸 claim(原 sweep.sh)
 
 ---
 
-## 五、Done — 本轮结束标准
+## 四、Done — 本轮结束标准
 
 | 结果 | 说明 |
 |------|------|
@@ -160,7 +123,7 @@ bootstrap/reconcile.sh stale    # 只跑僵尸 claim(原 sweep.sh)
 
 ---
 
-## 六、仅人工步骤（正式发布 release_prod）
+## 五、仅人工步骤（正式发布 release_prod）
 
 `autonomy.md` 策略永久停止项：
 
@@ -174,15 +137,15 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 
 ---
 
-## 七、工具链速查
+## 六、工具链速查
 
 | 工具 | 作用 |
 |------|------|
 | `bootstrap/preflight.sh` | 开局自检日级闸门：install+verify 24h 跑一次,`--force` 强制重跑 |
-| `bootstrap/scan.sh` | 入箱扫描 → JSON 工作项列表 |
+| `bootstrap/scan.sh` | 入箱扫描 → JSON 工作项列表（bridge ScanScheduler 定时调；手动兜底） |
 | `bootstrap/aone-get.sh <id>` | 取工单详情(3h 缓存,写后失效);`JARVIS_CACHE_TTL=0` 强制重取 |
 | `bootstrap/cache.sh` | 通用 TTL 缓存(get/bust/fresh),落 `.my-day/cache/` |
-| `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权 |
+| `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权（bridge/serve 流程用） |
 | `bootstrap/log.sh seen` | 去重检查 |
 | `bootstrap/log.sh run_done` | 记录完成 |
 | `bootstrap/wrap.sh sync/done` | 进展回填 Aone（唯一真源）+收尾审计；多行正文用 `--summary-stdin`/`--summary-file` |
