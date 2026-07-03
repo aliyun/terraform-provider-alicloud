@@ -58,23 +58,35 @@ _claim_prefix_path() { echo "$myday_dir/claim-prefix-$1.txt"; }
 
 # Atomically append/update entry in the claims ledger.
 # Usage: _ledger_upsert <id> <done_value>   (done_value: true|false)
+#
+# Each entry records the owning instance: {"id","done","owner"}. owner is taken
+# from ${COORD_ID:-} (the coord.sh instance id exported by the triage loop; empty
+# for interactive/no-coord sessions). wrap-check.sh scopes its Stop block by owner
+# so a session only hard-blocks on its own (or ownerless legacy) claims.
+#
+# INSERT writes owner. UPDATE (release/finish calling _ledger_upsert id true)
+# COALESCE-preserves the original owner: only backfills the current COORD_ID when
+# the existing owner is empty/missing, so a different instance closing a claim never
+# overwrites the original claimer. Legacy entries lacking an owner field read as "".
 _ledger_upsert() {
     local id="$1"
     local done_val="$2"
+    local owner="${COORD_ID:-}"
     mkdir -p "$myday_dir"
     local tmp
     tmp="$(mktemp "$myday_dir/.claims-tmp.XXXXXX")"
     # Seed tmp with existing ledger or empty array; never create a partial ledger_file first
     if [ -f "$ledger_file" ]; then
-        jq --arg id "$id" --argjson done "$done_val" \
+        jq --arg id "$id" --argjson done "$done_val" --arg owner "$owner" \
             'if any(.[]; .id == $id) then
-                 map(if .id == $id then .done = $done else . end)
+                 map(if .id == $id then (.done = $done | (if ((.owner // "") == "") then .owner = $owner else . end)) else . end)
              else
-                 . + [{"id": $id, "done": $done}]
+                 . + [{"id": $id, "done": $done, "owner": $owner}]
              end' \
             "$ledger_file" > "$tmp" && mv "$tmp" "$ledger_file"
     else
-        printf '[{"id":"%s","done":%s}]' "$id" "$done_val" > "$tmp" && mv "$tmp" "$ledger_file"
+        jq -n --arg id "$id" --argjson done "$done_val" --arg owner "$owner" \
+            '[{"id": $id, "done": $done, "owner": $owner}]' > "$tmp" && mv "$tmp" "$ledger_file"
     fi
 }
 

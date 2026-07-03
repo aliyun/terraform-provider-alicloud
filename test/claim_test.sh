@@ -249,6 +249,74 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 8: ledger records owner=COORD_ID on claim (INSERT)
+# ---------------------------------------------------------------------------
+echo "=== Test 8: claim writes owner=COORD_ID into ledger ==="
+today="$(date -u +%F)"
+ledger="$tmpconfig/.my-day/claims-${today}.json"
+rm -f "$ledger"                    # start from a clean ledger for the owner cases
+printf '' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP
+export COORD_ID="inst-A"
+run_claim claim
+echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
+
+led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+led_done=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .done' "$ledger" 2>/dev/null)
+if [ "$led_owner" = "inst-A" ]; then
+    assert_pass "claim ledger entry owner == COORD_ID (inst-A)"
+else
+    assert_fail "claim ledger owner should be inst-A, got '$led_owner'"
+fi
+if [ "$led_done" = "false" ]; then
+    assert_pass "claim ledger entry done == false"
+else
+    assert_fail "claim ledger done should be false, got '$led_done'"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 9: finish from a DIFFERENT instance does NOT overwrite original owner (coalesce)
+# ---------------------------------------------------------------------------
+echo "=== Test 9: finish by other instance keeps original owner (coalesce) ==="
+printf 'jarvis-probe,jarvis-claimed' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP
+export COORD_ID="inst-B"           # a different instance closes it
+run_claim finish
+echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
+
+led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+led_done=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .done' "$ledger" 2>/dev/null)
+if [ "$led_owner" = "inst-A" ]; then
+    assert_pass "finish by inst-B preserves original owner inst-A (coalesce, no overwrite)"
+else
+    assert_fail "finish should keep owner inst-A, got '$led_owner'"
+fi
+if [ "$led_done" = "true" ]; then
+    assert_pass "finish sets ledger done == true"
+else
+    assert_fail "finish should set done true, got '$led_done'"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 10: UPDATE backfills owner when the original entry had an empty owner
+# ---------------------------------------------------------------------------
+echo "=== Test 10: update backfills owner when original owner was empty ==="
+printf '[{"id":"%s","done":false,"owner":""}]' "$WORKITEM_ID" > "$ledger"
+printf 'jarvis-probe,jarvis-claimed' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP
+export COORD_ID="inst-C"
+run_claim release
+echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
+unset COORD_ID
+
+led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+if [ "$led_owner" = "inst-C" ]; then
+    assert_pass "update backfills owner (empty → inst-C)"
+else
+    assert_fail "update should backfill empty owner to inst-C, got '$led_owner'"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""
