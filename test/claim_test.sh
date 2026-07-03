@@ -249,6 +249,130 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 8: ledger records owner=COORD_ID on claim (INSERT)
+# ---------------------------------------------------------------------------
+echo "=== Test 8: claim writes owner=COORD_ID into ledger ==="
+today="$(date -u +%F)"
+ledger="$tmpconfig/.my-day/claims-${today}.json"
+rm -f "$ledger"                    # start from a clean ledger for the owner cases
+printf '' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP
+export COORD_ID="inst-A"
+run_claim claim
+echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
+
+led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+led_done=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .done' "$ledger" 2>/dev/null)
+if [ "$led_owner" = "inst-A" ]; then
+    assert_pass "claim ledger entry owner == COORD_ID (inst-A)"
+else
+    assert_fail "claim ledger owner should be inst-A, got '$led_owner'"
+fi
+if [ "$led_done" = "false" ]; then
+    assert_pass "claim ledger entry done == false"
+else
+    assert_fail "claim ledger done should be false, got '$led_done'"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 9: finish from a DIFFERENT instance does NOT overwrite original owner (coalesce)
+# ---------------------------------------------------------------------------
+echo "=== Test 9: finish by other instance keeps original owner (coalesce) ==="
+printf 'jarvis-probe,jarvis-claimed' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP
+export COORD_ID="inst-B"           # a different instance closes it
+run_claim finish
+echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
+
+led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+led_done=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .done' "$ledger" 2>/dev/null)
+if [ "$led_owner" = "inst-A" ]; then
+    assert_pass "finish by inst-B preserves original owner inst-A (coalesce, no overwrite)"
+else
+    assert_fail "finish should keep owner inst-A, got '$led_owner'"
+fi
+if [ "$led_done" = "true" ]; then
+    assert_pass "finish sets ledger done == true"
+else
+    assert_fail "finish should set done true, got '$led_done'"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 10: UPDATE backfills owner when the original entry had an empty owner
+# ---------------------------------------------------------------------------
+echo "=== Test 10: update backfills owner when original owner was empty ==="
+printf '[{"id":"%s","done":false,"owner":""}]' "$WORKITEM_ID" > "$ledger"
+printf 'jarvis-probe,jarvis-claimed' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP
+export COORD_ID="inst-C"
+run_claim release
+echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
+unset COORD_ID
+
+led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+if [ "$led_owner" = "inst-C" ]; then
+    assert_pass "update backfills owner (empty → inst-C)"
+else
+    assert_fail "update should backfill empty owner to inst-C, got '$led_owner'"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 11 (D2): no COORD_ID but CLAUDE_CODE_SESSION_ID set → owner = cc-<sid>
+# ---------------------------------------------------------------------------
+echo "=== Test 11: interactive session owner = cc-<CLAUDE_CODE_SESSION_ID> ==="
+rm -f "$ledger"
+printf '' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP COORD_ID
+export CLAUDE_CODE_SESSION_ID="sess-D2"
+run_claim claim
+echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
+led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+if [ "$led_owner" = "cc-sess-D2" ]; then
+    assert_pass "interactive claim owner == cc-sess-D2"
+else
+    assert_fail "interactive owner should be cc-sess-D2, got '$led_owner'"
+fi
+unset CLAUDE_CODE_SESSION_ID
+
+# ---------------------------------------------------------------------------
+# Test 12 (D2): COORD_ID takes precedence over CLAUDE_CODE_SESSION_ID
+# ---------------------------------------------------------------------------
+echo "=== Test 12: COORD_ID wins over CLAUDE_CODE_SESSION_ID ==="
+rm -f "$ledger"
+printf '' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP
+export COORD_ID="inst-P" CLAUDE_CODE_SESSION_ID="sess-Q"
+run_claim claim
+echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
+led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+if [ "$led_owner" = "inst-P" ]; then
+    assert_pass "COORD_ID precedence: owner == inst-P (not cc-sess-Q)"
+else
+    assert_fail "COORD_ID should win, got '$led_owner'"
+fi
+unset COORD_ID CLAUDE_CODE_SESSION_ID
+
+# ---------------------------------------------------------------------------
+# Test 13 (D1): concurrent claims of distinct ids → no lost update (mkdir lock)
+# ---------------------------------------------------------------------------
+echo "=== Test 13: concurrent ledger upserts keep all entries ==="
+rm -f "$ledger"
+unset COORD_ID CLAUDE_CODE_SESSION_ID A1_GET_FAIL A1_UPDATE_NOOP
+N=12
+for i in $(seq 1 "$N"); do
+    PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+        A1_LOG="$(mktemp)" A1_STATE="$(mktemp)" A1_CAPTURE="$(mktemp)" A1_GETCNT="$(mktemp)" \
+        bash "$proj_root/bootstrap/claim.sh" claim "77${i}" "$PROJECT_ID" >/dev/null 2>&1 &
+done
+wait
+cnt=$(jq 'length' "$ledger" 2>/dev/null || echo 0)
+if [ "$cnt" = "$N" ]; then
+    assert_pass "concurrent upserts: all $N entries present (no lost update)"
+else
+    assert_fail "lost update under concurrency: $cnt/$N entries in ledger"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

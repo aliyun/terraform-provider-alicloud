@@ -32,3 +32,24 @@ lib_runs_dir() {
 lib_escalation_dir() {
     echo "${JARVIS_ESCALATION_DIR:-$(jarvis_root)/escalation}"
 }
+
+# Effective owner/self for claim-ledger attribution (cap Phase 2, D2).
+# Resolution order:
+#   1. COORD_ID           — coord.sh instance id (triage-one / bridge loops export it)
+#   2. cc-<session-id>    — interactive/headless Claude session; CLAUDE_CODE_SESSION_ID
+#                           is stable across all Bash tool subprocesses of one session,
+#                           so two different sessions get distinct owners and no longer
+#                           block each other in wrap-check.
+#   3. ""                 — no stable source → ownerless (legacy behavior: wrap-check
+#                           still holds you to account, no regression).
+# claim.sh (writes owner) and wrap-check.sh (computes self) MUST both use this so the
+# values match within a session.
+coord_self() {
+    if [ -n "${COORD_ID:-}" ]; then
+        echo "$COORD_ID"
+    elif [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
+        echo "cc-$CLAUDE_CODE_SESSION_ID"
+    else
+        echo ""
+    fi
+}

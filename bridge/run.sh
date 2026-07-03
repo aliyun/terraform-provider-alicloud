@@ -26,7 +26,10 @@ start() {
   echo "starting bot, log -> $LOGFILE"
   nohup "$PY" "$BOT" >>"$LOGFILE" 2>&1 &
   echo $! > "$PIDFILE"
-  ID=$(bash "$BRIDGE_DIR/../bootstrap/coord.sh" register dispatch 2>/dev/null||true); [ -n "$ID" ] && nohup bash "$BRIDGE_DIR/../bootstrap/heartbeat.sh" "$ID" "$(cat "$PIDFILE")" >/dev/null 2>&1 &
+  BRIDGE_PID=$(cat "$PIDFILE")
+  # Register with the bridge's real pid (same pid the heartbeat sidecar follows) so
+  # coord.sh dead can verify liveness via kill -0 instead of coord.sh's own dead pid.
+  ID=$(bash "$BRIDGE_DIR/../bootstrap/coord.sh" register dispatch "$BRIDGE_PID" 2>/dev/null||true); [ -n "$ID" ] && nohup bash "$BRIDGE_DIR/../bootstrap/heartbeat.sh" "$ID" "$BRIDGE_PID" >/dev/null 2>&1 &
   sleep 1
   if is_running; then echo "started (pid $(cat "$PIDFILE"))"; else
     echo "FAILED to start; tail log:"; tail -n 20 "$LOGFILE"; exit 1; fi

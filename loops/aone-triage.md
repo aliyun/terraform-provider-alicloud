@@ -10,7 +10,7 @@
 
 ```bash
 # triage 实例开局：注册自身，扫孤儿并续跑
-COORD_ID=$(bootstrap/coord.sh register triage)
+COORD_ID=$(bootstrap/coord.sh register triage "$$")   # 传自身 pid,coord.sh dead 才能按 kill -0 判活
 for oid in $(bootstrap/coord.sh list-orphans); do
   COORD_ID=$COORD_ID bootstrap/coord.sh adopt "$oid"
 done

@@ -70,7 +70,15 @@ ROOT2=""
 ROOT3=""
 ROOT4=""
 ROOT5=""
-trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" 2>/dev/null; exit' INT TERM EXIT
+ROOT6=""
+ROOT7=""
+ROOT8=""
+ROOT9=""
+ROOT10=""
+ROOT11=""
+ROOT12=""
+ROOT13=""
+trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" "$ROOT6" "$ROOT7" "$ROOT8" "$ROOT9" "$ROOT10" "$ROOT11" "$ROOT12" "$ROOT13" 2>/dev/null; exit' INT TERM EXIT
 
 # ---------------------------------------------------------------------------
 # Test 1: done:false id, no runs/ file → exit 2
@@ -131,6 +139,123 @@ printf '[{"id":"WI-T5","done":false}]\n' > "$yesterday_claims"
 
 assert_exit_code "yesterday unclosed claim → exit 2" 2 \
     env JARVIS_ROOT="$ROOT5" JARVIS_RUNS_DIR="$ROOT5/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# assert_stderr_contains — runs cmd, asserts stderr contains a substring
+# ---------------------------------------------------------------------------
+assert_stderr_contains() {
+    local desc="$1"
+    local needle="$2"
+    shift 2
+    local err
+    err="$("$@" 2>&1 1>/dev/null)" || true
+    if printf '%s' "$err" | grep -qF -- "$needle"; then
+        echo "  PASS: $desc"
+        pass_count=$((pass_count + 1))
+    else
+        echo "  FAIL: $desc (stderr missing '$needle': $err)"
+        fail_count=$((fail_count + 1))
+    fi
+}
+
+# ===========================================================================
+# Owner-scoping matrix (cap-claim-ledger-owner-scoping Phase 1)
+# self is set via COORD_ID; a claim's owner scopes whether the Stop hook blocks.
+# ===========================================================================
+SELF="inst-self-1"
+OTHER="inst-other-2"
+
+# ---------------------------------------------------------------------------
+# Test 6: owner == self, no run_done → block (exit 2)
+# ---------------------------------------------------------------------------
+echo "Test 6: owner==self + no run file → exit 2 (own claim, blocks)"
+ROOT6="$(make_jarvis_root)"
+printf '[{"id":"WI-T6","done":false,"owner":"%s"}]\n' "$SELF" \
+    > "$ROOT6/.my-day/claims-${today}.json"
+assert_exit_code "own claim, no run_done → exit 2" 2 \
+    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT6" JARVIS_RUNS_DIR="$ROOT6/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 7: owner == self, has run_done → pass (exit 0)
+# ---------------------------------------------------------------------------
+echo "Test 7: owner==self + run file present → exit 0"
+ROOT7="$(make_jarvis_root)"
+printf '[{"id":"WI-T7","done":false,"owner":"%s"}]\n' "$SELF" \
+    > "$ROOT7/.my-day/claims-${today}.json"
+touch "$ROOT7/runs/${today}-WI-T7.md"
+assert_exit_code "own claim, run_done present → exit 0" 0 \
+    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT7" JARVIS_RUNS_DIR="$ROOT7/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 8: owner == other instance, no run_done → skip (exit 0) + WARN on stderr
+# ---------------------------------------------------------------------------
+echo "Test 8: owner==other + no run file → exit 0 (skip) + WARN"
+ROOT8="$(make_jarvis_root)"
+printf '[{"id":"WI-T8","done":false,"owner":"%s"}]\n' "$OTHER" \
+    > "$ROOT8/.my-day/claims-${today}.json"
+assert_exit_code "foreign claim, no run_done → skip exit 0" 0 \
+    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT8" JARVIS_RUNS_DIR="$ROOT8/runs" bash "$WRAP_CHECK"
+assert_stderr_contains "foreign claim emits skip/WARN line" "skip WI-T8" \
+    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT8" JARVIS_RUNS_DIR="$ROOT8/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 9: owner empty (legacy entry), no run_done → block (exit 2, no regression)
+# ---------------------------------------------------------------------------
+echo "Test 9: owner empty/legacy + no run file → exit 2 (no regression)"
+ROOT9="$(make_jarvis_root)"
+# legacy shape: no owner field at all
+printf '[{"id":"WI-T9","done":false}]\n' \
+    > "$ROOT9/.my-day/claims-${today}.json"
+assert_exit_code "legacy ownerless claim, no run_done → exit 2" 2 \
+    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT9" JARVIS_RUNS_DIR="$ROOT9/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 10: touched id whose claim owner is a foreign instance → skip (exit 0)
+# (touched-*.json has no owner field; owner is resolved from the claims map)
+# ---------------------------------------------------------------------------
+echo "Test 10: touched id + foreign claim owner → exit 0 (skip via claims map)"
+ROOT10="$(make_jarvis_root)"
+# claim closed (done:true) but still records the foreign owner; touched re-surfaces id
+printf '[{"id":"WI-T10","done":true,"owner":"%s"}]\n' "$OTHER" \
+    > "$ROOT10/.my-day/claims-${today}.json"
+printf '["WI-T10"]\n' > "$ROOT10/.my-day/touched-${today}.json"
+assert_exit_code "touched id owned by other instance → skip exit 0" 0 \
+    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT10" JARVIS_RUNS_DIR="$ROOT10/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 11: touched id with no claim entry (owner unknown="") → block (exit 2)
+# ---------------------------------------------------------------------------
+echo "Test 11: touched id, no claim/owner + no run file → exit 2 (treated as ownerless)"
+ROOT11="$(make_jarvis_root)"
+printf '["WI-T11"]\n' > "$ROOT11/.my-day/touched-${today}.json"
+assert_exit_code "touched ownerless id, no run_done → exit 2" 2 \
+    env COORD_ID="$SELF" JARVIS_ROOT="$ROOT11" JARVIS_RUNS_DIR="$ROOT11/runs" bash "$WRAP_CHECK"
+
+# ===========================================================================
+# D2: interactive sessions derive owner from CLAUDE_CODE_SESSION_ID (cc-<sid>)
+# via coord_self(). Two different sessions get distinct owners and must not block
+# each other; a session is still held to account for its own claims.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Test 12: claim owned by session A; session B (no COORD_ID, different sid) → skip (0)
+# ---------------------------------------------------------------------------
+echo "Test 12: interactive — other session's claim → exit 0 (skip)"
+ROOT12="$(make_jarvis_root)"
+printf '[{"id":"WI-T12","done":false,"owner":"cc-sess-A"}]\n' \
+    > "$ROOT12/.my-day/claims-${today}.json"
+assert_exit_code "interactive foreign-session claim → skip exit 0" 0 \
+    env CLAUDE_CODE_SESSION_ID="sess-B" JARVIS_ROOT="$ROOT12" JARVIS_RUNS_DIR="$ROOT12/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 13: session A runs wrap-check on its OWN claim, no run_done → block (exit 2)
+# ---------------------------------------------------------------------------
+echo "Test 13: interactive — own session claim, no run file → exit 2 (no regression)"
+ROOT13="$(make_jarvis_root)"
+printf '[{"id":"WI-T13","done":false,"owner":"cc-sess-A"}]\n' \
+    > "$ROOT13/.my-day/claims-${today}.json"
+assert_exit_code "interactive own-session claim, no run_done → exit 2" 2 \
+    env CLAUDE_CODE_SESSION_ID="sess-A" JARVIS_ROOT="$ROOT13" JARVIS_RUNS_DIR="$ROOT13/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Summary
