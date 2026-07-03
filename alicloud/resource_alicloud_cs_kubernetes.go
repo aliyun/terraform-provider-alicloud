@@ -617,14 +617,6 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
-	// migrate cluster to pro from standard
-	if d.HasChange("cluster_spec") {
-		err := migrateCluster(d, meta)
-		if err != nil {
-			return WrapError(err)
-		}
-	}
-
 	err := UpgradeAlicloudKubernetesCluster(d, meta)
 	if err != nil {
 		return WrapError(err)
@@ -815,10 +807,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("worker_ram_role_name", object.WorkerRamRoleName)
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("deletion_protection", object.DeletionProtection)
-
-	if object.ClusterType == cs.ManagedKubernetes {
-		d.Set("cluster_spec", object.ClusterSpec)
-	}
 
 	slbId, err := getApiServerSlbID(d, meta)
 	if err != nil {
@@ -1275,10 +1263,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		creationArgs.WorkerArgs.WorkerSystemDiskSize = workerDiskSize
 	}
 
-	if v, ok := d.GetOk("cluster_spec"); ok {
-		creationArgs.ClusterSpec = v.(string)
-	}
-
 	if rdsInstances, ok := d.GetOk("rds_instances"); ok {
 		creationArgs.RdsInstances = expandStringList(rdsInstances.([]interface{}))
 	}
@@ -1310,22 +1294,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	}
 
 	return creationArgs, nil
-}
-
-func expandKubernetesTaintsConfig(l []interface{}) []cs.Taint {
-	config := []cs.Taint{}
-
-	for _, v := range l {
-		if m, ok := v.(map[string]interface{}); ok {
-			config = append(config, cs.Taint{
-				Key:    m["key"].(string),
-				Value:  m["value"].(string),
-				Effect: cs.Effect(m["effect"].(string)),
-			})
-		}
-	}
-
-	return config
 }
 
 func expandKubernetesRuntimeConfig(l map[string]interface{}) cs.Runtime {
