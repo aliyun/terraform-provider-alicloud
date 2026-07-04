@@ -40,9 +40,10 @@ def create_client(endpoint: str = DEFAULT_ENDPOINT) -> OpenApiClient:
     """
     Create an OpenAPI client using AK credentials from environment variables.
 
-    Required environment variables:
-        ALIBABA_CLOUD_ACCESS_KEY_ID
-        ALIBABA_CLOUD_ACCESS_KEY_SECRET
+    Required environment variables (AMP_* takes precedence; APISpecData 按账号
+    白名单开放，运行账号无权限时用 AMP_* 指定专用 AK):
+        AMP_ACCESS_KEY_ID / ALIBABA_CLOUD_ACCESS_KEY_ID
+        AMP_ACCESS_KEY_SECRET / ALIBABA_CLOUD_ACCESS_KEY_SECRET
 
     Args:
         endpoint: The service endpoint (default: apispecdata.cn-hangzhou.aliyuncs.com)
@@ -50,13 +51,16 @@ def create_client(endpoint: str = DEFAULT_ENDPOINT) -> OpenApiClient:
     Returns:
         An initialised OpenApiClient instance.
     """
-    access_key_id = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID")
-    access_key_secret = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
+    access_key_id = os.environ.get("AMP_ACCESS_KEY_ID") or os.environ.get(
+        "ALIBABA_CLOUD_ACCESS_KEY_ID")
+    access_key_secret = os.environ.get("AMP_ACCESS_KEY_SECRET") or os.environ.get(
+        "ALIBABA_CLOUD_ACCESS_KEY_SECRET")
 
     if not access_key_id or not access_key_secret:
         print(
-            "Error: Please set ALIBABA_CLOUD_ACCESS_KEY_ID and "
-            "ALIBABA_CLOUD_ACCESS_KEY_SECRET environment variables.",
+            "Error: Please set AMP_ACCESS_KEY_ID/AMP_ACCESS_KEY_SECRET (or "
+            "ALIBABA_CLOUD_ACCESS_KEY_ID/ALIBABA_CLOUD_ACCESS_KEY_SECRET) "
+            "environment variables.",
             file=sys.stderr,
         )
         sys.exit(1)

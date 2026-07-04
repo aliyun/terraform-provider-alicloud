@@ -50,8 +50,10 @@ DEFAULT_ENDPOINT = "openapiexplorer.aliyuncs.com"
 
 def create_client(endpoint: str = DEFAULT_ENDPOINT) -> OpenApiClient:
     """Create an OpenAPI client using AK credentials from environment variables."""
-    access_key_id = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID")
-    access_key_secret = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
+    access_key_id = os.environ.get("AMP_ACCESS_KEY_ID") or os.environ.get(
+        "ALIBABA_CLOUD_ACCESS_KEY_ID")
+    access_key_secret = os.environ.get("AMP_ACCESS_KEY_SECRET") or os.environ.get(
+        "ALIBABA_CLOUD_ACCESS_KEY_SECRET")
 
     if not access_key_id or not access_key_secret:
         print(

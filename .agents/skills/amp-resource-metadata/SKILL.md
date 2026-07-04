@@ -28,6 +28,13 @@ export ALIBABA_CLOUD_ACCESS_KEY_ID=xxx
 export ALIBABA_CLOUD_ACCESS_KEY_SECRET=xxx
 ```
 
+**AK 白名单注意**：APISpecData（apispecdata-share 端点）按账号白名单开放。若运行账号（如数字机器人的 terraform_integration）无权限，调用会报 `InvalidApi.NotFound` 404（POP 网关对无权限内部 API 隐藏为 404，不是 403）。此时用专用 AK 覆盖，脚本优先读 `AMP_*`：
+```bash
+export AMP_ACCESS_KEY_ID=xxx        # 优先级高于 ALIBABA_CLOUD_*
+export AMP_ACCESS_KEY_SECRET=xxx
+```
+数字机器人上该 AK 存放于 `bootstrap/.env`（gitignored，chmod 600），使用前 `set -a; source bootstrap/.env; set +a`。长期方案是为运行账号申请 APISpecData 白名单。
+
 ## 1. Resource Schema — `get_resource_type.py`
 
 Get resource-level metadata: PopCode, PopVersion, GatewayType, and full resource schema (Meta with CRUD mappings, attribute definitions).
