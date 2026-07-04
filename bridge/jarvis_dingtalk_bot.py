@@ -642,15 +642,12 @@ class BoardScheduler:
 
     def __init__(self, handler):
         self.handler = handler
-        self.base_url = os.environ.get("JARVIS_BOARD_URL", "").rstrip("/")
-        self.sync_token = os.environ.get("JARVIS_BOARD_SYNC_TOKEN", "")
-        self.enabled = os.environ.get("JARVIS_BOARD_ENABLED", "1") not in ("", "0")
+        self.base_url = (os.environ.get("JARVIS_HTML_REPORT_BASE_URL")
+                         or "https://pre-agent.aliyun-inc.com").rstrip("/")
+        self.token = os.environ.get("JARVIS_HTML_REPORT_TOKEN", "")
         self._lock = threading.Lock()
 
     def start(self):
-        if not self.enabled or not self.base_url:
-            log.info("board scheduler disabled (enabled=%s url=%s)", self.enabled, self.base_url or "<empty>")
-            return
         threading.Thread(target=self.sync, daemon=True, name="BoardInit").start()
 
     def get_url(self):
@@ -661,8 +658,6 @@ class BoardScheduler:
             return None
 
     def sync(self):
-        if not self.enabled or not self.base_url:
-            return
         if not self._lock.acquire(blocking=False):
             return
         try:
@@ -681,8 +676,8 @@ class BoardScheduler:
             endpoint = self.base_url + "/api/board/sync"
             req = Request(endpoint, data=payload.encode(), method="POST",
                           headers={"Content-Type": "application/json"})
-            if self.sync_token:
-                req.add_header("Authorization", "Bearer " + self.sync_token)
+            if self.token:
+                req.add_header("Authorization", "Bearer " + self.token)
             with urlopen(req, timeout=30) as resp:
                 body = resp.read().decode()
             log.info("board synced to %s/board (%d bytes, resp=%s)",
@@ -1125,9 +1120,7 @@ def main():
     log.info("scan scheduler started (interval=%ss target=%s)",
              handler.scanner.interval, handler.scanner.notify_target)
     log.info("reconcile scheduler started (interval=%ss)", handler.reconciler.interval)
-    log.info("board scheduler %s (url=%s)",
-             "started" if handler.board.enabled and handler.board.base_url else "disabled",
-             handler.board.base_url or "<empty>")
+    log.info("board scheduler started (target=%s)", handler.board.base_url)
     log.info("wait watcher started (suspended=%d)", handler.watcher.count())
     log.info("starting DingTalk stream listener…")
     try:
