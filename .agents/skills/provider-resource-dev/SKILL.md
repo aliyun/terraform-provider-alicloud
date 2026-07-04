@@ -1,6 +1,6 @@
 ---
 name: provider-resource-dev
-description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform provider resource — either (a) NEW resource end-to-end (Terraform 资源名解析 → 镇元/Cloudspec resourceTypeCode 查证 → acube 映射/生成 → 生成代码 vs 手写代码 diff → 手改 → acc 验收 → PR), OR (b) **修/改一个非自动化生成（hand-written 或历史遗留 generated-but-mutated）的既有资源** — 补属性、修 bug、补重试、修 schema drift、加 import 支持等。触发场景：客户/Aone 需求要 接入/支持 一个资源(e.g. alicloud_oss_bucket_inventory)；生成资源空/缺；cloudspec terraform 无资源；要拿 镇元 spec 落 provider 代码；**或既有资源出现 bug（错误码未重试 / attribute 缺失 / CRUD 不对齐 API / import 断链 等）**。NOT for 现有 PR 评审(用 terraform-pr-review)或简单 是否支持 查询(用 aone-triage 查证)。
+description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform provider resource — either (a) NEW resource end-to-end (Terraform 资源名解析 → 镇元/Cloudspec resourceTypeCode 查证 → acube 映射/生成 → 生成代码 vs 手写代码 diff → 手改 → acc 验收 → PR), OR (b) **修/改一个非自动化生成（hand-written 或历史遗留 generated-but-mutated）的既有资源** — 补属性、修 bug、补重试、修 schema drift、加 import 支持等。触发场景：客户/Aone 需求要 接入/支持 一个资源(e.g. alicloud_oss_bucket_inventory)；生成资源空/缺；cloudspec terraform 无资源；要拿 镇元 spec 落 provider 代码；**或既有资源出现 bug（错误码未重试 / attribute 缺失 / CRUD 不对齐 API / import 断链 等）**。NOT for 现有 PR 评审(用 terraform-pr-review)或简单 是否支持 查询(用 aone-triage 查证)。 NOT for structured release SOP with mandatory Aone gap-analysis and PR-merge governance — use terraform-provider-release.
 ---
 
 # Provider 资源开发全流程
