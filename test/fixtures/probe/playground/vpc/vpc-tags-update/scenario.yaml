@@ -1,10 +1,10 @@
 id: vpc-tags-update
-title: VPC 标签+名称更新(客户改配置后重跑)
+title: VPC 标签原地更新(上线后改配置重跑)
 persona: updater
 products: VPC
 resources: alicloud_vpc
 cost: free
-detect: validate_fail,plan_fail,apply_fail,perpetual_diff,unexpected_replace,destroy_fail
+detect: perpetual_diff,unexpected_replace,apply_fail
 update_step: true
 import_check: false
 source_docs: https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/vpc

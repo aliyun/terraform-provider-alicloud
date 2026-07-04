@@ -31,7 +31,7 @@ status: pending-review
 - region: <verdict.region>
 
 ## 最小复现 .tf
-（贴 probes/scenarios/<id>/main.tf 的相关最小片段；含 pin 版本块）
+（贴 playground `<product>/<id>/main.tf` 的相关最小片段；含 pin 版本块）
 
 ## 复现步骤
 1. terraform init / validate / plan / apply
@@ -50,7 +50,7 @@ status: pending-review
 - 建议 Aone 优先级：紧急/高/中/低
 
 ## 溯源
-- tier-1:场景 probes/scenarios/<id>/ + verdict runs/probe/<日期>-<id>.json
+- tier-1:场景 terraform_playground/<product>/<id>/ + verdict runs/probe/<日期>-<id>.json
 - tier-0:资源 <alicloud_xxx> + verdict runs/probe/<日期>-tier0.json(含 doc/source 位置、judgment_queue)
 - 来源：jarvis tf-customer-probe
 ```

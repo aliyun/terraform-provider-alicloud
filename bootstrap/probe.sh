@@ -8,8 +8,8 @@
 #   tier-1 = 真实 apply 全生命周期探测(默认开启)。撤销免费白名单成本门,换 PrePaid/Subscription 销毁性守门。
 #
 # 子命令:
-#   doctor                          — 环境预检(terraform/jq/凭证/config/本地 provider 仓)
-#   list                            — 扫 probes/scenarios/*/scenario.yaml 输出表格
+#   doctor                          — 环境预检(terraform/jq/凭证/config/本地 provider 仓/场景根)
+#   list                            — 扫 <playground>/<product>/<id>/scenario.yaml 输出表格(含 PRODUCT 列)
 #   tier0 [alicloud_xxx ...] [--dry] — 静态三方一致性扫描(默认扫全部场景 resources 并集)
 #   run <scenario-id> [--region r] [--dry] [--keep] — tier-1 真实 apply 生命周期探测
 #   sweep                           — 扫 .my-day/probe/*/terraform.tfstate 报告残留 state
@@ -19,10 +19,17 @@
 # 分流纪律(建单准确率命门):findings=provider 疑似 bug;env_issues=环境问题(凭证/网络/prepaid/plan-only)。
 #   鉴权/网络类错误永远归 env_issues,绝不进 findings。凭证值绝不落日志/verdict。测试账号边界:只用环境注入的测试 AK/SK。
 #
+# 场景根(playground):场景语料库外置在 jarvis 仓外,按云产品维度两级归档
+#   <root>/<product>/<id>/scenario.yaml (product = 一级目录名, e.g. vpc/oss/ram)。
+#   解析优先级(env > config > 默认约定):
+#     1. $JARVIS_TF_PLAYGROUND 非空且目录存在
+#     2. config/probe.json 的 .paths.playground_dir 非 null 且目录存在(应为绝对路径)
+#     3. 默认 <jarvis 根目录的父目录>/terraform_playground
+#
 # 环境变量(多数仅测试用):
 #   JARVIS_ROOT              — repo root(见 lib.sh)
+#   JARVIS_TF_PLAYGROUND     — 场景根(playground)覆盖,优先级最高(非空且目录存在才生效)
 #   PROBE_CONFIG             — config/probe.json 路径(默认 <root>/config/probe.json)
-#   PROBE_SCENARIOS_DIR      — 场景目录(默认 <root>/probes/scenarios)
 #   PROBE_WORKDIR            — 工作/state 目录(默认 <root>/.my-day/probe)
 #   PROBE_AUDIT_DIR          — 审计落盘目录(默认 <root>/runs/probe)
 #   JARVIS_PROBE_PROVIDER_DIR — 本地 provider 仓(默认 bootstrap/workspace.sh dir terraform_provider)
@@ -38,12 +45,45 @@ source "$_probe_dir/lib.sh"
 # ── 路径 / 配置访问器 ────────────────────────────────────────────────
 probe_root()          { jarvis_root; }
 probe_config()        { echo "${PROBE_CONFIG:-$(probe_root)/config/probe.json}"; }
-probe_scenarios_dir() { echo "${PROBE_SCENARIOS_DIR:-$(probe_root)/probes/scenarios}"; }
 probe_workdir_base()  { echo "${PROBE_WORKDIR:-$(probe_root)/.my-day/probe}"; }
 probe_audit_dir()     { echo "${PROBE_AUDIT_DIR:-$(probe_root)/runs/probe}"; }
 
 # cfg <jq-filter> — 读一个 config 值(-r 原始输出)
 cfg() { jq -r "$1" "$(probe_config)" 2>/dev/null; }
+
+# 场景根(playground)解析。语料库外置 jarvis 仓外,按云产品维度两级归档
+#   <root>/<product>/<id>/scenario.yaml。优先级:env > config > 默认约定。
+probe_playground_dir() {
+    if [ -n "${JARVIS_TF_PLAYGROUND:-}" ] && [ -d "$JARVIS_TF_PLAYGROUND" ]; then
+        echo "$JARVIS_TF_PLAYGROUND"; return
+    fi
+    local cfg_dir; cfg_dir="$(cfg '.paths.playground_dir')"
+    if [ -n "$cfg_dir" ] && [ "$cfg_dir" != "null" ] && [ -d "$cfg_dir" ]; then
+        echo "$cfg_dir"; return
+    fi
+    echo "$(dirname "$(probe_root)")/terraform_playground"
+}
+
+# _find_scenario_dirs <id> — 跨 product 目录按 id 检索场景目录(两级 <root>/<product>/<id>)
+#   打印所有命中目录(每行一个,无尾斜杠;0/1/多行由调用方判 冲突)。
+_find_scenario_dirs() {
+    local id="$1" root d
+    root="$(probe_playground_dir)"
+    shopt -s nullglob
+    for d in "$root"/*/"$id"/; do
+        [ -f "$d/scenario.yaml" ] && echo "${d%/}"
+    done
+}
+
+# _playground_has_scenario <root> — root 下存在任一 <product>/<id>/scenario.yaml 则 0(纯 glob,不依赖 find)
+_playground_has_scenario() {
+    local root="$1" d
+    shopt -s nullglob
+    for d in "$root"/*/*/scenario.yaml; do
+        [ -f "$d" ] && return 0
+    done
+    return 1
+}
 
 # provider 仓路径:env 覆盖 > workspace.sh 解析
 probe_provider_dir() {
@@ -173,6 +213,15 @@ _cmd_doctor() {
         echo "MISS config: $(probe_config) 不可解析"
         rc=1
     fi
+    # 场景根(playground):目录存在且至少含 1 个 <product>/<id>/scenario.yaml(缺失只 WARN + 约定/覆盖提示)
+    local pg; pg="$(probe_playground_dir)"
+    if [ -d "$pg" ] && _playground_has_scenario "$pg"; then
+        echo "OK   场景根: $pg (两级布局 <product>/<id>/,含 scenario.yaml)"
+    else
+        echo "WARN 场景根不可用或无场景: $pg"
+        echo "       约定: <jarvis 根目录的父目录>/terraform_playground/<product>/<id>/scenario.yaml"
+        echo "       覆盖: 设 JARVIS_TF_PLAYGROUND=<绝对路径> 或 config paths.playground_dir"
+    fi
     # 本地 provider 仓(tier-0 静态扫描依赖;缺失只 WARN,不阻断——tier-1 不需要)
     local pdir; pdir="$(probe_provider_dir)"
     if [ -n "$pdir" ] && [ -d "$pdir/website/docs/r" ] && [ -d "$pdir/alicloud" ]; then
@@ -184,15 +233,18 @@ _cmd_doctor() {
 }
 
 # ── list ────────────────────────────────────────────────────────────
+# 两级布局 <playground>/<product>/<id>/:PRODUCT 列取 <id> 的父目录名。
 _cmd_list() {
-    local sdir d y
-    sdir="$(probe_scenarios_dir)"
-    printf '%-18s %-9s %-70s %s\n' ID PERSONA RESOURCES DETECT
+    local root d y product
+    root="$(probe_playground_dir)"
+    printf '%-10s %-18s %-9s %-64s %s\n' PRODUCT ID PERSONA RESOURCES DETECT
     shopt -s nullglob
-    for d in "$sdir"/*/; do
+    for d in "$root"/*/*/; do
         y="$d/scenario.yaml"
         [ -f "$y" ] || continue
-        printf '%-18s %-9s %-70s %s\n' \
+        product="$(basename "$(dirname "${d%/}")")"
+        printf '%-10s %-18s %-9s %-64s %s\n' \
+            "$product" \
             "$(_yaml_get "$y" id)" \
             "$(_yaml_get "$y" persona)" \
             "$(_yaml_get "$y" resources)" \
@@ -330,13 +382,13 @@ _cmd_tier0() {
         return 2
     fi
 
-    # 无参 → 扫全部场景 resources 并集(去重)
+    # 无参 → 扫全部场景 resources 并集(去重),两级布局 <product>/<id>/
     if [ "${#reslist[@]}" -eq 0 ]; then
-        local sdir d y r
-        sdir="$(probe_scenarios_dir)"
+        local root d y r
+        root="$(probe_playground_dir)"
         shopt -s nullglob
         local acc=""
-        for d in "$sdir"/*/; do
+        for d in "$root"/*/*/; do
             y="$d/scenario.yaml"; [ -f "$y" ] || continue
             acc="$acc,$(_yaml_get "$y" resources)"
         done
@@ -521,13 +573,19 @@ _cmd_run() {
     done
     [ -n "$sid" ] || { _usage_run; return 2; }
 
-    local sdir yaml
-    sdir="$(probe_scenarios_dir)/$sid"
-    yaml="$sdir/scenario.yaml"
-    if [ ! -f "$yaml" ]; then
-        echo "run: 场景不存在 $yaml" >&2
+    # 两级布局:按 id 跨 product 目录检索;同 id 命中多个 product → 明确报错(退 2)
+    local sdir yaml matches=()
+    while IFS= read -r _m; do [ -n "$_m" ] && matches+=("$_m"); done < <(_find_scenario_dirs "$sid")
+    if [ "${#matches[@]}" -eq 0 ]; then
+        echo "run: 场景不存在 '$sid'(在 $(probe_playground_dir) 下未找到 <product>/$sid/scenario.yaml)" >&2
+        return 2
+    elif [ "${#matches[@]}" -gt 1 ]; then
+        echo "run: 场景 id '$sid' 跨 product 目录重复,id 须全局唯一。命中:" >&2
+        printf '  %s\n' "${matches[@]}" >&2
         return 2
     fi
+    sdir="${matches[0]}"
+    yaml="$sdir/scenario.yaml"
 
     local scn_region update_step import_check import_address import_id_output allow_prepaid
     scn_region="$(_yaml_get "$yaml" region)"

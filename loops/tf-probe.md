@@ -115,7 +115,8 @@ aone-triage loop 扫到该单 → claim → provider-resource-dev/修复 → PR 
 发布后:tf-probe 复跑对应资源(tier0)/场景(tier1) → 无 finding = 回归通过(闭环)
 ```
 
-真实客户工单也应回灌为 `regression-<aone-id>` 场景(probes/README.md),成为发版前回归项。
+真实客户工单也应回灌为 `regression-<aone-id>` 场景(直落外置 `terraform_playground/<product>/regression-<aone-id>/`
++ 工单评论报备路径,无需 worktree/MR;规范见 `.claude/skills/tf-customer-probe/references/scenario-authoring.md`),成为发版前回归项。
 
 ### 修复侧衔接
 
@@ -134,7 +135,7 @@ probe 单指派 jarvis,会被 `scan.sh` 自然扫到进 triage;aone-triage 按 *
 | `bootstrap/probe.sh tier0 [alicloud_xxx ...] [--dry]` | tier-0 静态三方一致性扫描 |
 | `bootstrap/probe.sh run <id> [--region r] [--dry] [--keep]` | tier-1 真实 apply 生命周期探测 |
 | `bootstrap/probe.sh sweep` | 扫残留 state,残留退 1 |
-| `config/probe.json` | regions / tiers(tier1.enabled, prepaid_guard) / limits / ticket / paths |
-| `probes/scenarios/` | tier-1 场景语料库 |
+| `config/probe.json` | regions / tiers(tier1.enabled, prepaid_guard) / limits / ticket / paths(含 playground_dir) |
+| `terraform_playground/<product>/<id>/`(外置,仓外) | tier-1 场景语料库(云产品维度两级布局);根解析 env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > 默认 `<jarvis 父目录>/terraform_playground` |
 | `.claude/skills/tf-customer-probe` | 全流程技能 + references |
 | `escalation/cap-tf-customer-probe.md` | 能力路线图 |

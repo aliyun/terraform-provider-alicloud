@@ -29,7 +29,7 @@ probe 发现(tier-0 doc gap / tier-1 生命周期 bug) → 建单(tf_provider 52
 |----|------|------|
 | ① | 上游 GitHub issue 挖掘（从社区已报问题反查） | 未建（未来） |
 | **②** | **合成客户探测 = 本能力** | **P0 本轮** |
-| ③ | 真实工单回灌回归（regression-<aone-id> 场景） | 规则已立（probes/README.md），P1 落地 |
+| ③ | 真实工单回灌回归（regression-<aone-id> 场景） | 规则已立（scenario-authoring.md），直落外置 playground + 工单报备 |
 | ④ | 发布前 RC 门禁（发版前全场景过一遍） | P2 |
 | ⑤ | cloudspec/OpenAPI 覆盖矩阵驱动生成（探从未被示例覆盖的属性） | P3 |
 
@@ -41,7 +41,7 @@ probe 发现(tier-0 doc gap / tier-1 生命周期 bug) → 建单(tf_provider 52
 |------|------|------|
 | 配置 | `config/probe.json` | provider/tf 版本、regions(focus/matrix)、tiers(tier1.enabled/prepaid_guard)、limits、ticket、paths |
 | runner | `bootstrap/probe.sh` | doctor / list / **tier0** / run / sweep;分层执行 + findings/env 分流 + verdict 落盘 |
-| 场景语料库 | `probes/scenarios/<id>/` | scenario.yaml(无 tier 键) + main.tf + checks.md (+ step2/) |
+| 场景语料库(外置仓外) | `terraform_playground/<product>/<id>/` | 云产品维度两级布局;scenario.yaml(无 tier 键) + main.tf + checks.md (+ step2/);根解析 env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > 默认 `<jarvis 父目录>/terraform_playground` |
 | tier-0 fixture | `test/fixtures/probe/` | 手造迷你 doc + go,供解析器 hermetic 单测(五类 gap) |
 | 技能 | `.claude/skills/tf-customer-probe/` | 全流程 + severity/ticket/authoring references |
 | 循环 | `loops/tf-probe.md` | 触发→预检→tier0→tier1→分流→清理→Done runbook |
@@ -111,12 +111,24 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
 3. **成本门撤销**：测试账号费用不设限,删 `tier1_allowlist`;保留 **prepaid 销毁性守门**(PrePaid/Subscription 阻断)。
    建设单与 MR 仍待主人追认(目标池 api_toolkit 2100304)。
 
+### 2026-07-03（场景语料库外置 terraform_playground）
+仓库主人指令:tier-1 场景库从 jarvis 仓 `probes/scenarios/` **迁出到 `~/workspace/terraform_playground/`**,
+按**云产品维度**一级归档、场景两级布局 `<product>/<id>/`。动机与设计:
+1. **terraform 专家 skill 语料底座**:场景库作为未来「Terraform 专家 skill」的示例与验证语料,按云产品组织更利检索/扩容。
+2. **回灌免 MR 闭环提速**:语料库在 jarvis 仓外,regression 场景由 jarvis **直接落** `<playground>/<product>/regression-<aone-id>/`
+   (无需 worktree/MR),但须在对应工单评论**报备场景路径**供主人查验(取代原 `escalation/scenario-drafts` + 周批 MR)。
+3. **provider 仓统一迁 `terraform_space` 归档**:本机工作区路径覆盖走 gitignored `config/workspaces.local.json`
+   (已入 `bootstrap/master-allowlist` 长期免 worktree),base 配置不写绝对路径。
+4. **repo 侧适配**(本 commit):`probe.sh` 场景根解析改 env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` >
+   默认 `<jarvis 父目录>/terraform_playground`;目录布局升两级(list 加 PRODUCT 列、跨 product 同 id 报错、doctor 查场景根);
+   `git rm` 仓内 `probes/`;测试 fixtures 迁两级布局保持 hermetic(不依赖真实 playground)。
+
 ## 关联
 
 - **修复侧闭环设计**：见 `escalation/cap-probe-fix-flywheel.md`(探测→建单→修复→验证→发布→回灌 六段飞轮 + F0–F4 阶段计划)。
 - probe 发现的 provider 问题单：落 tf_provider 池 528766，指派 WORKER_1782379562571，标签 jarvis-probe。
-- 相关文件：`config/probe.json`、`bootstrap/probe.sh`、`probes/`、`.claude/skills/tf-customer-probe/`、
-  `loops/tf-probe.md`、`test/probe_test.sh`。
+- 相关文件：`config/probe.json`、`bootstrap/probe.sh`、外置 `terraform_playground/`(场景库)、
+  `.claude/skills/tf-customer-probe/`、`loops/tf-probe.md`、`test/probe_test.sh`。
 - 相关技能：aone-triage（接单修复）、provider-resource-dev（资源开发）、terraform-pr-review（PR 评审）、
   invoke-terraform-acc-test-remote（远程 AccTest）、terraform-changelog（发版，未来接 RC 门禁）。
 - 工作纪律：CLAUDE.md #4 工作区登记、#6 身份纪律；autonomy.md（probe 产出的建单/CR 受策略约束）。

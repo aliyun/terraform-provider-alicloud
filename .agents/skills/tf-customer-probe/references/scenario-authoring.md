@@ -2,8 +2,27 @@
 
 写新场景时按此规范。核心信念：**像真实客户一样参考文档**——宁可保守照抄官方示例，不要凭记忆编字段。
 
-> 分层重定义(2026-07-03)后,`probes/scenarios/` 里全是 **tier-1 生命周期场景**(真实 apply),`scenario.yaml`
+> 分层重定义(2026-07-03)后,场景库里全是 **tier-1 生命周期场景**(真实 apply),`scenario.yaml`
 > **无 `tier` 键**。tier-0 是**资源级**静态扫描(`probe.sh tier0`),不写成场景。
+
+## 场景库位置与目录结构(外置 + 两级布局)
+
+- 场景语料库**外置在 jarvis 仓外**的 `terraform_playground/`,按**云产品维度**两级归档:
+
+  ```
+  terraform_playground/
+    <product>/            ← 一级 = 云产品短名(小写),e.g. vpc / oss / ram
+      <id>/               ← 二级 = 场景(= 目录名,scenario.yaml 的 id 须与之一致且全局唯一)
+        scenario.yaml     ← 扁平元数据(probe.sh 用 grep/sed 解析)
+        main.tf           ← 场景 HCL(以官方文档示例为骨架)
+        checks.md         ← 期望行为 + 文档链接 + 探测点
+        step2/main.tf     ← 可选:update 场景覆盖层
+  ```
+
+- **场景 id 跨 product 全局唯一**:`probe.sh run <id>` 按 id 跨 product 目录检索;同 id 出现在多个
+  product 目录会**明确报错**(退 2)。新产品新建一级目录即可。
+- **路径解析优先级**:env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > 默认
+  `<jarvis 根目录的父目录>/terraform_playground`。本机路径覆盖走 `config/workspaces.local.json` / env,base 配置不写绝对路径。
 
 ## 场景来源优先级
 
@@ -12,7 +31,7 @@
    资源名存在、必填参数、字段是否废弃/改名、块是内联还是拆分资源。
 2. **阿里云官方 TF 教程 / 最佳实践**：registry 上的 how-to、云产品 IaC 文档。
 3. **terraform-alicloud registry modules**（alibaba/* 官方 module）的组合方式。
-4. **真实工单回灌**：aone-triage 处理过的客户问题 → `regression-<aone-id>` 场景（见 probes/README.md）。
+4. **真实工单回灌**：aone-triage 处理过的客户问题 → `regression-<aone-id>` 场景(回灌流程见下「工单回灌」)。
 
 ## persona 定义
 
@@ -68,8 +87,19 @@
 - **只测已接入 TF 的面**:某云产品资源/参数**没接入 provider**,不在 tier-0 检查范围——那是「需求」不是「bug」,
   真要提需求走 tf_customer 需求路径,不当 gap 报。
 
+## 工单回灌(regression-<aone-id>)—— 简化为直落 playground + 工单报备
+
+每一个被 aone-triage 处理过的**真实客户 TF 问题**,修复合入后回灌为一个 `regression-<aone-id>` 场景,用作发版前回归项。
+
+- **落点**:场景库外置在 jarvis 仓外(`terraform_playground/`),故回灌**无需 worktree/MR**——jarvis
+  **直接落** `<playground>/<product>/regression-<aone-id>/`(选对应云产品一级目录);`scenario.yaml` 的
+  `source_docs` 换成 Aone 工单链接,`main.tf` 为该工单最小复现配置,`checks.md` 记「修复前症状 / 修复后期望」。
+- **报备**:直落后**必须在对应工单评论里报备场景路径**(`terraform_playground/<product>/regression-<aone-id>/`),
+  供仓库主人查验;这取代了原「escalation/scenario-drafts + 周批 MR」流程(已废弃)。
+- **自检**:`bootstrap/probe.sh list` 能看到该 regression 场景、`run <id> --dry` 退 0。
+
 ## 写完自检
 
-- `bootstrap/probe.sh list` 能看到新场景。
+- `bootstrap/probe.sh list` 能看到新场景(含 PRODUCT 列)。
 - `bootstrap/probe.sh run <id> --dry` 退 0 且步骤计划符合预期(region 解析正确、prepaid 守门说明合理)。
-- `bash test/probe_test.sh` 全绿（校验 yaml 键齐全、id 唯一、无 tier 键、pin 版本、prepaid 守门、region 优先级等）。
+- `bash test/probe_test.sh` 全绿（校验 yaml 键齐全、id 跨 product 唯一、无 tier 键、pin 版本、prepaid 守门、region 与场景根解析优先级等）。

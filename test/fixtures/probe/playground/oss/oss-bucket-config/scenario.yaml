@@ -1,5 +1,5 @@
 id: oss-bucket-config
-title: OSS 桶版本控制+生命周期+标签(进阶客户内联配置)
+title: OSS 桶版本控制+标签(进阶客户内联配置)
 persona: composer
 products: OSS
 resources: alicloud_oss_bucket

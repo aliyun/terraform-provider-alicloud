@@ -21,3 +21,7 @@ escalation/
 # 保留是因为 chicken-and-egg：白名单更新本身也是"改文件"，要能自解封一次。
 bootstrap/master-allowlist
 bootstrap/worktree-guard.sh
+
+# config/workspaces.local.json — gitignored 本机工作区路径覆盖(CLAUDE.md 纪律 #4)。
+# 每台机不同的机器本地配置,base workspaces.json 不存绝对路径;应长期免 worktree。
+config/workspaces.local.json

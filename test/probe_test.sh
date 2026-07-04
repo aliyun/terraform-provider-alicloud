@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # test/probe_test.sh — hermetic tests for tf-customer-probe (probe.sh + config + scenarios)
 #
-# 不依赖 terraform / 网络 / 凭证。tier-0 解析器用 test/fixtures/probe/ 手造 fixture(JARVIS_PROBE_PROVIDER_DIR)。
+# 不依赖 terraform / 网络 / 凭证 / 真实 playground。
+#   - 场景类断言走 test/fixtures/probe/playground/<product>/<id>/(自造最小两级布局),JARVIS_TF_PLAYGROUND 指向它。
+#   - tier-0 解析器走 test/fixtures/probe/(手造迷你 doc + go,JARVIS_PROBE_PROVIDER_DIR)。
 # Run: bash test/probe_test.sh  → 打印 PASS/FAIL 汇总,全过退 0,任一失败退 1。
 
 set -uo pipefail
@@ -10,11 +12,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJ_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROBE="$PROJ_ROOT/bootstrap/probe.sh"
 CONFIG="$PROJ_ROOT/config/probe.json"
-SCEN_DIR="$PROJ_ROOT/probes/scenarios"
 FIXTURE_DIR="$PROJ_ROOT/test/fixtures/probe"
+PLAYGROUND_FIXTURE="$FIXTURE_DIR/playground"
 
-# hermetic: probe.sh 解析走 worktree;剔除环境凭证/region 干扰
+# hermetic: probe.sh 解析走 worktree;场景根指向 fixture 两级布局;剔除环境凭证/region 干扰
 export JARVIS_ROOT="$PROJ_ROOT"
+export JARVIS_TF_PLAYGROUND="$PLAYGROUND_FIXTURE"
 unset ALICLOUD_ACCESS_KEY ALICLOUD_SECRET_KEY ALICLOUD_REGION 2>/dev/null || true
 
 pass=0; fail=0
@@ -26,6 +29,9 @@ yget() { sed -n "s/^$2:[[:space:]]*//p" "$1" 2>/dev/null | head -1 | sed 's/[[:s
 
 # run_probe <args...> — 捕获 stdout+stderr 到 OUT,退出码到 RC(不触发 errexit)
 run_probe() { OUT="$("$@" 2>&1)"; RC=$?; }
+
+# scenario_dirs — 打印 fixture 两级布局每个 <product>/<id>/ 场景目录(尾斜杠)
+scenario_dirs() { for d in "$PLAYGROUND_FIXTURE"/*/*/; do [ -f "$d/scenario.yaml" ] && echo "$d"; done; }
 
 # ---------------------------------------------------------------------------
 echo "Test 1: config/probe.json 新 schema + 必备键 + 默认值"
@@ -43,12 +49,14 @@ done
 [ -n "$(jq -r '.regions.focus' "$CONFIG")" ] && ok "regions.focus 非空" || bad "regions.focus 为空"
 # 成本门已撤销:allowlist 不应存在
 jq -e '.tier1_allowlist == null' "$CONFIG" >/dev/null 2>&1 && ok "tier1_allowlist 已删除(成本门撤销)" || bad "tier1_allowlist 不应再存在"
+# 场景根外置:paths.playground_dir 键存在且默认 null(=走默认约定)
+jq -e '.paths|has("playground_dir")' "$CONFIG" >/dev/null 2>&1 && ok "paths.playground_dir 键存在" || bad "缺 paths.playground_dir 键"
+[ "$(jq -r '.paths.playground_dir' "$CONFIG")" = "null" ] && ok "playground_dir 默认 null(走默认约定)" || bad "playground_dir 应默认 null"
 
 # ---------------------------------------------------------------------------
-echo "Test 2: 场景 scenario.yaml 键齐全 + id 唯一且与目录名一致 + 无 tier 键 + step2/import 声明"
+echo "Test 2: 场景 scenario.yaml 键齐全 + id 唯一(跨 product 全局唯一)+ 无 tier 键 + step2/import 声明"
 ids=""
-for d in "$SCEN_DIR"/*/; do
-    [ -d "$d" ] || continue
+while IFS= read -r d; do
     id="$(basename "$d")"; y="$d/scenario.yaml"
     if [ ! -f "$y" ]; then bad "$id: 缺 scenario.yaml"; continue; fi
     for k in id title persona products resources cost detect update_step import_check source_docs; do
@@ -67,41 +75,40 @@ for d in "$SCEN_DIR"/*/; do
         ia="$(yget "$y" import_address)"; io="$(yget "$y" import_id_output)"
         { [ -n "$ia" ] && [ -n "$io" ]; } && ok "$id: import_check 声明成对($ia / $io)" || bad "$id: import_check=true 但 address/output 不成对"
     fi
-done
+done < <(scenario_dirs)
 uniq_ct="$(printf '%s\n' $ids | sort -u | grep -c .)"; all_ct="$(printf '%s\n' $ids | grep -c .)"
-{ [ "$uniq_ct" = "$all_ct" ] && [ "$all_ct" -ge 5 ]; } && ok "场景 id 唯一且 ≥5(共 $all_ct)" || bad "场景 id 不唯一或不足5(uniq=$uniq_ct all=$all_ct)"
+{ [ "$uniq_ct" = "$all_ct" ] && [ "$all_ct" -ge 4 ]; } && ok "场景 id 跨 product 全局唯一且 ≥4(共 $all_ct)" || bad "场景 id 不唯一或不足4(uniq=$uniq_ct all=$all_ct)"
 
 # ---------------------------------------------------------------------------
 echo "Test 3: 每场景 main.tf 声明 variable run_id + pin version 1.284.0"
-for d in "$SCEN_DIR"/*/; do
-    [ -d "$d" ] || continue
+while IFS= read -r d; do
     id="$(basename "$d")"; tf="$d/main.tf"
     if [ ! -f "$tf" ]; then bad "$id: 缺 main.tf"; continue; fi
     grep -qE 'variable[[:space:]]+"run_id"' "$tf" && ok "$id: 声明 variable run_id" || bad "$id: 缺 variable run_id"
     grep -qE 'version[[:space:]]*=[[:space:]]*"1\.284\.0"' "$tf" && ok "$id: pin version 1.284.0" || bad "$id: 未 pin 1.284.0"
-done
+done < <(scenario_dirs)
 
 # ---------------------------------------------------------------------------
-echo "Test 4: probe.sh list 输出全部场景"
+echo "Test 4: probe.sh list 两级遍历输出全部场景 + PRODUCT 列"
 run_probe bash "$PROBE" list
 [ "$RC" = "0" ] && ok "list 退 0" || bad "list 退 $RC"
-for d in "$SCEN_DIR"/*/; do
-    [ -d "$d" ] || continue
+grep -q "PRODUCT" <<<"$OUT" && ok "list 含 PRODUCT 列头" || bad "list 缺 PRODUCT 列头"
+for p in vpc oss; do grep -qw "$p" <<<"$OUT" && ok "list 含 product 列值 $p" || bad "list 缺 product $p"; done
+while IFS= read -r d; do
     id="$(basename "$d")"
     grep -qw "$id" <<<"$OUT" && ok "list 含 $id" || bad "list 缺 $id"
-done
+done < <(scenario_dirs)
 
 # ---------------------------------------------------------------------------
 echo "Test 5: 每场景 run --dry 退 0 + 步骤计划 + region 解析(tier1 默认开→显示 apply)"
-for d in "$SCEN_DIR"/*/; do
-    [ -d "$d" ] || continue
+while IFS= read -r d; do
     id="$(basename "$d")"
     run_probe bash "$PROBE" run "$id" --dry
     [ "$RC" = "0" ] && ok "$id: --dry 退 0" || bad "$id: --dry 退 $RC"
     grep -q "steps:" <<<"$OUT" && ok "$id: --dry 含步骤计划" || bad "$id: --dry 缺步骤计划"
     grep -q "region 解析" <<<"$OUT" && ok "$id: --dry 含 region 解析" || bad "$id: --dry 缺 region 解析"
     grep -q "apply -auto-approve" <<<"$OUT" && ok "$id: tier1 默认开→显示 apply" || bad "$id: 未显示 apply"
-done
+done < <(scenario_dirs)
 
 # ---------------------------------------------------------------------------
 echo "Test 6: tier1.enabled=false → run --dry 显示 plan-only 封顶(非降级 tier-0)"
@@ -189,6 +196,50 @@ clean="$tmp/wd_clean"; mkdir -p "$clean/20260101T000000Z-empty"
 echo '{"version":4,"resources":[]}' > "$clean/20260101T000000Z-empty/terraform.tfstate"
 run_probe env PROBE_WORKDIR="$clean" bash "$PROBE" sweep
 [ "$RC" = "0" ] && ok "sweep 干净退 0" || bad "sweep 干净应退 0,实退 $RC"
+
+# ---------------------------------------------------------------------------
+echo "Test 13: 场景根(playground)解析优先级(env > config.playground_dir > 默认约定)"
+pg_probe() { bash -c 'source "$1"; probe_playground_dir' _ "$PROBE"; }
+# env 优先(非空且目录存在)
+r="$( export JARVIS_TF_PLAYGROUND="$PLAYGROUND_FIXTURE"; pg_probe )"
+[ "$r" = "$PLAYGROUND_FIXTURE" ] && ok "env JARVIS_TF_PLAYGROUND 优先" || bad "env 优先 got '$r'"
+# env 目录不存在 → 跳过(config null → 默认约定 <JARVIS_ROOT 父目录>/terraform_playground)
+r="$( export JARVIS_TF_PLAYGROUND="$tmp/nonexistent-pg"; pg_probe )"
+[ "$r" = "$(dirname "$PROJ_ROOT")/terraform_playground" ] && ok "env 目录不存在→跳过回落默认" || bad "env 不存在回落 got '$r'"
+# config.playground_dir 次之(env 未设,沙箱 JARVIS_ROOT + config 指向 fixture)
+sb_cfg="$tmp/sb_cfg"; mkdir -p "$sb_cfg/config"
+jq --arg pg "$PLAYGROUND_FIXTURE" '.paths.playground_dir=$pg' "$CONFIG" > "$sb_cfg/config/probe.json"
+r="$( unset JARVIS_TF_PLAYGROUND; export JARVIS_ROOT="$sb_cfg"; pg_probe )"
+[ "$r" = "$PLAYGROUND_FIXTURE" ] && ok "config.playground_dir 次之" || bad "config 次之 got '$r'"
+# config 指向不存在目录 → 回落默认约定
+sb_bad="$tmp/sb_bad"; mkdir -p "$sb_bad/config"
+jq '.paths.playground_dir="/nonexistent/xyz-playground"' "$CONFIG" > "$sb_bad/config/probe.json"
+r="$( unset JARVIS_TF_PLAYGROUND; export JARVIS_ROOT="$sb_bad"; pg_probe )"
+[ "$r" = "$(dirname "$sb_bad")/terraform_playground" ] && ok "config 目录不存在→回落默认" || bad "config 回落 got '$r'"
+# 默认约定(env 未设 + config null)
+sb_def="$tmp/sb_def"; mkdir -p "$sb_def/config"
+cp "$CONFIG" "$sb_def/config/probe.json"
+r="$( unset JARVIS_TF_PLAYGROUND; export JARVIS_ROOT="$sb_def"; pg_probe )"
+[ "$r" = "$(dirname "$sb_def")/terraform_playground" ] && ok "默认走 <jarvis 父目录>/terraform_playground" || bad "默认约定 got '$r'"
+
+# ---------------------------------------------------------------------------
+echo "Test 14: 跨 product 同 id 冲突 → run 明确报错退 2"
+conf="$tmp/conflict_pg"; mkdir -p "$conf/vpc/dup-scn" "$conf/oss/dup-scn"
+printf 'id: dup-scn\npersona: beginner\n'  > "$conf/vpc/dup-scn/scenario.yaml"
+printf 'id: dup-scn\npersona: composer\n'  > "$conf/oss/dup-scn/scenario.yaml"
+run_probe env JARVIS_TF_PLAYGROUND="$conf" bash "$PROBE" run dup-scn --dry
+[ "$RC" = "2" ] && ok "跨 product 同 id → 退 2" || bad "跨 product 冲突应退 2,实退 $RC"
+grep -q "跨 product" <<<"$OUT" && ok "冲突报错含说明" || bad "冲突报错缺说明"
+grep -q "vpc/dup-scn" <<<"$OUT" && grep -q "oss/dup-scn" <<<"$OUT" && ok "冲突列出两处命中" || bad "冲突未列命中路径"
+rm -rf "$conf"
+
+# ---------------------------------------------------------------------------
+echo "Test 15: doctor 缺场景根 → 报状态 + 目录约定 + JARVIS_TF_PLAYGROUND 覆盖提示"
+emptypg="$tmp/empty_pg"; mkdir -p "$emptypg"
+OUT="$( export JARVIS_TF_PLAYGROUND="$emptypg" JARVIS_PROBE_PROVIDER_DIR="$FIXTURE_DIR"; bash "$PROBE" doctor 2>&1 )"; RC=$?
+grep -q "场景根" <<<"$OUT" && ok "doctor 报场景根状态" || bad "doctor 未报场景根"
+grep -q "JARVIS_TF_PLAYGROUND" <<<"$OUT" && ok "doctor 缺场景根→提示 env 覆盖" || bad "doctor 缺 env 覆盖提示"
+grep -q "terraform_playground" <<<"$OUT" && ok "doctor 缺场景根→提示目录约定" || bad "doctor 缺目录约定"
 
 # ---------------------------------------------------------------------------
 echo ""

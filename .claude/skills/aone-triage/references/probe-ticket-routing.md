@@ -8,7 +8,7 @@
 
 - **标签 `jarvis-probe`** 或**标题前缀 `[probe]`**(528766 池)即 probe 工单。
 - 正文含两节:
-  - **「溯源」节**:tier-0 资源(`alicloud_xxx`)或 tier-1 场景(`probes/scenarios/<id>/`)+ verdict 路径(`runs/probe/<日期>-*.json`)。
+  - **「溯源」节**:tier-0 资源(`alicloud_xxx`)或 tier-1 场景(`terraform_playground/<product>/<id>/`)+ verdict 路径(`runs/probe/<日期>-*.json`)。
   - **「修复建议」节**:探测判定给出的处置方向。
 - 路由判定**读工单正文**(尤其「修复建议」+「溯源」),不臆断。
 
@@ -32,11 +32,13 @@
 
 **复验证据(verdict 路径 / 输出摘录)必须贴回工单**——溯源可追、闭环可查。
 
-## 四、回灌（关单前起草）
+## 四、回灌（关单前直落 playground + 工单报备）
 
-- 关单前起草 regression 场景:`main.tf` 可从修复 PR 的验证配置改造,落
-  `escalation/scenario-drafts/regression-<aone-id>/`。
-- 周批走 worktree → MR 入 `probes/scenarios/`(飞轮第⑥段;人工门 = jarvis 仓 MR 合并)。
+- 场景语料库**外置在 jarvis 仓外**(`terraform_playground/`,按云产品维度两级归档),回灌**无需 worktree/MR**:
+  关单前 jarvis **直接落** regression 场景到 `terraform_playground/<product>/regression-<aone-id>/`
+  (`main.tf` 可从修复 PR 的验证配置改造,`source_docs` 换成 Aone 工单链接,`checks.md` 记「修复前症状/修复后期望」)。
+- **落后必在对应工单评论报备场景路径**(`terraform_playground/<product>/regression-<aone-id>/`)供仓库主人查验。
+- 原「`escalation/scenario-drafts` + 周批 MR 入 `probes/`」流程**已废弃**(飞轮第⑥段)。
 
 ## 五、纪律重申
 

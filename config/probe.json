@@ -22,6 +22,7 @@
   "paths": {
     "workdir": ".my-day/probe",
     "audit": "runs/probe",
-    "drafts": "escalation/probe-drafts"
+    "drafts": "escalation/probe-drafts",
+    "playground_dir": null
   }
 }
