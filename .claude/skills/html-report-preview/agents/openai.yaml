@@ -1,0 +1,4 @@
+interface:
+  display_name: "HTML Report Preview"
+  short_description: "Upload HTML reports for online review."
+  default_prompt: "Use $html-report-preview to upload an HTML report and return the online preview link."
