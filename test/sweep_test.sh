@@ -56,6 +56,7 @@ fi
 exit 0
 STUB
 chmod +x "$tmpbin/a1"
+export JARVIS_A1=a1   # 走 PATH 上的 a1 stub,不经真 bin/a1id
 
 output1=$(PATH="$tmpbin:$PATH" \
     JARVIS_ROOT="$tmproot" \

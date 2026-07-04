@@ -94,7 +94,8 @@
       "done_status": "已完成",
       "exclude_status": [
         "已发布",
-        "已取消"
+        "已取消",
+        "已完成"
       ],
       "exclude_title": []
     }

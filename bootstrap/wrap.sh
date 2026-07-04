@@ -29,6 +29,10 @@ source "$script_dir/lib.sh"
 jarvis_root="$(jarvis_root)"
 pools_cfg="$jarvis_root/config/pools.json"
 
+# a1 via bin/a1id → act as the jarvis identity regardless of ambient login (CLAUDE.md #6).
+# Overridable via JARVIS_A1 (tests point it at a stubbed `a1` on PATH).
+A1="${JARVIS_A1:-$jarvis_root/bin/a1id --}"
+
 [ -f "$pools_cfg" ] || { echo "wrap.sh: config/pools.json not found at $pools_cfg" >&2; exit 1; }
 
 # 代码落点页脚：从开发库当前 git 目录采 repo/分支/commit 自动追加，回填进展即定位代码。
@@ -112,10 +116,10 @@ write_done() {
     [ -n "$prefix" ] && local_summary="${prefix}"$'\n\n'"${local_summary}"
     local_summary="${local_summary}$(code_footer)"
     local_summary="$(format_comment "$local_summary")"
-    a1 project workitem comment create "$tid" -m "$local_summary"
+    $A1 project workitem comment create "$tid" -m "$local_summary"
     # 3) 默认改状态；无状态收尾用于当前状态不可转/无需转时避免半失败
     if [ "$update_status" = "1" ]; then
-        a1 project workitem update "$tid" --status "$status"
+        $A1 project workitem update "$tid" --status "$status"
     fi
     bash "$script_dir/cache.sh" bust "wi-$tid"  # 收尾改动后详情已变，丢缓存
 }
@@ -139,7 +143,7 @@ case "$cmd" in
         [ -n "$prefix" ] && text="${prefix}"$'\n\n'"${text}"
         text="${text}$(code_footer)"
         text="$(format_comment "$text")"
-        a1 project workitem comment create "$id" -m "$text" \
+        $A1 project workitem comment create "$id" -m "$text" \
             || echo "wrap.sh: a1 comment 失败（id=${id}），进展未落 Aone，请人工补" >&2
         bash "$script_dir/cache.sh" bust "wi-$id"  # 评论后详情已变，丢缓存
         ;;

@@ -14,6 +14,11 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib.sh"
 jarvis_root="$(jarvis_root)"
 
+# All a1 calls go through bin/a1id so jarvis acts as its own identity (WORKER_...),
+# regardless of the machine's ambient a1 login. Overridable via JARVIS_A1 (tests point
+# it at a stubbed `a1` on PATH). CLAUDE.md #6: a1 一律走 bin/a1id.
+A1="${JARVIS_A1:-$jarvis_root/bin/a1id --}"
+
 # 30min TTL gate: serve cached scan.json if younger than TTL, unless --force (or JARVIS_SCAN_TTL=0).
 # 走 cache.sh age 消除内嵌 stat -f %m/-c %Y 跨平台重实现(P1.d)。
 out_f="$jarvis_root/.my-day/scan.json"
@@ -28,11 +33,16 @@ if [ "$ttl" -gt 0 ] && [ -s "$out_f" ]; then
 fi
 
 # Verify we can authenticate.
-account=$(a1 auth whoami | awk '/Account:/{print $2}')
+account=$($A1 auth whoami | awk '/Account:/{print $2}')
 if [ -z "$account" ]; then
-  echo "scan.sh: could not determine account from 'a1 auth whoami'" >&2
+  echo "scan.sh: could not determine account from '$A1 auth whoami'" >&2
   exit 1
 fi
+
+# Scan target is decoupled from the write identity: JARVIS_SCAN_ASSIGNEE lets the bridge
+# watch someone else's queue (e.g. 辰羿 320687) while all writes stay as jarvis via $A1.
+# Unset → default to the jarvis account itself.
+scan_assignee="${JARVIS_SCAN_ASSIGNEE:-$account}"
 
 # Pools come from config/pools.json. claim_tag is no longer used to filter scan output
 # (claimed items are kept for the board); the key stays in config for claim.sh/triage dedup.
@@ -67,9 +77,9 @@ if $has_pools; then
       page=1
       while :; do
         if [ -n "$filter" ]; then
-          pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --category "$cat" --columns id,title,status,priority,tag,type,category --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+          pg=$($A1 project workitem list --project "$pool_project" --assignee "$scan_assignee" --category "$cat" --columns id,title,status,priority,tag,type,category --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
         else
-          pg=$(a1 project workitem list --project "$pool_project" --assignee "$account" --category "$cat" --columns id,title,status,priority,tag,type,category --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+          pg=$($A1 project workitem list --project "$pool_project" --assignee "$scan_assignee" --category "$cat" --columns id,title,status,priority,tag,type,category --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
         fi
         n=$(echo "$pg" | jq 'length' 2>/dev/null); [ -z "$n" ] && break
         pg=$(jq --arg c "$cat" '[.[] | .category=$c]' <<<"$pg" 2>/dev/null) || pg="[]"
@@ -94,7 +104,7 @@ if $has_pools; then
 else
   # No pools configured: fall back to assignee-based global list (category unstamped).
   # No claim-tag exclusion — keep jarvis-claimed so the board can show 进行中.
-  result=$(a1 project workitem list --assignee "$account" --columns id,title,status,priority,tag,type -f json \
+  result=$($A1 project workitem list --assignee "$scan_assignee" --columns id,title,status,priority,tag,type -f json \
     | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag, category: null}]') || result="[]"
 fi
 

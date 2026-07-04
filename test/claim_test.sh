@@ -92,6 +92,7 @@ fi
 exit 0
 STUB
 chmod +x "$tmpbin/a1"
+export JARVIS_A1=a1   # 走 PATH 上的 a1 stub,不经真 bin/a1id
 
 tmpstatuscap=$(mktemp)
 export A1_LOG="$tmplog" A1_STATE="$tmpstate" A1_CAPTURE="$tmpcapture" A1_GETCNT="$tmpgetcnt" A1_STATUS_CAPTURE="$tmpstatuscap"

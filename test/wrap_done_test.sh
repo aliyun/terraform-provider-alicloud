@@ -39,6 +39,7 @@ chmod +x "$FAKE_BIN_DIR/cache.sh"
 
 # Prepend fake bin to PATH so wrap.sh picks up fake a1
 export PATH="$FAKE_BIN_DIR:$PATH"
+export JARVIS_A1=a1   # 走 PATH 上的 a1 stub,不经真 bin/a1id
 
 # ---------------------------------------------------------------------------
 # Temp runs dir so log.sh run_done writes there

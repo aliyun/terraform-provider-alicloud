@@ -30,6 +30,10 @@ source "$script_dir/lib.sh"
 jarvis_root="$(jarvis_root)"
 pools_cfg="$jarvis_root/config/pools.json"
 
+# a1 via bin/a1id → act as the jarvis identity regardless of ambient login (CLAUDE.md #6).
+# Overridable via JARVIS_A1 (tests point it at a stubbed `a1` on PATH).
+A1="${JARVIS_A1:-$jarvis_root/bin/a1id --}"
+
 if [ ! -f "$pools_cfg" ]; then
     echo "claim.sh: config/pools.json not found at $pools_cfg" >&2
     exit 1
@@ -139,7 +143,7 @@ _ledger_upsert() {
 # call itself fails, so callers can degrade to a legacy bare-tag write.
 _get_tags() {
     local id="$1" json
-    json="$(a1 project workitem get "$id" -f json 2>/dev/null)" || return 1
+    json="$($A1 project workitem get "$id" -f json 2>/dev/null)" || return 1
     # get -f json exposes fields[]; the tag field is identifier=="tag", whose
     # displayValue is the comma-joined human tag names (format multiList). Empty/
     # single/multi all parse: null → "", "a" → "a", "a,b" → "a,b".
@@ -175,10 +179,10 @@ _update_tags_merged() {
     local existing new
     if existing="$(_get_tags "$id")"; then
         new="$(_compute_tags "$existing" "$add" "$remove")"
-        a1 project workitem update "$id" --tag "$new" "$@"
+        $A1 project workitem update "$id" --tag "$new" "$@"
     else
         echo "claim.sh: warning: could not read existing tags for $id; writing only '$add' (pre-existing tags may be lost)" >&2
-        a1 project workitem update "$id" --tag "$add" "$@"
+        $A1 project workitem update "$id" --tag "$add" "$@"
     fi
 }
 
@@ -237,7 +241,7 @@ case "$cmd" in
         _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG"
         rm -f "$(_claim_prefix_path "$workitem_id")"
         if [ -n "$eff_status" ]; then
-            if a1 project workitem update "$workitem_id" --status "$eff_status" >/dev/null 2>&1; then
+            if $A1 project workitem update "$workitem_id" --status "$eff_status" >/dev/null 2>&1; then
                 echo "claim.sh: finished workitem $workitem_id in project $project_id (status=$eff_status)"
             else
                 echo "claim.sh: warning: finished (tagged $DONE_TAG) but status '$eff_status' was rejected for $workitem_id — set a valid status manually or add a per-pool done_status in pools.json" >&2

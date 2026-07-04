@@ -89,6 +89,7 @@ STUB
 chmod +x "$FAKE_BIN_DIR/claim.sh"
 
 export PATH="$FAKE_BIN_DIR:$PATH"
+export JARVIS_A1=a1   # 走 PATH 上的 a1 stub,不经真 bin/a1id
 FAKE_BIN="$FAKE_BIN_DIR"
 
 # ---------------------------------------------------------------------------
