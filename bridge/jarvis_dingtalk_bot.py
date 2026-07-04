@@ -486,6 +486,7 @@ class ScanScheduler:
         self.interval = int(os.environ.get("JARVIS_SCAN_INTERVAL", "1800"))
         self.notify_target = os.environ.get("JARVIS_NOTIFY_GROUP", "cidy1mv+qvMEybkqTXcsXTOeQ==")
         self._prev_ids = set()           # IDs seen in previous scan cycle
+        self._cold = True                # first tick: seed _prev_ids only, no notification
         self.pending = {}                # id -> item dict, awaiting authorization
         self._lock = threading.Lock()    # guards self.pending
         self._thread = None
@@ -539,6 +540,13 @@ class ScanScheduler:
 
         cur_ids = {str(it.get("id", "")) for it in items if it.get("id")}
         items_by_id = {str(it["id"]): it for it in items if it.get("id")}
+
+        # Cold start: seed _prev_ids with current snapshot, skip notification.
+        if self._cold:
+            self._prev_ids = cur_ids
+            self._cold = False
+            log.info("ScanScheduler cold start: seeded %d existing IDs, no notification", len(cur_ids))
+            return
 
         with self._lock:
             pending_ids = set(self.pending.keys())
