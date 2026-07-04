@@ -47,28 +47,32 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
-# escalate <id> <reason>
+# escalate <id> <reason> [title]
 # Append-only audit record: escalation/<id>.md
-# First call creates the file with header + first section.
+# First call creates the file with header + first section (including Aone link and title).
 # Subsequent calls append "---" separator + a new section.
 # NEVER truncates; one file per id.
 # ---------------------------------------------------------------------------
 escalate() {
     local id="$1"
     local reason="$2"
+    local title="${3:-}"
     local esc_dir
     esc_dir="$(lib_escalation_dir)"
     local filepath="$esc_dir/${id}.md"
+    local aone_url="https://project.aone.alibaba-inc.com/issue/$id"
 
     mkdir -p "$esc_dir"
     if [ ! -f "$filepath" ]; then
-        cat > "$filepath" <<EOF
-# Escalation: $id
-
-**id:** $id
-**reason:** $reason
-**timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
-EOF
+        {
+            echo "# Escalation: $id"
+            echo ""
+            [ -n "$title" ] && echo "**title:** $title"
+            echo "**id:** $id"
+            echo "**url:** $aone_url"
+            echo "**reason:** $reason"
+            echo "**timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        } > "$filepath"
     else
         cat >> "$filepath" <<EOF
 
@@ -108,7 +112,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             run_done "${2:-}" "${3:-}" "${4:-}"
             ;;
         escalate)
-            escalate "${2:-}" "${3:-}"
+            escalate "${2:-}" "${3:-}" "${4:-}"
             ;;
         seen)
             seen "${2:-}"
