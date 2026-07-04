@@ -69,6 +69,24 @@ except Exception:
 " 2>/dev/null || true
 }
 
+_extract_title() {
+    local item_id="$1"
+    local json="$2"
+    printf '%s' "$json" | python3 -c "
+import json, sys
+try:
+    items = json.loads(sys.stdin.read())
+    target = '$item_id'
+    for item in items:
+        iid = str(item.get('identifier', item.get('id', '')))
+        if iid == target:
+            print(item.get('subject', item.get('title', '')))
+            break
+except Exception:
+    pass
+" 2>/dev/null || true
+}
+
 # ==== stale (原 sweep.sh) ====
 
 _parse_utc_epoch() {
@@ -104,6 +122,9 @@ _cmd_stale() {
 
         while IFS= read -r item_id; do
             [ -z "$item_id" ] && continue
+            # 幂等：已 escalate 过的工单不再重复追加
+            local _esc_dir="${JARVIS_ESCALATION_DIR:-$JARVIS_ROOT/escalation}"
+            [ -f "$_esc_dir/$item_id.md" ] && continue
             local comments_json latest_ts claim_epoch age_secs age_min
             comments_json=$($A1 project workitem comment list "$item_id" -f json 2>/dev/null || echo "[]")
             latest_ts=$(printf '%s' "$comments_json" | python3 -c "
@@ -129,7 +150,9 @@ except Exception:
             age_secs=$(( NOW_EPOCH - claim_epoch ))
             if [ "$age_secs" -gt "$TTL_SECS" ]; then
                 age_min=$(( age_secs / 60 ))
-                escalate "$item_id" "stale claim >${TTL_MIN}min (age: ${age_min}min)"
+                local item_title
+                item_title=$(_extract_title "$item_id" "$claimed_json")
+                escalate "$item_id" "stale claim >${TTL_MIN}min (age: ${age_min}min)" "$item_title"
                 STALE_IDS+=("$item_id")
             fi
         done <<< "$item_ids"
