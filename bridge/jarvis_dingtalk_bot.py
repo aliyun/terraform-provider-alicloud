@@ -80,8 +80,21 @@ log = logging.getLogger("jarvis-bot")
 
 
 def skill_path():
+    # Resolution order: explicit DINGTALK_SKILL override > global ~/.claude copy if present
+    # > repo-vendored copy > global default (returned even if absent, for the error message).
+    # The repo vendors streaming.py under .claude/skills/, but this module imports it by
+    # absolute path (not via Claude's cwd-based skill discovery), so without the fallback a
+    # machine whose global ~/.claude/skills is empty gets "replies disabled" until someone
+    # sets DINGTALK_SKILL by hand.
     p = os.environ.get("DINGTALK_SKILL")
-    return Path(p) if p else DEFAULT_SKILL
+    if p:
+        return Path(p)
+    if DEFAULT_SKILL.exists():
+        return DEFAULT_SKILL
+    vendored = REPO_ROOT / ".claude" / "skills" / "dingtalk-ai-card" / "scripts" / "streaming.py"
+    if vendored.exists():
+        return vendored
+    return DEFAULT_SKILL
 
 
 def claude_bin():
