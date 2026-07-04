@@ -1,0 +1,4 @@
+alibabacloud-tea-openapi>=0.3.0
+alibabacloud-tea-util>=0.3.0
+alibabacloud-openapi-util>=0.2.0
+pyyaml>=6.0

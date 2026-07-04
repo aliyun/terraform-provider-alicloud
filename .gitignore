@@ -31,6 +31,7 @@ AGENTS.md
 
 # Python bytecode
 __pycache__/
+.venv/
 
 # probe 运行产物(本地审计缓存,真源在 Aone;工作目录在 .my-day/ 已忽略)
 runs/probe/
