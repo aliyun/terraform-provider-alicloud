@@ -48,6 +48,7 @@ STUB
 chmod +x "$tmpbin/a1"
 
 export PATH="$tmpbin:$PATH"
+export JARVIS_A1=a1   # 走 PATH 上的 a1 stub,不经真 bin/a1id
 
 # Test 1 走 no-pools fallback path:tmpdir 无 config/pools.json → global assignee list
 tmpconfig1=$(mktemp -d)
@@ -769,6 +770,56 @@ if echo "$output11" | jq -e '.[0].tag == []' > /dev/null 2>&1; then
 else
     assert_fail "no-pools fallback output missing tag field: $output11"
 fi
+
+# ---------------------------------------------------------------------------
+# Test 12: JARVIS_SCAN_ASSIGNEE overrides the scan target (decoupled from whoami)
+# ---------------------------------------------------------------------------
+cat > "$tmpbin/a1" << 'STUB'
+#!/bin/bash
+if [ "$1" = "auth" ] && [ "$2" = "whoami" ]; then
+    echo "Account:  chenhanzhang.chz"; exit 0
+fi
+if [ "$1" = "project" ] && [ "$2" = "workitem" ] && [ "$3" = "list" ]; then
+    prev=""
+    for a in "$@"; do
+        [ "$prev" = "--assignee" ] && echo "$a" >> "$ASSIGNEE_CAP"
+        prev="$a"
+    done
+    echo '[]'; exit 0
+fi
+exit 1
+STUB
+chmod +x "$tmpbin/a1"
+
+tmpcfgA=$(mktemp -d); mkdir -p "$tmpcfgA/config"
+cat > "$tmpcfgA/config/pools.json" << 'JSON'
+{ "pools": { "p": { "project": 12345, "name": "P" } }, "claim": { "tag": "jarvis-claimed" } }
+JSON
+
+echo "=== Test 12: JARVIS_SCAN_ASSIGNEE override vs default whoami ==="
+capA=$(mktemp)
+JARVIS_ROOT="$tmpcfgA" JARVIS_SCAN_TTL=0 JARVIS_SCAN_ASSIGNEE=320687 ASSIGNEE_CAP="$capA" \
+    bash "$proj_root/bootstrap/scan.sh" >/dev/null 2>&1
+if grep -qx "320687" "$capA"; then
+    assert_pass "JARVIS_SCAN_ASSIGNEE overrides --assignee (320687)"
+else
+    assert_fail "expected --assignee 320687, got: $(sort -u "$capA" | tr '\n' ',')"
+fi
+if ! grep -qx "chenhanzhang.chz" "$capA"; then
+    assert_pass "override suppresses the whoami assignee"
+else
+    assert_fail "whoami assignee leaked despite override"
+fi
+
+: > "$capA"
+JARVIS_ROOT="$tmpcfgA" JARVIS_SCAN_TTL=0 ASSIGNEE_CAP="$capA" \
+    bash "$proj_root/bootstrap/scan.sh" >/dev/null 2>&1
+if grep -qx "chenhanzhang.chz" "$capA"; then
+    assert_pass "default assignee falls back to whoami account"
+else
+    assert_fail "expected whoami assignee by default, got: $(sort -u "$capA" | tr '\n' ',')"
+fi
+rm -rf "$tmpcfgA"; rm -f "$capA"
 
 # ---------------------------------------------------------------------------
 # Summary

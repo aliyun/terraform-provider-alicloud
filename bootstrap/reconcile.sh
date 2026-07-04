@@ -31,6 +31,10 @@ source "$_reconcile_dir/log.sh"
 
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
+# a1 via bin/a1id → act as the jarvis identity regardless of ambient login (CLAUDE.md #6).
+# Overridable via JARVIS_A1 (tests point it at a stubbed `a1` on PATH).
+A1="${JARVIS_A1:-$JARVIS_ROOT/bin/a1id --}"
+
 # ==== 共享 helpers ====
 
 _read_claim_tags() {
@@ -45,7 +49,7 @@ _projects() {
 
 _claimed_items() {
     local project="$1"
-    a1 project workitem list \
+    $A1 project workitem list \
         --project "$project" \
         --tag "$CLAIM_TAG" \
         --filter "NOT tag=$IDLE_TAG AND NOT tag=$DONE_TAG" \
@@ -101,7 +105,7 @@ _cmd_stale() {
         while IFS= read -r item_id; do
             [ -z "$item_id" ] && continue
             local comments_json latest_ts claim_epoch age_secs age_min
-            comments_json=$(a1 project workitem comment list "$item_id" -f json 2>/dev/null || echo "[]")
+            comments_json=$($A1 project workitem comment list "$item_id" -f json 2>/dev/null || echo "[]")
             latest_ts=$(printf '%s' "$comments_json" | python3 -c "
 import json, sys, re
 try:
