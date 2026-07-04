@@ -171,6 +171,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_cr_artifact_lifecycle_rules":                dataSourceAliCloudCrArtifactLifecycleRules(),
 			"alicloud_oss_bucket_inventories":                     dataSourceAliCloudOssBucketInventories(),
 			"alicloud_wafv3_address_books":                        dataSourceAliCloudWafv3AddressBooks(),
 			"alicloud_wafv3_defense_rules":                        dataSourceAliCloudWafv3DefenseRules(),
@@ -930,6 +931,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_das_sql_log_configs":                              dataSourceAliCloudDasSqlLogConfigs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_cr_artifact_lifecycle_rule":                           resourceAliCloudCrArtifactLifecycleRule(),
 			"alicloud_das_sql_log_config":                                   resourceAliCloudDasSqlLogConfig(),
 			"alicloud_oss_bucket_inventory":                                 resourceAliCloudOssBucketInventory(),
 			"alicloud_resource_manager_resource_directory_sharing":          resourceAliCloudResourceManagerResourceDirectorySharing(),
