@@ -40,6 +40,8 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from collections import defaultdict
+from urllib.request import Request, urlopen
+from urllib.error import URLError
 
 import dingtalk_stream
 from dingtalk_stream import AckMessage, AsyncChatbotHandler, ChatbotMessage, Credential, DingTalkStreamClient
@@ -517,6 +519,10 @@ class ScanScheduler:
                 self._tick()
             except Exception:  # noqa: BLE001 — never crash
                 log.exception("ScanScheduler tick failed; will retry next interval")
+            try:
+                self.handler.board.sync()
+            except Exception:  # noqa: BLE001
+                log.exception("board sync after scan tick failed")
             time.sleep(self.interval)
 
     def _tick(self):
@@ -653,6 +659,72 @@ class ReconcileScheduler:
                         (result.stderr or "").strip()[:300])
         else:
             log.info("reconcile.sh all: %s", summary or "(no output)")
+
+
+class BoardScheduler:
+    """Push board.sh JSON to AutomationAgent after each scan tick.
+
+    board.sh reads scan.json (produced by ScanScheduler) and classifies items into
+    states (pool/inflight/done/merged/escalated/idle). The JSON is POSTed to
+    /api/board/sync on AutomationAgent, which stores it for the /board dashboard page.
+
+    Called by ScanScheduler._loop() after each _tick() — not on its own timer,
+    because the board is only useful with fresh scan data.
+    """
+
+    URL_FILE = ".my-day/board-url.txt"
+
+    def __init__(self, handler):
+        self.handler = handler
+        self.base_url = (os.environ.get("JARVIS_HTML_REPORT_BASE_URL")
+                         or "https://pre-agent.aliyun-inc.com").rstrip("/")
+        self.token = os.environ.get("JARVIS_HTML_REPORT_TOKEN", "")
+        self._lock = threading.Lock()
+
+    def start(self):
+        threading.Thread(target=self.sync, daemon=True, name="BoardInit").start()
+
+    def get_url(self):
+        try:
+            p = REPO_ROOT / self.URL_FILE
+            return p.read_text().strip() if p.exists() else None
+        except Exception:
+            return None
+
+    def sync(self):
+        if not self._lock.acquire(blocking=False):
+            return
+        try:
+            result = subprocess.run(
+                [str(REPO_ROOT / "bootstrap" / "board.sh")],
+                cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=60)
+            if result.returncode != 0:
+                log.warning("board.sh failed (rc=%d): %s", result.returncode,
+                            (result.stderr or "").strip()[:300])
+                return
+            board_json = (result.stdout or "").strip()
+            if not board_json:
+                return
+            payload = json.dumps({"items": json.loads(board_json),
+                                  "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+            endpoint = self.base_url + "/api/board/sync"
+            req = Request(endpoint, data=payload.encode(), method="POST",
+                          headers={"Content-Type": "application/json"})
+            if self.token:
+                req.add_header("Authorization", "Bearer " + self.token)
+            with urlopen(req, timeout=30) as resp:
+                body = resp.read().decode()
+            log.info("board synced to %s/board (%d bytes, resp=%s)",
+                     self.base_url, len(payload), body[:200])
+            url_file = REPO_ROOT / self.URL_FILE
+            url_file.parent.mkdir(parents=True, exist_ok=True)
+            url_file.write_text(self.base_url + "/board\n")
+        except (URLError, OSError) as e:
+            log.warning("board sync failed: %s", e)
+        except Exception:
+            log.exception("BoardScheduler sync failed")
+        finally:
+            self._lock.release()
 
 
 # Gradual poll tiers: (age_threshold_sec, poll_interval_sec)
@@ -802,6 +874,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.pool = TataPool()                    # 常驻 idea 进程保温, 消 Tata 冷启
         self.scanner = ScanScheduler(self)
         self.reconciler = ReconcileScheduler(self)
+        self.board = BoardScheduler(self)
         self.dispatch_pool = ThreadPoolExecutor(
             max_workers=int(os.environ.get("JARVIS_DISPATCH_MAX", "3")),
             thread_name_prefix="dispatch")
@@ -962,6 +1035,16 @@ class JarvisHandler(AsyncChatbotHandler):
                     self._quick_card(card_target, "当前没有待处理的工单。", card_type)
                     return AckMessage.STATUS_OK, "nothing_pending"
 
+        # Board command: anyone in audience can view the board link
+        if re.match(r'^(看板|工作板|board)$', text, re.IGNORECASE):
+            url = self.board.get_url()
+            if url:
+                self._quick_card(card_target,
+                    "**Jarvis 工作板**\n\n[点击查看](%s)" % url, card_type)
+            else:
+                self._quick_card(card_target, "工作板尚未生成,请稍候。", card_type)
+            return AckMessage.STATUS_OK, "board"
+
         lock = self.locks[staff]
         if not lock.acquire(blocking=False):
             self._quick_card(card_target, "🟠 上一条还在处理中, 请稍候再发。", card_type)
@@ -1066,10 +1149,12 @@ def main():
     handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
     handler.scanner.start()
     handler.reconciler.start()
+    handler.board.start()
     handler.watcher.start()
     log.info("scan scheduler started (interval=%ss target=%s)",
              handler.scanner.interval, handler.scanner.notify_target)
     log.info("reconcile scheduler started (interval=%ss)", handler.reconciler.interval)
+    log.info("board scheduler started (target=%s)", handler.board.base_url)
     log.info("wait watcher started (suspended=%d)", handler.watcher.count())
     log.info("starting DingTalk stream listener…")
     try:
