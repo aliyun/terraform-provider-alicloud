@@ -660,6 +660,11 @@ class ScanScheduler:
             log.warning("scan.sh failed (rc=%d): %s", result.returncode,
                         result.stderr.strip()[:300])
             return None
+        # rc==0 但有 stderr = scan.sh 内部某池/category 重试尽失败并跳过(部分结果)。
+        # 不作废本轮(其余池仍有效)，但记日志让漏派可见、可追。
+        if result.stderr.strip():
+            log.warning("scan.sh partial (rc=0, some pool/category skipped): %s",
+                        result.stderr.strip()[:300])
         try:
             items = json.loads(result.stdout)
         except (ValueError, TypeError):

@@ -204,7 +204,7 @@ STUB
 chmod +x "$tmpbin/a1"
 
 echo "=== Test 3: all pool a1 list failures → exit 0 with [] (pools are non-fatal) ==="
-output=$(JARVIS_ROOT="$tmpconfig3" bash "$proj_root/bootstrap/scan.sh" 2>&1)
+output=$(JARVIS_ROOT="$tmpconfig3" bash "$proj_root/bootstrap/scan.sh" 2>/dev/null)  # stdout(JSON)only; WARN 走 stderr
 exit_code=$?
 rm -rf "$tmpconfig3"
 echo "Exit code: $exit_code"
@@ -547,7 +547,7 @@ exit 1
 STUB
 chmod +x "$tmpbin/a1"
 
-output8=$(JARVIS_ROOT="$tmpconfig8" bash "$proj_root/bootstrap/scan.sh" 2>&1)
+output8=$(JARVIS_ROOT="$tmpconfig8" bash "$proj_root/bootstrap/scan.sh" 2>/dev/null)  # stdout(JSON)only; WARN 走 stderr
 exit_code8=$?
 rm -rf "$tmpconfig8"
 
