@@ -12,7 +12,7 @@
   },
   "limits": { "max_scenarios_per_run": 3, "step_timeout_min": 20, "daily_new_tickets": 100 },
   "ticket": {
-    "mode": "draft",
+    "mode": "file",
     "pool": "tf_provider",
     "project": 528766,
     "assignee": "WORKER_1782379562571",

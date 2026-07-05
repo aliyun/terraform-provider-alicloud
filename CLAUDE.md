@@ -10,7 +10,7 @@
 
 1) 跑 `bootstrap/preflight.sh`（24h 闸门，`--force` 强制重跑），全绿才干活；
 2) 等任务：有单 → [loops/aone-triage.md](loops/aone-triage.md)，无单 → [loops/adhoc-intake.md](loops/adhoc-intake.md)，低置信/验收不过 → 起草不发出入 `escalation/`；
-3) bridge 定时扫池、授权前置（见 `bridge/jarvis_dingtalk_bot.py` ScanScheduler），Jarvis 不再主动扫。
+3) bridge 定时扫池并自动派发 headless 并发处理（授权前置可配回退 `JARVIS_AUTO_DISPATCH=0`；另含 probe/人工门重访每日轮；见 `bridge/jarvis_dingtalk_bot.py` ScanScheduler），Jarvis 不再主动扫。
 
 ## 工作纪律
 
