@@ -618,6 +618,14 @@ class ScanScheduler:
         self.pending = {}                # id -> item dict, awaiting authorization (fallback mode)
         self._lock = threading.Lock()    # guards self.pending
         self._thread = None
+        # 灰度安全阀：自动派发范围限定。assignee 已由 scan 的 JARVIS_SCAN_ASSIGNEE 限定，
+        # 此处再叠加「池白名单」+「创建时间上限」。机制未大规模实测前，**默认收窄到灰度**
+        # (tf_provider 池 + 2024-01-01 前创建)，即使漏配 env 也不会全量放开(fail-safe)。
+        # 显式设为空("JARVIS_DISPATCH_POOLS="/"JARVIS_DISPATCH_CREATED_BEFORE=")才解除对应限制；
+        # 验证稳定后可放宽此默认。
+        self.dispatch_pools = {p.strip() for p in
+                               os.environ.get("JARVIS_DISPATCH_POOLS", "tf_provider").split(",") if p.strip()}
+        self.dispatch_created_before = os.environ.get("JARVIS_DISPATCH_CREATED_BEFORE", "2024-01-01").strip()
 
     # -- public API ----------------------------------------------------------
 
@@ -662,11 +670,24 @@ class ScanScheduler:
             return None
         return items
 
+    def _in_scope(self, it):
+        """灰度安全阀：item 是否在自动派发范围内。pool 白名单 + created 上限，两者空=不限。
+        created 缺失或 >= cutoff 一律视为不在范围(保守不派，宁可漏派也不误处理)。
+        created 格式 'YYYY-MM-DD HH:MM'，与 'YYYY-MM-DD' cutoff 按字典序比较即时间序。"""
+        if self.dispatch_pools and it.get("pool", "") not in self.dispatch_pools:
+            return False
+        if self.dispatch_created_before:
+            cr = it.get("created") or ""
+            if not cr or cr >= self.dispatch_created_before:
+                return False
+        return True
+
     def _decide(self, items):
         """Cheap pre-dispatch triage for auto mode. Returns a list of
-        {id,title,item,action,reason}. action ∈ {dispatch, skip}; the claim tag /
-        done tag are skipped without spending an instance, and the DispatchPool's
-        active-set + 24h ledger provide soft-dedup (claim stays the real mutex)."""
+        {id,title,item,action,reason}. action ∈ {dispatch, skip}; out-of-scope items
+        (灰度安全阀) and claim/done/idle-tagged items are skipped without spending an
+        instance, and the DispatchPool's active-set + 24h ledger provide soft-dedup
+        (claim stays the real mutex)."""
         out = []
         for it in items:
             iid = str(it.get("id", ""))
@@ -674,7 +695,9 @@ class ScanScheduler:
                 continue
             title = it.get("title", "")
             tags = _tagset(it)
-            if "jarvis-claimed" in tags:
+            if not self._in_scope(it):
+                action, reason = "skip", "out_of_scope"
+            elif "jarvis-claimed" in tags:
                 action, reason = "skip", "claimed"
             elif "jarvis-done" in tags:
                 action, reason = "skip", "done"
@@ -723,6 +746,11 @@ class ScanScheduler:
     def _tick(self):
         """Run scan.sh --force, diff against the previous snapshot; dispatch/notify new
         items and surface (sensing only) externally-updated ones."""
+        # Runtime pause switch: `touch .my-day/bridge/pause` halts new scan+dispatch
+        # without restarting the bridge; `rm` resumes. In-flight workers keep running.
+        if (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
+            log.info("ScanScheduler: pause flag present (.my-day/bridge/pause), skip this tick")
+            return
         items = self._scan()
         if items is None:
             return

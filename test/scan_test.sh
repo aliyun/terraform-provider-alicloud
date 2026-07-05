@@ -116,12 +116,13 @@ else
     assert_fail "tag field missing or wrong (expected [\"p0\",\"urgent\"])"
 fi
 
-# Validate fields: no-pools fallback outputs id,title,type,status,priority,tag,category (7 字段,无 pool)
+# Validate fields: no-pools fallback outputs id,title,type,status,priority,tag,category,modified,created
+# (9 字段,无 pool)。modified 由 F2 加入、created 由灰度范围限定加入(供 JARVIS_DISPATCH_CREATED_BEFORE 判定)。
 field_count=$(echo "$output" | jq -e '.[0] | keys | length' 2>/dev/null)
-if [ "$field_count" -eq 7 ]; then
-    assert_pass "output object has exactly 7 fields (id,title,type,status,priority,tag,category)"
+if [ "$field_count" -eq 9 ]; then
+    assert_pass "output object has exactly 9 fields (…,category,modified,created)"
 else
-    assert_fail "output object has $field_count fields (expected 7:id,title,type,status,priority,tag,category)"
+    assert_fail "output object has $field_count fields (expected 9: id,title,type,status,priority,tag,category,modified,created)"
 fi
 
 # Validate category field present (no-pools fallback stamps category:null)

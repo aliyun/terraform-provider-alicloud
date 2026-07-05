@@ -77,9 +77,9 @@ if $has_pools; then
       page=1
       while :; do
         if [ -n "$filter" ]; then
-          pg=$($A1 project workitem list --project "$pool_project" --assignee "$scan_assignee" --category "$cat" --columns id,title,status,priority,tag,type,category,modified --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+          pg=$($A1 project workitem list --project "$pool_project" --assignee "$scan_assignee" --category "$cat" --columns id,title,status,priority,tag,type,category,modified,gmtCreate --filter "$filter" --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
         else
-          pg=$($A1 project workitem list --project "$pool_project" --assignee "$scan_assignee" --category "$cat" --columns id,title,status,priority,tag,type,category,modified --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
+          pg=$($A1 project workitem list --project "$pool_project" --assignee "$scan_assignee" --category "$cat" --columns id,title,status,priority,tag,type,category,modified,gmtCreate --page "$page" --page-size "$PAGE_SIZE" -f json 2>/dev/null) || true
         fi
         n=$(echo "$pg" | jq 'length' 2>/dev/null); [ -z "$n" ] && break
         pg=$(jq --arg c "$cat" '[.[] | .category=$c]' <<<"$pg" 2>/dev/null) || pg="[]"
@@ -88,7 +88,7 @@ if $has_pools; then
         page=$((page+1))
       done
     done
-    echo "$pool_out" | jq --arg pool "$pool_key" --arg proj "$pool_project" '[.[] | {id:.identifier,title:.subject,type:(.categoryIdentifier // .workitemType),status,pool:$pool,pool_project:$proj,priority,tag,category,modified:.gmtModified}]'
+    echo "$pool_out" | jq --arg pool "$pool_key" --arg proj "$pool_project" '[.[] | {id:.identifier,title:.subject,type:(.categoryIdentifier // .workitemType),status,pool:$pool,pool_project:$proj,priority,tag,category,modified:.gmtModified,created:.gmtCreate}]'
   }
 
   tmpd=$(mktemp -d); trap 'rm -rf "$tmpd"' EXIT
@@ -104,8 +104,8 @@ if $has_pools; then
 else
   # No pools configured: fall back to assignee-based global list (category unstamped).
   # No claim-tag exclusion — keep jarvis-claimed so the board can show 进行中.
-  result=$($A1 project workitem list --assignee "$scan_assignee" --columns id,title,status,priority,tag,type,modified -f json \
-    | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag, category: null, modified: .gmtModified}]') || result="[]"
+  result=$($A1 project workitem list --assignee "$scan_assignee" --columns id,title,status,priority,tag,type,modified,gmtCreate -f json \
+    | jq '[.[] | {id: .identifier, title: .subject, type: (.categoryIdentifier // .workitemType), status, priority, tag, category: null, modified: .gmtModified, created: .gmtCreate}]') || result="[]"
 fi
 
 # Persist scan.json atomically (temp+mv, no torn file) and echo to stdout.
