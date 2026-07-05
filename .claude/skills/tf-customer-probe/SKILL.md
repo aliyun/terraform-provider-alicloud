@@ -19,7 +19,9 @@ description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reporte
 ## 分层(2026-07-03 重定义)
 
 - **tier-0 = 静态三方一致性扫描**(TF 文档 ↔ OpenAPI 文档 ↔ provider 源码),**以资源为单位**,不跑 terraform。
-  机械部分只做本地 文档↔源码 diff(确定性强);OpenAPI 一侧留 `judgment_queue` 交 skill 层查证。
+  机械部分做本地 文档↔源码 diff(五类 `doc_gap_*`)**+ OpenAPI 侧机械三方 diff**(T0-mech,2026-07-05:`probe-meta.sh` 拉 amp
+  元数据,六类 `api_gap_*` 预筛);机械层**拿不准的项才留 `judgment_queue`**(映射不上/纯 prose 约束/被抑制存疑/OSS 无 action),
+  verifier 只判疑点。**精度命门:拿不准一律 queue,绝不硬报。**
 - **tier-1 = 真实 apply 全生命周期探测**(默认开启),**以场景为单位**,region 默认 focus=eu-central-1(重点方向,可切)。
 
 ## 红线（先读）
@@ -38,19 +40,29 @@ description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reporte
 ```bash
 bootstrap/probe.sh doctor
 ```
-terraform/jq/凭证/config/**本地 provider 仓**(tier-0 依赖)。缺 terraform → tier-1 不可跑;缺 provider 仓 → tier-0 不可跑。env 问题走 self-improve/escalation,不硬闯。
+terraform/jq/凭证/config/**本地 provider 仓**(tier-0 依赖)/**probe-meta**(T0-mech OpenAPI 元数据获取层)。缺 terraform → tier-1 不可跑;缺 provider 仓 → tier-0 不可跑;缺 probe-meta(无 venv/凭证)→ tier-0 **自动降级**为纯 doc↔source + 全 queue(不阻断)。env 问题走 self-improve/escalation,不硬闯。
+
+> **T0-mech 元数据层**:`bootstrap/probe-meta.sh`(fetch/cached-fetch/clear/available)薄封装 `amp-resource-metadata` skill 的
+> `get_api_definition.py`,带 `cache.sh` 7d 缓存(全量巡检才跑得起)。启用需 `amp-resource-metadata/scripts/setup.sh` 建 venv +
+> 配 `AMP_`/`ALIBABA_CLOUD_` 凭证(APISpecData 白名单见该 skill SKILL.md)。probe.sh 不直接调 python。
 
 ### A. tier-0 静态三方一致性扫描(建议先跑)
 ```bash
-bootstrap/probe.sh tier0                 # 无参 = 全部场景 resources 并集
-bootstrap/probe.sh tier0 alicloud_vpc    # 指定资源
+bootstrap/probe.sh tier0                        # 无参 = 全部场景 resources 并集
+bootstrap/probe.sh tier0 alicloud_vpc           # 指定资源
+bootstrap/probe.sh tier0 --all --rotate 20      # website/docs/r 全量,取 20 个最久未扫轮换巡检
+bootstrap/probe.sh tier0 --no-mech              # 关机械层(纯 doc↔source + 全 queue,= T0-mech 前现行为)
 ```
-1. runner 机械产出 `findings`(五类 doc↔source gap:`doc_gap_phantom/undocumented/flag_mismatch/forcenew/deprecated`)+ 每资源一条 `judgment_queue`。
-2. **OpenAPI 侧判定接棒(Claude/verifier 子代理)**:对 `judgment_queue` 每资源,走 aone-triage/verifier 同款双层查证惯例——
-   对照 `judgment_queue.api_actions` 指向的 OpenAPI 文档(next.api.aliyun.com),核验 provider 实际调用的 API 的请求/响应参数、
-   枚举值、行为是否与 TF 文档一致;不一致产 `doc_api_gap`(severity 按影响面 S2–S4 由判定给)。
+1. **机械三方 diff 先行**(runner 全机械,确定性强):
+   - 本地 文档↔源码:五类 `doc_gap_*`(phantom/undocumented/flag_mismatch/forcenew/deprecated)。
+   - OpenAPI 侧(T0-mech,`probe-meta.sh available` 时自动开;不可用则降级为纯 doc↔source + 全 queue):从源码抽
+     (product,version,action) 三元组 + 解析 `StringInSlice`/`IntBetween`/`Default`,对 amp 元数据机械 diff → 六类
+     `api_gap_*`(deprecated_action/enum_superset/required/type/range/default)。被抑制项入 `suppressed[]`、TF 更严项入 `coverage_notes[]`。
+2. **verifier 只判疑点**(收窄后的 `judgment_queue`,每条带 `reason`):`prose_review`(长度/字符集/基数等纯 prose 约束、
+   行为一致性)/`unmapped_params`(snake→Camel 映射不上,如 convert 改名)/`enum_unparsed`(枚举非字面 slice)/
+   `no_triple`(OSS SDK 风格抽不到 action)/`meta_unavailable`。对这些走 aone-triage/verifier 双层查证,不一致产 `doc_api_gap`。
    **范围红线**:只核对已接入的 API/参数面,未接入 TF 的一律不报。
-3. findings 定级(见 `references/severity-rubric.md`)→ 去重 → draft。
+3. findings 定级(见 `references/severity-rubric.md`,含 `api_gap_*` 表)→ 去重 → draft/建单。
 
 ### B. tier-1 真实 apply 生命周期探测
 ```bash

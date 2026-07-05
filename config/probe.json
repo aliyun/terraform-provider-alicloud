@@ -10,6 +10,11 @@
     "tier0": { "desc": "静态三方一致性扫描: TF文档↔OpenAPI文档↔provider源码, 只测TF已支持面" },
     "tier1": { "enabled": true, "prepaid_guard": true, "desc": "真实 apply 全生命周期探测" }
   },
+  "tier0_mech": {
+    "desc": "T0-mech OpenAPI 侧机械化 diff 的精度护栏(抑制表)",
+    "suppress_params": ["ClientToken", "RegionId", "OwnerId", "OwnerAccount", "ResourceOwnerId", "ResourceOwnerAccount", "SourceIp", "DryRun", "ResourceGroupId"],
+    "type_tolerance": ["string>integer", "string>long", "string>number", "string>boolean", "int>string", "integer>string", "long>string", "float>string"]
+  },
   "limits": { "max_scenarios_per_run": 3, "step_timeout_min": 20, "daily_new_tickets": 100 },
   "ticket": {
     "mode": "file",

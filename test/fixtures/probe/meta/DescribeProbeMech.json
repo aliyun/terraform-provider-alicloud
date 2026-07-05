@@ -1,0 +1,6 @@
+{
+  "deprecated": false,
+  "parameters": [
+    { "name": "ProbeMechId", "in": "query", "required": true, "schema": { "type": "string", "required": true } }
+  ]
+}

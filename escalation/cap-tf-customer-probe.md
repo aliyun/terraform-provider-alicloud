@@ -80,7 +80,11 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
 ## 路线图
 
 - **P0（本 MR）**：骨架 + 5 场景 + draft 模式 + tier-0 静态扫描(文档↔源码机械 diff)+ tier-1 默认真实 apply。
-- **P1**：**tier-0 OpenAPI 侧机械化**(接 cloudspec/镇元 spec 自动 diff,让 `judgment_queue` 从人判走向机判);
+- **P1**：**tier-0 OpenAPI 侧机械化**——✅ **首发线 T0-mech 已落地**(2026-07-05,F3):`bootstrap/probe-meta.sh` 拉 amp
+  `get_api_definition.py` 元数据(+`cache.sh` 7d 缓存),`probe.sh tier0` 抽 (product,version,action) 三元组 + 解析
+  `StringInSlice`/`IntBetween`/`Default`,机械 diff 出六类 `api_gap_*`(deprecated_action/enum_superset/required/type/range/default),
+  `judgment_queue` 从「人海判定」收窄为「机械层拿不准的疑点(prose/映射不上/OSS 无 action)」+ 抑制表/容差表/coverage_note 精度护栏;
+  未竟:接 cloudspec/镇元 resourceType spec 做更深属性 diff、`--all` 全量轮换的规模化实跑(需 AMP 白名单凭证)。
   **源码 schema 嵌套深层解析**(当前只顶层,深挖 Elem 内层字段);terraform 二进制入 `bootstrap/install.sh` 依赖;
   工单回灌机制落地;`sweep` 接 aliyun CLI 按标签扫真实孤儿资源;自动建单**已毕业**(2026-07-05 主人拍板,采纳率
   7/8=87.5% 提前毕业,`ticket.mode=file`;draft 保留为可回退开关);a1 建单命令与优先级枚举固化。
@@ -96,7 +100,9 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
   pin 版本、list、run `--dry`、`tier1.enabled=false → plan-only` 封顶、region 解析优先级、prepaid 守门(阻断/放行/豁免)、
   **tier-0 解析器五类 gap 全抓 + 嵌套字段不误报**(fixture)、doctor 缺 terraform、sweep 残留。tier-0 亦对真实 provider 仓
   试扫验证(alicloud_vpc 等)。
-- **待验**：tier-1 真实执行路径(apply/import/destroy)待真实测试账号凭证环境端到端验证;tier-0 OpenAPI 侧判定当前靠 skill 层人判(P1 机械化)。
+- **待验**：tier-1 真实执行路径(apply/import/destroy)待真实测试账号凭证环境端到端验证;tier-0 OpenAPI 机械 diff(T0-mech)
+  的**六类 api_gap_* 全被 hermetic 单测覆盖**(fixture 元数据桩,206 断言),真实标定亦对 07-03 首轮 8 资源逐条对照(复现
+  ClassicLink deprecated、RAM/SG 零误报、OSS 正确降级 queue);**待真实 AMP 白名单凭证环境**跑 `tier0 --all` 全量实拉元数据端到端。
 
 ## 决策记录
 
@@ -123,6 +129,20 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
 4. **repo 侧适配**(本 commit):`probe.sh` 场景根解析改 env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` >
    默认 `<jarvis 父目录>/terraform_playground`;目录布局升两级(list 加 PRODUCT 列、跨 product 同 id 报错、doctor 查场景根);
    `git rm` 仓内 `probes/`;测试 fixtures 迁两级布局保持 hermetic(不依赖真实 playground)。
+
+### 2026-07-05（F3 首发线 T0-mech —— tier-0 OpenAPI 侧机械化,Aone 83929676）
+
+规格:tier-0 三方一致性的 OpenAPI 侧从「verifier 人海判定」升级为「机械 diff 预筛 + verifier 只判疑点」。落地(developer 子代理):
+1. **元数据层** `bootstrap/probe-meta.sh`:薄封装 `amp-resource-metadata/get_api_definition.py`,fetch/cached-fetch(cache.sh 7d)/clear/available;
+   probe.sh **不直接调 python**;网络/venv/凭证不可用 → 干净降级(退非零 + 明确提示)。
+2. **机械 diff** `probe.sh tier0`:(product,version,action) 三元组抽取(`RpcPost("P","V",action)` 同行可得,OSS SDK 风格抽不到进 queue)+
+   源码 `StringInSlice`/`IntBetween`/`Default` 解析(解析不动标 unknown 进 queue,不猜)+ 六类 `api_gap_*` 机械 diff。**精度护栏**:
+   snake→Camel 精确映射(映射不上 queue)、抑制表 `suppress_params`+容差表 `type_tolerance`(命中入 `suppressed[]` 可审计)、
+   废弃双轨对不报、TF 更严记 `coverage_notes[]`。**CLI**:`--no-mech`(降级现行为)/`--all`(全资源清单)/`--limit N`/`--rotate N`(LRU 轮换)。
+3. **真实标定(验收核心)**:对 07-03 首轮 8 资源标定——机械层复现 `alicloud_vpc` ClassicLink `api_gap_deprecated_action` ×2
+   (= 单 83881282);`alicloud_ram_role`/`alicloud_security_group` 三方一致 → 零新增误报;`alicloud_oss_bucket` SDK 风格 → `no_triple` queue
+   (enum 超集需元数据可得,符合规格);`dns_hostname_status` convert 改名 → `unmapped_params` queue(机械层不猜)。hermetic 单测 206 断言全绿。
+   **约束**:本机无 AMP 白名单凭证,全量实拉元数据(`tier0 --all`)待有凭证环境端到端验证;机械管道由 fixture 元数据桩完整覆盖。
 
 ## 关联
 

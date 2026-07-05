@@ -1,0 +1,14 @@
+{
+  "deprecated": false,
+  "parameters": [
+    { "name": "Name", "in": "query", "required": true, "schema": { "type": "string", "required": true } },
+    { "name": "StorageClass", "in": "query", "schema": { "type": "string", "enum": ["IA", "Archive", "ColdArchive"], "default": "IA" } },
+    { "name": "RequiredField", "in": "query", "schema": { "type": "string", "required": true } },
+    { "name": "Mask", "in": "query", "schema": { "type": "integer", "minimum": 0, "maximum": 255 } },
+    { "name": "ModeValue", "in": "query", "schema": { "type": "string", "default": "manual" } },
+    { "name": "ConflictType", "in": "query", "schema": { "type": "string" } },
+    { "name": "ClientToken", "in": "query", "schema": { "type": "string", "required": true } },
+    { "name": "SafeEnum", "in": "query", "schema": { "type": "string", "enum": ["a", "b", "c"] } },
+    { "name": "OpaqueEnum", "in": "query", "schema": { "type": "string", "enum": ["x", "y"] } }
+  ]
+}

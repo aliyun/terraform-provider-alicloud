@@ -241,6 +241,191 @@ grep -q "场景根" <<<"$OUT" && ok "doctor 报场景根状态" || bad "doctor �
 grep -q "JARVIS_TF_PLAYGROUND" <<<"$OUT" && ok "doctor 缺场景根→提示 env 覆盖" || bad "doctor 缺 env 覆盖提示"
 grep -q "terraform_playground" <<<"$OUT" && ok "doctor 缺场景根→提示目录约定" || bad "doctor 缺目录约定"
 
+# ===========================================================================
+# F3 T0-mech —— tier-0 OpenAPI 侧机械化(元数据 diff 预筛)
+# ===========================================================================
+PROBEMETA="$PROJ_ROOT/bootstrap/probe-meta.sh"
+META_STUB="$FIXTURE_DIR/meta/fake_api_def.sh"
+
+# ---------------------------------------------------------------------------
+echo "Test 16: probe-meta.sh 薄封装(fetch/cached-fetch/clear/available;PATH 桩替底层 python)"
+if [ -f "$PROBEMETA" ]; then
+    ok "probe-meta.sh 存在"
+    # fetch:桩返回 fixture JSON(以 PROBE_META_PYTHON 覆盖底层 python)
+    OUT="$( PROBE_META_PYTHON="$META_STUB" bash "$PROBEMETA" fetch ProbeMech 2024-01-01 CreateProbeMech 2>/dev/null )"; RC=$?
+    { [ "$RC" = "0" ] && jq -e '.parameters|length>0' <<<"$OUT" >/dev/null 2>&1; } && ok "fetch 吐 API 定义 JSON" || bad "fetch 未吐 JSON(RC=$RC)"
+    # 未知 action → 干净降级(退非零 + 明确提示)
+    OUT="$( PROBE_META_PYTHON="$META_STUB" bash "$PROBEMETA" fetch ProbeMech 2024-01-01 NoSuchAction 2>&1 )"; RC=$?
+    [ "$RC" != "0" ] && ok "fetch 未知 action 退非零" || bad "fetch 未知 action 却退 0"
+    # cached-fetch:二次命中缓存(隔离 JARVIS_CACHE_DIR)
+    cdir="$tmp/pm_cache"
+    OUT="$( PROBE_META_PYTHON="$META_STUB" JARVIS_CACHE_DIR="$cdir" bash "$PROBEMETA" cached-fetch ProbeMech 2024-01-01 CreateProbeMech 2>/dev/null )"; RC1=$?
+    ERR2="$( PROBE_META_PYTHON="$META_STUB" JARVIS_CACHE_DIR="$cdir" bash "$PROBEMETA" cached-fetch ProbeMech 2024-01-01 CreateProbeMech 2>&1 >/dev/null )"
+    { [ "$RC1" = "0" ] && grep -q "cache hit" <<<"$ERR2"; } && ok "cached-fetch 二次命中缓存" || bad "cached-fetch 未命中缓存"
+    # clear → 缓存失效
+    PROBE_META_PYTHON="$META_STUB" JARVIS_CACHE_DIR="$cdir" bash "$PROBEMETA" clear ProbeMech 2024-01-01 CreateProbeMech >/dev/null 2>&1
+    ERR3="$( PROBE_META_PYTHON="$META_STUB" JARVIS_CACHE_DIR="$cdir" bash "$PROBEMETA" cached-fetch ProbeMech 2024-01-01 CreateProbeMech 2>&1 >/dev/null )"
+    grep -q "cache hit" <<<"$ERR3" && bad "clear 后仍命中缓存" || ok "clear 令缓存失效"
+    # available:桩已设 → 可用退 0;完全无桩/无 venv/无凭证 → 不可用退非零
+    ( PROBE_META_PYTHON="$META_STUB" bash "$PROBEMETA" available >/dev/null 2>&1 ) && ok "available(有 fetcher)退 0" || bad "available 有 fetcher 却退非零"
+    ( unset PROBE_META_PYTHON AMP_ACCESS_KEY_ID AMP_ACCESS_KEY_SECRET ALIBABA_CLOUD_ACCESS_KEY_ID ALIBABA_CLOUD_ACCESS_KEY_SECRET
+      AMP_SKILL_DIR="$tmp/nonexistent-skill" bash "$PROBEMETA" available >/dev/null 2>&1 ) && bad "available 无 fetcher/凭证却退 0" || ok "available 无能力退非零"
+else
+    bad "probe-meta.sh 缺失"
+fi
+
+# ---------------------------------------------------------------------------
+echo "Test 17: 源码 (product,version,action) 三元组抽取(RpcPost 风格)+ OSS 类抽不到"
+srcmech="$FIXTURE_DIR/alicloud/resource_alicloud_probemech.go"
+pv="$( bash -c 'source "$1"; _source_pv "$2"' _ "$PROBE" "$srcmech" 2>/dev/null )"
+[ "$pv" = "$(printf 'ProbeMech\t2024-01-01')" ] && ok "_source_pv 抽到唯一 (ProbeMech,2024-01-01)" || bad "_source_pv 异常: '$pv'"
+tri="$( bash -c 'source "$1"; _source_api_triples "$2"' _ "$PROBE" "$srcmech" 2>/dev/null )"
+has_tri() { echo "$tri" | awk -F'\t' -v a="$1" '$1=="ProbeMech"&&$2=="2024-01-01"&&$3==a{f=1} END{exit !f}'; }
+has_tri CreateProbeMech && ok "三元组含 CreateProbeMech" || bad "三元组缺 CreateProbeMech"
+has_tri LegacyAction && ok "三元组含 LegacyAction" || bad "三元组缺 LegacyAction"
+# probefix(无 RpcPost,SDK/其它风格)→ 抽不到 (product,version) → 三元组空
+tri0="$( bash -c 'source "$1"; _source_api_triples "$2"' _ "$PROBE" "$FIXTURE_DIR/alicloud/resource_alicloud_probefix.go" 2>/dev/null )"
+[ -z "$tri0" ] && ok "无 RpcPost 资源三元组为空(进 queue,不猜)" || bad "无 RpcPost 却抽出三元组: '$tri0'"
+
+# ---------------------------------------------------------------------------
+echo "Test 18: 源码约束解析器(enum/range/default/type;拿不准标 unknown)"
+sc="$( bash -c 'source "$1"; _parse_source_constraints "$2"' _ "$PROBE" "$srcmech" 2>/dev/null )"
+scget() { echo "$sc" | awk -F'\t' -v k="$1" '$1==k{print; exit}'; }
+# storage_class: type string, enum known {Standard,IA,Archive}, default IA
+row="$(scget storage_class)"
+{ echo "$row" | grep -q "string" && echo "$row" | grep -q "Standard" && echo "$row" | grep -q "known"; } && ok "storage_class enum known+值抓到" || bad "storage_class 解析异常: $row"
+echo "$row" | grep -qw "IA" && ok "storage_class default 抓到 IA" || bad "storage_class default 缺失: $row"
+# mask: IntBetween(0,4095) range known
+row="$(scget mask)"
+{ echo "$row" | grep -qw "0" && echo "$row" | grep -qw "4095" && echo "$row" | grep -q "known"; } && ok "mask range known 0..4095" || bad "mask range 解析异常: $row"
+# mode_value: default auto
+row="$(scget mode_value)"
+echo "$row" | grep -qw "auto" && ok "mode_value default auto" || bad "mode_value default 缺失: $row"
+# conflict_type: TypeList → list
+row="$(scget conflict_type)"
+echo "$row" | grep -qw "list" && ok "conflict_type type=list" || bad "conflict_type type 解析异常: $row"
+# opaque_enum: StringInSlice(变量) → enum_status unknown(不猜)
+row="$(scget opaque_enum)"
+echo "$row" | grep -q "unknown" && ok "opaque_enum enum_status=unknown(拿不准不猜)" || bad "opaque_enum 应 unknown: $row"
+# 顶层 only:嵌套/未定义字段不出现;safe_enum enum known 单值
+row="$(scget safe_enum)"
+{ echo "$row" | grep -qw "a" && echo "$row" | grep -q "known"; } && ok "safe_enum enum known {a}" || bad "safe_enum 解析异常: $row"
+
+# ---------------------------------------------------------------------------
+echo "Test 19: API 元数据规范化(_api_extract_params / _api_action_deprecated)"
+cm="$FIXTURE_DIR/meta/CreateProbeMech.json"
+ap="$( bash -c 'source "$1"; _api_extract_params "$2"' _ "$PROBE" "$cm" 2>/dev/null )"
+apget() { echo "$ap" | awk -F'\t' -v k="$1" '$1==k{print; exit}'; }
+{ echo "$(apget StorageClass)" | grep -q "IA" && echo "$(apget StorageClass)" | grep -q "ColdArchive"; } && ok "API StorageClass 枚举抽到" || bad "API StorageClass 枚举缺失"
+echo "$(apget Mask)" | grep -qw "255" && ok "API Mask max=255 抽到" || bad "API Mask range 缺失"
+echo "$(apget RequiredField)" | grep -qw "1" && ok "API RequiredField required=1" || bad "API RequiredField required 缺失"
+dep="$( bash -c 'source "$1"; _api_action_deprecated "$2"' _ "$PROBE" "$FIXTURE_DIR/meta/LegacyAction.json" 2>/dev/null )"
+[ "$dep" = "true" ] && ok "LegacyAction deprecated=true" || bad "LegacyAction deprecated 判定异常: '$dep'"
+dep2="$( bash -c 'source "$1"; _api_action_deprecated "$2"' _ "$PROBE" "$cm" 2>/dev/null )"
+[ "$dep2" = "false" ] && ok "CreateProbeMech deprecated=false" || bad "CreateProbeMech deprecated 判定异常: '$dep2'"
+
+# ---------------------------------------------------------------------------
+echo "Test 20: tier0 机械 diff —— 六类 api_gap_* finding 全抓(fixture 元数据桩)"
+audm="$tmp/audit_mech"; mkdir -p "$audm"
+run_probe env JARVIS_PROBE_PROVIDER_DIR="$FIXTURE_DIR" PROBE_AUDIT_DIR="$audm" \
+    PROBE_META_PYTHON="$META_STUB" JARVIS_CACHE_DIR="$tmp/mech_cache" \
+    bash "$PROBE" tier0 alicloud_probemech
+[ "$RC" = "1" ] && ok "tier0 mech 有 findings 退 1" || bad "tier0 mech 应退 1,实退 $RC"
+tm="$audm/$(date -u +%Y%m%d)-tier0.json"
+if [ -f "$tm" ]; then
+    ok "tier0 mech verdict 落盘"
+    fcode() { jq -r --arg c "$1" --arg a "$2" '[.findings[]|select(.code==$c and .attribute==$a)]|length' "$tm"; }
+    fsev()  { jq -r --arg c "$1" --arg a "$2" '[.findings[]|select(.code==$c and .attribute==$a)][0].severity_hint' "$tm"; }
+    [ "$(fcode api_gap_deprecated_action LegacyAction)" = "1" ] && [ "$(fsev api_gap_deprecated_action LegacyAction)" = "S3" ] && ok "api_gap_deprecated_action LegacyAction (S3)" || bad "deprecated_action 缺失/错级"
+    [ "$(fcode api_gap_enum_superset storage_class)" = "1" ] && [ "$(fsev api_gap_enum_superset storage_class)" = "S3" ] && ok "api_gap_enum_superset storage_class (S3)" || bad "enum_superset 缺失/错级"
+    [ "$(fcode api_gap_required required_field)" = "1" ] && [ "$(fsev api_gap_required required_field)" = "S3" ] && ok "api_gap_required required_field (S3)" || bad "required 缺失/错级"
+    [ "$(fcode api_gap_type conflict_type)" = "1" ] && [ "$(fsev api_gap_type conflict_type)" = "S3" ] && ok "api_gap_type conflict_type (S3)" || bad "type 缺失/错级"
+    [ "$(fcode api_gap_range mask)" = "1" ] && [ "$(fsev api_gap_range mask)" = "S4" ] && ok "api_gap_range mask (S4)" || bad "range 缺失/错级"
+    [ "$(fcode api_gap_default mode_value)" = "1" ] && [ "$(fsev api_gap_default mode_value)" = "S4" ] && ok "api_gap_default mode_value (S4)" || bad "default 缺失/错级"
+    # enum_superset 证据应含越界值 Standard
+    jq -e '[.findings[]|select(.code=="api_gap_enum_superset")][0].summary|test("Standard")' "$tm" >/dev/null 2>&1 && ok "enum_superset 证据含越界值 Standard" || bad "enum_superset 证据缺越界值"
+    [ "$(jq -r '.mech' "$tm")" = "on" ] && ok "verdict.mech=on" || bad "verdict.mech 非 on"
+else
+    bad "tier0 mech verdict 未落盘 $tm"
+fi
+
+# ---------------------------------------------------------------------------
+echo "Test 21: 精度护栏 —— 零误报 + 抑制表 + queue 路由(拿不准不硬报)"
+if [ -f "$tm" ]; then
+    # 零误报:一致/更严/被抑制/映射不上/不可解析 的字段绝不进 api_gap_* findings
+    for a in name safe_enum client_token renamed_field opaque_enum; do
+        n=$(jq -r --arg a "$a" '[.findings[]|select((.code|startswith("api_gap")) and .attribute==$a)]|length' "$tm")
+        [ "$n" = "0" ] && ok "无误报 api_gap $a" || bad "误报 api_gap $a (n=$n)"
+    done
+    # TF 更严(safe_enum ⊊ API)记 coverage note 而非 finding
+    jq -e '[.coverage_notes[]?|select(.attribute=="safe_enum")]|length>=1' "$tm" >/dev/null 2>&1 && ok "safe_enum 记 coverage note(方向安全)" || bad "safe_enum 未记 coverage note"
+    # 抑制表:client_token→ClientToken 命中 suppress_params,入 suppressed[]
+    jq -e '[.suppressed[]?|select(.resource=="alicloud_probemech" and (.param=="client_token" or .api_param=="ClientToken"))]|length>=1' "$tm" >/dev/null 2>&1 && ok "client_token 入 suppressed[](可审计)" || bad "client_token 未入 suppressed[]"
+    # queue 路由:映射不上 → unmapped_params(带 renamed_field);枚举不可解析 → enum_unparsed(带 opaque_enum)
+    jq -e '[.judgment_queue[]?|select(.resource=="alicloud_probemech" and .reason=="unmapped_params")][0].detail|index("renamed_field")' "$tm" >/dev/null 2>&1 && ok "renamed_field 进 queue(unmapped_params)" || bad "renamed_field 未进 unmapped queue"
+    jq -e '[.judgment_queue[]?|select(.resource=="alicloud_probemech" and .reason=="enum_unparsed")][0].detail|index("opaque_enum")' "$tm" >/dev/null 2>&1 && ok "opaque_enum 进 queue(enum_unparsed)" || bad "opaque_enum 未进 enum_unparsed queue"
+    # 每条 queue 带 reason
+    qnoreason=$(jq -r '[.judgment_queue[]?|select((.reason==null) or (.reason==""))]|length' "$tm")
+    [ "$qnoreason" = "0" ] && ok "judgment_queue 每条带 reason" || bad "有 $qnoreason 条 queue 缺 reason"
+else
+    bad "Test 21 无 verdict 可断言"
+fi
+
+# ---------------------------------------------------------------------------
+echo "Test 22: --no-mech 与降级路径等价现行为(纯 doc↔source + 全 queue,零 api_gap)"
+# --no-mech:显式关机械层
+audn="$tmp/audit_nomech"; mkdir -p "$audn"
+run_probe env JARVIS_PROBE_PROVIDER_DIR="$FIXTURE_DIR" PROBE_AUDIT_DIR="$audn" \
+    PROBE_META_PYTHON="$META_STUB" JARVIS_CACHE_DIR="$tmp/nomech_cache" \
+    bash "$PROBE" tier0 alicloud_probemech --no-mech
+tn="$audn/$(date -u +%Y%m%d)-tier0.json"
+if [ -f "$tn" ]; then
+    napi=$(jq -r '[.findings[]|select(.code|startswith("api_gap"))]|length' "$tn")
+    [ "$napi" = "0" ] && ok "--no-mech 零 api_gap finding" || bad "--no-mech 却有 $napi 个 api_gap"
+    [ "$(jq -r '.mech' "$tn")" = "off" ] && ok "--no-mech verdict.mech=off" || bad "--no-mech mech 非 off"
+    jq -e '[.judgment_queue[]?|select(.resource=="alicloud_probemech")]|length>=1' "$tn" >/dev/null 2>&1 && ok "--no-mech 资源进 queue" || bad "--no-mech 资源未进 queue"
+else
+    bad "--no-mech verdict 未落盘"
+fi
+# 降级:probe-meta 不可用(无桩/无 venv/无凭证)→ 自动等价 --no-mech
+audd="$tmp/audit_degrade"; mkdir -p "$audd"
+run_probe env JARVIS_PROBE_PROVIDER_DIR="$FIXTURE_DIR" PROBE_AUDIT_DIR="$audd" \
+    AMP_SKILL_DIR="$tmp/nonexistent-skill" \
+    bash "$PROBE" tier0 alicloud_probemech
+td="$audd/$(date -u +%Y%m%d)-tier0.json"
+if [ -f "$td" ]; then
+    napi=$(jq -r '[.findings[]|select(.code|startswith("api_gap"))]|length' "$td")
+    [ "$napi" = "0" ] && ok "降级路径零 api_gap finding" || bad "降级却有 $napi 个 api_gap"
+    [ "$(jq -r '.mech' "$td")" = "degraded" ] && ok "降级 verdict.mech=degraded" || bad "降级 mech 非 degraded"
+else
+    bad "降级 verdict 未落盘"
+fi
+
+# ---------------------------------------------------------------------------
+echo "Test 23: --all / --limit / --rotate(全量清单 + LRU 轮换)"
+# --all:website/docs/r/*.html.markdown 全量清单(fixture 有 probefix + probemech)
+run_probe env JARVIS_PROBE_PROVIDER_DIR="$FIXTURE_DIR" bash "$PROBE" tier0 --all --dry
+{ [ "$RC" = "0" ] && grep -q "alicloud_probefix" <<<"$OUT" && grep -q "alicloud_probemech" <<<"$OUT"; } && ok "--all 列全量资源(probefix+probemech)" || bad "--all 清单异常(RC=$RC)"
+# --limit N:截断
+run_probe env JARVIS_PROBE_PROVIDER_DIR="$FIXTURE_DIR" bash "$PROBE" tier0 --all --limit 1 --dry
+nres=$(grep -cE '^    - alicloud_' <<<"$OUT")
+[ "$nres" = "1" ] && ok "--limit 1 截断为 1 个资源" || bad "--limit 1 未截断(得 $nres)"
+# --rotate LRU 选择(单测 _rotate_select / _rotate_mark)
+stf="$tmp/t0mech-scanned.json"; rm -f "$stf"
+sel="$( bash -c 'source "$1"; _rotate_select "$2" 1 alicloud_probefix alicloud_probemech' _ "$PROBE" "$stf" 2>/dev/null )"
+[ -n "$sel" ] && [ "$(printf '%s\n' $sel | grep -c .)" = "1" ] && ok "_rotate_select 空状态返回 1 个" || bad "_rotate_select 空状态异常: '$sel'"
+# 标记 probefix 已扫 → 下次 rotate 应优先未扫的 probemech(LRU)
+bash -c 'source "$1"; _rotate_mark "$2" alicloud_probefix' _ "$PROBE" "$stf" 2>/dev/null
+[ -f "$stf" ] && jq -e '.["alicloud_probefix"]!=null' "$stf" >/dev/null 2>&1 && ok "_rotate_mark 落状态文件" || bad "_rotate_mark 未落状态"
+sel2="$( bash -c 'source "$1"; _rotate_select "$2" 1 alicloud_probefix alicloud_probemech' _ "$PROBE" "$stf" 2>/dev/null )"
+[ "$sel2" = "alicloud_probemech" ] && ok "_rotate_select LRU 优先未扫的 probemech" || bad "_rotate_select LRU 错选: '$sel2'"
+
+# ---------------------------------------------------------------------------
+echo "Test 24: doctor 报 probe-meta 可用性(不可用=WARN,tier0 自动降级)"
+OUT="$( export JARVIS_PROBE_PROVIDER_DIR="$FIXTURE_DIR" AMP_SKILL_DIR="$tmp/nonexistent-skill"; unset PROBE_META_PYTHON AMP_ACCESS_KEY_ID ALIBABA_CLOUD_ACCESS_KEY_ID; bash "$PROBE" doctor 2>&1 )"; RC=$?
+grep -qi "probe-meta" <<<"$OUT" && ok "doctor 报 probe-meta 状态行" || bad "doctor 缺 probe-meta 行"
+grep -q "WARN" <<<"$OUT" && grep -qi "降级\|degrad\|机械" <<<"$OUT" && ok "doctor probe-meta 不可用→WARN+降级提示" || bad "doctor 缺降级提示"
+
 # ---------------------------------------------------------------------------
 echo ""
 echo "Results: $pass passed, $fail failed"
