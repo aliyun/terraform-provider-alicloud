@@ -45,7 +45,7 @@ for k in '.provider.version' '.terraform.required_version' '.regions.focus' '.re
 done
 [ "$(jq -r '.tiers.tier1.enabled' "$CONFIG")" = "true" ] && ok "tier1.enabled 默认 true" || bad "tier1.enabled 应默认 true"
 [ "$(jq -r '.tiers.tier1.prepaid_guard' "$CONFIG")" = "true" ] && ok "tier1.prepaid_guard 默认 true" || bad "prepaid_guard 应默认 true"
-[ "$(jq -r '.ticket.mode' "$CONFIG")" = "draft" ] && ok "ticket.mode 默认 draft" || bad "ticket.mode 应默认 draft"
+[ "$(jq -r '.ticket.mode' "$CONFIG")" = "file" ] && ok "ticket.mode 默认 file (2026-07-05 毕业)" || bad "ticket.mode 应默认 file"
 [ -n "$(jq -r '.regions.focus' "$CONFIG")" ] && ok "regions.focus 非空" || bad "regions.focus 为空"
 # 成本门已撤销:allowlist 不应存在
 jq -e '.tier1_allowlist == null' "$CONFIG" >/dev/null 2>&1 && ok "tier1_allowlist 已删除(成本门撤销)" || bad "tier1_allowlist 不应再存在"

@@ -62,14 +62,15 @@ probe 发现(tier-0 doc gap / tier-1 生命周期 bug) → 建单(tf_provider 52
 ## 危害分级 → 优先级映射
 
 S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.md`）→ Aone 优先级 紧急/高/中/低。
-具体枚举值在首次真实建单（mode=file 毕业后）用 a1 查证项目 528766 字段后固化。
+具体枚举值在首次真实建单（mode=file，2026-07-05 已毕业）用 a1 查证项目 528766 字段后固化。
 
 ## 护栏
 
 - **销毁性(替代成本门)**：**prepaid 守门**——apply 前扫 plan 的 `*charge_type`/`*payment_type`,命中
   PrePaid/Subscription 默认阻断(包年包月多数无法 API 销毁,破坏零残留);场景 `allow_prepaid:true` 或
   `prepaid_guard=false` 豁免。强制 `destroy`(trap EXIT 兜底);`sweep` 残留核查;**残留即停并升级**。
-- **工单**：draft 冷启动(当前不写 Aone);建单前去重(a1 标签 + GitHub issue 只读);日上限
+- **工单**：mode=file 已毕业(2026-07-05,直接建 Aone 单);draft 冷启动保留为可回退开关
+  (`ticket.mode=draft` 只写 `escalation/probe-drafts/`、不碰 Aone);建单前去重(a1 标签 + GitHub issue 只读);日上限
   `daily_new_tickets`(默认 100);统一 `jarvis-probe` 标签。
 - **身份/账号**：a1 一律 jarvis(`bin/a1id`);probe 会话不 claim 工单;**只用环境注入的测试 AK/SK,绝不用生产账号**。
 - **凭证**：AK/SK 绝不落日志 / verdict / draft / 工单;doctor 只报 set/unset。
@@ -81,8 +82,8 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
 - **P0（本 MR）**：骨架 + 5 场景 + draft 模式 + tier-0 静态扫描(文档↔源码机械 diff)+ tier-1 默认真实 apply。
 - **P1**：**tier-0 OpenAPI 侧机械化**(接 cloudspec/镇元 spec 自动 diff,让 `judgment_queue` 从人判走向机判);
   **源码 schema 嵌套深层解析**(当前只顶层,深挖 Elem 内层字段);terraform 二进制入 `bootstrap/install.sh` 依赖;
-  工单回灌机制落地;`sweep` 接 aliyun CLI 按标签扫真实孤儿资源;自动建单毕业条件(累计 ≥10 draft 且采纳率 ≥90% 后
-  `ticket.mode` 切 `file`);a1 建单命令与优先级枚举固化。
+  工单回灌机制落地;`sweep` 接 aliyun CLI 按标签扫真实孤儿资源;自动建单**已毕业**(2026-07-05 主人拍板,采纳率
+  7/8=87.5% 提前毕业,`ticket.mode=file`;draft 保留为可回退开关);a1 建单命令与优先级枚举固化。
 - **P2**：cron/bridge 定时接入(**调度与修复闭环统一由 `cap-probe-fix-flywheel` F2 承接**);场景库批量扩容
   (website docs 全量 tier-0 覆盖);发布前 RC 门禁(接 terraform-changelog 发版流程,发版前全资源 tier-0 + 全场景
   tier-1 过一遍);upgrader persona(版本升级 state 兼容探测)。
