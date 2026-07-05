@@ -485,8 +485,8 @@ class ScanScheduler:
         self.handler = handler
         self.interval = int(os.environ.get("JARVIS_SCAN_INTERVAL", "1800"))
         self.notify_target = os.environ.get("JARVIS_NOTIFY_GROUP", "cidy1mv+qvMEybkqTXcsXTOeQ==")
-        self._prev_ids = set()           # IDs seen in previous scan cycle
-        self._cold = True                # first tick: seed _prev_ids only, no notification
+        self._prev_snapshot = {}         # id -> {modified, ...} full item snapshot
+        self._cold = True                # first tick: seed snapshot only, no notification
         self.pending = {}                # id -> item dict, awaiting authorization
         self._lock = threading.Lock()    # guards self.pending
         self._thread = None
@@ -520,7 +520,7 @@ class ScanScheduler:
             time.sleep(self.interval)
 
     def _tick(self):
-        """Run scan.sh --force, diff against previous, notify new items."""
+        """Run scan.sh --force, diff against previous, notify new AND updated items."""
         cmd = [str(REPO_ROOT / "bootstrap" / "scan.sh"), "--force"]
         result = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True,
                                 text=True, timeout=120)
@@ -538,44 +538,70 @@ class ScanScheduler:
             log.warning("scan.sh returned non-list: %s", type(items).__name__)
             return
 
-        cur_ids = {str(it.get("id", "")) for it in items if it.get("id")}
-        items_by_id = {str(it["id"]): it for it in items if it.get("id")}
+        cur_snapshot = {str(it["id"]): it for it in items if it.get("id")}
+        cur_ids = set(cur_snapshot.keys())
 
-        # Cold start: seed _prev_ids with current snapshot, skip notification.
+        # Cold start: seed snapshot only, no notification.
         if self._cold:
-            self._prev_ids = cur_ids
+            self._prev_snapshot = cur_snapshot
             self._cold = False
             log.info("ScanScheduler cold start: seeded %d existing IDs, no notification", len(cur_ids))
             return
 
+        prev_ids = set(self._prev_snapshot.keys())
         with self._lock:
             pending_ids = set(self.pending.keys())
 
-        # Truly new = not in previous scan AND not already pending authorization
-        new_ids = cur_ids - self._prev_ids - pending_ids
-        self._prev_ids = cur_ids
+        # New = not in previous scan AND not already pending authorization
+        new_ids = cur_ids - prev_ids - pending_ids
 
-        if not new_ids:
+        # Updated = existed before, modified time changed
+        updated_ids = set()
+        for iid in (cur_ids & prev_ids):
+            cur_mod = cur_snapshot[iid].get("modified", "")
+            prev_mod = self._prev_snapshot[iid].get("modified", "")
+            if cur_mod and prev_mod and cur_mod != prev_mod:
+                updated_ids.add(iid)
+
+        self._prev_snapshot = cur_snapshot
+
+        new_items = {iid: cur_snapshot[iid] for iid in new_ids if iid in cur_snapshot}
+        updated_items = {iid: cur_snapshot[iid] for iid in updated_ids if iid in cur_snapshot}
+
+        if new_items:
+            with self._lock:
+                self.pending.update(new_items)
+
+        if not new_items and not updated_items:
             return
-
-        new_items = {iid: items_by_id[iid] for iid in new_ids if iid in items_by_id}
-        with self._lock:
-            self.pending.update(new_items)
 
         # Build notification card text
         aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
-        lines = ["**新工单到达 (%d)**\n" % len(new_items)]
-        for iid, it in new_items.items():
-            pri = it.get("priority", "")
-            title = it.get("title", "(无标题)")
-            proj = it.get("pool_project", "")
-            if proj:
-                id_link = "[#%s](%s)" % (iid, aone_url % (proj, iid))
-            else:
-                id_link = "#%s" % iid
-            lines.append("- %s %s%s" % (id_link, title, (" [%s]" % pri) if pri else ""))
-        lines.append("")
-        lines.append('回复「处理 #ID」授权单条，或「全部处理」批量授权')
+        lines = []
+
+        if new_items:
+            lines.append("**新工单 (%d)**\n" % len(new_items))
+            for iid, it in new_items.items():
+                pri = it.get("priority", "")
+                title = it.get("title", "(无标题)")
+                proj = it.get("pool_project", "")
+                id_link = "[#%s](%s)" % (iid, aone_url % (proj, iid)) if proj else "#%s" % iid
+                lines.append("- %s %s%s" % (id_link, title, (" [%s]" % pri) if pri else ""))
+            lines.append("")
+
+        if updated_items:
+            lines.append("**有更新 (%d)**\n" % len(updated_items))
+            for iid, it in updated_items.items():
+                title = it.get("title", "(无标题)")
+                proj = it.get("pool_project", "")
+                pool = it.get("pool", "")
+                id_link = "[#%s](%s)" % (iid, aone_url % (proj, iid)) if proj else "#%s" % iid
+                lines.append("- %s %s [%s]" % (id_link, title, pool))
+            lines.append("")
+
+        if new_items:
+            lines.append('回复「处理 #ID」授权单条，或「全部处理」批量授权')
+
         text = "\n".join(lines)
 
         try:
