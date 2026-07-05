@@ -31,6 +31,7 @@ bootstrap/probe.sh doctor
 - 全绿退 0 才继续。
 - 缺 **terraform** → tier-1 不可跑;env 问题,**不硬闯**,按 loops/self-improve.md 记缺口 / escalation。
 - 缺 **本地 provider 仓**(website/docs + alicloud) → tier-0 静态扫描不可跑(WARN)。
+- 缺 **probe-meta**(T0-mech OpenAPI 元数据层:无 venv/凭证)→ tier-0 **自动降级**为纯 doc↔source + 全 queue(WARN,不阻断)。
 - 缺凭证 → tier-1 只能 plan-only(plan 亦需凭证;无凭证 plan 记 `no_creds`,不是 finding)。
 
 ---
@@ -38,15 +39,19 @@ bootstrap/probe.sh doctor
 ## 三、tier-0 静态扫描(先跑)
 
 ```bash
-bootstrap/probe.sh tier0                 # 无参 = 全部场景 resources 并集(去重)
-bootstrap/probe.sh tier0 alicloud_vpc    # 指定资源
-bootstrap/probe.sh tier0 --dry           # 只列将扫资源 + 文档/源码文件存在性
+bootstrap/probe.sh tier0                        # 无参 = 全部场景 resources 并集(去重)
+bootstrap/probe.sh tier0 alicloud_vpc           # 指定资源
+bootstrap/probe.sh tier0 --all --rotate 20      # website/docs/r 全量,取 20 个最久未扫轮换巡检(状态落 .my-day/probe/t0mech-scanned.json)
+bootstrap/probe.sh tier0 --no-mech              # 关机械层(纯 doc↔source + 全 queue,= T0-mech 前现行为)
+bootstrap/probe.sh tier0 --dry                  # 只列将扫资源 + mech 模式 + 文档/源码存在性
 ```
 
-- 机械产出 `findings`(五类 doc↔source gap)+ 每资源一条 `judgment_queue`(OpenAPI 侧待查证 + source 实际 API action)。
-- **OpenAPI 判定接棒(Claude/verifier)**:对 `judgment_queue` 逐资源走双层查证惯例,核验 API 参数/枚举/行为 vs TF 文档;
-  产 `doc_api_gap`。**范围红线:只核对已接入 TF 的面,未接入的资源/参数不报 gap(需求非 bug)**。
-- 落盘 `runs/probe/<日期>-tier0.json` + 人读 md。退出码:0 无 findings / 1 有 findings / 2 runner 错误。
+- **机械三方 diff 先行**:五类 `doc_gap_*`(doc↔source)**+ 六类 `api_gap_*`**(T0-mech,OpenAPI 元数据机械 diff:
+  deprecated_action/enum_superset/required/type/range/default);被抑制记 `suppressed[]`、TF 更严记 `coverage_notes[]`。
+  `probe-meta` 不可用 → 自动降级为纯 doc↔source + 全 queue(现行为)。
+- **verifier 只判疑点**:收窄后的 `judgment_queue`(每条带 `reason`:prose_review/unmapped_params/enum_unparsed/no_triple/
+  meta_unavailable)走双层查证,产 `doc_api_gap`。**范围红线:只核对已接入 TF 的面,未接入的资源/参数不报 gap(需求非 bug)**。
+- 落盘 `runs/probe/<日期>-tier0.json`(verdict `mech` 字段标 on/off/degraded) + 人读 md。退出码:0 无 findings / 1 有 findings / 2 runner 错误。
 
 ---
 
@@ -130,9 +135,10 @@ probe 单指派 jarvis,会被 `scan.sh` 自然扫到进 triage;aone-triage 按 *
 
 | 工具 | 作用 |
 |------|------|
-| `bootstrap/probe.sh doctor` | 环境预检(terraform/jq/凭证/config/本地 provider 仓) |
+| `bootstrap/probe.sh doctor` | 环境预检(terraform/jq/凭证/config/本地 provider 仓/probe-meta) |
 | `bootstrap/probe.sh list` | 列全部场景(id/persona/resources/detect) |
-| `bootstrap/probe.sh tier0 [alicloud_xxx ...] [--dry]` | tier-0 静态三方一致性扫描 |
+| `bootstrap/probe.sh tier0 [--no-mech] [--all] [--limit N] [--rotate N] [alicloud_xxx ...] [--dry]` | tier-0 静态三方一致性扫描(含 T0-mech OpenAPI 机械 diff) |
+| `bootstrap/probe-meta.sh {fetch\|cached-fetch\|clear\|available}` | T0-mech OpenAPI 元数据获取层(薄封装 amp skill + cache.sh 7d) |
 | `bootstrap/probe.sh run <id> [--region r] [--dry] [--keep]` | tier-1 真实 apply 生命周期探测 |
 | `bootstrap/probe.sh sweep` | 扫残留 state,残留退 1 |
 | `config/probe.json` | regions / tiers(tier1.enabled, prepaid_guard) / limits / ticket / paths(含 playground_dir) |

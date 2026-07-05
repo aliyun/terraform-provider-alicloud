@@ -24,8 +24,8 @@
 **未完成（自动运转三缺口）**：
 
 1. **调度**——✅ **已落地（F2，2026-07-03）**：bridge ScanScheduler auto-dispatch 并发派发（每单一 headless、上限 `JARVIS_DISPATCH_MAX`、软去重台账、钉钉播报）+ ProbeScheduler 每日探测轮 + RevisitScheduler 每日人工门重访；`--dry-run-once` 可离线验证决策。
-2. **规模**——5 场景 / 8 资源 vs 全 provider 资源面,需语料生成器 + cloudspec 覆盖矩阵。
-3. **判定成本**——OpenAPI 侧靠 verifier 子代理人海,需 cloudspec 机械 diff 预筛降本。
+2. **规模**——✅ **首发线已落地（F3 T0-mech，2026-07-05）**：`tier0 --all/--limit/--rotate` 支持 website/docs/r 全资源清单 + LRU 轮换巡检；未竟：场景语料生成器 + cloudspec 覆盖矩阵（tier-1 侧）。
+3. **判定成本**——✅ **首发线已落地（F3 T0-mech，2026-07-05）**：OpenAPI 侧从「verifier 人海判定」升级为「机械 diff 预筛（六类 `api_gap_*`）+ verifier 只判 `judgment_queue` 疑点」；`bootstrap/probe-meta.sh` 薄封装 amp 元数据 + `cache.sh` 7d 缓存，`probe.sh tier0` 抽 (product,version,action) 三元组 + `StringInSlice`/`IntBetween`/`Default` 解析做机械 diff。精度护栏:拿不准一律 queue + 抑制表 + 容差表 + coverage_note。首轮 8 资源标定复现 ClassicLink deprecated、RAM/SG 零新增误报、OSS SDK 风格正确降级为 queue。
 
 ## 飞轮六段架构
 
@@ -63,8 +63,9 @@
   + DispatchPool（并发/排队/软去重复用 `_dispatch_bg` 核心与 SUSPEND/WaitWatcher）+ ProbeScheduler 每日探测轮（跑 `loops/tf-probe.md`）
   + RevisitScheduler 每日 `jarvis-idle` 人工门重访 + `--dry-run-once` 验证入口 + hermetic 单测 `test/bridge_dispatch_test.sh`。
   **未竟**：provider 新版本事件触发；复验步骤进 triage 收尾清单。（`mode=file` 毕业已于 2026-07-05 主人拍板翻开关。）
-- **F3（规模化）**：场景语料生成器（website docs 全量 → tier-0 语料）、cloudspec 覆盖矩阵驱动生成与 OpenAPI 机械
-  diff 预筛、发布前 RC 门禁、度量看板。
+- **F3（规模化）**：**首发线 T0-mech 已落地（2026-07-05）**——tier-0 OpenAPI 侧机械化（`probe-meta.sh` + `tier0` 六类
+  `api_gap_*` 机械 diff 预筛 + `--all/--rotate` 全资源轮换巡检 + doctor 探针可用性降级）；**未竟**：场景语料生成器
+  （website docs 全量 → tier-1 语料）、cloudspec 覆盖矩阵驱动组合生成、发布前 RC 门禁、度量看板。
 - **F4（目标态）**：无人值守运转,人只守三硬门与 escalation 队列。
 
 ## 决策记录
@@ -83,6 +84,15 @@
   「累计 ≥10 draft 且 ≥90%」门槛）：`config/probe.json` `ticket.mode` `draft`→`file`，findings 直接建 Aone 单、
   不再走 draft 人审；draft 模式保留为**可回退开关**（临时收回自动建单权时切回）。② **dispatcher idle 过滤转正**——
   scan auto 跳过 `jarvis-idle`（归 RevisitScheduler 每日重访）由上轮「新增待追认」转为**正式设计**。
+- **2026-07-05（F3 首发线 T0-mech，developer 子代理实现，Aone 83929676）**：tier-0 OpenAPI 侧机械化落地。新增
+  `bootstrap/probe-meta.sh`（薄封装 amp `get_api_definition.py` + `cache.sh` 7d 缓存，fetch/cached-fetch/clear/available，
+  probe.sh 不直接调 python）;`probe.sh tier0` 升级——(product,version,action) 三元组抽取 + 源码 `StringInSlice`/`IntBetween`/`Default`
+  解析 + 六类 `api_gap_*` 机械 diff + 抑制表/容差表/coverage_note 精度护栏 + `--all/--limit/--rotate` 全资源 LRU 轮换巡检;doctor 增
+  probe-meta 可用性检查（不可用 WARN + 自动降级为纯 doc↔source 现行为）。hermetic 单测 154→206 断言（PATH 桩替底层 python + fixture
+  五类陷阱）。**首轮 8 资源真实标定**：机械层复现 `alicloud_vpc` ClassicLink `api_gap_deprecated_action` ×2（Enable/DisableVpcClassicLink，
+  = 07-03 单 83881282）;`alicloud_ram_role`/`alicloud_security_group` 零新增误报（三方一致）;`alicloud_oss_bucket` SDK 风格抽不到三元组 →
+  正确降级为 `no_triple` queue（enum 超集需元数据可得，符合规格）;`dns_hostname_status`（convert 改名）→ `unmapped_params` queue 不硬猜。
+  **红线遵守**:精度命门=拿不准一律 queue 不硬报;本机无 AMP 凭证时自动降级。
 - **待主人决策**：
   1. ~~`mode=file` 翻开关时点~~ → **已定（2026-07-05）**：主人拍板提前毕业（采纳率 87.5%），draft 留作回退。
   2. ~~bridge probe cron 频率~~ → **已定（2026-07-03）**：probe 每日 `JARVIS_PROBE_HOUR`（默认 10）一轮、revisit 每日

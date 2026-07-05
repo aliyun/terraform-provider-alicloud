@@ -10,7 +10,9 @@
 # 子命令:
 #   doctor                          — 环境预检(terraform/jq/凭证/config/本地 provider 仓/场景根)
 #   list                            — 扫 <playground>/<product>/<id>/scenario.yaml 输出表格(含 PRODUCT 列)
-#   tier0 [alicloud_xxx ...] [--dry] — 静态三方一致性扫描(默认扫全部场景 resources 并集)
+#   tier0 [--no-mech] [--all] [--limit N] [--rotate N] [alicloud_xxx ...] [--dry]
+#                                   — 静态三方一致性扫描(OpenAPI 机械三方 diff 预筛 + judgment_queue;
+#                                     默认扫场景 resources 并集;--all=website/docs/r 全量轮换巡检)
 #   run <scenario-id> [--region r] [--dry] [--keep] — tier-1 真实 apply 生命周期探测
 #   sweep                           — 扫 .my-day/probe/*/terraform.tfstate 报告残留 state
 #
@@ -229,6 +231,13 @@ _cmd_doctor() {
     else
         echo "WARN provider 仓不可解析或缺 website/docs(tier-0 静态扫描不可用): ${pdir:-未解析}"
     fi
+    # probe-meta(tier-0 OpenAPI 机械化元数据获取层):不可用=WARN,tier0 自动降级为纯 doc↔source+全 queue
+    if bash "$_probe_dir/probe-meta.sh" available >/dev/null 2>&1; then
+        echo "OK   probe-meta: OpenAPI 元数据获取层可用(tier-0 机械三方 diff 开启)"
+    else
+        echo "WARN probe-meta: OpenAPI 元数据获取层不可用(缺 venv/凭证)→ tier-0 自动降级为纯 doc↔source + 全 judgment_queue(现行为)"
+        echo "       启用: bash .claude/skills/amp-resource-metadata/scripts/setup.sh + 配 AMP_/ALIBABA_CLOUD_ 凭证(白名单见 skill SKILL.md)"
+    fi
     return "$rc"
 }
 
@@ -327,9 +336,212 @@ _parse_source_schema() {
 _count_lines() { local n; n=$(grep -c . "$1" 2>/dev/null); echo "${n:-0}"; }
 
 # _source_api_actions <srcfile> — best-effort 抽 source 里实际调用的 API action 名
+#   两路并集:`action :?= "X"` 赋值 + RpcPost/RpcGet 第三位字面量 action。
 _source_api_actions() {
-    grep -oE 'action[[:space:]]*:?=[[:space:]]*"[A-Za-z0-9]+"' "$1" 2>/dev/null \
-        | grep -oE '"[A-Za-z0-9]+"' | tr -d '"' | sort -u
+    { grep -oE 'action[[:space:]]*:?=[[:space:]]*"[A-Za-z0-9]+"' "$1" 2>/dev/null | grep -oE '"[A-Za-z0-9]+"' | tr -d '"'
+      grep -oE 'Rpc(Post|Get)\("[A-Za-z0-9]+", *"[0-9][0-9-]*", *"[A-Za-z0-9]+"' "$1" 2>/dev/null | awk -F'"' '{print $6}'
+    } | grep . | sort -u
+}
+
+# ── T0-mech:动作三元组 + 源码约束解析 + API 规范化 + 机械 diff ──────────
+# _snake_to_camel <snake> — snake_case → CamelCase(v1 精确映射规则,不做别名/缩写猜测)
+_snake_to_camel() {
+    local s="$1" out="" seg oldifs="$IFS"
+    IFS='_'
+    for seg in $s; do
+        [ -z "$seg" ] && continue
+        out="$out$(printf '%s' "${seg:0:1}" | tr '[:lower:]' '[:upper:]')${seg:1}"
+    done
+    IFS="$oldifs"
+    printf '%s' "$out"
+}
+
+# _source_pv <srcfile> — 抽 RpcPost/RpcGet 的 (product, version) 唯一集,TSV product<TAB>version
+_source_pv() {
+    grep -oE 'Rpc(Post|Get)\("[A-Za-z0-9]+", *"[0-9][0-9-]*"' "$1" 2>/dev/null \
+        | awk -F'"' '{print $2 "\t" $4}' | sort -u
+}
+
+# _source_api_triples <srcfile> — (product,version,action) 三元组 TSV。
+#   仅当 (product,version) 唯一时输出(0 或 >1 → 空,交 queue,机械层不猜)。OSS 类 SDK 风格无 RpcPost → 空。
+_source_api_triples() {
+    local src="$1" pv npv product version a
+    pv="$(_source_pv "$src")"
+    npv="$(printf '%s\n' "$pv" | grep -c .)"
+    [ "$npv" = "1" ] || return 0
+    product="$(printf '%s' "$pv" | cut -f1)"
+    version="$(printf '%s' "$pv" | cut -f2)"
+    while IFS= read -r a; do
+        [ -n "$a" ] && printf '%s\t%s\t%s\n' "$product" "$version" "$a"
+    done < <(_source_api_actions "$src")
+}
+
+# _parse_source_constraints <srcfile> — 顶层 schema 键的类型/枚举/范围/默认值(与 _parse_source_schema 同款
+#   顶层深度追踪,嵌套 Elem 内层跳过)。解析不动一律标 unknown(进 queue,不猜)。
+#   输出 TSV: name  type  enum(US-joined)  enum_status(known|unknown|none)  min  max  range_status(known|unknown|none)  default  default_status(known|unknown|none)
+_parse_source_constraints() {
+    awk '
+    function pf(k, line,   m,seg,rest,tok,e,d,arr){
+        if (line ~ /Type:[ \t]*schema\.Type[A-Za-z]+/ && stype[k]==""){
+            m=line; sub(/.*schema\.Type/,"",m); sub(/[^A-Za-z].*/,"",m); stype[k]=tolower(m)
+        }
+        if (line ~ /StringInSlice\(/){
+            if (match(line, /\[\]string\{[^}]*\}/)){
+                seg=substr(line,RSTART,RLENGTH); rest=seg; e=""
+                while (match(rest, /"[^"]*"/)){ tok=substr(rest,RSTART+1,RLENGTH-2); e=e tok SEP; rest=substr(rest,RSTART+RLENGTH) }
+                senum[k]=e; senumst[k]="known"
+            } else { if (senumst[k]!="known") senumst[k]="unknown" }
+        }
+        if (match(line, /IntBetween\([ \t]*-?[0-9]+[ \t]*,[ \t]*-?[0-9]+[ \t]*\)/)){
+            m=substr(line,RSTART,RLENGTH); gsub(/[^0-9,-]/,"",m); split(m,arr,","); smin[k]=arr[1]; smax[k]=arr[2]; srangest[k]="known"
+        } else if (line ~ /IntBetween\(/){ if (srangest[k]!="known") srangest[k]="unknown" }
+        if (match(line, /(^|[^A-Za-z_])Default:[ \t]*/)){
+            d=line; sub(/.*Default:[ \t]*/,"",d); sub(/,[ \t]*$/,"",d); sub(/[ \t]*$/,"",d)
+            if (d ~ /\(/ || d==""){ if (sdefst[k]!="known") sdefst[k]="unknown" }
+            else { gsub(/^"/,"",d); gsub(/"$/,"",d); sdef[k]=d; sdefst[k]="known" }
+        }
+    }
+    BEGIN{ SEP=sprintf("%c",31) }
+    {
+        t=$0; o=gsub(/\{/,"\\&",t); t=$0; c=gsub(/\}/,"\\&",t)
+        if (!inschema) {
+            if ($0 ~ /map\[string\]\*schema\.Schema\{/) { inschema=1; depth=o-c; base=depth }
+            next
+        }
+        sd = depth
+        if (sd == base && $0 ~ /^[ \t]*"[^"]+"[ \t]*:/) {
+            name=$0; sub(/^[ \t]*"/,"",name); sub(/".*/,"",name)
+            curkey=name
+            if (!(name in seen)) { order[++n]=name; seen[name]=1 }
+            pf(name, $0)
+        } else if (curkey != "" && sd == base+1) {
+            pf(curkey, $0)
+        }
+        depth = sd + o - c
+        if (depth < base) inschema=0
+    }
+    END {
+        for (i=1;i<=n;i++){ k=order[i]
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", k,
+                (stype[k]==""?"unknown":stype[k]),
+                senum[k], (senumst[k]==""?"none":senumst[k]),
+                smin[k], smax[k], (srangest[k]==""?"none":srangest[k]),
+                sdef[k], (sdefst[k]==""?"none":sdefst[k]) }
+    }' "$1" 2>/dev/null
+}
+
+# _api_extract_params <apidef.json> — 规范化 API 参数为 TSV。防御式多 key 兜底(enum/enumValueList/enumValueTitles)。
+#   输出: name  type  required(1|0|?)  enum(US-joined)  enum_status(known|none)  min  max  range_status  default  default_status  deprecated(1|0)
+_api_extract_params() {
+    jq -r '
+      def sep: "";
+      .parameters[]?
+      | (.in // "query") as $in
+      | select($in=="query" or $in=="body" or $in=="path" or $in=="formData")
+      | . as $p | (.schema // {}) as $s
+      | ( ( $s.enum
+            // (($s.enumValueList // []) | map(if type=="object" then (.value // .name // .) else . end))
+            // (($s.enumValueTitles // {}) | keys) ) // [] ) as $enum
+      | ($s.minimum // $s.min) as $mn
+      | ($s.maximum // $s.max) as $mx
+      | [ ($p.name // ""),
+          (($s.type // $p.type // "") | ascii_downcase),
+          ( if ($p.required==true or $s.required==true) then "1"
+            elif (($p|has("required")) or ($s|has("required"))) then "0" else "?" end ),
+          ( $enum | map(tostring) | join(sep) ),
+          ( if ($enum|length)>0 then "known" else "none" end ),
+          ( if $mn==null then "" else ($mn|tostring) end ),
+          ( if $mx==null then "" else ($mx|tostring) end ),
+          ( if ($mn!=null or $mx!=null) then "known" else "none" end ),
+          ( if $s.default==null then "" else ($s.default|tostring) end ),
+          ( if $s.default!=null then "known" else "none" end ),
+          ( if ($p.deprecated==true or $s.deprecated==true) then "1" else "0" end )
+        ] | @tsv
+    ' "$1" 2>/dev/null
+}
+
+# _api_action_deprecated <apidef.json> — action 级 deprecated 判定:true|false|unknown
+_api_action_deprecated() {
+    local v; v="$(jq -r 'if .deprecated==true then "true" elif .deprecated==false then "false" else "unknown" end' "$1" 2>/dev/null)"
+    printf '%s' "${v:-unknown}"
+}
+
+# _tier0_mech_param_diff <api_params.tsv> <src_schema.tsv> <src_constraints.tsv> <supp> <tol>
+#   逐 TF 顶层输入参数 ↔ API 参数机械 diff。输出 tagged 行(shell 路由):
+#     F<TAB>code<TAB>attr<TAB>sev<TAB>summary   S<TAB>param<TAB>apiparam<TAB>rule
+#     C<TAB>attr<TAB>note                        U<TAB>attr(unmapped)   E<TAB>attr(enum_unparsed)
+_tier0_mech_param_diff() {
+    awk -F'\t' -v apif="$1" -v schf="$2" -v conf="$3" -v supp="$4" -v tol="$5" '
+    BEGIN{ SEP=sprintf("%c",31) }
+    function in_set(joined,val,   arr,i,m){ m=split(joined,arr,SEP); for(i=1;i<=m;i++) if(arr[i]==val) return 1; return 0 }
+    function to_camel(s,   parts,i,out,seg,m){ m=split(s,parts,"_"); out=""; for(i=1;i<=m;i++){seg=parts[i]; if(seg=="")continue; out=out toupper(substr(seg,1,1)) substr(seg,2)} return out }
+    function type_ok(tf,api){
+        if(tf=="string"&&api=="string")return 1
+        if((tf=="int"||tf=="float")&&(api=="integer"||api=="long"||api=="number"||api=="float"))return 1
+        if(tf=="bool"&&api=="boolean")return 1
+        if((tf=="list"||tf=="set")&&api=="array")return 1
+        if(tf=="map"&&(api=="object"||api=="map"))return 1
+        if(index(tol, tf ">" api)>0)return 1
+        return 0
+    }
+    FILENAME==apif { aname[$1]=1; atype[$1]=$2; areq[$1]=$3; aenum[$1]=$4; aenumst[$1]=$5; amin[$1]=$6; amax[$1]=$7; arangest[$1]=$8; adef[$1]=$9; adefst[$1]=$10; next }
+    FILENAME==schf { sord[++sn]=$1; sopt[$1]=$2; sreqd[$1]=$3; scomp[$1]=$5; sdep[$1]=$6; next }
+    FILENAME==conf { ctype[$1]=$2; cenum[$1]=$3; cenumst[$1]=$4; cmin[$1]=$5; cmax[$1]=$6; crangest[$1]=$7; cdef[$1]=$8; cdefst[$1]=$9; next }
+    END{
+        for(i=1;i<=sn;i++){ k=sord[i]; if((sopt[k]==1||sreqd[k]==1)&&sdep[k]!=1){ mapcount[to_camel(k)]++ } }
+        for(i=1;i<=sn;i++){
+            k=sord[i]
+            if(!(sopt[k]==1||sreqd[k]==1)) continue
+            if(sdep[k]==1) continue
+            camel=to_camel(k)
+            if(index(supp, ":" camel ":")>0){ print "S\t" k "\t" camel "\tsuppress_params"; continue }
+            if(!(camel in aname)){ print "U\t" k; continue }
+            if(mapcount[camel]>1){ print "U\t" k; continue }
+            if(cenumst[k]=="known" && aenumst[camel]=="known"){
+                extra=""; m=split(cenum[k],sv,SEP)
+                for(j=1;j<=m;j++){ if(sv[j]=="")continue; if(!in_set(aenum[camel],sv[j])) extra=extra sv[j] "," }
+                if(extra!=""){ sub(/,$/,"",extra); print "F\tapi_gap_enum_superset\t" k "\tS3\tTF 枚举放行 API 拒绝的值 {" extra "}(客户端过宽,API 必拒)" }
+                miss=""; m2=split(aenum[camel],av,SEP)
+                for(j=1;j<=m2;j++){ if(av[j]=="")continue; if(!in_set(cenum[k],av[j])) miss=miss av[j] "," }
+                if(miss!=""){ sub(/,$/,"",miss); print "C\t" k "\tTF 枚举比 API 更严(未含 API 值 {" miss "});方向安全,仅记录" }
+            } else if(cenumst[k]=="unknown"){ print "E\t" k }
+            if(sopt[k]==1 && sreqd[k]==0 && scomp[k]==0 && cdefst[k]=="none" && areq[camel]=="1")
+                print "F\tapi_gap_required\t" k "\tS3\tTF 标 Optional 但 API 要求必填(无 Default/Computed 兜底)"
+            if(ctype[k]!="" && ctype[k]!="unknown" && atype[camel]!="" && !type_ok(ctype[k],atype[camel]))
+                print "F\tapi_gap_type\t" k "\tS3\tTF 类型 " ctype[k] " 与 API 类型 " atype[camel] " 硬冲突(经容差表过滤后仍冲突)"
+            if(crangest[k]=="known" && arangest[camel]=="known"){
+                bad=0
+                if(amin[camel]!="" && (cmin[k]+0)<(amin[camel]+0)) bad=1
+                if(amax[camel]!="" && (cmax[k]+0)>(amax[camel]+0)) bad=1
+                if(bad) print "F\tapi_gap_range\t" k "\tS4\tTF 范围 [" cmin[k] "," cmax[k] "] 越过 API [" amin[camel] "," amax[camel] "]"
+            }
+            if(cdefst[k]=="known" && adefst[camel]=="known" && cdef[k]!=adef[camel])
+                print "F\tapi_gap_default\t" k "\tS4\tTF 默认值 " cdef[k] " 与 API 默认值 " adef[camel] " 冲突"
+        }
+    }' "$1" "$2" "$3" 2>/dev/null
+}
+
+# ── LRU 轮换(--rotate):状态落 .my-day/probe/t0mech-scanned.json(res→last epoch) ──
+_rotate_state_file() { echo "${PROBE_ROTATE_STATE:-$(probe_workdir_base)/t0mech-scanned.json}"; }
+# _rotate_select <state_file> <N> <res...> — 打印 N 个最久未扫资源(least-recently-scanned 优先)
+_rotate_select() {
+    local sf="$1" n="$2"; shift 2
+    local res ts
+    for res in "$@"; do
+        ts="$(jq -r --arg r "$res" '.[$r] // 0' "$sf" 2>/dev/null)"; [ -z "$ts" ] && ts=0
+        printf '%s\t%s\n' "$ts" "$res"
+    done | sort -n -k1,1 | head -n "$n" | cut -f2
+}
+# _rotate_mark <state_file> <res...> — 记录本轮已扫资源时间戳
+_rotate_mark() {
+    local sf="$1"; shift
+    local now res tmp; now="$(date +%s)"
+    mkdir -p "$(dirname "$sf")"
+    [ -s "$sf" ] || echo '{}' > "$sf"
+    for res in "$@"; do
+        tmp="$(mktemp)"
+        jq --arg r "$res" --argjson t "$now" '.[$r]=$t' "$sf" > "$tmp" 2>/dev/null && mv -f "$tmp" "$sf" || rm -f "$tmp"
+    done
 }
 
 # _tier0_diff <docargs.tsv> <srckeys.tsv> — 五类 gap → TSV: code<TAB>attr<TAB>severity<TAB>summary(已按 code,attr 排序)
@@ -365,11 +577,97 @@ _emit_t0finding() { # code resource attribute summary severity
     echo "FINDING[$5] $1 $2.$3: $4" >&2
 }
 
+# _tier0_mech_resource <res> <srcf> <tmp> <supp> <tol> — mech-on 单资源 OpenAPI 侧机械核验。
+#   动作三元组抽取 → 逐 action deprecated_action 检查 → 创建型 action 参数级机械 diff →
+#   路由 finding / suppressed[] / coverage_note / judgment_queue(带 reason)。用全局累加文件。
+_tier0_mech_resource() {
+    local res="$1" srcf="$2" tmp="$3" supp="$4" tol="$5"
+    local triples actions_json
+    triples="$(_source_api_triples "$srcf")"
+    actions_json="$(_source_api_actions "$srcf" | jq -R . | jq -s .)"
+    if [ -z "$triples" ]; then
+        local npv reason note
+        npv="$(_source_pv "$srcf" | grep -c .)"
+        if [ "$npv" -gt 1 ]; then
+            reason="ambiguous_triple"; note="源码含多个 (product,version),无法确定 action 归属;OpenAPI 侧交人工核。"
+        else
+            reason="no_triple"; note="源码非 RpcPost 风格,抽不到 (product,version) 三元组(如 OSS SDK);OpenAPI 侧交人工核。"
+        fi
+        jq -nc --arg res "$res" --arg reason "$reason" --argjson actions "$actions_json" --arg note "$note" \
+            '{resource:$res,reason:$reason,api_actions:$actions,note:$note,detail:[]}' >> "$JQUEUE_FILE"
+        return
+    fi
+    # 逐 action:deprecated_action 检查(拉取失败记 metafail,不报 finding)
+    local tp tv ta defjson dep metafail=""
+    while IFS=$'\t' read -r tp tv ta; do
+        [ -z "$ta" ] && continue
+        defjson="$(bash "$_probe_dir/probe-meta.sh" cached-fetch "$tp" "$tv" "$ta" </dev/null 2>/dev/null)"
+        if [ -z "$defjson" ]; then metafail="$metafail $ta"; continue; fi
+        printf '%s' "$defjson" > "$tmp/apidef_${ta}.json"
+        dep="$(_api_action_deprecated "$tmp/apidef_${ta}.json")"
+        [ "$dep" = "true" ] && _emit_t0finding api_gap_deprecated_action "$res" "$ta" \
+            "源码调用的 action $ta 在 OpenAPI 标 deprecated(随上游退役,TF 侧无提示)" S3
+    done <<< "$triples"
+
+    # 创建型 action(优先 Create*)→ 参数级机械 diff
+    local create_action
+    create_action="$(printf '%s\n' "$triples" | cut -f3 | grep -E '^Create' | head -1)"
+    [ -z "$create_action" ] && create_action="$(printf '%s\n' "$triples" | cut -f3 | grep -E '^(Run|Allocate|Add|Apply|Register|Assign|Authorize|Put)' | head -1)"
+
+    local unmapped="" enumunp="" tag a b c d
+    if [ -n "$create_action" ] && [ -f "$tmp/apidef_${create_action}.json" ]; then
+        _api_extract_params "$tmp/apidef_${create_action}.json" > "$tmp/api.tsv"
+        _parse_source_schema "$srcf" > "$tmp/msch.tsv"
+        _parse_source_constraints "$srcf" > "$tmp/mcon.tsv"
+        while IFS=$'\t' read -r tag a b c d; do
+            case "$tag" in
+                F) _emit_t0finding "$a" "$res" "$b" "$d" "$c" ;;
+                S) jq -nc --arg res "$res" --arg p "$a" --arg ap "$b" --arg rule "$c" \
+                       '{resource:$res,param:$p,api_param:$ap,rule:$rule}' >> "$SUPPRESS_FILE" ;;
+                C) jq -nc --arg res "$res" --arg attr "$a" --arg note "$b" \
+                       '{resource:$res,attribute:$attr,note:$note}' >> "$COVERAGE_FILE" ;;
+                U) unmapped="$unmapped $a" ;;
+                E) enumunp="$enumunp $a" ;;
+            esac
+        done < <(_tier0_mech_param_diff "$tmp/api.tsv" "$tmp/msch.tsv" "$tmp/mcon.tsv" "$supp" "$tol")
+    else
+        metafail="$metafail ${create_action:-<无创建型 action>}"
+    fi
+
+    # queue:prose_review(残留人工核)+ 可选 unmapped/enum_unparsed/meta_unavailable
+    jq -nc --arg res "$res" --argjson actions "$actions_json" \
+        --arg note "机械层已核 deprecated-action/enum/required/type/range/default;此处仅需人工核 prose 约束(长度/字符集/基数)与行为一致性。范围红线=只核已接入面。" \
+        '{resource:$res,reason:"prose_review",api_actions:$actions,note:$note,detail:[]}' >> "$JQUEUE_FILE"
+    local dj
+    if [ -n "${unmapped// /}" ]; then
+        dj="$(printf '%s\n' $unmapped | grep . | jq -R . | jq -s .)"
+        jq -nc --arg res "$res" --argjson detail "$dj" \
+            --arg note "以下 TF 参数 snake→Camel 未命中 API 参数(convert 改名/仅 Modify 用/未接入),交人工核,机械层不猜。" \
+            '{resource:$res,reason:"unmapped_params",api_actions:[],note:$note,detail:$detail}' >> "$JQUEUE_FILE"
+    fi
+    if [ -n "${enumunp// /}" ]; then
+        dj="$(printf '%s\n' $enumunp | grep . | jq -R . | jq -s .)"
+        jq -nc --arg res "$res" --argjson detail "$dj" \
+            --arg note "以下参数 ValidateFunc 枚举非字面 slice,机械层不解析,交人工核。" \
+            '{resource:$res,reason:"enum_unparsed",api_actions:[],note:$note,detail:$detail}' >> "$JQUEUE_FILE"
+    fi
+    if [ -n "${metafail// /}" ]; then
+        dj="$(printf '%s\n' $metafail | grep . | jq -R . | jq -s .)"
+        jq -nc --arg res "$res" --argjson detail "$dj" \
+            --arg note "以下 action 元数据拉取失败,已跳过其机械核验,交人工核。" \
+            '{resource:$res,reason:"meta_unavailable",api_actions:[],note:$note,detail:$detail}' >> "$JQUEUE_FILE"
+    fi
+}
+
 _cmd_tier0() {
-    local dry=0; local reslist=()
+    local dry=0 nomech=0 allres=0 limit=0 rotate=0; local reslist=()
     while [ $# -gt 0 ]; do
         case "$1" in
             --dry) dry=1; shift ;;
+            --no-mech) nomech=1; shift ;;
+            --all) allres=1; shift ;;
+            --limit) limit="${2:-0}"; shift 2 ;;
+            --rotate) rotate="${2:-0}"; shift 2 ;;
             -*) echo "tier0: 未知参数 '$1'" >&2; return 2 ;;
             *) reslist+=("$1"); shift ;;
         esac
@@ -382,8 +680,15 @@ _cmd_tier0() {
         return 2
     fi
 
-    # 无参 → 扫全部场景 resources 并集(去重),两级布局 <product>/<id>/
-    if [ "${#reslist[@]}" -eq 0 ]; then
+    # 资源清单:--all(website/docs/r 全量) > 显式参数 > 场景 resources 并集
+    if [ "$allres" -eq 1 ]; then
+        local f n; shopt -s nullglob; local allacc=()
+        for f in "$pdir"/website/docs/r/*.html.markdown; do
+            n="$(basename "$f" .html.markdown)"; allacc+=("alicloud_$n")
+        done
+        reslist=(); local r
+        while IFS= read -r r; do [ -n "$r" ] && reslist+=("$r"); done < <(printf '%s\n' "${allacc[@]}" | grep . | sort -u)
+    elif [ "${#reslist[@]}" -eq 0 ]; then
         local root d y r
         root="$(probe_playground_dir)"
         shopt -s nullglob
@@ -397,9 +702,27 @@ _cmd_tier0() {
     fi
     [ "${#reslist[@]}" -gt 0 ] || { echo "tier0: 无资源可扫(场景 resources 为空且未传参)" >&2; return 2; }
 
+    # --rotate:least-recently-scanned 选 N(状态落 .my-day/probe/t0mech-scanned.json)
+    local rotate_sf; rotate_sf="$(_rotate_state_file)"
+    if [ "$rotate" -gt 0 ]; then
+        local rsel=() rr
+        while IFS= read -r rr; do [ -n "$rr" ] && rsel+=("$rr"); done < <(_rotate_select "$rotate_sf" "$rotate" "${reslist[@]}")
+        reslist=("${rsel[@]}")
+    fi
+    # --limit:截断
+    if [ "$limit" -gt 0 ] && [ "${#reslist[@]}" -gt "$limit" ]; then
+        reslist=("${reslist[@]:0:$limit}")
+    fi
+
+    # 机械层模式:--no-mech → off;probe-meta 可用 → on;否则自动 degraded(纯 doc↔source + 全 queue)
+    local mech
+    if [ "$nomech" -eq 1 ]; then mech="off"
+    elif bash "$_probe_dir/probe-meta.sh" available >/dev/null 2>&1; then mech="on"
+    else mech="degraded"; fi
+
     if [ "$dry" -eq 1 ]; then
-        echo "tier0 plan: provider_dir=$pdir"
-        echo "  将扫描资源(文档↔源码机械 diff + OpenAPI judgment_queue):"
+        echo "tier0 plan: provider_dir=$pdir  mech=$mech"
+        echo "  将扫描资源(文档↔源码机械 diff + OpenAPI $([ "$mech" = on ] && echo '机械三方 diff' || echo 'judgment_queue')):"
         local res name docf srcf
         for res in "${reslist[@]}"; do
             name="${res#alicloud_}"
@@ -407,15 +730,23 @@ _cmd_tier0() {
             srcf="$pdir/alicloud/resource_${res}.go"
             echo "    - $res  doc:$([ -f "$docf" ] && echo ok || echo MISSING)  src:$([ -f "$srcf" ] && echo ok || echo MISSING)"
         done
+        [ "$mech" != "on" ] && echo "  (mech=$mech:OpenAPI 侧全部进 judgment_queue,交 skill 层人工双层查证)"
         echo "  范围红线:只核对已接入 TF 的面;未接入资源/参数不报 gap。"
         return 0
     fi
 
     # 累加器
     local tmp; tmp="$(mktemp -d)"
-    STEPS_FILE="$tmp/.steps.jsonl";       : > "$STEPS_FILE"
-    FINDINGS_FILE="$tmp/.findings.jsonl"; : > "$FINDINGS_FILE"
-    local JQUEUE_FILE="$tmp/.judgment.jsonl"; : > "$JQUEUE_FILE"
+    STEPS_FILE="$tmp/.steps.jsonl";        : > "$STEPS_FILE"
+    FINDINGS_FILE="$tmp/.findings.jsonl";  : > "$FINDINGS_FILE"
+    JQUEUE_FILE="$tmp/.judgment.jsonl";    : > "$JQUEUE_FILE"
+    SUPPRESS_FILE="$tmp/.suppress.jsonl";  : > "$SUPPRESS_FILE"
+    COVERAGE_FILE="$tmp/.coverage.jsonl";  : > "$COVERAGE_FILE"
+
+    # 抑制表 / 容差表(冒号包裹便于 index 精确匹配;逗号连 tf>api 容差对)
+    local supp tol
+    supp=":$(cfg '.tier0_mech.suppress_params | join(":")'):"
+    tol="$(cfg '.tier0_mech.type_tolerance | join(",")')"
 
     local start_epoch; start_epoch=$(date +%s)
     local started_at; started_at="$(date -u +%FT%TZ)"
@@ -427,10 +758,9 @@ _cmd_tier0() {
         docf="$pdir/website/docs/r/${name}.html.markdown"
         srcf="$pdir/alicloud/resource_${res}.go"
         if [ ! -f "$docf" ] || [ ! -f "$srcf" ]; then
-            # 文档或源码缺失 → 交 judgment(可能是 data 源/命名差异/未接入),不当机械 finding
             jq -nc --arg res "$res" --argjson actions '[]' \
                 --arg note "文档或源码文件缺失(doc:$([ -f "$docf" ] && echo ok || echo missing) src:$([ -f "$srcf" ] && echo ok || echo missing)),需人工确认资源名映射或是否为 data 源;不当 gap 报。" \
-                '{resource:$res, api_actions:$actions, note:$note}' >> "$JQUEUE_FILE"
+                '{resource:$res, reason:"missing_doc_or_src", api_actions:$actions, note:$note, detail:[]}' >> "$JQUEUE_FILE"
             continue
         fi
         _parse_doc_args "$docf" > "$tmp/doc.tsv"
@@ -439,26 +769,35 @@ _cmd_tier0() {
         local sk; sk=$(_count_lines "$tmp/src.tsv")
         doc_args_total=$(( doc_args_total + da )); src_keys_total=$(( src_keys_total + sk )); res_ok=$(( res_ok + 1 ))
 
-        # diff → findings
+        # 本地 文档↔源码 机械 diff(五类 doc_gap,不受 mech 开关影响)
         local code attr sev summary
         while IFS=$'\t' read -r code attr sev summary; do
             [ -z "$code" ] && continue
             _emit_t0finding "$code" "$res" "$attr" "$summary" "$sev"
         done < <(_tier0_diff "$tmp/doc.tsv" "$tmp/src.tsv")
 
-        # judgment_queue：OpenAPI 侧待查证(source 实际 API action + 范围红线)
-        local actions_json
-        actions_json="$(_source_api_actions "$srcf" | jq -R . | jq -s .)"
-        jq -nc --arg res "$res" --argjson actions "$actions_json" \
-            --arg note "对照 OpenAPI 文档核验:上列 API action 的请求/响应参数、枚举值、行为是否与 TF 文档一致。范围红线=只核对已接入的 API/参数面;未接入 TF 的资源/参数不报 gap(那是需求不是 bug)。" \
-            '{resource:$res, api_actions:$actions, note:$note}' >> "$JQUEUE_FILE"
+        # OpenAPI 侧:mech=on 机械三方 diff;off/degraded 走每资源一条 queue(现行为)
+        if [ "$mech" = "on" ]; then
+            _tier0_mech_resource "$res" "$srcf" "$tmp" "$supp" "$tol"
+        else
+            local actions_json reason
+            actions_json="$(_source_api_actions "$srcf" | jq -R . | jq -s .)"
+            reason=$([ "$mech" = "off" ] && echo "meta_off" || echo "meta_unavailable")
+            jq -nc --arg res "$res" --arg reason "$reason" --argjson actions "$actions_json" \
+                --arg note "tier-0 机械层 $mech:OpenAPI 侧交 skill 层人工双层查证(核对上列 action 的参数/枚举/行为与 TF 文档一致)。范围红线=只核已接入面;未接入不报 gap。" \
+                '{resource:$res, reason:$reason, api_actions:$actions, note:$note, detail:[]}' >> "$JQUEUE_FILE"
+        fi
     done
 
-    # 三个聚合 step
+    # 聚合 step
     _emit_step doc_parse 0 0 "解析 $res_ok 个资源文档,共 $doc_args_total 个 Argument"
     _emit_step source_parse 0 0 "解析 $res_ok 个资源源码,共 $src_keys_total 个顶层 schema 键"
     local nf; nf=$(_count_lines "$FINDINGS_FILE")
-    _emit_step diff 0 0 "文档↔源码 diff → $nf findings"
+    local api_nf; api_nf=$(jq -s '[.[]|select(.code|startswith("api_gap"))]|length' "$FINDINGS_FILE" 2>/dev/null); [ -z "$api_nf" ] && api_nf=0
+    _emit_step diff 0 0 "三方一致性 diff(mech=$mech)→ $nf findings(内 api_gap_* $api_nf)"
+
+    # --rotate:实际执行后记录本轮已扫时间戳(--dry 不记)
+    [ "$rotate" -gt 0 ] && _rotate_mark "$rotate_sf" "${reslist[@]}"
 
     # verdict
     local audit; audit="$(probe_audit_dir)"; mkdir -p "$audit"
@@ -466,8 +805,9 @@ _cmd_tier0() {
     local reslist_json; reslist_json="$(printf '%s\n' "${reslist[@]}" | jq -R . | jq -s .)"
     local verdict="$tmp/verdict.json"
     jq -n \
-        --argjson schema 1 \
+        --argjson schema 2 \
         --arg mode "tier0" \
+        --arg mech "$mech" \
         --arg pv "$(cfg '.provider.version')" \
         --arg pdir "$pdir" \
         --arg started "$started_at" \
@@ -476,17 +816,20 @@ _cmd_tier0() {
         --slurpfile steps "$STEPS_FILE" \
         --slurpfile findings "$FINDINGS_FILE" \
         --slurpfile judgment "$JQUEUE_FILE" \
-        --argjson stats "$(jq -nc --argjson r "$res_ok" --argjson da "$doc_args_total" --argjson sk "$src_keys_total" --argjson f "$nf" '{resources:$r, doc_args_total:$da, source_keys_total:$sk, findings:$f}')" \
-        '{schema_version:$schema, mode:$mode, provider_version:$pv, provider_dir:$pdir,
+        --slurpfile suppressed "$SUPPRESS_FILE" \
+        --slurpfile coverage "$COVERAGE_FILE" \
+        --argjson stats "$(jq -nc --argjson r "$res_ok" --argjson da "$doc_args_total" --argjson sk "$src_keys_total" --argjson f "$nf" --argjson af "$api_nf" '{resources:$r, doc_args_total:$da, source_keys_total:$sk, findings:$f, api_findings:$af}')" \
+        '{schema_version:$schema, mode:$mode, mech:$mech, provider_version:$pv, provider_dir:$pdir,
           started_at:$started, duration_s:$dur, resources_scanned:$resources,
-          steps:$steps, findings:$findings, judgment_queue:$judgment, stats:$stats}' \
+          steps:$steps, findings:$findings, judgment_queue:$judgment,
+          suppressed:$suppressed, coverage_notes:$coverage, stats:$stats}' \
         > "$verdict" 2>/dev/null
 
     local day; day="$(date -u +%Y%m%d)"
     cp "$verdict" "$audit/${day}-tier0.json" 2>/dev/null
     _write_tier0_md "$verdict" "$audit/${day}-tier0.md"
     echo "verdict: $audit/${day}-tier0.json"
-    echo "findings: $nf / resources: $res_ok / judgment_queue: $(_count_lines "$JQUEUE_FILE")"
+    echo "mech: $mech / findings: $nf (api_gap_* $api_nf) / resources: $res_ok / judgment_queue: $(_count_lines "$JQUEUE_FILE") / suppressed: $(_count_lines "$SUPPRESS_FILE")"
 
     rm -rf "$tmp"
     [ "$nf" -gt 0 ] && return 1 || return 0
@@ -495,19 +838,23 @@ _cmd_tier0() {
 _write_tier0_md() { # verdict.json out.md
     local v="$1" out="$2"
     {
-        echo "# probe tier-0 三方一致性扫描"
+        echo "# probe tier-0 三方一致性扫描(mech=$(jq -r '.mech // "off"' "$v"))"
         echo
         echo "- provider: $(jq -r '.provider_version' "$v") / dir: $(jq -r '.provider_dir' "$v")"
         echo "- started: $(jq -r '.started_at' "$v") / duration: $(jq -r '.duration_s' "$v")s"
         echo "- 扫描资源: $(jq -r '.resources_scanned | join(", ")' "$v")"
         echo
-        echo "## findings ($(jq '.findings|length' "$v"))"
+        echo "## findings ($(jq '.findings|length' "$v")) —— doc↔source $(jq '[.findings[]|select(.code|startswith("doc_gap"))]|length' "$v") / OpenAPI 机械 $(jq '[.findings[]|select(.code|startswith("api_gap"))]|length' "$v")"
         jq -r '.findings[]? | "- [\(.severity_hint)] `\(.code)` \(.resource).\(.attribute): \(.summary)"' "$v"
         echo
-        echo "## judgment_queue (OpenAPI 侧待 skill 层查证, $(jq '.judgment_queue|length' "$v"))"
-        jq -r '.judgment_queue[]? | "- \(.resource): api_actions=[\(.api_actions|join(","))]\n  \(.note)"' "$v"
+        echo "## judgment_queue (机械层拿不准,交 skill 层查证, $(jq '.judgment_queue|length' "$v"))"
+        jq -r '.judgment_queue[]? | "- [\(.reason)] \(.resource): api_actions=[\(.api_actions|join(","))]\(if (.detail|length)>0 then " detail=["+(.detail|join(","))+"]" else "" end)\n  \(.note)"' "$v"
         echo
-        echo "来源:jarvis tf-customer-probe (tier-0)"
+        echo "## suppressed ($(jq '.suppressed|length' "$v")) / coverage_notes ($(jq '.coverage_notes|length' "$v"))"
+        jq -r '.suppressed[]? | "- suppress \(.resource).\(.param)→\(.api_param) (\(.rule))"' "$v"
+        jq -r '.coverage_notes[]? | "- cover \(.resource).\(.attribute): \(.note)"' "$v"
+        echo
+        echo "来源:jarvis tf-customer-probe (tier-0, T0-mech)"
     } > "$out"
 }
 

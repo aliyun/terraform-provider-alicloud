@@ -52,11 +52,25 @@ probe 发现的 finding 先落 detector 的 `severity_hint`（机判，见下表
 | `doc_gap_forcenew` | S2 | ForceNew 标注文档≠源码(客户会被意外重建;仅查活跃非废弃字段) |
 | `doc_gap_deprecated` | S4 | 源码已 Deprecated 但文档仍作正常参数列出(未标注废弃) |
 
-OpenAPI 侧判定(skill 层查 `judgment_queue`,非机械)产出:
+OpenAPI 侧**机械三方 diff**(T0-mech,`probe.sh tier0` 元数据 diff 预筛)产出——精度命门,拿不准一律进 `judgment_queue` 不硬报:
 
 | finding code | 默认 | 语义 |
 |--------------|------|------|
-| `doc_api_gap` | S2–S4 | provider 实际调用的 API 的参数/枚举/行为与 TF 文档不一致,severity 由判定按影响面给。**只核对已接入面**;未接入 TF 的资源/参数不报(需求非 bug) |
+| `api_gap_deprecated_action` | S3 | 源码在调的 (product,version,action) 在 OpenAPI 标 `deprecated:true`(如 ClassicLink 退役),TF 侧无提示 |
+| `api_gap_enum_superset` | S3 | TF `ValidateFunc` 枚举 ⊋ API 枚举——客户端放行 API 必拒的值(如 OSS `storage_class` 含 `Standard`) |
+| `api_gap_required` | S3 | TF 标 `Optional` 但 API `docRequired=true`(且无 `Default`/`Computed` 兜底、非废弃双轨) |
+| `api_gap_type` | S3 | 类型硬冲突(经 `type_tolerance` 容差表过滤后仍冲突,如 TF list vs API string) |
+| `api_gap_range` | S4 | TF `IntBetween(min,max)` 越过 API 数值范围(TF 放行 API 拒绝的范围) |
+| `api_gap_default` | S4 | TF 显式 `Default` 与 API 默认值冲突 |
+
+> 方向安全不报:TF 枚举 ⊊ API 枚举 / TF 范围更严 = TF 比 API 严,记 `coverage_notes[]` 而非 finding。
+> 抑制护栏:`config.tier0_mech.suppress_params`(ClientToken/RegionId 等)与 `type_tolerance`(API int↔TF string 建模惯例)命中记 `suppressed[]`(可审计),不报 finding。废弃双轨对沿用 deprecated 检测(参与双轨的参数 required/名称差异不报)。
+
+OpenAPI 侧**剩余非机械项**(机械层拿不准 → `judgment_queue` 带 reason,交 skill 层/verifier 双层查证)产出:
+
+| finding code | 默认 | 语义 |
+|--------------|------|------|
+| `doc_api_gap` | S2–S4 | queue 里 `prose_review`(长度/字符集/基数等纯 prose 约束、行为一致性)/`unmapped_params`(snake→Camel 映射不上,如 convert 改名)/`enum_unparsed`(枚举非字面 slice)/`no_triple`(OSS SDK 风格抽不到 action)经人工核实后确为不一致。severity 由判定按影响面给。**只核对已接入面**;未接入 TF 的资源/参数不报(需求非 bug) |
 
 ## 升降级判则（Claude 复核时应用）
 
