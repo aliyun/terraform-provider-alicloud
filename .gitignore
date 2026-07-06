@@ -25,9 +25,9 @@ bridge/jarvis.env
 # 本地凭据(chmod 600,双保险 gitignore;bootstrap/.env.example 是模板)
 bootstrap/.env
 
-# AGENTS.md 由 hook 生成(P6.a):preflight.sh 兜底 + PostToolUse hook 实时 sync,
-# 内容 = mirror_sed_claude_to_codex(CLAUDE.md);不再 tracked,避免手工同步漂移
-AGENTS.md
+# AGENTS.md 已入库跟踪(勿再加回 ignore):pre-commit 钩子在 CLAUDE.md 变更时自动
+# 重生成同步(内容 = mirror_sed_claude_to_codex(CLAUDE.md))并 add 进本次提交,
+# PostToolUse 实时 sync + preflight 兜底,入库跟踪根治手工同步漂移(取代原 P6.a untrack)
 
 # Python bytecode
 __pycache__/

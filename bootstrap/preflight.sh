@@ -16,9 +16,9 @@ if git -C "$repo_root" rev-parse --git-dir >/dev/null 2>&1 && [ -d "$repo_root/b
     fi
 fi
 
-# AGENTS.md 从 CLAUDE.md 由 mirror sed 生成(P6.a:AGENTS.md 不 tracked,由 preflight 兜底 +
-# PostToolUse hook 实时 sync)。首次 checkout / codex 侧初始 / TTL 命中 skip 时也保它在 disk 上,
-# 避免 codex 侧读不到入口文档。
+# AGENTS.md 从 CLAUDE.md 由 mirror sed 生成(AGENTS.md 已入库跟踪;preflight 兜底 +
+# PostToolUse hook 实时 sync + pre-commit staged CLAUDE.md 自动重生成+add)。首次 checkout /
+# codex 侧初始 / TTL 命中 skip 时也保它在 disk 上与 CLAUDE.md 一致,避免 codex 侧读到过期入口文档。
 if [ -f "$repo_root/CLAUDE.md" ] && [ -f "$script_dir/skills-mirror-lib.sh" ]; then
     # shellcheck source=bootstrap/skills-mirror-lib.sh
     source "$script_dir/skills-mirror-lib.sh"
