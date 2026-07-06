@@ -84,7 +84,7 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
   `get_api_definition.py` 元数据(+`cache.sh` 7d 缓存),`probe.sh tier0` 抽 (product,version,action) 三元组 + 解析
   `StringInSlice`/`IntBetween`/`Default`,机械 diff 出六类 `api_gap_*`(deprecated_action/enum_superset/required/type/range/default),
   `judgment_queue` 从「人海判定」收窄为「机械层拿不准的疑点(prose/映射不上/OSS 无 action)」+ 抑制表/容差表/coverage_note 精度护栏;
-  未竟:接 cloudspec/镇元 resourceType spec 做更深属性 diff、`--all` 全量轮换的规模化实跑(需 AMP 白名单凭证)。
+  未竟:接 cloudspec/镇元 resourceType spec 做更深属性 diff、`--all` 全量轮换的规模化实跑(AMP 白名单凭证 2026-07-06 已配置,可全量实跑)。
   **源码 schema 嵌套深层解析**(当前只顶层,深挖 Elem 内层字段);terraform 二进制入 `bootstrap/install.sh` 依赖;
   工单回灌机制落地;`sweep` 接 aliyun CLI 按标签扫真实孤儿资源;自动建单**已毕业**(2026-07-05 主人拍板,采纳率
   7/8=87.5% 提前毕业,`ticket.mode=file`;draft 保留为可回退开关);a1 建单命令与优先级枚举固化。
@@ -102,7 +102,7 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
   试扫验证(alicloud_vpc 等)。
 - **待验**：tier-1 真实执行路径(apply/import/destroy)待真实测试账号凭证环境端到端验证;tier-0 OpenAPI 机械 diff(T0-mech)
   的**六类 api_gap_* 全被 hermetic 单测覆盖**(fixture 元数据桩,206 断言),真实标定亦对 07-03 首轮 8 资源逐条对照(复现
-  ClassicLink deprecated、RAM/SG 零误报、OSS 正确降级 queue);**待真实 AMP 白名单凭证环境**跑 `tier0 --all` 全量实拉元数据端到端。
+  ClassicLink deprecated、RAM/SG 零误报、OSS 正确降级 queue);AMP 白名单凭证 2026-07-06 已配置,`tier0 --all` 全量实拉元数据可端到端跑(机械面全量点亮)。
 
 ## 决策记录
 
@@ -142,7 +142,15 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
 3. **真实标定(验收核心)**:对 07-03 首轮 8 资源标定——机械层复现 `alicloud_vpc` ClassicLink `api_gap_deprecated_action` ×2
    (= 单 83881282);`alicloud_ram_role`/`alicloud_security_group` 三方一致 → 零新增误报;`alicloud_oss_bucket` SDK 风格 → `no_triple` queue
    (enum 超集需元数据可得,符合规格);`dns_hostname_status` convert 改名 → `unmapped_params` queue(机械层不猜)。hermetic 单测 206 断言全绿。
-   **约束**:本机无 AMP 白名单凭证,全量实拉元数据(`tier0 --all`)待有凭证环境端到端验证;机械管道由 fixture 元数据桩完整覆盖。
+   **约束**:本机无 AMP 白名单凭证,全量实拉元数据(`tier0 --all`)待有凭证环境端到端验证(→ **2026-07-06 已配置凭证,约束解除**,见下);机械管道由 fixture 元数据桩完整覆盖。
+
+### 2026-07-06（主人指令四条,详见 `cap-probe-fix-flywheel.md` 决策记录）
+
+与本能力相关三条:①**成本门收窄为「值敏感」**——prepaid 守门不再对所有 PrePaid/Subscription 一刀切阻断,收窄为只挡真正值敏感
+(不可逆计费 / 无法 API 销毁);**订阅类资源若无对应 data source(无 ds 可读回校验)则放行 `apply`**(等价 `allow_prepaid`)。
+②**场景语料库 git 化**——`terraform_playground` 升级为 git 仓 **`terraflow/tf_playground`**,**直推 master + 工单报备**模型
+(取代原仓外裸目录无 MR 方案,同时天然收敛多机语料分叉)。③**AMP 白名单凭证已配置**——T0-mech 机械面全量点亮,
+`tier0 --all` 全量实拉元数据可端到端跑,解除上条 07-05「待有凭证环境」约束。(第四条 `bridge/run.sh` 单一入口属 bridge 侧,不涉本能力。)
 
 ## 关联
 

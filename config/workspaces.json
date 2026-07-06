@@ -68,6 +68,12 @@
       "pools": ["api_toolkit"],
       "ops": {"test":"bash test/aone_comment_format_test.sh && bash test/wrap_done_test.sh"},
       "desc": "Jarvis 自治工作台; Aone triage、流程编排、自我迭代和内部研发提效"
+    },
+    "tf_playground": {
+      "repo": "tf_playground",
+      "git_url": "git@gitlab.alibaba-inc.com:terraflow/tf_playground.git",
+      "default_branch": "master",
+      "desc": "tf-customer-probe 场景语料库,数据仓直推模型(直推 master + 工单报备),本地目录名可为 terraform_playground,probe 解析见 probe.sh probe_playground_dir"
     }
   }
 }

@@ -36,7 +36,7 @@
 | ③ 修复 Fix | bridge ScanScheduler 扫池(probe 单指派 jarvis 被 `scan.sh` 自然扫到) → headless dispatch → aone-triage 认领 → **按 `probe-ticket-routing` 路由** | (a) provider 代码修 → `provider-resource-dev` → fork+UT → `invoke-terraform-acc-test-remote` 验收 → GitHub PR(`github-identity` 硬门,`api-tool-agent`);(b) TF 文档修 → 同 PR 路径 docs-only;(c) 上游协作 → cloudspec_gap 等 `submit_only` 转发;(d) 需实验定性 → 先跑 tier-1 变体场景再归入 a/b/c | 机件**全部已存在** | 只缺**路由规范**(本 commit 落地) | upstream PR merge(maintainer) |
 | ④ 验证 Verify-fix | PR 合并 → master 复验 | tier-0 重扫该项应消失 / tier-1 场景复跑应绿 →「已修未发布」→ 发布后复跑绿 → `claim.sh finish`(jarvis-done) | 靠工单溯源字段映射回场景/资源,无需新 runner 子命令 | 复验编排规范(routing reference 内定义)+ 状态机落 tag/评论 | 无 |
 | ⑤ 发布 Release | changelog 聚合 → 发版 | `terraform-changelog` skill(已有) | 已有 | 发布前 RC 门禁 = 全场景语料过一遍(P2) | release_prod(autonomy.md 永久停止项) |
-| ⑥ 回灌 Regress | 每张修复完成的 probe 单 + 每张真实客户单 | `regression-<aone-id>` 场景**直落**外置 `terraform_playground/<product>/regression-<aone-id>/`(仓外,无需 worktree/MR)+ 工单评论报备场景路径 | 规则已立(2026-07-03 外置简化) | 收尾清单挂钩 | 工单评论报备(仓库主人查验) |
+| ⑥ 回灌 Regress | 每张修复完成的 probe 单 + 每张真实客户单 | `regression-<aone-id>` 场景落 **git 化 `terraflow/tf_playground`**(2026-07-06:直推 master + 工单报备,取代原仓外裸目录)+ 工单评论报备场景路径 | 规则已立(2026-07-03 外置 → 2026-07-06 git 化) | 收尾清单挂钩 | 工单报备(仓库主人查验;git 直推 master 无 MR 门) |
 
 ## 三个永久人工硬门（其余全自动）
 
@@ -63,10 +63,19 @@
   + DispatchPool（并发/排队/软去重复用 `_dispatch_bg` 核心与 SUSPEND/WaitWatcher）+ ProbeScheduler 每日探测轮（跑 `loops/tf-probe.md`）
   + RevisitScheduler 每日 `jarvis-idle` 人工门重访 + `--dry-run-once` 验证入口 + hermetic 单测 `test/bridge_dispatch_test.sh`。
   **未竟**：provider 新版本事件触发；复验步骤进 triage 收尾清单。（`mode=file` 毕业已于 2026-07-05 主人拍板翻开关。）
-- **F3（规模化）**：**首发线 T0-mech 已落地（2026-07-05）**——tier-0 OpenAPI 侧机械化（`probe-meta.sh` + `tier0` 六类
-  `api_gap_*` 机械 diff 预筛 + `--all/--rotate` 全资源轮换巡检 + doctor 探针可用性降级）；**未竟**：场景语料生成器
-  （website docs 全量 → tier-1 语料）、cloudspec 覆盖矩阵驱动组合生成、发布前 RC 门禁、度量看板。
-- **F4（目标态）**：无人值守运转,人只守三硬门与 escalation 队列。
+- **F3（规模化）已落地清单**——机械化 / 语料 / 门禁 / 度量 / 降级 / 单一入口全数成 MR（2026-07-05～06）：
+  - ✅ **T0-mech**（MR-3, `worktree-f3-t0mech`）—— tier-0 OpenAPI 侧机械化（`probe-meta.sh` + `tier0` 六类
+    `api_gap_*` 机械 diff 预筛 + `--all/--rotate` 全资源轮换巡检 + doctor 探针可用性降级）。**已合入 master**（2026-07-05）。
+  - ⏳ **Corpus-gen 场景语料生成器**（MR-7, `worktree-f3-corpus-gen`）—— website docs 全量 → tier-1 语料。
+  - ⏳ **RC 门禁**（MR-6, `worktree-f3-rc-gate`）—— 发布前全资源 tier-0 + 全场景 tier-1 过一遍，产物落 `runs/rc-gate/`。
+  - ⏳ **度量看板**（MR-5, `worktree-f3-board`）—— 发现数 / 采纳率 / 发现→修复周期 / 回归通过率 / 覆盖率，接 `board.sh`。
+  - ⏳ **无钉钉降级**（MR-4, `worktree-f3-nodingtalk`）—— bridge 缺钉钉凭证时干净降级，不阻断 scan/dispatch/probe 调度。
+  - ⏳ **run.sh 单一入口**（MR-8, `worktree-bridge-run-entry`）—— `bridge/run.sh` 收敛后台启动入口。
+  - **合并状态**：T0-mech（MR-3）已合入 master；规模化后四者（Corpus-gen MR-7 / RC 门禁 MR-6 / 度量看板 MR-5 /
+    无钉钉降级 MR-4）+ 单一入口 run.sh（MR-8）待仓库主人合并。这些分支改动含 `bridge/*.py`、`CLAUDE.md`、
+    `loops/aone-triage.md`，本收尾单一律不碰以防冲突。
+- **F4（目标态）**：无人值守运转,人只守三硬门与 escalation 队列。**多机运营不单立 cap**
+  （2026-07-06 主人定调,兜底靠 claim 点读锁 + `tf_playground` git 收敛,见决策记录 2026-07-06 附注）。
 
 ## 决策记录
 
@@ -93,6 +102,23 @@
   = 07-03 单 83881282）;`alicloud_ram_role`/`alicloud_security_group` 零新增误报（三方一致）;`alicloud_oss_bucket` SDK 风格抽不到三元组 →
   正确降级为 `no_triple` queue（enum 超集需元数据可得，符合规格）;`dns_hostname_status`（convert 改名）→ `unmapped_params` queue 不硬猜。
   **红线遵守**:精度命门=拿不准一律 queue 不硬报;本机无 AMP 凭证时自动降级。
+- **2026-07-06（主人指令四条 + 多机运营定调）**：
+  1. **成本门收窄为「值敏感」**：prepaid / 成本守门不再对所有 PrePaid/Subscription 一刀切阻断，收窄为**只对真正值敏感
+     （产生不可逆计费 / 无法 API 销毁）的场景**把关；**订阅类资源若无对应 data source（无 ds 可读回校验）则允许 `apply`**
+     （等价 `allow_prepaid`），避免探测面被过度锁死漏探。
+  2. **场景语料库 git 化**：`terraform_playground` 从「仓外裸目录」升级为 git 仓 **`terraflow/tf_playground`**，采用
+     **直推 master + 工单报备**模型（jarvis 直接 push master、工单评论报备场景路径，无 MR 人工门）。取代原「外置无 MR」
+     简化方案，同时天然收敛多机语料分叉（见下附注）。
+  3. **单一入口 `bridge/run.sh`**：bridge 后台启动收敛到单一入口脚本 `bridge/run.sh`（MR-8, `worktree-bridge-run-entry`），
+     统一 env / 日志 / 各调度器拉起。
+  4. **AMP 凭证已配置 → 机械面全量点亮**：本机已配置 AMP 白名单凭证，T0-mech 机械 diff 不再受「本机无凭证」约束，
+     `tier0 --all` 全量实拉元数据可端到端跑（此前 cap 记的「待有凭证环境验证」约束解除）。
+
+  **附注（多机运营，主人定调）**：**不为「多机运营」单立 F4 cap**。理由 / 兜底要点：
+  - **修复类多机安全**靠 `claim.sh` 的**点读锁**（claim 竞争互斥 + owner_instance）兜住——多实例并发认领同一工单不会撞车；
+  - **bridge / 日轮**（scan 派发、probe 轮、revisit）**单主机跑**，不做多主机分布式调度；
+  - **语料分叉**已由 **`tf_playground` git 化**（指令 2）解决——各机 push 同一 git 仓，天然收敛；
+  - **跨机去重台账**（dispatched 软去重当前 per-machine 落 `.my-day/`）**待真有多机需求再做**，现阶段不预建。
 - **待主人决策**：
   1. ~~`mode=file` 翻开关时点~~ → **已定（2026-07-05）**：主人拍板提前毕业（采纳率 87.5%），draft 留作回退。
   2. ~~bridge probe cron 频率~~ → **已定（2026-07-03）**：probe 每日 `JARVIS_PROBE_HOUR`（默认 10）一轮、revisit 每日

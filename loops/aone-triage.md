@@ -29,7 +29,7 @@ done
 
 | 方式 | 说明 |
 |------|------|
-| bridge 定时扫池（自动派发） | bridge ScanScheduler 周期跑 `bootstrap/scan.sh --force`，diff 出新工作项**直接投并发 DispatchPool 起 headless jarvis**（每单一实例、并发上限 `JARVIS_DISPATCH_MAX`、软去重台账 `.my-day/bridge/dispatched.json`；跳过带 `jarvis-claimed`/`jarvis-done`/`jarvis-idle` 标签的项，`claim.sh` 仍是竞争互斥真源）。钉钉卡片语义从「求授权」改为「播报：已自动派发 #id」。**授权前置=`JARVIS_AUTO_DISPATCH=0` 的回退模式**（钉钉「处理 #id / 全部处理」才派发）。另有 ProbeScheduler（每日 `JARVIS_PROBE_HOUR` 探测轮，跑 `loops/tf-probe.md`）与 RevisitScheduler（每日 `JARVIS_REVISIT_HOUR` 重访 `jarvis-idle` 人工门工单）。见 `bridge/jarvis_dingtalk_bot.py`；`--dry-run-once` 可离线看派发/跳过决策。**Jarvis 不再主动扫**（CLAUDE.md 开局动作 #3） |
+| bridge 定时扫池（自动派发） | bridge ScanScheduler 周期跑 `bootstrap/scan.sh --force`，diff 出新工作项**直接投并发 DispatchPool 起 headless jarvis**（每单一实例、并发上限 `JARVIS_DISPATCH_MAX`、软去重台账 `.my-day/bridge/dispatched.json`；跳过带 `jarvis-claimed`/`jarvis-done`/`jarvis-idle` 标签的项，`claim.sh` 仍是竞争互斥真源）。钉钉卡片语义从「求授权」改为「播报：已自动派发 #id」。**授权前置=`JARVIS_AUTO_DISPATCH=0` 的回退模式**（钉钉「处理 #id / 全部处理」才派发）。另有 ProbeScheduler（每日 `JARVIS_PROBE_HOUR` 探测轮，跑 `loops/tf-probe.md`）与 RevisitScheduler（每日 `JARVIS_REVISIT_HOUR` 重访 `jarvis-idle` 人工门工单）。见 `bridge/jarvis_dingtalk_bot.py`；启动入口统一 **`bridge/run.sh start`**（自动 source `bootstrap/.env`+`bridge/jarvis.env`、判定钉钉/降级模式、pidfile 守护；`bridge/run.sh dry-run` 透传 `--dry-run-once` 离线看派发/跳过决策）。**Jarvis 不再主动扫**（CLAUDE.md 开局动作 #3） |
 | bridge dispatch | Tata 委派单工单，headless 执行（autonomy.md headless 模式：auto 列表免授权、遇阻 `[[SUSPEND:...]]` 挂起） |
 | 用户指令 | 会话里给 Aone URL / 工单 id → 直接进「二、逐项执行」单条流程 |
 | 手动兜底 | `/aone-triage` 或手动跑 `bootstrap/scan.sh`（排查/对账用；`plan.sh` 供 bridge/serve 流程出计划） |

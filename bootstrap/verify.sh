@@ -91,6 +91,43 @@ else
     fi
 fi
 
+# a1 (jarvis identity) login-state daily check — WARN, NOT FAIL. Mirrors the
+# GitHub-token check above: a dead/expired a1 session only blocks a1-backed Aone
+# writes (aone-triage 回复/建单、wrap.sh、claim/scan/reconcile — all go through
+# bin/a1id); it must not fail preflight and thereby block non-a1 work. So we WARN,
+# do NOT increment fail_count, and drop an idempotent escalation note.
+# OK iff `bin/a1id -- auth whoami` yields Account == WORKER_1782379562571 (jarvis).
+# 空/报错(过期会话) 或 半死(EmpID 在但 Account 空) → WARN. Parser matches bin/a1id.
+a1id_bin="${JARVIS_A1ID:-$repo_root/bin/a1id}"
+a1_expect="WORKER_1782379562571"
+a1_account="$("$a1id_bin" -- auth whoami 2>/dev/null | awk '/Account:/{print $2}' || true)"
+if [ "$a1_account" = "$a1_expect" ]; then
+    echo "PASS jarvis-a1-session"
+else
+    echo "WARN jarvis-a1-session — a1 jarvis 登录态失效/缺失(whoami Account='${a1_account:-<空>}' != $a1_expect)；a1 相关 Aone 写(triage 回复/建单/wrap)会被阻断，非 a1 工作不受影响"
+    echo "     修复: 浏览器 BUC 登 open_jarvis 后 bin/a1id login jarvis，再跑 bin/a1id -- auth whoami 复验 Account=$a1_expect"
+    esc_dir="${JARVIS_ESCALATION_DIR:-$repo_root/escalation}"
+    esc_file="$esc_dir/a1-session-expired-$(date -u +%F).md"
+    if [ ! -f "$esc_file" ]; then
+        mkdir -p "$esc_dir"
+        {
+            echo "# a1 jarvis 登录态失效/缺失 — $(date -u +%F)"
+            echo ""
+            echo "## 现象"
+            echo "\`bootstrap/verify.sh\` 的 a1 登录态日检失败：\`bin/a1id -- auth whoami\` 的 Account 字段为空或非 jarvis 账号（期望 \`$a1_expect\`）。过期会话（报错/非零退出）与半死会话（EmpID 在、Account 空）均命中。"
+            echo ""
+            echo "## 影响面"
+            echo "仅阻断 a1 相关 Aone 写路径（aone-triage 回复/建单、wrap.sh sync/done、claim/scan/reconcile 走 bin/a1id）。非 a1 工作不受影响，故 verify 记 WARN 不硬失败。"
+            echo ""
+            echo "## 修复步骤"
+            echo "1. 浏览器登 BUC（https://buc.alibaba-inc.com/）为 open_jarvis 账号。"
+            echo "2. 跑 \`bin/a1id login jarvis\`（走 BUC SSO，落盘 jarvis 身份）。"
+            echo "3. 复验：\`bin/a1id -- auth whoami\` 应打印 \`Account: $a1_expect\` 并退 0。"
+        } > "$esc_file"
+        echo "     已落 escalation 提示: $esc_file"
+    fi
+fi
+
 # Check vendored skills
 chk_skill aone-triage
 

@@ -15,6 +15,18 @@
     "suppress_params": ["ClientToken", "RegionId", "OwnerId", "OwnerAccount", "ResourceOwnerId", "ResourceOwnerAccount", "SourceIp", "DryRun", "ResourceGroupId"],
     "type_tolerance": ["string>integer", "string>long", "string>number", "string>boolean", "int>string", "integer>string", "long>string", "float>string"]
   },
+  "corpus": {
+    "desc": "F3 Corpus-gen 场景生成器(probe-corpus.sh):website docs Example Usage 批量生成。free_prefixes 为免费族前缀白名单,--batch 生成时优先排序;tags_marker 注入到示例既有 tags 块。",
+    "free_prefixes": ["vpc", "vswitch", "route_table", "route_entry", "network_acl", "snat_entry", "forward_entry", "common_bandwidth_package", "havip", "network_interface", "ram", "resource_manager", "oss", "kms", "log", "sls", "alidns", "dns", "cms", "actiontrail", "config", "security_group", "ecs_key_pair", "ecs_launch_template"],
+    "tags_marker": "jarvis-probe"
+  },
+  "tier1_risk_denylist": {
+    "desc": "成本安全门(值敏感,主人 2026-07-05 收窄):按量付费(PostPaid/PayAsYouGo)大件一律直接 apply(resource_patterns 按量清单已删)。仅命中订阅语义才 apply:false —— charge_value_fields 的值 ∈ subscription_values(大小写不敏感),或独立 period 字段取订阅时长(纯整数 1..period_subscription_max,区别于秒级 metric period 如 60/300/900)。命中即写 apply:false,并按订阅类资源规范用 data source 引存量、勿真实创建。runner 侧 prepaid_guard 为运行时值敏感兜底,不在此。",
+    "charge_value_fields": ["instance_charge_type", "payment_type", "charge_type", "pricing_cycle", "subscription_type", "billing_cycle"],
+    "subscription_values": ["prepaid", "subscription", "year", "month", "week"],
+    "period_fields": ["period"],
+    "period_subscription_max": 12
+  },
   "limits": { "max_scenarios_per_run": 3, "step_timeout_min": 20, "daily_new_tickets": 100 },
   "ticket": {
     "mode": "file",

@@ -22,13 +22,17 @@ if [ "${1:-}" = "--refresh" ]; then
 fi
 
 mkdir -p "$root/docs"
-json_f="$(mktemp)"; trap 'rm -f "$json_f"' EXIT
+json_f="$(mktemp)"; probe_f="$(mktemp)"; trap 'rm -f "$json_f" "$probe_f"' EXIT
 "$script_dir/board.sh" > "$json_f"
+# probe 段(飞轮健康度):board.sh probe 恒退 0(a1 失败自动降级),WARN 落 stderr,html 构建静默
+"$script_dir/board.sh" probe > "$probe_f" 2>/dev/null || echo '{}' > "$probe_f"
 
-python3 - "$docs_out" "$json_f" "$root/config/pools.json" <<PY
+python3 - "$docs_out" "$json_f" "$root/config/pools.json" "$probe_f" <<PY
 import json, sys, html, datetime
 docs_out=sys.argv[1]
 data=json.load(open(sys.argv[2]))
+try: prb=json.load(open(sys.argv[4]))
+except Exception: prb={}
 def e(s): return html.escape(str(s or ""))
 PRI={"紧急":("#d92d20","#fef3f2"),"高":("#d92d20","#fef3f2"),"中":("#b54708","#fffaeb"),"低":("#475467","#f2f4f7")}
 COLS=[("任务池","pool"),("待开始","__pre"),("进行中","inflight"),("审核中","done"),("已完成","merged")]
@@ -48,6 +52,33 @@ TOTAL=sum(PCNT.get(p,0) for p in POOLS)
 def pname(k): return NAMES.get(k,k)
 def pcol(k): return COLOR.get(k,"#98a2b3")  # neutral for unknown/empty
 def tint(hexc): return hexc+"22"  # light bg from hue (~13% alpha), dark text stays the hue
+def probe_strip(p):
+  # 飞轮健康度 stat 带:board.sh probe 聚合结果 → 一排 tile。空/失败则不渲染。
+  if not p: return ""
+  f=p.get("findings") or {}; d=p.get("drafts") or {}; t=p.get("tickets") or {}
+  sc=p.get("scenarios") or {}; cov=p.get("tier0_coverage") or {}
+  def tile(k,v,s="",warn=False):
+    cls="ptile warn" if warn else "ptile"
+    sub=f'<div class="ps">{e(s)}</div>' if s else ""
+    # str(v) first: 现有 e() 用 (s or "") 会把整数 0 渲染成空,数值 tile 须显式 str 保 "0" 可见
+    return f'<div class="{cls}"><div class="pk">{e(k)}</div><div class="pv">{e(str(v))}</div>{sub}</div>'
+  ar=d.get("adoption_rate"); ar_s=(str(round(ar*100))+"%") if ar is not None else "—"
+  tot=t.get("total"); tot_s="—" if tot is None else str(tot); warn=(t.get("source")!="aone")
+  bp=sc.get("by_product") or {}
+  bptop=", ".join(f"{k} {v}" for k,v in sorted(bp.items(), key=lambda kv:-kv[1])[:3]) or "—"
+  last=p.get("last_tier1_round") or ""; last=last[:10] if last else "—"
+  ag=f.get("api_gap") or {}
+  agtop=", ".join(f'{k.replace("api_gap_","")} {v}' for k,v in sorted(ag.items(), key=lambda kv:-kv[1])[:2]) or "无"
+  tiles=[
+    tile("本周发现", f.get("total",0), f'{f.get("rounds",0)} 轮 · tier0 {f.get("tier0_rounds",0)}/tier1 {f.get("tier1_rounds",0)}'),
+    tile("采纳率", ar_s, f'filed {d.get("filed",0)}/pend {d.get("pending",0)}/rej {d.get("rejected",0)}'),
+    tile("建单", tot_s, ("降级·本地" if warn else f'关单 {t.get("closed",0)}'), warn),
+    tile("api_gap", sum(ag.values()) if ag else 0, agtop),
+    tile("场景总数", sc.get("total",0), bptop),
+    tile("tier0 覆盖", cov.get("resources_scanned",0), "已巡检资源"),
+    tile("最近 tier1", last, f'近 {p.get("window_days",7)} 天窗口'),
+  ]
+  return '<div class="probe" title="probe 飞轮健康度 · board.sh probe">'+"".join(tiles)+'</div>'
 def card(r):
   fg,bg=PRI.get(r.get("priority"),("#475467","#f2f4f7")); p=e(r.get("priority"))
   pk=r.get("pool"); ac=pcol(pk); cat=r.get("category") or ""
@@ -63,6 +94,7 @@ def col(label,st):
   cls=" col-empty" if not rows else ""
   return f'''<div class="col{cls}" data-col><div class="ch"><span>{label}</span><span class="badge">{len(rows)}</span></div><div class="cb">{body}</div></div>'''
 board="".join(col(l,s) for l,s in COLS)
+probe_html=probe_strip(prb)
 arun=len([x for x in data if x["state"]=="inflight"])
 def drow(p):
   s=psplit(p)
@@ -93,6 +125,12 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 .dr{{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;font-size:13px;cursor:pointer;white-space:nowrap}}.dr:hover{{background:#f2f4f7}}.dr input{{cursor:pointer}}.dr .nm{{overflow:hidden;text-overflow:ellipsis}}.cnt{{margin-left:auto;color:#98a2b3;font:11px ui-monospace,monospace;flex:none}}.ddh{{border-bottom:1px solid #eaecf0;margin:2px 0 4px;font-weight:600}}.sw{{width:10px;height:10px;border-radius:3px;flex:none}}
 .cp{{display:inline-flex;align-items:center;gap:5px;border:1px solid #d0d5dd;background:#fff;border-radius:16px;padding:4px 10px;font-size:12.5px;color:#344054;cursor:pointer}}.cp .ccnt{{color:#98a2b3;font:10px ui-monospace,monospace}}.cp[aria-pressed=false]{{opacity:.4;background:#f2f4f7}}.cd{{width:9px;height:9px;border-radius:50%;flex:none}}
 .gen{{margin-left:auto;color:#98a2b3;font-size:12px}}
+.probe{{display:flex;gap:10px;padding:2px 22px 12px;flex-wrap:wrap;align-items:stretch}}
+.ptile{{flex:0 0 auto;min-width:118px;background:#f9fafb;border:1px solid #eaecf0;border-radius:10px;padding:9px 13px}}
+.ptile .pk{{font-size:11px;color:#98a2b3;text-transform:uppercase;letter-spacing:.3px}}
+.ptile .pv{{font-size:19px;font-weight:700;color:#1d2939;margin-top:2px}}
+.ptile .ps{{font-size:11px;color:#667085;margin-top:2px}}
+.ptile.warn{{border-color:#fec84b;background:#fffaeb}}
 .bd{{display:flex;gap:14px;padding:8px 22px 26px;align-items:start;overflow-x:auto}}
 .col{{flex:0 0 300px;background:#f9fafb;border:1px solid #eaecf0;border-radius:10px;padding:8px}}.col-empty{{background:#fff;border-style:dashed}}
 .ch{{display:flex;justify-content:space-between;padding:6px 6px 10px;font-weight:600;font-size:13px;color:#344054}}.badge{{background:#eaecf0;color:#475467;border-radius:10px;font-size:11px;padding:0 7px}}
@@ -107,7 +145,7 @@ doc=f'''<!doctype html><meta charset=utf-8><title>Jarvis 工作板</title><style
 {nav("Workspace管理")}{nav("应用管理")}<div class="sf"><span class="av">辰</span>辰羿<span class="ico">⚙</span></div></aside>
 <main class="main"><div class="tb"><div class="bc">Workspace › <b>工作板</b></div><div class="r"><input class="srch" id=srch type=search placeholder="搜索工作项…" autocomplete=off><button class="btn" id=refresh title="运行 bash bootstrap/board-html.sh --refresh 重扫 Aone 并重建">刷新</button><button class="btn k">+ 新增任务</button></div></div>
 <div class="fl"><div class="dd"><button class="ddb" id=ddb>工作池 ▾</button><div class="ddp" id=ddp><label class="dr ddh"><input type=checkbox id=pfall checked><span class="nm">全选</span><span class="cnt">{TOTAL}</span></label>{rows}</div></div>{pills}<span class="gen">{gen} · agent runs {arun}</span></div>
-<div class="bd">{board}</div></main></div>
+{probe_html}<div class="bd">{board}</div></main></div>
 <script>
 var B=document.querySelectorAll('.pf'),A=document.getElementById('pfall'),P=document.querySelectorAll('.cp'),S=document.getElementById('srch');
 function sync(){{var on=new Set();B.forEach(c=>{{if(c.checked)on.add(c.dataset.pf)}});

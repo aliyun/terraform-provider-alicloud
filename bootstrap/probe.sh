@@ -53,8 +53,9 @@ probe_audit_dir()     { echo "${PROBE_AUDIT_DIR:-$(probe_root)/runs/probe}"; }
 # cfg <jq-filter> — 读一个 config 值(-r 原始输出)
 cfg() { jq -r "$1" "$(probe_config)" 2>/dev/null; }
 
-# 场景根(playground)解析。语料库外置 jarvis 仓外,按云产品维度两级归档
-#   <root>/<product>/<id>/scenario.yaml。优先级:env > config > 默认约定。
+# 场景根(playground)解析。语料库外置 jarvis 仓外(已 git 化:数据仓 tf_playground,直推 master + 工单报备),
+#   按云产品维度两级归档 <root>/<product>/<id>/scenario.yaml。
+#   优先级:env JARVIS_TF_PLAYGROUND > config paths.playground_dir > workspace.sh dir tf_playground > 默认约定。
 probe_playground_dir() {
     if [ -n "${JARVIS_TF_PLAYGROUND:-}" ] && [ -d "$JARVIS_TF_PLAYGROUND" ]; then
         echo "$JARVIS_TF_PLAYGROUND"; return
@@ -62,6 +63,11 @@ probe_playground_dir() {
     local cfg_dir; cfg_dir="$(cfg '.paths.playground_dir')"
     if [ -n "$cfg_dir" ] && [ "$cfg_dir" != "null" ] && [ -d "$cfg_dir" ]; then
         echo "$cfg_dir"; return
+    fi
+    # 数据仓 tf_playground 登记(多机 clone 后零配置):workspace.sh 解析且目录在则用之
+    local ws_dir; ws_dir="$(bash "$_probe_dir/workspace.sh" dir tf_playground 2>/dev/null | head -1)"
+    if [ -n "$ws_dir" ] && [ -d "$ws_dir" ]; then
+        echo "$ws_dir"; return
     fi
     echo "$(dirname "$(probe_root)")/terraform_playground"
 }
@@ -109,6 +115,10 @@ _yaml_get() {
     local file="$1" key="$2"
     sed -n "s/^${key}:[[:space:]]*//p" "$file" 2>/dev/null | head -1 | sed 's/[[:space:]]*$//'
 }
+
+# _apply_disabled <yaml> — scenario.yaml 显式 apply:false(成本安全门/大件资源)→ 0(禁用 apply);
+#   缺键或非 false → 非 0(默认放行,apply 是可选键、默认 true)。probe-corpus.sh 命中风险门时写入。
+_apply_disabled() { [ "$(_yaml_get "$1" apply)" = "false" ]; }
 
 # ── env 判定 ────────────────────────────────────────────────────────
 _have_terraform() { command -v terraform >/dev/null 2>&1; }
@@ -934,13 +944,14 @@ _cmd_run() {
     sdir="${matches[0]}"
     yaml="$sdir/scenario.yaml"
 
-    local scn_region update_step import_check import_address import_id_output allow_prepaid
+    local scn_region update_step import_check import_address import_id_output allow_prepaid apply_off
     scn_region="$(_yaml_get "$yaml" region)"
     update_step="$(_yaml_get "$yaml" update_step)"
     import_check="$(_yaml_get "$yaml" import_check)"
     import_address="$(_yaml_get "$yaml" import_address)"
     import_id_output="$(_yaml_get "$yaml" import_id_output)"
     allow_prepaid="$(_yaml_get "$yaml" allow_prepaid)"
+    apply_off=0; _apply_disabled "$yaml" && apply_off=1
 
     local region; region="$(_resolve_region "$cli_region" "$scn_region")"
     local tier1_enabled; tier1_enabled="$(cfg '.tiers.tier1.enabled')"
@@ -955,7 +966,9 @@ _cmd_run() {
         echo "    - init"
         echo "    - validate"
         if [ "$have_creds" -eq 1 ]; then echo "    - plan -out=tf.plan"; else echo "    - plan: 将跳过(未设置 ALICLOUD 凭证 → env_issue no_creds)"; fi
-        if [ "$tier1_enabled" != "true" ]; then
+        if [ "$apply_off" -eq 1 ]; then
+            echo "    - (场景 apply:false → 止步 plan,plan-only 封顶,不 apply;env_issue apply_disabled_by_scenario)"
+        elif [ "$tier1_enabled" != "true" ]; then
             echo "    - (tier1.enabled=false → plan-only 封顶,不 apply;env_issue tier1_disabled_plan_only)"
         else
             if [ "$allow_prepaid" = "true" ] || [ "$(cfg '.tiers.tier1.prepaid_guard')" != "true" ]; then
@@ -1034,6 +1047,12 @@ _cmd_run() {
         else
             _emit_finding plan_fail plan "合法配置 plan 失败" "$PRUN_WD/plan.log" S2
         fi
+        _finalize_verdict; return "$(_verdict_exit)"
+    fi
+
+    # 场景级 apply 门:scenario.yaml apply:false(生成器命中成本安全门写入)→ 止步 plan,不真实创建
+    if [ "$apply_off" -eq 1 ]; then
+        _emit_env apply_disabled_by_scenario "场景 scenario.yaml 声明 apply:false(成本安全门/付费大件资源),封顶 plan-only,不 apply"
         _finalize_verdict; return "$(_verdict_exit)"
     fi
 
