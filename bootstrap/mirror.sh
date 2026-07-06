@@ -119,6 +119,13 @@ _check_pair() {
     local direction="${mapping##* }"
 
     if [ ! -f "$dst" ]; then
+        # 生成型 untracked 镜像目标(.gitignore 标注,如顶层 AGENTS.md=sed(CLAUDE.md),
+        # 由 preflight/PostToolUse hook 按需生成)缺失 ≠ drift:fresh worktree/codex
+        # 首检出尚未跑 preflight 时本就没有该文件。存在则走下方 sed 比对 catch 真 drift,
+        # 仅"未生成"跳过。tracked 镜像(.claude/.agents 双份 skills)缺失仍报 drift。
+        if git -C "$jarvis_root" check-ignore -q "$dst" 2>/dev/null; then
+            return 0
+        fi
         echo "mirror-missing: $dst" >&2
         echo "  (expected mirror of $src)" >&2
         return 1

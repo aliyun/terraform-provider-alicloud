@@ -6,6 +6,9 @@ repo_root="$(cd "$test_dir/.." && pwd)"
 skill="$repo_root/.agents/skills/invoke-terraform-acc-test-remote/SKILL.md"
 provider_skill="$repo_root/.agents/skills/provider-resource-dev/SKILL.md"
 
+# 多用例契约的真源是 scripts/acctest.py::build_test_case_query:客户端**不拼**
+# `^(A|B|C)$` 合并正则,而是发重复的 `testCaseNames=A&testCaseNames=B`,服务端
+# 逐个字面名自行做 `^...$` 锚定。断言锁这份契约,防回退到旧的客户端拼正则写法。
 for term in \
   "alicloud_schedulerx_job" \
   "--terraform-resource alicloud_schedulerx_job" \
@@ -18,7 +21,8 @@ for term in \
   "不传 --test-case" \
   "跑该资源全部" \
   "逗号分隔多个用例" \
-  "^(A|B|C)$"; do
+  "testCaseNames=A&testCaseNames=B" \
+  "客户端不再拼正则"; do
   if ! grep -Fq -- "$term" "$skill"; then
     echo "acctest_remote_skill_rules_test: missing '$term' in $skill" >&2
     exit 1

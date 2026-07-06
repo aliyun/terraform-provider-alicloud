@@ -92,9 +92,20 @@ source = open(script, encoding="utf-8").read()
 assert "KNOWN_PRODUCT_PREFIXES" not in source
 assert "KNOWN_NAME_PARTS" not in source
 
-assert acctest.normalize_test_case_name("TestA") == "TestA"
-assert acctest.normalize_test_case_name("TestA, TestB") == "^(TestA|TestB)$"
-assert acctest.normalize_test_case_name(" TestA ,, TestB ") == "^(TestA|TestB)$"
+# 真源=acctest.py:normalize_test_case_name 返回**字面函数名列表**,不再拼
+# `^(A|B|C)$` 客户端正则(见 docstring "Does NOT build a regex")。多用例经
+# build_test_case_query 发重复 testCaseNames 参数,服务端逐个字面名自行锚定。
+assert acctest.normalize_test_case_name("TestA") == ["TestA"]
+assert acctest.normalize_test_case_name("TestA, TestB") == ["TestA", "TestB"]
+assert acctest.normalize_test_case_name(" TestA ,, TestB ") == ["TestA", "TestB"]
+assert acctest.normalize_test_case_name("") is None
+assert acctest.normalize_test_case_name(None) is None
+
+# 多用例 wire 契约:单用例 → testCaseName=;多用例 → 重复 testCaseNames=(非合并正则)
+assert acctest.build_test_case_query("http://x/u", "TestA") == "http://x/u?testCaseName=TestA"
+assert acctest.build_test_case_query("http://x/u", "TestA,TestB") == \
+    "http://x/u?testCaseNames=TestA&testCaseNames=TestB"
+assert acctest.build_test_case_query("http://x/u", None) == "http://x/u"
 PY
 
 echo "acctest_packaging_test: PASS"
