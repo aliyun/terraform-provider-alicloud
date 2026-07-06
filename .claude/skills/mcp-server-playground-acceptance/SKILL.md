@@ -76,10 +76,10 @@ description: >-
 如需上传带截图的 HTML 报告到 AutomationAgent:
 
 1. 先加载 `html-report-preview` skill,按其 Image Handling 章节处理图片。
-2. 禁止在 HTML 中使用相对图片路径或 base64 `data:image`;截图必须先上传到 OSS public-read,HTML 只引用 `https://<bucket>.oss-<region>.aliyuncs.com/...`。
-3. 凭证边界:HTML 报告上传到 AutomationAgent 只依赖 `JARVIS_HTML_REPORT_TOKEN`;截图上传 OSS 才依赖对象存储上传能力。不要使用任意个人 AKSK 或随便找一个 bucket;只能使用 Jarvis/团队认可的 public-read bucket、最小权限上传凭证,或已有可公开访问图片 URL。缺合规 OSS 上传能力时不要声称图片已修复,应升级人工处理。
+2. 禁止在 HTML 中使用相对图片路径或 base64 `data:image`;截图必须上传为 OSS 私有对象,再用半年期签名 GET URL 让 HTML 引用。严禁 public-read bucket/object。
+3. 凭证边界:HTML 报告上传到 AutomationAgent 只依赖 `JARVIS_HTML_REPORT_TOKEN`;截图上传和签名 OSS URL 才依赖对象存储能力。不要使用任意个人 AKSK 或随便找一个 bucket;只能使用 Jarvis/团队认可的私有 bucket、最小权限上传/签名凭证,或已有可安全限时访问的图片 URL。缺合规 OSS 签名能力时不要声称图片已修复,应升级人工处理。
 4. 调 `bootstrap/html-report-preview.sh upload` 前,检查 HTML 里所有 `<img src>` 都是 HTTP(S) 绝对 URL。
-5. 回贴 Aone 前,用 `curl -fsSI '<image-url>'` 或浏览器确认报告页和每个图片 URL 都返回 200。
+5. 分享前,确认未签名的 OSS 直链不可公开读取,签名 URL 用 GET 返回 200,并用浏览器确认报告页里每张图已实际加载。
 
 ## Aone 追评模板
 
