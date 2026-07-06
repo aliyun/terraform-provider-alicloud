@@ -154,6 +154,7 @@ class ScanDecideTest(unittest.TestCase):
         # 默认 mock 掉 _human_touched(否则 idle 分支会真发 a1 activity 查询)；
         # 默认「无人工介入」，需要人工介入的用例各自覆盖为 True。
         sc._human_touched = lambda iid: False
+        sc._human_commented = lambda iid: False
         return sc
 
     def test_tag_and_dedup_decisions(self):
@@ -190,10 +191,21 @@ class ScanDecideTest(unittest.TestCase):
         self.assertEqual(d["action"], "dispatch")
         self.assertTrue(d["force"], "idle+人工介入必须 force 覆盖去重台账")
 
+    def test_idle_human_comment_dispatches_force(self):
+        # jarvis-idle 且最新评论来自人工 → 重新派发，且 force=True
+        sc = self._scanner()
+        sc._human_touched = lambda iid: False
+        sc._human_commented = lambda iid: True
+        items = [{"id": "ic", "title": "idle comment", "tag": ["jarvis-idle"]}]
+        d = sc._decide(items)[0]
+        self.assertEqual(d["action"], "dispatch")
+        self.assertTrue(d["force"], "idle+人工评论必须 force 覆盖去重台账")
+
     def test_idle_jarvis_self_update_skips(self):
         # jarvis-idle 但最近动作是 jarvis 自身(_human_touched=False) → 跳过
         sc = self._scanner()
         sc._human_touched = lambda iid: False
+        sc._human_commented = lambda iid: False
         items = [{"id": "is", "title": "idle self", "tag": ["jarvis-idle"]}]
         d = sc._decide(items)[0]
         self.assertEqual((d["action"], d["reason"]), ("skip", "idle_no_human"))
@@ -507,6 +519,151 @@ class HumanTouchedTest(unittest.TestCase):
             sc._human_touched("5")
             sc._human_touched("5")
             self.assertEqual(calls[0], 1, "同一 tick 内同 id 只查一次")
+        finally:
+            b.subprocess.run = orig
+
+
+class HumanCommentedTest(unittest.TestCase):
+    """_human_commented: idle 更新时补看 Aone 最新评论。
+    最新评论来自人工 → 触发重派；最新评论来自 open-jarvis/系统账号 → 保守跳过。
+    绝不真发 a1 —— 全部 monkeypatch b.subprocess.run。"""
+
+    def _scanner(self):
+        tmp = tempfile.mkdtemp()
+        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        return b.ScanScheduler(handler=None, pool=pool)
+
+    def _fake_run(self, rc, stdout, stderr=""):
+        class R:
+            returncode = rc
+        R.stdout = stdout
+        R.stderr = stderr
+        return lambda *a, **k: R()
+
+    def test_latest_human_comment_is_touched(self):
+        sc = self._scanner()
+        comments = [
+            {"id": 1, "author": "open-jarvis", "content": "jarvis-claim x"},
+            {"id": 2, "author": "辰羿", "content": "@open-jarvis 继续处理"},
+        ]
+        orig = b.subprocess.run
+        b.subprocess.run = self._fake_run(0, json.dumps(comments))
+        try:
+            self.assertTrue(sc._human_commented("1"), "最新评论来自人工 → 需要重派")
+        finally:
+            b.subprocess.run = orig
+
+    def test_latest_jarvis_comment_not_touched(self):
+        sc = self._scanner()
+        comments = [
+            {"id": 1, "author": "辰羿", "content": "@open-jarvis 继续处理"},
+            {"id": 2, "author": "open-jarvis", "content": "jarvis-claim x"},
+        ]
+        orig = b.subprocess.run
+        b.subprocess.run = self._fake_run(0, json.dumps(comments))
+        try:
+            self.assertFalse(sc._human_commented("1"), "最新评论来自 Jarvis → 不重派")
+        finally:
+            b.subprocess.run = orig
+
+    def test_human_comment_after_idle_counts_even_if_latest_is_jarvis(self):
+        sc = self._scanner()
+        activities = [
+            {"property": "标签", "oldValue": "jarvis-claimed",
+             "newValue": "jarvis-idle", "eventTime": "2026-07-06 10:00"},
+        ]
+        comments = [
+            {"id": 1, "author": "辰羿", "createdAt": "2026-07-06 09:59:59",
+             "content": "@open-jarvis 旧评论"},
+            {"id": 2, "author": "辰羿", "createdAt": "2026-07-06 10:01:00",
+             "content": "@open-jarvis 继续处理"},
+            {"id": 3, "author": "open-jarvis", "createdAt": "2026-07-06 10:02:00",
+             "content": "jarvis-claim x"},
+        ]
+        orig = b.subprocess.run
+
+        def fake_run(args, **kwargs):
+            class R:
+                returncode = 0
+                stderr = ""
+            R.stdout = json.dumps(activities if "activity" in args else comments)
+            return R()
+
+        b.subprocess.run = fake_run
+        try:
+            self.assertTrue(sc._human_commented("1"),
+                            "只要 idle 后存在人工评论，即使最新评论是 Jarvis 也需要重派")
+        finally:
+            b.subprocess.run = orig
+
+    def test_human_comment_before_idle_does_not_count(self):
+        sc = self._scanner()
+        activities = [
+            {"property": "标签", "oldValue": "jarvis-claimed",
+             "newValue": "jarvis-idle", "eventTime": "2026-07-06 10:00"},
+        ]
+        comments = [
+            {"id": 1, "author": "辰羿", "createdAt": "2026-07-06 09:59:59",
+             "content": "@open-jarvis 旧评论"},
+        ]
+        orig = b.subprocess.run
+
+        def fake_run(args, **kwargs):
+            class R:
+                returncode = 0
+                stderr = ""
+            R.stdout = json.dumps(activities if "activity" in args else comments)
+            return R()
+
+        b.subprocess.run = fake_run
+        try:
+            self.assertFalse(sc._human_commented("1"),
+                             "idle 前的历史人工评论不能触发重派")
+        finally:
+            b.subprocess.run = orig
+
+    def test_latest_system_comment_not_touched(self):
+        sc = self._scanner()
+        comments = [{"id": 1, "author": "Kelude", "content": "sync"}]
+        orig = b.subprocess.run
+        b.subprocess.run = self._fake_run(0, json.dumps(comments))
+        try:
+            self.assertFalse(sc._human_commented("1"), "系统账号评论 → 不重派")
+        finally:
+            b.subprocess.run = orig
+
+    def test_comment_query_failure_returns_false(self):
+        sc = self._scanner()
+        orig = b.subprocess.run
+        b.subprocess.run = self._fake_run(1, "", "boom")
+        try:
+            self.assertFalse(sc._human_commented("9"), "rc!=0 → 保守 False")
+        finally:
+            b.subprocess.run = orig
+
+    def test_comment_result_cached_within_tick(self):
+        sc = self._scanner()
+        comment_calls = [0]
+        activity_calls = [0]
+        orig = b.subprocess.run
+
+        def counting(args, **kwargs):
+            class R:
+                returncode = 0
+                stderr = ""
+            if "activity" in args:
+                activity_calls[0] += 1
+                R.stdout = "[]"
+            else:
+                comment_calls[0] += 1
+                R.stdout = json.dumps([{"id": 1, "author": "辰羿", "content": "继续"}])
+            return R()
+        b.subprocess.run = counting
+        try:
+            sc._human_commented("5")
+            sc._human_commented("5")
+            self.assertEqual(comment_calls[0], 1, "同一 tick 内同 id 评论只查一次")
+            self.assertEqual(activity_calls[0], 1, "同一 tick 内同 id activity 只查一次")
         finally:
             b.subprocess.run = orig
 

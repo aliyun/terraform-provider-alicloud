@@ -663,6 +663,8 @@ class ScanScheduler:
         self._lock = threading.Lock()    # guards self.pending
         self._thread = None
         self._human_cache = {}           # per-tick cache of _human_touched(iid) → bool
+        self._human_comment_cache = {}   # per-tick cache of _human_commented(iid) → bool
+        self._activity_cache = {}        # per-tick cache of Aone activity list
         # 人工操作者白名单：只有 config/contacts.json 登记人员(name/flower/id 任一匹配)
         # 的 activity operator 才算人工介入。Kelude/机器人等未登记身份不触发重派。
         self._human_operators = self._load_human_operators()
@@ -760,24 +762,139 @@ class ScanScheduler:
         iid = str(iid)
         if iid in self._human_cache:
             return self._human_cache[iid]
-        result = False
+        data = self._activities(iid)
+        if isinstance(data, list) and data:
+            op = str(data[0].get("operator", "")).strip()
+            result = bool(op) and op in self._human_operators
+        else:
+            result = False
+        self._human_cache[iid] = result
+        return result
+
+    def _activities(self, iid):
+        iid = str(iid)
+        if iid in self._activity_cache:
+            return self._activity_cache[iid]
+        data = []
         try:
             r = subprocess.run(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
                  "activity", iid, "-f", "json"],
                 capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
             if r.returncode == 0:
-                data = json.loads(r.stdout)
-                if isinstance(data, list) and data:
-                    op = str(data[0].get("operator", "")).strip()
-                    result = bool(op) and op in self._human_operators
+                parsed = json.loads(r.stdout)
+                if isinstance(parsed, list):
+                    data = parsed
             else:
-                log.warning("_human_touched: activity query failed #%s rc=%d: %s",
+                log.warning("_activities: activity query failed #%s rc=%d: %s",
                             iid, r.returncode, (r.stderr or "").strip()[:200])
         except Exception as e:  # noqa: BLE001
-            log.warning("_human_touched: activity error #%s: %s", iid, e)
-        self._human_cache[iid] = result
+            log.warning("_activities: activity error #%s: %s", iid, e)
+        self._activity_cache[iid] = data
+        return data
+
+    def _human_commented(self, iid):
+        """Aone 评论中是否存在晚于上次进入 idle 的人工评论。
+
+        activity 流可能只暴露 Kelude 等系统动作，漏掉真正的人工 @open-jarvis 评论；
+        idle 单进入 updated_items 后，需要补看 comment list。找到上次标签进入 jarvis-idle
+        的时间后，检查其后的所有评论，而不是只看最新评论。best-effort：失败返回 False。
+        本轮缓存。
+        """
+        iid = str(iid)
+        if iid in self._human_comment_cache:
+            return self._human_comment_cache[iid]
+        result = False
+        try:
+            r = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                 "comment", "list", iid, "-f", "json"],
+                capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
+            if r.returncode == 0:
+                data = json.loads(r.stdout)
+                comments = [c for c in data if isinstance(c, dict)] if isinstance(data, list) else []
+                idle_at = self._last_idle_at(iid)
+                if idle_at is not None:
+                    result = any(self._is_human_comment_after(c, idle_at) for c in comments)
+                else:
+                    latest = self._latest_comment(comments)
+                    if latest:
+                        author = str(latest.get("author") or latest.get("creator") or "").strip()
+                        content = str(latest.get("content") or "").strip()
+                        result = self._is_human_comment(author, content)
+            else:
+                log.warning("_human_commented: comment query failed #%s rc=%d: %s",
+                            iid, r.returncode, (r.stderr or "").strip()[:200])
+        except Exception as e:  # noqa: BLE001
+            log.warning("_human_commented: comment error #%s: %s", iid, e)
+        self._human_comment_cache[iid] = result
         return result
+
+    def _last_idle_at(self, iid):
+        latest = None
+        for act in self._activities(iid):
+            if not isinstance(act, dict):
+                continue
+            if str(act.get("property", "")).strip() != "标签":
+                continue
+            old_value = str(act.get("oldValue") or "")
+            new_value = str(act.get("newValue") or "")
+            if "jarvis-idle" not in new_value or "jarvis-idle" in old_value:
+                continue
+            event_at = self._parse_aone_time(act.get("eventTime"))
+            if event_at and (latest is None or event_at > latest):
+                latest = event_at
+        return latest
+
+    @staticmethod
+    def _latest_comment(comments):
+        if not comments:
+            return None
+
+        def key(c):
+            cid = c.get("id")
+            try:
+                return (1, int(cid))
+            except (TypeError, ValueError):
+                return (0, str(c.get("createdAt") or c.get("created") or ""))
+
+        return max(comments, key=key)
+
+    @staticmethod
+    def _parse_aone_time(value):
+        raw = str(value or "").strip()
+        if not raw:
+            return None
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S%z"):
+            try:
+                parsed = datetime.strptime(raw, fmt)
+                return parsed.replace(tzinfo=None)
+            except ValueError:
+                pass
+        return None
+
+    @classmethod
+    def _is_human_comment_after(cls, comment, cutoff):
+        author = str(comment.get("author") or comment.get("creator") or "").strip()
+        content = str(comment.get("content") or "").strip()
+        if not cls._is_human_comment(author, content):
+            return False
+        created = cls._parse_aone_time(comment.get("createdAt") or comment.get("created"))
+        return bool(created and created > cutoff)
+
+    @staticmethod
+    def _is_human_comment(author, content=""):
+        author_norm = (author or "").strip().lower()
+        if not author_norm:
+            return False
+        if "open-jarvis" in author_norm or "worker_1782379562571" in author_norm:
+            return False
+        if author_norm in {"kelude", "云知道平台公共账号"}:
+            return False
+        content_norm = (content or "").strip().lower()
+        if content_norm.startswith("jarvis-claim"):
+            return False
+        return True
 
     def _decide(self, items):
         """Cheap pre-dispatch triage for auto mode. Returns a list of
@@ -788,8 +905,9 @@ class ScanScheduler:
           · 终态状态（TERMINAL_STATUSES）→ skip terminal
           · jarvis-done → skip done
           · jarvis-claimed（有实例正在跑）→ skip claimed
-          · jarvis-idle：jarvis 上轮已 release 等接手 —— 若 _human_touched（人工在其后介入）
-            则重新派发并 force=True（覆盖去重台账）；否则 skip idle_no_human（等每日 Revisit）
+          · jarvis-idle：jarvis 上轮已 release 等接手 —— 若 _human_touched（activity
+            白名单）或 _human_commented（最新评论来自人工），则重新派发并 force=True
+            （覆盖去重台账）；否则 skip idle_no_human（等每日 Revisit）
           · 其余（无 jarvis 标签，含首次/外部更新）→ 走派发判定，force=False
         「走派发判定」= pool.status(iid, force) 命中容量/去重则 skip，否则 dispatch/new。
         DispatchPool 的 active-set + 24h ledger 提供软去重，claim 仍是真正互斥锁。"""
@@ -812,7 +930,7 @@ class ScanScheduler:
             elif "jarvis-claimed" in tags:
                 action, reason = "skip", "claimed"
             elif "jarvis-idle" in tags:
-                if self._human_touched(iid):
+                if self._human_touched(iid) or self._human_commented(iid):
                     # 人工在 jarvis 上轮动作之后介入 → 重新派发，force 覆盖去重台账。
                     force, decide_dispatch = True, True
                     action, reason = "dispatch", "new"
@@ -870,6 +988,8 @@ class ScanScheduler:
             log.info("ScanScheduler: pause flag present (.my-day/bridge/pause), skip this tick")
             return
         self._human_cache = {}   # per-tick cache reset for _human_touched
+        self._human_comment_cache = {}
+        self._activity_cache = {}
         self._human_operators = self._load_human_operators()  # reload whitelist each tick
         items = self._scan()
         if items is None:
