@@ -28,6 +28,8 @@
 
 7. **auto-memory 只存 personal/machine，技术知识入 skill**：save memory 前扫本仓 skills 全集，已覆盖则不写；技术/团队/项目类且 skill 未覆盖 → 补入相关 skill/reference，不落 memory；仅个人偏好/机器状态/临时上下文才走 auto-memory。**why**：auto-memory per-machine 不跨设备，skill 走 git 天然跨设备并在 trigger 时自然加载。策略与已清理清单见 [escalation/archived/cap-auto-memory-save-policy.md](escalation/archived/cap-auto-memory-save-policy.md)（已归档）。
 
+8. **Aone 工单必先调 aone-triage skill**：用户给 Aone URL / 工单 id / 提及工单时，**第一步必须 `Skill aone-triage`** 加载完整诊断+路由规则（决策树、Step 1.5 canned 前置分诊、团队分工、关联单建单纪律）。严禁跳过 skill 直接手动 `aone-get.sh` + 查源码——会漏路由判定（专属名单/镇元查证/生成器 vs 手写/分支 A–G）导致转单到错的人。
+
 ## 自我迭代
 
 流程/能力缺口按 [loops/self-improve.md](loops/self-improve.md) 沉淀，别只口头修；跨轮结构性重构走 `escalation/cap-*.md` 路线图。
