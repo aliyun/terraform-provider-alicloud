@@ -265,6 +265,10 @@ def broadcast_type():
     return os.environ.get("JARVIS_BROADCAST_TYPE", "group")
 
 
+# Aone 终态状态集合：处于这些状态的工单已闭环，扫描到也不再派实例。
+TERMINAL_STATUSES = {"已发布", "已取消", "已完成", "已关闭", "已解决", "Fixed"}
+
+
 def _tagset(item):
     """Normalize an item's ``tag`` field (list | comma-string | None) to a set of strings."""
     t = item.get("tag")
@@ -625,14 +629,18 @@ class ScanScheduler:
         self.pending = {}                # id -> item dict, awaiting authorization (fallback mode)
         self._lock = threading.Lock()    # guards self.pending
         self._thread = None
-        # 灰度安全阀：自动派发范围限定。assignee 已由 scan 的 JARVIS_SCAN_ASSIGNEE 限定，
-        # 此处再叠加「池白名单」+「创建时间上限」。机制未大规模实测前，**默认收窄到灰度**
-        # (tf_provider 池 + 2024-01-01 前创建)，即使漏配 env 也不会全量放开(fail-safe)。
-        # 显式设为空("JARVIS_DISPATCH_POOLS="/"JARVIS_DISPATCH_CREATED_BEFORE=")才解除对应限制；
-        # 验证稳定后可放宽此默认。
+        self._human_cache = {}           # per-tick cache of _human_touched(iid) → bool
+        # jarvis 自身写 Aone 的 operator 身份集合，用于区分「jarvis 自更新 vs 人工介入」。
+        # open-jarvis = 展示名，WORKER_1782379562571 = 账号；JARVIS_SELF_OPERATOR 可补充别名。
+        self.self_operators = {"open-jarvis", "WORKER_1782379562571"} | {
+            s.strip() for s in os.environ.get("JARVIS_SELF_OPERATOR", "").split(",") if s.strip()}
+        # 灰度安全阀（可选收窄）：assignee 已由 scan 的 JARVIS_SCAN_ASSIGNEE 限定，此处可再叠加
+        # 「池白名单」(JARVIS_DISPATCH_POOLS) + 「创建时间上限」(JARVIS_DISPATCH_CREATED_BEFORE)。
+        # **默认已放开到全部池 / 全部时间**（两者默认空 → _in_scope 恒 True）；只有显式配置对应
+        # env 才收窄。灰度验证期已过，默认不再收窄。
         self.dispatch_pools = {p.strip() for p in
-                               os.environ.get("JARVIS_DISPATCH_POOLS", "tf_provider").split(",") if p.strip()}
-        self.dispatch_created_before = os.environ.get("JARVIS_DISPATCH_CREATED_BEFORE", "2024-01-01").strip()
+                               os.environ.get("JARVIS_DISPATCH_POOLS", "").split(",") if p.strip()}
+        self.dispatch_created_before = os.environ.get("JARVIS_DISPATCH_CREATED_BEFORE", "").strip()
 
     # -- public API ----------------------------------------------------------
 
@@ -694,12 +702,45 @@ class ScanScheduler:
                 return False
         return True
 
+    def _human_touched(self, iid):
+        """最近一条 Aone activity 的 operator 是否非 jarvis 本身（=人工/辰羿在 jarvis 上轮
+        动作之后介入过）。best-effort：任何失败一律返回 False（保守，不误续跑）。本轮缓存。"""
+        iid = str(iid)
+        if iid in self._human_cache:
+            return self._human_cache[iid]
+        result = False
+        try:
+            r = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+                 "activity", iid, "-f", "json"],
+                capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
+            if r.returncode == 0:
+                data = json.loads(r.stdout)
+                if isinstance(data, list) and data:
+                    op = str(data[0].get("operator", "")).strip()
+                    result = bool(op) and op not in self.self_operators
+            else:
+                log.warning("_human_touched: activity query failed #%s rc=%d: %s",
+                            iid, r.returncode, (r.stderr or "").strip()[:200])
+        except Exception as e:  # noqa: BLE001
+            log.warning("_human_touched: activity error #%s: %s", iid, e)
+        self._human_cache[iid] = result
+        return result
+
     def _decide(self, items):
         """Cheap pre-dispatch triage for auto mode. Returns a list of
-        {id,title,item,action,reason}. action ∈ {dispatch, skip}; out-of-scope items
-        (灰度安全阀) and claim/done/idle-tagged items are skipped without spending an
-        instance, and the DispatchPool's active-set + 24h ledger provide soft-dedup
-        (claim stays the real mutex)."""
+        {id,title,item,action,reason,force}. action ∈ {dispatch, skip}.
+
+        判定顺序（每条 item）：
+          · out-of-scope（灰度安全阀，默认全放）→ skip out_of_scope
+          · 终态状态（TERMINAL_STATUSES）→ skip terminal
+          · jarvis-done → skip done
+          · jarvis-claimed（有实例正在跑）→ skip claimed
+          · jarvis-idle：jarvis 上轮已 release 等接手 —— 若 _human_touched（人工在其后介入）
+            则重新派发并 force=True（覆盖去重台账）；否则 skip idle_no_human（等每日 Revisit）
+          · 其余（无 jarvis 标签，含首次/外部更新）→ 走派发判定，force=False
+        「走派发判定」= pool.status(iid, force) 命中容量/去重则 skip，否则 dispatch/new。
+        DispatchPool 的 active-set + 24h ledger 提供软去重，claim 仍是真正互斥锁。"""
         out = []
         for it in items:
             iid = str(it.get("id", ""))
@@ -707,27 +748,37 @@ class ScanScheduler:
                 continue
             title = it.get("title", "")
             tags = _tagset(it)
+            status = str(it.get("status", "")).strip()
+            force = False
+            decide_dispatch = False
             if not self._in_scope(it):
                 action, reason = "skip", "out_of_scope"
-            elif "jarvis-claimed" in tags:
-                action, reason = "skip", "claimed"
+            elif status in TERMINAL_STATUSES:
+                action, reason = "skip", "terminal"
             elif "jarvis-done" in tags:
                 action, reason = "skip", "done"
+            elif "jarvis-claimed" in tags:
+                action, reason = "skip", "claimed"
             elif "jarvis-idle" in tags:
-                # Parked / human-gated item — the daily RevisitScheduler owns it; the
-                # 30-min scan must not re-spin a full-triage instance on it every tick.
-                action, reason = "skip", "idle"
-            elif self.pool is not None:
-                ok, reason = self.pool.status(iid)
-                action = "dispatch" if ok else "skip"
-                reason = "new" if ok else reason
+                if self._human_touched(iid):
+                    # 人工在 jarvis 上轮动作之后介入 → 重新派发，force 覆盖去重台账。
+                    force, decide_dispatch = True, True
+                    action, reason = "dispatch", "new"
+                else:
+                    # 仍是 jarvis 自更新/停摆 → 交每日 RevisitScheduler，不每轮重启实例。
+                    action, reason = "skip", "idle_no_human"
             else:
+                decide_dispatch = True
                 action, reason = "dispatch", "new"
+            if decide_dispatch and self.pool is not None:
+                ok, preason = self.pool.status(iid, force=force)
+                action = "dispatch" if ok else "skip"
+                reason = "new" if ok else preason
             out.append({"id": iid, "title": title, "item": it,
-                        "action": action, "reason": reason})
+                        "action": action, "reason": reason, "force": force})
         return out
 
-    def _dispatch(self, item):
+    def _dispatch(self, item, force=False):
         """Submit one ticket to the DispatchPool as a headless jarvis instance.
         Fresh session per ticket (每单一实例). Returns (accepted, reason)."""
         iid = str(item.get("id", ""))
@@ -741,7 +792,8 @@ class ScanScheduler:
         work = (lambda: self.handler.dispatch_item(
             iid, prompt, sid, False, notify, tgt, ttype,
             on_spawn=lambda p: self.pool.set_proc(iid, p)))
-        return self.pool.submit(iid, work, notify=notify, kind="ticket", project=pool_project)
+        return self.pool.submit(iid, work, notify=notify, kind="ticket",
+                                project=pool_project, force=force)
 
     # -- loop / tick ---------------------------------------------------------
 
@@ -758,39 +810,30 @@ class ScanScheduler:
             time.sleep(self.interval)
 
     def _tick(self):
-        """Run scan.sh --force, diff against the previous snapshot; dispatch/notify new
-        items and surface (sensing only) externally-updated ones."""
+        """Run scan.sh --force, diff against the previous snapshot; feed both new and
+        externally-updated items into the dispatch decision (auto) / card (supervised)."""
         # Runtime pause switch: `touch .my-day/bridge/pause` halts new scan+dispatch
         # without restarting the bridge; `rm` resumes. In-flight workers keep running.
         if (REPO_ROOT / ".my-day" / "bridge" / "pause").exists():
             log.info("ScanScheduler: pause flag present (.my-day/bridge/pause), skip this tick")
             return
+        self._human_cache = {}   # per-tick cache reset for _human_touched
         items = self._scan()
         if items is None:
             return
         cur_snapshot = {str(it["id"]): it for it in items if it.get("id")}
         cur_ids = set(cur_snapshot.keys())
 
-        # Cold start (bridge just (re)started). Semantics diverge by mode:
-        # · supervised/fallback: the first tick only seeds the baseline snapshot and pushes
-        #   NO notification, so a restart never floods 钉钉 with the whole backlog as "new"
-        #   (fc2a7ea). Its new/updated detection depends on the prev-snapshot diff, so seeding
-        #   the baseline is required.
-        # · auto-dispatch: the 派发决策不依赖 diff —— it is driven by tag-skip + the DispatchPool
-        #   soft-dedup ledger —— so the first tick DOES dispatch the qualifying backlog (bounded
-        #   by the concurrency cap + queue). That is intended: a parked probe backlog should be
-        #   consumed on startup, and the persisted ledger still stops a restart from re-dispatching
-        #   what was already handled inside the 24h window. Leave _prev_snapshot empty here so
-        #   every current item is "new" this tick; it is seeded below.
+        # Cold start (bridge just (re)started): seed the baseline snapshot and dispatch
+        # NOTHING — regardless of auto/supervised. A restart must not re-consume the existing
+        # backlog; only genuinely new / externally-updated tickets on later ticks trigger action
+        # (new/updated detection depends on the prev-snapshot diff, so seeding is required).
         if self._cold:
             self._cold = False
-            if not self.auto:
-                self._prev_snapshot = cur_snapshot
-                log.info("ScanScheduler cold start (supervised): seeded %d IDs, no notification",
-                         len(cur_ids))
-                return
-            log.info("ScanScheduler cold start (auto): dispatching qualifying backlog from %d items",
-                     len(cur_ids))
+            self._prev_snapshot = cur_snapshot
+            log.info("ScanScheduler cold start: seeded %d IDs, no dispatch (auto=%s)",
+                     len(cur_ids), self.auto)
+            return
 
         prev_ids = set(self._prev_snapshot.keys())
         with self._lock:
@@ -799,10 +842,10 @@ class ScanScheduler:
         # New = not seen before (and, in fallback mode, not already pending authorization).
         new_ids = cur_ids - prev_ids - (set() if self.auto else pending_ids)
 
-        # Updated = seen before with a changed modified (gmtModified) time. Sensing/notification
-        # path ONLY — never wired to auto-dispatch: an updated ticket is almost always already
-        # claimed/idle (which the dispatch decision skips), and semantically an external update
-        # → 播报通知, not a fresh headless instance (master 6de3d06 语义原样保留).
+        # Updated = seen before with a changed modified (gmtModified) time. In auto mode these
+        # now flow into the dispatch decision alongside new items (an updated ticket that is
+        # claimed/done stays skipped by _decide; an idle one only re-dispatches when a human
+        # touched it after jarvis). In supervised mode they remain a sensing-only card section.
         updated_ids = set()
         for iid in (cur_ids & prev_ids):
             cur_mod = cur_snapshot[iid].get("modified", "")
@@ -823,20 +866,24 @@ class ScanScheduler:
             self._tick_supervised(new_items, updated_items)
 
     def _tick_auto(self, new_items, updated_items=None):
-        """Auto-dispatch new items into the pool (broadcast, not authorize). Externally-updated
-        tickets are surfaced as a 「有更新」broadcast only — never dispatched (sensing path)."""
+        """Auto-dispatch candidates into the pool (broadcast, not authorize). Candidates =
+        new items + externally-updated items; both flow through _decide, which skips
+        claimed/done/terminal/idle-without-human and only re-dispatches an idle ticket
+        (force=True) when a human touched it after jarvis."""
         if self.pool is None:
             log.warning("auto-dispatch on but no DispatchPool; skipping tick")
             return
+        candidates = list(new_items) + list((updated_items or {}).values())
         dispatched, dropped = [], []
-        for d in self._decide(new_items):
+        for d in self._decide(candidates):
             if d["action"] != "dispatch":
                 log.info("scan auto: skip #%s (%s)", d["id"], d["reason"])
                 continue
-            ok, reason = self._dispatch(d["item"])
+            ok, reason = self._dispatch(d["item"], force=d.get("force", False))
             if ok:
                 dispatched.append(d)
-                log.info("scan auto: dispatched #%s %s", d["id"], d["title"][:80])
+                log.info("scan auto: dispatched #%s %s (force=%s)",
+                         d["id"], d["title"][:80], d.get("force", False))
             else:
                 dropped.append((d["id"], reason))
                 log.warning("scan auto: #%s not dispatched (%s)", d["id"], reason)
@@ -865,16 +912,6 @@ class ScanScheduler:
                         % (len(qf), ", ".join("#" + i for i in qf)))
                 except Exception:  # noqa: BLE001
                     log.exception("ScanScheduler failed to broadcast drop notice")
-        if updated_items:
-            lines = ["**有更新 (%d)**\n" % len(updated_items)]
-            for iid, it in updated_items.items():
-                proj = it.get("pool_project", "")
-                idl = ("[#%s](%s)" % (iid, aone_url % (proj, iid))) if proj else ("#%s" % iid)
-                lines.append("- %s %s [%s]" % (idl, it.get("title", "(无标题)"), it.get("pool", "")))
-            try:
-                self.handler._broadcast("\n".join(lines))
-            except Exception:  # noqa: BLE001
-                log.exception("ScanScheduler failed to broadcast update notice")
 
     def _tick_supervised(self, new_items, updated_items=None):
         """Fallback (JARVIS_AUTO_DISPATCH=0): stage new items for authorization + push a card.
@@ -1891,7 +1928,9 @@ def run_dry_once():
     else:
         for d in scanner._decide(items):
             mark = "DISPATCH" if d["action"] == "dispatch" else "skip    "
-            print("  [%s] #%s %s — %s" % (mark, d["id"], (d["title"] or "")[:60], d["reason"]))
+            fmark = " (force)" if d.get("force") else ""
+            print("  [%s] #%s %s — %s%s"
+                  % (mark, d["id"], (d["title"] or "")[:60], d["reason"], fmark))
 
     print("\n--- REVISIT CANDIDATES (jarvis-idle) ---")
     reviser = RevisitScheduler(handler=None, pool=pool)
