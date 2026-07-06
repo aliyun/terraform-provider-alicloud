@@ -210,6 +210,33 @@ class ScanDecideTest(unittest.TestCase):
         d = sc._decide(items)[0]
         self.assertEqual((d["action"], d["reason"]), ("skip", "idle_no_human"))
 
+    def test_npe_skipped(self):
+        # 人工标 jarvis-npe(路由不明) → 一律 skip npe，不自动派发
+        sc = self._scanner()
+        items = [{"id": "np", "title": "route unclear", "tag": ["jarvis-npe"]}]
+        d = sc._decide(items)[0]
+        self.assertEqual((d["action"], d["reason"]), ("skip", "npe"))
+
+    def test_npe_overrides_idle_human_gate(self):
+        # 关键防回归：idle+npe 即便人工介入(_human_touched/commented 都 True)也不重派——
+        # npe 判定排在 idle 门之前，压过人工门，直到人工摘标签放行。
+        sc = self._scanner()
+        sc._human_touched = lambda iid: True
+        sc._human_commented = lambda iid: True
+        items = [{"id": "ni", "title": "idle+npe human touched",
+                  "tag": ["jarvis-idle", "jarvis-npe"]}]
+        d = sc._decide(items)[0]
+        self.assertEqual((d["action"], d["reason"]), ("skip", "npe"),
+                         "npe 必须压过 idle 人工门，有人评论也不重派")
+        self.assertFalse(d["force"], "npe skip 不 force")
+
+    def test_npe_after_claimed(self):
+        # 顺序锁定：claimed 在 npe 之前——在跑实例如实报 claimed，收尾后下轮才被 npe 拦
+        sc = self._scanner()
+        items = [{"id": "nc", "title": "claimed+npe", "tag": ["jarvis-claimed", "jarvis-npe"]}]
+        d = sc._decide(items)[0]
+        self.assertEqual((d["action"], d["reason"]), ("skip", "claimed"))
+
     def test_terminal_status_skipped(self):
         # 终态工单(如「已发布」) → 直接 skip terminal，不派实例
         sc = self._scanner()
@@ -327,6 +354,43 @@ class DailySchedulerTest(unittest.TestCase):
         self.assertTrue(r._is_revisit_candidate({"title": "x", "description": "待续条件: PR 合并"}))
         self.assertTrue(r._is_revisit_candidate({"title": "y", "description": "等待 maintainer 合并"}))
         self.assertFalse(r._is_revisit_candidate({"title": "ordinary ticket"}))
+
+    def test_revisit_query_pool_carries_tag(self):
+        # _query_pool 构造的行必须带上原始 tag，供 _query 过滤 jarvis-npe。
+        tmp = tempfile.mkdtemp()
+        r = b.RevisitScheduler(handler=None, enabled=True, hour=9,
+                               state_file=os.path.join(tmp, "revisit.last"))
+
+        class R:
+            returncode = 0
+            stdout = json.dumps([{"identifier": "83", "subject": "[probe] x",
+                                  "status": "问题解决中", "tag": ["jarvis-idle", "jarvis-npe"]}])
+            stderr = ""
+        orig = b.subprocess.run
+        b.subprocess.run = lambda *a, **k: R()
+        try:
+            rows = r._query_pool("tf_provider", "528766")
+        finally:
+            b.subprocess.run = orig
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(b._tagset(rows[0]), {"jarvis-idle", "jarvis-npe"},
+                         "_query_pool 行必须带原始 tag")
+
+    def test_revisit_query_excludes_npe(self):
+        # idle+npe 与 idle 干净两条(都满足 _is_revisit_candidate) → 只有干净条进 cands。
+        tmp = tempfile.mkdtemp()
+        r = b.RevisitScheduler(handler=None, enabled=True, hour=9,
+                               state_file=os.path.join(tmp, "revisit.last"))
+        r._pool_projects = lambda: [("tf_provider", "528766")]
+        r._query_pool = lambda key, project: [
+            {"id": "clean", "title": "[probe] clean idle", "pool": key,
+             "pool_project": project, "tag": "jarvis-idle", "description": ""},
+            {"id": "npe", "title": "[probe] idle but npe", "pool": key,
+             "pool_project": project, "tag": ["jarvis-idle", "jarvis-npe"], "description": ""},
+        ]
+        ids = [c["id"] for c in r._query()]
+        self.assertIn("clean", ids, "idle 干净单进每日复查")
+        self.assertNotIn("npe", ids, "idle+jarvis-npe 不投每日复查(等人工摘标签)")
 
 
 class TicketPromptTest(unittest.TestCase):
@@ -1079,6 +1143,27 @@ class BacklogDrainTest(unittest.TestCase):
         sc.dispatch_pools = {"tf_provider"}   # 收窄灰度范围
         self.assertTrue(sc._is_backlog({"id": "6", "tag": [], "pool": "tf_provider"}))
         self.assertFalse(sc._is_backlog({"id": "7", "tag": [], "pool": "tf_customer"}), "out of scope ≠ backlog")
+
+    def test_is_backlog_excludes_npe_but_keeps_probe(self):
+        sc, _pool = self._scanner()
+        self.assertFalse(sc._is_backlog({"id": "n", "tag": ["jarvis-npe"]}), "npe ≠ backlog (路由不明)")
+        # 摘掉 npe → 恢复为可消化积压
+        self.assertTrue(sc._is_backlog({"id": "n", "tag": []}), "npe 摘掉后恢复为积压")
+        # 不做 jarvis-* 前缀匹配：jarvis-probe 仍是合法派发对象
+        self.assertTrue(sc._is_backlog({"id": "p", "tag": ["jarvis-probe"]}),
+                        "jarvis-probe 不在排除集，仍算积压(勿改成前缀匹配)")
+
+    def test_drain_skips_npe_item(self):
+        sc, _pool = self._scanner()
+        got = self._capture_dispatch(sc)
+        snapshot = [
+            {"id": "clean", "title": "clean", "tag": []},
+            {"id": "npe", "title": "route unclear", "tag": ["jarvis-npe"]},
+        ]
+        sc._scan = lambda: snapshot
+        sc._tick()   # cold seed
+        sc._tick()   # drain
+        self.assertEqual([iid for iid, _ in got], ["clean"], "空闲消化只派干净单，跳过 jarvis-npe")
 
     def test_drain_only_picks_backlog_from_mixed_snapshot(self):
         sc, _pool = self._scanner()
