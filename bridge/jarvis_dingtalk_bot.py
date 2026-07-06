@@ -970,6 +970,7 @@ class BoardScheduler:
         self.base_url = (os.environ.get("JARVIS_HTML_REPORT_BASE_URL")
                          or "https://pre-agent.aliyun-inc.com").rstrip("/")
         self.token = os.environ.get("JARVIS_HTML_REPORT_TOKEN", "")
+        self.enabled = bool(self.base_url)  # board pushes whenever a base_url is configured
         self._lock = threading.Lock()
 
     def start(self):
