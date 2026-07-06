@@ -37,9 +37,20 @@ start() {
 
 stop() {
   if is_running; then
-    pid=$(cat "$PIDFILE"); kill "$pid" 2>/dev/null || true
-    sleep 1; kill -9 "$pid" 2>/dev/null || true
-    echo "stopped (pid $pid)"
+    pid=$(cat "$PIDFILE")
+    kill "$pid" 2>/dev/null || true
+    # graceful: 给 bot 时间杀 worker + release claim, 超时才 SIGKILL 兜底
+    grace=${JARVIS_STOP_GRACE:-30}
+    i=0
+    while [ "$i" -lt "$grace" ] && kill -0 "$pid" 2>/dev/null; do
+      sleep 1; i=$((i+1))
+    done
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -9 "$pid" 2>/dev/null || true
+      echo "stopped (pid $pid, forced after ${grace}s)"
+    else
+      echo "stopped (pid $pid, graceful)"
+    fi
   else echo "not running"; fi
   rm -f "$PIDFILE"
 }

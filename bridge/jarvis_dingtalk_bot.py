@@ -60,6 +60,7 @@ import uuid
 import time
 import logging
 import subprocess
+import signal
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -356,7 +357,7 @@ def parse_stream_lines(lines):
             yield acc
 
 
-def run_claude_stream(text, session_id, resume, timeout=None):
+def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None):
     """Spawn claude streaming round; yield accumulated answer text as it grows.
 
     On timeout the process is killed and a notice yielded; stderr is captured
@@ -370,7 +371,13 @@ def run_claude_stream(text, session_id, resume, timeout=None):
     # stdin</dev/null: claude-start.sh 预检里若 read 等待(IP 不符)会卡死, 喂空输入直放行。
     # banner 等非 JSON 行被 parse_stream_lines 自动跳过。
     p = subprocess.Popen(cmd, cwd=jarvis_root(), text=True, stdin=subprocess.DEVNULL,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         start_new_session=True)
+    if on_spawn:
+        try:
+            on_spawn(p)
+        except Exception:  # noqa: BLE001
+            pass
     saw_any = False
     try:
         for acc in parse_stream_lines(p.stdout):
@@ -731,8 +738,10 @@ class ScanScheduler:
         prompt = _ticket_prompt(iid, title, pool_key, pool_project)
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = self.handler._broadcast if self.handler else (lambda t: None)
-        work = (lambda: self.handler.dispatch_item(iid, prompt, sid, False, notify, tgt, ttype))
-        return self.pool.submit(iid, work, notify=notify, kind="ticket")
+        work = (lambda: self.handler.dispatch_item(
+            iid, prompt, sid, False, notify, tgt, ttype,
+            on_spawn=lambda p: self.pool.set_proc(iid, p)))
+        return self.pool.submit(iid, work, notify=notify, kind="ticket", project=pool_project)
 
     # -- loop / tick ---------------------------------------------------------
 
@@ -1187,6 +1196,7 @@ class DispatchPool:
         self._active = {}     # id -> {started, kind, future}
         self._ledger = {}     # id -> last-dispatch epoch seconds
         self._lock = threading.Lock()
+        self._closed = False
         self._load_ledger()
 
     # -- dedup / capacity decision -------------------------------------------
@@ -1215,10 +1225,12 @@ class DispatchPool:
 
     # -- submit ---------------------------------------------------------------
 
-    def submit(self, item_id, work, *, notify=None, force=False, kind="ticket"):
+    def submit(self, item_id, work, *, notify=None, force=False, kind="ticket", project=None):
         """Accept a job unless deduped / at capacity. Returns (accepted, reason)."""
         iid = str(item_id)
         with self._lock:
+            if self._closed:
+                return False, "closing"
             if iid in self._active:
                 return False, "active"
             if not force and self._fresh_ledger(iid):
@@ -1227,7 +1239,8 @@ class DispatchPool:
                 return False, "queue_full"
             self._ledger[iid] = time.time()
             self._persist_ledger()
-            self._active[iid] = {"started": time.time(), "kind": kind, "future": None}
+            self._active[iid] = {"started": time.time(), "kind": kind, "future": None,
+                                 "project": project, "proc": None}
 
         def _wrapped():
             try:
@@ -1250,6 +1263,51 @@ class DispatchPool:
             if ent is not None:
                 ent["future"] = fut
         return True, "dispatched"
+
+    def set_proc(self, item_id, proc):
+        """Record the live worker Popen so terminate_all can kill its process group."""
+        with self._lock:
+            ent = self._active.get(str(item_id))
+            if ent is not None:
+                ent["proc"] = proc
+
+    def terminate_all(self, release_fn=None, grace=3):
+        """Immediate-cleanup stop (run.sh stop / SIGTERM): kill every active worker's
+        process group (TERM→grace→KILL, so grandchildren like gopls/go build die too),
+        then release each ticket's claim so no jarvis-claimed zombie lingers.
+        Returns the list of active ids that were cleaned up."""
+        with self._lock:
+            self._closed = True
+            snapshot = [(iid, ent.get("proc"), ent.get("project"), ent.get("kind"))
+                        for iid, ent in self._active.items()]
+        killed = []
+        for iid, proc, project, kind in snapshot:
+            if proc is None:
+                continue
+            try:
+                pgid = os.getpgid(proc.pid)
+                os.killpg(pgid, signal.SIGTERM)
+                killed.append(pgid)
+            except (ProcessLookupError, OSError):
+                pass
+        if killed:
+            time.sleep(grace)
+            for pgid in killed:
+                try:
+                    os.killpg(pgid, signal.SIGKILL)
+                except (ProcessLookupError, OSError):
+                    pass
+        if release_fn:
+            for iid, proc, project, kind in snapshot:
+                # Only release workers that actually started (proc set) — a queued
+                # ticket never ran claim.sh claim, so tagging it jarvis-idle would
+                # wrongly park an untouched item. Queued ones just drop for re-scan.
+                if proc is not None and kind == "ticket" and project:
+                    try:
+                        release_fn(iid, project)
+                    except Exception as e:  # noqa: BLE001
+                        log.warning("terminate_all: release #%s failed: %s", iid, e)
+        return [iid for iid, _p, _pr, _k in snapshot]
 
     def shutdown(self, wait=False, cancel_futures=False):
         try:
@@ -1578,7 +1636,7 @@ class JarvisHandler(AsyncChatbotHandler):
             self._quick_card(target, "⚠️ 工单 #%s 后台处理异常: %s" % (item_id, e), target_type)
             return "error"
 
-    def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type):
+    def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type, on_spawn=None):
         """Headless path (auto-dispatch / probe / revisit): run one Jarvis instance to
         completion WITHOUT a live card (no "回复某人" binding); broadcast the result via
         ``notify``. Shares the SUSPEND + WaitWatcher core with the card path. Returns an
@@ -1587,7 +1645,7 @@ class JarvisHandler(AsyncChatbotHandler):
         try:
             log.info("dispatch_item #%s start (timeout=%ds)", item_id, dispatch_timeout)
             final = ""
-            for acc in run_claude_stream(prompt, sid, resume, timeout=dispatch_timeout):
+            for acc in run_claude_stream(prompt, sid, resume, timeout=dispatch_timeout, on_spawn=on_spawn):
                 final = acc
             info = self._maybe_suspend(final, sid, target, target_type)
             if info:
@@ -1836,6 +1894,17 @@ def run_dry_once():
     return 0
 
 
+def _release_claim(iid, project):
+    """Best-effort release of a jarvis-claimed workitem during graceful stop."""
+    try:
+        subprocess.run(
+            [str(REPO_ROOT / "bootstrap" / "claim.sh"), "release", str(iid), str(project)],
+            cwd=str(REPO_ROOT), timeout=60,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:  # noqa: BLE001
+        log.warning("_release_claim #%s failed: %s", iid, e)
+
+
 def main():
     if "--dry-run-once" in sys.argv:
         sys.exit(run_dry_once())
@@ -1869,6 +1938,22 @@ def main():
              handler.prober.enabled, handler.prober.hour,
              handler.reviser.enabled, handler.reviser.hour, handler.reviser.max_n)
     log.info("wait watcher started (suspended=%d)", handler.watcher.count())
+
+    def _graceful_stop(signum, _frame):
+        log.info("signal %s received — graceful stop: kill workers + release claims", signum)
+        try:
+            ids = handler.dispatch_pool.terminate_all(release_fn=_release_claim)
+            log.info("graceful stop: cleaned up %d worker(s): %s", len(ids), ids)
+        except Exception as e:  # noqa: BLE001
+            log.exception("graceful stop cleanup failed: %s", e)
+        try:
+            handler.pool.shutdown()
+        except Exception:  # noqa: BLE001
+            pass
+        os._exit(0)
+
+    signal.signal(signal.SIGTERM, _graceful_stop)
+    signal.signal(signal.SIGINT, _graceful_stop)
     log.info("starting DingTalk stream listener…")
     try:
         client.start_forever()
