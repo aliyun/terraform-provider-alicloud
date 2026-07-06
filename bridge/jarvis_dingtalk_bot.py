@@ -642,8 +642,9 @@ class ScanScheduler:
 
     Backlog drain (``JARVIS_BACKLOG_DRAIN``, default on, auto mode only): on a tick that
     has NO new / externally-updated items and the pool has free running slots, it trickle-
-    dispatches "backlog" tickets jarvis has never touched (in-scope + non-terminal + no
-    jarvis-* tag), ordered by 优先级→建单时间, until the free slots fill. New items always
+    dispatches "backlog" tickets jarvis has never touched (in-scope + non-terminal + none of
+    the jarvis-claimed/idle/done/npe tags — note jarvis-probe stays dispatchable), ordered by
+    优先级→建单时间, until the free slots fill. New items always
     win — this only fires on a no-new tick, and free_slots>0 implies an empty queue, so a
     backlog ticket can never be queued ahead of a future new one. The cold-start tick seeds
     the baseline and drains nothing (a restart never storm-consumes the standing backlog).
@@ -905,6 +906,8 @@ class ScanScheduler:
           · 终态状态（TERMINAL_STATUSES）→ skip terminal
           · jarvis-done → skip done
           · jarvis-claimed（有实例正在跑）→ skip claimed
+          · jarvis-npe（人工标记路由不明）→ skip npe（排在 idle 门之前：idle+npe 就算有人
+            评论也不重派，直到人工摘标签放行）
           · jarvis-idle：jarvis 上轮已 release 等接手 —— 若 _human_touched（activity
             白名单）或 _human_commented（最新评论来自人工），则重新派发并 force=True
             （覆盖去重台账）；否则 skip idle_no_human（等每日 Revisit）
@@ -929,6 +932,10 @@ class ScanScheduler:
                 action, reason = "skip", "done"
             elif "jarvis-claimed" in tags:
                 action, reason = "skip", "claimed"
+            elif "jarvis-npe" in tags:
+                # 路由不明（人工标记）：不自动派发，且必须排在 idle 人工门之前——
+                # idle+npe 的单就算有人评论也不重派，直到人工摘标签放行。
+                action, reason = "skip", "npe"
             elif "jarvis-idle" in tags:
                 if self._human_touched(iid) or self._human_commented(iid):
                     # 人工在 jarvis 上轮动作之后介入 → 重新派发，force 覆盖去重台账。
@@ -1135,13 +1142,14 @@ class ScanScheduler:
     # -- backlog drain (idle-only opportunistic) -----------------------------
 
     def _is_backlog(self, it):
-        """积压单 = 从未被 jarvis 处理过且可派发：在灰度范围 + 非终态 + 无任何 jarvis 标签。
-        带 jarvis-claimed/idle/done 标签的另有归属(在跑 / 等每日 Revisit / 已完成)，不属积压。"""
+        """积压单 = 从未被 jarvis 处理过且可派发：在灰度范围 + 非终态 + 无 jarvis-claimed/idle/
+        done/npe 标签。带这些标签的另有归属(在跑 / 等每日 Revisit / 已完成 / 路由不明人工挂起)，
+        不算积压。只排除这四个明确标签——jarvis-probe 等其它 jarvis-* 前缀仍是合法派发对象。"""
         if not self._in_scope(it):
             return False
         if str(it.get("status", "")).strip() in TERMINAL_STATUSES:
             return False
-        if _tagset(it) & {"jarvis-claimed", "jarvis-idle", "jarvis-done"}:
+        if _tagset(it) & {"jarvis-claimed", "jarvis-idle", "jarvis-done", "jarvis-npe"}:
             return False
         return True
 
@@ -1841,6 +1849,7 @@ class RevisitScheduler(_DailyScheduler):
             return [{"id": it.get("identifier") or it.get("id"),
                      "title": it.get("subject") or it.get("title") or "",
                      "pool": key, "pool_project": project,
+                     "tag": it.get("tag"),   # 原始 tag(str/list)，供 _query 过滤 jarvis-npe
                      "description": it.get("description") or ""}
                     for it in data]
         except Exception as e:  # noqa: BLE001
@@ -1848,13 +1857,16 @@ class RevisitScheduler(_DailyScheduler):
             return None
 
     def _query(self):
-        """Collect revisit candidates across pools (≤ max_n). Best-effort per pool."""
+        """Collect revisit candidates across pools (≤ max_n). Best-effort per pool.
+        idle + jarvis-npe（路由不明人工挂起）跳过，不投每日复查——等人工摘标签放行。"""
         cands = []
         for key, project in self._pool_projects():
             rows = self._query_pool(key, project)
             if rows is None:
                 continue
             for it in rows:
+                if "jarvis-npe" in _tagset(it):
+                    continue
                 if it.get("id") and self._is_revisit_candidate(it):
                     cands.append(it)
                     if len(cands) >= self.max_n:
