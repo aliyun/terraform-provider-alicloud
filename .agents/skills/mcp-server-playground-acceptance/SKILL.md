@@ -14,7 +14,7 @@ description: >-
 
 - 有 Aone URL/ID 时,先用 `aone-triage` 读单、claim、回填和 release。
 - 通过浏览器打开 Playground 实测;不要用本地脚本或后端日志替代 UI 链路。
-- 需要上传 HTML 验收报告时,先用 `html-report-preview`;报告包含截图时必须遵循其 Image Handling 约束。
+- 需要上传 HTML 验收报告时,先用仓库内已有的 `html-report-preview` skill;报告包含截图时必须遵循其 Image Handling 约束。
 - 涉及 cloudspec / OpenAPI MCP Server / RunIaC / API 查询工具时,默认参考 `aone-triage/references/delivery-cloudspec.md` 的 app 与流水线坐标。
 - 涉及 AutomationAgent 时,默认参考 `aone-triage/references/delivery-aliyun-automation-agent.md` 的 app 与流水线坐标。
 
@@ -77,8 +77,9 @@ description: >-
 
 1. 先加载 `html-report-preview` skill,按其 Image Handling 章节处理图片。
 2. 禁止在 HTML 中使用相对图片路径或 base64 `data:image`;截图必须先上传到 OSS public-read,HTML 只引用 `https://<bucket>.oss-<region>.aliyuncs.com/...`。
-3. 调 `bootstrap/html-report-preview.sh upload` 前,检查 HTML 里所有 `<img src>` 都是 HTTP(S) 绝对 URL。
-4. 回贴 Aone 前,用 `curl -fsSI '<image-url>'` 或浏览器确认报告页和每个图片 URL 都返回 200。
+3. 凭证边界:HTML 报告上传到 AutomationAgent 只依赖 `JARVIS_HTML_REPORT_TOKEN`;截图上传 OSS 才依赖当前机器可用的 `aliyun oss cp` 凭证/AKSK 或等效对象存储上传能力。缺 OSS 凭证时不要声称图片已修复,应改用已有可公开访问图片 URL 或升级人工处理。
+4. 调 `bootstrap/html-report-preview.sh upload` 前,检查 HTML 里所有 `<img src>` 都是 HTTP(S) 绝对 URL。
+5. 回贴 Aone 前,用 `curl -fsSI '<image-url>'` 或浏览器确认报告页和每个图片 URL 都返回 200。
 
 ## Aone 追评模板
 
