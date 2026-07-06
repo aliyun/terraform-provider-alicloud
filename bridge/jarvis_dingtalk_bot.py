@@ -12,7 +12,11 @@ Direction: INBOUND (user -> bot -> claude -> bot -> user). The card sender
 helpers are imported from the dingtalk-ai-card skill's streaming.py.
 
 Env:
-  DINGTALK_APP_KEY / DINGTALK_APP_SECRET   Stream credentials (required).
+  DINGTALK_APP_KEY / DINGTALK_APP_SECRET   Stream credentials (required unless JARVIS_NO_DINGTALK=1).
+  JARVIS_NO_DINGTALK                        1=无钉钉降级模式(点火): 缺凭证也照起自动派发 +
+                                           各调度器, 不建 DingTalk client/stream/TataPool;
+                                           卡片/播报降级为 [BROADCAST] 日志行(→ bot.log);
+                                           挂起/唤醒照常(轮询走 a1), @人通知落日志+Aone 评论。
   DINGTALK_TEMPLATE_ID                     AI card template id (required for reply).
   DINGTALK_ROBOT_CODE                      robot code for createAndDeliver (default: app key).
   JARVIS_TATA_STAFF                        comma staffId audience for Tata (empty = everyone).
@@ -1029,6 +1033,46 @@ class BoardScheduler:
         except Exception:
             return None
 
+    def _board_supports_probe(self):
+        """probe 子命令由 E 线 MR-5 给 board.sh 引入; 主线 board.sh 不解析子命令(直出 items
+        数组), 误当 probe 会污染 payload。先 grep 脚本确认真有 probe 分派再调用(MR-5 合并即转真)。"""
+        try:
+            return "probe" in (REPO_ROOT / "bootstrap" / "board.sh").read_text(errors="ignore")
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _probe_section(self):
+        """Best-effort board.sh probe 健康度 JSON(E 线 MR-5)。返回 dict 或 None。
+        未合并/拉取失败/非对象输出一律 None —— 只 WARN, 绝不影响主 items 同步。"""
+        if not self._board_supports_probe():
+            return None  # 依赖 MR-5: 合并后 board.sh 才有 probe 子命令, 此前静默跳过
+        try:
+            r = subprocess.run([str(REPO_ROOT / "bootstrap" / "board.sh"), "probe"],
+                               cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=60)
+            if r.returncode != 0:
+                log.warning("board.sh probe failed (rc=%d): %s", r.returncode,
+                            (r.stderr or "").strip()[:200])
+                return None
+            data = json.loads((r.stdout or "").strip() or "null")
+            if isinstance(data, dict):
+                return data
+            log.warning("board.sh probe output not an object (%s); probe 段跳过",
+                        type(data).__name__)
+            return None
+        except Exception as e:  # noqa: BLE001 — probe 拉不到不阻塞主同步
+            log.warning("board.sh probe skipped: %s", e)
+            return None
+
+    def _build_payload(self, board_json):
+        """组装 /api/board/sync 载荷 dict。主体 = items + ts; 若 board.sh probe 健康度段可用
+        (MR-5)则并入 "probe" 键。probe 缺失/失败绝不影响主 items 同步(容错依赖 MR-5)。"""
+        obj = {"items": json.loads(board_json),
+               "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        probe = self._probe_section()
+        if probe is not None:
+            obj["probe"] = probe
+        return obj
+
     def sync(self):
         if not self._lock.acquire(blocking=False):
             return
@@ -1043,8 +1087,7 @@ class BoardScheduler:
             board_json = (result.stdout or "").strip()
             if not board_json:
                 return
-            payload = json.dumps({"items": json.loads(board_json),
-                                  "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+            payload = json.dumps(self._build_payload(board_json))
             endpoint = self.base_url + "/api/board/sync"
             req = Request(endpoint, data=payload.encode(), method="POST",
                           headers={"Content-Type": "application/json"})
@@ -1602,14 +1645,17 @@ class RevisitScheduler(_DailyScheduler):
 class JarvisHandler(AsyncChatbotHandler):
     # process() runs in a ThreadPoolExecutor (sync, NOT async) so blocking
     # subprocess calls never freeze the WS event loop / keepalive ack.
-    def __init__(self):
+    def __init__(self, no_dingtalk=False):
         super().__init__()
+        # 无钉钉降级模式(main() 缺凭证 + JARVIS_NO_DINGTALK=1 点火): 卡片/播报落 [BROADCAST]
+        # 日志, 唤醒走 headless 池, 无入站 Tata → TataPool 是死重故跳过。见 _run_no_dingtalk()。
+        self.no_dingtalk = no_dingtalk
         self.audience = tata_audience()           # 空=全员; 非空=Tata 受众名单
         self.jarvis_sessions = {}                 # staff -> Jarvis session uuid (master only)
         self.jarvis_started = set()               # staff with a live Jarvis session
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
-        self.pool = TataPool()                    # 常驻 idea 进程保温, 消 Tata 冷启
+        self.pool = None if no_dingtalk else TataPool()   # 常驻 idea 进程保温, 消 Tata 冷启
         # One bounded pool + soft-dedup ledger shared by every dispatch path
         # (auto-dispatch / probe / revisit / authorize / handoff / wake).
         self.dispatch_pool = DispatchPool()
@@ -1635,7 +1681,13 @@ class JarvisHandler(AsyncChatbotHandler):
             yield from run_tata_stream(text, sid, resume)
 
     def _quick_card(self, target, text, target_type="user"):
-        """One-shot card (no live stream): create then finalize once. Best-effort."""
+        """One-shot card (no live stream): create then finalize once. Best-effort.
+
+        无钉钉降级模式: 不发卡, 把内容结构化落一条 [BROADCAST] 日志行(→ bot.log)。这是
+        所有卡片/播报(含 _broadcast、调度器汇总、挂起/唤醒/超时通知)的统一降级出口。"""
+        if self.no_dingtalk:
+            log.info("[BROADCAST] %s", (text or "").replace("\n", " | ")[:1000])
+            return
         if not self.sm:
             return
         try:
@@ -1736,6 +1788,15 @@ class JarvisHandler(AsyncChatbotHandler):
             task["target"],
             "🔔 工单 #%s 收到回复，正在唤醒 Jarvis…" % aone_id,
             task["target_type"])
+        if self.no_dingtalk:
+            # 降级模式无 live 卡片可流 → 走 headless dispatch_item 续跑, 结果播报落日志;
+            # force=True: resumed ticket 可能仍在 24h 去重窗内。挂起/唤醒本身照常(轮询走 a1)。
+            notify = self._broadcast
+            work = (lambda: self.dispatch_item(
+                aone_id, prompt, task["session_id"], True,
+                notify, task["target"], task["target_type"]))
+            self.dispatch_pool.submit(aone_id, work, notify=notify, force=True, kind="wake")
+            return
         # force=True: a resumed ticket may still sit inside the 24h dedup ledger window.
         self._submit_card(aone_id, task["target"], task["target_type"],
                           prompt, task["session_id"], True, force=True)
@@ -1962,14 +2023,69 @@ def _release_claim(iid, project):
         log.warning("_release_claim #%s failed: %s", iid, e)
 
 
+def _run_no_dingtalk():
+    """无钉钉降级模式启动(JARVIS_NO_DINGTALK=1 点火路径): 不建 DingTalk client/stream,
+    不初始化 TataPool; 只起自动派发(ScanScheduler→DispatchPool)+ Reconcile/Board/Probe/
+    Revisit/Wait 调度器。卡片/播报统一降级为 [BROADCAST] 日志行(→ bot.log); WaitWatcher
+    挂起/唤醒照常(轮询走 a1, 唤醒走 headless 池), "@人通知"降级为日志 + 既有 Aone 评论。
+    入站 Tata 门面停用(无 stream)。阻塞至进程收到中断信号。"""
+    log.warning("[NO-DINGTALK] 降级模式启动: 无 DingTalk client/stream/TataPool; "
+                "自动派发 + Scan/Reconcile/Board/Probe/Revisit/Wait 调度器照常; "
+                "卡片/播报 → [BROADCAST] 日志行; 入站 Tata 门面停用。")
+    handler = JarvisHandler(no_dingtalk=True)
+    handler.scanner.start()
+    handler.reconciler.start()   # claim 纪律安全网(always-on 主机唯一触发点), 无钉钉依赖
+    handler.board.start()        # board.sh → AutomationAgent, 依赖 HTML_REPORT_TOKEN 非钉钉
+    handler.prober.start()
+    handler.reviser.start()
+    handler.watcher.start()
+    log.info("[NO-DINGTALK] scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
+             handler.scanner.interval, handler.scanner.auto,
+             handler.scanner.notify_target, broadcast_target())
+    log.info("[NO-DINGTALK] reconcile=%ss board=%s probe=%s@%s revisit=%s@%s max=%d wait(suspended=%d)",
+             handler.reconciler.interval, ("on" if handler.board.enabled else "off"),
+             handler.prober.enabled, handler.prober.hour,
+             handler.reviser.enabled, handler.reviser.hour, handler.reviser.max_n,
+             handler.watcher.count())
+    log.info("[NO-DINGTALK] ready — 阻塞运行; 卡片/播报以 [BROADCAST] 日志行落 bot.log。"
+             "配好钉钉凭证后去掉 JARVIS_NO_DINGTALK 即回全功能模式。")
+
+    # 优雅停止(与全功能 main() 同款, 吸收 master f7f1f72): run.sh stop 发 SIGTERM → 整树杀在跑
+    # worker(进程组) + release 其 jarvis-claimed 工单, 再退出。降级模式无 TataPool, 故不 shutdown pool。
+    def _graceful_stop(signum, _frame):
+        log.info("[NO-DINGTALK] signal %s received — graceful stop: kill workers + release claims", signum)
+        try:
+            ids = handler.dispatch_pool.terminate_all(release_fn=_release_claim)
+            log.info("[NO-DINGTALK] graceful stop: cleaned up %d worker(s): %s", len(ids), ids)
+        except Exception as e:  # noqa: BLE001
+            log.exception("[NO-DINGTALK] graceful stop cleanup failed: %s", e)
+        os._exit(0)
+
+    signal.signal(signal.SIGTERM, _graceful_stop)
+    signal.signal(signal.SIGINT, _graceful_stop)
+    stop = threading.Event()
+    try:
+        stop.wait()
+    except KeyboardInterrupt:  # fallback if signal registration was pre-empted
+        pass
+    finally:
+        handler.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+    return 0
+
+
 def main():
     if "--dry-run-once" in sys.argv:
         sys.exit(run_dry_once())
     load_env_file()
     key = os.environ.get("DINGTALK_APP_KEY")
     secret = os.environ.get("DINGTALK_APP_SECRET")
+    # 无钉钉降级(点火路径): JARVIS_NO_DINGTALK=1 显式开启即走降级, 凭证缺失也照起自动派发。
+    if os.environ.get("JARVIS_NO_DINGTALK") == "1":
+        sys.exit(_run_no_dingtalk())
     if not key or not secret:
-        log.error("DINGTALK_APP_KEY/DINGTALK_APP_SECRET required")
+        log.error("DINGTALK_APP_KEY/DINGTALK_APP_SECRET required "
+                  "(缺凭证想先点火: 设 JARVIS_NO_DINGTALK=1 走无钉钉降级模式 —— "
+                  "自动派发 + 各调度器照常, 卡片/播报落 bot.log)")
         sys.exit(2)
     if not os.environ.get("DINGTALK_TEMPLATE_ID"):
         log.warning("DINGTALK_TEMPLATE_ID unset — replies will silently no-op")
@@ -1989,7 +2105,7 @@ def main():
              handler.scanner.notify_target, broadcast_target())
     log.info("reconcile scheduler started (interval=%ss)", handler.reconciler.interval)
     log.info("board scheduler %s (target=%s)",
-             "started" if handler.board.enabled and handler.board.base_url else "disabled",
+             "started" if handler.board.enabled else "disabled",
              handler.board.base_url or "<empty>")
     log.info("probe scheduler: enabled=%s hour=%s | revisit scheduler: enabled=%s hour=%s max=%d",
              handler.prober.enabled, handler.prober.hour,

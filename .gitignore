@@ -35,6 +35,8 @@ __pycache__/
 
 # probe 运行产物(本地审计缓存,真源在 Aone;工作目录在 .my-day/ 已忽略)
 runs/probe/
+# RC 门禁运行产物(发布前全资源 tier-0 + 全场景 tier-1 过一遍,本地审计缓存,真源在 Aone)
+runs/rc-gate/
 # terraform 本地状态兜底(严禁 state/plan 入库)
 **/.terraform/
 *.tfstate

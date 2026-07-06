@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+# test/bridge_run_test.sh — hermetic tests for bridge/run.sh (单一入口进程管理器).
+#
+# 全程 mock: 用一个假 bot(桩 python)顶替 `python3 bridge/jarvis_dingtalk_bot.py`,
+# 状态目录/env 文件/python/bot 路径全部走 JARVIS_BRIDGE_* 覆盖到临时目录, 不碰真
+# .my-day、不连钉钉、不起真 claude、不写 coord 台账(JARVIS_BRIDGE_NO_COORD=1)。
+#
+# 覆盖: bash -n 语法; start 幂等/pidfile/模式判定(有无凭证 env + 走 jarvis.env source);
+#       stop 清理/重复 stop; restart 换 pid; status 运行/停止/模式; logs 非阻塞;
+#       dry-run 透传; 启动失败检测(立即退出 / 首行 ERROR 但驻留).
+#
+# Run: bash test/bridge_run_test.sh   (exit 0 = all pass)
+
+set -uo pipefail
+
+test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$test_dir/.." && pwd)"
+RUNSH="$repo_root/bridge/run.sh"
+
+if [ ! -f "$RUNSH" ]; then
+  echo "SKIP bridge_run_test: $RUNSH not found"
+  exit 0
+fi
+
+TMP="$(mktemp -d 2>/dev/null || mktemp -d -t bridge_run)"
+STATE="$TMP/state"
+FAKEPY="$TMP/fakepy"
+BOTFILE="$TMP/bot.py"       # dummy path handed to the fake python; content unused
+BSENV="$TMP/bootstrap.env"  # stand-in for bootstrap/.env
+JENV="$TMP/jarvis.env"      # stand-in for bridge/jarvis.env
+: >"$BOTFILE"; : >"$BSENV"; : >"$JENV"
+
+pass=0; fail=0
+ok() { echo "PASS $1"; pass=$((pass+1)); }
+no() { echo "FAIL $1"; fail=$((fail+1)); }
+has() { case "$2" in *"$1"*) ok "$3";; *) no "$3 [missing '$1']";; esac; }
+hasnot() { case "$2" in *"$1"*) no "$3 [unexpected '$1']";; *) ok "$3";; esac; }
+
+# The fake bot: stands in for the real python bot. Behaviour via FAKE_BOT_MODE.
+cat >"$FAKEPY" <<'FAKE'
+#!/usr/bin/env bash
+ts="$(date '+%Y-%m-%d %H:%M:%S')"
+for a in "$@"; do
+  if [ "$a" = "--dry-run-once" ]; then
+    echo "$ts INFO [MainThread] dry-run ok (fake bot)"
+    exit 0
+  fi
+done
+case "${FAKE_BOT_MODE:-stay}" in
+  exit)
+    echo "$ts ERROR [MainThread] fake bot immediate exit (missing creds sim)"
+    exit 2 ;;
+  errfirst)
+    echo "$ts ERROR [MainThread] fake bot fatal startup line (stays alive)"
+    exec sleep 300 ;;
+  deaf)
+    # 忽略 SIGTERM(模拟清理超时/卡死的 bot) → run.sh 宽限超时后必须 SIGKILL 兜底。
+    # 用 while 循环(而非 exec sleep)才能保住 trap; SIGKILL 不可捕获, 故最终会被杀。
+    trap '' TERM
+    echo "$ts INFO [MainThread] deaf fake bot (ignores SIGTERM)"
+    while true; do sleep 1; done ;;
+  *)
+    # Mirror the real bot's dual-line startup: the degraded bot prefixes EVERY line with
+    # [NO-DINGTALK]; both modes log "scan scheduler started" (an ambiguous non-discriminator).
+    if [ "${JARVIS_NO_DINGTALK:-}" = "1" ]; then
+      echo "$ts WARNING [MainThread] [NO-DINGTALK] 降级模式启动 (fake bot)"
+      echo "$ts INFO [MainThread] [NO-DINGTALK] scan scheduler started (fake bot)"
+    else
+      echo "$ts INFO [MainThread] starting DingTalk stream listener… (fake bot)"
+      echo "$ts INFO [MainThread] scan scheduler started (fake bot)"
+    fi
+    exec sleep 300 ;;
+esac
+FAKE
+chmod +x "$FAKEPY"
+
+# Invoke run.sh with all state/env/deps redirected into the hermetic tmp sandbox.
+run() {
+  env JARVIS_BRIDGE_PYTHON="$FAKEPY" \
+      JARVIS_BRIDGE_BOT="$BOTFILE" \
+      JARVIS_BRIDGE_STATE_DIR="$STATE" \
+      JARVIS_BRIDGE_BOOTSTRAP_ENV="$BSENV" \
+      JARVIS_BRIDGE_ENV="$JENV" \
+      JARVIS_BRIDGE_START_WAIT="1.0" \
+      JARVIS_BRIDGE_STOP_WAIT="1" \
+      JARVIS_BRIDGE_NO_COORD="1" \
+      DINGTALK_APP_KEY="${TEST_KEY-}" \
+      DINGTALK_APP_SECRET="${TEST_SECRET-}" \
+      JARVIS_NO_DINGTALK="" \
+      FAKE_BOT_MODE="${TEST_BOT_MODE:-stay}" \
+      bash "$RUNSH" "$@"
+}
+
+pidval() { cat "$STATE/bot.pid" 2>/dev/null || echo ""; }
+fresh() {
+  local p; p="$(pidval)"; [ -n "$p" ] && kill -9 "$p" 2>/dev/null
+  rm -rf "$STATE"; mkdir -p "$STATE"
+}
+cleanup() {
+  local p; p="$(pidval)"; [ -n "$p" ] && kill -9 "$p" 2>/dev/null
+  rm -rf "$TMP"
+}
+trap cleanup EXIT
+
+# --- T0: syntax ------------------------------------------------------------
+if bash -n "$RUNSH" 2>/dev/null; then ok "bash -n: run.sh syntax clean"; else no "bash -n: run.sh syntax clean"; fi
+
+# --- T1: degraded start (no creds) -----------------------------------------
+fresh
+out="$(TEST_KEY= TEST_SECRET= run start 2>&1)"; rc=$?
+has "降级" "$out" "start(degraded): prints prominent degraded hint"
+[ "$rc" = 0 ] && ok "start(degraded): exit 0" || no "start(degraded): exit 0 (got $rc)"
+[ -f "$STATE/bot.pid" ] && ok "start(degraded): pidfile written" || no "start(degraded): pidfile written"
+p1="$(pidval)"; kill -0 "$p1" 2>/dev/null && ok "start(degraded): bot alive after start-check" || no "start(degraded): bot alive"
+st="$(run status 2>&1)"
+has "RUNNING" "$st" "status: reports RUNNING"
+has "降级" "$st" "status: mode read from log banner = degraded"
+run stop >/dev/null 2>&1
+
+# --- T2: full mode via creds in env ----------------------------------------
+fresh
+out="$(TEST_KEY=k TEST_SECRET=s run start 2>&1)"; rc=$?
+has "全功能" "$out" "start(full/env): reports full mode"
+hasnot "降级" "$out" "start(full/env): no degraded hint when creds present"
+[ "$rc" = 0 ] && ok "start(full/env): exit 0" || no "start(full/env): exit 0 (got $rc)"
+st="$(run status 2>&1)"
+has "全功能" "$st" "status(full): mode = full"
+run stop >/dev/null 2>&1
+
+# --- T3: full mode via sourcing bridge/jarvis.env (creds NOT in env) --------
+fresh
+printf 'DINGTALK_APP_KEY=fromfile\nDINGTALK_APP_SECRET=fromfile\n' >"$JENV"
+out="$(TEST_KEY= TEST_SECRET= run start 2>&1)"
+has "全功能" "$out" "start: sources creds from jarvis.env → full mode"
+run stop >/dev/null 2>&1
+: >"$JENV"
+
+# --- T4: start idempotency --------------------------------------------------
+fresh
+run start >/dev/null 2>&1
+p1="$(pidval)"
+out="$(run start 2>&1)"; rc=$?
+has "已在运行" "$out" "start(idempotent): reports already running"
+[ "$rc" = 0 ] && ok "start(idempotent): exit 0" || no "start(idempotent): exit 0 (got $rc)"
+p2="$(pidval)"
+[ -n "$p1" ] && [ "$p1" = "$p2" ] && ok "start(idempotent): pid unchanged" || no "start(idempotent): pid unchanged ($p1 vs $p2)"
+run stop >/dev/null 2>&1
+
+# --- T5: stop cleanup + repeat stop ----------------------------------------
+fresh
+run start >/dev/null 2>&1
+p1="$(pidval)"
+out="$(run stop 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "stop: exit 0" || no "stop: exit 0 (got $rc)"
+[ ! -f "$STATE/bot.pid" ] && ok "stop: pidfile removed" || no "stop: pidfile removed"
+kill -0 "$p1" 2>/dev/null && no "stop: process terminated" || ok "stop: process terminated"
+out2="$(run stop 2>&1)"; rc2=$?
+[ "$rc2" = 0 ] && ok "stop(no pid): clean exit 0" || no "stop(no pid): exit 0 (got $rc2)"
+has "未在运行" "$out2" "stop(no pid): reports not running"
+
+# --- T6: startup failure — bot exits immediately ---------------------------
+fresh
+out="$(TEST_BOT_MODE=exit run start 2>&1)"; rc=$?
+[ "$rc" != 0 ] && ok "start(fail/exit): non-zero exit" || no "start(fail/exit): non-zero exit (got $rc)"
+has "失败" "$out" "start(fail/exit): reports failure + log tail"
+[ ! -f "$STATE/bot.pid" ] && ok "start(fail/exit): stale pidfile cleaned" || no "start(fail/exit): stale pidfile cleaned"
+
+# --- T7: startup failure — first log line is ERROR though process stays ----
+fresh
+out="$(TEST_BOT_MODE=errfirst run start 2>&1)"; rc=$?
+[ "$rc" != 0 ] && ok "start(fail/errfirst): non-zero exit" || no "start(fail/errfirst): non-zero exit (got $rc)"
+[ ! -f "$STATE/bot.pid" ] && ok "start(fail/errfirst): pidfile cleaned (proc stopped)" || no "start(fail/errfirst): pidfile cleaned"
+
+# --- T8: dry-run passes --dry-run-once through -----------------------------
+fresh
+out="$(run dry-run 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "dry-run: exit 0" || no "dry-run: exit 0 (got $rc)"
+has "dry-run ok" "$out" "dry-run: --dry-run-once forwarded to bot"
+
+# --- T9: status when stopped -----------------------------------------------
+fresh
+out="$(run status 2>&1)"
+has "STOPPED" "$out" "status(stopped): reports STOPPED"
+
+# --- T10: logs is non-blocking (must return) -------------------------------
+fresh
+run start >/dev/null 2>&1
+out="$(run logs 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "logs: returns without blocking (no tail -f)" || no "logs: non-blocking (got $rc)"
+has "$STATE/bot.log" "$out" "logs: prints log path"
+run stop >/dev/null 2>&1
+
+# --- T11: restart swaps the pid --------------------------------------------
+fresh
+run start >/dev/null 2>&1
+p1="$(pidval)"
+out="$(run restart 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "restart: exit 0" || no "restart: exit 0 (got $rc)"
+p2="$(pidval)"
+[ -n "$p2" ] && [ "$p1" != "$p2" ] && ok "restart: new pid" || no "restart: new pid ($p1 -> $p2)"
+kill -0 "$p1" 2>/dev/null && no "restart: old process gone" || ok "restart: old process gone"
+run stop >/dev/null 2>&1
+
+# --- T12: graceful stop semantics (吸收 master f7f1f72 优雅停止) --------------
+# 正常 bot 收 SIGTERM 即退 → graceful; deaf bot 忽略 TERM → 宽限超时后 SIGKILL forced 兜底。
+fresh
+run start >/dev/null 2>&1
+gout="$(run stop 2>&1)"
+has "graceful" "$gout" "stop(normal): bot 收 SIGTERM 即退 → graceful"
+fresh
+TEST_BOT_MODE=deaf run start >/dev/null 2>&1
+p1="$(pidval)"
+fout="$(run stop 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "stop(deaf): exit 0" || no "stop(deaf): exit 0 (got $rc)"
+has "forced" "$fout" "stop(deaf): 忽略 TERM → 宽限后 SIGKILL forced 兜底"
+kill -0 "$p1" 2>/dev/null && no "stop(deaf): process gone after SIGKILL" || ok "stop(deaf): process gone after SIGKILL"
+[ ! -f "$STATE/bot.pid" ] && ok "stop(deaf): pidfile removed" || no "stop(deaf): pidfile removed"
+
+echo ""
+echo "bridge_run_test: $pass passed, $fail failed"
+[ "$fail" -eq 0 ] && { echo "ALLPASS"; exit 0; } || { echo "FAILED"; exit 1; }

@@ -344,3 +344,22 @@ Once the PR is merged:
 ## Rules
 
 <!-- TODO: hard coding rules for hand-written resources / hand-written test cases (GetOkExists, array type assertion, naming conventions, etc.) -->
+
+---
+
+## 发版前强化门禁（可选,additive）
+
+> **本节为 jarvis 侧 additive 指引,不改动上述任何既有步骤;是否启用由跑者按发版风险自定。**
+
+提 PR / 合并前,可选跑一条**发版前全量过闸**门禁(jarvis F3 探测线),把 tf-probe 的 tier-0（三方一致性全量）
++ tier-1（全场景生命周期）串成一次红/黄/绿判定:
+
+```bash
+bootstrap/rc-gate.sh <provider-dir> [--quick]   # 绿/黄=退0过闸, 红=退1阻断, 不可判=退2
+```
+
+- 🟢绿/🟡黄 → 照常进入本 SOP 的远程 ACC / PR / 人工合并环节（黄项知情放行）。
+- 🔴红（api_gap S3+ / 场景 fail / destroy 残留）→ 回「修复方案」修红项,复跑转绿/黄再提交。
+- 门禁**不替代**远程 ACC（互补:ACC 深验单资源,门禁广验全量+全场景）,**不触碰** `release_prod`。
+
+详见 [`references/rc-gate.md`](references/rc-gate.md);完整读法与实现见 jarvis 仓 `loops/tf-probe.md`「四点五、RC 门禁」+ `bootstrap/rc-gate.sh`。

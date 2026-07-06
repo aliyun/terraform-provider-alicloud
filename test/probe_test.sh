@@ -198,7 +198,7 @@ run_probe env PROBE_WORKDIR="$clean" bash "$PROBE" sweep
 [ "$RC" = "0" ] && ok "sweep 干净退 0" || bad "sweep 干净应退 0,实退 $RC"
 
 # ---------------------------------------------------------------------------
-echo "Test 13: 场景根(playground)解析优先级(env > config.playground_dir > 默认约定)"
+echo "Test 13: 场景根解析优先级(env > config.playground_dir > workspace.sh dir tf_playground > 默认约定)"
 pg_probe() { bash -c 'source "$1"; probe_playground_dir' _ "$PROBE"; }
 # env 优先(非空且目录存在)
 r="$( export JARVIS_TF_PLAYGROUND="$PLAYGROUND_FIXTURE"; pg_probe )"
@@ -216,7 +216,18 @@ sb_bad="$tmp/sb_bad"; mkdir -p "$sb_bad/config"
 jq '.paths.playground_dir="/nonexistent/xyz-playground"' "$CONFIG" > "$sb_bad/config/probe.json"
 r="$( unset JARVIS_TF_PLAYGROUND; export JARVIS_ROOT="$sb_bad"; pg_probe )"
 [ "$r" = "$(dirname "$sb_bad")/terraform_playground" ] && ok "config 目录不存在→回落默认" || bad "config 回落 got '$r'"
-# 默认约定(env 未设 + config null)
+# workspace.sh dir tf_playground 级(env 未设 + config null + 数据仓已登记且 clone 落点存在)——插在 config 与默认之间
+sb_ws="$tmp/sb_ws"; mkdir -p "$sb_ws/config"
+cp "$CONFIG" "$sb_ws/config/probe.json"                          # playground_dir 默认 null
+cp "$PROJ_ROOT/config/workspaces.json" "$sb_ws/config/workspaces.json"  # 含 tf_playground 登记
+wsroot="$tmp/wsroot"; mkdir -p "$wsroot/tf_playground/vpc/x"     # 数据仓 clone 落点存在
+r="$( unset JARVIS_TF_PLAYGROUND; export JARVIS_ROOT="$sb_ws" JARVIS_WORKSPACE_ROOT="$wsroot"; pg_probe )"
+[ "$r" = "$wsroot/tf_playground" ] && ok "workspace.sh dir tf_playground(数据仓已 clone)优先于默认" || bad "tf_playground 级未生效 got '$r'"
+# 数据仓未 clone(目录不存在)→ 继续回落默认约定
+rm -rf "$wsroot/tf_playground"
+r="$( unset JARVIS_TF_PLAYGROUND; export JARVIS_ROOT="$sb_ws" JARVIS_WORKSPACE_ROOT="$wsroot"; pg_probe )"
+[ "$r" = "$(dirname "$sb_ws")/terraform_playground" ] && ok "数据仓未 clone → 回落默认约定" || bad "未回落默认 got '$r'"
+# 默认约定(env 未设 + config null + 无 workspaces 登记)
 sb_def="$tmp/sb_def"; mkdir -p "$sb_def/config"
 cp "$CONFIG" "$sb_def/config/probe.json"
 r="$( unset JARVIS_TF_PLAYGROUND; export JARVIS_ROOT="$sb_def"; pg_probe )"
@@ -425,6 +436,217 @@ echo "Test 24: doctor 报 probe-meta 可用性(不可用=WARN,tier0 自动降级
 OUT="$( export JARVIS_PROBE_PROVIDER_DIR="$FIXTURE_DIR" AMP_SKILL_DIR="$tmp/nonexistent-skill"; unset PROBE_META_PYTHON AMP_ACCESS_KEY_ID ALIBABA_CLOUD_ACCESS_KEY_ID; bash "$PROBE" doctor 2>&1 )"; RC=$?
 grep -qi "probe-meta" <<<"$OUT" && ok "doctor 报 probe-meta 状态行" || bad "doctor 缺 probe-meta 行"
 grep -q "WARN" <<<"$OUT" && grep -qi "降级\|degrad\|机械" <<<"$OUT" && ok "doctor probe-meta 不可用→WARN+降级提示" || bad "doctor 缺降级提示"
+
+# ===========================================================================
+# F3 Corpus-gen —— 场景生成器(bootstrap/probe-corpus.sh)
+# ===========================================================================
+CORPUS="$PROJ_ROOT/bootstrap/probe-corpus.sh"
+CORPUS_PROV="$FIXTURE_DIR/corpus-provider"          # 隔离的 provider fixture(docs+go),不碰 tier0 fixture
+TF_STUB="$CORPUS_PROV/fake_terraform.sh"            # hermetic terraform 桩
+CVER="$(jq -r '.provider.version' "$CONFIG")"
+
+# gen 统一入口:隔离 provider + 隔离输出 playground + 桩 terraform(fmt 恒成功、不改文件)
+gen_probe() { # <out_playground> <args...>
+    local out="$1"; shift
+    OUT="$( env JARVIS_ROOT="$PROJ_ROOT" JARVIS_PROBE_PROVIDER_DIR="$CORPUS_PROV" \
+                JARVIS_TF_PLAYGROUND="$out" PROBE_TERRAFORM_BIN="$TF_STUB" \
+                bash "$CORPUS" "$@" 2>&1 )"; RC=$?
+}
+
+# ---------------------------------------------------------------------------
+echo "Test 25: config tier1_risk_denylist 值敏感结构(2026-07-05 收窄)+ corpus.free_prefixes"
+if [ -f "$CORPUS" ]; then ok "probe-corpus.sh 存在"; else bad "probe-corpus.sh 缺失"; fi
+# 按量大件清单 resource_patterns 已删(值敏感收窄)
+jq -e '.tier1_risk_denylist.resource_patterns == null' "$CONFIG" >/dev/null 2>&1 && ok "resource_patterns 已删(按量大件放行)" || bad "resource_patterns 应删除"
+jq -e '.tier1_risk_denylist.charge_value_fields|index("instance_charge_type") and index("payment_type")' "$CONFIG" >/dev/null 2>&1 && ok "charge_value_fields 含计费字段" || bad "charge_value_fields 不齐"
+jq -e '.tier1_risk_denylist.subscription_values|index("prepaid") and index("subscription")' "$CONFIG" >/dev/null 2>&1 && ok "subscription_values 含订阅语义值" || bad "subscription_values 不齐"
+jq -e '.tier1_risk_denylist.period_fields|index("period")' "$CONFIG" >/dev/null 2>&1 && ok "period_fields 含 period" || bad "period_fields 缺 period"
+jq -e '.tier1_risk_denylist.period_subscription_max|type=="number" and .>0' "$CONFIG" >/dev/null 2>&1 && ok "period_subscription_max 为正数" || bad "period_subscription_max 缺失"
+jq -e '.corpus.free_prefixes|type=="array" and (index("vpc") and index("ram") and index("oss") and index("kms") and index("log"))' "$CONFIG" >/dev/null 2>&1 && ok "corpus.free_prefixes 含免费族" || bad "corpus.free_prefixes 不齐"
+
+# ---------------------------------------------------------------------------
+echo "Test 26: gen alicloud_corpusfree → 三件套 + 注入项 + 产品取自源码三元组"
+og="$(mktemp -d)"
+gen_probe "$og" gen alicloud_corpusfree
+[ "$RC" = "0" ] && ok "gen 退 0" || bad "gen 退 $RC ($OUT)"
+sd="$og/corpusfree/corpusfree"   # product 取源码 RpcPost 三元组 Corpusfree→corpusfree;id=资源短名
+{ [ -f "$sd/scenario.yaml" ] && [ -f "$sd/main.tf" ] && [ -f "$sd/checks.md" ]; } && ok "三件套落盘(product=corpusfree 源码三元组)" || bad "三件套缺失 @ $sd"
+if [ -f "$sd/main.tf" ]; then
+    grep -qE 'variable[[:space:]]+"run_id"' "$sd/main.tf" && ok "注入 variable run_id" || bad "缺 variable run_id"
+    grep -qE "version[[:space:]]*=[[:space:]]*\"$CVER\"" "$sd/main.tf" && ok "pin provider $CVER" || bad "未 pin $CVER"
+    grep -qE 'name[[:space:]]*=[[:space:]]*"probe-\$\{var\.run_id\}"' "$sd/main.tf" && ok "可命名 name 注入 \${var.run_id}" || bad "name 未注入 run_id"
+    grep -qE 'managed_by[[:space:]]*=[[:space:]]*"jarvis-probe"' "$sd/main.tf" && ok "tags 注入 managed_by=jarvis-probe" || bad "tags 未注入 managed_by"
+    grep -qE 'resource[[:space:]]+"alicloud_corpusfree"' "$sd/main.tf" && ok "保留目标 resource 块" || bad "丢失 resource 块"
+    # 头部 terraform 块只应有 1 个(注入的),原文无 provider/backend 残留
+    [ "$(grep -cE '^provider[[:space:]]' "$sd/main.tf")" = "0" ] && ok "无 provider 残留块" || bad "有 provider 残留"
+fi
+if [ -f "$sd/scenario.yaml" ]; then
+    for k in id title persona products resources cost detect update_step import_check source_docs; do
+        [ -n "$(yget "$sd/scenario.yaml" "$k")" ] && ok "scenario.yaml 键 $k" || bad "scenario.yaml 缺键 $k"
+    done
+    [ "$(yget "$sd/scenario.yaml" id)" = "corpusfree" ] && ok "id=corpusfree(资源短名)" || bad "id 异常"
+    echo "$(yget "$sd/scenario.yaml" resources)" | grep -q "alicloud_corpusfree" && ok "resources 含 alicloud_corpusfree" || bad "resources 漏目标"
+    echo "$(yget "$sd/scenario.yaml" source_docs)" | grep -q "corpusfree" && ok "source_docs 指向资源文档" || bad "source_docs 异常"
+    # 免费资源:无 apply 键(默认 true)或 apply!=false
+    [ "$(yget "$sd/scenario.yaml" apply)" != "false" ] && ok "免费资源 apply 未禁(默认 true)" || bad "免费资源被误禁 apply"
+    # generated 来源纪律
+    [ "$(yget "$sd/scenario.yaml" origin)" = "generated" ] && ok "scenario.yaml 标 origin: generated" || bad "缺 origin: generated"
+fi
+grep -qi "jarvis-probe-corpus\|生成骨架\|待人工" "$sd/checks.md" 2>/dev/null && ok "checks.md 标注生成骨架待校订" || bad "checks.md 未标注骨架"
+
+# ---------------------------------------------------------------------------
+echo "Test 27: gen 产品回落 docs subcategory(无源码三元组 + 净化括号/空格)"
+og2="$(mktemp -d)"
+gen_probe "$og2" gen alicloud_corpusdoc
+{ [ "$RC" = "0" ] && [ -f "$og2/corpus/corpusdoc/scenario.yaml" ]; } && ok "无源码→回落 subcategory 'Corpus Store (CS)'→corpus" || bad "产品回落异常(RC=$RC, $OUT)"
+grep -qE 'corpusdoc_name[[:space:]]*=[[:space:]]*"probe-\$\{var\.run_id\}"' "$og2/corpus/corpusdoc/main.tf" 2>/dev/null && ok "*_name 字段注入 run_id" || bad "*_name 未注入"
+
+# ---------------------------------------------------------------------------
+echo "Test 28: 成本安全门值敏感 —— 订阅值/订阅period → apply:false;按量值/metric period/retention → 放行"
+# corpus_instance:大件名 + PostPaid + period=900(秒级 metric)+ backup_retention_period → 全部放行
+ogd="$(mktemp -d)"
+gen_probe "$ogd" gen alicloud_corpus_instance
+iy="$ogd/corpuscompute/corpus-instance/scenario.yaml"
+{ [ "$RC" = "0" ] && [ "$(yget "$iy" apply)" != "false" ]; } && ok "大件名+PostPaid+metric period+retention → apply 放行(不误禁)" || bad "值敏感门误禁按量大件(apply=$(yget "$iy" apply))"
+[ "$(yget "$iy" cost)" != "paid" ] && ok "放行场景 cost 非 paid" || bad "放行场景 cost 误标 paid"
+# corpuscharged:instance_charge_type = "PrePaid"(订阅值)→ apply:false
+ogc="$(mktemp -d)"
+gen_probe "$ogc" gen alicloud_corpuscharged
+cy="$ogc/corpuspay/corpuscharged/scenario.yaml"
+{ [ "$RC" = "0" ] && [ "$(yget "$cy" apply)" = "false" ]; } && ok "订阅值+有ds(instance_charge_type=PrePaid)→apply:false" || bad "PrePaid+ds 值未命中"
+[ "$(yget "$cy" cost)" = "paid" ] && ok "订阅场景 cost=paid" || bad "订阅场景 cost 应 paid"
+[ "$(yget "$cy" allow_prepaid)" != "true" ] && ok "有 ds 走 apply:false,不写 allow_prepaid" || bad "有 ds 误写 allow_prepaid"
+grep -qi "成本安全门\|订阅\|data source\|apply.*false\|止步 plan" "$ogc/corpuspay/corpuscharged/checks.md" 2>/dev/null && ok "checks.md 记订阅门 + datasource 规范" || bad "checks.md 未记规范"
+# corpusperiod:订阅(period=1)但无 ds 文档 → 翻 apply:true + allow_prepaid:true(runner prepaid_guard 兜底放行)
+ogp="$(mktemp -d)"
+gen_probe "$ogp" gen alicloud_corpusperiod
+py="$ogp/corpussub/corpusperiod/scenario.yaml"
+{ [ "$RC" = "0" ] && [ "$(yget "$py" apply)" != "false" ] && [ "$(yget "$py" allow_prepaid)" = "true" ]; } && ok "订阅无 ds → apply:true + allow_prepaid:true" || bad "无 ds 未翻 apply+allow_prepaid(apply=$(yget "$py" apply) allow=$(yget "$py" allow_prepaid))"
+[ ! -d "$ogp/corpussub/ds-corpusperiod" ] && ok "无 ds 文档 → 不生成 ds- 变体" || bad "无 ds 却生成 ds- 变体"
+grep -qiE 'destroy 可能失败|destroy_fail|S1' "$ogp/corpussub/corpusperiod/checks.md" 2>/dev/null && ok "无 ds 场景 checks.md 注 destroy_fail S1 兜底" || bad "checks.md 未注 destroy_fail 告警"
+# 值敏感单测:_corpus_gate 直接喂 main.tf(PrePaid 命中 / PostPaid 不命中 / retention_period 不误伤 / metric period 不命中)
+gate_probe() { bash -c 'source "$1"; if _corpus_gate x "$2" >/dev/null 2>&1; then echo GATED; else echo PASS; fi' _ "$CORPUS" "$1" 2>/dev/null; }
+mkc() { printf '%s\n' "$1" > "$tmp/gate.tf"; echo "$tmp/gate.tf"; }
+export JARVIS_ROOT="$PROJ_ROOT"
+[ "$(gate_probe "$(mkc 'instance_charge_type = "PrePaid"')")" = "GATED" ] && ok "gate: PrePaid 值命中" || bad "gate: PrePaid 未命中"
+[ "$(gate_probe "$(mkc 'instance_charge_type = "PostPaid"')")" = "PASS" ] && ok "gate: PostPaid 值放行" || bad "gate: PostPaid 被误禁"
+[ "$(gate_probe "$(mkc 'payment_type = "Subscription"')")" = "GATED" ] && ok "gate: Subscription 值命中(大小写不敏感)" || bad "gate: Subscription 未命中"
+[ "$(gate_probe "$(mkc 'payment_type = "payasyougo"')")" = "PASS" ] && ok "gate: PayAsYouGo 放行" || bad "gate: PayAsYouGo 被误禁"
+[ "$(gate_probe "$(mkc 'period = 1')")" = "GATED" ] && ok "gate: period=1(订阅时长)命中" || bad "gate: period=1 未命中"
+[ "$(gate_probe "$(mkc 'period = 900')")" = "PASS" ] && ok "gate: period=900(秒级 metric)放行" || bad "gate: period=900 被误禁"
+[ "$(gate_probe "$(mkc 'period = "60"')")" = "PASS" ] && ok "gate: period=\"60\"(metric)放行" || bad "gate: period=60 被误禁"
+[ "$(gate_probe "$(mkc 'backup_retention_period = 7')")" = "PASS" ] && ok "gate: retention_period 不误伤" || bad "gate: retention_period 被误命中"
+[ "$(gate_probe "$(mkc 'internet_charge_type = "PayByBandwidth"')")" = "PASS" ] && ok "gate: internet_charge_type 非计费值放行" || bad "gate: internet_charge_type 被误禁"
+
+# ---------------------------------------------------------------------------
+echo "Test 29: gen 剥离 provider/terraform 块 + 声明额外 provider(random) + heredoc 保真"
+ogr="$(mktemp -d)"
+gen_probe "$ogr" gen alicloud_corpusrandom
+mr="$ogr/corpusmisc/corpusrandom/main.tf"
+[ "$RC" = "0" ] && [ -f "$mr" ] && ok "corpusrandom 生成" || bad "corpusrandom 生成失败(RC=$RC, $OUT)"
+if [ -f "$mr" ]; then
+    grep -qE '^provider[[:space:]]+"alicloud"' "$mr" && bad "provider 块未剥离" || ok "provider 块已剥离"
+    grep -q 'region = "cn-hangzhou"' "$mr" && bad "provider region 残留" || ok "provider 内容已剥离"
+    grep -qE 'random[[:space:]]*=[[:space:]]*\{' "$mr" && grep -q 'hashicorp/random' "$mr" && ok "额外 provider random 已声明" || bad "random provider 未声明"
+    grep -q '"Statement"' "$mr" && grep -q '"Version": "1"' "$mr" && ok "heredoc JSON 内容保真" || bad "heredoc 内容丢失/损坏"
+    # 名称已含插值(random)→ 不改写(保留 random 引用,run_id 仅声明)
+    grep -q 'policy_name     = "tf-example-${random_integer.default.result}"' "$mr" && ok "带插值名称保留不改写" || bad "带插值名称被误改写"
+    grep -qE 'variable[[:space:]]+"run_id"' "$mr" && ok "仍注入 variable run_id" || bad "缺 variable run_id"
+    # heredoc 内的 brace 未干扰:resource 块完整闭合(random_integer + corpusrandom 两个 resource 都在)
+    [ "$(grep -cE '^resource[[:space:]]' "$mr")" = "2" ] && ok "两个 resource 块均保留(heredoc brace 未干扰剥离)" || bad "resource 块数异常"
+fi
+
+# ---------------------------------------------------------------------------
+echo "Test 30: gen --batch —— 免费族优先 + diff 掉已有 + 数量截断"
+ob="$(mktemp -d)"
+# 自定义 config:free_prefixes 指向 fixture 资源,验证优先排序机制
+bcfg="$tmp/batch_cfg.json"; jq '.corpus.free_prefixes=["corpusrandom","corpusfree"]' "$CONFIG" > "$bcfg"
+OUT="$( env JARVIS_ROOT="$PROJ_ROOT" JARVIS_PROBE_PROVIDER_DIR="$CORPUS_PROV" JARVIS_TF_PLAYGROUND="$ob" \
+            PROBE_CONFIG="$bcfg" PROBE_TERRAFORM_BIN="$TF_STUB" bash "$CORPUS" gen --batch 2 2>&1 )"; RC=$?
+[ "$RC" = "0" ] && ok "--batch 2 退 0" || bad "--batch 2 退 $RC ($OUT)"
+ncount() { find "$ob" -mindepth 3 -name scenario.yaml 2>/dev/null | grep -vc _quarantine; }
+[ "$(ncount)" = "2" ] && ok "--batch 2 恰生成 2 个" || bad "--batch 2 生成数=$(ncount)"
+{ [ -f "$ob/corpusfree/corpusfree/scenario.yaml" ] && [ -f "$ob/corpusmisc/corpusrandom/scenario.yaml" ]; } && ok "优先生成 free_prefixes 命中的 corpusfree/corpusrandom" || bad "免费族优先排序未生效"
+[ -f "$ob/corpuspay/corpuscharged/scenario.yaml" ] && bad "非优先项 corpuscharged 不应在 batch 2 内" || ok "非优先项被截断在外"
+# 二次 batch:diff 掉已有 2 个,生成剩余 4 个 primary(corpuscharged 订阅→ +ds-corpuscharged 变体)= 共 7
+OUT="$( env JARVIS_ROOT="$PROJ_ROOT" JARVIS_PROBE_PROVIDER_DIR="$CORPUS_PROV" JARVIS_TF_PLAYGROUND="$ob" \
+            PROBE_CONFIG="$bcfg" PROBE_TERRAFORM_BIN="$TF_STUB" bash "$CORPUS" gen --batch 10 2>&1 )"; RC=$?
+{ [ "$RC" = "0" ] && [ "$(ncount)" = "7" ]; } && ok "二次 batch diff 掉已有→补齐至 7(6 primary + 1 ds- 变体)" || bad "二次 batch 数=$(ncount)(应 7)"
+[ -f "$ob/corpuspay/ds-corpuscharged/scenario.yaml" ] && ok "batch 对订阅类连带产出 ds- 变体" || bad "batch 未产出 ds- 变体"
+grep -qi "skip\|已存在\|跳过" <<<"$OUT" && ok "batch 报告跳过已有项" || bad "batch 未报告跳过"
+
+# ---------------------------------------------------------------------------
+echo "Test 31: validate —— 质量门 init/validate/fmt;失败移 _quarantine + reason 文件"
+vp="$(mktemp -d)"
+mkdir -p "$vp/net/vok" "$vp/net/vbad"
+printf 'id: vok\nproducts: NET\n'  > "$vp/net/vok/scenario.yaml"
+printf 'id: vbad\nproducts: NET\n' > "$vp/net/vbad/scenario.yaml"
+printf 'resource "alicloud_vpc" "m" { vpc_name = "ok" }\n'                    > "$vp/net/vok/main.tf"
+printf 'resource "alicloud_vpc" "m" { vpc_name = "bad" }\n# CORPUS_FAIL_VALIDATE\n' > "$vp/net/vbad/main.tf"
+OUT="$( env JARVIS_ROOT="$PROJ_ROOT" JARVIS_TF_PLAYGROUND="$vp" PROBE_TERRAFORM_BIN="$TF_STUB" \
+            bash "$CORPUS" validate --all 2>&1 )"; RC=$?
+[ "$RC" = "1" ] && ok "有隔离→validate 退 1" || bad "validate 退 $RC(应 1)"
+[ -f "$vp/net/vok/main.tf" ] && ok "通过场景 vok 留原位" || bad "vok 被误隔离"
+# 隔离到 _quarantine/<product>/<id>(深一层,避开两级 list/run glob)
+{ [ ! -d "$vp/net/vbad" ] && [ -d "$vp/_quarantine/net/vbad" ]; } && ok "失败场景 vbad 移入 _quarantine/net/vbad" || bad "vbad 未隔离"
+[ -f "$vp/_quarantine/net/vbad/QUARANTINE_REASON.txt" ] && ok "隔离目录含 reason 文件" || bad "隔离缺 reason 文件"
+grep -qi "validate" "$vp/_quarantine/net/vbad/QUARANTINE_REASON.txt" 2>/dev/null && ok "reason 记录失败步骤 validate" || bad "reason 未记失败步骤"
+# 隔离体不被 list 的两级 glob 看见(product=_quarantine 不出现)
+run_probe env JARVIS_TF_PLAYGROUND="$vp" bash "$PROBE" list
+grep -q "_quarantine" <<<"$OUT" && bad "list 误列 _quarantine 隔离体" || ok "list 不列 _quarantine 隔离体"
+
+# ---------------------------------------------------------------------------
+echo "Test 32: probe.sh apply:false 行为(止步 plan,不 apply)"
+# 单测谓词 _apply_disabled
+ay="$tmp/apply_off.yaml"; printf 'id: x\napply: false\n' > "$ay"
+an="$tmp/apply_on.yaml";  printf 'id: y\npersona: beginner\n' > "$an"
+( bash -c 'source "$1"; _apply_disabled "$2"' _ "$PROBE" "$ay" ) && ok "_apply_disabled 对 apply:false 返回 0" || bad "_apply_disabled(false) 异常"
+( bash -c 'source "$1"; _apply_disabled "$2"' _ "$PROBE" "$an" ) && bad "_apply_disabled 对缺键误判禁用" || ok "_apply_disabled 缺键→默认放行(返回非 0)"
+# run --dry:apply:false 场景显示 plan-only 封顶,不显示 apply
+apg="$tmp/apply_pg"; mkdir -p "$apg/net/apply-off"
+cat > "$apg/net/apply-off/scenario.yaml" <<'YAML'
+id: apply-off
+persona: beginner
+products: NET
+resources: alicloud_vpc
+cost: paid
+detect: validate_fail,plan_fail
+update_step: false
+import_check: false
+apply: false
+source_docs: https://example
+YAML
+printf 'variable "run_id" { type = string }\nresource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }\n' > "$apg/net/apply-off/main.tf"
+run_probe env JARVIS_TF_PLAYGROUND="$apg" bash "$PROBE" run apply-off --dry
+[ "$RC" = "0" ] && ok "apply:false 场景 --dry 退 0" || bad "apply:false --dry 退 $RC"
+grep -qiE "apply.*false|止步 plan|plan-only|apply_disabled" <<<"$OUT" && ok "--dry 显示 apply:false 封顶 plan" || bad "--dry 未显示 apply:false 封顶"
+grep -q "apply -auto-approve" <<<"$OUT" && bad "apply:false 下不应显示 apply" || ok "apply:false 下不显示 apply"
+
+# ---------------------------------------------------------------------------
+echo "Test 33: ds- 只读变体 —— 订阅类资源有 data source 文档 → 额外生成 ds-<id>(data+output, apply 安全)"
+ods="$(mktemp -d)"
+gen_probe "$ods" gen alicloud_corpuscharged
+dsd="$ods/corpuspay/ds-corpuscharged"
+{ grep -q "ds:" <<<"$OUT" && [ -d "$dsd" ]; } && ok "订阅类 corpuscharged → 生成 ds-corpuscharged" || bad "ds- 变体未生成($OUT)"
+if [ -d "$dsd" ]; then
+    grep -qE '^data[[:space:]]+"alicloud_corpuschargeds"' "$dsd/main.tf" && ok "ds main.tf 含 data 块" || bad "ds main.tf 缺 data 块"
+    grep -qE 'resource[[:space:]]+"' "$dsd/main.tf" && bad "ds- 变体不应含 resource(非只读)" || ok "ds- 变体纯只读(无 resource)"
+    grep -qE 'output[[:space:]]+"ds_result"' "$dsd/main.tf" && ok "ds main.tf 含 output" || bad "ds main.tf 缺 output"
+    grep -qE "version[[:space:]]*=[[:space:]]*\"$CVER\"" "$dsd/main.tf" && ok "ds pin provider $CVER" || bad "ds 未 pin 版本"
+    [ "$(yget "$dsd/scenario.yaml" apply)" != "false" ] && ok "ds- 变体 apply 未禁(只读天然安全)" || bad "ds- 变体被误禁 apply"
+    [ "$(yget "$dsd/scenario.yaml" origin)" = "generated" ] && ok "ds- 变体标 origin: generated" || bad "ds- 变体缺 origin"
+    echo "$(yget "$dsd/scenario.yaml" source_docs)" | grep -q "data-sources" && ok "ds source_docs 指向 data-sources" || bad "ds source_docs 异常"
+fi
+
+# ---------------------------------------------------------------------------
+echo "Test 34: 重判幂等 —— 同资源 --force 两次生成 scenario.yaml 一致(值敏感判定稳定)"
+oi="$(mktemp -d)"
+gen_probe "$oi" gen alicloud_corpuscharged
+h1="$(cat "$oi/corpuspay/corpuscharged/scenario.yaml" 2>/dev/null)"
+gen_probe "$oi" gen alicloud_corpuscharged --force
+h2="$(cat "$oi/corpuspay/corpuscharged/scenario.yaml" 2>/dev/null)"
+[ -n "$h1" ] && [ "$h1" = "$h2" ] && ok "--force 重判 scenario.yaml 幂等一致" || bad "重判不幂等"
+[ "$(printf '%s' "$h2" | sed -n 's/^apply: //p')" = "false" ] && ok "重判后 apply:false 稳定(PrePaid 订阅值)" || bad "重判 apply 标记漂移"
 
 # ---------------------------------------------------------------------------
 echo ""

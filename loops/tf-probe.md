@@ -77,6 +77,58 @@ bootstrap/probe.sh run <id> --dry               # 只看步骤计划(region 解�
 
 ---
 
+## 四点五、RC 门禁（发版前全量过闸，rc-gate.sh）
+
+> 把 tier-0（全量机械层）+ tier-1（全场景生命周期）串成**一条发版前门禁线**,一次跑完给红/黄/绿判定与退码,
+> 供 `terraform-provider-release` SOP 在 PR/合并前当闸门用。**它是编排层,不复制 probe 逻辑——每步都调 probe.sh 子命令。**
+
+### 何时跑
+
+- **provider 发版前(RC 阶段)**:切好发版分支、准备提 PR / 合并前,跑一遍确认全量探测过闸。
+- **新版本落地后**:版本升级易引入 state 不兼容 / 新永久 diff / 文档漂移,全量跑一轮兜底。
+- 日常增量开发**不必**每次跑全量;那是 tier-0 `--rotate` 巡检 + tier-1 单场景的活。
+
+### 怎么跑
+
+```bash
+bootstrap/rc-gate.sh <provider-dir>            # 完整模式:tier-1 真实 apply 顺跑(并发 1)
+bootstrap/rc-gate.sh <provider-dir> --quick    # 快扫:tier-1 改 plan 为止(run --dry,零创建),不 apply
+```
+
+- `<provider-dir>` = 本地 terraform-provider-alicloud 仓(经 `JARVIS_PROBE_PROVIDER_DIR` 传给 tier0,需 website/docs/r + alicloud)。
+- 三步:① `probe.sh tier0 --all --limit 200`(机械层全量,**降级容忍**:mech=degraded 记黄不记红)
+  → ② `probe.sh list` 枚举全场景 → 逐场景 `probe.sh run`(完整=真实 apply;`--quick`=`run --dry` plan 为止)
+  → ③ 汇总 `runs/rc-gate/<date>-report.md` 并按判定退码。
+- 可调 env:`RC_GATE_QUEUE_YELLOW`(queue 激增黄线,默认 40)、`RC_GATE_TOTAL_TIMEOUT`(tier-1 阶段总超时预算秒,默认 0=不限,超预算剩余场景跳过记黄)。
+
+### 怎么读报告 / 判定与退码
+
+报告落 `runs/rc-gate/<date>-report.md`,顶部 `## VERDICT: <色>  (exit N)` 一眼定结论:
+
+| 判定 | 退码 | 触发 | 动作 |
+|------|------|------|------|
+| 🔴 **RED** | 1（阻断） | tier-0 `api_gap` 严重度 **S3+** / 场景 `run` 退 1（provider finding）/ 场景 `run` 退 3（destroy 失败或 state 残留） | **禁发**,先修红项再复跑 |
+| 🟡 **YELLOW** | 0（放行但标注） | 机械层降级 mech=degraded / judgment_queue 激增 / tier-0 有非 S3+ finding（doc_gap、S4 api_gap）/ 场景 `run` 退 2（env 阻断,非 bug）/ `--quick` 未跑 apply / 无场景 / 超时跳过 | 可放行,但报告显著标注,发版前尽量清 |
+| 🟢 **GREEN** | 0 | 以上皆无 | 过闸 |
+| ⚪ **CANNOT_CERTIFY** | 2（门禁不完整） | tier-0 无法运行（`probe.sh tier0` 退 2,provider 仓不可用） | 修环境后重跑,**勿把不可判当绿放行** |
+
+- 优先级 **RED > CANNOT_CERTIFY > YELLOW > GREEN**;stdout 末行同样打 `VERDICT: <色>` 便于 CI/脚本 grep。
+- **降级不误伤**:probe-meta（OpenAPI 元数据层）不可用时 tier-0 自动降级,api_gap 检测关闭→api_gap S3+ 恒 0,只靠 doc↔source 出黄项,门禁**不会因环境降级而误判红**。
+
+### 与 terraform-provider-release SOP 的衔接
+
+```
+terraform-provider-release SOP: 需求澄清 → gap 分析 → (生成/改码) → [RC 门禁: rc-gate.sh] → 远程 ACC → PR → 人工合并
+                                                                        ↑
+                                          绿/黄 → 继续 SOP 的 PR/ACC/合并环节(黄项知情放行)
+                                          红   → 回到改码,修红项后复跑门禁
+                                          不可判 → 修 provider 仓/probe-meta 环境后重跑
+```
+
+release skill 侧仅加了 additive「发版前强化门禁(可选)」指引(见其 `references/rc-gate.md`),不改 SOP 既有步骤;是否插入门禁由跑者按发版风险自定。
+
+---
+
 ## 五、产物分流
 
 | 产物 | 去向 |
@@ -141,6 +193,7 @@ probe 单指派 jarvis,会被 `scan.sh` 自然扫到进 triage;aone-triage 按 *
 | `bootstrap/probe-meta.sh {fetch\|cached-fetch\|clear\|available}` | T0-mech OpenAPI 元数据获取层(薄封装 amp skill + cache.sh 7d) |
 | `bootstrap/probe.sh run <id> [--region r] [--dry] [--keep]` | tier-1 真实 apply 生命周期探测 |
 | `bootstrap/probe.sh sweep` | 扫残留 state,残留退 1 |
+| `bootstrap/rc-gate.sh <provider-dir> [--quick]` | **RC 门禁线**:tier-0 全量 + tier-1 全场景一次过闸,红/黄/绿判定,报告落 `runs/rc-gate/<date>-report.md`(退码 红1/黄0/绿0/不可判2);见「四点五」 |
 | `config/probe.json` | regions / tiers(tier1.enabled, prepaid_guard) / limits / ticket / paths(含 playground_dir) |
 | `terraform_playground/<product>/<id>/`(外置,仓外) | tier-1 场景语料库(云产品维度两级布局);根解析 env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > 默认 `<jarvis 父目录>/terraform_playground` |
 | `.claude/skills/tf-customer-probe` | 全流程技能 + references |

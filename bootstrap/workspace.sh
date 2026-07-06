@@ -15,6 +15,25 @@ base="$jarvis_root/config/workspaces.json"
 local="$jarvis_root/config/workspaces.local.json"
 ws_root="${JARVIS_WORKSPACE_ROOT:-$HOME/workspace}"
 
+# workspaces.local.json is gitignored, so a `git worktree add` checkout never gets
+# a copy — only the tracked workspaces.json comes along. When run from a worktree,
+# fall back to the PRIMARY repo's local.json, else the machine-local path override
+# is silently lost inside every worktree. `git rev-parse --git-common-dir` yields
+# <main>/.git (absolute) from a worktree vs a plain ".git" from the main checkout,
+# so its parent is the main repo root. Guarded by -f + root!=jarvis_root so the
+# main-checkout case (no local.json genuinely absent) is a no-op.
+if [ ! -f "$local" ]; then
+  gcd="$(git -C "$jarvis_root" rev-parse --git-common-dir 2>/dev/null || true)"
+  if [ -n "$gcd" ]; then
+    case "$gcd" in /*) : ;; *) gcd="$jarvis_root/$gcd" ;; esac  # normalize to absolute
+    main_root="$(cd "$(dirname "$gcd")" 2>/dev/null && pwd)"
+    if [ -n "$main_root" ] && [ "$main_root" != "$jarvis_root" ] \
+       && [ -f "$main_root/config/workspaces.local.json" ]; then
+      local="$main_root/config/workspaces.local.json"
+    fi
+  fi
+fi
+
 [ -f "$base" ] || { echo "workspace.sh: $base not found" >&2; exit 1; }
 
 # Deep-merge base * local (local wins); local missing → base alone.

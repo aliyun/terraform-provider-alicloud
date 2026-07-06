@@ -485,6 +485,140 @@ class HumanTouchedTest(unittest.TestCase):
             b.subprocess.run = orig
 
 
+class NoDingtalkDegradedTest(unittest.TestCase):
+    """无钉钉降级模式(JARVIS_NO_DINGTALK=1, 缺凭证): 调度器照起、TataPool 跳过、
+    卡片/播报降级为 [BROADCAST] 日志行、唤醒走 headless 池 —— 全程绝不触钉钉。"""
+
+    class _BoomSM:
+        """任何被当作 streaming 模块访问的属性都炸 —— 证明降级路径根本没碰钉钉 SDK。"""
+        def __getattr__(self, name):
+            raise AssertionError("DingTalk streaming touched in no-dingtalk mode: .%s" % name)
+
+    def _handler(self):
+        # 无 DINGTALK_APP_KEY/SECRET 也能构造; 只建调度器, 不 start()(不起线程/子进程)。
+        for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
+            os.environ.pop(k, None)
+        h = b.JarvisHandler(no_dingtalk=True)
+        h.sm = self._BoomSM()   # 任何真钉钉调用即触发 AssertionError
+        return h
+
+    def test_schedulers_built_tatapool_skipped(self):
+        h = self._handler()
+        self.assertTrue(h.no_dingtalk)
+        self.assertIsNone(h.pool, "TataPool must be skipped in no-dingtalk mode")
+        for name in ("dispatch_pool", "scanner", "reconciler", "board",
+                     "prober", "reviser", "watcher"):
+            self.assertIsNotNone(getattr(h, name, None), "%s must be constructed" % name)
+        self.assertTrue(h.scanner.auto, "auto-dispatch stays on in degraded mode")
+
+    def test_broadcast_and_card_land_in_log_no_dingtalk_call(self):
+        h = self._handler()
+        with self.assertLogs("jarvis-bot", level="INFO") as cm:
+            h._broadcast("已自动派发 #123 测试单\n- 第二行")   # 经 _quick_card 降级
+            h._quick_card("someuser", "定向卡片也降级", "user")
+        joined = "\n".join(cm.output)
+        self.assertIn("[BROADCAST]", joined)
+        self.assertIn("已自动派发 #123", joined)
+        self.assertIn("定向卡片也降级", joined)
+        # _BoomSM 未抛异常即证明没走真钉钉(get_access_token 等未被调用)。
+
+    def test_scheduler_broadcast_path_no_dingtalk(self):
+        # 调度器 dispatch 汇总播报回调 = handler._broadcast → 降级落 [BROADCAST] 日志, 不触钉钉。
+        # mock submit 免真起 claude(新语义: new/updated 单都过 _decide 派发, 派发汇总即播报)。
+        h = self._handler()
+        h.dispatch_pool.submit = lambda *a, **k: (True, "dispatched")  # 不真跑 work
+        with self.assertLogs("jarvis-bot", level="INFO") as cm:
+            h.scanner._tick_auto([{"id": "77", "title": "新单派发", "tag": [],
+                                   "pool": "tf_provider", "pool_project": "528766"}], {})
+        self.assertIn("[BROADCAST]", "\n".join(cm.output))
+
+    def test_wake_resumes_via_headless_pool_not_card(self):
+        h = self._handler()
+        captured = {}
+
+        def fake_submit(item_id, work, *, notify=None, force=False, kind="ticket"):
+            captured.update(id=str(item_id), force=force, kind=kind)
+            return True, "dispatched"   # 不真跑 work(不起 claude)
+
+        h.dispatch_pool.submit = fake_submit
+        # 若降级唤醒误走卡片路(_submit_card→_stream_round→get_access_token), _BoomSM 会炸。
+        task = {"target": "grp", "target_type": "group", "session_id": "sess-1"}
+        with self.assertLogs("jarvis-bot", level="INFO") as cm:
+            h._wake("83929676", task, [{"creator": "someone", "content": "继续"}])
+        self.assertEqual(captured.get("id"), "83929676")
+        self.assertTrue(captured.get("force"), "wake must force past the 24h dedup ledger")
+        self.assertEqual(captured.get("kind"), "wake",
+                         "degraded wake must use the headless pool path, not the card path")
+        self.assertIn("[BROADCAST]", "\n".join(cm.output))  # 「收到回复,唤醒中」通知降级为日志
+
+
+class BoardEnabledTest(unittest.TestCase):
+    """board.enabled 隐雷: live main() 引用 handler.board.enabled — 该属性必须存在且为 bool,
+    否则配上真钉钉凭证走 live 路径会 AttributeError。"""
+
+    def test_enabled_attribute_present_and_bool(self):
+        board = b.BoardScheduler(None)
+        self.assertTrue(hasattr(board, "enabled"), "BoardScheduler must expose .enabled")
+        self.assertIsInstance(board.enabled, bool)
+        # 复刻 main()/降级路径的判定表达式: 不得抛 AttributeError; base_url 默认非空 → started。
+        self.assertEqual("started" if board.enabled else "disabled", "started")
+        # 降级路径同款判定也不得抛
+        self.assertEqual("on" if board.enabled else "off", "on")
+
+
+class BoardProbeMergeTest(unittest.TestCase):
+    """BoardScheduler 并入 board.sh probe 健康度段(E 线 MR-5)。probe 成功→并入 "probe" 键;
+    probe 缺失/失败→绝不影响主 items 同步(容错依赖 MR-5)。全程桩 board.sh, 不依赖 MR-5 是否合并。"""
+
+    def test_probe_merged_into_payload_when_available(self):
+        board = b.BoardScheduler(None)
+        board._probe_section = lambda: {"pass": 3, "fail": 1, "warn": 0}
+        p = board._build_payload('[{"id": "1", "state": "pool"}]')
+        self.assertEqual(p["items"], [{"id": "1", "state": "pool"}])
+        self.assertIn("ts", p)
+        self.assertEqual(p["probe"], {"pass": 3, "fail": 1, "warn": 0})
+
+    def test_items_sync_unaffected_when_probe_absent(self):
+        board = b.BoardScheduler(None)
+        board._probe_section = lambda: None
+        p = board._build_payload('[{"id": "1"}]')
+        self.assertNotIn("probe", p, "no probe key when probe section unavailable")
+        self.assertEqual(p["items"], [{"id": "1"}])  # 主同步不受影响
+        self.assertIn("ts", p)
+
+    def test_probe_section_two_states(self):
+        board = b.BoardScheduler(None)
+        board._board_supports_probe = lambda: True   # 桩: 假装 board.sh 已有 probe 子命令(MR-5 后)
+
+        class _R:
+            def __init__(self, rc, out):
+                self.returncode = rc; self.stdout = out; self.stderr = ""
+
+        orig = b.subprocess.run
+        try:
+            b.subprocess.run = lambda *a, **k: _R(0, '{"pass": 2, "fail": 0}')  # 成功: 对象
+            self.assertEqual(board._probe_section(), {"pass": 2, "fail": 0})
+            b.subprocess.run = lambda *a, **k: _R(1, "")                        # 失败: rc!=0
+            self.assertIsNone(board._probe_section())
+            b.subprocess.run = lambda *a, **k: _R(0, '[{"id": "1"}]')           # 非对象(items 回退)
+            self.assertIsNone(board._probe_section(), "array output must not be treated as probe")
+        finally:
+            b.subprocess.run = orig
+
+    def test_probe_skipped_without_invoking_board_when_subcommand_absent(self):
+        # 主线 board.sh 无 probe 子命令 → 存在性探测 False → 不调 subprocess, 直接 None(不污染 payload)。
+        board = b.BoardScheduler(None)
+        board._board_supports_probe = lambda: False
+        called = []
+        orig = b.subprocess.run
+        try:
+            b.subprocess.run = lambda *a, **k: called.append(1)
+            self.assertIsNone(board._probe_section())
+            self.assertEqual(called, [], "must not run board.sh when probe subcommand absent")
+        finally:
+            b.subprocess.run = orig
+
+
 def _run():
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
