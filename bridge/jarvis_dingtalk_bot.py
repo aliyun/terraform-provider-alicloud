@@ -1221,9 +1221,13 @@ class ReconcileScheduler:
                 log.exception("ReconcileScheduler tick failed; will retry next interval")
 
     def _tick(self):
+        skip_ids = ",".join(self.handler.dispatch_pool.active_ids())
+        env = os.environ.copy()
+        if skip_ids:
+            env["JARVIS_RECONCILE_SKIP_IDS"] = skip_ids
         cmd = [str(REPO_ROOT / "bootstrap" / "reconcile.sh"), "all"]
         result = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True,
-                                text=True, timeout=300)
+                                text=True, timeout=300, env=env)
         summary = (result.stdout or "").strip().replace("\n", " | ")[:500]
         if result.returncode != 0:
             log.warning("reconcile.sh all failed (rc=%d): %s", result.returncode,
@@ -1532,6 +1536,11 @@ class DispatchPool:
     def active_count(self):
         with self._lock:
             return len(self._active)
+
+    def active_ids(self):
+        """Snapshot of currently active ticket IDs (for reconcile exclusion)."""
+        with self._lock:
+            return sorted(self._active.keys())
 
     def free_slots(self):
         """空闲运行槽 = max_workers - 在飞任务数(含排队)。返回 >0 蕴含队列必为空

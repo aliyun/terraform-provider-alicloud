@@ -16,6 +16,7 @@
 #   JARVIS_ESCALATION_DIR — escalation dir(默认 <root>/escalation)
 #   JARVIS_RUNS_DIR       — runs dir(默认 <root>/runs)
 #   RECONCILE_CLAIM_CMD   — 覆盖 claim.sh 路径(测试用)
+#   JARVIS_RECONCILE_SKIP_IDS — comma-separated IDs to skip (active DispatchPool workers)
 #
 # Read-mostly;仅 drift 分支可能触发 claim.sh release。
 
@@ -30,6 +31,21 @@ export JARVIS_ROOT
 source "$_reconcile_dir/log.sh"
 
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"
+
+# Active DispatchPool worker IDs — reconcile must not touch these.
+_SKIP_IDS_RAW="${JARVIS_RECONCILE_SKIP_IDS:-}"
+declare -A _SKIP_ID_MAP
+if [ -n "$_SKIP_IDS_RAW" ]; then
+    IFS=',' read -ra _skip_arr <<< "$_SKIP_IDS_RAW"
+    for _sid in "${_skip_arr[@]}"; do
+        _sid="$(echo "$_sid" | tr -d '[:space:]')"
+        [ -n "$_sid" ] && _SKIP_ID_MAP["$_sid"]=1
+    done
+fi
+
+_is_active_dispatch() {
+    [ "${_SKIP_ID_MAP[$1]+_}" ]
+}
 
 # a1 via bin/a1id → act as the jarvis identity regardless of ambient login (CLAUDE.md #6).
 # Overridable via JARVIS_A1 (tests point it at a stubbed `a1` on PATH).
@@ -122,6 +138,11 @@ _cmd_stale() {
 
         while IFS= read -r item_id; do
             [ -z "$item_id" ] && continue
+            # Skip IDs actively being processed by DispatchPool
+            if _is_active_dispatch "$item_id"; then
+                echo "SKIP(active): $item_id"
+                continue
+            fi
             # 幂等：已 escalate 过的工单不再重复追加
             local _esc_dir="${JARVIS_ESCALATION_DIR:-$JARVIS_ROOT/escalation}"
             [ -f "$_esc_dir/$item_id.md" ] && continue
@@ -193,6 +214,11 @@ _cmd_drift() {
 
         while IFS= read -r item_id; do
             [ -z "$item_id" ] && continue
+            # Skip IDs actively being processed by DispatchPool
+            if _is_active_dispatch "$item_id"; then
+                echo "SKIP(active): $item_id"
+                continue
+            fi
             if seen "$item_id"; then
                 local _claim_cmd="${RECONCILE_CLAIM_CMD:-$_reconcile_dir/claim.sh}"
                 $_claim_cmd release "$item_id" "$project"
