@@ -1449,9 +1449,11 @@ class WaitWatcher:
         with self._lock:
             self.suspended.pop(aone_id, None)
         self._remove_persisted(aone_id)
+        wl = JarvisDingTalkBot._workitem_line(aone_id)
+        line = wl[0] if isinstance(wl, tuple) else wl
         self.handler._quick_card(
             task["target"],
-            "⏰ 工单 #%s 挂起超 48h 未收到回复，已升级。" % aone_id,
+            "⏰ 工单挂起超 48h 未收到回复，已升级。\n%s" % line,
             task["target_type"])
 
     # -- persistence -----------------------------------------------------------
@@ -1992,9 +1994,11 @@ class JarvisHandler(AsyncChatbotHandler):
                 target_type=target_type)
             info = self._maybe_suspend(result, sid, target, target_type)
             if info:
+                wl = self._workitem_line(info["aone_id"])
+                line = wl[0] if isinstance(wl, tuple) else wl
                 self._quick_card(target,
-                    "⏸️ 工单 #%s 已挂起，等待 @%s 回复" % (
-                        info["aone_id"], info.get("wait_for", "?")),
+                    "⏸️ 工单已挂起，等待 @%s 回复\n%s" % (
+                        info.get("wait_for", "?"), line),
                     target_type)
                 return "suspended"
             log.info("dispatch_bg #%s done", item_id)
@@ -2004,22 +2008,20 @@ class JarvisHandler(AsyncChatbotHandler):
             self._quick_card(target, "⚠️ 工单 #%s 后台处理异常: %s" % (item_id, e), target_type)
             return "error"
 
-    def _completion_broadcast(self, item_id):
-        """Build the headless completion broadcast text. Distinguishes the final tag
-        state (jarvis-done / jarvis-idle / jarvis-claimed) and appends a clickable Aone
-        link matching the dispatch-card format. Best-effort: non-numeric ids and any
-        a1 query / parse failure fall back to a plain completion line (never raises)."""
-        fallback = "✅ 工单 #%s 处理完成（headless）" % item_id
+    @staticmethod
+    def _workitem_line(item_id):
+        """Fetch workitem metadata and return a formatted markdown line:
+        ``- [#id](aone_url) title [priority]``. Falls back to ``#id`` on error."""
         sid = str(item_id)
         if not sid.isdigit():
-            return "✅ 任务 #%s 处理完成（headless）" % item_id
+            return "#%s" % sid
         try:
             r = subprocess.run(
                 [str(REPO_ROOT / "bin" / "a1id"), "--",
                  "project", "workitem", "get", sid, "-f", "json"],
                 capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
             if r.returncode != 0:
-                return fallback
+                return "#%s" % sid
             data = json.loads(r.stdout)
             title = (data.get("title") or "").strip()
             fields = {f.get("identifier"): f
@@ -2028,22 +2030,32 @@ class JarvisHandler(AsyncChatbotHandler):
             def _disp(key):
                 f = fields.get(key) or {}
                 return f.get("displayValue") or f.get("value") or ""
-            tag = _disp("tag")
             priority = _disp("priority")
             project = (fields.get("space") or {}).get("value") or ""
+            tag = _disp("tag")
         except Exception:  # noqa: BLE001
-            return fallback
+            return "#%s" % sid
+        aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s" % (project, sid)
+        pri = " [%s]" % priority if priority else ""
+        return "- [#%s](%s) %s%s" % (sid, aone_url, title, pri), tag
+
+    def _completion_broadcast(self, item_id):
+        """Build the completion broadcast text. Distinguishes the final tag
+        state (jarvis-done / jarvis-idle / jarvis-claimed) and appends a clickable Aone
+        link matching the dispatch-card format."""
+        result = self._workitem_line(item_id)
+        if isinstance(result, tuple):
+            line, tag = result
+        else:
+            return "✅ 工单 #%s 处理完成" % item_id
         if "jarvis-done" in tag:
-            prefix = "✅ 工单处理完成（headless）"
+            prefix = "✅ 工单处理完成"
         elif "jarvis-idle" in tag:
-            prefix = "⏸️ 工单阶段完成·待人工接手（headless）"
+            prefix = "⏸️ 工单阶段完成·待人工接手"
         elif "jarvis-claimed" in tag:
             prefix = "⚠️ 工单处理结束但未收尾（仍 claimed）"
         else:
-            prefix = "✅ 工单处理完成（headless）"
-        aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s" % (project, sid)
-        pri = " [%s]" % priority if priority else ""
-        line = "- [#%s](%s) %s%s" % (sid, aone_url, title, pri)
+            prefix = "✅ 工单处理完成"
         return prefix + "\n" + line
 
     def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type, on_spawn=None):
@@ -2059,8 +2071,10 @@ class JarvisHandler(AsyncChatbotHandler):
                 final = acc
             info = self._maybe_suspend(final, sid, target, target_type)
             if info:
-                notify("⏸️ 工单 #%s 已挂起，等待 @%s 回复" % (
-                    info["aone_id"], info.get("wait_for", "?")))
+                wl = self._workitem_line(info["aone_id"])
+                line = wl[0] if isinstance(wl, tuple) else wl
+                notify("⏸️ 工单已挂起，等待 @%s 回复\n%s" % (
+                    info.get("wait_for", "?"), line))
                 return "suspended"
             notify(self._completion_broadcast(item_id))
             log.info("dispatch_item #%s done", item_id)
@@ -2087,9 +2101,11 @@ class JarvisHandler(AsyncChatbotHandler):
         reply_text = "\n".join(
             "@%s: %s" % (c.get("creator", "?"), c.get("content", "")) for c in new_comments)
         prompt = "工单 #%s 收到新回复:\n%s\n\n请继续处理。" % (aone_id, reply_text)
+        wl = self._workitem_line(aone_id)
+        line = wl[0] if isinstance(wl, tuple) else wl
         self._quick_card(
             task["target"],
-            "🔔 工单 #%s 收到回复，正在唤醒 Jarvis…" % aone_id,
+            "🔔 工单收到回复，正在唤醒 Jarvis…\n%s" % line,
             task["target_type"])
         if self.no_dingtalk:
             # 降级模式无 live 卡片可流 → 走 headless dispatch_item 续跑, 结果播报落日志;
