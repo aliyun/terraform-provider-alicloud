@@ -31,10 +31,6 @@ func dataSourceAliCloudDasSqlLogConfigs() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"instance_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -87,42 +83,27 @@ func dataSourceAliCloudDasSqlLogConfigsRead(d *schema.ResourceData, meta interfa
 	objectRaw, err := dasServiceV2.DescribeDasSqlLogConfig(instanceId)
 	if err != nil {
 		if NotFoundError(err) {
-			d.SetId(dataResourceIdHash([]string{instanceId}))
-			d.Set("ids", []string{})
-			d.Set("configs", []map[string]interface{}{})
+			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
 	dataRawObj, _ := jsonpath.Get("$.Data", objectRaw)
-	dataRaw := make(map[string]interface{})
-	if dataRawObj != nil {
-		dataRaw = dataRawObj.(map[string]interface{})
-	}
-
-	toBool := func(v interface{}) bool {
-		b, _ := v.(bool)
-		return b
-	}
-	toStr := func(v interface{}) string {
-		if v == nil {
-			return ""
-		}
-		s, _ := v.(string)
-		return s
+	dataRaw, _ := dataRawObj.(map[string]interface{})
+	if dataRaw == nil {
+		dataRaw = map[string]interface{}{}
 	}
 
 	mapping := map[string]interface{}{
-		"id":                   instanceId,
 		"instance_id":          instanceId,
-		"enable":               toBool(dataRaw["SqlLogEnable"]),
-		"request_enable":       toBool(dataRaw["RequestEnable"]),
+		"enable":               formatBool(dataRaw["SqlLogEnable"]),
+		"request_enable":       formatBool(dataRaw["RequestEnable"]),
 		"retention":            formatInt(dataRaw["Retention"]),
 		"hot_retention":        formatInt(dataRaw["HotRetention"]),
 		"cold_retention":       formatInt(dataRaw["ColdRetention"]),
-		"version":              toStr(dataRaw["Version"]),
-		"log_filter":           toStr(dataRaw["LogFilter"]),
+		"version":              dataRaw["Version"],
+		"log_filter":           dataRaw["LogFilter"],
 		"sql_log_visible_time": formatInt(dataRaw["SqlLogVisibleTime"]),
 	}
 
