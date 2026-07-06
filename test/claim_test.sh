@@ -55,11 +55,31 @@ JSON
 #   A1_UPDATE_NOOP – "1" → update captures but does NOT persist (lost-race sim)
 #   A1_STATUS_CAPTURE – file to record the --status value of an update (optional)
 #   A1_REJECT_STATUS  – if set and equals the update's --status value, exit 1 (enum mismatch sim)
+#   A1_COMMENTS       – shared comments JSON file (array of {"content":...}); comment
+#                       create appends, comment list echoes it. Models one Aone workitem's
+#                       comment stream shared across multiple "machines" for arbitration.
 # A --tag-less update (e.g. finish's separate --status call) must NOT clobber A1_STATE tags.
 # ---------------------------------------------------------------------------
 cat > "$tmpbin/a1" << 'STUB'
 #!/bin/bash
 echo "$@" >> "$A1_LOG"
+if [ "$1 $2 $3 $4" = "project workitem comment create" ]; then
+    args=("$@"); content=""; i=0
+    while [ $i -lt ${#args[@]} ]; do
+        if [ "${args[$i]}" = "-m" ]; then j=$((i + 1)); content="${args[$j]}"; fi
+        i=$((i + 1))
+    done
+    f="${A1_COMMENTS:-}"
+    if [ -n "$f" ]; then
+        [ -s "$f" ] || printf '[]' > "$f"
+        ctmp=$(mktemp); jq --arg c "$content" '. + [{"content":$c}]' "$f" > "$ctmp" && mv "$ctmp" "$f"
+    fi
+    exit 0
+fi
+if [ "$1 $2 $3 $4" = "project workitem comment list" ]; then
+    if [ -n "${A1_COMMENTS:-}" ] && [ -s "$A1_COMMENTS" ]; then cat "$A1_COMMENTS"; else echo '[]'; fi
+    exit 0
+fi
 if [ "$1 $2 $3" = "project workitem get" ]; then
     if [ "${A1_GET_FAIL:-}" = "all" ]; then exit 1; fi
     if [ "${A1_GET_FAIL:-}" = "first" ]; then
@@ -426,6 +446,107 @@ echo "rc=$rc tags='$state'"
 if [ "$rc" = "0" ]; then assert_pass "rejected status: finish still exits 0"; else assert_fail "rejected status: exit $rc"; fi
 if printf '%s' "$state" | grep -q "jarvis-done"; then assert_pass "rejected status: still tagged jarvis-done (not stuck idle)"; else assert_fail "rejected status: done tag lost, got '$state'"; fi
 if printf '%s' "$out" | grep -qi "warning"; then assert_pass "rejected status: emits warning"; else assert_fail "rejected status: no warning emitted"; fi
+
+# ===========================================================================
+# Cross-machine claim arbitration (JARVIS_CLAIM_SETTLE>0).
+# Two "machines" (distinct JARVIS_SELF_HOST) claim the SAME workitem, sharing one
+# A1_STATE (tag set) and one A1_COMMENTS (comment stream) = one Aone workitem. Run
+# sequentially so hostA's claim comment carries the earlier UTC timestamp (hostA
+# starts and finishes — incl. its settle sleep — before hostB begins), modelling
+# near-simultaneous claims with a deterministic global order. hostA (earliest) must
+# win; hostB (later) must detect the earlier claim, stand down, and roll back to idle.
+# ===========================================================================
+echo "=== Test 17: cross-machine arbitration — earliest host wins, later stands down ==="
+ARB_STATE=$(mktemp); ARB_COMMENTS=$(mktemp)
+ARB_LOGA=$(mktemp); ARB_CAPA=$(mktemp); ARB_CNTA=$(mktemp)
+ARB_LOGB=$(mktemp); ARB_CAPB=$(mktemp); ARB_CNTB=$(mktemp)
+printf '' > "$ARB_STATE"          # start with no tags on the shared workitem
+printf '[]' > "$ARB_COMMENTS"     # empty comment stream
+ARB_ID="8001"
+unset COORD_ID CLAUDE_CODE_SESSION_ID
+
+# hostA claims first (earliest timestamp). JARVIS_ROOT=$tmpconfig so config/pools.json resolves.
+outA=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_SETTLE=1 JARVIS_SELF_HOST=host-A \
+    A1_LOG="$ARB_LOGA" A1_STATE="$ARB_STATE" A1_CAPTURE="$ARB_CAPA" A1_GETCNT="$ARB_CNTA" \
+    A1_COMMENTS="$ARB_COMMENTS" \
+    bash "$proj_root/bootstrap/claim.sh" claim "$ARB_ID" "$PROJECT_ID" 2>&1); rcA=$?
+
+# hostB claims the same item afterwards (later timestamp) → must lose to host-A
+outB=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+    JARVIS_CLAIM_SETTLE=1 JARVIS_SELF_HOST=host-B \
+    A1_LOG="$ARB_LOGB" A1_STATE="$ARB_STATE" A1_CAPTURE="$ARB_CAPB" A1_GETCNT="$ARB_CNTB" \
+    A1_COMMENTS="$ARB_COMMENTS" \
+    bash "$proj_root/bootstrap/claim.sh" claim "$ARB_ID" "$PROJECT_ID" 2>&1); rcB=$?
+
+echo "hostA rc=$rcA out=$outA"
+echo "hostB rc=$rcB out=$outB"
+echo "capB(last --tag)=$(cat "$ARB_CAPB")"
+echo "comments=$(cat "$ARB_COMMENTS")"
+
+# Exactly one winner
+winners=0
+[ "$rcA" -eq 0 ] && winners=$((winners + 1))
+[ "$rcB" -eq 0 ] && winners=$((winners + 1))
+if [ "$winners" -eq 1 ]; then assert_pass "exactly one host wins the claim"; else assert_fail "expected exactly one winner, rcA=$rcA rcB=$rcB"; fi
+
+# host-A (earliest) wins
+if [ "$rcA" -eq 0 ]; then assert_pass "host-A (earliest claim) exits 0 (won)"; else assert_fail "host-A should win, got rc=$rcA"; fi
+
+# host-B (later) stands down
+if [ "$rcB" -eq 1 ]; then assert_pass "host-B (later claim) exits 1 (stood down)"; else assert_fail "host-B should lose, got rc=$rcB"; fi
+
+# host-B stood down WITHOUT clobbering the shared tag set: on loss it must NOT write idle
+# (that would erase the winner's claimed, whole-set replace, no per-owner identity). Its
+# last --tag write stays its own step-1 claimed (idempotent with the winner's).
+capB=$(cat "$ARB_CAPB")
+if echo "$capB" | grep -q "jarvis-claimed" && ! echo "$capB" | grep -q "jarvis-idle"; then
+    assert_pass "host-B did not roll back to idle on loss (capB=$capB)"
+else
+    assert_fail "host-B must not write idle on loss (would clobber winner), got '$capB'"
+fi
+
+# CORE invariant: the winner's claim survives on the SHARED workitem — the arbitration
+# loser must not have removed jarvis-claimed from the shared tag set.
+sharedB=$(cat "$ARB_STATE")
+if echo "$sharedB" | grep -q "jarvis-claimed"; then
+    assert_pass "winner keeps jarvis-claimed on shared workitem (loser did not clobber)"
+else
+    assert_fail "shared tag set lost jarvis-claimed after loser stood down, got '$sharedB'"
+fi
+
+# host-B's stderr explains the stand-down
+if echo "$outB" | grep -qi "arbitration"; then assert_pass "host-B emits arbitration stand-down message"; else assert_fail "host-B should mention arbitration, got: $outB"; fi
+
+# Both machines wrote reconcile-parseable claim comments (nonce after the UTC timestamp,
+# so reconcile.sh's existing regex still captures the timestamp).
+recon_ts=$(python3 -c "
+import json,sys,re
+cs=json.load(open('$ARB_COMMENTS'))
+pat=re.compile(r'jarvis-claim\s+\S+\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)')
+n=sum(1 for c in cs if pat.search(c.get('content','')))
+print(n)
+" 2>/dev/null || echo 0)
+if [ "$recon_ts" = "2" ]; then
+    assert_pass "both claim comments match reconcile.sh timestamp regex (nonce non-breaking)"
+else
+    assert_fail "expected 2 reconcile-parseable comments, got $recon_ts"
+fi
+
+# Nonces are distinct (8-hex tail after the timestamp)
+distinct_nonces=$(python3 -c "
+import json,re
+cs=json.load(open('$ARB_COMMENTS'))
+pat=re.compile(r'jarvis-claim\s+\S+\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\s+(\S+)')
+ns=set()
+for c in cs:
+    m=pat.search(c.get('content',''))
+    if m: ns.add(m.group(1))
+print(len(ns))
+" 2>/dev/null || echo 0)
+if [ "$distinct_nonces" = "2" ]; then assert_pass "two distinct nonces present"; else assert_fail "expected 2 distinct nonces, got $distinct_nonces"; fi
+
+rm -f "$ARB_STATE" "$ARB_COMMENTS" "$ARB_LOGA" "$ARB_CAPA" "$ARB_CNTA" "$ARB_LOGB" "$ARB_CAPB" "$ARB_CNTB"
 
 # ---------------------------------------------------------------------------
 # Summary

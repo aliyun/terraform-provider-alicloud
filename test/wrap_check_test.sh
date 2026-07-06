@@ -78,7 +78,10 @@ ROOT10=""
 ROOT11=""
 ROOT12=""
 ROOT13=""
-trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" "$ROOT6" "$ROOT7" "$ROOT8" "$ROOT9" "$ROOT10" "$ROOT11" "$ROOT12" "$ROOT13" 2>/dev/null; exit' INT TERM EXIT
+ROOT14=""
+ROOT15=""
+ROOT16=""
+trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" "$ROOT6" "$ROOT7" "$ROOT8" "$ROOT9" "$ROOT10" "$ROOT11" "$ROOT12" "$ROOT13" "$ROOT14" "$ROOT15" "$ROOT16" 2>/dev/null; exit' INT TERM EXIT
 
 # ---------------------------------------------------------------------------
 # Test 1: done:false id, no runs/ file → exit 2
@@ -256,6 +259,61 @@ printf '[{"id":"WI-T13","done":false,"owner":"cc-sess-A"}]\n' \
     > "$ROOT13/.my-day/claims-${today}.json"
 assert_exit_code "interactive own-session claim, no run_done → exit 2" 2 \
     env CLAUDE_CODE_SESSION_ID="sess-A" JARVIS_ROOT="$ROOT13" JARVIS_RUNS_DIR="$ROOT13/runs" bash "$WRAP_CHECK"
+
+# ===========================================================================
+# JARVIS_REQUIRE_PUSH externalization gate (opt-in; default 0 = no behavior change)
+# A coord task (.my-day/tasks/<id>.json) owned by self, stage!=done, with a non-empty
+# branch but an empty pushed_branch means the code was never externalized (pushed to a
+# remote). Only enforced when JARVIS_REQUIRE_PUSH=1.
+# ===========================================================================
+PSELF="inst-push-self"
+
+# Helper: write a coord task json
+make_task() {
+    local root="$1" aid="$2" owner="$3" stage="$4" branch="$5" pushed="$6"
+    mkdir -p "$root/.my-day/tasks"
+    printf '{"aone_id":"%s","owner_instance":"%s","stage":"%s","worktree":"/wt","branch":"%s","repo":"r","pushed_branch":"%s","updated":"now"}\n' \
+        "$aid" "$owner" "$stage" "$branch" "$pushed" > "$root/.my-day/tasks/$aid.json"
+}
+
+# ---------------------------------------------------------------------------
+# Test 14: REQUIRE_PUSH=1, own task, branch set, pushed_branch empty → exit 2
+# ---------------------------------------------------------------------------
+echo "Test 14: REQUIRE_PUSH=1 + own task branch set + pushed empty → exit 2"
+ROOT14="$(make_jarvis_root)"
+make_task "$ROOT14" "WI-T14" "$PSELF" "coding" "feat-x" ""
+# also give it a run_done so the ledger/touched path is clean (isolate the push gate)
+touch "$ROOT14/runs/${today}-WI-T14.md"
+assert_exit_code "unexternalized own task → exit 2" 2 \
+    env JARVIS_REQUIRE_PUSH=1 COORD_ID="$PSELF" JARVIS_ROOT="$ROOT14" JARVIS_RUNS_DIR="$ROOT14/runs" bash "$WRAP_CHECK"
+assert_stderr_contains "unexternalized task reports the id + push hint" "WI-T14" \
+    env JARVIS_REQUIRE_PUSH=1 COORD_ID="$PSELF" JARVIS_ROOT="$ROOT14" JARVIS_RUNS_DIR="$ROOT14/runs" bash "$WRAP_CHECK"
+assert_stderr_contains "unexternalized task mentions push" "push" \
+    env JARVIS_REQUIRE_PUSH=1 COORD_ID="$PSELF" JARVIS_ROOT="$ROOT14" JARVIS_RUNS_DIR="$ROOT14/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 15: DEFAULT (REQUIRE_PUSH unset), same un-pushed task → exit 0 (no regression)
+# ---------------------------------------------------------------------------
+echo "Test 15: default (REQUIRE_PUSH unset) + un-pushed task → exit 0"
+ROOT15="$(make_jarvis_root)"
+make_task "$ROOT15" "WI-T15" "$PSELF" "coding" "feat-x" ""
+touch "$ROOT15/runs/${today}-WI-T15.md"
+assert_exit_code "default: un-pushed task not enforced → exit 0" 0 \
+    env COORD_ID="$PSELF" JARVIS_ROOT="$ROOT15" JARVIS_RUNS_DIR="$ROOT15/runs" bash "$WRAP_CHECK"
+
+# ---------------------------------------------------------------------------
+# Test 16: REQUIRE_PUSH=1 but pushed_branch present → exit 0 (externalized, OK)
+#          and stage=done or empty branch are exempt.
+# ---------------------------------------------------------------------------
+echo "Test 16: REQUIRE_PUSH=1 + pushed present / done / no-branch → exit 0"
+ROOT16="$(make_jarvis_root)"
+make_task "$ROOT16" "WI-T16a" "$PSELF" "coding" "feat-x" "origin/feat-x"   # pushed → OK
+make_task "$ROOT16" "WI-T16b" "$PSELF" "done"   "feat-y" ""                # done → exempt
+make_task "$ROOT16" "WI-T16c" "$PSELF" "coding" ""       ""                # no branch → exempt
+make_task "$ROOT16" "WI-T16d" "inst-other" "coding" "feat-z" ""            # foreign owner → not ours
+touch "$ROOT16/runs/${today}-WI-T16a.md"
+assert_exit_code "externalized/done/no-branch/foreign → exit 0" 0 \
+    env JARVIS_REQUIRE_PUSH=1 COORD_ID="$PSELF" JARVIS_ROOT="$ROOT16" JARVIS_RUNS_DIR="$ROOT16/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Summary

@@ -145,7 +145,12 @@ class ScanDecideTest(unittest.TestCase):
         pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
         for iid in ledger_recent:
             pool._ledger[str(iid)] = time.time()
-        return b.ScanScheduler(handler=None, pool=pool)
+        sc = b.ScanScheduler(handler=None, pool=pool)
+        # 这些用例专测 tag/dedup 决策，解除灰度范围默认(否则无 pool/created 的 mock item
+        # 会被 out_of_scope 提前 skip)；scope 本身由 ScopeGateTest 覆盖。
+        sc.dispatch_pools = set()
+        sc.dispatch_created_before = ""
+        return sc
 
     def test_tag_and_dedup_decisions(self):
         sc = self._scanner(ledger_recent=["dd"])
@@ -272,6 +277,87 @@ class TicketPromptTest(unittest.TestCase):
         self.assertIn("528766", prompt)
         self.assertIn("claim", prompt)
         self.assertIn("SUSPEND", prompt)
+
+
+class ScopeGateTest(unittest.TestCase):
+    """灰度安全阀：_in_scope 只放行池白名单内、created 早于 cutoff 的单；_decide 对
+    out-of-scope 返回 skip；pause flag 让 _tick 在 _scan 前短路。默认(未配)不限=现状。"""
+
+    def _scanner(self):
+        tmp = tempfile.mkdtemp()
+        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        sc = b.ScanScheduler(handler=None, pool=pool)
+        sc.auto = True
+        return sc
+
+    def test_default_is_gray_scoped(self):
+        # fail-safe 默认：不配任何 env 时也收窄到 tf_provider + 2024-01-01 前，不全量放开。
+        sc = self._scanner()
+        self.assertEqual(sc.dispatch_pools, {"tf_provider"}, "default pool allowlist = tf_provider")
+        self.assertEqual(sc.dispatch_created_before, "2024-01-01", "default created cutoff = 2024-01-01")
+        self.assertTrue(sc._in_scope({"pool": "tf_provider", "created": "2023-06-01 12:00"}))
+        self.assertFalse(sc._in_scope({"pool": "tf_customer", "created": "2023-06-01 12:00"}),
+                         "other pool NOT auto-dispatched by default")
+        self.assertFalse(sc._in_scope({"pool": "tf_provider", "created": "2025-06-01 12:00"}),
+                         "newer-than-cutoff NOT auto-dispatched by default")
+
+    def test_pool_allowlist(self):
+        sc = self._scanner()
+        sc.dispatch_pools = {"tf_provider"}
+        sc.dispatch_created_before = ""   # 单测 pool 维度，解除 created 默认
+        self.assertTrue(sc._in_scope({"pool": "tf_provider", "created": "2023-01-01 00:00"}))
+        self.assertFalse(sc._in_scope({"pool": "tf_customer", "created": "2023-01-01 00:00"}))
+
+    def test_created_before(self):
+        sc = self._scanner()
+        sc.dispatch_pools = set()          # 单测 created 维度，解除 pool 默认
+        sc.dispatch_created_before = "2024-01-01"
+        self.assertTrue(sc._in_scope({"pool": "x", "created": "2023-12-31 23:59"}))
+        self.assertFalse(sc._in_scope({"pool": "x", "created": "2024-01-01 00:00"}), "cutoff day excluded")
+        self.assertFalse(sc._in_scope({"pool": "x", "created": "2026-07-01 10:00"}))
+        self.assertFalse(sc._in_scope({"pool": "x", "created": None}), "missing created → not in scope")
+        self.assertFalse(sc._in_scope({"pool": "x"}), "no created key → not in scope")
+
+    def test_combined_gray_release(self):
+        sc = self._scanner()
+        sc.dispatch_pools = {"tf_provider"}
+        sc.dispatch_created_before = "2024-01-01"
+        self.assertTrue(sc._in_scope({"pool": "tf_provider", "created": "2023-06-01 12:00"}))
+        self.assertFalse(sc._in_scope({"pool": "tf_provider", "created": "2025-01-01 00:00"}))
+        self.assertFalse(sc._in_scope({"pool": "tf_customer", "created": "2023-06-01 12:00"}))
+
+    def test_decide_skips_out_of_scope(self):
+        sc = self._scanner()
+        sc.dispatch_pools = {"tf_provider"}
+        sc.dispatch_created_before = "2024-01-01"
+        items = [
+            {"id": "1", "title": "in", "tag": [], "pool": "tf_provider", "created": "2023-01-01 00:00"},
+            {"id": "2", "title": "wrongpool", "tag": [], "pool": "tf_customer", "created": "2023-01-01 00:00"},
+            {"id": "3", "title": "toonew", "tag": [], "pool": "tf_provider", "created": "2025-01-01 00:00"},
+        ]
+        decided = {d["id"]: (d["action"], d["reason"]) for d in sc._decide(items)}
+        self.assertEqual(decided["1"][0], "dispatch", "in-scope old tf_provider ticket dispatches")
+        self.assertEqual(decided["2"], ("skip", "out_of_scope"), "wrong pool skipped")
+        self.assertEqual(decided["3"], ("skip", "out_of_scope"), "too-new skipped")
+
+    def test_pause_flag_short_circuits_tick(self):
+        sc = self._scanner()
+        scanned = []
+        sc._scan = lambda: (scanned.append(True) or [])
+        orig = b.REPO_ROOT
+        tmp = tempfile.mkdtemp()
+        try:
+            b.REPO_ROOT = orig.__class__(tmp)
+            pause = b.REPO_ROOT / ".my-day" / "bridge" / "pause"
+            pause.parent.mkdir(parents=True, exist_ok=True)
+            pause.write_text("")
+            sc._tick()
+            self.assertEqual(scanned, [], "pause flag must short-circuit before _scan")
+            pause.unlink()
+            sc._tick()
+            self.assertEqual(scanned, [True], "no pause → _scan runs")
+        finally:
+            b.REPO_ROOT = orig
 
 
 def _run():

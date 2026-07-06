@@ -29,6 +29,14 @@ COORD_ID=$live_id bash "$COORD" checkpoint 9001 coding /wt b1 repoX
 ck cp-stage "$(jq -r .stage "$JARVIS_ROOT/.my-day/tasks/9001.json")" coding
 ck cp-owner "$(jq -r .owner_instance "$JARVIS_ROOT/.my-day/tasks/9001.json")" "$live_id"
 
+# pushed_branch: 6-arg (legacy) call → field present but empty (backward compatible)
+ck cp-pushed-legacy-empty "$(jq -r .pushed_branch "$JARVIS_ROOT/.my-day/tasks/9001.json")" ""
+
+# pushed_branch: 7th arg round-trips into task json (externalization tracking)
+COORD_ID=$live_id bash "$COORD" checkpoint 9007 coding /wt feat-b repoX origin/feat-b
+ck cp-pushed-branch "$(jq -r .pushed_branch "$JARVIS_ROOT/.my-day/tasks/9007.json")" origin/feat-b
+ck cp-pushed-branch-keeps-branch "$(jq -r .branch "$JARVIS_ROOT/.my-day/tasks/9007.json")" feat-b
+
 # Only 9002 (dead owner) should appear; 9001 (live owner) must not
 COORD_ID=nohost-999999 bash "$COORD" checkpoint 9002 coding
 ck orphan-list "$(bash "$COORD" list-orphans)" 9002

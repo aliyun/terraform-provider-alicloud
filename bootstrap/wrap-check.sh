@@ -59,71 +59,106 @@ touched_files=()
 while IFS= read -r -d '' f; do touched_files+=("$f"); done \
     < <(find "$myday_dir" -maxdepth 1 -name 'touched-*.json' -print0 2>/dev/null)
 
-# No ledgers at all → nothing to check
-if [ "${#ledger_files[@]}" -eq 0 ] && [ "${#touched_files[@]}" -eq 0 ]; then
-    exit 0
-fi
-
-# Merge: open claims (done==false) + every touched id, deduplicate. Each must have a run_done.
-open_ids=()
-while IFS= read -r id; do
-    [ -n "$id" ] && open_ids+=("$id")
-done < <(
-    {
-        for ledger_file in ${ledger_files[@]+"${ledger_files[@]}"}; do
-            jq -r '.[] | select(.done == false) | .id' "$ledger_file" 2>/dev/null
-        done
-        for tf in ${touched_files[@]+"${touched_files[@]}"}; do
-            jq -r '.[]' "$tf" 2>/dev/null
-        done
-    } | sort -u
-)
-
-if [ "${#open_ids[@]}" -eq 0 ]; then
-    exit 0
-fi
-
-# Build an id→owner lookup from all ledger files: one "id<TAB>owner" line per entry
-# that carries a non-empty owner. Legacy entries without an owner field, or with an
-# empty owner, are omitted → they resolve to "" on lookup (bash 3.2: no assoc array,
-# so a flat temp file + awk first-match is used for a stable, portable map).
 # self via coord_self() (lib.sh): COORD_ID, else cc-<CLAUDE_CODE_SESSION_ID>, else "".
 # Must match how claim.sh stamps owner so this session recognizes its own claims — and
 # so two different interactive sessions (distinct cc-<sid>) don't block each other (D2).
 self="$(coord_self)"
-owner_map="$(mktemp)"
-trap 'rm -f "$owner_map"' EXIT
-for ledger_file in ${ledger_files[@]+"${ledger_files[@]}"}; do
-    jq -r '.[] | select((.owner // "") != "") | "\(.id)\t\(.owner)"' "$ledger_file" 2>/dev/null
-done > "$owner_map"
 
-# owner_of <id> — echoes the first non-empty owner recorded for id, or "" if none.
-owner_of() {
-    awk -F'\t' -v id="$1" '$1 == id { print $2; exit }' "$owner_map"
-}
+missing=()          # open claims/touched ids lacking a run_done
+push_missing=()     # own coord tasks with un-externalized (un-pushed) code
 
-# For each open id, scope by owner then use log.sh seen as the run-exists check.
-missing=()
-for id in "${open_ids[@]}"; do
-    owner="$(owner_of "$id")"
-    if [ -n "$owner" ] && [ "$owner" != "$self" ]; then
-        # Owned by another named instance → not this session's problem. Warn for
-        # visibility; reconcile is responsible for dead-instance leftovers.
-        echo "wrap-check: skip $id (owned by other instance $owner)" >&2
-        continue
+# --- Externalization gate (JARVIS_REQUIRE_PUSH=1, opt-in; default 0 = no-op) -----
+# Multi-machine safety: a coord task (.my-day/tasks/<id>.json) owned by THIS instance,
+# not yet done, whose branch is non-empty but whose pushed_branch is empty = code was
+# developed locally but never pushed to a remote → un-resumable on another machine.
+# Only enforced when JARVIS_REQUIRE_PUSH=1; unset/0 skips the whole block so single-
+# machine behavior is unchanged.
+if [ "${JARVIS_REQUIRE_PUSH:-0}" = "1" ]; then
+    tasks_dir="$myday_dir/tasks"
+    if [ -d "$tasks_dir" ]; then
+        for tf in "$tasks_dir"/*.json; do
+            [ -e "$tf" ] || continue
+            _stage="$(jq -r '.stage // ""' "$tf" 2>/dev/null)"
+            _owner="$(jq -r '.owner_instance // ""' "$tf" 2>/dev/null)"
+            _branch="$(jq -r '.branch // ""' "$tf" 2>/dev/null)"
+            _pushed="$(jq -r '.pushed_branch // ""' "$tf" 2>/dev/null)"
+            _aid="$(jq -r '.aone_id // ""' "$tf" 2>/dev/null)"
+            [ "$_stage" = "done" ] && continue      # finished → exempt
+            [ "$_owner" = "$self" ] || continue     # only this instance's tasks
+            if [ -n "$_branch" ] && [ -z "$_pushed" ]; then
+                push_missing+=("$_aid")
+            fi
+        done
     fi
-    # owner == self, or owner empty/missing (legacy/interactive) → require run_done.
-    if ! seen "$id"; then
-        missing+=("$id")
-    fi
-done
+fi
 
-if [ "${#missing[@]}" -eq 0 ]; then
+# No claim/touched ledgers → skip the run_done sweep, but still honor the push gate.
+if [ "${#ledger_files[@]}" -eq 0 ] && [ "${#touched_files[@]}" -eq 0 ]; then
+    open_ids=()
+else
+    # Merge: open claims (done==false) + every touched id, deduplicate. Each must have a run_done.
+    open_ids=()
+    while IFS= read -r id; do
+        [ -n "$id" ] && open_ids+=("$id")
+    done < <(
+        {
+            for ledger_file in ${ledger_files[@]+"${ledger_files[@]}"}; do
+                jq -r '.[] | select(.done == false) | .id' "$ledger_file" 2>/dev/null
+            done
+            for tf in ${touched_files[@]+"${touched_files[@]}"}; do
+                jq -r '.[]' "$tf" 2>/dev/null
+            done
+        } | sort -u
+    )
+fi
+
+if [ "${#open_ids[@]}" -gt 0 ]; then
+    # Build an id→owner lookup from all ledger files: one "id<TAB>owner" line per entry
+    # that carries a non-empty owner. Legacy entries without an owner field, or with an
+    # empty owner, are omitted → they resolve to "" on lookup (bash 3.2: no assoc array,
+    # so a flat temp file + awk first-match is used for a stable, portable map).
+    owner_map="$(mktemp)"
+    trap 'rm -f "$owner_map"' EXIT
+    for ledger_file in ${ledger_files[@]+"${ledger_files[@]}"}; do
+        jq -r '.[] | select((.owner // "") != "") | "\(.id)\t\(.owner)"' "$ledger_file" 2>/dev/null
+    done > "$owner_map"
+
+    # owner_of <id> — echoes the first non-empty owner recorded for id, or "" if none.
+    owner_of() {
+        awk -F'\t' -v id="$1" '$1 == id { print $2; exit }' "$owner_map"
+    }
+
+    # For each open id, scope by owner then use log.sh seen as the run-exists check.
+    for id in "${open_ids[@]}"; do
+        owner="$(owner_of "$id")"
+        if [ -n "$owner" ] && [ "$owner" != "$self" ]; then
+            # Owned by another named instance → not this session's problem. Warn for
+            # visibility; reconcile is responsible for dead-instance leftovers.
+            echo "wrap-check: skip $id (owned by other instance $owner)" >&2
+            continue
+        fi
+        # owner == self, or owner empty/missing (legacy/interactive) → require run_done.
+        if ! seen "$id"; then
+            missing+=("$id")
+        fi
+    done
+fi
+
+if [ "${#missing[@]}" -eq 0 ] && [ "${#push_missing[@]}" -eq 0 ]; then
     exit 0
 fi
 
-echo "wrap-check: claimed-or-touched workitems with no run_done (未收尾):" >&2
-for id in "${missing[@]}"; do
-    echo "  $id" >&2
-done
+if [ "${#missing[@]}" -gt 0 ]; then
+    echo "wrap-check: claimed-or-touched workitems with no run_done (未收尾):" >&2
+    for id in "${missing[@]}"; do
+        echo "  $id" >&2
+    done
+fi
+
+if [ "${#push_missing[@]}" -gt 0 ]; then
+    echo "wrap-check: coord tasks with code NOT pushed 外化 (branch 有但 pushed_branch 空):" >&2
+    for id in "${push_missing[@]}"; do
+        echo "  $id (代码未 push 外化)" >&2
+    done
+fi
 exit 2

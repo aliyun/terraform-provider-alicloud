@@ -194,29 +194,98 @@ case "$cmd" in
         # 2. 冻结 hostname + utc 到 prefix 文件；wrap.sh sync/done 第一次发业务评论时自动 prefix
         # 到顶部并消费，避免 claim 时刻额外刷一条独立留痕评论。
         # 优先 ComputerName(用户自定义显示名)，回落 hostname -s 短名，最后 hostname；避免 mac 默认带 .local 后缀
+        # JARVIS_SELF_HOST 覆盖(多机分布式统一标识/测试注入)；不设=现状 scutil 链。
         utcnow=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-        host=$(scutil --get ComputerName 2>/dev/null || hostname -s 2>/dev/null || hostname)
+        host="${JARVIS_SELF_HOST:-$(scutil --get ComputerName 2>/dev/null || hostname -s 2>/dev/null || hostname)}"
         mkdir -p "$myday_dir"
         printf 'jarvis-claim %s %s' "$host" "$utcnow" > "$(_claim_prefix_path "$workitem_id")"
 
         # 3. Readback via POINT-READ (workitem get), retries for a small safety margin.
-        # Concurrency semantics: the point-read confirms *our own* write landed; it does
-        # NOT arbitrate a true race — two instances claiming near-simultaneously will both
-        # see jarvis-claimed and both exit 0 here. Mutual exclusion still rests on the
-        # ledger + reconcile stale/drift sweep (unchanged; not a regression vs the old
-        # list-based readback, which likewise could not distinguish owners — it only added
-        # a deterministic false-negative from search-index lag).
+        # The point-read confirms *our own* write landed; by itself it does NOT arbitrate a
+        # true race — two instances claiming near-simultaneously both see jarvis-claimed.
+        # When JARVIS_CLAIM_SETTLE>0 a cross-machine arbitration round (step 4) breaks the
+        # tie via the reconcile timestamp範式; when it's 0 (default) behavior is unchanged
+        # and mutual exclusion still rests on the ledger + reconcile stale/drift sweep.
+        claimed_ok=""
         for _ in 1 2 3; do
             if _csv_contains "$(_get_tags "$workitem_id" 2>/dev/null || echo "")" "$CLAIM_TAG"; then
-                echo "claim.sh: claimed workitem $workitem_id in project $project_id"
-                _ledger_upsert "$workitem_id" false
-                exit 0
+                claimed_ok=1; break
             fi
             sleep "${JARVIS_CLAIM_READBACK_SLEEP:-2}"
         done
-        # 抢锁失败：清理本机 prefix 痕迹（不留给别人）
+        if [ -z "$claimed_ok" ]; then
+            # 抢锁失败：清理本机 prefix 痕迹（不留给别人）
+            rm -f "$(_claim_prefix_path "$workitem_id")"
+            echo "claim.sh: lost race for workitem $workitem_id (claimed tag not visible in point-read readback)" >&2
+            exit 1
+        fi
+
+        # 4. Cross-machine arbitration — ONLY when JARVIS_CLAIM_SETTLE>0. settle<=0 (default)
+        # keeps the historical point-read-only semantics: no comment write, no settle wait.
+        settle="${JARVIS_CLAIM_SETTLE:-0}"
+        if ! [ "$settle" -gt 0 ] 2>/dev/null; then
+            echo "claim.sh: claimed workitem $workitem_id in project $project_id"
+            _ledger_upsert "$workitem_id" false
+            exit 0
+        fi
+
+        # 4a. Write our claim comment. Format `jarvis-claim <host> <utc> <nonce>` keeps
+        # reconcile.sh's existing regex working (nonce trails the timestamp, non-breaking).
+        nonce="$(head -c8 /dev/urandom 2>/dev/null | od -An -tx1 2>/dev/null | tr -d ' \n' | cut -c1-8)"
+        [ -n "$nonce" ] || nonce="$(printf '%08x' $((RANDOM * RANDOM)))"
+        $A1 project workitem comment create "$workitem_id" -m "jarvis-claim $host $utcnow $nonce" >/dev/null 2>&1 \
+            || echo "claim.sh: warning: arbitration comment write failed for $workitem_id" >&2
+
+        # 4b. Settle window, then read the whole comment stream back.
+        sleep "$settle"
+        arb_comments="$($A1 project workitem comment list "$workitem_id" -f json 2>/dev/null || echo "[]")"
+
+        # 4c. Total order over (epoch, nonce); the earliest claim wins. Echo the winner host.
+        # Reuses the reconcile UTC→epoch idea (calendar.timegm) inline to avoid sourcing.
+        winner_host="$(printf '%s' "$arb_comments" | python3 -c "
+import json, sys, re, calendar, datetime
+def epoch(ts):
+    try:
+        return calendar.timegm(datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%SZ').timetuple())
+    except Exception:
+        return None
+pat = re.compile(r'jarvis-claim\s+(\S+)\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\s+(\S+)')
+try:
+    cs = json.loads(sys.stdin.read())
+except Exception:
+    cs = []
+cands = []
+for c in cs:
+    content = c.get('content', '') if isinstance(c, dict) else ''
+    m = pat.search(content)
+    if not m:
+        continue
+    e = epoch(m.group(2))
+    if e is None:
+        continue
+    cands.append((e, m.group(3), m.group(1)))   # (epoch, nonce, host)
+if cands:
+    cands.sort(key=lambda x: (x[0], x[1]))
+    print(cands[0][2])
+" 2>/dev/null || echo "")"
+
+        # 4d. Verdict. Empty (only our own comment / parse miss) or winner==self → we win.
+        # Otherwise an earlier claim from another host exists → stand down and roll back.
+        if [ -z "$winner_host" ] || [ "$winner_host" = "$host" ]; then
+            echo "claim.sh: claimed workitem $workitem_id in project $project_id (arbitration won)"
+            _ledger_upsert "$workitem_id" false
+            exit 0
+        fi
+
+        # Lost arbitration: an earlier claim from another host won. Do NOT touch the shared
+        # tag set — the winner legitimately holds jarvis-claimed, and Aone `--tag` is a
+        # whole-set replace with no per-owner identity, so writing idle here would CLOBBER
+        # the winner's claim (and the winner, having already exited 0, would never restore
+        # it). Our own step-1 claimed write is idempotent with the winner's (same tag name),
+        # so leaving the tag set as-is is correct. Just drop our local prefix and stand down;
+        # we never ledger-upserted, so there is nothing local to release.
         rm -f "$(_claim_prefix_path "$workitem_id")"
-        echo "claim.sh: lost race for workitem $workitem_id (claimed tag not visible in point-read readback)" >&2
+        echo "claim.sh: lost arbitration for workitem $workitem_id to host '$winner_host' (earlier claim); standing down, winner keeps $CLAIM_TAG" >&2
         exit 1
         ;;
 
