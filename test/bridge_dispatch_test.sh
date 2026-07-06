@@ -619,6 +619,79 @@ class BoardProbeMergeTest(unittest.TestCase):
             b.subprocess.run = orig
 
 
+class CompletionBroadcastTest(unittest.TestCase):
+    """_completion_broadcast: headless 完成播报按最终 tag 区分状态 + 附可点击 Aone 链接。
+    绝不真发 a1 —— 全部 monkeypatch b.subprocess.run；非数字 id / 查询失败 → 回退纯文本。"""
+
+    @staticmethod
+    def _workitem_json(tag_display, title="支持 X 参数", project="1086837", priority="高"):
+        return json.dumps({
+            "id": "83884678",
+            "title": title,
+            "url": "https://project.aone.alibaba-inc.com/v2/project/%s/req/83884678" % project,
+            "fields": [
+                {"identifier": "status", "value": "155741", "displayValue": "问题解决中"},
+                {"identifier": "priority", "value": "95", "displayValue": priority},
+                {"identifier": "space", "value": project, "displayValue": "Terraform - 客户问题"},
+                {"identifier": "tag", "value": "568724", "displayValue": tag_display},
+            ],
+        })
+
+    def _fake_run(self, rc, stdout, stderr=""):
+        class R:
+            returncode = rc
+        R.stdout = stdout
+        R.stderr = stderr
+        return lambda *a, **k: R()
+
+    def _broadcast(self, item_id, run_fn):
+        orig = b.subprocess.run
+        b.subprocess.run = run_fn
+        try:
+            return b.JarvisHandler._completion_broadcast(None, item_id)
+        finally:
+            b.subprocess.run = orig
+
+    def test_done_tag_has_prefix_link_title_priority(self):
+        msg = self._broadcast("83884678", self._fake_run(0, self._workitem_json("jarvis-done")))
+        self.assertIn("✅ 工单处理完成", msg)
+        self.assertIn(
+            "[#83884678](https://project.aone.alibaba-inc.com/v2/project/1086837/req/83884678)", msg)
+        self.assertIn("支持 X 参数", msg)
+        self.assertIn("[高]", msg)
+
+    def test_idle_tag_pending_human(self):
+        msg = self._broadcast("83884678", self._fake_run(0, self._workitem_json("jarvis-idle")))
+        self.assertIn("⏸️ 工单阶段完成·待人工接手", msg)
+        self.assertIn(
+            "[#83884678](https://project.aone.alibaba-inc.com/v2/project/1086837/req/83884678)", msg)
+
+    def test_claimed_tag_unfinished(self):
+        msg = self._broadcast("83884678", self._fake_run(0, self._workitem_json("jarvis-claimed")))
+        self.assertIn("⚠️", msg)
+        self.assertIn("未收尾", msg)
+
+    def test_non_numeric_id_fallback_without_a1(self):
+        called = [0]
+
+        def spy(*a, **k):
+            called[0] += 1
+            raise AssertionError("a1 must not be called for non-numeric id")
+        msg = self._broadcast("probe-2026-07-06", spy)
+        self.assertEqual(called[0], 0, "非数字 id 不得调用 a1")
+        self.assertIn("✅ 任务 #probe-2026-07-06 处理完成", msg)
+
+    def test_query_nonzero_rc_fallback(self):
+        msg = self._broadcast("83884678", self._fake_run(1, "", "boom"))
+        self.assertEqual(msg, "✅ 工单 #83884678 处理完成（headless）")
+
+    def test_query_exception_fallback(self):
+        def boom(*a, **k):
+            raise RuntimeError("network down")
+        msg = self._broadcast("83884678", boom)
+        self.assertEqual(msg, "✅ 工单 #83884678 处理完成（headless）")
+
+
 def _run():
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
