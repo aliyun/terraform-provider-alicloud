@@ -34,9 +34,14 @@ Env:
   --- F2 池调度 dispatcher (scan 自动派发 + probe/revisit 每日轮) ---
   JARVIS_AUTO_DISPATCH                     1=scan 发现新工单直接并发派发 headless jarvis (默认);
                                            0=回退授权前置模式 (钉钉「处理 #id / 全部处理」才派发).
-                                           冷启动(bridge 重启后首个 tick): auto 模式照常消化合格积压单
-                                           (靠 tag skip + DispatchPool 去重台账, 不靠 diff, 受并发上限约束);
-                                           回退模式首个 tick 只建 _prev_ids 基线、不推通知(fc2a7ea).
+                                           冷启动(bridge 重启后首个 tick, 两种模式一致): 只建 _prev
+                                           基线、派发/通知一律为空——重启绝不重复消化存量积压。
+  JARVIS_BACKLOG_DRAIN                     1=空闲机会式消化积压 (默认); 0=纯新单派发(现状回退).
+                                           仅 auto 模式生效: 无新单/更新单且池有空闲运行槽的 tick,
+                                           按 优先级→建单时间 涓流派发「从未被 jarvis 碰过的积压单」
+                                           (在范围+非终态+无 jarvis 标签) 填满空闲槽。新单永远优先
+                                           (free_slots>0 蕴含队列空, 积压绝不排在未来新单前); 冷启动
+                                           那轮不消化; 24h 去重台账 + claim 打标防重派。
   JARVIS_DISPATCH_MAX                      max concurrent headless dispatch workers (default 2).
   JARVIS_DISPATCH_QUEUE_MAX                pending queue depth beyond the concurrency cap
                                            before new dispatches are dropped (default 20).
@@ -287,6 +292,16 @@ def _tagset(item):
     if isinstance(t, str):
         return {s.strip() for s in t.split(",") if s.strip()}
     return set()
+
+
+# Aone workitem priority displayValue（scan.sh 的 --columns priority 直出中文枚举）。
+_PRIORITY_RANK = {"紧急": 0, "高": 1, "中": 2, "低": 3}
+
+
+def _priority_rank(priority):
+    """backlog 排序键：优先级高者 rank 小、未知/空值置末(9)。仅影响空闲槽 < 积压单数时先派谁，
+    不影响正确性——degrade 到未知全 9、按 created 决胜也可接受。"""
+    return _PRIORITY_RANK.get(str(priority or "").strip(), 9)
 
 
 def _ticket_prompt(item_id, title, pool_key, pool_project):
@@ -625,6 +640,14 @@ class ScanScheduler:
     · fallback (=0): the legacy authorization-front behaviour — new items land in
       ``pending`` awaiting "处理 #ID" / "全部处理" before dispatch.
 
+    Backlog drain (``JARVIS_BACKLOG_DRAIN``, default on, auto mode only): on a tick that
+    has NO new / externally-updated items and the pool has free running slots, it trickle-
+    dispatches "backlog" tickets jarvis has never touched (in-scope + non-terminal + no
+    jarvis-* tag), ordered by 优先级→建单时间, until the free slots fill. New items always
+    win — this only fires on a no-new tick, and free_slots>0 implies an empty queue, so a
+    backlog ticket can never be queued ahead of a future new one. The cold-start tick seeds
+    the baseline and drains nothing (a restart never storm-consumes the standing backlog).
+
     Runs as a daemon thread; errors are logged and skipped, never crash the bridge.
     """
 
@@ -650,6 +673,9 @@ class ScanScheduler:
         self.dispatch_pools = {p.strip() for p in
                                os.environ.get("JARVIS_DISPATCH_POOLS", "").split(",") if p.strip()}
         self.dispatch_created_before = os.environ.get("JARVIS_DISPATCH_CREATED_BEFORE", "").strip()
+        # 空闲机会式消化积压(默认开)：无新单/更新单且池有空闲运行槽的 tick，涓流派发从未被
+        # jarvis 碰过的积压单填满空闲槽；新单永远优先。JARVIS_BACKLOG_DRAIN=0 恢复纯新单派发。
+        self.backlog_drain = os.environ.get("JARVIS_BACKLOG_DRAIN", "1") != "0"
 
     def _load_human_operators(self):
         """从 config/contacts.json 动态加载人类操作者白名单(name+flower+id)。
@@ -885,6 +911,13 @@ class ScanScheduler:
         new_items = [cur_snapshot[iid] for iid in new_ids if iid in cur_snapshot]
         updated_items = {iid: cur_snapshot[iid] for iid in updated_ids if iid in cur_snapshot}
         if not new_items and not updated_items:
+            # 无新单/更新单 → 机会式消化积压(仅 auto + 开关开; cold-start 已在上方早退，不会走到
+            # 这里，故重启不会瞬间消化积压，只随后续空闲 tick 逐步 free_slots 个一批地涓流)。
+            if self.auto and self.backlog_drain:
+                try:
+                    self._tick_backlog(cur_snapshot)
+                except Exception:  # noqa: BLE001 — 消化积压失败绝不能拖垮 scan tick
+                    log.exception("backlog drain tick failed")
             return
 
         if self.auto:
@@ -978,6 +1011,60 @@ class ScanScheduler:
             self.handler._quick_card(self.notify_target, text, "group")
         except Exception:  # noqa: BLE001
             log.exception("ScanScheduler failed to push notification card")
+
+    # -- backlog drain (idle-only opportunistic) -----------------------------
+
+    def _is_backlog(self, it):
+        """积压单 = 从未被 jarvis 处理过且可派发：在灰度范围 + 非终态 + 无任何 jarvis 标签。
+        带 jarvis-claimed/idle/done 标签的另有归属(在跑 / 等每日 Revisit / 已完成)，不属积压。"""
+        if not self._in_scope(it):
+            return False
+        if str(it.get("status", "")).strip() in TERMINAL_STATUSES:
+            return False
+        if _tagset(it) & {"jarvis-claimed", "jarvis-idle", "jarvis-done"}:
+            return False
+        return True
+
+    def _tick_backlog(self, snapshot):
+        """空闲机会式消化积压(JARVIS_BACKLOG_DRAIN)。仅由 _tick 在「本轮无新单/更新单」分支调用，
+        且池有空闲运行槽时才派。从既有快照挑 _is_backlog 的工单，按 优先级→建单时间(旧单先) 排序，
+        填满空闲槽。走 _dispatch→pool.submit，24h 去重台账照常生效(派出即记账 + headless 实例 claim
+        打标，下轮 _is_backlog 自然过滤)。
+        新单优先由结构保证：本方法只在无新单 tick 触发，free_slots>0 蕴含队列空，积压单绝不排在
+        未来新单前面；一旦某轮有新单，新单当轮直接派，积压单让路等下一个空闲 tick。"""
+        if self.pool is None:
+            return
+        free = self.pool.free_slots()
+        if free <= 0:
+            return
+        backlog = [it for it in snapshot.values() if self._is_backlog(it)]
+        if not backlog:
+            return
+        backlog.sort(key=lambda it: (_priority_rank(it.get("priority", "")),
+                                     str(it.get("created", ""))))
+        dispatched = []
+        for it in backlog[:free]:
+            ok, reason = self._dispatch(it, force=False)
+            if ok:
+                dispatched.append(it)
+                log.info("backlog drain: dispatched #%s %s",
+                         it.get("id"), str(it.get("title", ""))[:80])
+            else:
+                log.info("backlog drain: skip #%s (%s)", it.get("id"), reason)
+        # 播报（对齐 _tick_auto 的 dispatched 播报风格；handler 为 None 时跳过，供 dry-run/单测）。
+        if dispatched and self.handler:
+            aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
+            lines = ["**🫧 空闲消化积压 %d 条 (headless)**\n" % len(dispatched)]
+            for it in dispatched:
+                proj = it.get("pool_project", "")
+                iid = str(it.get("id", ""))
+                idl = ("[#%s](%s)" % (iid, aone_url % (proj, iid))) if proj else ("#%s" % iid)
+                pri = it.get("priority", "")
+                lines.append("- %s %s%s" % (idl, it.get("title", ""), (" [%s]" % pri) if pri else ""))
+            try:
+                self.handler._broadcast("\n".join(lines))
+            except Exception:  # noqa: BLE001
+                log.exception("backlog drain broadcast failed")
 
 
 class ReconcileScheduler:
@@ -1325,6 +1412,13 @@ class DispatchPool:
     def active_count(self):
         with self._lock:
             return len(self._active)
+
+    def free_slots(self):
+        """空闲运行槽 = max_workers - 在飞任务数(含排队)。返回 >0 蕴含队列必为空
+        (在飞数 < 并发上限时不可能有排队)，故 backlog drain 用它可保证只填真正空闲的
+        运行槽、绝不把积压单排到未来新单前面。"""
+        with self._lock:
+            return max(0, self.max_workers - len(self._active))
 
     # -- submit ---------------------------------------------------------------
 
@@ -2060,6 +2154,30 @@ def run_dry_once():
             fmark = " (force)" if d.get("force") else ""
             print("  [%s] #%s %s — %s%s"
                   % (mark, d["id"], (d["title"] or "")[:60], d["reason"], fmark))
+
+    print("\n--- BACKLOG DRAIN (idle-only) ---")
+    # dry-run 是一次性扫描、无 prev-snapshot diff，这里只展示「假如本轮无新单/更新单」时会被空闲
+    # 消化的积压候选(只读, 绝不 submit)。live 仅在无新单 tick 且开关开时才真派(填满空闲运行槽)。
+    free = pool.free_slots()
+    print("  backlog_drain=%s  free_slots=%d/%d" % (scanner.backlog_drain, free, pool.max_workers))
+    if not scanner.backlog_drain:
+        print("  (JARVIS_BACKLOG_DRAIN=0 → disabled, pure new-item dispatch)")
+    elif items is None:
+        print("  (scan.sh failed — no snapshot)")
+    else:
+        backlog = [it for it in items if scanner._is_backlog(it)]
+        backlog.sort(key=lambda it: (_priority_rank(it.get("priority", "")),
+                                     str(it.get("created", ""))))
+        if not backlog:
+            print("  (no untouched backlog in the current snapshot)")
+        elif free <= 0:
+            print("  %d backlog candidate(s) but no free slot this tick" % len(backlog))
+        else:
+            print("  would drain up to %d (free slots) of %d candidate(s):" % (free, len(backlog)))
+            for it in backlog[:free]:
+                pri = it.get("priority", "")
+                print("  [DRAIN] #%s %s%s"
+                      % (it.get("id"), (it.get("title") or "")[:60], (" [%s]" % pri) if pri else ""))
 
     print("\n--- REVISIT CANDIDATES (jarvis-idle) ---")
     reviser = RevisitScheduler(handler=None, pool=pool)

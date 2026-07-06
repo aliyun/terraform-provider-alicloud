@@ -34,7 +34,8 @@ sys.path.insert(0, os.environ["BRIDGE_DIR"])
 # Neutralize env so defaults are exercised deterministically.
 for k in ("JARVIS_AUTO_DISPATCH", "JARVIS_DISPATCH_MAX", "JARVIS_DISPATCH_QUEUE_MAX",
           "JARVIS_DISPATCH_DEDUP_TTL", "JARVIS_PROBE_SCHED", "JARVIS_PROBE_HOUR",
-          "JARVIS_REVISIT_SCHED", "JARVIS_REVISIT_HOUR", "JARVIS_REVISIT_MAX"):
+          "JARVIS_REVISIT_SCHED", "JARVIS_REVISIT_HOUR", "JARVIS_REVISIT_MAX",
+          "JARVIS_BACKLOG_DRAIN"):
     os.environ.pop(k, None)
 
 import jarvis_dingtalk_bot as b
@@ -755,6 +756,224 @@ class CompletionBroadcastTest(unittest.TestCase):
             raise RuntimeError("network down")
         msg = self._broadcast("83884678", boom)
         self.assertEqual(msg, "✅ 工单 #83884678 处理完成（headless）")
+
+
+class FreeSlotsTest(unittest.TestCase):
+    """DispatchPool.free_slots() = max_workers - 在飞任务数(含排队)，clamp 到 >=0。
+    free_slots>0 蕴含队列必空(在飞数<并发上限时不可能排队)——backlog drain 的核心不变量:
+    只填真正空闲的运行槽，绝不把积压单排到未来新单前面。"""
+
+    def test_free_slots_tracks_active(self):
+        tmp = tempfile.mkdtemp()
+        pool = b.DispatchPool(max_workers=2, queue_max=5, ledger_path=_ledger(tmp))
+        self.assertEqual(pool.free_slots(), 2, "empty pool = max_workers free")
+        pool._active["a"] = {"started": time.time()}
+        self.assertEqual(pool.free_slots(), 1, "one in flight = max_workers-1")
+        pool._active["b"] = {"started": time.time()}
+        self.assertEqual(pool.free_slots(), 0, "at concurrency cap = 0 free")
+        pool._active["c"] = {"started": time.time()}  # queued beyond max_workers
+        self.assertEqual(pool.free_slots(), 0, "overfull (queued) clamps to 0, never negative")
+
+
+class PriorityRankTest(unittest.TestCase):
+    """_priority_rank: 紧急<高<中<低，未知/空值排最后(9)——只影响空闲槽<积压单数时先派谁。"""
+
+    def test_known_ranks_strictly_ordered(self):
+        self.assertLess(b._priority_rank("紧急"), b._priority_rank("高"))
+        self.assertLess(b._priority_rank("高"), b._priority_rank("中"))
+        self.assertLess(b._priority_rank("中"), b._priority_rank("低"))
+
+    def test_unknown_and_blank_rank_last(self):
+        self.assertEqual(b._priority_rank(""), 9)
+        self.assertEqual(b._priority_rank(None), 9)
+        self.assertGreater(b._priority_rank("P0"), b._priority_rank("低"))
+        self.assertGreater(b._priority_rank("whatever"), b._priority_rank("低"))
+
+    def test_whitespace_tolerated(self):
+        self.assertEqual(b._priority_rank(" 高 "), b._priority_rank("高"))
+
+
+class BacklogDrainTest(unittest.TestCase):
+    """空闲机会式消化积压(JARVIS_BACKLOG_DRAIN): 仅 auto+开关开、无新单/更新单、池有空闲运行槽
+    的 tick 才涓流派发从未被 jarvis 碰过的积压单；新单永远优先；冷启动那轮不消化。"""
+
+    def _scanner(self, max_workers=2):
+        tmp = tempfile.mkdtemp()
+        pool = b.DispatchPool(max_workers=max_workers, dedup_ttl=86400, ledger_path=_ledger(tmp))
+        sc = b.ScanScheduler(handler=None, pool=pool)
+        sc.auto = True
+        sc.backlog_drain = True
+        sc.dispatch_pools = set()          # 解除灰度范围默认(mock item 无 pool/created)
+        sc.dispatch_created_before = ""
+        sc._human_touched = lambda iid: False
+        return sc, pool
+
+    def _capture_dispatch(self, sc):
+        """替换 _dispatch 记录 (id, force)，不真起 pool/claude；返回记录列表。"""
+        got = []
+        sc._dispatch = lambda it, force=False: (
+            got.append((str(it.get("id")), force)) or (True, "ok"))
+        return got
+
+    def test_idle_tick_drains_untouched_backlog(self):
+        sc, _pool = self._scanner()
+        got = self._capture_dispatch(sc)
+        item = {"id": "bk", "title": "backlog one", "tag": []}
+        sc._scan = lambda: [item]
+        sc._tick()   # cold → seed baseline only
+        self.assertEqual(got, [], "cold tick drains nothing")
+        sc._tick()   # no new/updated + free slot → drain
+        self.assertEqual(got, [("bk", False)], "idle tick drains the untouched backlog item")
+
+    def test_new_item_tick_skips_drain(self):
+        # 同一轮既有新单又有积压候选 → 只派新单，积压本轮不派(新单优先)。
+        sc, _pool = self._scanner()
+        auto_calls, drain_calls = [], []
+        sc._tick_auto = lambda ni, ui=None: auto_calls.append({str(i["id"]) for i in ni})
+        sc._tick_backlog = lambda snap: drain_calls.append(set(snap))
+        backlog = {"id": "bk", "title": "old backlog", "tag": []}
+        sc._scan = lambda: [backlog]
+        sc._tick()   # cold seed {bk}
+        sc._scan = lambda: [backlog, {"id": "nw", "title": "new", "tag": []}]
+        sc._tick()   # nw is new → auto path, drain must NOT run
+        self.assertEqual(auto_calls, [{"nw"}], "only the new item flows to auto dispatch")
+        self.assertEqual(drain_calls, [], "a tick with new items must not run backlog drain")
+
+    def test_full_pool_no_drain(self):
+        sc, pool = self._scanner(max_workers=2)
+        got = self._capture_dispatch(sc)
+        pool._active = {"busy1": {"started": time.time()}, "busy2": {"started": time.time()}}
+        sc._scan = lambda: [{"id": "bk", "title": "backlog", "tag": []}]
+        sc._tick()   # cold seed
+        sc._tick()   # idle tick but free_slots==0 → no drain
+        self.assertEqual(got, [], "no free running slot → backlog not drained")
+
+    def test_queued_pool_no_drain(self):
+        # 3 在飞 with max_workers=2 → 有排队；free_slots=max(0,2-3)=0 → 不消化。
+        sc, pool = self._scanner(max_workers=2)
+        got = self._capture_dispatch(sc)
+        pool._active = {"a": {}, "b": {}, "c": {}}
+        sc._scan = lambda: [{"id": "bk", "title": "backlog", "tag": []}]
+        sc._tick(); sc._tick()
+        self.assertEqual(pool.free_slots(), 0, "queue non-empty ⇒ free_slots 0")
+        self.assertEqual(got, [], "queued jobs mean no free slot → never queue backlog ahead of new")
+
+    def test_cold_start_no_drain(self):
+        sc, _pool = self._scanner()
+        drain_calls, auto_calls = [], []
+        sc._tick_backlog = lambda snap: drain_calls.append(1)
+        sc._tick_auto = lambda ni, ui=None: auto_calls.append(1)
+        sc._scan = lambda: [{"id": "bk", "title": "backlog", "tag": []}]
+        self.assertTrue(sc._cold)
+        sc._tick()   # cold tick
+        self.assertFalse(sc._cold)
+        self.assertEqual(drain_calls, [], "cold start must not drain backlog (restart no-storm)")
+        self.assertEqual(auto_calls, [], "cold start dispatches nothing")
+        self.assertEqual(set(sc._prev_snapshot), {"bk"}, "cold start seeds baseline")
+
+    def test_drain_respects_dedup_ledger(self):
+        # 真 submit + FakeHandler: 消化过一条后同快照再 tick，被去重台账/active 拦下不重复派。
+        tmp = tempfile.mkdtemp()
+        pool = b.DispatchPool(max_workers=2, dedup_ttl=86400, ledger_path=_ledger(tmp))
+
+        class FakeHandler:
+            def _broadcast(self, text):
+                pass
+
+            def dispatch_item(self, *a, **k):
+                return "ok"
+
+        sc = b.ScanScheduler(handler=FakeHandler(), pool=pool)
+        sc.auto = True
+        sc.backlog_drain = True
+        sc.dispatch_pools = set()
+        sc.dispatch_created_before = ""
+        sc._human_touched = lambda iid: False
+
+        submits = []
+        real_submit = pool.submit
+
+        def spy(iid, work, **k):
+            r = real_submit(iid, work, **k)
+            submits.append((str(iid), r[0]))
+            return r
+        pool.submit = spy
+
+        item = {"id": "bk", "title": "backlog", "tag": [],
+                "pool": "tf_provider", "pool_project": "528766"}
+        sc._scan = lambda: [item]
+        sc._tick()   # cold seed
+        sc._tick()   # drain #1 → bk dispatched, ledger records it
+        sc._tick()   # drain #2 → bk deduped/active, NOT re-dispatched
+        pool.shutdown(wait=True)
+
+        bk = [ok for iid, ok in submits if iid == "bk"]
+        self.assertEqual(bk, [True, False],
+                         "first drain dispatches bk; second rejected by dedup ledger/active")
+        self.assertIn("bk", pool._ledger, "dispatched backlog id recorded in dedup ledger")
+
+    def test_is_backlog_filters_tags_terminal_scope(self):
+        sc, _pool = self._scanner()
+        self.assertTrue(sc._is_backlog({"id": "1", "tag": []}), "clean untouched ticket = backlog")
+        self.assertFalse(sc._is_backlog({"id": "2", "tag": ["jarvis-claimed"]}), "claimed ≠ backlog")
+        self.assertFalse(sc._is_backlog({"id": "3", "tag": ["jarvis-idle"]}), "idle ≠ backlog")
+        self.assertFalse(sc._is_backlog({"id": "4", "tag": ["jarvis-done"]}), "done ≠ backlog")
+        self.assertFalse(sc._is_backlog({"id": "5", "tag": [], "status": "已发布"}), "terminal ≠ backlog")
+        sc.dispatch_pools = {"tf_provider"}   # 收窄灰度范围
+        self.assertTrue(sc._is_backlog({"id": "6", "tag": [], "pool": "tf_provider"}))
+        self.assertFalse(sc._is_backlog({"id": "7", "tag": [], "pool": "tf_customer"}), "out of scope ≠ backlog")
+
+    def test_drain_only_picks_backlog_from_mixed_snapshot(self):
+        sc, _pool = self._scanner()
+        got = self._capture_dispatch(sc)
+        snapshot = [
+            {"id": "clean", "title": "clean", "tag": []},
+            {"id": "clm", "title": "claimed", "tag": ["jarvis-claimed"]},
+            {"id": "idl", "title": "idle", "tag": ["jarvis-idle"]},
+            {"id": "dn", "title": "done", "tag": ["jarvis-done"]},
+            {"id": "term", "title": "released", "tag": [], "status": "已发布"},
+        ]
+        sc._scan = lambda: snapshot
+        sc._tick()   # cold seed
+        sc._tick()   # drain
+        self.assertEqual([iid for iid, _ in got], ["clean"],
+                         "only the untagged non-terminal in-scope item is drained")
+
+    def test_switch_off_restores_pure_new_behavior(self):
+        sc, _pool = self._scanner()
+        sc.backlog_drain = False
+        drain_calls = []
+        sc._tick_backlog = lambda snap: drain_calls.append(1)
+        got = self._capture_dispatch(sc)
+        sc._scan = lambda: [{"id": "bk", "title": "backlog", "tag": []}]
+        sc._tick()   # cold seed
+        sc._tick()   # idle tick, but drain disabled
+        self.assertEqual(drain_calls, [], "JARVIS_BACKLOG_DRAIN off → _tick_backlog never called")
+        self.assertEqual(got, [], "switch off → an idle tick dispatches nothing (old behavior)")
+
+    def test_drain_sorts_priority_high_first(self):
+        # free=1, 两条不同优先级 → 先派高优先级(低优先级列在前证明 sort 生效)。
+        sc, _pool = self._scanner(max_workers=1)
+        got = self._capture_dispatch(sc)
+        items = [
+            {"id": "lo", "title": "low", "tag": [], "priority": "低", "created": "2026-07-01 09:00"},
+            {"id": "hi", "title": "high", "tag": [], "priority": "高", "created": "2026-07-05 09:00"},
+        ]
+        sc._scan = lambda: items
+        sc._tick(); sc._tick()
+        self.assertEqual([iid for iid, _ in got], ["hi"], "free_slots=1 → higher priority drained first")
+
+    def test_drain_created_tiebreak_older_first(self):
+        # 同优先级 → 先派 created 更早的(旧单先)。
+        sc, _pool = self._scanner(max_workers=1)
+        got = self._capture_dispatch(sc)
+        items = [
+            {"id": "newer", "title": "n", "tag": [], "priority": "中", "created": "2026-07-05 09:00"},
+            {"id": "older", "title": "o", "tag": [], "priority": "中", "created": "2026-07-01 09:00"},
+        ]
+        sc._scan = lambda: items
+        sc._tick(); sc._tick()
+        self.assertEqual([iid for iid, _ in got], ["older"], "same priority → earlier gmtCreate first")
 
 
 def _run():
