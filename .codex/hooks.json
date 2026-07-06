@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/bootstrap/wrap-check.sh\""
+            "command": "repo=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { echo \"stop-hook: cannot resolve repo root from cwd=$PWD\" >&2; exit 127; }; bash \"$repo/bootstrap/run-stop-hook.sh\""
           }
         ]
       }
