@@ -169,6 +169,20 @@ else
     ((fail_count++))
 fi
 
+# Check project Codex Stop hook is not Claude-runtime-only. It must call the
+# shared repo-local wrapper and avoid expanding an empty CLAUDE_PROJECT_DIR to
+# /bootstrap/wrap-check.sh.
+codex_hooks_file="$(git rev-parse --show-toplevel)/.codex/hooks.json"
+codex_stop_cmd="$(jq -r '.hooks.Stop[0].hooks[0].command // ""' "$codex_hooks_file" 2>/dev/null || true)"
+if [ -f "$codex_hooks_file" ] \
+    && printf '%s' "$codex_stop_cmd" | grep -q 'bootstrap/run-stop-hook.sh' \
+    && ! printf '%s' "$codex_stop_cmd" | grep -q 'CLAUDE_PROJECT_DIR'; then
+    echo "PASS codex hooks.Stop"
+else
+    echo "FAIL codex hooks.Stop"
+    ((fail_count++))
+fi
+
 # Check the 3 agent definition files exist (主会话即总领，不单设 jarvis 子代理)
 for agent in developer reviewer verifier; do
     agent_file="${repo_root}/.claude/agents/${agent}.md"
