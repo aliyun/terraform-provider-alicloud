@@ -16,6 +16,8 @@ For information about Polar Db Account and how to use it, see [What is Account](
 
 -> **NOTE:** Available since v1.67.0.
 
+-> **NOTE:** The DynamoDB type account does not support deletion. When destroying the Terraform resource, the DynamoDB account will be removed from state but not deleted from the cloud.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -90,6 +92,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<account_name>`.
 * `status` - (Available since v1.265.0) The status of the database account.
+* `dynamodb_auth_password` - (Sensitive, Available since v1.285.0) The DynamoDB authentication password. Only available for DynamoDB account type.
 
 ## Timeouts
 
