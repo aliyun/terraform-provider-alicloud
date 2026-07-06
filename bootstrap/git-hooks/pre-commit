@@ -26,10 +26,13 @@ while IFS= read -r f; do
 done <<< "$mirror_staged"
 [ "${#files[@]}" -eq 0 ] && exit 0
 
-# CLAUDE.md staged 时自动从 CLAUDE.md sync 一次 AGENTS.md 到 disk(P6.a:AGENTS.md
-# gitignored,不入 index;若外部编辑器改 CLAUDE.md 未触发 PostToolUse hook,这里兜底)。
+# CLAUDE.md staged 时自动从 CLAUDE.md 重生成 AGENTS.md 并 git add 进本次提交:
+# AGENTS.md 已入库跟踪,内容 = mirror_sed_claude_to_codex(CLAUDE.md)。CLAUDE.md 是唯一
+# 真源——外部编辑器/Bash 改 CLAUDE.md 未触发 PostToolUse hook 时这里兜底重生成+入 index,
+# 根治「CLAUDE 改了、AGENTS 没跟上」的手工漂移(对齐 .claude/skills→.agents 镜像做法)。
 if printf '%s\n' "${files[@]}" | grep -qxF 'CLAUDE.md'; then
     bash "$repo_root/bootstrap/mirror.sh" to-codex "$repo_root/CLAUDE.md" >/dev/null 2>&1 || true
+    git -C "$repo_root" add -- "$repo_root/AGENTS.md" 2>/dev/null || true
 fi
 
 exec bash "$repo_root/bootstrap/mirror.sh" check "${files[@]}"

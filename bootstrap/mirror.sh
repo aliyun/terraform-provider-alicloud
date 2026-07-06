@@ -8,9 +8,9 @@
 #
 # sed 规则仍在 bootstrap/skills-mirror-lib.sh(source-only)。
 #
-# 注:P6.a 起 AGENTS.md 不 tracked(.gitignore),由 bootstrap/preflight.sh 兜底生成
-# + PostToolUse hook 实时 sync;check 依然能对齐 disk 上的 AGENTS.md(hook 主线保证),
-# 或首次 codex checkout 后跑 preflight 一次即可。
+# 注:AGENTS.md 已入库跟踪(内容 = mirror_sed_claude_to_codex(CLAUDE.md)),pre-commit
+# 钩子在 CLAUDE.md staged 时自动重生成+git add,PostToolUse 实时 sync + preflight 兜底;
+# check 对 CLAUDE.md↔AGENTS.md 双向配对校验 disk 一致性(round-trip 恒等,见 test)。
 #
 # 用法:
 #   mirror.sh to-codex <file>...    # Claude → Codex 单文件 sync(hook 场景)
@@ -119,6 +119,13 @@ _check_pair() {
     local direction="${mapping##* }"
 
     if [ ! -f "$dst" ]; then
+        # 通用:生成型 untracked 镜像目标(.gitignore 标注)缺失 ≠ drift——fresh worktree/
+        # codex 首检出尚未按需生成时本就没有该文件;存在才走下方 sed 比对 catch 真 drift。
+        # tracked 镜像(已入库的 AGENTS.md、.claude/.agents 双份 skills)缺失仍报 drift。
+        # AGENTS.md 现已入库跟踪、不再命中本跳过分支;分支保留通用性防未来新增生成型镜像回退。
+        if git -C "$jarvis_root" check-ignore -q "$dst" 2>/dev/null; then
+            return 0
+        fi
         echo "mirror-missing: $dst" >&2
         echo "  (expected mirror of $src)" >&2
         return 1

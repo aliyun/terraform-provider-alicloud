@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Ensure the alicloud provider repo is synced. Path is read from config/workspaces.json
-# (.workspaces.terraform_provider.path) — edit there to relocate. No repo -> clone;
+# Ensure the alicloud provider repo is synced. Path is resolved via
+# bootstrap/workspace.sh dir terraform_provider(base 配置不存绝对路径,
+# 本机覆盖走 workspaces.local.json / JARVIS_WORKSPACE_ROOT). No repo -> clone;
 # existing repo -> fetch + reset --hard FETCH_HEAD (强制对齐 upstream HEAD).
 #
 # workspace 定位:只读查证镜像。开发/评审改动必须走 worktree(CLAUDE.md 纪律 1);
@@ -8,9 +9,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG="$SCRIPT_DIR/../../../../config/workspaces.json"
-REPO_DIR="$(jq -r '.workspaces.terraform_provider.path' "$CONFIG")"
-REPO_DIR="${REPO_DIR/#\~/$HOME}"
+ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+REPO_DIR="$(bash "$ROOT/bootstrap/workspace.sh" dir terraform_provider)"
+if [ -z "$REPO_DIR" ] || [ "$REPO_DIR" = "null" ]; then
+  echo "[sync-provider] cannot resolve terraform_provider workspace dir (bootstrap/workspace.sh dir terraform_provider)" >&2
+  exit 1
+fi
 REMOTE="https://github.com/aliyun/terraform-provider-alicloud.git"
 
 if [ ! -d "$REPO_DIR/.git" ]; then
