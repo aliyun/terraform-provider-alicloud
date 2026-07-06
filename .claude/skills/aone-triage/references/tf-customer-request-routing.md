@@ -44,6 +44,9 @@
         │   关联单指派 临钧(429768)                                   │
         └─ 手写 → 关联单指派 过载(484483)                             │
         原单同步指派 + status=问题解决中 + @指派人                     │
+                                                                     │
+以上所有分支均未匹配的特殊情况(NPE 兜底)                              │
+→ 关联单指派 夏节(401498) + 打标签 jarvis-npe [分支 H,end]           │
 ```
 
 关联单一律建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。**例外:临钧路由(生成器产出)不由 jarvis `a1 workitem create` 手动建单**——走 acube `createBuildTaskV2` 接口,acube 内部自动建单+指派临钧+触发生成/PR 工作流,jarvis 只查回 aoneId 做关联,详见 Step 3。
@@ -311,6 +314,24 @@ bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 - 路由固定过载,**不受镇元 OK/NOT OK 影响**(不像分支 D/E 会因镇元结果分到不同人)
 - 过载的关联单 jarvis 直接 claim 跟进(与 D-过载手写分支一致的 bookend 流程)
 
+**分支 H · NPE 兜底(→ 夏节 401498 + 标签 `jarvis-npe`)**:适用于"以上所有分支均未命中"的兜底场景。典型触发:
+- 需求跨多个云产品无法拆解到单一负责人(如 EMR SparkServerless / StarRocksServerless / DLF 三块独立产品线,本团队无路径拆分)
+- 客户诉求超出 tf-alicloud 团队职责边界但不明确该转给谁
+- 分类/归属模糊,决策树各分支判定结果均为 N(不适用)
+- 决策依据不足以走前述任一分支,又不能直接分支 F 甩上游
+
+**落地脚本与分支 A/D-过载/E 一致**,只需以下微调:
+- `--assignee` 填 `401498`(夏节)
+- `--category` 一般填 `task`(视原单类型)
+- `--title` 注明"NPE 兜底/需二次分诊"字样,便于夏节识别
+- 源单 `--assignee 401498` + `--status 问题解决中` + **打标签 `jarvis-npe`**(而非 jarvis-idle/jarvis-claimed):
+  ```bash
+  bin/a1id -- project workitem tag add <源工单ID> jarvis-npe
+  ```
+- **不走镇元查证**(NPE 意味着诉求本身还没定位到具体资源/API 层),Step 2 可跳过,直接建单
+
+**为什么走夏节兜底**:夏节是团队分诊 owner,能横向拉云产品/评估拆解路径,能处理"路由决策树没覆盖到"的边缘场景。jarvis-npe 标签便于后续统计分诊决策树盲区,补齐路由规则。
+
 ### 分支 D-临钧(生成器产出):走 acube V2 接口,jarvis 不手动建单
 
 生成器产出资源交给 acube 的 `TerraformVendorBuildTaskOpenapiController#createBuildTaskV2` 接口——接口内部**自动**在 terraform-alicloud (528766) 建关联单、指派临钧(429768)、触发生成/PR 工作流,jarvis 只负责查回 aoneId 并做源单关联+指派。**严禁**同时走上面 `a1 workitem create` 手动建单流程,否则双单污染临钧队列。
@@ -488,3 +509,9 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ Step 3 执行路由前不扫评论区/状态 —— 查证+决策期间有时间窗口,原指派人(常被前线随机指派)可能已回帖修复/贴 PR/接手;不扫就转单会重复建关联单、让接手方收多余通知;参见工单 83861367 教训(新山在 jarvis 转单前 20 分钟已修并评论,jarvis 仍建单 @过载)
 - ❌ 仅文档改造的工单因镇元 NOT OK 就转给谜拟/新山 —— 文档改造路由固定过载(484483),镇元查证仍要走(确保文档与 schema/API 一致),但结果不影响指派对象
 - ❌ 缺陷类型工单沿用原单 `priority` 字段值 —— 缺陷(功能缺陷/线上问题/性能瓶颈)优先级一律覆写为"紧急",无视原单标记;覆写后影响镇元 NOT OK 分支路由(紧急→新山)及关联单 `--priority` 传值
+- ❌ 用 `head -1 | cut -f1` 或 `awk -F'\t' '{print $1}'` 解析 `a1 workitem create --quiet` 输出抓 NEW_ID —— `--quiet` 输出是**空格分隔**不是 tab(实测 `<id><空格><title><空格><status><空格><assignee>`),tab 分隔符抓到的是整行;NEW_ID 会带脏字符,后续 `relation add` / heredoc 里 `$NEW_ID:xxx` 全部污染。**正确写法**:`... --quiet | head -1 | awk '{print $1}'`(不带 -F,按空白拆);抓完打印 `echo "NEW_ID=[$NEW_ID]"` 用方括号包裹肉眼验证边界
+- ❌ 在 tf_provider(528766) 池建**缺陷(Bug/功能缺陷/线上问题)**类关联单不传 `--cfs "Terraform需求类型=..."` —— 该字段是 Bug 类型的必填(Req/Task 类型可选),漏传 a1 会 `400 【Terraform需求类型】不能为空`;bug 类关联单默认传 `--cfs "Terraform需求类型=运行时问题，TF问题"`(其他合法值:「有OpenAPI，资源未定义，开放平台维护/自主维护」「有OpenAPI，资源已定义，开放平台维护/自主维护」「云产品有功能无OpenAPI」「运行时问题，云产品API问题」「使用问题」「文档问题」「云产品无此功能」「其他（其他）」)。查枚举:`a1 project workitem field options "Terraform需求类型" --project 528766 --type 36`(36=功能缺陷)
+- ❌ `wrap.sh done <id> --summary-stdin <status> <<EOF ... EOF`(不带引号的 heredoc)里正文含反引号 code 块或 `$var:字母` —— shell 会展开 heredoc:反引号 `` `xxx` `` 被当命令替换执行(报 `command not found` 且被替换成空),`$NEW_ID:alicloud_xxx` 被 wrap.sh 前缀 pwd 拼成 `/path/to/jarvis/<id>licloud_xxx` 怪路径。**正确写法**二选一:(a) 用 `<<'EOF'`(带引号)阻止 shell 展开,但 `$NEW_ID` 也不展开,先 `envsubst` 或 sed 预替换;(b) 保留 unquoted heredoc 但正文里去掉反引号(用引号 `"xxx"` 代替 code)、`$NEW_ID` 后面接空格不接字母冒号(如写作 `关联单 ID = ${NEW_ID}`)。批量转单场景推荐:先把评论正文 sed 替换 NEW_ID 后写到 `/tmp/wrap-<id>.txt`,再走 `wrap.sh done <id> --summary-file /tmp/wrap-<id>.txt <status>`,彻底跳过 heredoc 展开风险
+- ❌ 用 `a1 project workitem tag add <id> <tag>` 加标签 —— 该子命令**不存在**(`a1 project workitem` 只有 activity/attachment/comment/create/delete/field/get/list/relation/type/update)。标签统一走 `update --tag "a,b,c"` **覆盖式**写入;`claim.sh` 已实现 point-read 现有 tag + 合并再写,但外挂标签(如 `jarvis-npe`)必须在 `claim.sh release` 之后单独补一次:`bin/a1id -- project workitem update <id> --tag "jarvis-idle,jarvis-npe"`(release 后 tag=jarvis-idle,覆盖式写完整列表保留)
+- ❌ **未复现客户报错就直接路由** —— 分诊模糊时直接甩 NPE 兜底/上游是**懒惰误诊**。**正确顺序**:先读 description 全文(尤其客户 tf 代码 + 完整报错栈的堆栈行号),按报错文件路径 grep provider 源码定位根因,再决定路由。参见工单 78365505 教训:凡修回复"找 SLS 同学"已明确 SLS 域(alicloud_sls_oss_export_sink 缺 404 ProjectNotExist retry,ActionTrail 后台 SLS project 异步就绪场景),jarvis 未读 tf 代码/报错栈就走 NPE 兜底转夏节,实际应走**分支 A 专属维护名单 → 豁朗(269032)**。**规则**:客户 tf 代码 + 完整报错栈齐备时,先做静态复现(source 定位根因)再路由;仅"canned 类咨询/无报错/跨多产品"才走 NPE
+- ❌ **「控制台 vs Terraform data source 结果不一致」类工单默认走分支 F 上游缺口** —— 或直接甩 NPE 兜底。大多数情况实际是 **provider 侧客户端多层过滤 + 客户配置差异**导致的表面不一致,**不是**上游 API 缺口。**判定路径 3 步**:① provider 调什么 API(grep `alicloud/data_source_alicloud_xxx.go` 定位实际 SDK Action,可能多个:主 API + 二次过滤 API + image 交集 API);② 控制台调什么 API(前端如 `ecs-buy.aliyun.com/api/...describeXxx.json` 通常是**公开 API 的内部聚合封装**,公开等价物是同族 OpenAPI,如 ecs-buy `describeAvailableInstanceTypes.json` ↔ 公开 `DescribeAvailableResource`);③ 过滤字段差异比对(常见 provider 侧额外客户端过滤:`image_id` 参数触发 `DescribeImageSupportInstanceTypes` 交集 / `spot_strategy` 传入即过滤 / `IoOptimized` 硬编码 `"optimized"` / `SoldOut` 强过滤,控制台前端通常不做这些)。**结论**:同族 API + provider 客户端过滤差异 = **分支 D-过载**(手写 data source 透明度改进:doc NOTE 补参数副作用 / 空集错误提示 / IoOptimized 类硬编码参数暴露);真正上游 API 缺口(公开 API 缺参数无法替代内部聚合)才走分支 F;绝不走 H NPE(场景明确、单一 data source、单一云产品域,不属"跨多产品无单一负责人/分类模糊")。参见工单 78274567 教训:客户主张"过滤条件都一样"是**误解**——provider 传的 `image_id="m-uf6..."` 触发 image 交集把 `ecs.u2i-c1m2.xlarge` 排除,ESS 控制台无 image 过滤所以能看到
