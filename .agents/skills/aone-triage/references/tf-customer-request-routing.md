@@ -30,24 +30,40 @@
 │         └─ Provider 侧适配 → 我们团队可复制路径 → 走下方镇元分支    │
 └─ NO (纯接入新资源 / 修 provider bug) ↓                             │
                                                                      │
+纯 datasource 问题?(诉求只涉 data.alicloud_xxx 查询/过滤/输出字段,    │
+  不涉资源 schema/生命周期;resource+datasource 混合不算"纯")          │
+├─ YES → 【与镇元不相关】——datasource 是 provider 侧对查询 API 的     │
+│   只读封装,镇元只管资源 schema,查镇元无意义;**跳过镇元查证**,       │
+│   直接走下方【与镇元不相关分流】                                     │
+└─ NO(资源类) ↓                                                       │
+                                                                     │
 镇元 OK? (三条件全满足才算 OK:                                        │
   ① API 在镇元已定义并发布                                            │
   ② 当前资源 schema 属性满足客户诉求(不缺字段)                        │
   ③ acube V2 覆盖度 CoverageScore == 1.0)                             │
-├─ NO (三条件任一不满足) ↓                                            │
-│     优先级=紧急 OR 距计划截止 < 14 天?                              │
-│     ├─ YES → 关联单指派 新山(521957)                                │
-│     └─ NO  → 关联单指派 谜拟(479782)                                │
-│     原单同步指派 + status=问题解决中 + @指派人                       │
-└─ YES → provider 代码类型:                                          │
-        ├─ 自动生成 (`This file is generated automatically`) →       │
-        │   关联单指派 临钧(429768)                                   │
-        └─ 手写 → 关联单指派 过载(484483)                             │
-        原单同步指派 + status=问题解决中 + @指派人                     │
+├─ NO (任一不满足) = 与镇元相关且镇元 NOT OK [分支 E] ↓               │
+│     关联单指派 谜拟(479782)——镇元侧根因主责,**无论紧急与否都建**    │
+│     再判紧急: 优先级=紧急 OR 距计划截止 < 14 天?                     │
+│     ├─ YES → **同时再建一张**关联单指派 新山(521957)——双单并行      │
+│     │        (谜拟修镇元侧根因,新山紧急兜底 provider 侧/加速)        │
+│     └─ NO  → 仅谜拟一张                                             │
+│     原单指派 谜拟 + status=问题解决中 + @谜拟(紧急时并 @新山)        │
+└─ YES = 镇元侧无问题、provider 侧存在问题 → 【与镇元不相关】↓        │
+                                                                     │
+【与镇元不相关分流】(纯 datasource 从上方直接进入):                    │
+├─ 资源类 且 provider 代码=自动生成                                    │
+│   (`This file is generated automatically`) →                       │
+│   关联单指派 临钧(429768) [D-临钧,acube 重跑生成器管道不变]         │
+└─ 其余(纯 datasource / 手写代码):                                    │
+    ├─ 紧急 → 关联单指派 新山(521957) [D-新山]                        │
+    └─ 不紧急 → 关联单指派 过载(484483) [D-过载]                      │
+    原单同步指派 + status=问题解决中 + @指派人                         │
                                                                      │
 以上所有分支均未匹配的特殊情况(NPE 兜底)                              │
 → 关联单指派 夏节(401498) + 打标签 jarvis-npe [分支 H,end]           │
 ```
+
+**「与镇元相关性」定义**(2026-07-06 路由重整的核心概念):以下两类为**与镇元不相关的问题**——① **纯 datasource 问题**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段),不涉资源 schema/生命周期。datasource 是 provider 侧对 List/Describe 类查询 API 的只读封装,镇元(Cloudspec)只管资源 schema,查镇元无意义(跳过镇元查证);resource+datasource 混合诉求不算"纯",按资源主线走。② **镇元侧无问题、provider 侧存在问题**:镇元 OK 三条件全满足,缺口在 provider 实现(bug/适配缺失/文档行为不符)。与镇元不相关的问题**不进谜拟**——紧急转新山(521957),不紧急转过载(484483);生成器产出资源例外走临钧 acube 管道。反之,**谜拟(479782)只接「与镇元相关且镇元 NOT OK」**的单;该类单若紧急,则谜拟+新山**两人都建关联单**并行处理。
 
 关联单一律建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。**例外:临钧路由(生成器产出)不由 jarvis `a1 workitem create` 手动建单**——走 acube `createBuildTaskV2` 接口,acube 内部自动建单+指派临钧+触发生成/PR 工作流,jarvis 只查回 aoneId 做关联,详见 Step 3。
 
@@ -68,7 +84,7 @@ aone-triage 主流程已跑 `aone-get.sh`;此处补充抽取关键字段:
 - `工单ID(104264)` —— 小蜜工单号,备用
 - `space` / `workitemType` / `creator` —— 分类误建/承接单判定(见 Step 1.5)
 
-**缺陷类型优先级覆写**:`workitemType` 为缺陷(功能缺陷/线上问题/性能瓶颈)时,**优先级一律视为紧急**,无视原单 `priority` 字段值。此覆写影响决策树镇元 NOT OK 分支路由(紧急 → 新山 521957)及关联单 `--priority` 传值。
+**缺陷类型优先级覆写**:`workitemType` 为缺陷(功能缺陷/线上问题/性能瓶颈)时,**优先级一律视为紧急**,无视原单 `priority` 字段值。此覆写影响决策树两处紧急判定——分支 E(与镇元相关且 NOT OK)紧急时在谜拟单之外**加建新山双单**;与镇元不相关分流紧急时路由新山(521957)——及关联单 `--priority` 传值。
 
 **真实诉求重述**:核心动作。用一句话把客户想要的能力/结果写下来,与 description 全文对齐。不对齐直接停,读客户原描述二次确认。
 
@@ -241,7 +257,7 @@ for f in d.get("fields",[]):
 
 **未命中短路** → 继续下方对应分支执行正常路由。
 
-### 分支 A / D-过载(手写) / E(jarvis 手动建关联单+指派)
+### 分支 A / D-新山 / D-过载 / E(jarvis 手动建关联单+指派)
 
 ```bash
 # 0. 从原单读优先级 + DDL,关联单继承
@@ -297,6 +313,14 @@ bin/a1id -- project workitem relation add <源工单ID> relate:$NEW_ID
 bin/a1id -- project workitem update <源工单ID> --assignee <工号>
 bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 ```
+
+**分支 E · 紧急双关联单(谜拟 479782 + 新山 521957)**:与镇元相关且镇元 NOT OK 的单,谜拟的关联单**无论紧急与否都建**(镇元侧根因主责);若紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写),**再按同一脚本建第二张**关联单指派新山,两单并行。要点:
+- 两张关联单**各自**双向关联源客户单(`relation add <源> relate:<谜拟单>` + `relation add <源> relate:<新山单>`)
+- 分工写进各自 `--body`:谜拟单注明"镇元侧根因修复(schema 定义/属性补齐/覆盖度)";新山单注明"紧急兜底——provider 侧可先行绕过/加速方案,与谜拟单 <ID> 并行"
+- **原单指派谜拟**(与镇元相关的主责人),status=问题解决中;评论 @谜拟(479782) + @新山(521957) 两人,注明双单并行与各自分工
+- 非紧急:仅谜拟一张,原单指派谜拟,@谜拟
+
+**分支 D-新山 / D-过载 · 与镇元不相关(纯 datasource / 镇元 OK 但 provider 侧问题,手写代码)**:落地脚本与分支 A 完全一致,按紧急度选指派人——紧急 `--assignee 521957`(新山),不紧急 `--assignee 484483`(过载);`--title` 注明问题面("纯 datasource"/"provider 侧实现"),纯 datasource 单在 `--body` 说明已按定义跳过镇元查证。过载的关联单 jarvis 直接 claim 跟进(bookend 纪律不变);新山的建单 + @对方。
 
 **分支 G · Provider 全局改造(→ 新山 521957)**:适用于"诉求不涉及单一 alicloud_xxx 资源、而是 provider 侧全局改动"的场景(region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump 等)。**落地脚本与上面完全一致**,只需 3 处微调:
 - `--assignee` 填 `521957`(新山)
@@ -443,24 +467,34 @@ Terraform Provider / 镇元(Cloudspec)侧可闭环。
 
 ```
 ### 结论
-客户诉求「<一句话诉求重述>」应由 <指派人所在层:镇元 schema/provider 代码>
-侧承接。已建关联单 <NEW_ID> 到 terraform-alicloud 项目,指派 @<花名>(<工号>)
+客户诉求「<一句话诉求重述>」<与镇元相关且镇元 NOT OK / 与镇元不相关(纯
+datasource / 镇元 OK 但 provider 侧问题)>,应由 <指派人所在层> 侧承接。
+已建关联单 <NEW_ID> 到 terraform-alicloud 项目,指派 @<花名>(<工号>)
 跟进,源工单同步指派并改状态为「问题解决中」。
+[分支 E 紧急双单场景改写为:已建两张关联单——<谜拟单ID> 指派 @谜拟(479782)
+负责镇元侧根因修复,<新山单ID> 指派 @新山(521957) 紧急兜底 provider 侧,
+双单并行;源工单指派谜拟并改状态「问题解决中」。]
 
 ### 查证依据
-1. **镇元**:<get: 有/无 data | list released 是否命中 | CoverageScore=<x>>
+1. **镇元相关性**:<纯 datasource(跳过镇元查证)/ 资源类镇元 OK(与镇元
+   不相关)/ 资源类镇元 NOT OK(与镇元相关)>
+   - 镇元:<get: 有/无 data | list released 是否命中 | CoverageScore=<x>>
    - acube V2 覆盖度(线上):CoverageScore=<x>
    - Property/Operation/PrimaryOperation=<>/<>/<>
 2. **provider 代码类型**:<自动生成 / 手写>(依据 `alicloud/resource_...go:1-3`
-   <是否有 generated automatically 注释>)
-3. **紧急度**:priority=<>, 计划截止=<>, 剩余=<>天,故路由到 <人>
+   <是否有 generated automatically 注释>;纯 datasource 看 data_source_...go)
+3. **紧急度**:priority=<>, 计划截止=<>, 剩余=<>天<,缺陷类型覆写=紧急>,
+   故路由到 <人 / 谜拟+新山双单>
 
 ### 关联单
 - <NEW_ID>: <标题>,项目 528766 terraform-alicloud
   (临钧场景:aoneId 由 acube V2 createBuildTaskV2 接口异步创建;taskId=<>)
-- 双向关联已加
+  (分支 E 紧急场景列两张:谜拟单 <ID> 镇元侧根因 / 新山单 <ID> 紧急兜底)
+- 双向关联已加(双单场景两张各自与源单双向关联)
 
 @<花名>(<工号>) 烦请跟进上述查证结论,进度请在两侧工单同步回帖。
+[双单场景:@谜拟(479782) @新山(521957) 烦请按上述分工并行跟进,进度请在
+各自关联单与本单同步回帖。]
 ```
 
 ### 模板 C:专属名单产品(分支 A)
@@ -508,10 +542,13 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ Provider 源码查证跳过 Step 2 前置的 upstream PR 前扫,只 grep 本地 workspace 磁盘 —— workspace 的本地 branch 可能滞后 upstream 数十小时,或 sync-provider.sh 未 hardened 时只 fetch 不 reset;必先跑 `gh pr list --search` + `gh api contents?ref=master`,同题 recently-merged PR 直接引用避免重复建单;参见工单 83718139 教训(PR 9909 merged 21h 后 jarvis 才处理仍未命中)
 - ❌ Step 3 执行路由前不扫评论区/状态 —— 查证+决策期间有时间窗口,原指派人(常被前线随机指派)可能已回帖修复/贴 PR/接手;不扫就转单会重复建关联单、让接手方收多余通知;参见工单 83861367 教训(新山在 jarvis 转单前 20 分钟已修并评论,jarvis 仍建单 @过载)
 - ❌ 仅文档改造的工单因镇元 NOT OK 就转给谜拟/新山 —— 文档改造路由固定过载(484483),镇元查证仍要走(确保文档与 schema/API 一致),但结果不影响指派对象
-- ❌ 缺陷类型工单沿用原单 `priority` 字段值 —— 缺陷(功能缺陷/线上问题/性能瓶颈)优先级一律覆写为"紧急",无视原单标记;覆写后影响镇元 NOT OK 分支路由(紧急→新山)及关联单 `--priority` 传值
+- ❌ 缺陷类型工单沿用原单 `priority` 字段值 —— 缺陷(功能缺陷/线上问题/性能瓶颈)优先级一律覆写为"紧急",无视原单标记;覆写后影响两处紧急判定(分支 E 紧急→谜拟+新山双单;与镇元不相关分流紧急→新山)及关联单 `--priority` 传值
+- ❌ 镇元 OK 但 provider 侧有问题的单仍派谜拟 —— 2026-07-06 起谜拟只接「与镇元相关且镇元 NOT OK」;镇元侧无问题即「与镇元不相关」,紧急→新山(521957),不紧急→过载(484483),生成器产出走临钧管道
+- ❌ 纯 datasource 工单去查镇元覆盖度 —— datasource 是 provider 侧对查询 API 的只读封装,镇元只管资源 schema;纯 datasource(不涉资源 schema/生命周期)直接判「与镇元不相关」分流,查镇元浪费一轮且可能误路由。resource+datasource 混合诉求不算"纯",仍按资源主线查镇元
+- ❌ 分支 E 紧急单只建谜拟一张关联单 —— 紧急(优先级=紧急/距 DDL<14 天/缺陷覆写)时必须谜拟+新山**两张**关联单并行(谜拟修镇元侧根因、新山紧急兜底),漏建新山单=紧急件失去快速通道;评论也要 @两人并注明分工
 - ❌ 用 `head -1 | cut -f1` 或 `awk -F'\t' '{print $1}'` 解析 `a1 workitem create --quiet` 输出抓 NEW_ID —— `--quiet` 输出是**空格分隔**不是 tab(实测 `<id><空格><title><空格><status><空格><assignee>`),tab 分隔符抓到的是整行;NEW_ID 会带脏字符,后续 `relation add` / heredoc 里 `$NEW_ID:xxx` 全部污染。**正确写法**:`... --quiet | head -1 | awk '{print $1}'`(不带 -F,按空白拆);抓完打印 `echo "NEW_ID=[$NEW_ID]"` 用方括号包裹肉眼验证边界
 - ❌ 在 tf_provider(528766) 池建**缺陷(Bug/功能缺陷/线上问题)**类关联单不传 `--cfs "Terraform需求类型=..."` —— 该字段是 Bug 类型的必填(Req/Task 类型可选),漏传 a1 会 `400 【Terraform需求类型】不能为空`;bug 类关联单默认传 `--cfs "Terraform需求类型=运行时问题，TF问题"`(其他合法值:「有OpenAPI，资源未定义，开放平台维护/自主维护」「有OpenAPI，资源已定义，开放平台维护/自主维护」「云产品有功能无OpenAPI」「运行时问题，云产品API问题」「使用问题」「文档问题」「云产品无此功能」「其他（其他）」)。查枚举:`a1 project workitem field options "Terraform需求类型" --project 528766 --type 36`(36=功能缺陷)
 - ❌ `wrap.sh done <id> --summary-stdin <status> <<EOF ... EOF`(不带引号的 heredoc)里正文含反引号 code 块或 `$var:字母` —— shell 会展开 heredoc:反引号 `` `xxx` `` 被当命令替换执行(报 `command not found` 且被替换成空),`$NEW_ID:alicloud_xxx` 被 wrap.sh 前缀 pwd 拼成 `/path/to/jarvis/<id>licloud_xxx` 怪路径。**正确写法**二选一:(a) 用 `<<'EOF'`(带引号)阻止 shell 展开,但 `$NEW_ID` 也不展开,先 `envsubst` 或 sed 预替换;(b) 保留 unquoted heredoc 但正文里去掉反引号(用引号 `"xxx"` 代替 code)、`$NEW_ID` 后面接空格不接字母冒号(如写作 `关联单 ID = ${NEW_ID}`)。批量转单场景推荐:先把评论正文 sed 替换 NEW_ID 后写到 `/tmp/wrap-<id>.txt`,再走 `wrap.sh done <id> --summary-file /tmp/wrap-<id>.txt <status>`,彻底跳过 heredoc 展开风险
 - ❌ 用 `a1 project workitem tag add <id> <tag>` 加标签 —— 该子命令**不存在**(`a1 project workitem` 只有 activity/attachment/comment/create/delete/field/get/list/relation/type/update)。标签统一走 `update --tag "a,b,c"` **覆盖式**写入;`claim.sh` 已实现 point-read 现有 tag + 合并再写,但外挂标签(如 `jarvis-npe`)必须在 `claim.sh release` 之后单独补一次:`bin/a1id -- project workitem update <id> --tag "jarvis-idle,jarvis-npe"`(release 后 tag=jarvis-idle,覆盖式写完整列表保留)
 - ❌ **未复现客户报错就直接路由** —— 分诊模糊时直接甩 NPE 兜底/上游是**懒惰误诊**。**正确顺序**:先读 description 全文(尤其客户 tf 代码 + 完整报错栈的堆栈行号),按报错文件路径 grep provider 源码定位根因,再决定路由。参见工单 78365505 教训:凡修回复"找 SLS 同学"已明确 SLS 域(alicloud_sls_oss_export_sink 缺 404 ProjectNotExist retry,ActionTrail 后台 SLS project 异步就绪场景),jarvis 未读 tf 代码/报错栈就走 NPE 兜底转夏节,实际应走**分支 A 专属维护名单 → 豁朗(269032)**。**规则**:客户 tf 代码 + 完整报错栈齐备时,先做静态复现(source 定位根因)再路由;仅"canned 类咨询/无报错/跨多产品"才走 NPE
-- ❌ **「控制台 vs Terraform data source 结果不一致」类工单默认走分支 F 上游缺口** —— 或直接甩 NPE 兜底。大多数情况实际是 **provider 侧客户端多层过滤 + 客户配置差异**导致的表面不一致,**不是**上游 API 缺口。**判定路径 3 步**:① provider 调什么 API(grep `alicloud/data_source_alicloud_xxx.go` 定位实际 SDK Action,可能多个:主 API + 二次过滤 API + image 交集 API);② 控制台调什么 API(前端如 `ecs-buy.aliyun.com/api/...describeXxx.json` 通常是**公开 API 的内部聚合封装**,公开等价物是同族 OpenAPI,如 ecs-buy `describeAvailableInstanceTypes.json` ↔ 公开 `DescribeAvailableResource`);③ 过滤字段差异比对(常见 provider 侧额外客户端过滤:`image_id` 参数触发 `DescribeImageSupportInstanceTypes` 交集 / `spot_strategy` 传入即过滤 / `IoOptimized` 硬编码 `"optimized"` / `SoldOut` 强过滤,控制台前端通常不做这些)。**结论**:同族 API + provider 客户端过滤差异 = **分支 D-过载**(手写 data source 透明度改进:doc NOTE 补参数副作用 / 空集错误提示 / IoOptimized 类硬编码参数暴露);真正上游 API 缺口(公开 API 缺参数无法替代内部聚合)才走分支 F;绝不走 H NPE(场景明确、单一 data source、单一云产品域,不属"跨多产品无单一负责人/分类模糊")。参见工单 78274567 教训:客户主张"过滤条件都一样"是**误解**——provider 传的 `image_id="m-uf6..."` 触发 image 交集把 `ecs.u2i-c1m2.xlarge` 排除,ESS 控制台无 image 过滤所以能看到
+- ❌ **「控制台 vs Terraform data source 结果不一致」类工单默认走分支 F 上游缺口** —— 或直接甩 NPE 兜底。大多数情况实际是 **provider 侧客户端多层过滤 + 客户配置差异**导致的表面不一致,**不是**上游 API 缺口。**判定路径 3 步**:① provider 调什么 API(grep `alicloud/data_source_alicloud_xxx.go` 定位实际 SDK Action,可能多个:主 API + 二次过滤 API + image 交集 API);② 控制台调什么 API(前端如 `ecs-buy.aliyun.com/api/...describeXxx.json` 通常是**公开 API 的内部聚合封装**,公开等价物是同族 OpenAPI,如 ecs-buy `describeAvailableInstanceTypes.json` ↔ 公开 `DescribeAvailableResource`);③ 过滤字段差异比对(常见 provider 侧额外客户端过滤:`image_id` 参数触发 `DescribeImageSupportInstanceTypes` 交集 / `spot_strategy` 传入即过滤 / `IoOptimized` 硬编码 `"optimized"` / `SoldOut` 强过滤,控制台前端通常不做这些)。**结论**:同族 API + provider 客户端过滤差异 = 纯 datasource 问题 → **与镇元不相关分流**(跳过镇元查证;不紧急 → **D-过载**,该类透明度改进多为非紧急:doc NOTE 补参数副作用 / 空集错误提示 / IoOptimized 类硬编码参数暴露;紧急 → D-新山);真正上游 API 缺口(公开 API 缺参数无法替代内部聚合)才走分支 F;绝不走 H NPE(场景明确、单一 data source、单一云产品域,不属"跨多产品无单一负责人/分类模糊")。参见工单 78274567 教训:客户主张"过滤条件都一样"是**误解**——provider 传的 `image_id="m-uf6..."` 触发 image 交集把 `ecs.u2i-c1m2.xlarge` 排除,ESS 控制台无 image 过滤所以能看到

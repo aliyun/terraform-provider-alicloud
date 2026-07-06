@@ -118,27 +118,33 @@ print("  Property/Operation/PrimaryOperation:",
 2. **当前资源属性满足客户诉求**:比对 Step 1 抽取的真实诉求字段,镇元资源 schema 的 properties **全覆盖** —— 缺字段即视为 NOT OK(即便覆盖度分再高也不算 OK,因为覆盖度只测已建 schema 的属性,客户想要新字段时属性不覆盖=缺口在镇元)
 3. **测试覆盖度 100%**:`CoverageDetail.CoverageScore == 1.0`(V2 已不返回 PASS/FAIL 用例计数,仅以覆盖度综合分判定)
 
-**判定**:
-- 三条件全满足 → **镇元 OK**,走分支 D
-- 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0) → **镇元 NOT OK**,走分支 E
+**判定**(按「与镇元相关性」口径,2026-07-06 路由重整):
+- 三条件全满足 → **镇元 OK** = 镇元侧无问题、缺口在 provider 侧 = **与镇元不相关**,走分支 D 分流
+- 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0) → **镇元 NOT OK** = **与镇元相关**,走分支 E
+
+**前置短路 · 纯 datasource 问题不查镇元**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段)、不涉资源 schema/生命周期的,直接判**与镇元不相关**、进分支 D 分流(非临钧子分支)——datasource 是 provider 侧对 List/Describe 查询 API 的只读封装,镇元只管资源 schema,本节的 get/覆盖度查证全部跳过。resource+datasource 混合诉求不算"纯",仍按资源主线走本节查证。
 
 **环境说明**:V2 已发布到 acube 正式(`acube.aliyun-inc.com`),默认走线上;需要预发数据把域名换成 `pre-acube.aliyun-inc.com` 即可(路径 / 参数 / 返回结构一致)。服务端实现见邻仓 `a-cube-aliyun-com` 里 `acube-auto-generator/.../ProductMetaUtil.java#getResourceQualityDetailCoverageScoreV2ByCommon`。
 
 **sanity check(必跑)**:拿同产品已发布的其他资源(如查 ① released list 里另一项)以相同接口复查,能拿到 `CoverageDetail` 说明内网/接口正常;否则先排查内网访问(`pre-acube.aliyun-inc.com` 需办公网/VPN;`/api/v1/**` 免鉴权,但走内网 DNS)。
 
-### 分支 D:镇元 OK,判定 provider 代码类型
+### 分支 D:与镇元不相关(镇元 OK 但 provider 侧问题 / 纯 datasource),分流
+
+资源类先判 provider 代码类型:
 
 ```bash
 provider_repo="$(bash bootstrap/workspace.sh dir terraform_provider)"
 head -3 "$provider_repo/alicloud/resource_alicloud_<product>_<resource>.go" 2>/dev/null
 ```
 
-- 首行有类似 `// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!` → **生成器产出** → 走 acube V2 接口触发临钧工作流(见 Step 3 · 分支 D-临钧)
-- 无该注释(手写) → 指派 过载(484483)(见 Step 3 · 分支 A / D-过载 / E)
+- 首行有类似 `// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!` → **生成器产出** → 走 acube V2 接口触发临钧工作流(见 Step 3 · 分支 D-临钧;生成器产出修复=重跑生成器,管道不变)
+- 无该注释(手写)**或纯 datasource 问题**(datasource 不走临钧管道)→ 按紧急度分流(紧急判定脚本同分支 E):
+  - 紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写)→ 指派 新山(521957)(Step 3 · 分支 D-新山)
+  - 不紧急 → 指派 过载(484483)(Step 3 · 分支 D-过载)
 
-若文件不存在:说明 provider 代码尚未合入(镇元 OK 但 provider 未生成/合入)——按"生成器产出待跑"处理,同样走 Step 3 · 分支 D-临钧 的 acube V2 接口(接口内部会跑生成器 + PR),不必 jarvis 手动 comment 提醒生成。
+若资源文件不存在:说明 provider 代码尚未合入(镇元 OK 但 provider 未生成/合入)——按"生成器产出待跑"处理,同样走 Step 3 · 分支 D-临钧 的 acube V2 接口(接口内部会跑生成器 + PR),不必 jarvis 手动 comment 提醒生成。
 
-### 分支 E:镇元 NOT OK,判定紧急度
+### 分支 E:与镇元相关且镇元 NOT OK → 谜拟(紧急加建新山双单)
 
 ```bash
 priority=$(bash bootstrap/aone-get.sh <id> | python3 -c '
@@ -164,8 +170,9 @@ else:
 echo "days_left=$days_left"
 ```
 
-- `priority == '紧急'` 或 `days_left < 14` → 指派 新山(521957)
-- 否则 → 指派 谜拟(479782)
+- 关联单指派 谜拟(479782)——镇元侧根因主责,**无论紧急与否都建**
+- `priority == '紧急'` 或 `days_left < 14`(或缺陷类型覆写为紧急)→ **同时再建一张**关联单指派 新山(521957),双单并行(谜拟修镇元侧根因,新山紧急兜底 provider 侧);原单指派谜拟,评论 @谜拟+@新山(见 Step 3 · 分支 E 紧急双关联单)
+- 否则 → 仅谜拟一张
 
 ### 分支 F:上游 API 缺口
 
