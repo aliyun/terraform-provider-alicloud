@@ -41,7 +41,6 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 * `configs` - A list of Sql Log Config Entries. Each element contains the following attributes:
-    * `id` - The ID of the Sql Log Config. Its value is same as `instance_id`.
     * `instance_id` - The ID of the database instance.
     * `enable` - Specifies whether SQL Explorer is enabled.
     * `request_enable` - The requested state of SQL Explorer.

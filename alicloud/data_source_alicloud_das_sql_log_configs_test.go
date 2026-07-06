@@ -27,7 +27,6 @@ func TestAccAliCloudDasSqlLogConfigDataSource(t *testing.T) {
 var existDasSqlLogConfigMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"configs.#":               "1",
-		"configs.0.id":            CHECKSET,
 		"configs.0.instance_id":   CHECKSET,
 		"configs.0.retention":     "30",
 		"configs.0.hot_retention": "7",
