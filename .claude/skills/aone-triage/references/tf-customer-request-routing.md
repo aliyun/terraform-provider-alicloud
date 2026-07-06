@@ -197,6 +197,36 @@ Terraform 只是一个客户端资源编排工具,所有功能特性都基于云
 
 ## Step 3 — 执行路由动作(写操作,先授权)
 
+### 前置 Gate — 评论区/状态变化扫描
+
+Step 1 读单 → Step 2 查证期间存在**时间窗口**：原指派人(常被前线随机指派)或团队成员可能已回帖修复/贴 PR/接手。执行任何路由写操作**前**,必须 point-read 一次:
+
+```bash
+# 1. 扫最新评论(限最近 10 条,看有没有 Fixed/PR 链接/@接手)
+bin/a1id -- project workitem comment list <源工单ID> 2>&1 | tail -20
+
+# 2. 看状态/指派人是否已变(如 New → Fixed,或已改指派给过载/谜拟等)
+bin/a1id -- project workitem get <源工单ID> -f json 2>/dev/null | \
+  python3 -c 'import json,sys
+d=json.load(sys.stdin)
+for f in d.get("fields",[]):
+  if f.get("identifier") in ("status","assignedTo"):
+    print(f"{f[\"label\"]}: {f.get(\"displayValue\",\"\")} ({f.get(\"value\",\"\")})")'
+```
+
+**短路条件**(命中任一 → 跳过建关联单,直接确认+跟进):
+- 评论含团队成员(新山/谜拟/过载/临钧等)回帖"已修"/"Fixed"/贴 PR 链接/@接手
+- 状态已非 New(如 Fixed/问题解决中/已发布)
+- 指派人已改为路由目标人(过载/谜拟/临钧/新山)
+
+**短路动作**:
+1. 评论确认对方修复/接手,贴 PR 链接(如有)
+2. 不建关联单(避免重复)
+3. 原单状态跟进对方进度(如 PR 未合并 → 问题解决中;已合并 → 已发布待需求方验收)
+4. wrap done + release
+
+**未命中** → 继续下方对应分支执行正常路由。
+
 ### 分支 A / D-过载(手写) / E(jarvis 手动建关联单+指派)
 
 ```bash
@@ -430,3 +460,4 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 建关联单用 `--description` —— a1 CLI 不吃(报 `unknown flag: --description`),正文用 `--body` 或 `--body-file`
 - ❌ 在 tf_provider(528766)建单不传"计划开始日期 / 计划截止日期 / 实际工时" cfs —— 池校验必填,漏传会 400 `【计划开始日期】不能为空...`;用 `--cfs "计划开始日期=YYYY-MM-DD"` 等传入
 - ❌ Provider 源码查证跳过 Step 2 前置的 upstream PR 前扫,只 grep 本地 workspace 磁盘 —— workspace 的本地 branch 可能滞后 upstream 数十小时,或 sync-provider.sh 未 hardened 时只 fetch 不 reset;必先跑 `gh pr list --search` + `gh api contents?ref=master`,同题 recently-merged PR 直接引用避免重复建单;参见工单 83718139 教训(PR 9909 merged 21h 后 jarvis 才处理仍未命中)
+- ❌ Step 3 执行路由前不扫评论区/状态 —— 查证+决策期间有时间窗口,原指派人(常被前线随机指派)可能已回帖修复/贴 PR/接手;不扫就转单会重复建关联单、让接手方收多余通知;参见工单 83861367 教训(新山在 jarvis 转单前 20 分钟已修并评论,jarvis 仍建单 @过载)
