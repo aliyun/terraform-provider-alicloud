@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "repo=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { echo \"stop-hook: cannot resolve repo root from cwd=$PWD\" >&2; exit 127; }; bash \"$repo/bootstrap/run-stop-hook.sh\""
+            "command": "runner=\"${CODEX_HOME:-$HOME/.codex}/jarvis/run-stop-hook.sh\"; if [ -x \"$runner\" ]; then bash \"$runner\"; else repo=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { echo \"stop-hook: cannot resolve repo root from cwd=$PWD\" >&2; exit 127; }; bash \"$repo/bootstrap/run-stop-hook.sh\"; fi"
           }
         ]
       }

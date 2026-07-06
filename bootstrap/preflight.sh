@@ -25,6 +25,67 @@ if [ -f "$repo_root/CLAUDE.md" ] && [ -f "$script_dir/skills-mirror-lib.sh" ]; t
     mirror_sed_claude_to_codex < "$repo_root/CLAUDE.md" > "$repo_root/AGENTS.md"
 fi
 
+record_codex_stop_hook_root() {
+    local codex_home state_dir roots_dir runner
+    codex_home="${CODEX_HOME:-$HOME/.codex}"
+    state_dir="$codex_home/jarvis"
+    roots_dir="$state_dir/session-roots"
+    runner="$state_dir/run-stop-hook.sh"
+
+    mkdir -p "$roots_dir" || return 1
+    printf '%s\n' "$repo_root" > "$state_dir/repo-root"
+    if [ -n "${CODEX_THREAD_ID:-}" ]; then
+        printf '%s\n' "$repo_root" > "$roots_dir/$CODEX_THREAD_ID"
+    fi
+
+    cat > "$runner" <<'EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+
+codex_home="${CODEX_HOME:-$HOME/.codex}"
+state_dir="$codex_home/jarvis"
+repo=""
+
+use_repo() {
+    local candidate="$1"
+    if [ -n "$candidate" ] && [ -f "$candidate/bootstrap/run-stop-hook.sh" ]; then
+        repo="$candidate"
+        return 0
+    fi
+    return 1
+}
+
+if [ -n "${JARVIS_ROOT:-}" ]; then
+    use_repo "$JARVIS_ROOT" || true
+fi
+
+if [ -z "$repo" ]; then
+    git_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+    use_repo "$git_root" || true
+fi
+
+if [ -z "$repo" ] && [ -n "${CODEX_THREAD_ID:-}" ]; then
+    thread_root="$(cat "$state_dir/session-roots/$CODEX_THREAD_ID" 2>/dev/null || true)"
+    use_repo "$thread_root" || true
+fi
+
+if [ -z "$repo" ]; then
+    default_root="$(cat "$state_dir/repo-root" 2>/dev/null || true)"
+    use_repo "$default_root" || true
+fi
+
+if [ -z "$repo" ]; then
+    echo "stop-hook: cannot resolve repo root from cwd=$PWD" >&2
+    exit 127
+fi
+
+exec bash "$repo/bootstrap/run-stop-hook.sh"
+EOF
+    chmod +x "$runner"
+}
+
+record_codex_stop_hook_root
+
 ttl="${JARVIS_PREFLIGHT_TTL:-86400}"   # 24h
 [ "${1:-}" = "--force" ] && ttl=0
 
