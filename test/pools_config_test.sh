@@ -41,5 +41,10 @@ done
 [ "$(jq '.claim.ttl_min' "$POOLS_JSON")" = "45" ] \
   && ok "claim.ttl_min 45" || bad "claim.ttl_min wrong"
 
+# S9: api_toolkit.done_status 必须是项目 2100304 支持的枚举(为「已发布」)。
+# 该项目状态枚举无「已完成」——配错会导致 claim.sh finish 时 status 更新被拒、不流转。
+[ "$(jq -r '.pools.api_toolkit.done_status' "$POOLS_JSON")" = "已发布" ] \
+  && ok "api_toolkit.done_status 已发布(项目有效枚举)" || bad "api_toolkit.done_status 应为「已发布」(项目 2100304 无「已完成」枚举)"
+
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -gt 0 ] && exit 1; exit 0
