@@ -34,11 +34,11 @@
 
 ## 四、回灌（关单前直落 playground + 工单报备）
 
-- 场景语料库**外置在 jarvis 仓外**(`terraform_playground/`,按云产品维度两级归档),回灌**无需 worktree/MR**:
-  关单前 jarvis **直接落** regression 场景到 `terraform_playground/<product>/regression-<aone-id>/`
-  (`main.tf` 可从修复 PR 的验证配置改造,`source_docs` 换成 Aone 工单链接,`checks.md` 记「修复前症状/修复后期望」)。
-- **落后必在对应工单评论报备场景路径**(`terraform_playground/<product>/regression-<aone-id>/`)供仓库主人查验。
-- 原「`escalation/scenario-drafts` + 周批 MR 入 `probes/`」流程**已废弃**(飞轮第⑥段)。
+- 场景语料库是**独立 git 数据仓** `tf_playground`(`terraflow/tf_playground`,直推 master + 工单报备,非代码不走 MR),
+  回灌**无需 worktree/MR**:关单前 jarvis **直接落**(并 `git push` 数据仓)regression 场景到
+  `tf_playground/<product>/regression-<aone-id>/`(`main.tf` 可从修复 PR 的验证配置改造,`source_docs` 换成 Aone 工单链接,
+  `checks.md` 记「修复前症状/修复后期望」)。
+- **落后必在对应工单评论报备场景路径**(`tf_playground/<product>/regression-<aone-id>/`)供仓库主人查验 + 提醒他机 `git pull`。
 
 ## 五、纪律重申
 

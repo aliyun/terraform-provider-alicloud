@@ -41,7 +41,7 @@ probe 发现(tier-0 doc gap / tier-1 生命周期 bug) → 建单(tf_provider 52
 |------|------|------|
 | 配置 | `config/probe.json` | provider/tf 版本、regions(focus/matrix)、tiers(tier1.enabled/prepaid_guard)、limits、ticket、paths |
 | runner | `bootstrap/probe.sh` | doctor / list / **tier0** / run / sweep;分层执行 + findings/env 分流 + verdict 落盘 |
-| 场景语料库(外置仓外) | `terraform_playground/<product>/<id>/` | 云产品维度两级布局;scenario.yaml(无 tier 键) + main.tf + checks.md (+ step2/);根解析 env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > 默认 `<jarvis 父目录>/terraform_playground` |
+| 场景语料库(独立 git 数据仓) | `tf_playground/<product>/<id>/` | 云产品维度两级布局;scenario.yaml(无 tier 键) + main.tf + checks.md (+ step2/);根解析 env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > `workspace.sh dir tf_playground` > 默认 `<jarvis 父目录>/terraform_playground` |
 | tier-0 fixture | `test/fixtures/probe/` | 手造迷你 doc + go,供解析器 hermetic 单测(五类 gap) |
 | 技能 | `.claude/skills/tf-customer-probe/` | 全流程 + severity/ticket/authoring references |
 | 循环 | `loops/tf-probe.md` | 触发→预检→tier0→tier1→分流→清理→Done runbook |
