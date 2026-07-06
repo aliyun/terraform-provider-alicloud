@@ -33,7 +33,7 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Custom", "Primary", "Cluster"}, false),
+				ValidateFunc: StringInSlice([]string{"Custom", "Primary", "Cluster", "DynamoDB"}, false),
 				Default:      "Custom",
 			},
 			"nodes": {
@@ -416,6 +416,11 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudPolarDBEndpointDelete(d *schema.ResourceData, meta interface{}) error {
+	// DynamoDB type endpoint does not support deletion
+	if v, ok := d.GetOk("endpoint_type"); ok && v.(string) == "DynamoDB" {
+		return nil
+	}
+
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := PolarDBService{client}
 

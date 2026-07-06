@@ -293,3 +293,83 @@ func resourcePolarDBEndpointConfigDependence(name string) string {
 		}
         `, name)
 }
+
+// Test PolarDB Endpoint DynamoDB type
+func TestAccAliCloudPolarDBEndpoint_dynamoDB(t *testing.T) {
+	var v *polardb.DBEndpoint
+	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	name := fmt.Sprintf("tf-testAccPolarDBendpoint-dynamodb-%s", rand)
+	var basicMap = map[string]string{
+		"db_cluster_id": CHECKSET,
+	}
+	resourceId := "alicloud_polardb_endpoint.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterEndpoint")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBEndpointDynamoDBDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id": "${alicloud_polardb_cluster.default.id}",
+					"endpoint_type": "DynamoDB",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id": CHECKSET,
+						"endpoint_type": "DynamoDB",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func resourcePolarDBEndpointDynamoDBDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.7.id
+  vswitch_name = var.name
+}
+
+resource "alicloud_polardb_cluster" "default" {
+  db_type         = "PostgreSQL"
+  db_version      = "14"
+  db_node_class   = "polar.pg.x4.medium"
+  pay_type        = "PostPaid"
+  vswitch_id      = alicloud_vswitch.default.id
+  enable_dynamodb = true
+}
+`, name)
+}

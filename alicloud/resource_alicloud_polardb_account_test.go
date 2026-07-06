@@ -378,3 +378,90 @@ resource "alicloud_polardb_cluster" "default" {
 }
 
 // Test PolarDb Account. <<< Resource test cases, automatically generated.
+
+// Test PolarDb Account DynamoDB type
+func TestAccAliCloudPolarDbAccount_dynamoDB(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_polardb_account.default"
+	ra := resourceAttrInit(resourceId, AliCloudPolarDbAccountMapDynamoDB)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PolarDbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePolarDbAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPolarDbAccountBasicDependenceDynamoDB)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":    "${alicloud_polardb_cluster.default.id}",
+					"account_name":     "dynamodb",
+					"account_password": "YourPassword123!",
+					"account_type":     "DynamoDB",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id":          CHECKSET,
+						"account_name":           "dynamodb",
+						"account_type":           "DynamoDB",
+						"dynamodb_auth_password": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "dynamodb_auth_password"},
+			},
+		},
+	})
+}
+
+var AliCloudPolarDbAccountMapDynamoDB = map[string]string{
+	"account_lock_state":          CHECKSET,
+	"account_password_valid_time": CHECKSET,
+	"status":                      CHECKSET,
+}
+
+func AliCloudPolarDbAccountBasicDependenceDynamoDB(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.7.id
+  vswitch_name = var.name
+}
+
+resource "alicloud_polardb_cluster" "default" {
+  db_type         = "PostgreSQL"
+  db_version      = "16"
+  db_node_class   = "polar.pg.x4.medium"
+  pay_type        = "PostPaid"
+  vswitch_id      = alicloud_vswitch.default.id
+  enable_dynamodb = true
+}
+`, name)
+}
