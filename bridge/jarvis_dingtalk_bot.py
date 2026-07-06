@@ -281,7 +281,7 @@ def broadcast_type():
 
 
 # Aone 终态状态集合：处于这些状态的工单已闭环，扫描到也不再派实例。
-TERMINAL_STATUSES = {"已发布", "已取消", "已完成", "已关闭", "已解决", "Fixed"}
+TERMINAL_STATUSES = {"已发布", "已取消", "已完成", "已关闭", "已解决", "Fixed", "已发布待需求方验收"}
 
 
 def _tagset(item):

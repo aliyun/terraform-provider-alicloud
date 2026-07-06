@@ -81,6 +81,39 @@ _get_wtype() {
     ' 2>/dev/null || return 0
 }
 
+# Check for unmerged MRs/PRs associated with a workitem.
+# Returns 0 if unmerged MRs found, 1 if none found.
+# Checks: (1) active worktree branches containing the workitem ID,
+#         (2) open GitHub PRs from api-tool-agent mentioning the ID.
+_has_unmerged_mr() {
+    local id="$1"
+
+    # Check 1: active worktree branches containing this workitem ID.
+    # The parent dir of jarvis_root holds all worktrees (e.g. ../jarvis-worktree-*).
+    local parent_dir
+    parent_dir="$(cd "$jarvis_root/.." && pwd)"
+    if git -C "$parent_dir" worktree list --porcelain 2>/dev/null | grep -q "worktree-.*${id}"; then
+        return 0
+    fi
+
+    # Check 2: open GitHub PRs from api-tool-agent mentioning this ID.
+    if [ -n "${JARVIS_GITHUB_TOKEN:-}" ]; then
+        local prs
+        prs="$(GH_TOKEN="$JARVIS_GITHUB_TOKEN" gh search prs \
+            --author api-tool-agent --state open "$id" \
+            --json repository,number,title --limit 5 2>/dev/null || echo "[]")"
+        if [ "$prs" != "[]" ] && [ -n "$prs" ]; then
+            local count
+            count="$(echo "$prs" | jq 'length' 2>/dev/null || echo 0)"
+            if [ "$count" -gt 0 ] 2>/dev/null; then
+                return 0
+            fi
+        fi
+    fi
+
+    return 1
+}
+
 cmd="${1:-}"
 workitem_id="${2:-}"
 project_id="${3:-}"
@@ -325,6 +358,15 @@ if cands:
         ;;
 
     finish)
+        # Hard gate: refuse to finish if unmerged MRs exist (CLAUDE.md: MR 未合并禁 finish).
+        # The workitem should be released (jarvis-idle) so humans can merge + verify.
+        if [ "${JARVIS_SKIP_MR_GATE:-0}" != "1" ] && _has_unmerged_mr "$workitem_id"; then
+            echo "claim.sh: refusing to finish $workitem_id — unmerged MR(s) detected" >&2
+            echo "claim.sh: use 'claim.sh release' instead to hand off for merge review," >&2
+            echo "claim.sh: or set JARVIS_SKIP_MR_GATE=1 to override this gate." >&2
+            exit 2
+        fi
+
         # Tag as done, preserving other tags: existing − {claimed, idle} ∪ {done}.
         # Tag FIRST and status SEPARATELY: previously tag+status went in one a1 update, so
         # an unsupported status (project enum mismatch) failed the whole call and left the

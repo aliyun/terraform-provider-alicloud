@@ -136,6 +136,12 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 
 **release vs finish**:默认 release(路由 ≠ 真闭环,需下游响应);仅当查证发现"其实已支持 + 只是客户版本旧"这类无缺口场景走 finish。
 
+**MR/CR 未合并禁 finish**:当 MR/CR 已提交但未合并(PR state ≠ merged / CR 未合入 master)时,**禁止调 `claim.sh finish`**。正确路径:
+- `wrap.sh done <id> --no-status` —— 发评论记录进展,不改 Aone 状态
+- `claim.sh release <id> <project>` —— 释放为 jarvis-idle,等人工合并验收
+- Aone 评论说明「MR 已提交待合并验收,链接: <PR_URL>」
+- `claim.sh finish` 内置了硬闸门(退码 2),即使遗漏也会拦截
+
 **关联单 claim 规则**:指派给过载(484483)的关联单,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人(谜拟/新山/临钧等)或 Cloudspec(2165097)池的关联单不 claim,建单 + @ 即可,不 touch 标签。
 
 ## 自己交付(改自家应用)
