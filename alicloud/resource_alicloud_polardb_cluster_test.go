@@ -2091,6 +2091,56 @@ func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudPolarDBCluster_TargetMinorVersion(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterTargetMinorVersion"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":       CHECKSET,
+		"db_node_class":     CHECKSET,
+		"db_type":           CHECKSET,
+		"db_version":        CHECKSET,
+		"connection_string": REGEXMATCH + clusterConnectionStringRegexp,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":              "PostgreSQL",
+					"db_version":           "16",
+					"pay_type":             "PostPaid",
+					"db_node_class":        "polar.pg.x4.medium",
+					"target_minor_version": "v16.13.17.7#20260611",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target_minor_version": "v16.13.17.7#20260611",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPolarDBCluster_Xengine(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testAccPolarDBCluster-x-engine"

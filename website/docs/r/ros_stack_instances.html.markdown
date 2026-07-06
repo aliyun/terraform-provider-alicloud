@@ -80,7 +80,7 @@ resource "alicloud_ros_stack_instances" "self_managed" {
 
 5. **Parameter Sensitivity**: The `parameter_value` field in `parameter_overrides` is marked as sensitive. Values will be masked in Terraform output and logs for security.
 
-6. **ForceNew Parameters**: Most parameters (`stack_group_name`, `region_ids`, `account_ids`, `deployment_targets`, `disable_rollback`, `deployment_options`) require resource recreation if modified. Only `parameter_overrides`, `operation_preferences`, `timeout_in_minutes`, and `operation_description` support in-place updates.
+6. **ForceNew Parameters**: Most parameters (`stack_group_name`, `region_ids`, `account_ids`, `disable_rollback`, `deployment_options`) require resource recreation if modified. `parameter_overrides`, `operation_preferences`, `timeout_in_minutes`, `operation_description`, and `deployment_targets` support in-place updates.
 
 7. **Empty Results**: If your deployment targets result in no stack instances being created (e.g., targeting an empty folder), the `stack_instances` attribute will be an empty list. This is expected behavior and does not indicate an error.
 
@@ -94,7 +94,7 @@ The following arguments are supported:
 
 * `account_ids` - (Optional, ForceNew) List of target Alibaba Cloud account IDs for self-managed permissions model. You can specify 1 to 50 accounts. This parameter conflicts with `deployment_targets`. This parameter cannot be modified after creation. Example: `["123456789012****", "098765432109****"]`.
 
-* `deployment_targets` - (Optional, ForceNew) Configuration block defining deployment targets for service-managed permissions model. This parameter conflicts with `account_ids`. This parameter cannot be modified after creation. See [`deployment_targets`](#deployment_targets) below.
+* `deployment_targets` - (Optional) Configuration block defining deployment targets for service-managed permissions model. This parameter conflicts with `account_ids`. Changes to `rd_folder_ids` and `account_ids` within this block support in-place updates. See [`deployment_targets`](#deployment_targets) below.
 
 -> **NOTE:** You must specify either `account_ids` (for self-managed permissions) or `deployment_targets` (for service-managed permissions), but not both.
 

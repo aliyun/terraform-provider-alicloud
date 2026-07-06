@@ -27,9 +27,9 @@ func TestAccAliCloudSchedulerxJob_basic9597(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -131,11 +131,11 @@ resource "alicloud_schedulerx_app_group" "CreateAppGroup" {
   namespace             = alicloud_schedulerx_namespace.CreateNameSpace.namespace_uid
   group_id              = "test-appgroup-pop-autotest"
   description           = "appgroup 资源用例生成"
-  monitor_contacts_json = "[{\"userName\":\"张三\",\"userPhone\":\"89756******\"},{\"userName\":\"李四\",\"ding\":\"http://www.example.com\"}]"
+  monitor_contacts_json = "[{\"name\":\"用户-手机\"},{\"name\":\"用户-钉钉\"}]"
   app_name              = "test-appgroup-pop-autotest"
   app_version           = "1"
   namespace_name        = alicloud_schedulerx_namespace.CreateNameSpace.namespace_name
-  monitor_config_json   = "{\"sendChannel\":\"sms,ding\"}"
+  monitor_config_json   = "{\"sendChannel\":\"sms,ding\",\"alarmType\":\"Contacts\",\"webhookIsAtAll\":\"false\"}"
   app_type              = "2"
   max_jobs              = "100"
   namespace_source      = "schedulerx"
@@ -162,9 +162,9 @@ func TestAccAliCloudSchedulerxJob_basic9548(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -386,6 +386,131 @@ resource "alicloud_schedulerx_app_group" "CreateAppGroup" {
   namespace_name = alicloud_schedulerx_namespace.CreateNameSpace.namespace_name
   app_type       = "2"
   max_jobs       = "1000"
+}
+
+
+`, name)
+}
+
+// Case job_monitor_info with contact_info should not panic
+func TestAccAliCloudSchedulerxJob_contactInfoEmpty(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_schedulerx_job.default"
+	ra := resourceAttrInit(resourceId, AlicloudSchedulerxJobMapContactInfoEmpty)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSchedulerxJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sschedulerxjob%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxJobBasicDependenceContactInfoEmpty)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":                "Enable",
+					"max_attempt":           "0",
+					"description":           "test contact_info nil guard",
+					"success_notice_enable": "false",
+					"job_name":              name,
+					"max_concurrency":       "1",
+					"time_config": []map[string]interface{}{
+						{
+							"time_type": "-1",
+							"calendar":  "workday",
+						},
+					},
+					"namespace": "${alicloud_schedulerx_namespace.CreateNameSpace.namespace_uid}",
+					"group_id":  "${alicloud_schedulerx_app_group.CreateAppGroup.group_id}",
+					"job_type":  "shell",
+					"job_monitor_info": []map[string]interface{}{
+						{
+							"monitor_config": []map[string]interface{}{
+								{
+									"timeout":      "7200",
+									"send_channel": "webhook",
+								},
+							},
+							"contact_info": []map[string]interface{}{
+								{
+									"user_name": "test-user",
+								},
+							},
+						},
+					},
+					"content":          "echo 'hello'",
+					"namespace_source": "schedulerx",
+					"attempt_interval": "30",
+					"execute_mode":     "standalone",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":                            "Enable",
+						"max_attempt":                       "0",
+						"description":                       "test contact_info nil guard",
+						"success_notice_enable":             "false",
+						"job_name":                          name,
+						"max_concurrency":                   "1",
+						"namespace":                         CHECKSET,
+						"group_id":                          CHECKSET,
+						"job_type":                          "shell",
+						"content":                           "echo 'hello'",
+						"namespace_source":                  "schedulerx",
+						"attempt_interval":                  "30",
+						"execute_mode":                      "standalone",
+						"job_monitor_info.#":                "1",
+						"job_monitor_info.0.contact_info.#": "1",
+						"job_monitor_info.0.contact_info.0.user_name":      "test-user",
+						"job_monitor_info.0.monitor_config.#":              "1",
+						"job_monitor_info.0.monitor_config.0.timeout":      "7200",
+						"job_monitor_info.0.monitor_config.0.send_channel": "webhook",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"fail_times", "namespace_source", "success_notice_enable", "task_dispatch_mode", "template", "timezone"},
+			},
+		},
+	})
+}
+
+var AlicloudSchedulerxJobMapContactInfoEmpty = map[string]string{
+	"job_id": CHECKSET,
+}
+
+func AlicloudSchedulerxJobBasicDependenceContactInfoEmpty(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_schedulerx_namespace" "CreateNameSpace" {
+  namespace_name = var.name
+  description    = "namespace for contact_info nil guard test"
+}
+
+resource "alicloud_schedulerx_app_group" "CreateAppGroup" {
+  namespace             = alicloud_schedulerx_namespace.CreateNameSpace.namespace_uid
+  group_id              = "test-appgroup-pop-autotest"
+  description           = "appgroup for contact_info nil guard test"
+  monitor_contacts_json = "[{\"name\":\"用户-手机\"},{\"name\":\"用户-钉钉\"}]"
+  app_name              = "test-appgroup-pop-autotest"
+  app_version           = "1"
+  namespace_name        = alicloud_schedulerx_namespace.CreateNameSpace.namespace_name
+  monitor_config_json   = "{\"sendChannel\":\"sms,ding\",\"alarmType\":\"Contacts\",\"webhookIsAtAll\":\"false\"}"
+  app_type              = "2"
+  max_jobs              = "100"
+  namespace_source      = "schedulerx"
 }
 
 

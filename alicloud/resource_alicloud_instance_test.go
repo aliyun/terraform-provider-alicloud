@@ -771,12 +771,12 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"security_groups":            []string{"${alicloud_security_group.default.0.id}"},
-					"instance_name":              name,
-					"description":                name,
-					"host_name":                  REMOVEKEY,
-					"password":                   REMOVEKEY,
+					"instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"security_groups": []string{"${alicloud_security_group.default.0.id}"},
+					"instance_name":   name,
+					"description":     name,
+					"host_name":       REMOVEKEY,
+					"password":        REMOVEKEY,
 					// "credit_specification":       "Standard",
 
 					"system_disk_size": "70",
@@ -1558,7 +1558,7 @@ func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
 func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
-	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	ra := resourceAttrInit(resourceId, testAccInstanceDataDisksCheckMap)
 	serviceFunc := func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
@@ -1580,7 +1580,7 @@ func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":                      "${data.alicloud_images.default.images.0.id}",
-					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"network_interface_id":          "${alicloud_ecs_network_interface.primary.id}",
 					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
 					"system_disk_category":          "cloud_efficiency",
@@ -1591,11 +1591,10 @@ func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "${base64encode(\"I am the user data\")}",
 					"instance_charge_type":          "PostPaid",
-					"vswitch_id":                    "${alicloud_vswitch.default.id}",
 					"role_name":                     "${alicloud_ram_role.default.name}",
 					"network_interfaces": []map[string]string{
 						{
-							"network_interface_id": "${alicloud_ecs_network_interface.default.id}",
+							"network_interface_id": "${alicloud_ecs_network_interface.secondary.id}",
 						},
 					},
 					"data_disks": []map[string]string{
@@ -2829,10 +2828,16 @@ resource "alicloud_kms_key" "key" {
   key_state              = "Enabled"
 }
 
-resource "alicloud_ecs_network_interface" "default" {
-  network_interface_name = var.name
+resource "alicloud_ecs_network_interface" "primary" {
+  network_interface_name = "${var.name}primary"
   vswitch_id             = alicloud_vswitch.default.id
   security_group_ids     = [alicloud_security_group.default.0.id]
+}
+
+resource "alicloud_ecs_network_interface" "secondary" {
+  network_interface_name = "${var.name}secondary"
+  vswitch_id             = alicloud_vswitch.default.id
+  security_group_ids     = [alicloud_security_group.default.1.id]
 }
 `, name)
 }
@@ -3072,6 +3077,42 @@ var testAccInstanceCheckMap = map[string]string{
 	"instance_type":     CHECKSET,
 	"security_groups.#": "1",
 
+	"availability_zone":    CHECKSET,
+	"system_disk_category": "cloud_efficiency",
+	//"credit_specification":          "",
+	"spot_strategy":    "NoSpot",
+	"spot_price_limit": "0",
+	// "security_enhancement_strategy": "Active",
+	"vswitch_id": CHECKSET,
+	"user_data":  "I_am_user_data",
+
+	"description":   "",
+	"host_name":     CHECKSET,
+	"password":      "",
+	"is_outdated":   NOSET,
+	"volume_tags.%": "0",
+	"tags.%":        NOSET,
+
+	"private_ip":                 CHECKSET,
+	"public_ip":                  "",
+	"status":                     "Running",
+	"internet_charge_type":       "PayByTraffic",
+	"internet_max_bandwidth_out": "0",
+	"instance_charge_type":       "PostPaid",
+	// the attributes of below are suppressed  when the value of instance_charge_type is `PostPaid`
+	"period":             NOSET,
+	"force_delete":       NOSET,
+	"include_data_disks": NOSET,
+	"dry_run":            "false",
+	"system_disk_id":     CHECKSET,
+	"create_time":        CHECKSET,
+	"start_time":         CHECKSET,
+	"expired_time":       CHECKSET,
+}
+
+var testAccInstanceDataDisksCheckMap = map[string]string{
+	"image_id":             CHECKSET,
+	"instance_type":        CHECKSET,
 	"availability_zone":    CHECKSET,
 	"system_disk_category": "cloud_efficiency",
 	//"credit_specification":          "",
@@ -3464,6 +3505,7 @@ func TestAccAliCloudECSInstanceSystemDisk(t *testing.T) {
 					"system_disk_encrypted":         "true",
 					"system_disk_kms_key_id":        "${alicloud_kms_key.key.id}",
 					"system_disk_encrypt_algorithm": "aes-256",
+					"source_dest_check":             "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3473,6 +3515,7 @@ func TestAccAliCloudECSInstanceSystemDisk(t *testing.T) {
 						"system_disk_kms_key_id": CHECKSET,
 						"system_disk_category":   "cloud_essd",
 						"system_disk_size":       "500",
+						"source_dest_check":      "true",
 					}),
 				),
 			},
@@ -3852,6 +3895,7 @@ func TestAccAliCloudECSInstanceNetworkInterface0(t *testing.T) {
 					"network_interface_traffic_mode": "HighPerformance",
 					"network_card_index":             "0",
 					"queue_pair_number":              "1",
+					"source_dest_check":              "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3862,6 +3906,7 @@ func TestAccAliCloudECSInstanceNetworkInterface0(t *testing.T) {
 						"network_interface_traffic_mode": "HighPerformance",
 						"network_card_index":             "0",
 						"queue_pair_number":              "1",
+						"source_dest_check":              "true",
 					}),
 				),
 			},
@@ -3968,11 +4013,13 @@ func TestAccAliCloudECSInstanceNetworkInterface1(t *testing.T) {
 					"network_interface_traffic_mode": "HighPerformance",
 					"network_card_index":             "0",
 					"queue_pair_number":              "1",
+					"source_dest_check":              "true",
 					"network_interfaces": []map[string]interface{}{
 						{
 							"vswitch_id":                     "${alicloud_vswitch.networkInterface.id}",
 							"network_interface_traffic_mode": "Standard",
 							"network_card_index":             "1",
+							"source_dest_check":              "true",
 							"security_group_ids":             []string{"${alicloud_security_group.networkInterface.id}"},
 						},
 					},
@@ -3993,6 +4040,7 @@ func TestAccAliCloudECSInstanceNetworkInterface1(t *testing.T) {
 						"network_interface_traffic_mode": "HighPerformance",
 						"network_card_index":             "0",
 						"queue_pair_number":              "1",
+						"source_dest_check":              "true",
 						"network_interfaces.#":           "1",
 						"cpu_options.#":                  "1",
 					}),
@@ -4133,6 +4181,7 @@ func TestAccAliCloudECSInstanceNetworkInterface2(t *testing.T) {
 							"network_interface_traffic_mode": "HighPerformance",
 							"network_card_index":             "1",
 							"queue_pair_number":              "1",
+							"source_dest_check":              "true",
 							"security_group_ids":             []string{"${alicloud_security_group.networkInterface.id}"},
 						},
 					},

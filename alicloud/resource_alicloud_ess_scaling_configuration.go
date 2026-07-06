@@ -729,7 +729,7 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	}
 
 	if v := d.Get("system_disk_size").(int); v != 0 {
-		request["SystemDisk.Size"] = d.Get("system_disk_size")
+		request["SystemDisk.Size"] = v
 	}
 
 	if v := d.Get("system_disk_name").(string); v != "" {
@@ -1165,8 +1165,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if d.HasChange("system_disk_size") {
-		request["SystemDisk.Size"] = d.Get("system_disk_size")
-		update = true
+		if v := d.Get("system_disk_size").(int); v != 0 {
+			request["SystemDisk.Size"] = d.Get("system_disk_size")
+			update = true
+		}
 	}
 
 	if d.HasChange("system_disk_name") {

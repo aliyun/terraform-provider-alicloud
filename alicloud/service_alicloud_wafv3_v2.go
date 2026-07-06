@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -356,6 +357,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseRule(id string) (object map[string]
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -515,3 +517,119 @@ func (s *Wafv3ServiceV2) Wafv3DefenseResourceGroupStateRefreshFuncWithApi(id str
 }
 
 // DescribeWafv3DefenseResourceGroup >>> Encapsulated.
+
+// DescribeWafv3AddressBook <<< Encapsulated get interface for Wafv3 AddressBook.
+
+func (s *Wafv3ServiceV2) DescribeWafv3AddressBook(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RuleId"] = parts[1]
+	request["InstanceId"] = parts[0]
+	request["RegionId"] = client.RegionId
+	request["DefenseType"] = "global"
+	action := "DescribeDefenseRule"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Defense.Control.DefenseRuleNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("AddressBook", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Rule.Config", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rule.Config", response)
+	}
+
+	if configStr, ok := v.(string); ok {
+		object = make(map[string]interface{})
+		if err := json.Unmarshal([]byte(configStr), &object); err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rule.Config", response)
+		}
+		return object, nil
+	}
+	return v.(map[string]interface{}), nil
+}
+func (s *Wafv3ServiceV2) DescribeWafv3AddressBookAddresses(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+
+	action := "DescribeAddresses"
+	aggregatedAddresses := make([]interface{}, 0)
+	nextToken := ""
+
+	for {
+		request := map[string]interface{}{
+			"RuleId":     parts[1],
+			"InstanceId": parts[0],
+			"RegionId":   client.RegionId,
+			"MaxResults": 100,
+		}
+		if nextToken != "" {
+			request["NextToken"] = nextToken
+		}
+		query := make(map[string]interface{})
+
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"Defense.Control.DefenseRuleNotExist"}) {
+				return object, WrapErrorf(NotFoundErr("AddressBook", id), NotFoundMsg, response)
+			}
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		if pageList, ok := response["AddressList"].([]interface{}); ok {
+			aggregatedAddresses = append(aggregatedAddresses, pageList...)
+		}
+
+		nt, _ := response["NextToken"].(string)
+		if nt == "" || nt == nextToken {
+			break
+		}
+		nextToken = nt
+	}
+
+	return map[string]interface{}{"AddressList": aggregatedAddresses}, nil
+}
+
+// DescribeWafv3AddressBook >>> Encapsulated.

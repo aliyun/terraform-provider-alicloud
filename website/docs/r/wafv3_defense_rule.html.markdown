@@ -82,7 +82,9 @@ resource "alicloud_wafv3_defense_rule" "default" {
 }
 ```
 
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_wafv3_defense_rule&spm=docs.r.wafv3_defense_rule.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
@@ -109,7 +111,7 @@ When the protection rule type `DefenseType` is set to `template`, the value is a
 
 When the protection rule type `DefenseType` is set to `resource`, the value is as follows:
   - `account_identifier`: indicates account extraction.
-  - `waf_codec`: (Available since v1.269.0) indicates decode setting.
+  - `waf_codec`: indicates decode setting.
 * `defense_type` - (Required, ForceNew) The protection rule type. Value:
   - `template` (default): indicates the template protection rule.
   - `resource`: indicates the rule of the protected object dimension.
@@ -172,7 +174,7 @@ The config supports the following:
   - dlp: indicates information leakage prevention.
   - tamperproof: indicates web tamper-proofing.
   - spike_throttle: indicates peak traffic throttling.
-* `cc_effect` - (Optional) Set the effective range of the speed limit. This information is configured only when ccStatus is set to 1. Value:
+* `cc_effect` - (Optional, Computed) Set the effective range of the speed limit. This information is configured only when ccStatus is set to 1. Value:
   - service: indicates that the effective object is a protected object.
   - rule: indicates that the effective object is a single rule.
 * `cc_status` - (Optional, Int) Whether to open the speed limit. Value:
@@ -227,7 +229,7 @@ The config supports the following:
 * `time_config` - (Optional, Computed, Set, Available since v1.262.0) The scheduled rule configuration. The value is a JSON.  See [`time_config`](#config-time_config) below.
 * `ua` - (Optional) The User-Agent string that is allowed for access to the address.
 * `url` - (Optional) The address of the cached page.
-* `waf_base_config` - (Optional, List, Available since v1.269.0) The configuration of the Web core protection rules to be modified. See [`waf_base_config`](#config-waf_base_config) below.
+* `waf_base_config` - (Optional, List) The configuration of the Web core protection rules to be modified. See [`waf_base_config`](#config-waf_base_config) below.
 
 ### `config-account_identifiers`
 
@@ -273,6 +275,8 @@ The config-conditions supports the following:
   - mpty: Indicates that the content is empty.
   - exists: Indicates that the field exists.
   - inl: indicates in the list.
+  - in-list: Indicates that the value is in the list.
+  - not-in-list: Indicates that the value is not in the list.
 
 -> **NOTE:**  Not all logical characters (opvalues) can be configured for the match field (key) of each custom rule. For the logical characters supported by different matching fields, please refer to the association relationship between the matching fields and the logical characters in the custom rules of the WAF console.
 
@@ -335,7 +339,7 @@ The config-waf_base_config supports the following:
   - `all_block`: sets the action of all rules to Block.
   - `all_monitor`: sets the action of all rules to Monitor.
 * `rule_detail` - (Optional, List, Available since v1.269.0) The configuration of the Web core protection rules to be modified. See [`rule_detail`](#config-waf_base_config-rule_detail) below.
-* `rule_type` - (Optional, Available since v1.269.0) The type of the rule. Valid values:
+* `rule_type` - (Optional) The type of the rule. Valid values:
   - `system`: a system rule for basic protection.
   - `custom`: a custom regular expression rule for basic protection.
 
@@ -346,7 +350,7 @@ The config-waf_base_config-rule_detail supports the following:
   - `block`: blocks requests.
   - `monitor`: places requests in observation mode.
 * `rule_id` - (Optional, Available since v1.269.0) The ID of the core Web protection rule.
-* `rule_status` - (Optional, Int, Available since v1.269.0) The status of Web core protection rules.
+* `rule_status` - (Optional, Int) The status of Web core protection rules.
 
 ### `config-time_config-time_periods`
 
@@ -377,6 +381,7 @@ The config-rate_limit-status supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<defense_type>:<rule_id>`.
+* `gmt_modified` - The modification time of the protection rule.
 * `rule_id` - The protection rule ID.
 
 ## Timeouts

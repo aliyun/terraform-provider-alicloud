@@ -79,6 +79,10 @@ func dataSourceAliCloudAmqpInstances() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
+						"serverless_switch": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 						"payment_type": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -208,6 +212,7 @@ func dataSourceAliCloudAmqpInstancesRead(d *schema.ResourceData, meta interface{
 			"public_endpoint":   object["PublicEndpoint"],
 			"private_end_point": object["PrivateEndpoint"],
 			"support_eip":       object["SupportEIP"],
+			"serverless_switch": object["ServerlessSwitch"],
 			"status":            object["Status"],
 			"create_time":       fmt.Sprint(object["OrderCreateTime"]),
 			"expire_time":       fmt.Sprint(object["ExpireTime"]),

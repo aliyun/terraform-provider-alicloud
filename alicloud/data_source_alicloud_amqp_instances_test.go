@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
@@ -67,6 +68,7 @@ func TestAccAliCloudAmqpInstancesDataSource_basic0(t *testing.T) {
 			"instances.0.public_endpoint":       CHECKSET,
 			"instances.0.private_end_point":     CHECKSET,
 			"instances.0.support_eip":           CHECKSET,
+			"instances.0.serverless_switch":     CHECKSET,
 			"instances.0.payment_type":          "",
 			"instances.0.renewal_status":        "",
 			"instances.0.renewal_duration":      "0",
@@ -92,6 +94,7 @@ func TestAccAliCloudAmqpInstancesDataSource_basic0(t *testing.T) {
 	}
 
 	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		testAccPreCheck(t)
 		testAccPreCheckWithAccountSiteType(t, DomesticSite)
 	}
@@ -167,6 +170,7 @@ func TestAccAliCloudAmqpInstancesDataSource_basic1(t *testing.T) {
 			"instances.0.public_endpoint":       CHECKSET,
 			"instances.0.private_end_point":     CHECKSET,
 			"instances.0.support_eip":           CHECKSET,
+			"instances.0.serverless_switch":     CHECKSET,
 			"instances.0.payment_type":          CHECKSET,
 			"instances.0.renewal_status":        CHECKSET,
 			"instances.0.renewal_duration":      CHECKSET,
@@ -189,6 +193,7 @@ func TestAccAliCloudAmqpInstancesDataSource_basic1(t *testing.T) {
 			"instances.0.public_endpoint":       CHECKSET,
 			"instances.0.private_end_point":     CHECKSET,
 			"instances.0.support_eip":           CHECKSET,
+			"instances.0.serverless_switch":     CHECKSET,
 			"instances.0.payment_type":          "",
 			"instances.0.renewal_status":        "",
 			"instances.0.renewal_duration":      "0",
@@ -206,6 +211,7 @@ func TestAccAliCloudAmqpInstancesDataSource_basic1(t *testing.T) {
 	}
 
 	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		testAccPreCheck(t)
 		testAccPreCheckWithAccountSiteType(t, DomesticSite)
 	}
@@ -219,6 +225,20 @@ func dataSourceAmqpInstancesConfig(name string) string {
   		default = "%s"
 	}
 
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^default-NODELETING-ACK-switch"
+	}
+
+	data "alicloud_security_groups" "default" {
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^sae"
+	}
+
 	resource "alicloud_amqp_instance" "default" {
   		instance_name         = var.name
   		instance_type         = "enterprise"
@@ -230,6 +250,9 @@ func dataSourceAmqpInstancesConfig(name string) string {
   		renewal_duration      = 1
   		renewal_duration_unit = "Year"
   		support_eip           = true
+  		vpc_id                = data.alicloud_vpcs.default.ids.0
+  		vswitch_ids           = [data.alicloud_vswitches.default.ids.0, data.alicloud_vswitches.default.ids.1]
+  		security_group_id     = data.alicloud_security_groups.default.ids.0
 	}
 `, name)
 }

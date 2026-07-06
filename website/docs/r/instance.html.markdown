@@ -107,7 +107,14 @@ The following arguments are supported:
 * `image_id` - (Optional) The Image to use for the instance. ECS instance's image can be replaced via changing `image_id`. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `image_id`.
 * `instance_type` - (Optional) The type of instance to start. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `instance_type`.
 * `is_outdated` - (Optional) Whether to use outdated instance type.
-* `security_groups` - (Optional)  A list of security group ids to associate with. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
+* `network_interface_id` - (Optional, ForceNew, Available since v1.284.0) The ID of the Primary ENI.
+  
+-> **NOTE:** From version 1.284.0, `network_interface_id` can be set.
+
+* `security_groups` - (Optional) A list of security group ids to associate with.
+
+-> **NOTE:** If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
+
 * `availability_zone` - (Optional, ForceNew) The Zone to start the instance in. It is ignored and will be computed when set `vswitch_id`.
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://. **NOTE:** From version 1.243.0, the default value `ECS-Instance` will be removed.
 * `system_disk_category` - (Optional, ForceNew) Valid values are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`, `cloud_auto`, `cloud_essd_entry`. only is used to some none I/O optimized instance. Valid values `cloud_auto` Available since v1.184.0.
@@ -240,8 +247,9 @@ The following arguments are supported:
 * `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.227.1) The communication mode of the Primary ENI. Default value: `Standard`. Valid values:
   - `Standard`: Uses the TCP communication mode.
   - `HighPerformance`: Uses the remote direct memory access (RDMA) communication mode with Elastic RDMA Interface (ERI) enabled.
-* `network_card_index` - (Optional, ForceNew, Int, Available since v1.227.1)  The index of the network card for Primary ENI.
+* `network_card_index` - (Optional, ForceNew, Int, Available since v1.227.1) The index of the network card for Primary ENI.
 * `queue_pair_number` - (Optional, ForceNew, Int, Available since v1.227.1) The number of queues supported by the ERI.
+* `source_dest_check` - (Optional, ForceNew, Bool, Available since v1.284.0) Specifies whether to enable the source and destination IP address check feature. We recommend that you enable the feature to improve network security. Valid values: `true`, `false`.
 * `password_inherit` - (Optional, Bool, Available since v1.232.0) Specifies whether to use the password preset in the image. Default value: `false`. Valid values:
   - `true`: Uses the preset password.
   - `false`: Does not use the preset password.
@@ -321,8 +329,9 @@ The network_interfaces supports the following.
 * `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.223.2) The communication mode of the Secondary ENI. Default value: `Standard`. Valid values:
   - `Standard`: Uses the TCP communication mode.
   - `HighPerformance`: Uses the remote direct memory access (RDMA) communication mode with Elastic RDMA Interface (ERI) enabled.
-* `network_card_index` - (Optional, ForceNew, Int, Available since v1.227.1)  The index of the network card for Secondary ENI.
+* `network_card_index` - (Optional, ForceNew, Int, Available since v1.227.1) The index of the network card for Secondary ENI.
 * `queue_pair_number` - (Optional, ForceNew, Int, Available since v1.227.1) The number of queues supported by the ERI.
+* `source_dest_check` - (Optional, ForceNew, Bool, Available since v1.284.0) Specifies whether to enable the source and destination IP address check feature. We recommend that you enable the feature to improve network security. Valid values: `true`, `false`.
 * `security_group_ids` - (Optional, ForceNew, List, Available since v1.223.2) The ID of security group N to which to assign Secondary ENI N.
 
 ### `maintenance_time`
@@ -356,7 +365,6 @@ The following attributes are exported:
 * `memory` - The memory size of the instance. Unit: MiB.
 * `os_type` - The type of the operating system of the instance.
 * `os_name` - The name of the operating system of the instance.
-* `network_interface_id` - The ID of the Primary ENI.
 * `system_disk_id` - (Available since v1.210.0) The ID of system disk.
 * `primary_ip_address` - The primary private IP address of the ENI.
 * `deployment_set_group_no` - The group number of the instance in a deployment set when the deployment set is use.

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -38,7 +37,6 @@ func resourceAlicloudRosStackInstances() *schema.Resource {
 			"deployment_targets": {
 				Type:          schema.TypeList,
 				Optional:      true,
-				ForceNew:      true,
 				MaxItems:      1,
 				ConflictsWith: []string{"account_ids"},
 				Elem: &schema.Resource{
@@ -52,34 +50,37 @@ func resourceAlicloudRosStackInstances() *schema.Resource {
 							DiffSuppressFunc: suppressDeploymentTargetAccountIdsDiff,
 						},
 						"rd_folder_ids": {
-							Type:        schema.TypeList,
-							Optional:    true,
-							MaxItems:    20,
-							Elem:        &schema.Schema{Type: schema.TypeString},
-							Description: "List of Resource Directory folder IDs.",
+							Type:             schema.TypeList,
+							Optional:         true,
+							MaxItems:         20,
+							Elem:             &schema.Schema{Type: schema.TypeString},
+							Description:      "List of Resource Directory folder IDs.",
+							DiffSuppressFunc: suppressListOrderDiff,
 						},
 					},
 				},
 				Description: "Configuration block defining deployment targets. Conflicts with account_ids.",
 			},
 			"region_ids": {
-				Type:        schema.TypeList,
-				Required:    true,
-				ForceNew:    true,
-				MinItems:    1,
-				MaxItems:    20,
-				Elem:        &schema.Schema{Type: schema.TypeString},
-				Description: "List of target region IDs. Maximum 20 regions.",
+				Type:             schema.TypeList,
+				Required:         true,
+				ForceNew:         true,
+				MinItems:         1,
+				MaxItems:         20,
+				Elem:             &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: suppressListOrderDiff,
+				Description:      "List of target region IDs. Maximum 20 regions.",
 			},
 			"account_ids": {
-				Type:          schema.TypeList,
-				Optional:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"deployment_targets"},
-				MinItems:      1,
-				MaxItems:      50,
-				Elem:          &schema.Schema{Type: schema.TypeString},
-				Description:   "List of target account IDs for self-managed permissions. Maximum 50 accounts.",
+				Type:             schema.TypeList,
+				Optional:         true,
+				ForceNew:         true,
+				ConflictsWith:    []string{"deployment_targets"},
+				MinItems:         1,
+				MaxItems:         50,
+				Elem:             &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: suppressListOrderDiff,
+				Description:      "List of target account IDs for self-managed permissions. Maximum 50 accounts.",
 			},
 			"parameter_overrides": {
 				Type:      schema.TypeSet,
@@ -267,9 +268,6 @@ func resourceAlicloudRosStackInstancesCreate(d *schema.ResourceData, meta interf
 	}
 
 	operationId := fmt.Sprint(response["OperationId"])
-	if operationId == "" || operationId == "<nil>" {
-		return WrapError(fmt.Errorf("ROS CreateStackInstances did not return a valid OperationId"))
-	}
 
 	if err := waitForRosStackGroupOperationAndCheckResults(client, d.Get("stack_group_name").(string), operationId, d.Timeout(schema.TimeoutCreate)); err != nil {
 		log.Printf("[WARN] Create operation %s ended with issues.", operationId)
@@ -414,9 +412,8 @@ func resourceAlicloudRosStackInstancesRead(d *schema.ResourceData, meta interfac
 		})
 	}
 
-	// Sort to prevent state drift diffs
-	sort.Strings(foundRegionIds)
-	sort.Strings(foundAccountIds)
+	foundRegionIds = uniqueStringSlice(foundRegionIds)
+	foundAccountIds = uniqueStringSlice(foundAccountIds)
 	sort.SliceStable(stateInstances, func(i, j int) bool {
 		if stateInstances[i]["account_id"].(string) == stateInstances[j]["account_id"].(string) {
 			return stateInstances[i]["region_id"].(string) < stateInstances[j]["region_id"].(string)
@@ -436,9 +433,6 @@ func resourceAlicloudRosStackInstancesRead(d *schema.ResourceData, meta interfac
 	}
 
 	d.Set("stack_instances", stateInstances)
-	// Persist non-returned attributes from state/config
-	d.Set("timeout_in_minutes", d.Get("timeout_in_minutes"))
-	d.Set("disable_rollback", d.Get("disable_rollback"))
 
 	// Safely handle deployment_targets preservation
 	if dtList, ok := d.Get("deployment_targets").([]interface{}); ok && len(dtList) > 0 {
@@ -454,19 +448,6 @@ func resourceAlicloudRosStackInstancesRead(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if v := d.Get("operation_preferences"); v != nil {
-		d.Set("operation_preferences", v)
-	}
-	if v := d.Get("operation_description"); v != nil {
-		d.Set("operation_description", v)
-	}
-	if v := d.Get("parameter_overrides"); v != nil {
-		d.Set("parameter_overrides", v)
-	}
-	if v := d.Get("deployment_options"); v != nil {
-		d.Set("deployment_options", v)
-	}
-
 	return nil
 }
 
@@ -474,7 +455,7 @@ func resourceAlicloudRosStackInstancesUpdate(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	action := "UpdateStackInstances"
 
-	if !d.HasChanges("parameter_overrides", "operation_preferences", "timeout_in_minutes", "operation_description") {
+	if !d.HasChanges("parameter_overrides", "operation_preferences", "timeout_in_minutes", "operation_description", "deployment_targets") {
 		return nil
 	}
 
@@ -639,46 +620,6 @@ func resourceAlicloudRosStackInstancesDelete(d *schema.ResourceData, meta interf
 		}
 	}
 
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		req := map[string]interface{}{
-			"RegionId":       client.RegionId,
-			"StackGroupName": stackGroupName,
-			"PageNumber":     1,
-			"PageSize":       50,
-		}
-		resp, err := client.RpcPost("ROS", "2019-09-10", "ListStackInstances", nil, req, true)
-		if err != nil {
-			if IsExpectedErrors(err, []string{"StackGroupNotFound"}) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-		if resp == nil {
-			return resource.RetryableError(fmt.Errorf("waiting for stack instances deletion verification"))
-		}
-
-		instances, _ := resp["StackInstances"].([]interface{})
-		for _, item := range instances {
-			inst := item.(map[string]interface{})
-			accId := fmt.Sprintf("%v", inst["AccountId"])
-			regId := fmt.Sprintf("%v", inst["RegionId"])
-
-			targetAccounts := request["AccountIds"]
-			targetRegions := request["RegionIds"]
-
-			matchReg := targetRegions == nil || strings.Contains(fmt.Sprintf("%v", targetRegions), regId)
-			matchAcc := targetAccounts == nil || strings.Contains(fmt.Sprintf("%v", targetAccounts), accId)
-
-			if matchAcc && matchReg {
-				return resource.RetryableError(fmt.Errorf("stack instances still exist in account %s region %s", accId, regId))
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		log.Printf("[WARN] Final cleanup wait warning: %v", err)
-	}
-
 	d.SetId("")
 	return nil
 }
@@ -791,6 +732,7 @@ func waitForRosStackGroupOperationAndCheckResults(client *connectivity.AliyunCli
 }
 
 func waitForRosStackGroupOperation(client *connectivity.AliyunClient, operationId string, timeout time.Duration) error {
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	return resource.Retry(timeout, func() *resource.RetryError {
 		req := map[string]interface{}{"RegionId": client.RegionId, "OperationId": operationId}
 		var response map[string]interface{}
@@ -798,6 +740,7 @@ func waitForRosStackGroupOperation(client *connectivity.AliyunClient, operationI
 		response, err = client.RpcPost("ROS", "2019-09-10", "GetStackGroupOperation", nil, req, true)
 		if err != nil {
 			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -806,7 +749,7 @@ func waitForRosStackGroupOperation(client *connectivity.AliyunClient, operationI
 
 		opRaw, ok := response["StackGroupOperation"]
 		if !ok || opRaw == nil {
-			time.Sleep(5 * time.Second)
+			wait()
 			return resource.RetryableError(fmt.Errorf("operation not available"))
 		}
 		op, _ := opRaw.(map[string]interface{})
@@ -817,27 +760,10 @@ func waitForRosStackGroupOperation(client *connectivity.AliyunClient, operationI
 		case "FAILED", "CANCELLED":
 			return resource.NonRetryableError(fmt.Errorf("operation ended: %s, Reason: %v", status, op["Reason"]))
 		default:
-			time.Sleep(5 * time.Second)
+			wait()
 			return resource.RetryableError(fmt.Errorf("operation status: %s", status))
 		}
 	})
-}
-
-func suppressJsonStringDiff(k, old, new string, d *schema.ResourceData) bool {
-	if old == new {
-		return true
-	}
-	if old == "" || new == "" {
-		return false
-	}
-	var o, n interface{}
-	if err := json.Unmarshal([]byte(old), &o); err != nil {
-		return false
-	}
-	if err := json.Unmarshal([]byte(new), &n); err != nil {
-		return false
-	}
-	return reflect.DeepEqual(o, n)
 }
 
 func stringSliceContains(slice []string, val string) bool {
@@ -857,6 +783,18 @@ func convertStringListToInterfaceList(list []string) []interface{} {
 	return result
 }
 
+func uniqueStringSlice(list []string) []string {
+	seen := make(map[string]struct{})
+	var unique []string
+	for _, s := range list {
+		if _, exists := seen[s]; !exists {
+			seen[s] = struct{}{}
+			unique = append(unique, s)
+		}
+	}
+	return unique
+}
+
 func uniqueInterfaceSlice(list []interface{}) []interface{} {
 	seen := make(map[string]struct{})
 	var unique []interface{}
@@ -871,12 +809,56 @@ func uniqueInterfaceSlice(list []interface{}) []interface{} {
 	return unique
 }
 
+// suppressListOrderDiff suppresses diffs for TypeList fields where element order
+// doesn't matter (e.g. region_ids, account_ids). It compares both sides as sets.
+// Works for both top-level fields and nested fields inside blocks.
+func suppressListOrderDiff(k, old, new string, d *schema.ResourceData) bool {
+	// Extract the list key by removing the last segment (element index or "#")
+	// e.g. "region_ids.0" → "region_ids"
+	// e.g. "deployment_targets.0.rd_folder_ids.1" → "deployment_targets.0.rd_folder_ids"
+	baseKey := k
+	if idx := strings.LastIndexByte(k, '.'); idx >= 0 {
+		baseKey = k[:idx]
+	}
+
+	oldSet := make(map[string]struct{})
+	newSet := make(map[string]struct{})
+
+	// Collect old and new values via GetChange
+	oldVal, newVal := d.GetChange(baseKey)
+	if oldList, ok := oldVal.([]interface{}); ok {
+		for _, v := range oldList {
+			if s, ok := v.(string); ok {
+				oldSet[s] = struct{}{}
+			}
+		}
+	}
+	if newList, ok := newVal.([]interface{}); ok {
+		for _, v := range newList {
+			if s, ok := v.(string); ok {
+				newSet[s] = struct{}{}
+			}
+		}
+	}
+
+	if len(oldSet) != len(newSet) {
+		return false
+	}
+	for s := range oldSet {
+		if _, ok := newSet[s]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func suppressDeploymentTargetAccountIdsDiff(k, old, new string, d *schema.ResourceData) bool {
-	if old == "" && new == "0" {
-		return true
+	// Suppress spurious diff between empty string and "0" for the count key
+	if strings.HasSuffix(k, ".#") {
+		if (old == "" && new == "0") || (old == "0" && new == "") {
+			return true
+		}
 	}
-	if old == "0" && new == "" {
-		return true
-	}
-	return false
+	// Suppress order-independent diffs for element keys
+	return suppressListOrderDiff(k, old, new, d)
 }

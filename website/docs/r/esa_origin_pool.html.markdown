@@ -120,11 +120,16 @@ The origins supports the following:
   - `false`: Not enabled.
 * `header` - (Optional) The request header that is sent when returning to the source. Only Host is supported.
 * `name` - (Optional) Origin Name.
-* `type` - (Optional) Source station type:
-ip_domain: ip or domain name type origin station;
+* `type` - (Optional) The type of the origin. Valid values:
+  - `ip_domain`: ip or domain name type origin station;
   - `OSS`:OSS address source station;
   - `S3`:AWS S3 Source station.
 * `weight` - (Optional, Int) Weight, 0-100.
+* `ip_version_policy` - (Optional, Available since v1.283.0) The IP protocol version for back-to-origin requests. Default value: `round_robin`. Valid values:
+  - `round_robin`: Randomly selects an IPv4 or IPv6 origin.
+  - `ipv4_first`: Prioritizes IPv4 origins.
+  - `ipv6_first`: Prioritizes IPv6 origins.
+  - `follow`: Uses the same IP protocol version as the client's request.
 
 ### `origins-auth_conf`
 

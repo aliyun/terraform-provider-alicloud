@@ -71,12 +71,12 @@ The following arguments are supported:
   - on: Open
   - off: off
 * `fallback` - (Optional, Available since v1.265.0) Spare
-* `route_enable` - (Optional) Routing switch. Value range:
+* `route_enable` - (Required) Routing switch. Value range:
   - on: Open
   - off: off
-* `route_name` - (Optional) The route name.
+* `route_name` - (Required) The route name.
 * `routine_name` - (Required, ForceNew) The edge function Routine name.
-* `rule` - (Optional) The rule content.
+* `rule` - (Required) The rule content.
 * `sequence` - (Optional, Int) Rule execution order.
 * `site_id` - (Required, ForceNew) Site Id
 

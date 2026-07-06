@@ -128,6 +128,7 @@ The following arguments are supported:
 * `db_type` - (Required, ForceNew) Database type. Value options: MySQL, Oracle, PostgreSQL.
 * `db_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBVersion`.
 * `db_minor_version` - (Optional, ForceNew, Available since 1.247.0) Database minor version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBMinorVersion`. This parameter takes effect only when `db_type` is MySQL and `db_version` is 8.0.
+* `target_minor_version` - (Optional, ForceNew, Available since 1.285.0) The target minor version of the cluster. Used during creation.
 * `db_node_class` - (Required) The db_node_class of cluster node.
 -> **NOTE:** Node specifications are divided into cluster version, single node version and History Library version. They can't change each other, but the general specification and exclusive specification of cluster version can be changed. 
   From version 1.204.0, If you need to create a Serverless cluster with MySQL , `db_node_class` can be set to `polar.mysql.sl.small` for enterprise edition, and `polar.mysql.sl.small.c` for standard edition.

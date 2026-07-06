@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,14 +36,17 @@ func resourceAliCloudEsaTransportLayerApplication() *schema.Resource {
 			"cross_border_optimization": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"ip_access_rule": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"ipv6": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"record_name": {
 				Type:     schema.TypeString,
@@ -168,7 +172,7 @@ func resourceAliCloudEsaTransportLayerApplicationCreate(d *schema.ResourceData, 
 	d.SetId(fmt.Sprintf("%v:%v", request["SiteId"], response["ApplicationId"]))
 
 	esaServiceV2 := EsaServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 15*time.Minute, esaServiceV2.EsaTransportLayerApplicationStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 3*time.Minute, esaServiceV2.EsaTransportLayerApplicationStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -195,7 +199,11 @@ func resourceAliCloudEsaTransportLayerApplicationRead(d *schema.ResourceData, me
 	d.Set("ipv6", objectRaw["Ipv6"])
 	d.Set("record_name", objectRaw["RecordName"])
 	d.Set("status", objectRaw["Status"])
-	d.Set("application_id", objectRaw["ApplicationId"])
+	applicationId, err := strconv.ParseInt(objectRaw["ApplicationId"].(json.Number).String(), 10, 64)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("application_id", applicationId)
 	if v, ok := objectRaw["SiteId"]; ok {
 		d.Set("site_id", v)
 	}
@@ -297,7 +305,7 @@ func resourceAliCloudEsaTransportLayerApplicationUpdate(d *schema.ResourceData, 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		esaServiceV2 := EsaServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Minute, esaServiceV2.EsaTransportLayerApplicationStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, esaServiceV2.EsaTransportLayerApplicationStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -346,7 +354,11 @@ func resourceAliCloudEsaTransportLayerApplicationDelete(d *schema.ResourceData, 
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
+		esaServiceV2 := EsaServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 3*time.Minute, esaServiceV2.EsaTransportLayerApplicationStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 	return nil
 }

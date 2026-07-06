@@ -3369,7 +3369,7 @@ func (s *EsaServiceV2) DescribeEsaRoutineRoute(id string) (object map[string]int
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -4311,6 +4311,9 @@ func (s *EsaServiceV2) DescribeEsaTransportLayerApplication(id string) (object m
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"TransportLayerApplicationNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("TransportLayerApplication", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

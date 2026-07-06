@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -87,6 +86,13 @@ func resourceAliCloudMessageServiceQueue() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"queue_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"normal", "fifo"}, false),
+			},
 			"tags": tagsSchema(),
 			"visibility_timeout": {
 				Type:         schema.TypeInt,
@@ -127,6 +133,9 @@ func resourceAliCloudMessageServiceQueueCreate(d *schema.ResourceData, meta inte
 	}
 	if v, ok := d.GetOkExists("logging_enabled"); ok {
 		request["EnableLogging"] = v
+	}
+	if v, ok := d.GetOk("queue_type"); ok {
+		request["QueueType"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
@@ -200,6 +209,7 @@ func resourceAliCloudMessageServiceQueueRead(d *schema.ResourceData, meta interf
 	d.Set("maximum_message_size", objectRaw["MaximumMessageSize"])
 	d.Set("message_retention_period", objectRaw["MessageRetentionPeriod"])
 	d.Set("polling_wait_seconds", objectRaw["PollingWaitSeconds"])
+	d.Set("queue_type", objectRaw["QueueType"])
 	d.Set("visibility_timeout", objectRaw["VisibilityTimeout"])
 	d.Set("queue_name", objectRaw["QueueName"])
 

@@ -169,6 +169,11 @@ func dataSourceAlicloudOosExecutions() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 						"update_date": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -303,6 +308,9 @@ func dataSourceAlicloudOosExecutionsRead(d *schema.ResourceData, meta interface{
 			"template_name":       object["TemplateName"],
 			"template_version":    object["TemplateVersion"],
 			"update_date":         object["UpdateDate"],
+		}
+		if v, ok := object["Tags"].(map[string]interface{}); ok {
+			mapping["tags"] = tagsToMap(v)
 		}
 		ids = append(ids, fmt.Sprint(object["ExecutionId"]))
 		s = append(s, mapping)

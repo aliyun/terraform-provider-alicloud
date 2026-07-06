@@ -106,20 +106,23 @@ func TestAccAliCloudResourceManagerHandshake_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccResourceManagerHandshake%d", rand)
+	testAccUseResourceManagerHandshakeManagementAccount(t)
+	invitedAccountId := testAccResolveResourceManagerHandshakeInvitedAccountId(t)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ResourceManagerHandshakeBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckEnterpriseAccountEnabled(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
+			testAccPreCheckResourceManagerHandshakeAccountDetached(t, invitedAccountId)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"target_entity": "${alicloud_resource_manager_account.example.id}",
+					"target_entity": invitedAccountId,
 					"target_type":   "Account",
 					"note":          "test resource manager handshake",
 				}),
@@ -143,11 +146,7 @@ func TestAccAliCloudResourceManagerHandshake_basic(t *testing.T) {
 var ResourceManagerHandshakeMap = map[string]string{}
 
 func ResourceManagerHandshakeBasicdependence(name string) string {
-	return fmt.Sprintf(`
-resource "alicloud_resource_manager_account" "example" {
-  display_name = "%s"
-}
-`, name)
+	return resourceManagerHandshakeManagementProviderDependence(name)
 }
 
 // lintignore: R001
@@ -230,7 +229,7 @@ func TestUnitAlicloudResourceManagerHandshake(t *testing.T) {
 		patches.Reset()
 		assert.NotNil(t, err)
 		ReadMockResponseDiff = map[string]interface{}{}
-		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+		errorCodes := []string{"NonRetryableError", "LimitExceeded.InvitationRate", "LimitExceeded.SameTargetInvitationRate", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
 			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -357,21 +356,24 @@ func TestAccAliCloudResourceManagerHandshake_basic11272(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccresourcemanager%d", rand)
+	testAccUseResourceManagerHandshakeManagementAccount(t)
+	invitedAccountId := testAccResolveResourceManagerHandshakeInvitedAccountId(t)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerHandshakeBasicDependence11272)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
+			testAccPreCheckResourceManagerHandshakeAccountDetached(t, invitedAccountId)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"note":          "test",
 					"target_type":   "Account",
-					"target_entity": "1382956792949863",
+					"target_entity": invitedAccountId,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -402,13 +404,22 @@ var AlicloudResourceManagerHandshakeMap11272 = map[string]string{
 }
 
 func AlicloudResourceManagerHandshakeBasicDependence11272(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
+	return resourceManagerHandshakeManagementProviderDependence(name)
 }
 
+func resourceManagerHandshakeManagementProviderDependence(name string) string {
+	ak, sk := testAccResourceManagerHandshakeManagementCredentialValues()
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
 
-`, name)
+provider "alicloud" {
+  region     = "cn-hangzhou"
+  access_key = "%s"
+  secret_key = "%s"
+}
+`, name, ak, sk)
 }
 
 // Test ResourceManager Handshake. <<< Resource test cases, automatically generated.

@@ -505,6 +505,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: polardbAndCreationDiffSuppressFunc,
 			},
+			"target_minor_version": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "The target minor version of the cluster. Used during creation.",
+			},
 			"db_revision_version_list": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -1998,6 +2004,9 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	}
 	if v, ok := d.GetOk("db_minor_version"); ok && v.(string) != "" {
 		request["DBMinorVersion"] = d.Get("db_minor_version").(string)
+	}
+	if v, ok := d.GetOk("target_minor_version"); ok && v.(string) != "" {
+		request["TargetMinorVersion"] = v.(string)
 	}
 	if v, ok := d.GetOk("provisioned_iops"); ok && v.(string) != "" {
 		request["ProvisionedIops"], _ = strconv.ParseInt(v.(string), 10, 64)

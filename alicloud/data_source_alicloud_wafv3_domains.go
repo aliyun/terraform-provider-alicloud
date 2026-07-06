@@ -63,6 +63,10 @@ func dataSourceAliCloudWafv3Domains() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"domain_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"resource_manager_resource_group_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -319,6 +323,10 @@ func dataSourceAliCloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 		object, err = wafOpenapiService.DescribeWafv3Domain(fmt.Sprint(mapping["id"]))
 		if err != nil {
 			return WrapError(err)
+		}
+
+		if domainId, ok := object["DomainId"]; ok && domainId != nil {
+			mapping["domain_id"] = fmt.Sprint(domainId)
 		}
 
 		if listen, ok := object["Listen"]; ok {
