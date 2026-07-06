@@ -1274,40 +1274,58 @@ class DispatchPool:
     def terminate_all(self, release_fn=None, grace=3):
         """Immediate-cleanup stop (run.sh stop / SIGTERM): kill every active worker's
         process group (TERM→grace→KILL, so grandchildren like gopls/go build die too),
-        then release each ticket's claim so no jarvis-claimed zombie lingers.
-        Returns the list of active ids that were cleaned up."""
+        then release each running ticket's claim so no jarvis-claimed zombie lingers.
+        Returns the list of active ids that were seen during cleanup.
+
+        Race guard: setting _closed only blocks new submit(); the executor would still
+        launch already-queued workers as running slots free mid-shutdown (a freed slot
+        starting a fresh claude that our kill pass already skipped). So we first
+        shutdown(cancel_futures=True) to drop queued futures, then sweep _active TWICE
+        (TERM, wait, KILL) re-reading the live set each pass — the second sweep catches
+        any worker that spawned in the tiny window before the shutdown took effect."""
         with self._lock:
             self._closed = True
-            snapshot = [(iid, ent.get("proc"), ent.get("project"), ent.get("kind"))
+        # Drop queued-but-unstarted futures so no new worker spawns during teardown.
+        try:
+            self._executor.shutdown(wait=False, cancel_futures=True)
+        except TypeError:  # pragma: no cover — <3.9 lacks cancel_futures
+            self._executor.shutdown(wait=False)
+
+        def _sweep(sig):
+            with self._lock:
+                snap = [(iid, ent.get("proc"), ent.get("project"), ent.get("kind"))
                         for iid, ent in self._active.items()]
-        killed = []
-        for iid, proc, project, kind in snapshot:
-            if proc is None:
-                continue
-            try:
-                pgid = os.getpgid(proc.pid)
-                os.killpg(pgid, signal.SIGTERM)
-                killed.append(pgid)
-            except (ProcessLookupError, OSError):
-                pass
-        if killed:
-            time.sleep(grace)
-            for pgid in killed:
+            for _iid, proc, _project, _kind in snap:
+                if proc is None:
+                    continue
                 try:
-                    os.killpg(pgid, signal.SIGKILL)
+                    os.killpg(os.getpgid(proc.pid), sig)
                 except (ProcessLookupError, OSError):
                     pass
+            return snap
+
+        snap1 = _sweep(signal.SIGTERM)
+        time.sleep(grace)
+        snap2 = _sweep(signal.SIGKILL)
+
+        # Release only workers that actually started (proc set) — a queued ticket never
+        # ran claim.sh claim, so tagging it jarvis-idle would wrongly park an untouched
+        # item. Union both sweeps so a late-spawned worker is released too.
+        to_release = {}
+        for iid, proc, project, kind in list(snap1) + list(snap2):
+            if proc is not None and kind == "ticket" and project:
+                to_release[iid] = project
         if release_fn:
-            for iid, proc, project, kind in snapshot:
-                # Only release workers that actually started (proc set) — a queued
-                # ticket never ran claim.sh claim, so tagging it jarvis-idle would
-                # wrongly park an untouched item. Queued ones just drop for re-scan.
-                if proc is not None and kind == "ticket" and project:
-                    try:
-                        release_fn(iid, project)
-                    except Exception as e:  # noqa: BLE001
-                        log.warning("terminate_all: release #%s failed: %s", iid, e)
-        return [iid for iid, _p, _pr, _k in snapshot]
+            for iid, project in to_release.items():
+                try:
+                    release_fn(iid, project)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("terminate_all: release #%s failed: %s", iid, e)
+        # Report only ids that had a live process (actually killed) — queued futures
+        # were cancelled, not "cleaned up workers", so counting them would mislead.
+        killed = {iid for iid, proc, _pr, _k in list(snap1) + list(snap2)
+                  if proc is not None}
+        return sorted(killed)
 
     def shutdown(self, wait=False, cancel_futures=False):
         try:
