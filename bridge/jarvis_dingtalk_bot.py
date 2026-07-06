@@ -1743,6 +1743,48 @@ class JarvisHandler(AsyncChatbotHandler):
             self._quick_card(target, "⚠️ 工单 #%s 后台处理异常: %s" % (item_id, e), target_type)
             return "error"
 
+    def _completion_broadcast(self, item_id):
+        """Build the headless completion broadcast text. Distinguishes the final tag
+        state (jarvis-done / jarvis-idle / jarvis-claimed) and appends a clickable Aone
+        link matching the dispatch-card format. Best-effort: non-numeric ids and any
+        a1 query / parse failure fall back to a plain completion line (never raises)."""
+        fallback = "✅ 工单 #%s 处理完成（headless）" % item_id
+        sid = str(item_id)
+        if not sid.isdigit():
+            return "✅ 任务 #%s 处理完成（headless）" % item_id
+        try:
+            r = subprocess.run(
+                [str(REPO_ROOT / "bin" / "a1id"), "--",
+                 "project", "workitem", "get", sid, "-f", "json"],
+                capture_output=True, text=True, timeout=30, cwd=str(REPO_ROOT))
+            if r.returncode != 0:
+                return fallback
+            data = json.loads(r.stdout)
+            title = (data.get("title") or "").strip()
+            fields = {f.get("identifier"): f
+                      for f in data.get("fields", []) if isinstance(f, dict)}
+
+            def _disp(key):
+                f = fields.get(key) or {}
+                return f.get("displayValue") or f.get("value") or ""
+            tag = _disp("tag")
+            priority = _disp("priority")
+            project = (fields.get("space") or {}).get("value") or ""
+        except Exception:  # noqa: BLE001
+            return fallback
+        if "jarvis-done" in tag:
+            prefix = "✅ 工单处理完成（headless）"
+        elif "jarvis-idle" in tag:
+            prefix = "⏸️ 工单阶段完成·待人工接手（headless）"
+        elif "jarvis-claimed" in tag:
+            prefix = "⚠️ 工单处理结束但未收尾（仍 claimed）"
+        else:
+            prefix = "✅ 工单处理完成（headless）"
+        aone_url = "https://project.aone.alibaba-inc.com/v2/project/%s/req/%s" % (project, sid)
+        pri = " [%s]" % priority if priority else ""
+        line = "- [#%s](%s) %s%s" % (sid, aone_url, title, pri)
+        return prefix + "\n" + line
+
     def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type, on_spawn=None):
         """Headless path (auto-dispatch / probe / revisit): run one Jarvis instance to
         completion WITHOUT a live card (no "回复某人" binding); broadcast the result via
@@ -1759,7 +1801,7 @@ class JarvisHandler(AsyncChatbotHandler):
                 notify("⏸️ 工单 #%s 已挂起，等待 @%s 回复" % (
                     info["aone_id"], info.get("wait_for", "?")))
                 return "suspended"
-            notify("✅ 工单 #%s 处理完成（headless）" % item_id)
+            notify(self._completion_broadcast(item_id))
             log.info("dispatch_item #%s done", item_id)
             return "done"
         except Exception as e:  # noqa: BLE001
