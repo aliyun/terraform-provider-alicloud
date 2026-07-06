@@ -2,8 +2,8 @@
 
 写新场景时按此规范。核心信念：**像真实客户一样参考文档**——宁可保守照抄官方示例，不要凭记忆编字段。
 
-> 分层重定义(2026-07-03)后,场景库里全是 **tier-1 生命周期场景**(真实 apply),`scenario.yaml`
-> **无 `tier` 键**。tier-0 是**资源级**静态扫描(`probe.sh tier0`),不写成场景。
+> 场景库里全是 **tier-1 生命周期场景**(真实 apply),`scenario.yaml` **无 `tier` 键**。
+> tier-0 是**资源级**静态扫描(`probe.sh tier0`),不写成场景。
 
 ## 场景库位置与目录结构(独立数据仓 + 两级布局)
 
@@ -79,25 +79,30 @@ bootstrap/probe-corpus.sh validate --all          # 或 validate <id>...
   「配置无误、确系 provider 行为」后才升级为 bug。手写/回灌(`regression-*`)场景无此限,按常规分诊。
 - 人工校订通过后,把 `origin: generated` 改为 `origin: curated`(或删键),该场景才进入常规 bug 分诊面。
 
-## apply 门(成本安全门)—— `apply:` 键(值敏感,2026-07-05 收窄)
+## apply 门(成本安全门)—— `apply:` 键(值敏感)
 
 - `scenario.yaml` 可选键 **`apply:`(默认 `true`)**。写 `apply: false` → `probe.sh run` **止步 plan**
   (init/validate/plan 后不 apply,verdict 记 `env_issue apply_disabled_by_scenario`)。
 - 生成器按 `config .tier1_risk_denylist` **值敏感**判定 —— **按量付费(PostPaid/PayAsYouGo)大件一律直接 apply**
-  (原按量大件资源名清单 `resource_patterns` 已删)。仅命中**订阅语义**才 `apply: false`:
+  (无按量大件资源名清单)。仅命中**订阅语义**才收窄:
   - `charge_value_fields`(`instance_charge_type`/`payment_type`/`charge_type`/`pricing_cycle` 等)的**字面量值**
     ∈ `subscription_values`(`prepaid`/`subscription`/…,大小写不敏感);**或**
   - 独立 `period` 字段取**订阅时长**(纯整数 `1..period_subscription_max`,默认 12)——借此把订阅 `period=1`
     与秒级 metric `period=900`/`"60"` 区分开(后者放行);`retention_period`/`period_unit` 等非独立 period 不误伤。
-- 命中订阅门的场景 `cost: paid` + `apply: false`,并按**订阅类资源规范**(见下)引存量、勿真实创建。
-- 与 **runner 侧 prepaid 守门**互补:`apply: false` 是**生成期静态值敏感门**;prepaid 守门是 **plan 期运行时值敏感兜底**
+- **命中订阅门后按有无对应 data source 分岔**:
+  - **有 ds**(`website/docs/d/` 存在对应 data source 文档)→ `cost: paid` + **`apply: false`** + 生成 `ds-<id>` 只读变体,
+    按**订阅类资源规范**(见下)引存量、勿真实创建;
+  - **无 ds**(取不到 data source 文档,无从读回校验)→ **`apply: true` + `allow_prepaid: true`** 放行真实创建探全生命周期
+    (锁死会漏探),交 runner 运行时 prepaid_guard 兜底;订阅/包年包月 destroy 可能失败,届时 `destroy_fail`(S1)兜底上报待人工清理。
+- 与 **runner 侧 prepaid 守门**互补:`apply:` 是**生成期静态值敏感门**;prepaid 守门是 **plan 期运行时值敏感兜底**
   (apply 前扫 plan 命中 PrePaid/Subscription 才阻断)。手写场景确需真跑订阅生命周期时,用 `allow_prepaid: true`(且自证可销毁)。
 
-## 订阅类资源规范 —— data source 引存量,勿真实创建
+## 订阅类资源规范 —— 有 data source 引存量,无则放行真跑
 
-- 订阅/包年包月资源**难以 API 干净销毁**,不真实 `apply` 创建。命中订阅门的场景保持 `apply: false`,
-  `checks.md` 注明规范。
-- 生成器**额外产出 `ds-<id>` 只读变体**:若 provider `website/docs/d/<name|names|namees>` 存在对应 data source 文档,
+- 订阅/包年包月资源**难以 API 干净销毁**。命中订阅门后按有无对应 data source 分岔(见上「apply 门」):
+  **有 ds** → `apply: false` + 生成 `ds-<id>` 只读变体引存量、不真实创建;**无 ds** → `apply: true` + `allow_prepaid: true`
+  放行真跑(无从 ds 读回校验,锁死漏探),`checks.md` 注明规范与 destroy 风险。
+- `ds-<id>` 只读变体:若 provider `website/docs/d/<name|names|namees>` 存在对应 data source 文档,
   抽其 `data "alicloud_…" {}` 块 + `output`,落**同 product 目录** `ds-<id>/`(纯 data,天然 `apply` 安全,探测
   data source 读路径)。取不到 data source 文档的,只在主场景 `checks.md` 留规范注记、不产 ds- 变体。
 
@@ -155,7 +160,7 @@ bootstrap/probe-corpus.sh validate --all          # 或 validate <id>...
   `source_docs` 换成 Aone 工单链接,`main.tf` 为该工单最小复现配置,`checks.md` 记「修复前症状 / 修复后期望」;
   然后在数据仓 `git add/commit/push` 直推 master(数据仓写入模型)。
 - **报备**:直推后**必须在对应工单评论里报备场景路径**(`tf_playground/<product>/regression-<aone-id>/`),
-  供仓库主人查验 + 提醒他机 `git pull`;这取代了原「escalation/scenario-drafts + 周批 MR」流程(已废弃)。
+  供仓库主人查验 + 提醒他机 `git pull`。
 - **自检**:`bootstrap/probe.sh list` 能看到该 regression 场景、`run <id> --dry` 退 0。
 
 ## 写完自检

@@ -21,7 +21,7 @@
     "tags_marker": "jarvis-probe"
   },
   "tier1_risk_denylist": {
-    "desc": "成本安全门(值敏感,主人 2026-07-05 收窄):按量付费(PostPaid/PayAsYouGo)大件一律直接 apply(resource_patterns 按量清单已删)。仅命中订阅语义才 apply:false —— charge_value_fields 的值 ∈ subscription_values(大小写不敏感),或独立 period 字段取订阅时长(纯整数 1..period_subscription_max,区别于秒级 metric period 如 60/300/900)。命中即写 apply:false,并按订阅类资源规范用 data source 引存量、勿真实创建。runner 侧 prepaid_guard 为运行时值敏感兜底,不在此。",
+    "desc": "成本安全门(值敏感):按量付费(PostPaid/PayAsYouGo)大件一律直接 apply(无按量资源名清单)。仅命中订阅语义才收窄 —— charge_value_fields 的值 ∈ subscription_values(大小写不敏感),或独立 period 字段取订阅时长(纯整数 1..period_subscription_max,区别于秒级 metric period 如 60/300/900)。命中后按有无对应 data source 分岔:有 ds 则 apply:false + 生成 ds- 只读变体(引存量、勿真实创建);无 ds 则 apply:true + allow_prepaid(放行真跑,交 runner prepaid_guard 运行时兜底,destroy 可能失败走 destroy_fail 上报)。runner 侧 prepaid_guard 为运行时值敏感兜底,不在此。",
     "charge_value_fields": ["instance_charge_type", "payment_type", "charge_type", "pricing_cycle", "subscription_type", "billing_cycle"],
     "subscription_values": ["prepaid", "subscription", "year", "month", "week"],
     "period_fields": ["period"],

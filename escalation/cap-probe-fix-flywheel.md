@@ -63,17 +63,16 @@
   + DispatchPool（并发/排队/软去重复用 `_dispatch_bg` 核心与 SUSPEND/WaitWatcher）+ ProbeScheduler 每日探测轮（跑 `loops/tf-probe.md`）
   + RevisitScheduler 每日 `jarvis-idle` 人工门重访 + `--dry-run-once` 验证入口 + hermetic 单测 `test/bridge_dispatch_test.sh`。
   **未竟**：provider 新版本事件触发；复验步骤进 triage 收尾清单。（`mode=file` 毕业已于 2026-07-05 主人拍板翻开关。）
-- **F3（规模化）已落地清单**——机械化 / 语料 / 门禁 / 度量 / 降级 / 单一入口全数成 MR（2026-07-05～06）：
-  - ✅ **T0-mech**（MR-3, `worktree-f3-t0mech`）—— tier-0 OpenAPI 侧机械化（`probe-meta.sh` + `tier0` 六类
+- **F3（规模化）已落地清单**——机械化 / 语料 / 门禁 / 度量 / 降级 / 单一入口全数成 MR（2026-07-05～06），**已全数合入 master**（2026-07-06 经 `worktree-f3-consolidated` 整合合并落地）：
+  - ✅ **T0-mech**（`worktree-f3-t0mech`）—— tier-0 OpenAPI 侧机械化（`probe-meta.sh` + `tier0` 六类
     `api_gap_*` 机械 diff 预筛 + `--all/--rotate` 全资源轮换巡检 + doctor 探针可用性降级）。**已合入 master**（2026-07-05）。
-  - ⏳ **Corpus-gen 场景语料生成器**（MR-7, `worktree-f3-corpus-gen`）—— website docs 全量 → tier-1 语料。
-  - ⏳ **RC 门禁**（MR-6, `worktree-f3-rc-gate`）—— 发布前全资源 tier-0 + 全场景 tier-1 过一遍，产物落 `runs/rc-gate/`。
-  - ⏳ **度量看板**（MR-5, `worktree-f3-board`）—— 发现数 / 采纳率 / 发现→修复周期 / 回归通过率 / 覆盖率，接 `board.sh`。
-  - ⏳ **无钉钉降级**（MR-4, `worktree-f3-nodingtalk`）—— bridge 缺钉钉凭证时干净降级，不阻断 scan/dispatch/probe 调度。
-  - ⏳ **run.sh 单一入口**（MR-8, `worktree-bridge-run-entry`）—— `bridge/run.sh` 收敛后台启动入口。
-  - **合并状态**：T0-mech（MR-3）已合入 master；规模化后四者（Corpus-gen MR-7 / RC 门禁 MR-6 / 度量看板 MR-5 /
-    无钉钉降级 MR-4）+ 单一入口 run.sh（MR-8）待仓库主人合并。这些分支改动含 `bridge/*.py`、`CLAUDE.md`、
-    `loops/aone-triage.md`，本收尾单一律不碰以防冲突。
+  - ✅ **Corpus-gen 场景语料生成器**（`worktree-f3-corpus-gen`）—— website docs 全量 → tier-1 语料。
+  - ✅ **RC 门禁**（`worktree-f3-rc-gate`）—— 发布前全资源 tier-0 + 全场景 tier-1 过一遍，产物落 `runs/rc-gate/`。
+  - ✅ **度量看板**（`worktree-f3-board`）—— 发现数 / 采纳率 / 发现→修复周期 / 回归通过率 / 覆盖率，接 `board.sh`。
+  - ✅ **无钉钉降级**（`worktree-f3-nodingtalk`）—— bridge 缺钉钉凭证时干净降级，不阻断 scan/dispatch/probe 调度。
+  - ✅ **run.sh 单一入口**（`worktree-bridge-run-entry`）—— `bridge/run.sh` 收敛后台启动入口。
+  - **合并状态**：全数合入 master——T0-mech（2026-07-05）在先，规模化四件（Corpus-gen / RC 门禁 / 度量看板 /
+    无钉钉降级）+ 单一入口 run.sh 于 2026-07-06 经 `worktree-f3-consolidated` 整合合并落地。
 - **F4（目标态）**：无人值守运转,人只守三硬门与 escalation 队列。**多机运营不单立 cap**
   （2026-07-06 主人定调,兜底靠 claim 点读锁 + `tf_playground` git 收敛,见决策记录 2026-07-06 附注）。
 

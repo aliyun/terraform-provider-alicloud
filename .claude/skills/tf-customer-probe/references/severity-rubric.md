@@ -21,8 +21,8 @@ probe 发现的 finding 先落 detector 的 `severity_hint`（机判，见下表
 | S3 | 中 |
 | S4 | 低 |
 
-> **枚举值待固化**：Aone 项目 528766 的优先级字段实际枚举值（及其 id），在**首次真实建单**（`ticket.mode=file`
-> 毕业后）时用 `a1` 查证项目字段后固化到本表；draft 阶段先用中文标签「紧急/高/中/低」。
+> **枚举值待固化**：Aone 项目 528766 的优先级字段实际枚举值（及其 id），在**首次真实建单**（`ticket.mode=file`）时
+> 用 `a1` 查证项目字段后固化到本表；`mode=draft` 时先用中文标签「紧急/高/中/低」。
 
 ## detector 默认 severity_hint（runner 机判，Claude 可改）
 

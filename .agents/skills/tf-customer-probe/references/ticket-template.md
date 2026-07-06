@@ -1,7 +1,7 @@
 # ticket-template —— probe 工单/草稿骨架
 
-probe 发现的 provider 问题按此骨架落 `escalation/probe-drafts/<日期>-<资源或场景>-<code>.md`（draft 模式），
-或未来毕业后按此建 Aone 需求单。
+probe 发现的 provider 问题按此骨架建单：当前 `ticket.mode=file` 直接建 Aone 需求单（category `req`，池/指派/标签见下参数块）；
+`mode=draft`（可回退开关）时改落 `escalation/probe-drafts/<日期>-<资源或场景>-<code>.md`、不写 Aone。
 
 ## 硬规则（写之前先记）
 
@@ -55,7 +55,7 @@ status: pending-review
 - 来源：jarvis tf-customer-probe
 ```
 
-## 建单参数块（毕业后 mode=file 用；draft 阶段只记录不执行）
+## 建单参数块（mode=file 建单用；mode=draft 时只记录不执行）
 
 | 字段 | 值（来自 config/probe.json） |
 |------|------|

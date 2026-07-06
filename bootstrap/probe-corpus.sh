@@ -17,10 +17,11 @@
 #   4. 可命名 name/*_name 字面量/var.name → "probe-${var.run_id}"(已带插值的名称不动)
 #   5. 示例既有 tags 块注入 managed_by = "<tags_marker>"
 #
-# 成本安全门(宁保守勿激进,config .tier1_risk_denylist):资源短名命中 resource_patterns,或
-#   main.tf 含 charge_field_patterns(整词)→ scenario.yaml 写 apply:false → probe.sh run 止步 plan。
+# 成本安全门(值敏感,config .tier1_risk_denylist):命中订阅语义(charge_value_fields 字面量值 ∈ subscription_values,
+#   或独立 period 取订阅时长)→ 有对应 data source 则 apply:false + ds- 只读变体(引存量);无 ds 则 apply:true +
+#   allow_prepaid:true 放行真跑;按量付费大件一律直接 apply(无按量资源名清单)。
 #
-# 产物落点:playground 解析与 probe.sh 同(env JARVIS_TF_PLAYGROUND > config paths.playground_dir > 默认约定)。
+# 产物落点:playground 解析与 probe.sh 同(env JARVIS_TF_PLAYGROUND > config paths.playground_dir > workspace.sh dir tf_playground > 默认约定)。
 # provider 仓解析:env JARVIS_PROBE_PROVIDER_DIR > bootstrap/workspace.sh dir terraform_provider。
 # 环境:PROBE_TERRAFORM_BIN — terraform 二进制(默认 terraform;gen 规整/validate 用,便于单测桩)。
 #

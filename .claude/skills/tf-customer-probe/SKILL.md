@@ -10,16 +10,17 @@ description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reporte
 
 - 能力全景/路线图:`escalation/cap-tf-customer-probe.md`
 - 循环 runbook:`loops/tf-probe.md`
-- 场景语料库(**外置 jarvis 仓外**):`terraform_playground/`,按云产品维度两级归档 `<product>/<id>/`
-  (scenario.yaml + main.tf + checks.md,可选 step2/)。默认路径 `<jarvis 根目录的父目录>/terraform_playground`,
-  可用 `JARVIS_TF_PLAYGROUND`(env,最高优先)或 `config/probe.json` 的 `paths.playground_dir` 覆盖;
-  README 与场景规范见 playground 仓 README + `references/scenario-authoring.md`。
+- 场景语料库=**独立 git 数据仓** `tf_playground`(gitlab `terraflow/tf_playground`,**直推 master + 工单报备**,非代码不走 MR),
+  按云产品维度两级归档 `<product>/<id>/`(scenario.yaml + main.tf + checks.md,可选 step2/)。根解析优先级:
+  env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > `bootstrap/workspace.sh dir tf_playground`
+  (数据仓已登记 `config/workspaces.json`,多机 clone 后零配置)> 默认 `<jarvis 根目录的父目录>/terraform_playground`;
+  场景规范见 `references/scenario-authoring.md`。
 - runner:`bootstrap/probe.sh`;配置:`config/probe.json`
 
-## 分层(2026-07-03 重定义)
+## 分层
 
 - **tier-0 = 静态三方一致性扫描**(TF 文档 ↔ OpenAPI 文档 ↔ provider 源码),**以资源为单位**,不跑 terraform。
-  机械部分做本地 文档↔源码 diff(五类 `doc_gap_*`)**+ OpenAPI 侧机械三方 diff**(T0-mech,2026-07-05:`probe-meta.sh` 拉 amp
+  机械部分做本地 文档↔源码 diff(五类 `doc_gap_*`)**+ OpenAPI 侧机械三方 diff**(T0-mech:`probe-meta.sh` 拉 amp
   元数据,六类 `api_gap_*` 预筛);机械层**拿不准的项才留 `judgment_queue`**(映射不上/纯 prose 约束/被抑制存疑/OSS 无 action),
   verifier 只判疑点。**精度命门:拿不准一律 queue,绝不硬报。**
 - **tier-1 = 真实 apply 全生命周期探测**(默认开启),**以场景为单位**,region 默认 focus=eu-central-1(重点方向,可切)。
@@ -78,10 +79,11 @@ bootstrap/probe.sh run <id> --dry              # 只看步骤计划(region 解�
 2. **查 provider 仓 CHANGELOG Unreleased 段**:已在 master 修掉的标「已修复未发布」**不建单**。
 3. `env_issues` 一律不建单(凭证/网络/prepaid/plan-only 都是环境噪声)。
 
-### D. 去重 → 产出工单(当前 mode=file,2026-07-05 已毕业)
+### D. 去重 → 产出工单(mode=file)
 - 去重:a1 检索 528766 池 `jarvis-probe` 标签 + 标题关键词;GitHub `aliyun/terraform-provider-alicloud` open issues 只读检索;重复则**追加 evidence**不新建。
-- `config.ticket.mode=file`(**当前默认**,2026-07-05 主人拍板毕业:采纳率 7/8=87.5% 提前毕业)→ 走 adhoc-intake 建单纪律(category `req`、project/assignee/tag 按 config),受 `daily_new_tickets` 上限。**直接建 Aone 单,不再走 draft 人审。**
-- `config.ticket.mode=draft`(**保留为可回退开关**)→ 按 `references/ticket-template.md` 写 `escalation/probe-drafts/<日期>-<资源或场景>-<code>.md`,头加 `status: pending-review`,**不写 Aone**;仅在需要临时收回自动建单权时切回。
+- **generated 场景先过校订门**:`origin: generated` 且未经人工校订的场景跑出 `apply_fail`/`validate_fail` **先归「场景质量疑点」入人工校订队列,不直接建 bug 单**(机器抽文档+机械改造的配置本身可能有缺陷);须人工确认确系 provider 行为才升级。手写/回灌场景无此限。
+- `config.ticket.mode=file`(**当前默认**)→ 走 adhoc-intake 建单纪律(category `req`、project/assignee/tag 按 config),受 `daily_new_tickets` 上限,**直接建 Aone 单**。
+- `config.ticket.mode=draft`(**可回退开关**,切回即恢复 draft 人审)→ 按 `references/ticket-template.md` 写 `escalation/probe-drafts/<日期>-<资源或场景>-<code>.md`,头加 `status: pending-review`,**不写 Aone**。
 
 ### E. 清理核查 + 审计汇报
 ```bash
