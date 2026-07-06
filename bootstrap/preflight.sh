@@ -89,6 +89,11 @@ record_codex_stop_hook_root
 ttl="${JARVIS_PREFLIGHT_TTL:-86400}"   # 24h
 [ "${1:-}" = "--force" ] && ttl=0
 
+# Always sweep stale claims / dead-owner orphans / ledger drift on preflight,
+# regardless of fresh-cache. Timeout/中断 in batch bookend 会遗留 jarvis-claimed
+# 标签,不清理会导致下一轮 lost race。--quiet 保持 preflight 输出精简。
+bash "$script_dir/reconcile.sh" stale >/dev/null 2>&1 || true
+
 if bash "$script_dir/cache.sh" fresh "preflight.ok" "$ttl"; then
     echo "preflight: skip (verified < $((ttl/3600))h ago)"
     exit 0
