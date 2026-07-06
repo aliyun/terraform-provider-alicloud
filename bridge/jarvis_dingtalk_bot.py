@@ -22,6 +22,7 @@ Env:
   JARVIS_TATA_STAFF                        comma staffId audience for Tata (empty = everyone).
   JARVIS_MASTER_STAFF                      staffId allowed to escalate to Jarvis (default 320687).
   JARVIS_TATA_ROOT                         Tata cwd (default ~/.jarvis/tata-cwd, no jarvis bootstrap).
+  JARVIS_TATA_RESIDENT                     1=use resident TataPool warm subprocesses (default 0 = one-shot).
   JARVIS_ROOT                              cwd for Jarvis claude (default repo root, two up).
   DINGTALK_SKILL                           override path to streaming.py.
   CLAUDE_BIN                               claude binary (default: PATH / ~/.local/bin/claude).
@@ -186,6 +187,11 @@ def tata_cmd():
     settings = os.environ.get("JARVIS_TATA_SETTINGS") or str(
         Path.home() / ".claude" / "idea_settings.json")
     return [claude_bin(), "--settings", settings]
+
+
+def tata_resident_enabled():
+    """Whether Tata should keep warm subprocesses. Default off to avoid idle resident claude."""
+    return os.environ.get("JARVIS_TATA_RESIDENT", "0").strip().lower() in ("1", "true", "yes", "on")
 
 
 def jarvis_cmd():
@@ -1672,7 +1678,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.jarvis_started = set()               # staff with a live Jarvis session
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
-        self.pool = None if no_dingtalk else TataPool()   # 常驻 idea 进程保温, 消 Tata 冷启
+        self.pool = None if (no_dingtalk or not tata_resident_enabled()) else TataPool()
         # One bounded pool + soft-dedup ledger shared by every dispatch path
         # (auto-dispatch / probe / revisit / authorize / handoff / wake).
         self.dispatch_pool = DispatchPool()
@@ -1683,14 +1689,17 @@ class JarvisHandler(AsyncChatbotHandler):
         self.reviser = RevisitScheduler(self, self.dispatch_pool)
         self.watcher = WaitWatcher(self)
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s "
-                 "auto_dispatch=%s dispatch_max=%s probe=%s@%s revisit=%s@%s",
+                 "tata_resident=%s auto_dispatch=%s dispatch_max=%s probe=%s@%s revisit=%s@%s",
                  self.audience or "*", master_staff(), jarvis_root(), tata_root(),
-                 claude_bin(), skill_path(), self.scanner.auto, self.dispatch_pool.max_workers,
-                 self.prober.enabled, self.prober.hour, self.reviser.enabled, self.reviser.hour)
+                 claude_bin(), skill_path(), bool(self.pool), self.scanner.auto,
+                 self.dispatch_pool.max_workers, self.prober.enabled, self.prober.hour,
+                 self.reviser.enabled, self.reviser.hour)
 
     def _tata_runner(self, text, sid, resume):
-        """Tata 一轮: 优先常驻进程保温(self.pool.send), 起不来回退一次性 run_tata_stream。
-        进程即会话, 无需 uuid/resume; 崩溃由 pool 下条重起。"""
+        """Tata 一轮: 默认一次性冷起; 显式开启 resident 模式时走常驻进程保温。"""
+        if self.pool is None:
+            yield from run_tata_stream(text, sid, resume)
+            return
         try:
             yield from self.pool.send(sid, text)
         except (TataSpawnError, BrokenPipeError, OSError) as e:
@@ -2152,7 +2161,8 @@ def main():
     client = DingTalkStreamClient(cred)
     handler = JarvisHandler()
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
-    handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
+    if handler.pool is not None:
+        handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
     handler.scanner.start()
     handler.reconciler.start()
     handler.board.start()
@@ -2179,7 +2189,8 @@ def main():
         except Exception as e:  # noqa: BLE001
             log.exception("graceful stop cleanup failed: %s", e)
         try:
-            handler.pool.shutdown()
+            if handler.pool is not None:
+                handler.pool.shutdown()
         except Exception:  # noqa: BLE001
             pass
         os._exit(0)
@@ -2191,7 +2202,8 @@ def main():
         client.start_forever()
     finally:
         handler.dispatch_pool.shutdown(wait=False, cancel_futures=True)
-        handler.pool.shutdown()  # 收尾全 kill 常驻 Tata 进程
+        if handler.pool is not None:
+            handler.pool.shutdown()  # 收尾全 kill 常驻 Tata 进程
 
 
 if __name__ == "__main__":
