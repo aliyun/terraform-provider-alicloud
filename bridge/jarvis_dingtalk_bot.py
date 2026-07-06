@@ -634,10 +634,9 @@ class ScanScheduler:
         self._lock = threading.Lock()    # guards self.pending
         self._thread = None
         self._human_cache = {}           # per-tick cache of _human_touched(iid) → bool
-        # jarvis 自身写 Aone 的 operator 身份集合，用于区分「jarvis 自更新 vs 人工介入」。
-        # open-jarvis = 展示名，WORKER_1782379562571 = 账号；JARVIS_SELF_OPERATOR 可补充别名。
-        self.self_operators = {"open-jarvis", "WORKER_1782379562571"} | {
-            s.strip() for s in os.environ.get("JARVIS_SELF_OPERATOR", "").split(",") if s.strip()}
+        # 人工操作者白名单：只有 config/contacts.json 登记人员(name/flower/id 任一匹配)
+        # 的 activity operator 才算人工介入。Kelude/机器人等未登记身份不触发重派。
+        self._human_operators = self._load_human_operators()
         # 灰度安全阀（可选收窄）：assignee 已由 scan 的 JARVIS_SCAN_ASSIGNEE 限定，此处可再叠加
         # 「池白名单」(JARVIS_DISPATCH_POOLS) + 「创建时间上限」(JARVIS_DISPATCH_CREATED_BEFORE)。
         # **默认已放开到全部池 / 全部时间**（两者默认空 → _in_scope 恒 True）；只有显式配置对应
@@ -645,6 +644,22 @@ class ScanScheduler:
         self.dispatch_pools = {p.strip() for p in
                                os.environ.get("JARVIS_DISPATCH_POOLS", "").split(",") if p.strip()}
         self.dispatch_created_before = os.environ.get("JARVIS_DISPATCH_CREATED_BEFORE", "").strip()
+
+    def _load_human_operators(self):
+        """从 config/contacts.json 动态加载人类操作者白名单(name+flower+id)。
+        文件不存在/解析失败 → 返回空集(保守:无白名单=所有人都不算人工介入,不误派)。"""
+        try:
+            cfg = Path(REPO_ROOT) / "config" / "contacts.json"
+            data = json.loads(cfg.read_text())
+            ops = set()
+            for c in data.get("contacts", []):
+                for field in ("name", "flower", "id"):
+                    v = (c.get(field) or "").strip()
+                    if v:
+                        ops.add(v)
+            return ops
+        except Exception:  # noqa: BLE001
+            return set()
 
     # -- public API ----------------------------------------------------------
 
@@ -707,8 +722,9 @@ class ScanScheduler:
         return True
 
     def _human_touched(self, iid):
-        """最近一条 Aone activity 的 operator 是否非 jarvis 本身（=人工/辰羿在 jarvis 上轮
-        动作之后介入过）。best-effort：任何失败一律返回 False（保守，不误续跑）。本轮缓存。"""
+        """最近一条 Aone activity 的 operator 是否在 config/contacts.json 白名单中（=团队
+        登记人员在 jarvis 上轮动作之后介入过）。Kelude/机器人等未登记身份不算人工介入。
+        best-effort：任何失败一律返回 False（保守，不误续跑）。本轮缓存。"""
         iid = str(iid)
         if iid in self._human_cache:
             return self._human_cache[iid]
@@ -722,7 +738,7 @@ class ScanScheduler:
                 data = json.loads(r.stdout)
                 if isinstance(data, list) and data:
                     op = str(data[0].get("operator", "")).strip()
-                    result = bool(op) and op not in self.self_operators
+                    result = bool(op) and op in self._human_operators
             else:
                 log.warning("_human_touched: activity query failed #%s rc=%d: %s",
                             iid, r.returncode, (r.stderr or "").strip()[:200])
@@ -822,6 +838,7 @@ class ScanScheduler:
             log.info("ScanScheduler: pause flag present (.my-day/bridge/pause), skip this tick")
             return
         self._human_cache = {}   # per-tick cache reset for _human_touched
+        self._human_operators = self._load_human_operators()  # reload whitelist each tick
         items = self._scan()
         if items is None:
             return

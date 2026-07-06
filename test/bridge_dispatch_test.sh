@@ -408,13 +408,17 @@ class ScopeGateTest(unittest.TestCase):
 
 
 class HumanTouchedTest(unittest.TestCase):
-    """_human_touched: 最近一条 Aone activity 的 operator 是否非 jarvis 本身。
+    """_human_touched: 白名单模式 — 只有 config/contacts.json 登记人员(name/flower/id)
+    的 operator 才算人工介入。Kelude/机器人等未登记身份不触发重派。
     绝不真发 a1 —— 全部 monkeypatch b.subprocess.run。"""
 
     def _scanner(self):
         tmp = tempfile.mkdtemp()
         pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
-        return b.ScanScheduler(handler=None, pool=pool)
+        sc = b.ScanScheduler(handler=None, pool=pool)
+        # Mock whitelist: simulate contacts.json with known human operators
+        sc._human_operators = {"辰羿", "陈汉璋", "320687", "马裘", "逄磊", "404709"}
+        return sc
 
     def _fake_run(self, rc, stdout, stderr=""):
         class R:
@@ -426,9 +430,9 @@ class HumanTouchedTest(unittest.TestCase):
     def test_human_operator_is_touched(self):
         sc = self._scanner()
         orig = b.subprocess.run
-        b.subprocess.run = self._fake_run(0, json.dumps([{"operator": "chenyi", "eventTime": 2}]))
+        b.subprocess.run = self._fake_run(0, json.dumps([{"operator": "辰羿", "eventTime": 2}]))
         try:
-            self.assertTrue(sc._human_touched("1"), "非 jarvis operator → 人工介入")
+            self.assertTrue(sc._human_touched("1"), "白名单内 operator → 人工介入")
         finally:
             b.subprocess.run = orig
 
@@ -439,9 +443,30 @@ class HumanTouchedTest(unittest.TestCase):
             sc._human_cache = {}
             b.subprocess.run = self._fake_run(0, json.dumps([{"operator": op, "eventTime": 2}]))
             try:
-                self.assertFalse(sc._human_touched("1"), "%s 是 jarvis 自身 → 非人工" % op)
+                self.assertFalse(sc._human_touched("1"), "%s 不在白名单 → 非人工" % op)
             finally:
                 b.subprocess.run = orig
+
+    def test_kelude_not_touched(self):
+        """Kelude 等系统机器人不在白名单 → 不算人工介入(修复 #83899246 误派)。"""
+        sc = self._scanner()
+        orig = b.subprocess.run
+        b.subprocess.run = self._fake_run(0, json.dumps([{"operator": "Kelude", "eventTime": 2}]))
+        try:
+            self.assertFalse(sc._human_touched("1"), "Kelude 不在白名单 → 非人工介入")
+        finally:
+            b.subprocess.run = orig
+
+    def test_empty_whitelist_returns_false(self):
+        """白名单为空集 → 任何 operator 都返回 False(保守不误派)。"""
+        sc = self._scanner()
+        sc._human_operators = set()  # simulate contacts.json load failure
+        orig = b.subprocess.run
+        b.subprocess.run = self._fake_run(0, json.dumps([{"operator": "辰羿", "eventTime": 2}]))
+        try:
+            self.assertFalse(sc._human_touched("1"), "白名单为空 → 一律不算人工介入")
+        finally:
+            b.subprocess.run = orig
 
     def test_failure_returns_false_conservatively(self):
         sc = self._scanner()
@@ -473,7 +498,7 @@ class HumanTouchedTest(unittest.TestCase):
             calls[0] += 1
             class R:
                 returncode = 0
-                stdout = json.dumps([{"operator": "chenyi"}])
+                stdout = json.dumps([{"operator": "辰羿"}])
                 stderr = ""
             return R()
         b.subprocess.run = counting
