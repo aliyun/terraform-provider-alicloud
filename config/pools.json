@@ -91,7 +91,7 @@
       "product_cfs": "107239=906688",
       "assignee": 320687,
       "dev": false,
-      "done_status": "已发布",
+      "done_status": {"需求": "已发布", "功能缺陷": "Fixed"},
       "exclude_status": [
         "已发布",
         "已取消",

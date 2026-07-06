@@ -40,6 +40,7 @@ cat > "$tmpconfig/config/pools.json" << 'JSON'
   },
   "pools": {
     "with_override": { "project": 2100304, "name": "override pool", "done_status": "已完成" },
+    "cat_override":  { "project": 2100305, "name": "per-category pool", "done_status": {"需求": "已发布", "功能缺陷": "Fixed"} },
     "no_override":   { "project": 1086837, "name": "plain pool" }
   }
 }
@@ -58,6 +59,9 @@ JSON
 #   A1_COMMENTS       – shared comments JSON file (array of {"content":...}); comment
 #                       create appends, comment list echoes it. Models one Aone workitem's
 #                       comment stream shared across multiple "machines" for arbitration.
+#   A1_WTYPE          – workitem type displayValue returned by `workitem get` in a
+#                       fields[] entry identifier=="workitemType" (default 需求). Lets
+#                       finish exercise per-category done_status selection.
 # A --tag-less update (e.g. finish's separate --status call) must NOT clobber A1_STATE tags.
 # ---------------------------------------------------------------------------
 cat > "$tmpbin/a1" << 'STUB'
@@ -87,7 +91,8 @@ if [ "$1 $2 $3" = "project workitem get" ]; then
         if [ "$c" = "1" ]; then exit 1; fi
     fi
     tags=$(cat "$A1_STATE" 2>/dev/null || echo "")
-    printf '{"fields":[{"identifier":"tag","displayValue":"%s","format":"multiList"}]}\n' "$tags"
+    wtype="${A1_WTYPE:-需求}"
+    printf '{"fields":[{"identifier":"tag","displayValue":"%s","format":"multiList"},{"identifier":"workitemType","displayValue":"%s"}]}\n' "$tags" "$wtype"
     exit 0
 fi
 if [ "$1 $2 $3" = "project workitem update" ]; then
@@ -446,6 +451,45 @@ echo "rc=$rc tags='$state'"
 if [ "$rc" = "0" ]; then assert_pass "rejected status: finish still exits 0"; else assert_fail "rejected status: exit $rc"; fi
 if printf '%s' "$state" | grep -q "jarvis-done"; then assert_pass "rejected status: still tagged jarvis-done (not stuck idle)"; else assert_fail "rejected status: done tag lost, got '$state'"; fi
 if printf '%s' "$out" | grep -qi "warning"; then assert_pass "rejected status: emits warning"; else assert_fail "rejected status: no warning emitted"; fi
+
+# ---------------------------------------------------------------------------
+# Test 17: per-category done_status — bug (功能缺陷) → Fixed
+# The pool's done_status is an object keyed by workitem type; finish must read the
+# workitem type (fields[] identifier==workitemType displayValue) and select its status.
+# ---------------------------------------------------------------------------
+echo "=== Test 17: per-category done_status — 功能缺陷 → Fixed ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" A1_WTYPE=功能缺陷 \
+    bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 2100305 2>&1); rc=$?
+cap=$(cat "$tmpstatuscap" 2>/dev/null); state=$(cat "$tmpstate" 2>/dev/null)
+echo "rc=$rc status_set='$cap' tags='$state'"
+if [ "$cap" = "Fixed" ]; then assert_pass "per-category 功能缺陷: status set to Fixed"; else assert_fail "per-category 功能缺陷 status should be Fixed, got '$cap'"; fi
+if printf '%s' "$state" | grep -q "jarvis-done"; then assert_pass "per-category 功能缺陷: tagged jarvis-done"; else assert_fail "per-category 功能缺陷: expected jarvis-done, got '$state'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 18: per-category done_status — req (需求) → 已发布
+# ---------------------------------------------------------------------------
+echo "=== Test 18: per-category done_status — 需求 → 已发布 ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" A1_WTYPE=需求 \
+    bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 2100305 2>&1); rc=$?
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc status_set='$cap'"
+if [ "$cap" = "已发布" ]; then assert_pass "per-category 需求: status set to 已发布"; else assert_fail "per-category 需求 status should be 已发布, got '$cap'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 19: per-category unknown type falls back to first object value (avoid empty)
+# ---------------------------------------------------------------------------
+echo "=== Test 19: per-category unknown type → first object value fallback ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" A1_WTYPE=任务 \
+    bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 2100305 2>&1); rc=$?
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc status_set='$cap'"
+if [ "$cap" = "已发布" ]; then assert_pass "per-category unknown type falls back to first value (已发布)"; else assert_fail "per-category unknown type should fall back to first value 已发布, got '$cap'"; fi
 
 # ===========================================================================
 # Cross-machine claim arbitration (JARVIS_CLAIM_SETTLE>0).

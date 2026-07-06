@@ -49,12 +49,36 @@ DONE_STATUS=$(jq -r '.claim.done_status' "$pools_cfg")
 # overrides the global .claim.done_status. Different Aone projects have different status
 # enums (e.g. 2100304 only allows 处理中/已完成/已取消, not the global "已发布待需求排期"),
 # so finish must use the target project's own completion status. Echoes "" if neither set.
+#
+# The per-pool .done_status may be EITHER a string (one completion status for the whole
+# pool) OR an object keyed by workitem type displayValue (e.g. {"需求":"已发布","功能缺陷":
+# "Fixed"}) — because a single Aone project's status enum differs by workitem category
+# (api_toolkit「需求」完成态=已发布, but「功能缺陷」枚举无「已发布」, 完成态=Fixed). When the
+# per-pool value is an object, select by <wtype> (2nd arg); an unknown/empty wtype falls
+# back to the object's first value to avoid an empty status. When it is a (non-empty)
+# string, return it verbatim (backward compatible). If no per-pool value, fall back to the
+# global .claim.done_status (always a string). Echoes "" if neither set.
 _pool_done_status() {
-    local project="$1" ps
-    ps="$(jq -r --arg p "$project" \
-        '(.pools[]? | select((.project|tostring) == $p) | .done_status) // empty' \
+    local project="$1" wtype="${2:-}" ps
+    ps="$(jq -r --arg p "$project" --arg w "$wtype" \
+        '(.pools[]? | select((.project|tostring) == $p) | .done_status)
+         | if . == null then empty
+           elif type == "object" then (.[$w] // (to_entries[0].value // empty))
+           else . end' \
         "$pools_cfg" 2>/dev/null)"
     if [ -n "$ps" ]; then echo "$ps"; else jq -r '.claim.done_status // empty' "$pools_cfg" 2>/dev/null; fi
+}
+
+# Point-read a workitem's type displayValue (e.g. 需求 / 功能缺陷 / 任务), used to pick the
+# per-category done_status. The top-level categoryIdentifier/workitemType are null; the
+# real value lives in fields[] under identifier=="workitemType". Echoes "" on any failure
+# (get call fails / field absent) so callers degrade gracefully.
+_get_wtype() {
+    local id="$1" json
+    json="$($A1 project workitem get "$id" -f json 2>/dev/null)" || return 0
+    printf '%s' "$json" | jq -r '
+        (.fields // [])[] | select(.identifier=="workitemType") | .displayValue // empty
+    ' 2>/dev/null || return 0
 }
 
 cmd="${1:-}"
@@ -306,7 +330,8 @@ if cands:
         # an unsupported status (project enum mismatch) failed the whole call and left the
         # workitem stuck as idle with no done tag. Now the done tag always lands; a rejected
         # status is a WARN, not fatal.
-        eff_status="$(_pool_done_status "$project_id")"
+        wtype="$(_get_wtype "$workitem_id")"
+        eff_status="$(_pool_done_status "$project_id" "$wtype")"
         _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG"
         rm -f "$(_claim_prefix_path "$workitem_id")"
         if [ -n "$eff_status" ]; then
