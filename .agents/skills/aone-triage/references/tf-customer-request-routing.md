@@ -44,6 +44,9 @@
         │   关联单指派 临钧(429768)                                   │
         └─ 手写 → 关联单指派 过载(484483)                             │
         原单同步指派 + status=问题解决中 + @指派人                     │
+                                                                     │
+以上所有分支均未匹配的特殊情况(NPE 兜底)                              │
+→ 关联单指派 夏节(401498) + 打标签 jarvis-npe [分支 H,end]           │
 ```
 
 关联单一律建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。**例外:临钧路由(生成器产出)不由 jarvis `a1 workitem create` 手动建单**——走 acube `createBuildTaskV2` 接口,acube 内部自动建单+指派临钧+触发生成/PR 工作流,jarvis 只查回 aoneId 做关联,详见 Step 3。
@@ -310,6 +313,24 @@ bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 - **仍走镇元查证**(Step 2 不跳过):probe tier-0 的 `doc_gap_*` 发现依赖 TF 文档 ↔ OpenAPI 文档 ↔ provider 源码三方比对,文档改造同样需要确认镇元 schema 定义准确
 - 路由固定过载,**不受镇元 OK/NOT OK 影响**(不像分支 D/E 会因镇元结果分到不同人)
 - 过载的关联单 jarvis 直接 claim 跟进(与 D-过载手写分支一致的 bookend 流程)
+
+**分支 H · NPE 兜底(→ 夏节 401498 + 标签 `jarvis-npe`)**:适用于"以上所有分支均未命中"的兜底场景。典型触发:
+- 需求跨多个云产品无法拆解到单一负责人(如 EMR SparkServerless / StarRocksServerless / DLF 三块独立产品线,本团队无路径拆分)
+- 客户诉求超出 tf-alicloud 团队职责边界但不明确该转给谁
+- 分类/归属模糊,决策树各分支判定结果均为 N(不适用)
+- 决策依据不足以走前述任一分支,又不能直接分支 F 甩上游
+
+**落地脚本与分支 A/D-过载/E 一致**,只需以下微调:
+- `--assignee` 填 `401498`(夏节)
+- `--category` 一般填 `task`(视原单类型)
+- `--title` 注明"NPE 兜底/需二次分诊"字样,便于夏节识别
+- 源单 `--assignee 401498` + `--status 问题解决中` + **打标签 `jarvis-npe`**(而非 jarvis-idle/jarvis-claimed):
+  ```bash
+  bin/a1id -- project workitem tag add <源工单ID> jarvis-npe
+  ```
+- **不走镇元查证**(NPE 意味着诉求本身还没定位到具体资源/API 层),Step 2 可跳过,直接建单
+
+**为什么走夏节兜底**:夏节是团队分诊 owner,能横向拉云产品/评估拆解路径,能处理"路由决策树没覆盖到"的边缘场景。jarvis-npe 标签便于后续统计分诊决策树盲区,补齐路由规则。
 
 ### 分支 D-临钧(生成器产出):走 acube V2 接口,jarvis 不手动建单
 
