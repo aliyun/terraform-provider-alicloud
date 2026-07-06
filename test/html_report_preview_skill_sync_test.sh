@@ -30,7 +30,12 @@ for skill in \
     "/reports/aone" \
     "from-aone" \
     "--comment" \
-    "buc_required"; do
+    "buc_required" \
+    "Never make report screenshots public-read" \
+    "--acl private" \
+    "oss sign" \
+    "--timeout 15768000" \
+    "GET-signed URL"; do
     if ! grep -q -- "$term" "$skill"; then
       echo "html_report_preview_skill_sync_test: missing '$term' in $skill" >&2
       exit 1
@@ -41,6 +46,15 @@ for skill in \
     echo "html_report_preview_skill_sync_test: skill must not contain plaintext token assignment: $skill" >&2
     exit 1
   fi
+
+  for forbidden in \
+    "--acl public-read" \
+    "as a public-read object"; do
+    if grep -q -- "$forbidden" "$skill"; then
+      echo "html_report_preview_skill_sync_test: forbidden '$forbidden' in $skill" >&2
+      exit 1
+    fi
+  done
 done
 
 echo "html_report_preview_skill_sync_test: PASS"
