@@ -18,6 +18,11 @@
 ├─ YES → 直接指派对应负责人, status=问题解决中, @负责人 [end]         │
 └─ NO ↓                                                              │
                                                                      │
+诉求仅涉及文档改造(website/docs 变更,无 provider 代码改动)?           │
+├─ YES → 仍走镇元查证(确保文档与 schema/API 一致),但路由固定          │
+│        关联单指派 过载(484483),不受镇元 OK/NOT OK 影响 [end]         │
+└─ NO ↓                                                              │
+                                                                     │
 诉求是"现有资源缺 X 属性/值/行为"(有 analog 产品/资源可类比)?         │
 ├─ YES → 查 analog 是"API 原生"还是"Provider 侧适配":                │
 │         ├─ API 原生 + provider 透传 → 缺口在上游产品 API →         │
@@ -59,6 +64,8 @@ aone-triage 主流程已跑 `aone-get.sh`;此处补充抽取关键字段:
 - `涉及云产品(140097)` —— 优先匹配【专属维护名单】
 - `工单ID(104264)` —— 小蜜工单号,备用
 - `space` / `workitemType` / `creator` —— 分类误建/承接单判定(见 Step 1.5)
+
+**缺陷类型优先级覆写**:`workitemType` 为缺陷(功能缺陷/线上问题/性能瓶颈)时,**优先级一律视为紧急**,无视原单 `priority` 字段值。此覆写影响决策树镇元 NOT OK 分支路由(紧急 → 新山 521957)及关联单 `--priority` 传值。
 
 **真实诉求重述**:核心动作。用一句话把客户想要的能力/结果写下来,与 description 全文对齐。不对齐直接停,读客户原描述二次确认。
 
@@ -235,13 +242,19 @@ for f in d.get("fields",[]):
 
 ```bash
 # 0. 从原单读优先级 + DDL,关联单继承
-#    - 优先级直接复制原单
+#    - 缺陷类型(功能缺陷/线上问题/性能瓶颈)优先级一律覆写为"紧急",无视原单值
+#    - 非缺陷类型直接复制原单优先级
 #    - 截止日期:原单 DDL 提前 2 天(留余量给下一棒);原单无 DDL 时 today+3
 src_json=$(bash bootstrap/aone-get.sh <源工单ID>)
+src_type=$(echo "$src_json" | python3 -c 'import json,sys
+d=json.load(sys.stdin)
+print(d.get("workitemType","") or d.get("categoryIdentifier",""))')
 src_prio=$(echo "$src_json" | python3 -c 'import json,sys
 d=json.load(sys.stdin)
 for f in d.get("fields",[]):
   if f.get("identifier")=="priority": print(f.get("value") or "")')
+# 缺陷类型强制紧急
+case "$src_type" in *缺陷*|*Bug*|*bug*) src_prio="紧急" ;; esac
 src_ddl=$(echo "$src_json" | python3 -c 'import json,sys
 d=json.load(sys.stdin)
 for f in d.get("fields",[]):
@@ -289,6 +302,14 @@ bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 - 源单 `--assignee 521957` + `--status 问题解决中`
 
 分支 G **不走镇元查证**(镇元管资源 schema,不管 provider 基础),Step 2 分支 D/E 的 acube 覆盖度检查可跳过,直接进入 Step 3 建单流程。
+
+**文档改造分支 · 仅 website/docs 变更(→ 过载 484483)**:适用于"诉求仅涉及文档改造(website/docs 变更,无 provider 代码改动)"的场景。**落地脚本与分支 A/D-过载/E 完全一致**,只需以下微调:
+- `--assignee` 填 `484483`(过载)
+- `--category` 视原单类型(需求/缺陷)
+- `--title` 注明"文档改造"字样
+- **仍走镇元查证**(Step 2 不跳过):probe tier-0 的 `doc_gap_*` 发现依赖 TF 文档 ↔ OpenAPI 文档 ↔ provider 源码三方比对,文档改造同样需要确认镇元 schema 定义准确
+- 路由固定过载,**不受镇元 OK/NOT OK 影响**(不像分支 D/E 会因镇元结果分到不同人)
+- 过载的关联单 jarvis 直接 claim 跟进(与 D-过载手写分支一致的 bookend 流程)
 
 ### 分支 D-临钧(生成器产出):走 acube V2 接口,jarvis 不手动建单
 
@@ -465,3 +486,5 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 在 tf_provider(528766)建单不传"计划开始日期 / 计划截止日期 / 实际工时" cfs —— 池校验必填,漏传会 400 `【计划开始日期】不能为空...`;用 `--cfs "计划开始日期=YYYY-MM-DD"` 等传入
 - ❌ Provider 源码查证跳过 Step 2 前置的 upstream PR 前扫,只 grep 本地 workspace 磁盘 —— workspace 的本地 branch 可能滞后 upstream 数十小时,或 sync-provider.sh 未 hardened 时只 fetch 不 reset;必先跑 `gh pr list --search` + `gh api contents?ref=master`,同题 recently-merged PR 直接引用避免重复建单;参见工单 83718139 教训(PR 9909 merged 21h 后 jarvis 才处理仍未命中)
 - ❌ Step 3 执行路由前不扫评论区/状态 —— 查证+决策期间有时间窗口,原指派人(常被前线随机指派)可能已回帖修复/贴 PR/接手;不扫就转单会重复建关联单、让接手方收多余通知;参见工单 83861367 教训(新山在 jarvis 转单前 20 分钟已修并评论,jarvis 仍建单 @过载)
+- ❌ 仅文档改造的工单因镇元 NOT OK 就转给谜拟/新山 —— 文档改造路由固定过载(484483),镇元查证仍要走(确保文档与 schema/API 一致),但结果不影响指派对象
+- ❌ 缺陷类型工单沿用原单 `priority` 字段值 —— 缺陷(功能缺陷/线上问题/性能瓶颈)优先级一律覆写为"紧急",无视原单标记;覆写后影响镇元 NOT OK 分支路由(紧急→新山)及关联单 `--priority` 传值
