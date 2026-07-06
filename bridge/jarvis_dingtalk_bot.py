@@ -42,7 +42,8 @@ Env:
                                            (在范围+非终态+无 jarvis 标签) 填满空闲槽。新单永远优先
                                            (free_slots>0 蕴含队列空, 积压绝不排在未来新单前); 冷启动
                                            那轮不消化; 24h 去重台账 + claim 打标防重派。
-  JARVIS_DISPATCH_MAX                      max concurrent headless dispatch workers (default 2).
+  JARVIS_DISPATCH_MAX                      max concurrent headless dispatch workers (default 3).
+  JARVIS_BACKLOG_MAX_SLOTS                 max slots backlog drain may occupy per tick (default 1).
   JARVIS_DISPATCH_QUEUE_MAX                pending queue depth beyond the concurrency cap
                                            before new dispatches are dropped (default 20).
   JARVIS_DISPATCH_DEDUP_TTL                soft-dedup window in seconds: same id not re-dispatched
@@ -1156,7 +1157,8 @@ class ScanScheduler:
     def _tick_backlog(self, snapshot):
         """空闲机会式消化积压(JARVIS_BACKLOG_DRAIN)。仅由 _tick 在「本轮无新单/更新单」分支调用，
         且池有空闲运行槽时才派。从既有快照挑 _is_backlog 的工单，按 优先级→建单时间(旧单先) 排序，
-        填满空闲槽。走 _dispatch→pool.submit，24h 去重台账照常生效(派出即记账 + headless 实例 claim
+        最多派 JARVIS_BACKLOG_MAX_SLOTS（默认 1）条积压单，剩余槽位留给新单。
+        走 _dispatch→pool.submit，24h 去重台账照常生效(派出即记账 + headless 实例 claim
         打标，下轮 _is_backlog 自然过滤)。
         新单优先由结构保证：本方法只在无新单 tick 触发，free_slots>0 蕴含队列空，积压单绝不排在
         未来新单前面；一旦某轮有新单，新单当轮直接派，积压单让路等下一个空闲 tick。"""
@@ -1165,6 +1167,8 @@ class ScanScheduler:
         free = self.pool.free_slots()
         if free <= 0:
             return
+        backlog_cap = int(os.environ.get("JARVIS_BACKLOG_MAX_SLOTS", "1"))
+        free = min(free, backlog_cap)
         backlog = [it for it in snapshot.values() if self._is_backlog(it)]
         if not backlog:
             return
@@ -1509,7 +1513,7 @@ class DispatchPool:
 
     def __init__(self, max_workers=None, queue_max=None, dedup_ttl=None, ledger_path=None):
         self.max_workers = int(max_workers if max_workers is not None
-                               else os.environ.get("JARVIS_DISPATCH_MAX", "2"))
+                               else os.environ.get("JARVIS_DISPATCH_MAX", "3"))
         self.queue_max = int(queue_max if queue_max is not None
                              else os.environ.get("JARVIS_DISPATCH_QUEUE_MAX", "20"))
         self.dedup_ttl = int(dedup_ttl if dedup_ttl is not None
