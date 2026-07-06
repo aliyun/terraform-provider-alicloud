@@ -226,21 +226,52 @@ _csv_contains() {
         >/dev/null 2>&1
 }
 
-# Write the full expected tag set in one update, preserving pre-existing tags.
+# Return current tags as name<TAB>id pairs, one per line, TAB-separated. Empty tag
+# → no output. Returns non-zero on get failure. Uses value (numeric IDs) so cross-
+# project / whitelist-external tags (e.g. "企业级能力-资源化-OpenAPI(Terraform)"
+# only exists at Aone-global level, not in project field options) survive downstream
+# updates — a1 --tag validates names but accepts IDs, so preserving by ID never trips
+# the "tag not found" gate.
+_get_tag_pairs() {
+    local id="$1" json
+    json="$($A1 project workitem get "$id" -f json 2>/dev/null)" || return 1
+    printf '%s' "$json" | jq -r '
+        (.fields // []) | map(select(.identifier=="tag")) | .[0] |
+        [(.displayValue // "" | split(", ")), (.value // "" | split(", "))]
+        | if (.[0] == [""] or .[0] == []) then empty
+          else (transpose | .[] | @tsv) end
+    ' 2>/dev/null || return 1
+}
+
+# Write the full expected tag set in one update, preserving pre-existing tags by ID
+# (so cross-project / whitelist-external tags survive) and adding new tags by name.
 # Args: <id> <add_csv> <remove_csv> [extra a1 update flags...].
 # Degrades to a legacy bare `--tag <add>` write (may drop other tags) with a stderr
 # warning if the current tags can't be read, so claim/release/finish never hard-fail
 # on a transient get error.
 _update_tags_merged() {
     local id="$1" add="$2" remove="$3"; shift 3
-    local existing new
-    if existing="$(_get_tags "$id")"; then
-        new="$(_compute_tags "$existing" "$add" "$remove")"
-        $A1 project workitem update "$id" --tag "$new" "$@"
-    else
+    local pairs kept_ids to_write
+    if ! pairs="$(_get_tag_pairs "$id")"; then
         echo "claim.sh: warning: could not read existing tags for $id; writing only '$add' (pre-existing tags may be lost)" >&2
         $A1 project workitem update "$id" --tag "$add" "$@"
+        return
     fi
+    # existing (name,id) pairs whose name NOT in (remove ∪ add) → keep by numeric ID
+    kept_ids="$(printf '%s' "$pairs" | jq -rRs --arg rm "$remove" --arg add "$add" '
+        def clean: split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0));
+        ($rm|clean) as $r | ($add|clean) as $a |
+        split("\n") | map(select(length>0)) | map(split("\t")) |
+        map(select(([.[0]]|inside($r+$a)|not))) |
+        map(.[1]) | map(select(length>0)) | join(",")
+    ' 2>/dev/null || true)"
+    to_write="$kept_ids"
+    [ -n "$add" ] && to_write="${to_write:+${to_write},}${add}"
+    if [ -z "$to_write" ]; then
+        # nothing to write — clearing all tags is not what callers expect
+        return 0
+    fi
+    $A1 project workitem update "$id" --tag "$to_write" "$@"
 }
 
 case "$cmd" in

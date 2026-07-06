@@ -442,6 +442,28 @@ bin/a1id -- project workitem update <源工单ID> --status 待上游排期
 
 ## Step 4 — 回复模板
 
+### 模板选择判定表(先横向判定动作,再选具体模板)
+
+分诊后要发评论前,先按下表定位**该走哪种动作**;每种动作对应下方一个具体模板:
+
+| 触发条件(必须都命中) | 动作 | 模板 | 写操作 |
+|---|---|---|---|
+| 新工单 or **前次路由错**(如 78365505 从 NPE 撤回改路由到豁朗) | **转单** | A/B/C(按分支 A-H) | 建关联单 + 源单 assignee 改 + 状态改「问题解决中」+ wrap done + release |
+| **前次路由对 + 缺关联单**(源单 assignee 已改到本团队分工里正确的人,但没有对应 tf_provider(528766) 关联单——常见于前一轮 jarvis 只改了 assignee/状态却漏建关联单,或客户单历史长且前线随机指派) | **补建关联单** | A/B/C(按分支,不重复改 assignee/状态) | 建关联单 + relation add(双向)+ comment 通知承接方新单号;**源单 assignee/状态保持不动**(前次已对) |
+| **前次路由对 + 关联单齐 + 距上次实质进展 <30 天** | **观察等待** | 无 | **不发评论、不改状态、不建单**;jarvis 内部记录本轮观察时间(bridge revisit 日轮会重扫,新进展进来自然触发);避免频繁打搅承接方 |
+| 前次路由对 + 关联单齐 + **距上次实质进展 ≥30 天**(不算 canned/@ 追问,以承接方给出的技术信息或时间承诺为准) | **进度跟进** | D | 只发 comment,免 bookend;不改状态、不建关联单 |
+| 承接方已给结论(拒接/根因/待客户验证)但客户或云产品未回,且已有 ≥1 次追问未响应 | **追料/最后通牒** | F | 只发 comment,免 bookend;通牒里必须给具体截止日期(默认 today+14 天)与到期动作(默认"按无法复现/信息不足关单");评论**同时 @ 客户/提单人 + 承接方**(提单人负责补料/确认,承接方获知通牒状态) |
+| 承接方已闭环(PR merged / 已发布 / 明确拒接结论),但主单状态仍是 New/评估中/问题解决中 | **关单提示** | E | wrap done + 状态改「已发布待需求方验收」/「已拒绝」/「方案功能已存在」+ finish 或 release;评论**同时 @ 提单人 + 最后处理人** |
+
+**辅助判定原则**:
+- 「实质进展」= 承接方(不是提单人也不是 jarvis 自己)在评论里给出**技术信息、排期时间、决策结论**其中一样;单纯 "@某人跟进"、"辛苦看下" 不算实质进展
+- 「30 天」按 UTC 计算,以最后一条实质进展评论的时间为基准
+- 「路由对不对」的判定:承接方是否在**本团队分工表**内且与诉求领域匹配(专属维护名单/新山/过载/谜拟/临钧/夏节 NPE,详见 [team-roster.md](./team-roster.md));不在本团队分工的(如"刘源"外包工号、"皓桦"云产品同学、客户 TAM)一律视为"前次路由错",走转单
+- 「缺关联单」的判定:源单看 relation list,若没有指向 tf_provider(528766) 池或对应产品池的关联单,即算缺;单纯与其他客户单的 relate 不算"承接关联单"
+- 一张工单可能**同时**满足"关单提示 + 追料"(承接方已给拒接结论 + 客户未确认),此时优先走关单提示(状态改「已拒绝」直接闭环),不做追料
+- 一张工单可能**同时**满足"缺关联单 + 距上次进展 ≥30 天"(前次只改 assignee 没建单),此时先补建关联单(带上进度跟进语气的评论),不再另发 D
+- 若判定犹豫,默认往"观察等待"或"进度跟进"倾斜(comment 免 bookend/不发,轻量;不改状态,不建重复关联单)
+
 ### 模板 A:类比查证 → 上游 API 缺口(分支 F)
 
 ```
@@ -508,6 +530,97 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 @<花名>(<工号>) 请协助评估 <诉求>,进度请回帖。
 ```
 
+### 模板 D:进度跟进(承接方 ≥30 天无实质进展)
+
+用于**已转出且距上次实质进展 ≥30 天**的工单(见判定表)。不叫"追料"(语气偏催促),用"进度跟进"(语气偏专业协同)。**必须贴出至少 2 条真实链接**(provider 源码 + API 文档 + 关联工单 + 前次进展评论 comment ID 任选),让承接人有具体上下文,不空催。
+
+```
+### 进度跟进 · <一句话诉求>
+
+**查证资料**:
+- 【provider 源码】(若涉及): `alicloud/resource_alicloud_xxx.go:LINE`
+  https://github.com/aliyun/terraform-provider-alicloud/blob/master/alicloud/<file>.go#L<n>
+- 【上游 API】: `<Product> <Action>` — https://help.aliyun.com/document_detail/xxx.html
+  或 https://api.aliyun.com/product/<Product>
+- 【镇元/Cloudspec】(若涉及): resourceTypeCode = <>,CoverageScore = <>
+- 【关联工单】: <ID> <title> https://project.aone.alibaba-inc.com/v2/project/<pool>/req/<ID>
+- 【前次进展评论】<日期> <评论人>:"<摘要>" (comment ID: <ID>)
+- 【相关 PR】(若涉及): #NNNN https://github.com/aliyun/terraform-provider-alicloud/pull/NNNN
+
+**进度跟进请求**:
+@<承接人花名>(<工号>) 距上次进展 <X> 天,请更新:
+1. <具体问题 1,基于查证资料给出可执行提问,不空问>
+2. <具体问题 2>
+3. <可选:兼顾双方的过渡方案 / 排期建议>
+
+若已闭环烦请回帖同步(附 PR/资源链接);若延期请给出新时间线;若长期无进展,建议 <升级到 XX 或转 XX>。
+```
+
+**发送方式**:进度跟进属于**只发评论、不改状态、不建关联单**,可直接 `bin/a1id -- project workitem comment create <id> -m "$(cat body-file)"` 免 bookend。避免走 `wrap.sh done` 的 heredoc,规避反引号/`$var:字母` 展开风险(见反模式)。发前 point-read 一次最新评论,避免与承接人刚回帖的进展撞车。
+
+### 模板 E:关单提示(承接方已闭环 / 云产品明确拒接 / 已修复但主单未同步)
+
+用于**承接方给出终结论后**主单状态仍未收敛的场景(见判定表)。走 bookend + 状态改「已发布待需求方验收」/「已拒绝」/「方案功能已存在」;**评论必须同时 @ 提单人和最后处理人**——提单人才知道诉求闭环并可后续验收,最后处理人被通知本单归档避免后续被再次追问。
+
+```
+### 结论(<PR/已发布/已拒接/根因结论>)
+<一句话诉求 + 一句话闭环状态>
+
+**查证资料**:
+- 【provider 源码】(若涉及): `alicloud/resource_alicloud_xxx.go:LINE`
+  https://github.com/aliyun/terraform-provider-alicloud/blob/master/alicloud/<file>.go#L<n>
+- 【上游 API】: `<Product> <Action>` — https://help.aliyun.com/document_detail/xxx.html
+- 【相关 PR / 合入版本】: #NNNN https://github.com/aliyun/terraform-provider-alicloud/pull/NNNN,已合入 vX.Y.Z
+- 【关联工单】: <ID> <title> https://project.aone.alibaba-inc.com/v2/project/<pool>/req/<ID>
+- 【前次进展评论】<日期> <承接人>:"<结论摘要>" (comment ID: <ID>)
+
+**建议行动**:
+- 客户侧:@<提单人花名>(<工号>) 请升级到 vX.Y.Z 后验收;若验收通过烦请回帖同步,本单归档。
+- 承接方:@<最后处理人花名>(<工号>) 感谢跟进,本单据此关闭,后续若客户复现请另开新单直连你。
+
+若已闭环无需回帖,状态已同步为「<已发布待需求方验收 / 已拒绝 / 方案功能已存在>」。
+```
+
+**发送方式**:
+- **走 bookend**(claim → wrap done + status → release/finish),避免关单动作与 jarvis-idle 循环冲突。
+- **状态选择**:PR 已合待客户验收 → 「已发布待需求方验收」;云产品/API 明确拒接 → 「已拒绝」;资源已支持只是客户版本旧 → 「方案功能已存在」;客户配置根因非 provider bug → 走模板 F 追料确认后关(而非本模板)。
+- **双 @ 语法**:`@<提单人花名>(<提单人工号>)` 和 `@<最后处理人花名>(<最后处理人工号>)` 各带工号,提单人放 "客户侧" 段落,承接方放 "承接方" 段落——语义清晰,notification 两侧都收到。
+- **最后处理人识别**:从 activity 或 comment list 找最后一条**给出实质进展**的评论(非 canned/@ 追问),其作者即最后处理人;若最后处理人 = 提单人自己(自派单),仅 @ 一次即可。
+
+### 模板 F:追料/最后通牒(承接方已给结论,客户/云产品未回)
+
+用于承接方已给根因/结论(如"你的 lifecycle 配置引起 diff""API 层限制单值")后,**客户/云产品 ≥1 次追问仍未回**的场景。**通牒里必须给具体截止日期与到期动作**,避免无限期挂着。**评论必须同时 @ 提单人和承接方**——提单人负责补料/确认,承接方获知通牒状态(避免通牒到期关单后承接方以为球还在他手里再来追)。
+
+```
+### 追料最后通牒 · <一句话根因或阻塞点>
+
+**查证资料**:
+- 【前次结论评论】<日期> <承接人>:"<根因/结论摘要>" (comment ID: <ID>)
+- 【provider 源码 / API 文档】(定位根因用): <链接>
+- 【已请求补料内容】: <具体要什么,如"完整 main.tf + terraform.log + Code 字段的错误信息">
+
+**待补齐材料**(<次数>次追问未回):
+1. <材料 1,如 完整 tf 测试模板>
+2. <材料 2,如 报错时 ECS 返回的 Code 字段(非仅 RequestId)>
+3. <材料 3,可选>
+
+**最后通牒**:
+- 客户/补料侧:@<提单人花名>(<工号>) 请两周内(**截止 YYYY-MM-DD**)补齐上述材料;
+- 承接方知会:@<承接方最后处理人花名>(<工号>) 本单已发最后通牒,通牒到期未补料将按「<无法复现/客户未回料/云产品无排期>」关闭,后续同题客户会开新单直连你,你**无需再来本单追问**。
+
+到期动作:
+- 若两周内补齐 → 本团队继续定位;
+- 若两周内仍未补齐 → 本单将按「<无法复现 / 客户未回料 / 云产品无排期>」关闭,后续再遇报错请**开新单**并直接附上材料(减少往复)。
+```
+
+**发送方式**:
+- **免 bookend**,走 `bin/a1id -- project workitem comment create <id> -m "$(cat body-file)"`,只发评论;状态**不立即改**,保持等回料。
+- **双 @ 语法**:`@<提单人花名>(<提单人工号>)` 和 `@<承接方花名>(<承接方工号>)` 各带工号;提单人放"客户/补料侧",承接方放"承接方知会"段落,语义清晰,notification 两侧都收到,承接方知道本轮球在客户手里、不用他再追。
+- **承接方识别**:activity/comment list 里给出实质进展/结论的最后作者(非 canned/@ 追问);若承接方 = 提单人自己(自派单/前线随机指派回自己),仅 @ 一次即可。
+- **通牒到期后**:若客户/云产品补齐 → 走正常处理;若仍未回 → 走模板 E 关单(状态改「客户未响应」或对应闭环状态)。
+- **默认截止日期**:today+14 天;若情况紧急(如 P1 缺陷)可缩短到 7 天,但必须在通牒中说明加急理由。
+- **不要**在同一单反复发通牒——若前一轮通牒到期未回已按流程关单,再遇同题另开新单跟踪。
+
 ## bookend 与 wrap.sh 参数
 
 评论发布走 aone-triage 主流程的 bookend(claim → wrap.sh done → release)。关键细节:
@@ -552,3 +665,7 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 用 `a1 project workitem tag add <id> <tag>` 加标签 —— 该子命令**不存在**(`a1 project workitem` 只有 activity/attachment/comment/create/delete/field/get/list/relation/type/update)。标签统一走 `update --tag "a,b,c"` **覆盖式**写入;`claim.sh` 已实现 point-read 现有 tag + 合并再写,但外挂标签(如 `jarvis-npe`)必须在 `claim.sh release` 之后单独补一次:`bin/a1id -- project workitem update <id> --tag "jarvis-idle,jarvis-npe"`(release 后 tag=jarvis-idle,覆盖式写完整列表保留)
 - ❌ **未复现客户报错就直接路由** —— 分诊模糊时直接甩 NPE 兜底/上游是**懒惰误诊**。**正确顺序**:先读 description 全文(尤其客户 tf 代码 + 完整报错栈的堆栈行号),按报错文件路径 grep provider 源码定位根因,再决定路由。参见工单 78365505 教训:凡修回复"找 SLS 同学"已明确 SLS 域(alicloud_sls_oss_export_sink 缺 404 ProjectNotExist retry,ActionTrail 后台 SLS project 异步就绪场景),jarvis 未读 tf 代码/报错栈就走 NPE 兜底转夏节,实际应走**分支 A 专属维护名单 → 豁朗(269032)**。**规则**:客户 tf 代码 + 完整报错栈齐备时,先做静态复现(source 定位根因)再路由;仅"canned 类咨询/无报错/跨多产品"才走 NPE
 - ❌ **「控制台 vs Terraform data source 结果不一致」类工单默认走分支 F 上游缺口** —— 或直接甩 NPE 兜底。大多数情况实际是 **provider 侧客户端多层过滤 + 客户配置差异**导致的表面不一致,**不是**上游 API 缺口。**判定路径 3 步**:① provider 调什么 API(grep `alicloud/data_source_alicloud_xxx.go` 定位实际 SDK Action,可能多个:主 API + 二次过滤 API + image 交集 API);② 控制台调什么 API(前端如 `ecs-buy.aliyun.com/api/...describeXxx.json` 通常是**公开 API 的内部聚合封装**,公开等价物是同族 OpenAPI,如 ecs-buy `describeAvailableInstanceTypes.json` ↔ 公开 `DescribeAvailableResource`);③ 过滤字段差异比对(常见 provider 侧额外客户端过滤:`image_id` 参数触发 `DescribeImageSupportInstanceTypes` 交集 / `spot_strategy` 传入即过滤 / `IoOptimized` 硬编码 `"optimized"` / `SoldOut` 强过滤,控制台前端通常不做这些)。**结论**:同族 API + provider 客户端过滤差异 = 纯 datasource 问题 → **与镇元不相关分流**(跳过镇元查证;不紧急 → **D-过载**,该类透明度改进多为非紧急:doc NOTE 补参数副作用 / 空集错误提示 / IoOptimized 类硬编码参数暴露;紧急 → D-新山);真正上游 API 缺口(公开 API 缺参数无法替代内部聚合)才走分支 F;绝不走 H NPE(场景明确、单一 data source、单一云产品域,不属"跨多产品无单一负责人/分类模糊")。参见工单 78274567 教训:客户主张"过滤条件都一样"是**误解**——provider 传的 `image_id="m-uf6..."` 触发 image 交集把 `ecs.u2i-c1m2.xlarge` 排除,ESS 控制台无 image 过滤所以能看到
+- ❌ 批量 bookend 里 `bash claim.sh claim ... ; wrap.sh ... ; claim.sh release` 不检查 claim exit code —— `claim.sh` lost race 时**退出码 1** 且 tag 已回滚(源单未被认领),但脚本继续跑 `wrap.sh done` 会把评论发出去,后续再回退用 `comment create` 补发,**同一条追料 / 进度跟进评论发出两次**污染工单历史。参见 2026-07-06 批量追料 4 单(78552705/78525865/78452193/78312012)各多发一条评论的教训。**正确写法**:`if bash bootstrap/claim.sh claim $id $pool; then bash bootstrap/wrap.sh done ... && bash bootstrap/claim.sh release $id $pool; else echo "$id lost race, skip"; fi`
+- ❌ 批量 bookend / 长循环脚本单次超过 Bash 工具 2min timeout —— 13 单 × 3 步 × 每步 ~5-10s ≈ 130-200s 会被截断,中断时最后一单常处于 `jarvis-claimed` 状态没走 `release`,遗留僵尸 claim 阻塞下一轮 lost race。**规则**:批处理**单 Bash 调用限 4-5 单**(<60s),分批;preflight.sh 已在开局主动跑 `reconcile.sh stale` 清理僵尸(2026-07-06 补丁),但会话中的实时截断仍需手动 `claim.sh release <id> <pool>` 补救
+- ❌ `a1 update --tag "<name>"` 传 tag **name** 保留 existing tag —— 当 existing 里含跨项目/白名单外 tag(如"企业级能力-资源化-OpenAPI(Terraform)" 含括号 + 不在 `field options tag --project X --type Y` 白名单)时,name-based `--tag` 校验会报 `not found` 或**静默截断**只写入白名单内的部分,业务 tag 丢失。**正确写法**:point-read `workitem get -f json` 拿 `.fields[].tag.value`(**数字 ID 列表**,如 `516678`,`568724`),`--tag` 参数用 ID 传或 ID+name 混合传(a1 CLI `--tag` 明说支持 name 或 ID);`claim.sh _get_tag_pairs` + `_update_tags_merged` 已实现 ID-aware 保留(2026-07-06 补丁),外部调用侧手动 update 时也要遵循同规则。参见工单 78312012 教训:业务 tag "企业级能力-资源化-OpenAPI(Terraform)"(ID 516678)被 name-based update 静默覆盖,人工前端手工补救
+- ❌ 「追料」canned 语气偏催 —— 长期未响应的工单发"追料"评论对承接人是**噪声**(没上下文只喊时间);进度跟进应走**模板 D**,贴 provider 源码 / API 文档 / 关联工单 / 前次评论 comment ID 等真实链接,让承接人有具体上下文;**规则**:批量进度跟进走 `comment create -m "$(cat body-file)"` **免 bookend**(纯发评论无状态变更),避免走 `wrap.sh done` 的 heredoc 展开风险和 `claim.sh` lost race 阻断
