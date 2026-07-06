@@ -577,6 +577,46 @@ class NoDingtalkDegradedTest(unittest.TestCase):
         self.assertIn("[BROADCAST]", "\n".join(cm.output))  # 「收到回复,唤醒中」通知降级为日志
 
 
+class TataResidentModeTest(unittest.TestCase):
+    """Tata 默认不保留常驻 claude 子进程；需要保温时必须显式打开。"""
+
+    def setUp(self):
+        for k in ("JARVIS_TATA_RESIDENT", "JARVIS_TATA_PREWARM"):
+            os.environ.pop(k, None)
+
+    def tearDown(self):
+        for k in ("JARVIS_TATA_RESIDENT", "JARVIS_TATA_PREWARM"):
+            os.environ.pop(k, None)
+
+    def test_default_tata_runner_is_one_shot_without_pool(self):
+        h = b.JarvisHandler(no_dingtalk=False)
+        self.assertIsNone(h.pool, "default live bridge must not retain a TataPool")
+
+        calls = []
+        orig = b.run_tata_stream
+
+        def fake_run_tata_stream(text, session_id, resume):
+            calls.append((text, session_id, resume))
+            yield "one-shot reply"
+
+        b.run_tata_stream = fake_run_tata_stream
+        try:
+            self.assertEqual(list(h._tata_runner("hi", "staff-1", False)), ["one-shot reply"])
+            self.assertEqual(calls, [("hi", "staff-1", False)])
+        finally:
+            b.run_tata_stream = orig
+            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+
+    def test_resident_mode_requires_explicit_env(self):
+        os.environ["JARVIS_TATA_RESIDENT"] = "1"
+        h = b.JarvisHandler(no_dingtalk=False)
+        try:
+            self.assertIsInstance(h.pool, b.TataPool)
+        finally:
+            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+            h.pool.shutdown()
+
+
 class BoardEnabledTest(unittest.TestCase):
     """board.enabled 隐雷: live main() 引用 handler.board.enabled — 该属性必须存在且为 bool,
     否则配上真钉钉凭证走 live 路径会 AttributeError。"""
