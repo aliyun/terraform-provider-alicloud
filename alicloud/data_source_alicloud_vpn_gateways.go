@@ -67,6 +67,11 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"enable", "disable"}, false),
 			},
+			"gateway_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Traditional", "Enhanced.SiteToSite"}, false),
+			},
 			"include_reservation_data": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -208,6 +213,10 @@ func dataSourceAlicloudVpnGatewaysRead(d *schema.ResourceData, meta interface{})
 		request["BusinessStatus"] = v.(string)
 	}
 
+	if v, ok := d.GetOk("gateway_type"); ok && v.(string) != "" {
+		request["GatewayType"] = v.(string)
+	}
+
 	var objects []map[string]interface{}
 	var vpnGatewayNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -284,6 +293,14 @@ func dataSourceAlicloudVpnGatewaysRead(d *schema.ResourceData, meta interface{})
 		if sslVpn != "" && sslVpn != fmt.Sprint(object["SslVpn"]) {
 			continue
 		}
+		status := ""
+		if v, ok := object["Status"].(string); ok && v != "" {
+			status = convertStatus(v)
+		}
+		instanceChargeType := ""
+		if v, ok := object["ChargeType"].(string); ok && v != "" {
+			instanceChargeType = convertChargeType(v)
+		}
 		mapping := map[string]interface{}{
 			"id":                            object["VpnGatewayId"],
 			"vpc_id":                        object["VpcId"],
@@ -291,9 +308,9 @@ func dataSourceAlicloudVpnGatewaysRead(d *schema.ResourceData, meta interface{})
 			"specification":                 object["Spec"],
 			"name":                          object["Name"],
 			"description":                   object["Description"],
-			"status":                        convertStatus(object["Status"].(string)),
+			"status":                        status,
 			"business_status":               object["BusinessStatus"],
-			"instance_charge_type":          convertChargeType(object["ChargeType"].(string)),
+			"instance_charge_type":          instanceChargeType,
 			"enable_ipsec":                  object["IpsecVpn"],
 			"enable_ssl":                    object["SslVpn"],
 			"ssl_vpn":                       object["SslVpn"],
