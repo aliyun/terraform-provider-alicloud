@@ -150,6 +150,9 @@ class ScanDecideTest(unittest.TestCase):
         # 会被 out_of_scope 提前 skip)；scope 本身由 ScopeGateTest 覆盖。
         sc.dispatch_pools = set()
         sc.dispatch_created_before = ""
+        # 默认 mock 掉 _human_touched(否则 idle 分支会真发 a1 activity 查询)；
+        # 默认「无人工介入」，需要人工介入的用例各自覆盖为 True。
+        sc._human_touched = lambda iid: False
         return sc
 
     def test_tag_and_dedup_decisions(self):
@@ -164,9 +167,42 @@ class ScanDecideTest(unittest.TestCase):
         d = {x["id"]: (x["action"], x["reason"]) for x in sc._decide(items)}
         self.assertEqual(d["cl"], ("skip", "claimed"))
         self.assertEqual(d["dn"], ("skip", "done"))
-        self.assertEqual(d["id"], ("skip", "idle"))   # parked → RevisitScheduler owns it
+        # idle 且无人工介入(_human_touched=False) → 不重启实例，等每日 Revisit
+        self.assertEqual(d["id"], ("skip", "idle_no_human"))
         self.assertEqual(d["fr"], ("dispatch", "new"))
         self.assertEqual(d["dd"], ("skip", "deduped"))
+
+    def test_updated_no_tag_dispatches(self):
+        # 更新单(无 jarvis 标签，pool 允许) → dispatch，force 默认 False
+        sc = self._scanner()
+        items = [{"id": "u1", "title": "updated fresh", "tag": []}]
+        d = sc._decide(items)[0]
+        self.assertEqual((d["action"], d["reason"]), ("dispatch", "new"))
+        self.assertFalse(d["force"], "无 jarvis 标签的派发 force 默认 False")
+
+    def test_idle_human_touched_dispatches_force(self):
+        # jarvis-idle 且人工(辰羿)在 jarvis 上轮动作后介入 → 重新派发，且 force=True
+        sc = self._scanner()
+        sc._human_touched = lambda iid: True
+        items = [{"id": "ih", "title": "idle human", "tag": ["jarvis-idle"]}]
+        d = sc._decide(items)[0]
+        self.assertEqual(d["action"], "dispatch")
+        self.assertTrue(d["force"], "idle+人工介入必须 force 覆盖去重台账")
+
+    def test_idle_jarvis_self_update_skips(self):
+        # jarvis-idle 但最近动作是 jarvis 自身(_human_touched=False) → 跳过
+        sc = self._scanner()
+        sc._human_touched = lambda iid: False
+        items = [{"id": "is", "title": "idle self", "tag": ["jarvis-idle"]}]
+        d = sc._decide(items)[0]
+        self.assertEqual((d["action"], d["reason"]), ("skip", "idle_no_human"))
+
+    def test_terminal_status_skipped(self):
+        # 终态工单(如「已发布」) → 直接 skip terminal，不派实例
+        sc = self._scanner()
+        items = [{"id": "t1", "title": "released", "tag": [], "status": "已发布"}]
+        d = sc._decide(items)[0]
+        self.assertEqual((d["action"], d["reason"]), ("skip", "terminal"))
 
     def test_tag_string_and_missing(self):
         sc = self._scanner()
@@ -186,18 +222,19 @@ class ScanDecideTest(unittest.TestCase):
 
 
 class ColdStartTest(unittest.TestCase):
-    """Fused cold-start semantics (rebase onto fc2a7ea): supervised seeds baseline + returns
-    with no notification; auto DOES dispatch the qualifying backlog on the first tick
-    (diff-independent — gated by tag-skip + the dedup ledger)."""
+    """Cold-start semantics: a (re)start only seeds the baseline snapshot and dispatches
+    NOTHING — regardless of auto/supervised. A restart never re-consumes the existing
+    backlog; only genuinely new / externally-updated tickets on later ticks trigger action."""
 
     def _scanner(self, auto):
         tmp = tempfile.mkdtemp()
         pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
         sc = b.ScanScheduler(handler=None, pool=pool)
         sc.auto = auto
+        sc._human_touched = lambda iid: False
         return sc
 
-    def test_cold_auto_dispatches_backlog(self):
+    def test_cold_auto_seeds_only_no_dispatch(self):
         sc = self._scanner(auto=True)
         items = [{"id": "1", "title": "a", "tag": []}, {"id": "2", "title": "b", "tag": []}]
         sc._scan = lambda: items
@@ -205,12 +242,12 @@ class ColdStartTest(unittest.TestCase):
         sc._tick_auto = lambda ni, ui=None: calls.append(("auto", {i["id"] for i in ni}))
         sc._tick_supervised = lambda ni, ui=None: calls.append(("sup", None))
         self.assertTrue(sc._cold)
-        sc._tick()  # cold tick
+        sc._tick()  # cold tick → seed baseline only
         self.assertFalse(sc._cold)
-        self.assertEqual(calls, [("auto", {"1", "2"})], "auto cold start must dispatch backlog")
+        self.assertEqual(calls, [], "cold start must seed baseline only, dispatch nothing")
         self.assertEqual(set(sc._prev_snapshot.keys()), {"1", "2"})
 
-    def test_cold_supervised_seeds_only_then_diffs(self):
+    def test_cold_supervised_seeds_only(self):
         sc = self._scanner(auto=False)
         items = [{"id": "1", "title": "a", "tag": []}, {"id": "2", "title": "b", "tag": []}]
         sc._scan = lambda: items
@@ -221,14 +258,23 @@ class ColdStartTest(unittest.TestCase):
         self.assertEqual(calls, [], "supervised cold start must not notify/dispatch")
         self.assertEqual(set(sc._prev_snapshot.keys()), {"1", "2"})
         self.assertFalse(sc._cold)
-        # second tick with one genuinely new item → supervised path fires for just that one
-        sc._scan = lambda: items + [{"id": "3", "title": "c", "tag": []}]
-        sc._tick()
-        self.assertEqual(calls, [("sup", {"3"})])
 
-    def test_external_update_surfaced_not_dispatched(self):
-        # Merge with master 6de3d06: an existing ticket whose modified (gmtModified) time
-        # changes is classified as "updated" (sensing/notify), NOT "new" — never dispatched.
+    def test_new_item_after_cold_dispatches(self):
+        # After the baseline seed, a genuinely new ticket on a later tick IS dispatched.
+        sc = self._scanner(auto=True)
+        base = [{"id": "1", "title": "a", "tag": []}, {"id": "2", "title": "b", "tag": []}]
+        calls = []
+        sc._tick_auto = lambda ni, ui=None: calls.append(("auto", {i["id"] for i in ni}))
+        sc._scan = lambda: base
+        sc._tick()  # cold → seed {1,2}, no dispatch
+        self.assertEqual(calls, [])
+        sc._scan = lambda: base + [{"id": "3", "title": "c", "tag": []}]
+        sc._tick()  # #3 is new → auto path fires for just that one
+        self.assertEqual(calls, [("auto", {"3"})])
+
+    def test_external_update_surfaced_then_dispatched(self):
+        # An existing ticket whose modified (gmtModified) time changes is classified as
+        # "updated" and now flows into the dispatch decision (not new, but a candidate).
         sc = self._scanner(auto=True)
         v1 = [{"id": "7", "title": "t", "tag": [], "modified": "2026-07-05T10:00:00"}]
         v2 = [{"id": "7", "title": "t", "tag": [], "modified": "2026-07-05T11:00:00"}]
@@ -237,10 +283,10 @@ class ColdStartTest(unittest.TestCase):
         got = []
         sc._tick_auto = lambda ni, ui=None: got.append(
             (sorted(i["id"] for i in ni), sorted((ui or {}).keys())))
-        sc._tick()  # cold auto → #7 dispatched as new
-        sc._tick()  # #7 modified changed → updated, not new
-        self.assertEqual(got[0], (["7"], []), "first tick: #7 is new")
-        self.assertEqual(got[1], ([], ["7"]), "modified change → updated (surfaced, not dispatched)")
+        sc._tick()  # cold → seed {7}, no dispatch (_tick_auto not called)
+        self.assertEqual(got, [], "cold tick seeds only, no _tick_auto call")
+        sc._tick()  # #7 modified changed → updated candidate
+        self.assertEqual(got, [([], ["7"])], "modified change → updated (fed to dispatch decision)")
 
 
 class DailySchedulerTest(unittest.TestCase):
@@ -288,18 +334,19 @@ class ScopeGateTest(unittest.TestCase):
         pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
         sc = b.ScanScheduler(handler=None, pool=pool)
         sc.auto = True
+        sc._human_touched = lambda iid: False
         return sc
 
-    def test_default_is_gray_scoped(self):
-        # fail-safe 默认：不配任何 env 时也收窄到 tf_provider + 2024-01-01 前，不全量放开。
+    def test_default_is_open(self):
+        # 默认(未配 env)已放开：pool 白名单空 + created 上限空 → _in_scope 对所有池/所有时间放行。
         sc = self._scanner()
-        self.assertEqual(sc.dispatch_pools, {"tf_provider"}, "default pool allowlist = tf_provider")
-        self.assertEqual(sc.dispatch_created_before, "2024-01-01", "default created cutoff = 2024-01-01")
-        self.assertTrue(sc._in_scope({"pool": "tf_provider", "created": "2023-06-01 12:00"}))
-        self.assertFalse(sc._in_scope({"pool": "tf_customer", "created": "2023-06-01 12:00"}),
-                         "other pool NOT auto-dispatched by default")
-        self.assertFalse(sc._in_scope({"pool": "tf_provider", "created": "2025-06-01 12:00"}),
-                         "newer-than-cutoff NOT auto-dispatched by default")
+        self.assertEqual(sc.dispatch_pools, set(), "default pool allowlist empty = all pools")
+        self.assertEqual(sc.dispatch_created_before, "", "default created cutoff empty = no time limit")
+        for pool in ("tf_provider", "tf_customer", "cloudspec", "provider_dev", "some_new_pool"):
+            self.assertTrue(sc._in_scope({"pool": pool, "created": "2026-07-01 10:00"}),
+                            "%s must be in scope by default" % pool)
+        self.assertTrue(sc._in_scope({"pool": "tf_provider"}), "missing created ok when no cutoff")
+        self.assertTrue(sc._in_scope({}), "empty item in scope when both gates open")
 
     def test_pool_allowlist(self):
         sc = self._scanner()
@@ -358,6 +405,84 @@ class ScopeGateTest(unittest.TestCase):
             self.assertEqual(scanned, [True], "no pause → _scan runs")
         finally:
             b.REPO_ROOT = orig
+
+
+class HumanTouchedTest(unittest.TestCase):
+    """_human_touched: 最近一条 Aone activity 的 operator 是否非 jarvis 本身。
+    绝不真发 a1 —— 全部 monkeypatch b.subprocess.run。"""
+
+    def _scanner(self):
+        tmp = tempfile.mkdtemp()
+        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        return b.ScanScheduler(handler=None, pool=pool)
+
+    def _fake_run(self, rc, stdout, stderr=""):
+        class R:
+            returncode = rc
+        R.stdout = stdout
+        R.stderr = stderr
+        return lambda *a, **k: R()
+
+    def test_human_operator_is_touched(self):
+        sc = self._scanner()
+        orig = b.subprocess.run
+        b.subprocess.run = self._fake_run(0, json.dumps([{"operator": "chenyi", "eventTime": 2}]))
+        try:
+            self.assertTrue(sc._human_touched("1"), "非 jarvis operator → 人工介入")
+        finally:
+            b.subprocess.run = orig
+
+    def test_jarvis_operator_not_touched(self):
+        sc = self._scanner()
+        orig = b.subprocess.run
+        for op in ("open-jarvis", "WORKER_1782379562571"):
+            sc._human_cache = {}
+            b.subprocess.run = self._fake_run(0, json.dumps([{"operator": op, "eventTime": 2}]))
+            try:
+                self.assertFalse(sc._human_touched("1"), "%s 是 jarvis 自身 → 非人工" % op)
+            finally:
+                b.subprocess.run = orig
+
+    def test_failure_returns_false_conservatively(self):
+        sc = self._scanner()
+        orig = b.subprocess.run
+
+        def boom(*a, **k):
+            raise RuntimeError("network down")
+        b.subprocess.run = boom
+        try:
+            self.assertFalse(sc._human_touched("9"), "查询异常一律保守返回 False")
+        finally:
+            b.subprocess.run = orig
+
+    def test_nonzero_rc_returns_false(self):
+        sc = self._scanner()
+        orig = b.subprocess.run
+        b.subprocess.run = self._fake_run(1, "", "boom")
+        try:
+            self.assertFalse(sc._human_touched("9"), "rc!=0 → 保守 False")
+        finally:
+            b.subprocess.run = orig
+
+    def test_result_cached_within_tick(self):
+        sc = self._scanner()
+        calls = [0]
+        orig = b.subprocess.run
+
+        def counting(*a, **k):
+            calls[0] += 1
+            class R:
+                returncode = 0
+                stdout = json.dumps([{"operator": "chenyi"}])
+                stderr = ""
+            return R()
+        b.subprocess.run = counting
+        try:
+            sc._human_touched("5")
+            sc._human_touched("5")
+            self.assertEqual(calls[0], 1, "同一 tick 内同 id 只查一次")
+        finally:
+            b.subprocess.run = orig
 
 
 def _run():
