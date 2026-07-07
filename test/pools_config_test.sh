@@ -11,14 +11,26 @@ bad() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
 # S1: parses
 jq . "$POOLS_JSON" >/dev/null 2>&1 && ok "jq parses config/pools.json" || bad "jq parses config/pools.json"
 
-# S2: 5 pools across 2 lines
-[ "$(jq '.pools|length' "$POOLS_JSON")" = "5" ] && ok "5 pools" || bad "expected 5 pools"
+# S2: 4 pools across 2 lines (cloudspec 池已删除 — jarvis 非项目 1120451 成员,恒 403)
+[ "$(jq '.pools|length' "$POOLS_JSON")" = "4" ] && ok "4 pools" || bad "expected 4 pools"
 [ "$(jq '.lines|length' "$POOLS_JSON")" = "2" ] && ok "2 lines" || bad "expected 2 lines"
 
-# S3: all 5 project ids present (verbatim)
-for id in 1086837 528766 2124589 1120451 2100304; do
+# S3: all 4 project ids present (verbatim); 1120451(cloudspec) 已移除
+for id in 1086837 528766 2124589 2100304; do
   jq -e --argjson p "$id" '[.pools[].project]|index($p)' "$POOLS_JSON" >/dev/null \
     && ok "project $id present" || bad "project $id missing"
+done
+# S3b: cloudspec 池已删除
+[ "$(jq '.pools|has("cloudspec")' "$POOLS_JSON")" = "false" ] \
+  && ok "cloudspec pool removed" || bad "cloudspec pool should be removed"
+
+# S3c: per-pool assignee 语义(config/pools.json)
+#   4 池全部仅看【转派给 open-jarvis(WORKER_1782379562571)】的单。
+#   标识符用账号/员工 ID(a1 服务端解析,ID/名字/邮箱等价;ID 最稳,不用显示名)。
+for pool in tf_customer tf_provider mcp_server api_toolkit; do
+  [ "$(jq -r ".pools.$pool.assignee" "$POOLS_JSON")" = "WORKER_1782379562571" ] \
+    && ok "$pool.assignee = open-jarvis(WORKER_1782379562571)" \
+    || bad "$pool.assignee 应为 WORKER_1782379562571(仅看转派给 open-jarvis 的单)"
 done
 
 # S4: every pool names its line

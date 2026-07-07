@@ -66,16 +66,19 @@ if $has_pools; then
   # `pg=$(...) || true` + `n=空 → break` 把请求失败当成「没有更多」静默 break，5 池并发下
   # 会整组丢单还 exit 0 无告警(实测 total 在 821/1406 间跳)。重试吸收瞬时失败;真失败由调用方告警。
   # return 0 = 成功(stdout 为 JSON 数组)；return 2 = 永久性错误(无权限/非项目成员,不重试,
-  # 调用方静默跳过——如 cloudspec 对本 assignee 恒 403)；return 1 = 瞬时失败重试尽(调用方告警)。
+  # 调用方静默跳过——如 jarvis 非成员的项目恒 403)；return 1 = 瞬时失败重试尽(调用方告警)。
+  # _asg 为空 → 不带 --assignee(扫全池,不限关注人)；具体关注人过滤统一走 --filter assignedTo=
+  # (--assignee 不吃逗号多值,详见 fetch_pool)。
   _scan_page() {  # args: project assignee cat filter page → JSON array on stdout
-    local _proj="$1" _asg="$2" _cat="$3" _flt="$4" _pg="$5" _out _t=0 _errf
+    local _proj="$1" _asg="$2" _cat="$3" _flt="$4" _pg="$5" _out _t=0 _errf _args
     _errf=$(mktemp)
     while [ "$_t" -lt 3 ]; do
-      if [ -n "$_flt" ]; then
-        _out=$($A1 project workitem list --project "$_proj" --assignee "$_asg" --category "$_cat" --columns id,title,status,priority,tag,type,category,modified,gmtCreate --filter "$_flt" --page "$_pg" --page-size "$PAGE_SIZE" -f json 2>"$_errf")
-      else
-        _out=$($A1 project workitem list --project "$_proj" --assignee "$_asg" --category "$_cat" --columns id,title,status,priority,tag,type,category,modified,gmtCreate --page "$_pg" --page-size "$PAGE_SIZE" -f json 2>"$_errf")
-      fi
+      _args=(project workitem list --project "$_proj" --category "$_cat"
+             --columns id,title,status,priority,tag,type,category,modified,gmtCreate
+             --page "$_pg" --page-size "$PAGE_SIZE" -f json)
+      [ -n "$_asg" ] && _args+=(--assignee "$_asg")
+      [ -n "$_flt" ] && _args+=(--filter "$_flt")
+      _out=$($A1 "${_args[@]}" 2>"$_errf")
       if printf '%s' "$_out" | jq -e 'type=="array"' >/dev/null 2>&1; then
         rm -f "$_errf"; printf '%s' "$_out"; return 0
       fi
@@ -88,9 +91,18 @@ if $has_pools; then
     rm -f "$_errf"; return 1
   }
 
-  fetch_pool() {  # args: key project status_csv title_csv → prints transformed JSON array
-    local pool_key="$1" pool_project="$2" exclude_status="$3" exclude_title="$4"
-    local filter="" pat pool_out="[]" cat page pg n _rc
+  fetch_pool() {  # args: key project status_csv title_csv assignee_spec → prints transformed JSON array
+    local pool_key="$1" pool_project="$2" exclude_status="$3" exclude_title="$4" assignee_spec="$5"
+    local filter="" pat pool_out="[]" cat page pg n _rc asg_flag=""
+    # 关注人过滤(per-pool assignee, config/pools.json)——三态语义:
+    #   __ANY__     ("assignee":"any") → 不限关注人,扫全池(不带 --assignee,无 assignedTo 子句)
+    #   __GLOBAL__  (池未配 assignee)  → 回退全局 $scan_assignee,经 --assignee 传(保持旧行为)
+    #   其它(单值/逗号多值)             → 经 --filter assignedTo=<csv> 过滤(多值 OR;--assignee 不吃逗号)
+    case "$assignee_spec" in
+      __ANY__) : ;;
+      __GLOBAL__) asg_flag="$scan_assignee" ;;
+      *) [ -n "$filter" ] && filter="$filter AND "; filter="${filter}assignedTo=$assignee_spec" ;;
+    esac
     # NOTE: jarvis-claimed items are intentionally KEPT (board.sh maps them → 进行中/inflight).
     # The old "NOT tag=$claim_tag" exclusion was triage-loop dedup, not for the board, and broke
     # 进行中 (always empty). If a triage caller needs dedup, filter on tag downstream, not in scan.
@@ -103,7 +115,7 @@ if $has_pools; then
     for cat in req bug task; do
       page=1
       while :; do
-        _rc=0; pg=$(_scan_page "$pool_project" "$scan_assignee" "$cat" "$filter" "$page") || _rc=$?
+        _rc=0; pg=$(_scan_page "$pool_project" "$asg_flag" "$cat" "$filter" "$page") || _rc=$?
         # rc 2 = 权限类(本 assignee 对该池无权,预期)→ 静默跳过该 category,不告警不作废。
         [ "$_rc" = 2 ] && break
         # rc 1 = 瞬时失败重试尽 → 告警 + 跳过该 category(其余 category/池照常,scan 不整轮作废)。
@@ -124,14 +136,25 @@ if $has_pools; then
   }
 
   tmpd=$(mktemp -d); trap 'rm -rf "$tmpd"' EXIT
-  while IFS=$'\t' read -r pool_key pool_project pool_name exclude_status exclude_title; do
+  # 字段用 ASCII Unit Separator(0x1F)分隔,不用 tab:tab 是 IFS 空白符,bash 会把连续空字段
+  # (如空的 exclude_status/exclude_title)折叠,导致其后的 assignee 令牌错位到前面的变量。
+  # 0x1F 非空白 → 空字段原样保留、字段数固定。工单数据里不会出现 0x1F。
+  while IFS=$'\x1f' read -r pool_key pool_project pool_name exclude_status exclude_title pool_assignee; do
     # 不吞 stderr：让 fetch_pool 的 WARN(某 category 重试尽失败)冒泡到 scan.sh stderr，
     # 供 bridge 日志可见(bridge _scan 在 stderr 非空时会 log)。stdout(JSON)仍单独重定向到文件。
-    fetch_pool "$pool_key" "$pool_project" "$exclude_status" "$exclude_title" > "$tmpd/$pool_key.json" &
+    fetch_pool "$pool_key" "$pool_project" "$exclude_status" "$exclude_title" "$pool_assignee" > "$tmpd/$pool_key.json" &
   done < <(jq -r '
+    # per-pool assignee → 单列令牌:缺省=__GLOBAL__(回退全局),"any"=__ANY__(全池),
+    # 数组=逗号 join(多关注人 OR),标量=原值。语义见 fetch_pool。
+    def aspec: (.value.assignee) as $a |
+      (if   $a == null            then "__GLOBAL__"
+       elif ($a|type)=="string"   then (if $a=="any" then "__ANY__" else $a end)
+       elif ($a|type)=="array"    then ($a|map(tostring)|join(","))
+       else ($a|tostring) end);
     .pools // {} | to_entries[] |
-    [.key, (.value.project | tostring), (.value.name // .key), ((.value.exclude_status // [])|join(",")), ((.value.exclude_title // [])|join(","))] |
-    @tsv
+    [.key, (.value.project | tostring), (.value.name // .key),
+     ((.value.exclude_status // [])|join(",")), ((.value.exclude_title // [])|join(",")), aspec] |
+    join("\u001f")
   ' "$pools_cfg")
   wait
   result=$(jq -s 'add // []' "$tmpd"/*.json 2>/dev/null) || result="[]"
