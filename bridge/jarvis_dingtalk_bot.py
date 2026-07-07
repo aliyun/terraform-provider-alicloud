@@ -28,6 +28,7 @@ Env:
   CLAUDE_BIN                               claude binary (default: PATH / ~/.local/bin/claude).
   JARVIS_CC                                override full Jarvis launch command (default: claude --settings).
   JARVIS_SETTINGS                          override settings file for Jarvis (default: ~/.claude/idea_settings.json).
+                                           冒号分隔可给多档摊额度/token；按 session_id 粘档(同单 resume 稳定)。
   CLAUDE_TIMEOUT                           per-round seconds (default 300).
   JARVIS_DISPATCH_TIMEOUT                  headless dispatch timeout (default 43200 = 12h).
 
@@ -68,6 +69,7 @@ import re
 import sys
 import json
 import uuid
+import hashlib
 import time
 import logging
 import subprocess
@@ -200,13 +202,24 @@ def tata_resident_enabled():
     return os.environ.get("JARVIS_TATA_RESIDENT", "0").strip().lower() in ("1", "true", "yes", "on")
 
 
-def jarvis_cmd():
-    """Jarvis 基命令 = claude --settings idea_settings.json（走 idealab 网关）。JARVIS_CC 可覆盖完整命令。"""
+def jarvis_cmd(session_id=None):
+    """Jarvis 基命令 = claude --settings idea_settings.json（走 idealab 网关）。JARVIS_CC 可覆盖完整命令。
+
+    JARVIS_SETTINGS 支持冒号分隔多档（摊额度/token）。多档时按 session_id 做**确定性**
+    取档（sticky-random）：不同工单落不同档天然摊负载，但同一工单建会话轮与 --resume 轮
+    必落同一档——否则 resume 会串到别的网关/token，claude --resume 直接失败。
+    单值时行为与旧版一致；缺 session_id（无从粘）退回第一档。"""
     cc = os.environ.get("JARVIS_CC")
     if cc:
         return [cc]
-    settings = os.environ.get("JARVIS_SETTINGS") or str(
+    raw = os.environ.get("JARVIS_SETTINGS") or str(
         Path.home() / ".claude" / "idea_settings.json")
+    pool = [s.strip() for s in raw.split(":") if s.strip()]
+    if len(pool) > 1 and session_id:
+        idx = int(hashlib.md5(session_id.encode()).hexdigest(), 16) % len(pool)
+        settings = pool[idx]
+    else:
+        settings = pool[0]
     return [claude_bin(), "--settings", settings]
 
 
@@ -394,7 +407,7 @@ def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None):
     for a fallback error message. First turn --session-id, later turns --resume."""
     if timeout is None:
         timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
-    cmd = jarvis_cmd() + ["-p", text, "--output-format", "stream-json",
+    cmd = jarvis_cmd(session_id) + ["-p", text, "--output-format", "stream-json",
            "--include-partial-messages", "--verbose"]
     cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
     deadline = time.time() + timeout
