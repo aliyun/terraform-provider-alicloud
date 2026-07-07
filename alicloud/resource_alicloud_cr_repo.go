@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -21,6 +22,14 @@ func resourceAlicloudCRRepo() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		DeprecationMessage: "This resource has been deprecated since v1.276.0 and will be removed in the future. Please use 'alicloud_cr_ee_repo' instead.",
+		SchemaVersion:      1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Version: 0,
+				Type:    resourceAlicloudCRRepoV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceAlicloudCRRepoStateUpgradeV0,
+			},
+		},
 		Schema: map[string]*schema.Schema{
 			"namespace": {
 				Type:         schema.TypeString,
@@ -196,4 +205,68 @@ func resourceAlicloudCRRepoDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	return WrapError(crService.WaitForCrRepo(d.Id(), Deleted, DefaultTimeout))
+}
+
+func resourceAlicloudCRRepoV0() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"namespace": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"summary": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"repo_type": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"detail": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			// lintignore: S022
+			"domain_list": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vpc": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"public": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"internal": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func resourceAlicloudCRRepoStateUpgradeV0(_ context.Context, rawState map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+	if v, ok := rawState["domain_list"]; ok && v != nil {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			if len(val) > 0 {
+				rawState["domain_list"] = []interface{}{val}
+			} else {
+				rawState["domain_list"] = []interface{}{}
+			}
+		}
+	}
+	return rawState, nil
 }

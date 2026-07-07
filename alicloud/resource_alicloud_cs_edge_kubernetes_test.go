@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -12,7 +14,7 @@ import (
 
 const EdgeKubernetesConfigTpl = `
 variable "name" {
-	default = "%s"
+  default = "%s"
 }
 
 variable "instance_type" {
@@ -110,9 +112,9 @@ func TestAccAliCloudEdgeKubernetes_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  resourceAttrCheck.checkResourceDestroy(),
+		CheckDestroy:      resourceAttrCheck.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -226,9 +228,9 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.EssdSupportRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  resourceAttrCheck.checkResourceDestroy(),
+		CheckDestroy:      resourceAttrCheck.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -379,9 +381,9 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  resourceAttrCheck.checkResourceDestroy(),
+		CheckDestroy:      resourceAttrCheck.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -453,4 +455,269 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 
 func edgeKubernetesConfigDependence(name string) string {
 	return fmt.Sprintf(EdgeKubernetesConfigTpl, name)
+}
+
+func TestCSEdgeKubernetesStateUpgradeV0(t *testing.T) {
+	fields := []string{"runtime", "certificate_authority", "connections"}
+	cases := []struct {
+		name     string
+		input    map[string]interface{}
+		expected map[string][]interface{}
+	}{
+		{
+			name: "map with data",
+			input: map[string]interface{}{
+				"id": "c-edge-123",
+				"runtime": map[string]interface{}{
+					"name":    "containerd",
+					"version": "1.6.20",
+				},
+				"certificate_authority": map[string]interface{}{
+					"cluster_cert": "cluster-cert",
+					"client_cert":  "client-cert",
+					"client_key":   "client-key",
+				},
+				"connections": map[string]interface{}{
+					"api_server_internet": "https://1.2.3.4:6443",
+					"api_server_intranet": "https://10.0.0.1:6443",
+					"master_public_ip":    "1.2.3.4",
+					"service_domain":      "*.c-edge-123.cs.local",
+				},
+			},
+			expected: map[string][]interface{}{
+				"runtime": {
+					map[string]interface{}{
+						"name":    "containerd",
+						"version": "1.6.20",
+					},
+				},
+				"certificate_authority": {
+					map[string]interface{}{
+						"cluster_cert": "cluster-cert",
+						"client_cert":  "client-cert",
+						"client_key":   "client-key",
+					},
+				},
+				"connections": {
+					map[string]interface{}{
+						"api_server_internet": "https://1.2.3.4:6443",
+						"api_server_intranet": "https://10.0.0.1:6443",
+						"master_public_ip":    "1.2.3.4",
+						"service_domain":      "*.c-edge-123.cs.local",
+					},
+				},
+			},
+		},
+		{
+			name: "empty map",
+			input: map[string]interface{}{
+				"id":                    "c-edge-456",
+				"runtime":               map[string]interface{}{},
+				"certificate_authority": map[string]interface{}{},
+				"connections":           map[string]interface{}{},
+			},
+			expected: map[string][]interface{}{
+				"runtime":               {},
+				"certificate_authority": {},
+				"connections":           {},
+			},
+		},
+		{
+			name: "nil value",
+			input: map[string]interface{}{
+				"id":                    "c-edge-789",
+				"runtime":               nil,
+				"certificate_authority": nil,
+				"connections":           nil,
+			},
+			expected: nil,
+		},
+		{
+			name: "field not present",
+			input: map[string]interface{}{
+				"id": "c-edge-000",
+			},
+			expected: nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := resourceAlicloudCSEdgeKubernetesStateUpgradeV0(context.Background(), tc.input, nil)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			for _, field := range fields {
+				got := result[field]
+				if tc.expected == nil {
+					if got != nil {
+						t.Errorf("%s: expected nil, got %v", field, got)
+					}
+					continue
+				}
+				exp := tc.expected[field]
+				gotList, ok := got.([]interface{})
+				if !ok {
+					t.Fatalf("%s: expected []interface{}, got %T", field, got)
+				}
+				if len(gotList) != len(exp) {
+					t.Fatalf("%s: expected length %d, got %d", field, len(exp), len(gotList))
+				}
+				for i, item := range gotList {
+					gotMap := item.(map[string]interface{})
+					expMap := exp[i].(map[string]interface{})
+					for k, v := range expMap {
+						if gotMap[k] != v {
+							t.Errorf("%s[%d].%s: expected %v, got %v", field, i, k, v, gotMap[k])
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestCSEdgeKubernetesSchemaVersionV0ToV1(t *testing.T) {
+	r := resourceAlicloudCSEdgeKubernetes()
+	if r.SchemaVersion != 1 {
+		t.Errorf("expected SchemaVersion 1, got %d", r.SchemaVersion)
+	}
+	if len(r.StateUpgraders) != 1 {
+		t.Fatalf("expected 1 StateUpgrader, got %d", len(r.StateUpgraders))
+	}
+	if r.StateUpgraders[0].Version != 0 {
+		t.Errorf("expected StateUpgrader version 0, got %d", r.StateUpgraders[0].Version)
+	}
+}
+
+func TestAccAlicloudCSEdgeKubernetes_StateMigrationV0ToV1(t *testing.T) {
+	if os.Getenv("ALICLOUD_STATE_MIGRATION_V0_V1") == "" {
+		t.Skip("ALICLOUD_STATE_MIGRATION_V0_V1 not set. Test for V0 -> V1 state migration")
+	}
+	var v map[string]interface{}
+	resourceId := "alicloud_cs_edge_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCsManagedKubernetes")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-statemig-%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"alicloud": {
+						Source:            "aliyun/alicloud",
+						VersionConstraint: "1.282.0",
+					},
+				},
+				Config: testAccCSEdgeKubernetesStateMigrationConfigV0(name),
+			},
+			{
+				ProviderFactories: testAccProviderFactory,
+				Config:            testAccCSEdgeKubernetesStateMigrationConfigV1(name),
+			},
+		},
+	})
+}
+
+func testAccCSEdgeKubernetesStateMigrationDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+  available_disk_category     = "cloud_efficiency"
+  available_instance_type     = "ecs.c6.xlarge"
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+`, name)
+}
+
+func testAccCSEdgeKubernetesStateMigrationConfigV0(name string) string {
+	return testAccCSEdgeKubernetesStateMigrationDependence(name) + `
+resource "alicloud_cs_edge_kubernetes" "default" {
+  name                           = var.name
+  worker_vswitch_ids             = [alicloud_vswitch.default.id]
+  worker_instance_types          = ["ecs.c6.xlarge"]
+  worker_number                  = 1
+  password                       = "Test12345"
+  pod_cidr                       = "10.76.0.0/16"
+  service_cidr                   = "172.26.0.0/16"
+  worker_disk_category           = "cloud_efficiency"
+  new_nat_gateway                = true
+  slb_internet_enabled           = true
+  skip_set_certificate_authority = false
+  runtime = {
+    name    = "containerd"
+    version = "1.6.20"
+  }
+}
+
+output "runtime" {
+  value = alicloud_cs_edge_kubernetes.default.runtime["name"]
+}
+
+output "alicloud_cs_edge_kubernetes" {
+  value = alicloud_cs_edge_kubernetes.default.certificate_authority["cluster_cert"]
+}
+
+output "connections" {
+  value = alicloud_cs_edge_kubernetes.default.connections["api_server_internet"]
+}
+`
+}
+
+func testAccCSEdgeKubernetesStateMigrationConfigV1(name string) string {
+	return testAccCSEdgeKubernetesStateMigrationDependence(name) + `
+resource "alicloud_cs_edge_kubernetes" "default" {
+  name                           = var.name
+  worker_vswitch_ids             = [alicloud_vswitch.default.id]
+  worker_instance_types          = ["ecs.c6.xlarge"]
+  worker_number                  = 1
+  password                       = "Test12345"
+  pod_cidr                       = "10.76.0.0/16"
+  service_cidr                   = "172.26.0.0/16"
+  worker_disk_category           = "cloud_efficiency"
+  new_nat_gateway                = true
+  slb_internet_enabled           = true
+  skip_set_certificate_authority = false
+  runtime {
+    name    = "containerd"
+    version = "1.6.20"
+  }
+}
+
+output "runtime" {
+  value = alicloud_cs_edge_kubernetes.default.runtime.0.name
+}
+
+output "alicloud_cs_edge_kubernetes" {
+  value = alicloud_cs_edge_kubernetes.default.certificate_authority.0.cluster_cert
+}
+
+output "connections" {
+  value = alicloud_cs_edge_kubernetes.default.connections.0.api_server_internet
+}
+`
 }
