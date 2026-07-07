@@ -42,11 +42,11 @@ resource "alicloud_vpc_ipv4_gateway" "default" {
   enabled           = true
 }
 
-resource "alicloud_route_entry" "default" {
-  route_table_id        = alicloud_vpc.default.route_table_id
-  destination_cidrblock = "172.11.1.1/32"
-  nexthop_type          = "Ipv4Gateway"
-  nexthop_id            = alicloud_vpc_ipv4_gateway.default.id
+resource "alicloud_vpc_route_entry" "default" {
+  route_table_id         = alicloud_vpc.default.route_table_id
+  destination_cidr_block = "172.11.1.1/32"
+  nexthop_type           = "Ipv4Gateway"
+  nexthop_id             = alicloud_vpc_ipv4_gateway.default.id
 }
 ```
 
