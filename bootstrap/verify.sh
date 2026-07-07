@@ -64,6 +64,11 @@ repo_root="$(git rev-parse --show-toplevel)"
 # thereby block Aone-only work. So we print a WARN line, do NOT increment fail_count,
 # and drop an idempotent escalation note so the stale token stays visible/actionable.
 # (github-identity.sh check itself is unchanged — it stays a hard gate at use time.)
+# Auto-source .env if JARVIS_GITHUB_TOKEN not yet in environment (gh#78).
+if [ -z "${JARVIS_GITHUB_TOKEN:-}" ] && [ -f "$repo_root/bootstrap/.env" ]; then
+    # shellcheck source=/dev/null
+    source "$repo_root/bootstrap/.env"
+fi
 if "$repo_root/bootstrap/github-identity.sh" check >/dev/null 2>&1; then
     echo "PASS jarvis-github-token"
 else
