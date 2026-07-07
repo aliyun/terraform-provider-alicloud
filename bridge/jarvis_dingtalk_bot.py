@@ -1917,6 +1917,8 @@ class JarvisHandler(AsyncChatbotHandler):
         self.audience = tata_audience()           # 空=全员; 非空=Tata 受众名单
         self.jarvis_sessions = {}                 # staff -> Jarvis session uuid (master only)
         self.jarvis_started = set()               # staff with a live Jarvis session
+        self.tata_sessions = {}                   # staff -> Tata session uuid (claude --session-id)
+        self.tata_started = set()                 # staff whose Tata session已建(后续 --resume)
         self.locks = defaultdict(threading.Lock)  # per-sender serialize
         self.sm = _load_streaming_module()        # imported streaming.py helpers
         self.pool = None if (no_dingtalk or not tata_resident_enabled()) else TataPool()
@@ -1935,6 +1937,18 @@ class JarvisHandler(AsyncChatbotHandler):
                  claude_bin(), skill_path(), bool(self.pool), self.scanner.auto,
                  self.dispatch_pool.max_workers, self.prober.enabled, self.prober.hour,
                  self.reviser.enabled, self.reviser.hour)
+
+    def _tata_session(self, staff):
+        """返回该 staff 的 Tata (session_id, resume)。
+
+        session_id 必须是合法 UUID——claude CLI 对 --session-id/--resume 强校验，
+        一次性冷起模式(默认)下直传 staffId 会被拒("Invalid session ID. Must be a
+        valid UUID.")。每 staff 一个稳定 uuid：首轮 --session-id 建会话，后续 --resume
+        续聊。resident TataPool 仅拿它当 dict key，语义不变。"""
+        sid = self.tata_sessions.setdefault(staff, str(uuid.uuid4()))
+        resume = staff in self.tata_started
+        self.tata_started.add(staff)
+        return sid, resume
 
     def _tata_runner(self, text, sid, resume):
         """Tata 一轮: 默认一次性冷起; 显式开启 resident 模式时走常驻进程保温。"""
@@ -2214,9 +2228,10 @@ class JarvisHandler(AsyncChatbotHandler):
             log.info("staff=%s group=%s conv=%s msg=%r", staff, is_group,
                      msg.conversation_id if is_group else "-", text[:200])
             t0 = time.time()
-            # 第一层：Tata 门面，全文先建卡流推；哨兵剥行不上屏。常驻进程即会话, 键=staff。
+            # 第一层：Tata 门面，全文先建卡流推；哨兵剥行不上屏。
+            tsid, tresume = self._tata_session(staff)
             full = self._stream_round(
-                card_target, text, staff, False,
+                card_target, text, tsid, tresume,
                 self._tata_runner,
                 clean_sentinel=True,
                 tail_on_handoff="\n\n交给 Jarvis 处理…",
