@@ -67,6 +67,13 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 
 **判断规则**:先看 `space` 命中 池,再看 `涉及云产品` / 标题 / cwd 辅助定位。有 domain reference 就**加载并跟随**它的决策树;无 reference 走本文件下方通用查证。
 
+**528766 特例 —— Terraform 自动审核流程单**(平台发布流水线自动建单,标题形如 `[Terraform X发布自动审核流程] 产品 [P] 资源 [R]`,评论区是流水线各闸门的自动结果),**按标题子类型分流,勿一律当复核**:
+
+| 标题子类型 | 正确处理 |
+|---|---|
+| **[Terraform 资源发布自动审核流程]** | **调 `terraform-provider-release` skill 跑完整 SOP**——需求差距分析(AMP 元数据 vs provider 代码)+ 远程 ACC 实测 + 出 PR。平台流水线的「源码生成/打包上传容器」只是构建产物,**不等于代码已进 provider 仓、更不等于 ACC 验证过**;jarvis 仍须按 SOP 补 ACC + PR(PR merge 是人工门)。**禁止只复核告警就 release**——那是漏跑发布流程,不算处理达标。 |
+| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 SOP):用镇元 `GetResourceType` 核验文档告警落在 provider 公开 schema 还是镇元元数据侧——落 provider 侧 → `provider-fix-documentation` 补文档+PR;落镇元侧/无缺口 → 复核结论 + 路由发布流程或上游 owner。无资源开发,不跑 ACC。 |
+
 ### 2. 按类型分诊(通用)
 
 | workitemType | 通用动作 |
