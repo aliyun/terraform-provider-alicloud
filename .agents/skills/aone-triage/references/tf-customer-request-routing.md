@@ -42,10 +42,11 @@
   ② 当前资源 schema 属性满足客户诉求(不缺字段)                        │
   ③ acube V2 覆盖度 CoverageScore == 1.0)                             │
 ├─ NO (任一不满足) = 与镇元相关且镇元 NOT OK [分支 E] ↓               │
-│     关联单指派 谜拟(479782)——镇元侧根因主责,**无论紧急与否都建**    │
+│     关联单 → 谜拟(479782), 落 Terraform镇元对接(2165097) 池        │
+│     ——镇元侧根因主责,**无论紧急与否都建**                          │
 │     再判紧急: 优先级=紧急 OR 距计划截止 < 14 天?                     │
-│     ├─ YES → **同时再建一张**关联单指派 新山(521957)——双单并行      │
-│     │        (谜拟修镇元侧根因,新山紧急兜底 provider 侧/加速)        │
+│     ├─ YES → **同时再建一张**关联单 → 新山(521957), 落 528766      │
+│     │        ——双单并行(谜拟修镇元侧根因,新山紧急兜底 provider 侧)  │
 │     └─ NO  → 仅谜拟一张                                             │
 │     原单指派 谜拟 + status=问题解决中 + @谜拟(紧急时并 @新山)        │
 └─ YES = 镇元侧无问题、provider 侧存在问题 → 【与镇元不相关】↓        │
@@ -65,7 +66,10 @@
 
 **「与镇元相关性」定义**(2026-07-06 路由重整的核心概念):以下两类为**与镇元不相关的问题**——① **纯 datasource 问题**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段),不涉资源 schema/生命周期。datasource 是 provider 侧对 List/Describe 类查询 API 的只读封装,镇元(Cloudspec)只管资源 schema,查镇元无意义(跳过镇元查证);resource+datasource 混合诉求不算"纯",按资源主线走。② **镇元侧无问题、provider 侧存在问题**:镇元 OK 三条件全满足,缺口在 provider 实现(bug/适配缺失/文档行为不符)。与镇元不相关的问题**不进谜拟**——紧急转新山(521957),不紧急转过载(484483);生成器产出资源例外走临钧 acube 管道。反之,**谜拟(479782)只接「与镇元相关且镇元 NOT OK」**的单;该类单若紧急,则谜拟+新山**两人都建关联单**并行处理。
 
-关联单一律建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。**例外:临钧路由(生成器产出)不由 jarvis `a1 workitem create` 手动建单**——走 acube `createBuildTaskV2` 接口,acube 内部自动建单+指派临钧+触发生成/PR 工作流,jarvis 只查回 aoneId 做关联,详见 Step 3。
+关联单默认建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。**两处例外**:
+
+1. **谜拟(479782) 关联单落 Terraform镇元对接**(2165097, `pools.upstream.cloudspec_gap`)——镇元侧根因由谜拟在自己池内跟进,tf_provider(528766) 池只放 provider 侧修复(如分支 E 紧急双单里的新山单)。**分支 E 双单时两池并存**:谜拟单 → 2165097,新山单 → 528766。
+2. **临钧路由(生成器产出)不由 jarvis `a1 workitem create` 手动建单**——走 acube `createBuildTaskV2` 接口,acube 内部自动建单+指派临钧+触发生成/PR 工作流,jarvis 只查回 aoneId 做关联,详见 Step 3。
 
 
 ## 团队分工速查
@@ -289,11 +293,16 @@ else:
   d=date.today()+timedelta(days=3)               # 原单无 DDL,默认 today+3
 print(d.isoformat())")
 
-# 1. 建关联单在 terraform-alicloud (528766)
+# 1. 建关联单
 #    正文用 --body 或 --body-file(a1 不吃 --description,会报 unknown flag)
-#    tf_provider(528766) 校验必填:计划开始/截止日期 + 实际工时,通过 --cfs 传
+#    池选择(见 Step 3 开头例外说明):
+#      - 谜拟单(分支 E 主责) → --project 2165097 (Terraform镇元对接)
+#        2165097 池当前无 528766 的「计划开始/截止日期 / 实际工时 / Terraform需求类型」
+#        cfs 强校验,可省 cfs 直接建;若日后 400 按报错补,别默认沿用 528766 cfs 组合
+#      - 其它路由(过载/新山/夏节/文档改造/G/H) → --project 528766 (terraform-alicloud)
+#        必带下方三件套 cfs;bug 类还必带 --cfs "Terraform需求类型=..."
 bin/a1id -- project workitem create \
-  --project 528766 \
+  --project <528766 或 2165097> \
   --category <req|bug|task> \
   --title "<清晰标题:资源/属性/诉求>" \
   --assignee <工号> \
@@ -303,6 +312,7 @@ bin/a1id -- project workitem create \
   --cfs "计划截止日期=$new_ddl" \
   --cfs "实际工时=0" \
   --quiet
+# 注:上述 --cfs 三件套仅 528766 池必需;谜拟单落 2165097 时可去掉整块 --cfs
 # --quiet 输出只有 "<id>\t<title>\t<status>\t<assignee>",取第一列作 NEW_ID
 NEW_ID=<新单 id>
 
@@ -315,16 +325,17 @@ bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 ```
 
 **分支 E · 紧急双关联单(谜拟 479782 + 新山 521957)**:与镇元相关且镇元 NOT OK 的单,谜拟的关联单**无论紧急与否都建**(镇元侧根因主责);若紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写),**再按同一脚本建第二张**关联单指派新山,两单并行。要点:
+- **池归属两分**:谜拟单 `--project 2165097` (Terraform镇元对接),新山单 `--project 528766` (terraform-alicloud)。两池 cfs 校验不同——**2165097** 当前无「计划开始/截止/实际工时/Terraform需求类型」强校验,可省整块 `--cfs` 直接建;**528766** 必带三件套 cfs,bug 类还必带 `--cfs "Terraform需求类型=..."`。日后 2165097 若 400 按报错补,别默认沿用 528766 cfs 组合。
 - 两张关联单**各自**双向关联源客户单(`relation add <源> relate:<谜拟单>` + `relation add <源> relate:<新山单>`)
 - 分工写进各自 `--body`:谜拟单注明"镇元侧根因修复(schema 定义/属性补齐/覆盖度)";新山单注明"紧急兜底——provider 侧可先行绕过/加速方案,与谜拟单 <ID> 并行"
 - **原单指派谜拟**(与镇元相关的主责人),status=问题解决中;评论 @谜拟(479782) + @新山(521957) 两人,注明双单并行与各自分工
-- 非紧急:仅谜拟一张,原单指派谜拟,@谜拟
+- 非紧急:仅谜拟一张(落 2165097),原单指派谜拟,@谜拟
 
 **分支 D-新山 / D-过载 · 与镇元不相关(纯 datasource / 镇元 OK 但 provider 侧问题,手写代码)**:落地脚本与分支 A 完全一致,按紧急度选指派人——紧急 `--assignee 521957`(新山),不紧急 `--assignee 484483`(过载);`--title` 注明问题面("纯 datasource"/"provider 侧实现"),纯 datasource 单在 `--body` 说明已按定义跳过镇元查证。过载的关联单 jarvis 直接 claim 跟进(bookend 纪律不变);新山的建单 + @对方。
 
 **分支 G · Provider 全局改造(→ 新山 521957)**:适用于"诉求不涉及单一 alicloud_xxx 资源、而是 provider 侧全局改动"的场景(region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump 等)。**落地脚本与上面完全一致**,只需 3 处微调:
 - `--assignee` 填 `521957`(新山)
-- `--category` 填 `task`(全局改造多为工程任务,而非缺陷/需求)
+- `--category` **跟原单类型一致**(`req`/`bug`/`task`,视原单 `workitemType`)——全局改造工单类型跨度大(需求/任务/缺陷都可能),类型跟原单走避免类型突变导致 Aone 报表统计错位
 - `--title` 与 `--body-file` 正文注明"provider 全局改造"字样(例:"provider 支持 ap-southeast-8 region"),便于新山识别范围
 - 源单 `--assignee 521957` + `--status 问题解决中`
 
@@ -449,7 +460,7 @@ bin/a1id -- project workitem update <源工单ID> --status 待上游排期
 | 触发条件(必须都命中) | 动作 | 模板 | 写操作 |
 |---|---|---|---|
 | 新工单 or **前次路由错**(如 78365505 从 NPE 撤回改路由到豁朗) | **转单** | A/B/C(按分支 A-H) | 建关联单 + 源单 assignee 改 + 状态改「问题解决中」+ wrap done + release |
-| **前次路由对 + 缺关联单**(源单 assignee 已改到本团队分工里正确的人,但没有对应 tf_provider(528766) 关联单——常见于前一轮 jarvis 只改了 assignee/状态却漏建关联单,或客户单历史长且前线随机指派) | **补建关联单** | A/B/C(按分支,不重复改 assignee/状态) | 建关联单 + relation add(双向)+ comment 通知承接方新单号;**源单 assignee/状态保持不动**(前次已对) |
+| **前次路由对 + 缺关联单**(源单 assignee 已改到本团队分工里正确的人,但没有对应关联单——常见于前一轮 jarvis 只改了 assignee/状态却漏建关联单,或客户单历史长且前线随机指派;对应池按分工走:过载/新山/夏节/G/H → 528766,谜拟 → 2165097) | **补建关联单** | A/B/C(按分支,不重复改 assignee/状态) | 建关联单 + relation add(双向)+ comment 通知承接方新单号;**源单 assignee/状态保持不动**(前次已对) |
 | **前次路由对 + 关联单齐 + 距上次实质进展 <30 天** | **观察等待** | 无 | **不发评论、不改状态、不建单**;jarvis 内部记录本轮观察时间(bridge revisit 日轮会重扫,新进展进来自然触发);避免频繁打搅承接方 |
 | 前次路由对 + 关联单齐 + **距上次实质进展 ≥30 天**(不算 canned/@ 追问,以承接方给出的技术信息或时间承诺为准) | **进度跟进** | D | 只发 comment,免 bookend;不改状态、不建关联单 |
 | 承接方已给结论(拒接/根因/待客户验证)但客户或云产品未回,且已有 ≥1 次追问未响应 | **追料/补料提醒** | F | 只发 comment,免 bookend;提醒里给出建议补齐时间(默认 today+14 天)与到期处理方式(默认"按无法复现/信息不足关单");评论**同时 @ 客户/提单人 + 承接方**(提单人负责补料/确认,承接方获知补料进度) |
@@ -480,7 +491,7 @@ bin/a1id -- project workitem update <源工单ID> --status 待上游排期
 - 「实质进展」= 承接方(不是提单人也不是 jarvis 自己)在评论里给出**技术信息、排期时间、决策结论**其中一样;单纯 "@某人跟进"、"辛苦看下" 不算实质进展
 - 「30 天」按 UTC 计算,以最后一条实质进展评论的时间为基准
 - 「路由对不对」的判定:承接方是否在**本团队分工表**内且与诉求领域匹配(专属维护名单/新山/过载/谜拟/临钧/夏节 NPE,详见 [team-roster.md](./team-roster.md));不在本团队分工的(如"刘源"外包工号、"皓桦"云产品同学、客户 TAM)一律视为"前次路由错",走转单
-- 「缺关联单」的判定:源单看 relation list,若没有指向 tf_provider(528766) 池或对应产品池的关联单,即算缺;单纯与其他客户单的 relate 不算"承接关联单"
+- 「缺关联单」的判定:源单看 relation list,若没有指向承接方对应池的关联单,即算缺——承接方 → 池映射:过载/新山/夏节/G/H → tf_provider(528766),谜拟 → Terraform镇元对接(2165097),临钧 → 528766(由 acube 自动建);单纯与其他客户单的 relate 不算"承接关联单"
 - 一张工单可能**同时**满足"关单提示 + 追料"(承接方已给拒接结论 + 客户未确认),此时优先走关单提示(状态改「已拒绝」直接闭环),不做追料
 - 一张工单可能**同时**满足"缺关联单 + 距上次进展 ≥30 天"(前次只改 assignee 没建单),此时先补建关联单(带上进度跟进语气的评论),不再另发 D
 - 若判定犹豫,默认往"观察等待"或"进度跟进"倾斜(comment 免 bookend/不发,轻量;不改状态,不建重复关联单)
@@ -512,11 +523,12 @@ Terraform Provider / 镇元(Cloudspec)侧可闭环。
 ### 结论
 客户诉求「<一句话诉求重述>」<与镇元相关且镇元 NOT OK / 与镇元不相关(纯
 datasource / 镇元 OK 但 provider 侧问题)>,应由 <指派人所在层> 侧承接。
-已建关联单 <NEW_ID> 到 terraform-alicloud 项目,指派 @<花名>(<工号>)
-跟进,源工单同步指派并改状态为「问题解决中」。
-[分支 E 紧急双单场景改写为:已建两张关联单——<谜拟单ID> 指派 @谜拟(479782)
-负责镇元侧根因修复,<新山单ID> 指派 @新山(521957) 紧急兜底 provider 侧,
-双单并行;源工单指派谜拟并改状态「问题解决中」。]
+已建关联单 <NEW_ID> 到 <terraform-alicloud (528766) / Terraform镇元对接 (2165097)>
+项目,指派 @<花名>(<工号>) 跟进,源工单同步指派并改状态为「问题解决中」。
+[分支 E 紧急双单场景改写为:已建两张关联单——<谜拟单ID> 到 Terraform镇元对接
+(2165097) 指派 @谜拟(479782) 负责镇元侧根因修复,<新山单ID> 到 terraform-alicloud
+(528766) 指派 @新山(521957) 紧急兜底 provider 侧,双单并行;源工单指派谜拟并改
+状态「问题解决中」。]
 
 ### 查证依据
 1. **镇元相关性**:<纯 datasource(跳过镇元查证)/ 资源类镇元 OK(与镇元
@@ -530,9 +542,10 @@ datasource / 镇元 OK 但 provider 侧问题)>,应由 <指派人所在层> 侧�
    故路由到 <人 / 谜拟+新山双单>
 
 ### 关联单
-- <NEW_ID>: <标题>,项目 528766 terraform-alicloud
+- <NEW_ID>: <标题>,项目 <528766 terraform-alicloud / 2165097 Terraform镇元对接>
+  (**谜拟单** → 2165097 Terraform镇元对接;**其它人**(过载/新山/夏节/文档改造/G/H) → 528766 terraform-alicloud)
   (临钧场景:aoneId 由 acube V2 createBuildTaskV2 接口异步创建;taskId=<>)
-  (分支 E 紧急场景列两张:谜拟单 <ID> 镇元侧根因 / 新山单 <ID> 紧急兜底)
+  (分支 E 紧急场景列两张:谜拟单 <ID> @2165097 镇元侧根因 / 新山单 <ID> @528766 紧急兜底)
 - 双向关联已加(双单场景两张各自与源单双向关联)
 
 @<花名>(<工号>) 烦请跟进上述查证结论,进度请在两侧工单同步回帖。
@@ -672,7 +685,7 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 状态改成"问题处理中" —— tf_customer(1086837) 池合法枚举没这个值,合法名是"问题解决中";写错 a1 会 `unsupported target status` 阻断。合法枚举:需求待补充/待处理/评估中/待上游排期/问题讨论/长期跟进/待排期/已排期/问题解决中/已发布待需求方验收/验收中/验收通过/验收不通过/客户未响应/方案功能已存在/需求撤回/已拒绝
 - ❌ 转单不复制原单优先级 / 不设短于原单 DDL 的截止日期 —— 关联单接手方无优先级参考,DDL 与原单齐会让下一棒无余量;规则:`--priority` 复制原单,`--cfs 计划截止日期` = 原单 DDL - 2 天(至少 today+1);原单无 DDL 时默认 today+3
 - ❌ 建关联单用 `--description` —— a1 CLI 不吃(报 `unknown flag: --description`),正文用 `--body` 或 `--body-file`
-- ❌ 在 tf_provider(528766)建单不传"计划开始日期 / 计划截止日期 / 实际工时" cfs —— 池校验必填,漏传会 400 `【计划开始日期】不能为空...`;用 `--cfs "计划开始日期=YYYY-MM-DD"` 等传入
+- ❌ 在 tf_provider(528766)建单不传"计划开始日期 / 计划截止日期 / 实际工时" cfs —— 池校验必填,漏传会 400 `【计划开始日期】不能为空...`;用 `--cfs "计划开始日期=YYYY-MM-DD"` 等传入。**限定**:此三件套仅 528766 池必填,**谜拟单落 Terraform镇元对接(2165097) 无此约束**,可省整块 `--cfs`;实测遇到 2165097 池 cfs 校验(如日后加字段)按 400 报错补
 - ❌ Provider 源码查证跳过 Step 2 前置的 upstream PR 前扫,只 grep 本地 workspace 磁盘 —— workspace 的本地 branch 可能滞后 upstream 数十小时,或 sync-provider.sh 未 hardened 时只 fetch 不 reset;必先跑 `gh pr list --search` + `gh api contents?ref=master`,同题 recently-merged PR 直接引用避免重复建单;参见工单 83718139 教训(PR 9909 merged 21h 后 jarvis 才处理仍未命中)
 - ❌ Step 3 执行路由前不扫评论区/状态 —— 查证+决策期间有时间窗口,原指派人(常被前线随机指派)可能已回帖修复/贴 PR/接手;不扫就转单会重复建关联单、让接手方收多余通知;参见工单 83861367 教训(新山在 jarvis 转单前 20 分钟已修并评论,jarvis 仍建单 @过载)
 - ❌ 仅文档改造的工单因镇元 NOT OK 就转给谜拟/新山 —— 文档改造路由固定过载(484483),镇元查证仍要走(确保文档与 schema/API 一致),但结果不影响指派对象
@@ -681,7 +694,7 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - ❌ 纯 datasource 工单去查镇元覆盖度 —— datasource 是 provider 侧对查询 API 的只读封装,镇元只管资源 schema;纯 datasource(不涉资源 schema/生命周期)直接判「与镇元不相关」分流,查镇元浪费一轮且可能误路由。resource+datasource 混合诉求不算"纯",仍按资源主线查镇元
 - ❌ 分支 E 紧急单只建谜拟一张关联单 —— 紧急(优先级=紧急/距 DDL<14 天/缺陷覆写)时必须谜拟+新山**两张**关联单并行(谜拟修镇元侧根因、新山紧急兜底),漏建新山单=紧急件失去快速通道;评论也要 @两人并注明分工
 - ❌ 用 `head -1 | cut -f1` 或 `awk -F'\t' '{print $1}'` 解析 `a1 workitem create --quiet` 输出抓 NEW_ID —— `--quiet` 输出是**空格分隔**不是 tab(实测 `<id><空格><title><空格><status><空格><assignee>`),tab 分隔符抓到的是整行;NEW_ID 会带脏字符,后续 `relation add` / heredoc 里 `$NEW_ID:xxx` 全部污染。**正确写法**:`... --quiet | head -1 | awk '{print $1}'`(不带 -F,按空白拆);抓完打印 `echo "NEW_ID=[$NEW_ID]"` 用方括号包裹肉眼验证边界
-- ❌ 在 tf_provider(528766) 池建**缺陷(Bug/功能缺陷/线上问题)**类关联单不传 `--cfs "Terraform需求类型=..."` —— 该字段是 Bug 类型的必填(Req/Task 类型可选),漏传 a1 会 `400 【Terraform需求类型】不能为空`;bug 类关联单默认传 `--cfs "Terraform需求类型=运行时问题，TF问题"`(其他合法值:「有OpenAPI，资源未定义，开放平台维护/自主维护」「有OpenAPI，资源已定义，开放平台维护/自主维护」「云产品有功能无OpenAPI」「运行时问题，云产品API问题」「使用问题」「文档问题」「云产品无此功能」「其他（其他）」)。查枚举:`a1 project workitem field options "Terraform需求类型" --project 528766 --type 36`(36=功能缺陷)
+- ❌ 在 tf_provider(528766) 池建**缺陷(Bug/功能缺陷/线上问题)**类关联单不传 `--cfs "Terraform需求类型=..."` —— 该字段是 Bug 类型的必填(Req/Task 类型可选),漏传 a1 会 `400 【Terraform需求类型】不能为空`;bug 类关联单默认传 `--cfs "Terraform需求类型=运行时问题，TF问题"`(其他合法值:「有OpenAPI，资源未定义，开放平台维护/自主维护」「有OpenAPI，资源已定义，开放平台维护/自主维护」「云产品有功能无OpenAPI」「运行时问题，云产品API问题」「使用问题」「文档问题」「云产品无此功能」「其他（其他）」)。查枚举:`a1 project workitem field options "Terraform需求类型" --project 528766 --type 36`(36=功能缺陷)。**限定**:此 cfs 仅 528766 池 Bug 类型必填,**谜拟单落 Terraform镇元对接(2165097) 无此约束**,不要惯性带过去
 - ❌ `wrap.sh done <id> --summary-stdin <status> <<EOF ... EOF`(不带引号的 heredoc)里正文含反引号 code 块或 `$var:字母` —— shell 会展开 heredoc:反引号 `` `xxx` `` 被当命令替换执行(报 `command not found` 且被替换成空),`$NEW_ID:alicloud_xxx` 被 wrap.sh 前缀 pwd 拼成 `/path/to/jarvis/<id>licloud_xxx` 怪路径。**正确写法**二选一:(a) 用 `<<'EOF'`(带引号)阻止 shell 展开,但 `$NEW_ID` 也不展开,先 `envsubst` 或 sed 预替换;(b) 保留 unquoted heredoc 但正文里去掉反引号(用引号 `"xxx"` 代替 code)、`$NEW_ID` 后面接空格不接字母冒号(如写作 `关联单 ID = ${NEW_ID}`)。批量转单场景推荐:先把评论正文 sed 替换 NEW_ID 后写到 `/tmp/wrap-<id>.txt`,再走 `wrap.sh done <id> --summary-file /tmp/wrap-<id>.txt <status>`,彻底跳过 heredoc 展开风险
 - ❌ 用 `a1 project workitem tag add <id> <tag>` 加标签 —— 该子命令**不存在**(`a1 project workitem` 只有 activity/attachment/comment/create/delete/field/get/list/relation/type/update)。标签统一走 `update --tag "a,b,c"` **覆盖式**写入;`claim.sh` 已实现 point-read 现有 tag + 合并再写,但外挂标签(如 `jarvis-npe`)必须在 `claim.sh release` 之后单独补一次:`bin/a1id -- project workitem update <id> --tag "jarvis-idle,jarvis-npe"`(release 后 tag=jarvis-idle,覆盖式写完整列表保留)
 - ❌ **未复现客户报错就直接路由** —— 分诊模糊时直接甩 NPE 兜底/上游是**懒惰误诊**。**正确顺序**:先读 description 全文(尤其客户 tf 代码 + 完整报错栈的堆栈行号),按报错文件路径 grep provider 源码定位根因,再决定路由。参见工单 78365505 教训:凡修回复"找 SLS 同学"已明确 SLS 域(alicloud_sls_oss_export_sink 缺 404 ProjectNotExist retry,ActionTrail 后台 SLS project 异步就绪场景),jarvis 未读 tf 代码/报错栈就走 NPE 兜底转夏节,实际应走**分支 A 专属维护名单 → 豁朗(269032)**。**规则**:客户 tf 代码 + 完整报错栈齐备时,先做静态复现(source 定位根因)再路由;仅"canned 类咨询/无报错/跨多产品"才走 NPE
