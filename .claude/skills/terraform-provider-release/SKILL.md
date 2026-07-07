@@ -84,9 +84,15 @@ cd ../<worktree_dir>
 
 **Why a worktree**: each Aone work item gets its own worktree. All subsequent development, testing, and fixes for this work item run inside that worktree, isolated from other parallel tasks.
 
-### Step 3: Confirm the Generator Working Directory
+### Step 3: Resolve the Generator Working Directory
 
-Ask the user for the **local working directory of the Terraform Provider generator** and record it. This path is used by the generation steps (Step 6) and by the test-case generation step (Step 9).
+**Do NOT ask the user** — the Terraform generator is a registered workspace `terraform_generator_v4`:
+- Repo: `git@gitlab.alibaba-inc.com:opensource-tools/terraform-generator-v4.git` (branch `main`)
+- Resolve its local path: `GEN=$(bootstrap/workspace.sh dir terraform_generator_v4)`
+- **If absent, clone it there first**: `git clone git@gitlab.alibaba-inc.com:opensource-tools/terraform-generator-v4.git "$GEN"`
+- **Before every generation use (Step 6 code-gen / Step 9 test-case gen), pull fresh** so you run the latest generator: `git -C "$GEN" pull --ff-only`
+
+This path is used by the generation steps (Step 6) and by the test-case generation step (Step 9).
 
 ### Step 4: Decide Release Scope (new vs update)
 
