@@ -46,7 +46,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_elasticsearch_instance" "default" {
   description                      = var.name
   vswitch_id                       = alicloud_vswitch.default.id
-  password                         = "Examplw1234"
+  password                         = "Examplw1234@"
   version                          = "7.10_with_X-Pack"
   payment_type                     = "PayAsYouGo"
   data_node_amount                 = "2"

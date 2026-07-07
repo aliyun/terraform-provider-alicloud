@@ -1909,7 +1909,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_15_0_Babelfish(t *testing.T) {
 							"babelfish_enabled":    "true",
 							"migration_mode":       "single-db",
 							"master_username":      "test01",
-							"master_user_password": "test_123456",
+							"master_user_password": "Test_123456",
 						},
 					},
 					"deletion_protection":  "true",

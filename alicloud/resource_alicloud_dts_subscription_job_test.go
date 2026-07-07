@@ -149,7 +149,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "N1cetest",
 						"source_endpoint_user_name":          "test_mysql",
-						"source_endpoint_password":           "N1cetest",
+						"source_endpoint_password":           "N1cetest@",
 						"db_list":                            "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "vpc",
 					}),
@@ -177,11 +177,11 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 			//},
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"source_endpoint_password": "Test12345",
+			//		"source_endpoint_password": "Test12345@",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{
-			//			"source_endpoint_password": "Test12345",
+			//			"source_endpoint_password": "Test12345@",
 			//		}),
 			//	),
 			//},
@@ -294,7 +294,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
 					"source_endpoint_user_name":          "tftestprivilege",
-					"source_endpoint_password":           "Test12345",
+					"source_endpoint_password":           "Test12345@",
 					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"subscription_instance_network_type": "classic",
 					"tags": map[string]string{
@@ -311,7 +311,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "tfaccountpri_0",
 						"source_endpoint_user_name":          "tftestprivilege",
-						"source_endpoint_password":           "Test12345",
+						"source_endpoint_password":           "Test12345@",
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "classic",
 						"tags.%":                             "2",
@@ -399,11 +399,11 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 			//},
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"source_endpoint_password": "Test12345",
+			//		"source_endpoint_password": "Test12345@",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{
-			//			"source_endpoint_password": "Test12345",
+			//			"source_endpoint_password": "Test12345@",
 			//		}),
 			//	),
 			//},
@@ -469,7 +469,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
 					"source_endpoint_user_name":          "tftestprivilege",
-					"source_endpoint_password":           "Test12345",
+					"source_endpoint_password":           "Test12345@",
 					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"subscription_instance_network_type": "classic",
 					"tags": map[string]string{
@@ -486,7 +486,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "tfaccountpri_0",
 						"source_endpoint_user_name":          "tftestprivilege",
-						"source_endpoint_password":           "Test12345",
+						"source_endpoint_password":           "Test12345@",
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "classic",
 						"tags.%":                             "2",
@@ -582,7 +582,7 @@ resource "alicloud_db_database" "source_db" {
 resource "alicloud_rds_account" "source_account" {
   db_instance_id   = alicloud_db_instance.source.id
   account_name     = "test_mysql"
-  account_password = "N1cetest"
+  account_password = "N1cetest@"
 }
 
 resource "alicloud_db_account_privilege" "source_privilege" {
@@ -605,7 +605,7 @@ resource "alicloud_db_instance" "target" {
 resource "alicloud_rds_account" "target_account" {
   db_instance_id   = alicloud_db_instance.target.id
   account_name     = "test_mysql"
-  account_password = "N1cetest"
+  account_password = "N1cetest@"
 }
 
 `, name, os.Getenv("ALICLOUD_REGION"))

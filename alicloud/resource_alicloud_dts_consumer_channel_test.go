@@ -41,7 +41,7 @@ func TestAccAlicloudDTSConsumerChannel_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"consumer_group_password":  "tftestAcc123",
+					"consumer_group_password":  "tftestAcc123@",
 					"consumer_group_user_name": name,
 					"consumer_group_name":      name,
 					"dts_instance_id":          "${alicloud_dts_subscription_job.default.dts_instance_id}",
@@ -56,7 +56,7 @@ func TestAccAlicloudDTSConsumerChannel_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"consumer_group_password": "tftestAcc123" + "update",
+					"consumer_group_password": "tftestAcc123@" + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -128,7 +128,7 @@ resource "alicloud_db_database" "source_db" {
 resource "alicloud_rds_account" "source_account" {
   db_instance_id   = alicloud_db_instance.source.id
   account_name     = "test_mysql"
-  account_password = "N1cetest"
+  account_password = "N1cetest@"
 }
 
 resource "alicloud_db_account_privilege" "source_privilege" {
@@ -151,7 +151,7 @@ resource "alicloud_db_instance" "target" {
 resource "alicloud_rds_account" "target_account" {
   db_instance_id   = alicloud_db_instance.target.id
   account_name     = "test_mysql"
-  account_password = "N1cetest"
+  account_password = "N1cetest@"
 }
 
 resource "alicloud_dts_subscription_job" "default" {
@@ -162,7 +162,7 @@ resource "alicloud_dts_subscription_job" "default" {
   db_list = "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}"
   payment_duration_unit = "Month"
   source_endpoint_instance_type = "RDS"
-  source_endpoint_password = "Test12345"
+  source_endpoint_password = "Test12345@"
   dts_job_name = "tf-testAccCase"
   payment_duration = "1"
   source_endpoint_region = "cn-hangzhou"

@@ -37,8 +37,8 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 					"remote_db_instance_id": "${alicloud_gpdb_account.defaultwXePof.db_instance_id}",
 					"local_database":        "test_001",
 					"data_source_name":      "mytest",
-					"user_password":         "test_001",
-					"manager_user_password": "test_001",
+					"user_password":         "Test_001",
+					"manager_user_password": "Test_001",
 					"local_db_instance_id":  "${alicloud_gpdb_instance.defaultEtEzMF.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -48,8 +48,8 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 						"user_name":             "test_001",
 						"remote_db_instance_id": CHECKSET,
 						"local_database":        "test_001",
-						"user_password":         "test_001",
-						"manager_user_password": "test_001",
+						"user_password":         "Test_001",
+						"manager_user_password": "Test_001",
 						"local_db_instance_id":  CHECKSET,
 					}),
 				),
@@ -77,12 +77,12 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"user_name":     "test_002",
-					"user_password": "test_002",
+					"user_password": "Test_002",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"user_name":     "test_002",
-						"user_password": "test_002",
+						"user_password": "Test_002",
 					}),
 				),
 			},
@@ -94,8 +94,8 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 					"remote_db_instance_id": "${alicloud_gpdb_account.defaultwXePof.db_instance_id}",
 					"local_database":        "test_001",
 					"data_source_name":      "mytest",
-					"user_password":         "test_001",
-					"manager_user_password": "test_001",
+					"user_password":         "Test_001",
+					"manager_user_password": "Test_001",
 					"local_db_instance_id":  "${alicloud_gpdb_instance.defaultEtEzMF.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -106,8 +106,8 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 						"remote_db_instance_id": CHECKSET,
 						"local_database":        "test_001",
 						"data_source_name":      "mytest",
-						"user_password":         "test_001",
-						"manager_user_password": "test_001",
+						"user_password":         "Test_001",
+						"manager_user_password": "Test_001",
 						"local_db_instance_id":  CHECKSET,
 					}),
 				),
@@ -187,21 +187,21 @@ resource "alicloud_gpdb_account" "default26qpEo" {
   account_description = "test_001"
   db_instance_id      = alicloud_gpdb_instance.defaultEtEzMF.id
   account_name        = "test_001"
-  account_password    = "test_001"
+  account_password    = "Test_001"
 }
 
 resource "alicloud_gpdb_account" "defaultwXePof" {
   account_description = "test_001"
   db_instance_id      = alicloud_gpdb_instance.defaultEY7t9t.id
   account_name        = "test_001"
-  account_password    = "test_001"
+  account_password    = "Test_001"
 }
 
 resource "alicloud_gpdb_account" "defaultTQoLwv" {
   account_description = "test_002"
   db_instance_id      = alicloud_gpdb_instance.defaultEY7t9t.id
   account_name        = "test_002"
-  account_password    = "test_002"
+  account_password    = "Test_002"
   account_type        = "Normal"
 }
 
@@ -237,8 +237,8 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853_raw(t *testing.T) {
 					"remote_db_instance_id": "${alicloud_gpdb_account.defaultwXePof.db_instance_id}",
 					"local_database":        "test_001",
 					"data_source_name":      "mytest",
-					"user_password":         "test_001",
-					"manager_user_password": "test_001",
+					"user_password":         "Test_001",
+					"manager_user_password": "Test_001",
 					"local_db_instance_id":  "${alicloud_gpdb_instance.defaultEtEzMF.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -249,8 +249,8 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853_raw(t *testing.T) {
 						"remote_db_instance_id": CHECKSET,
 						"local_database":        "test_001",
 						"data_source_name":      "mytest",
-						"user_password":         "test_001",
-						"manager_user_password": "test_001",
+						"user_password":         "Test_001",
+						"manager_user_password": "Test_001",
 						"local_db_instance_id":  CHECKSET,
 					}),
 				),

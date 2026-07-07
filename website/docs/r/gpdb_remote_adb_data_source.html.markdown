@@ -91,14 +91,14 @@ resource "alicloud_gpdb_account" "default26qpEo" {
   account_description = "example_001"
   db_instance_id      = alicloud_gpdb_instance.defaultEtEzMF.id
   account_name        = "example_001"
-  account_password    = "example_001"
+  account_password    = "Example_001"
 }
 
 resource "alicloud_gpdb_account" "defaultwXePof" {
   account_description = "example_001"
   db_instance_id      = alicloud_gpdb_instance.defaultEY7t9t.id
   account_name        = "example_001"
-  account_password    = "example_001"
+  account_password    = "Example_001"
 }
 
 
@@ -109,8 +109,8 @@ resource "alicloud_gpdb_remote_adb_data_source" "default" {
   remote_db_instance_id = alicloud_gpdb_account.defaultwXePof.db_instance_id
   local_database        = "example_001"
   data_source_name      = "myexample"
-  user_password         = "example_001"
-  manager_user_password = "example_001"
+  user_password         = "Example_001"
+  manager_user_password = "Example_001"
   local_db_instance_id  = alicloud_gpdb_instance.defaultEtEzMF.id
 }
 ```

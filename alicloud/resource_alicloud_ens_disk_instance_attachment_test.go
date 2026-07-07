@@ -77,7 +77,7 @@ resource "alicloud_ens_instance" "创建实例" {
   image_id                   = "centos_6_08_64_20G_alibase_20171208"
   payment_type               = "Subscription"
   instance_type              = "ens.sn1.stiny"
-  password                   = "12345678ABCabc"
+  password                   = "12345678ABCabc@"
   amount                     = "1"
   internet_max_bandwidth_out = "10"
   unique_suffix              = true

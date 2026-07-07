@@ -87,7 +87,7 @@ func testAccCheckAlicloudPolarClusterAccountsDataSourceConfig(rand int, attrMap 
 	resource "alicloud_polardb_account" "account" {
 	  db_cluster_id        = alicloud_polardb_cluster.default.id
 	  account_name         = "tftestnormal"
-	  account_password     = "Test12345"
+	  account_password     = "Test12345@"
       account_description  = var.name
       account_type         = "Normal"
 	}

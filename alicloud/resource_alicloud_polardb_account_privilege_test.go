@@ -121,7 +121,7 @@ func resourcePolarDBAccountPrivilegeConfigDependence(name string) string {
 	  db_cluster_id = "${alicloud_polardb_cluster.default.id}"
 	  account_name = "tftestprivilege"
 	  account_type = "Normal"
-	  account_password = "Test12345"
+	  account_password = "Test12345@"
 	  account_description = "from terraform"
 	}
 `, PolarDBCommonTestCase, name)

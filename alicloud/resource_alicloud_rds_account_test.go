@@ -477,7 +477,7 @@ func TestAccAliCloudRdsAccount_basic11761(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_id":      "${alicloud_db_instance.default.id}",
 					"account_name":        name,
-					"account_password":    "1qaz@4321",
+					"account_password":    "1Qaz@4321",
 					"account_description": "test001",
 					"account_type":        "Super",
 					"check_policy":        "false",
@@ -486,7 +486,7 @@ func TestAccAliCloudRdsAccount_basic11761(t *testing.T) {
 					testAccCheck(map[string]string{
 						"db_instance_id":      CHECKSET,
 						"account_name":        name,
-						"account_password":    "1qaz@4321",
+						"account_password":    "1Qaz@4321",
 						"account_description": "test001",
 						"account_type":        "Super",
 						"check_policy":        "false",
@@ -515,11 +515,11 @@ func TestAccAliCloudRdsAccount_basic11761(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "1qaz@4312",
+					"account_password": "1Qaz@4312",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "1qaz@4312",
+						"account_password": "1Qaz@4312",
 					}),
 				),
 			},
@@ -559,7 +559,7 @@ func TestAccAliCloudRdsAccount_basic11761_2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_id":      "${alicloud_db_instance.default.id}",
 					"account_name":        name,
-					"account_password":    "1qaz@4321",
+					"account_password":    "1Qaz@4321",
 					"account_description": "test001",
 					"account_type":        "Sysadmin",
 					"check_policy":        "false",
@@ -568,7 +568,7 @@ func TestAccAliCloudRdsAccount_basic11761_2(t *testing.T) {
 					testAccCheck(map[string]string{
 						"db_instance_id":      CHECKSET,
 						"account_name":        name,
-						"account_password":    "1qaz@4321",
+						"account_password":    "1Qaz@4321",
 						"account_description": "test001",
 						"account_type":        "Sysadmin",
 						"check_policy":        "false",
@@ -577,11 +577,11 @@ func TestAccAliCloudRdsAccount_basic11761_2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "1qaz@4312",
+					"account_password": "1Qaz@4312",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "1qaz@4312",
+						"account_password": "1Qaz@4312",
 					}),
 				),
 			},
@@ -683,7 +683,7 @@ func TestAccAliCloudRdsAccount_basic11752(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_id":      "${alicloud_db_instance.default.id}",
 					"account_name":        name,
-					"account_password":    "1qaz@4321",
+					"account_password":    "1Qaz@4321",
 					"account_description": "test001",
 					"status":              "Available",
 				}),
@@ -691,7 +691,7 @@ func TestAccAliCloudRdsAccount_basic11752(t *testing.T) {
 					testAccCheck(map[string]string{
 						"db_instance_id":      CHECKSET,
 						"account_name":        name,
-						"account_password":    "1qaz@4321",
+						"account_password":    "1Qaz@4321",
 						"account_description": "test001",
 						"status":              "Available",
 					}),
@@ -709,11 +709,11 @@ func TestAccAliCloudRdsAccount_basic11752(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "1qaz@432111",
+					"account_password": "1Qaz@432111",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "1qaz@432111",
+						"account_password": "1Qaz@432111",
 					}),
 				),
 			},

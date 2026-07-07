@@ -322,7 +322,7 @@ resource "alicloud_ecs_disk_attachment" "default" {
   count = "${var.number}"
   disk_id = "${element(alicloud_ecs_disk.default.*.id, count.index)}"
   instance_id = alicloud_instance.default.id
-  password = "YouPassword123"
+  password = "YouPassword123@"
   key_pair_name = var.name
 }
 `, name)

@@ -57,7 +57,7 @@ func TestAccAliCloudCrInstance_Basic(t *testing.T) {
 			// Currently, the API does not support sts
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"password": "YourPassword123",
+			//		"password": "YourPassword123@",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{}),
@@ -132,7 +132,7 @@ func TestAccAliCloudCrInstance_Standard(t *testing.T) {
 			// Currently, the API does not support sts
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"password": "YourPassword123",
+			//		"password": "YourPassword123@",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{}),
@@ -206,7 +206,7 @@ func TestAccAliCloudCrInstance_Advanced(t *testing.T) {
 			// Currently, the API does not support sts
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"password": "YourPassword123",
+			//		"password": "YourPassword123@",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{}),

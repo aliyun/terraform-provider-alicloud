@@ -51,7 +51,7 @@ func TestAccAlicloudHBRHanaInstance_basic0(t *testing.T) {
 					"validate_certificate": "false",
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"sid":                  "HXE",
-					"password":             "YouPassword123",
+					"password":             "YouPassword123@",
 					"ecs_instance_ids":     []string{"${data.alicloud_instances.default.ids.0}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(

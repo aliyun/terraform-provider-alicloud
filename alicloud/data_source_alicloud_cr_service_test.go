@@ -21,7 +21,7 @@ func TestAccAlicloudCRServiceDataSource(t *testing.T) {
 					testAccCheck(map[string]string{
 						"id":       CHECKSET,
 						"status":   "Opened",
-						"password": "1111aaaa",
+						"password": "1111Aaaa@",
 					}),
 				),
 			},
@@ -32,6 +32,6 @@ func TestAccAlicloudCRServiceDataSource(t *testing.T) {
 const testAccCheckAlicloudCrServiceDataSource = `
 data "alicloud_cr_service" "current" {
 	enable 		= "On"
-	password   	= "1111aaaa"
+	password   	= "1111Aaaa@"
 }
 `

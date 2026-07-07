@@ -99,7 +99,7 @@ resource "alicloud_db_database" "db" {
 resource "alicloud_db_account" "account" {
   db_instance_id      = alicloud_db_instance.instance.id
   account_name        = "tftestprivilege"
-  account_password    = "Test12345"
+  account_password    = "Test12345@"
   account_description = "from terraform"
 }
 
@@ -119,7 +119,7 @@ resource "alicloud_dts_subscription_job" "default" {
     source_endpoint_instance_id         = alicloud_db_instance.instance.id
     source_endpoint_database_name       = "tfaccountpri_0"
     source_endpoint_user_name           = "tftestprivilege"
-    source_endpoint_password            = "Test12345"
+    source_endpoint_password            = "Test12345@"
     db_list                             =  <<EOF
         {"dtstestdata": {"name": "tfaccountpri_0", "all": true}}
     EOF

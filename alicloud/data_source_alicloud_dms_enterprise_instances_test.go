@@ -149,7 +149,7 @@ func dataSourceDmsEnterpriseInstancesConfigDependence(name string) string {
 	resource "alicloud_db_account" "account" {
 		instance_id = "${alicloud_db_instance.instance.id}"
 		name        = "tftestnormal"
-		password    = "Test12345"
+		password    = "Test12345@"
 		type        = "Normal"
 	}
 

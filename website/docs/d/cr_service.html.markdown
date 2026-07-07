@@ -20,7 +20,7 @@ For information about Container Registry (CR) and how to use it, see [What is Co
 ```terraform
 data "alicloud_cr_service" "open" {
   enable   = "On"
-  password = "1111aaaa"
+  password = "1111Aaaa@"
 }
 ```
 

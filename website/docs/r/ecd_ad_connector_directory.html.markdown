@@ -56,7 +56,7 @@ resource "alicloud_ecd_ad_connector_directory" "default" {
   desktop_access_type    = "INTERNET"
   dns_address            = ["127.0.0.2"]
   domain_name            = "corp.example.com"
-  domain_password        = "Example1234"
+  domain_password        = "Example1234@"
   domain_user_name       = "sAMAccountName"
   enable_admin_access    = false
   mfa_enabled            = false

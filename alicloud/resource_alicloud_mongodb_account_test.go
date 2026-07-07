@@ -434,14 +434,14 @@ func TestAccAliCloudMongodbAccount_basic9243(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"account_name":     name,
-					"account_password": "qwer1234!!!",
+					"account_password": "Qwer1234!!!",
 					"instance_id":      "${alicloud_mongodb_sharding_instance.default7eOftZ.id}",
 					"character_type":   "db",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"account_name":     name,
-						"account_password": "qwer1234!!!",
+						"account_password": "Qwer1234!!!",
 						"instance_id":      CHECKSET,
 						"character_type":   "db",
 					}),
@@ -548,7 +548,7 @@ func TestAccAliCloudMongodbAccount_basic8763(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"account_name":        "root",
-					"account_password":    "qwer1234!!!",
+					"account_password":    "Qwer1234!!!",
 					"instance_id":         "${alicloud_mongodb_instance.default7eOftZ.id}",
 					"character_type":      "normal",
 					"account_description": "bgg-test-power",
@@ -556,7 +556,7 @@ func TestAccAliCloudMongodbAccount_basic8763(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"account_name":        "root",
-						"account_password":    "qwer1234!!!",
+						"account_password":    "Qwer1234!!!",
 						"instance_id":         CHECKSET,
 						"character_type":      "normal",
 						"account_description": "bgg-test-power",

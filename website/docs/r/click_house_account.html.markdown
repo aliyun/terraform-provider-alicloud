@@ -65,7 +65,7 @@ resource "alicloud_click_house_account" "default" {
   db_cluster_id       = alicloud_click_house_db_cluster.default.id
   account_description = "tf-example-description"
   account_name        = "examplename"
-  account_password    = "Example1234"
+  account_password    = "Example1234@"
   type                = var.type
 }
 ```

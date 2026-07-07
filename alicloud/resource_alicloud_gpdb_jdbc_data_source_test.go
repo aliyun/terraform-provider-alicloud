@@ -34,7 +34,7 @@ func TestAccAliCloudGpdbJdbcDataSource_basic7592(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"jdbc_password":           "test_005",
+					"jdbc_password":           "Test_005",
 					"data_source_name":        "${alicloud_gpdb_external_data_service.defaultRXkfKL.service_name}",
 					"data_source_type":        "mysql",
 					"jdbc_user_name":          "test_005",
@@ -44,7 +44,7 @@ func TestAccAliCloudGpdbJdbcDataSource_basic7592(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"jdbc_password":           "test_005",
+						"jdbc_password":           "Test_005",
 						"data_source_name":        CHECKSET,
 						"data_source_type":        "mysql",
 						"jdbc_user_name":          "test_005",
@@ -56,7 +56,7 @@ func TestAccAliCloudGpdbJdbcDataSource_basic7592(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"jdbc_password":           "test_006",
+					"jdbc_password":           "Test_006",
 					"data_source_type":        "postgresql",
 					"jdbc_user_name":          "test_006",
 					"jdbc_connection_string":  "jdbc:mysql://rm-2ze327yr44c61182c.mysql.rds.aliyuncs.com:3306/test_006",
@@ -64,7 +64,7 @@ func TestAccAliCloudGpdbJdbcDataSource_basic7592(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"jdbc_password":           "test_006",
+						"jdbc_password":           "Test_006",
 						"data_source_type":        "postgresql",
 						"jdbc_user_name":          "test_006",
 						"jdbc_connection_string":  "jdbc:mysql://rm-2ze327yr44c61182c.mysql.rds.aliyuncs.com:3306/test_006",
@@ -129,13 +129,13 @@ resource "alicloud_gpdb_instance" "defaulttuqTmM" {
 resource "alicloud_gpdb_account" "defaultsF2fsl" {
   db_instance_id   = alicloud_gpdb_instance.defaulttuqTmM.id
   account_name     = format("%%s1", var.name)
-  account_password = "test_005"
+  account_password = "Test_005"
   account_type     = "Normal"
 }
 
 resource "alicloud_gpdb_account" "default8txVNo" {
   account_name     = format("%%s2", var.name)
-  account_password = "test_006"
+  account_password = "Test_006"
   db_instance_id   = alicloud_gpdb_instance.defaulttuqTmM.id
   account_type     = "Normal"
 }
@@ -175,7 +175,7 @@ func TestAccAliCloudGpdbJdbcDataSource_basic6965(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"jdbc_password":           "test_001",
+					"jdbc_password":           "Test_001",
 					"data_source_name":        "${alicloud_gpdb_external_data_service.defaultRXkfKL.service_name}",
 					"data_source_type":        "mysql",
 					"jdbc_user_name":          "test_001",
@@ -185,7 +185,7 @@ func TestAccAliCloudGpdbJdbcDataSource_basic6965(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"jdbc_password":           "test_001",
+						"jdbc_password":           "Test_001",
 						"data_source_name":        CHECKSET,
 						"data_source_type":        "mysql",
 						"jdbc_user_name":          "test_001",
@@ -196,7 +196,7 @@ func TestAccAliCloudGpdbJdbcDataSource_basic6965(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"jdbc_password":           "test_002",
+					"jdbc_password":           "Test_002",
 					"data_source_type":        "postgresql",
 					"jdbc_connection_string":  "jdbc:mysql://rm-2ze327yr44c61182c.mysql.rds.aliyuncs.com:3306/test_002",
 					"jdbc_user_name":          "test_002",
@@ -204,7 +204,7 @@ func TestAccAliCloudGpdbJdbcDataSource_basic6965(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"jdbc_password":           "test_002",
+						"jdbc_password":           "Test_002",
 						"data_source_type":        "postgresql",
 						"jdbc_connection_string":  "jdbc:mysql://rm-2ze327yr44c61182c.mysql.rds.aliyuncs.com:3306/test_002",
 						"jdbc_user_name":          "test_002",
@@ -270,7 +270,7 @@ resource "alicloud_gpdb_account" "defaultsk1eaS" {
   account_description = "test_001"
   db_instance_id      = alicloud_gpdb_instance.defaulttuqTmM.id
   account_name        = format("%%s1", var.name)
-  account_password    = "test_001"
+  account_password    = "Test_001"
   account_type        = "Normal"
 }
 

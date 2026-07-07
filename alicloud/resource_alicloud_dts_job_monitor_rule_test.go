@@ -350,7 +350,7 @@ resource "alicloud_db_database" "source_db" {
 resource "alicloud_rds_account" "source_account" {
   db_instance_id   = alicloud_db_instance.source.id
   account_name     = "test_mysql"
-  account_password = "N1cetest"
+  account_password = "N1cetest@"
 }
 
 resource "alicloud_db_account_privilege" "source_privilege" {
@@ -373,7 +373,7 @@ resource "alicloud_db_instance" "target" {
 resource "alicloud_rds_account" "target_account" {
   db_instance_id   = alicloud_db_instance.target.id
   account_name     = "test_mysql"
-  account_password = "N1cetest"
+  account_password = "N1cetest@"
 }
 
 ## DTS Data Synchronization
@@ -553,7 +553,7 @@ resource "alicloud_db_database" "source_db" {
 resource "alicloud_rds_account" "source_account" {
   db_instance_id   = alicloud_db_instance.source.id
   account_name     = "test_mysql"
-  account_password = "N1cetest"
+  account_password = "N1cetest@"
 }
 
 resource "alicloud_db_account_privilege" "source_privilege" {
@@ -576,7 +576,7 @@ resource "alicloud_db_instance" "target" {
 resource "alicloud_rds_account" "target_account" {
   db_instance_id   = alicloud_db_instance.target.id
   account_name     = "test_mysql"
-  account_password = "N1cetest"
+  account_password = "N1cetest@"
 }
 
 resource "alicloud_dts_subscription_job" "default" {

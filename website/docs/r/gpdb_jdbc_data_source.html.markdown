@@ -71,7 +71,7 @@ resource "alicloud_gpdb_account" "defaultsk1eaS" {
   account_description = "example_001"
   db_instance_id      = alicloud_gpdb_instance.defaulttuqTmM.id
   account_name        = "example_001"
-  account_password    = "example_001"
+  account_password    = "Example_001"
   account_type        = "Normal"
 }
 
@@ -86,7 +86,7 @@ resource "alicloud_gpdb_jdbc_data_source" "default" {
   jdbc_connection_string  = "jdbc:mysql://rm-2ze327yr44c61183c.mysql.rds.aliyuncs.com:3306/example_001"
   data_source_description = "myexample"
   db_instance_id          = alicloud_gpdb_instance.defaulttuqTmM.id
-  jdbc_password           = "example_001"
+  jdbc_password           = "Example_001"
   data_source_name        = alicloud_gpdb_external_data_service.defaultRXkfKL.service_name
   data_source_type        = "mysql"
   jdbc_user_name          = "example_001"

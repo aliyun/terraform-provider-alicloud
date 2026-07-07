@@ -52,7 +52,7 @@ resource "alicloud_adb_db_cluster" "cluster" {
 resource "alicloud_adb_account" "default" {
   db_cluster_id       = alicloud_adb_db_cluster.cluster.id
   account_name        = var.name
-  account_password    = "tf_example123"
+  account_password    = "Tf_example123"
   account_description = var.name
 }
 ```

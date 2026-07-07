@@ -399,7 +399,7 @@ func TestAccAliCloudRedisAccount_basic11424(t *testing.T) {
 					"account_privilege": "RoleReadWrite",
 					"account_type":      "Normal",
 					"account_name":      name,
-					"account_password":  "123456_tf",
+					"account_password":  "123456_Tf",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -408,7 +408,7 @@ func TestAccAliCloudRedisAccount_basic11424(t *testing.T) {
 						"account_privilege": "RoleReadWrite",
 						"account_type":      "Normal",
 						"account_name":      name,
-						"account_password":  "123456_tf",
+						"account_password":  "123456_Tf",
 					}),
 				),
 			},
@@ -416,13 +416,13 @@ func TestAccAliCloudRedisAccount_basic11424(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":       "tf测试 Account 修改",
 					"account_privilege": "RoleReadOnly",
-					"account_password":  "tf_123456",
+					"account_password":  "Tf_123456",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "tf测试 Account 修改",
 						"account_privilege": "RoleReadOnly",
-						"account_password":  "tf_123456",
+						"account_password":  "Tf_123456",
 					}),
 				),
 			},

@@ -75,7 +75,7 @@ resource "alicloud_click_house_enterprise_db_cluster_account" "default" {
   description    = "example_desc"
   db_instance_id = alicloud_click_house_enterprise_db_cluster.defaultWrovOd.id
   account_type   = "NormalAccount"
-  password       = "abc123456!"
+  password       = "Abc123456!"
   dml_auth_setting {
     dml_authority      = "0"
     ddl_authority      = true

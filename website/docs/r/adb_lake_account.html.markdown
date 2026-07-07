@@ -70,7 +70,7 @@ resource "alicloud_adb_lake_account" "default" {
   db_cluster_id    = alicloud_adb_db_cluster_lake_version.CreateInstance.id
   account_type     = "Super"
   account_name     = "tfnormal"
-  account_password = "normal@2023"
+  account_password = "Normal@2023"
   account_privileges {
     privilege_type = "Database"
     privilege_object {

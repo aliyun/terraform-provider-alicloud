@@ -245,7 +245,7 @@ func TestAccAliCloudEhpcClusterV2_basic12089(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_credentials": []map[string]interface{}{
 						{
-							"password": "aliHPC123",
+							"password": "aliHPC123@",
 						},
 					},
 					"cluster_vpc_id":      "${alicloud_vpc.minimal_test_clientVersion_vpc.id}",
@@ -448,7 +448,7 @@ func TestAccAliCloudEhpcClusterV2_basic12090(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_credentials": []map[string]interface{}{
 						{
-							"password": "aliHPC123",
+							"password": "aliHPC123@",
 						},
 					},
 					"cluster_vpc_id":      "${alicloud_vpc.minimal_test_prepaid_vpc.id}",
@@ -652,7 +652,7 @@ func TestAccAliCloudEhpcClusterV2_basic12035(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_credentials": []map[string]interface{}{
 						{
-							"password": "aliHPC123",
+							"password": "aliHPC123@",
 						},
 					},
 					"cluster_vpc_id":    "${alicloud_vpc.full_test_vpc.id}",
@@ -869,7 +869,7 @@ func TestAccAliCloudEhpcClusterV2_basic12036(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_credentials": []map[string]interface{}{
 						{
-							"password": "aliHPC123",
+							"password": "aliHPC123@",
 						},
 					},
 					"cluster_vpc_id":      "${alicloud_vpc.minimal_test_vpc.id}",

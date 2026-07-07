@@ -128,7 +128,7 @@ resource "alicloud_ecd_ad_connector_office_site" "default" {
 	desktop_access_type = "INTERNET"
 	dns_address = ["127.0.0.2"]
 	domain_name = "example1234.com"
-	domain_password = "YourPassword1234"
+	domain_password = "YourPassword1234@"
 	domain_user_name =  "Administrator"
 	enable_admin_access = "true"
 	enable_internet_access = "true"

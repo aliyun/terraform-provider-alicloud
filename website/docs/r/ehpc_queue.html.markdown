@@ -91,7 +91,7 @@ resource "alicloud_nas_access_rule" "queue_minimal_example_access_rule" {
 resource "alicloud_ehpc_cluster_v2" "queue_minimal_cluster_example" {
   depends_on = [alicloud_nas_access_rule.queue_minimal_example_access_rule]
   cluster_credentials {
-    password = "aliHPC123"
+    password = "aliHPC123@"
   }
   cluster_vpc_id    = alicloud_vpc.queue_minimal_example_vpc.id
   cluster_category  = "Standard"

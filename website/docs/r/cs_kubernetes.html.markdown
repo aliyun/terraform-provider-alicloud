@@ -182,7 +182,7 @@ resource "alicloud_cs_kubernetes" "default" {
   pod_vswitch_ids                = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
   master_instance_types          = [data.alicloud_instance_types.cloud_essd.0.instance_types.0.id, data.alicloud_instance_types.cloud_essd.1.instance_types.0.id, data.alicloud_instance_types.cloud_essd.2.instance_types.0.id]
   master_disk_category           = "cloud_essd"
-  password                       = "Yourpassword1234"
+  password                       = "Yourpassword1234@"
   service_cidr                   = "172.18.0.0/16"
   install_cloud_monitor          = true
   resource_group_id              = data.alicloud_resource_manager_resource_groups.default.groups.0.id

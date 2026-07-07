@@ -938,7 +938,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
   instance_types                = [var.instance_type]
-  password                      = "Test12345"
+  password                      = "Test12345@"
   system_disk_size              = 50
   system_disk_category          = "cloud_essd"
   instance_charge_type          = "PostPaid"
