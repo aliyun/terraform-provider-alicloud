@@ -42,6 +42,10 @@ func dataSourceAlicloudAlikafkaSaslAcls() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"username": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -106,8 +110,12 @@ func alikafkaSaslAclsDecriptionAttributes(d *schema.ResourceData, kafkaAclsInfo 
 	var names []string
 	var s []map[string]interface{}
 
+	instanceId := d.Get("instance_id").(string)
+
 	for _, item := range kafkaAclsInfo {
+		id := fmt.Sprintf("%s:%s:%s:%s:%s:%s", instanceId, item.Username, item.AclResourceType, item.AclResourceName, item.AclResourcePatternType, item.AclOperationType)
 		mapping := map[string]interface{}{
+			"id":                        id,
 			"username":                  item.Username,
 			"acl_resource_type":         item.AclResourceType,
 			"acl_resource_name":         item.AclResourceName,
@@ -116,8 +124,7 @@ func alikafkaSaslAclsDecriptionAttributes(d *schema.ResourceData, kafkaAclsInfo 
 			"acl_operation_type":        item.AclOperationType,
 		}
 
-		name := fmt.Sprintf("%s:%s:%s:%s:%s", item.Username, item.AclResourceType, item.AclResourceName, item.AclResourcePatternType, item.AclOperationType)
-		names = append(names, name)
+		names = append(names, id)
 		s = append(s, mapping)
 	}
 

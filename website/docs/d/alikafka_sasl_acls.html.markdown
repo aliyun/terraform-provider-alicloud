@@ -44,6 +44,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `acls` - A list of sasl acls. Each element contains the following attributes:
+  * `id` - ID of the sasl acl. The value is formatted as `instance_id:username:acl_resource_type:acl_resource_name:acl_resource_pattern_type:acl_operation_type`.
   * `username` - The username of the sasl acl.
   * `acl_resource_type` - The resource type of the sasl acl.
   * `acl_resource_name` - The resource name of the sasl acl.
