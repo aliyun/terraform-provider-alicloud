@@ -823,6 +823,68 @@ fi
 rm -rf "$tmpcfgA"; rm -f "$capA"
 
 # ---------------------------------------------------------------------------
+# Test 13: per-pool assignee 三态 — "any"=全池不限 / 数组=--filter assignedTo OR /
+#          缺省=回退全局 --assignee。每池的 a1 list 参数按 project 分别断言。
+# ---------------------------------------------------------------------------
+echo "=== Test 13: per-pool assignee (any / 多关注人数组 / 缺省回退) ==="
+cat > "$tmpbin/a1" << 'STUB'
+#!/bin/bash
+if [ "$1" = "auth" ] && [ "$2" = "whoami" ]; then
+    echo "Account:  chenhanzhang.chz"; exit 0
+fi
+if [ "$1" = "project" ] && [ "$2" = "workitem" ] && [ "$3" = "list" ]; then
+    echo "$*" >> "$ARGS_CAP"
+    echo '[]'; exit 0
+fi
+exit 1
+STUB
+chmod +x "$tmpbin/a1"
+
+tmpcfg13=$(mktemp -d); mkdir -p "$tmpcfg13/config"
+cat > "$tmpcfg13/config/pools.json" << 'JSON'
+{
+  "pools": {
+    "p_any":    { "project": 8001, "name": "Any",    "assignee": "any" },
+    "p_multi":  { "project": 8002, "name": "Multi",  "assignee": [320687, "WORKER_1782379562571"] },
+    "p_global": { "project": 8003, "name": "Global" }
+  },
+  "claim": { "tag": "jarvis-claimed" }
+}
+JSON
+cap13=$(mktemp)
+JARVIS_ROOT="$tmpcfg13" JARVIS_SCAN_TTL=0 ARGS_CAP="$cap13" \
+    bash "$proj_root/bootstrap/scan.sh" >/dev/null 2>&1
+
+any_lines=$(grep 'project 8001' "$cap13")
+multi_lines=$(grep 'project 8002' "$cap13")
+global_lines=$(grep 'project 8003' "$cap13")
+
+# any: 不带 --assignee,也不带 assignedTo 过滤(扫全池)
+if ! echo "$any_lines" | grep -q -- '--assignee' && ! echo "$any_lines" | grep -q 'assignedTo'; then
+    assert_pass "assignee=any → 无 --assignee 无 assignedTo(全池)"
+else
+    assert_fail "assignee=any 不应带关注人过滤: $any_lines"
+fi
+
+# 数组: --filter assignedTo=320687,WORKER_...(OR),不带 --assignee
+if echo "$multi_lines" | grep -q 'assignedTo=320687,WORKER_1782379562571' \
+   && ! echo "$multi_lines" | grep -q -- '--assignee'; then
+    assert_pass "assignee=数组 → --filter assignedTo=320687,WORKER_... 且无 --assignee"
+else
+    assert_fail "assignee=数组 应走 --filter assignedTo OR: $multi_lines"
+fi
+
+# 缺省: 回退全局 --assignee(whoami=chenhanzhang.chz),不带 assignedTo 过滤
+if echo "$global_lines" | grep -q -- '--assignee chenhanzhang.chz' \
+   && ! echo "$global_lines" | grep -q 'assignedTo'; then
+    assert_pass "assignee 缺省 → 回退全局 --assignee chenhanzhang.chz"
+else
+    assert_fail "assignee 缺省 应回退全局 --assignee: $global_lines"
+fi
+
+rm -rf "$tmpcfg13"; rm -f "$cap13"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

@@ -9,7 +9,7 @@
       "name": "Terraform - 客户需求",
       "line": "terraform_provider",
       "desc": "来自客户侧的需求",
-      "assignee": 320687,
+      "assignee": "WORKER_1782379562571",
       "dev": false,
       "exclude_status": [
         "Closed",
@@ -33,7 +33,7 @@
       "name": "terraform-provider",
       "line": "terraform_provider",
       "desc": "内部发布单 + Terraform 生产流程优化",
-      "assignee": 320687,
+      "assignee": "WORKER_1782379562571",
       "dev": false,
       "exclude_status": [
         "已发布",
@@ -65,7 +65,7 @@
           "delivery": "delivery-cloudspec.md"
         }
       ],
-      "assignee": 320687,
+      "assignee": "WORKER_1782379562571",
       "dev": true,
       "version_cfs": 100340,
       "exclude_status": [
@@ -75,21 +75,12 @@
       ],
       "exclude_title": []
     },
-    "cloudspec": {
-      "project": 1120451,
-      "name": "Cloudspec 需求",
-      "line": "agentic_tools",
-      "assignee": 479782,
-      "dev": false,
-      "exclude_status": [],
-      "exclude_title": []
-    },
     "api_toolkit": {
       "project": 2100304,
       "name": "API 工具团队需求",
       "line": "agentic_tools",
       "product_cfs": "107239=906688",
-      "assignee": 320687,
+      "assignee": "WORKER_1782379562571",
       "dev": false,
       "done_status": {"需求": "已发布", "功能缺陷": "Fixed"},
       "exclude_status": [
@@ -126,15 +117,6 @@
         "aliyun-automation-agent"
       ],
       "pool": "mcp_server"
-    },
-    {
-      "match": [
-        "Cloudspec",
-        "缺口",
-        "补字段",
-        "补资源"
-      ],
-      "pool": "cloudspec"
     },
     {
       "match": [
