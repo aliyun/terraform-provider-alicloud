@@ -22,7 +22,14 @@
 
 4. **工作区按登记走**：repo/池/构建命令以 `config/workspaces.json` 为准，本地路径用 `bootstrap/workspace.sh dir <key>` 拿（base 不存绝对路径，本机覆盖走 gitignored `workspaces.local.json`，多数机只需设 `JARVIS_WORKSPACE_ROOT`）；缺登记 → escalate（`missing_capability`），勿臆造。
 
-5. **汇报带链接 + 对外禁 AI 署名**：最后总结必须带 Aone 工作项链接与 MR/CR 链接（缺其一视为汇报不完整）；PR/MR/CR 正文/评论、Aone 回复、`git commit` 均禁 `Co-Authored-By: Codex` /「🤖 Generated with Codex」等水印，发出前剥掉，发现存量改掉。
+5. **汇报带链接 + 对外产物 sanitize**：内部汇报（钉钉/主会话）最后总结必须带 Aone 工作项链接与内部 MR/CR 链接（缺其一视为汇报不完整）。**对外产物**（GitHub 公开仓 PR title/body/评论、`git commit` message、code comments 及任何进入公开 registry 的文档）**严禁内部信息**——发出前逐条自查，发现存量改掉：
+   - **AI 署名/水印**：`Co-Authored-By: Codex` /「🤖 Generated with Codex」/ AI-assisted / bot 署名
+   - **客户信息**：客户名（不管是否有名气）、账号 UID、opportunity/合同 ID、GC67 类客情线
+   - **内部工单系统**：Aone URL（`project.aone.alibaba-inc.com/...`）、工单号（`#78350047` 类）、Aone 内部术语（"关联单/tf_customer 池"等）
+   - **诊断细节**：客户实例 ID（`r-xxx` / `lb-xxx` / `i-xxx` / `s-xxx` 等）、RequestId、错误 detail 里的机器名/RAM 用户名
+   - **内部人员引用**：花名+工号（`@辰羿(320687)`）、内部聊天/OKR/项目名
+   
+   **完整禁品清单 + PR body 骨架** 见 [terraform-provider-release SKILL Step 11.1](.Codex/skills/terraform-provider-release/SKILL.md)。**push 前自查**（provider worktree 里跑）：`git log -p origin/master..HEAD` 通读全部 diff + commit message，看有无 `aone`、内部客户名（本轮工单里出现过的）、`r-[0-9a-f]{8,}` / `i-[0-9a-f]{8,}` 类实例 ID、`RequestId`、`@<花名>(<工号>)` 引用——命中任一即卡住修，不允许 push。
 
 6. **身份纪律**：a1 一律走 `bin/a1id`，默认 jarvis（`a1id -- <args>`）；个人身份（chenyi/guozai/linjun）禁擅用，仅仓库主人本轮当面授权时才 `a1id as <id> -- <args>` 临时切，用完即回。GitHub PR/评论/推分支必须先 `bootstrap/github-identity.sh check`（token 账号必须 `api-tool-agent`，PR head `api-tool-agent:<branch>`），缺 token/账号不匹配一律阻断升级，禁回退 ambient `gh auth`。terraform-pr-review skill 有完整清单。
 
