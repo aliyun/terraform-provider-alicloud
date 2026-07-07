@@ -345,8 +345,9 @@ func convertListToJsonString(configured []interface{}) string {
 }
 
 func convertJsonStringToStringList(src interface{}) (result []interface{}) {
-	if err, ok := src.([]interface{}); !ok {
-		panic(err)
+	if _, ok := src.([]interface{}); !ok {
+		log.Printf("[WARN] convertJsonStringToStringList: expected []interface{} but got %T, returning nil", src)
+		return nil
 	}
 	for _, v := range src.([]interface{}) {
 		result = append(result, fmt.Sprint(formatInt(v)))
@@ -1160,17 +1161,20 @@ func formatInt(src interface{}) int {
 		}
 		v, err := strconv.Atoi(vv)
 		if err != nil {
-			panic(err)
+			log.Printf("[WARN] formatInt: failed to parse string %q: %v, returning 0", vv, err)
+			return 0
 		}
 		return v
 	case "json.Number":
 		v, err := strconv.Atoi(src.(json.Number).String())
 		if err != nil {
-			panic(err)
+			log.Printf("[WARN] formatInt: failed to parse json.Number %q: %v, returning 0", src.(json.Number).String(), err)
+			return 0
 		}
 		return v
 	default:
-		panic(fmt.Sprintf("Not support type %s", attrType.String()))
+		log.Printf("[WARN] formatInt: unsupported type %s, returning 0", attrType.String())
+		return 0
 	}
 }
 
@@ -1189,11 +1193,13 @@ func formatBool(src interface{}) bool {
 		}
 		v, err := strconv.ParseBool(vv)
 		if err != nil {
-			panic(err)
+			log.Printf("[WARN] formatBool: failed to parse string %q: %v, returning false", vv, err)
+			return false
 		}
 		return v
 	default:
-		panic(fmt.Sprintf("Not support type %s", attrType.String()))
+		log.Printf("[WARN] formatBool: unsupported type %s, returning false", attrType.String())
+		return false
 	}
 }
 
@@ -1220,17 +1226,20 @@ func formatFloat64(src interface{}) float64 {
 		}
 		v, err := strconv.ParseFloat(vv, 64)
 		if err != nil {
-			panic(err)
+			log.Printf("[WARN] formatFloat64: failed to parse string %q: %v, returning 0", vv, err)
+			return 0
 		}
 		return v
 	case "json.Number":
 		v, err := src.(json.Number).Float64()
 		if err != nil {
-			panic(err)
+			log.Printf("[WARN] formatFloat64: failed to parse json.Number %q: %v, returning 0", src.(json.Number).String(), err)
+			return 0
 		}
 		return v
 	default:
-		panic(fmt.Sprintf("Not support type %s", attrType.String()))
+		log.Printf("[WARN] formatFloat64: unsupported type %s, returning 0", attrType.String())
+		return 0
 	}
 }
 

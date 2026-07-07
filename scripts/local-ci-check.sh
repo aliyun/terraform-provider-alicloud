@@ -299,6 +299,13 @@ if echo "$CHANGED_FILES" | grep -q "\.go$\|website/docs"; then
     || true
 fi
 
+# 1.6 Panic Check (static check for panic() calls)
+if echo "$CHANGED_FILES" | grep -q "\.go$"; then
+  run_check "Panic Check (no panic() in changed files)" \
+    "sh \"$SCRIPT_DIR/paniccheck.sh\"" \
+    || true
+fi
+
 # ============================================================================
 # 2. Testing Coverage Rate Check
 # ============================================================================

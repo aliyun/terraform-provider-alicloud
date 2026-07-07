@@ -131,6 +131,9 @@ test-resource-debug:
 vet:
 	"$(CURDIR)/scripts/vetcheck.sh"
 
+panic-check:
+	@sh scripts/paniccheck.sh
+
 fmt:
 	gofmt -w $(GOFMT_FILES)
 	goimports -w $(GOFMT_FILES)
@@ -252,7 +255,7 @@ sweep:
 		TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	fi
 
-.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep
+.PHONY: build test testacc test-resource test-resource-debug vet panic-check fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep
 
 all: mac windows linux
 

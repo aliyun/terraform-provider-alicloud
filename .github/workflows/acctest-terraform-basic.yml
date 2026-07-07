@@ -44,6 +44,22 @@ jobs:
           git diff HEAD^ HEAD > diff.out
           go run scripts/consistency/consistency_check.go -fileNames="diff.out"
 
+  PanicCheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.x'
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Panic Static Check
+        run: |
+          sh scripts/paniccheck.sh
+
   Formatter:
     runs-on: ubuntu-latest
     permissions:
