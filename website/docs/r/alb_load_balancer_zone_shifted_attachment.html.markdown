@@ -114,7 +114,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Application Load Balancer (ALB) Load Balancer Zone Shifted Attachment can be imported using the id, e.g.
+Application Load Balancer (ALB) Load Balancer Zone Shifted Attachment can be imported using the id, which consists of load_balancer_id, vswitch_id and zone_id, e.g.
 
 ```shell
 $ terraform import alicloud_alb_load_balancer_zone_shifted_attachment.example <load_balancer_id>:<vswitch_id>:<zone_id>

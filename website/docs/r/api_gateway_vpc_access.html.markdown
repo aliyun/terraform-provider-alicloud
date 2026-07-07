@@ -111,7 +111,7 @@ The following attributes are exported:
 
 ## Import
 
-Api Gateway Vpc Access can be imported using the id, e.g.
+Api Gateway Vpc Access can be imported using the id, which consists of name, vpc_id, instance_id and port, e.g.
 
 ```shell
 $ terraform import alicloud_api_gateway_vpc_access.example <name>:<vpc_id>:<instance_id>:<port>

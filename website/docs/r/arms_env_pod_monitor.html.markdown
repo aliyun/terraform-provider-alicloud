@@ -163,7 +163,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-ARMS Env Pod Monitor can be imported using the id, e.g.
+ARMS Env Pod Monitor can be imported using the id, which consists of environment_id, namespace and env_pod_monitor_name, e.g.
 
 ```shell
 $ terraform import alicloud_arms_env_pod_monitor.example <environment_id>:<namespace>:<env_pod_monitor_name>
