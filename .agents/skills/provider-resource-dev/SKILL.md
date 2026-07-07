@@ -152,6 +152,12 @@ python3 tools/terraform_generated_diff.py \
 - ResourceManager handshake/成员账号类资源:若存在删除/移除关系 API,provider Delete 必须实现真实删除并校验幂等;AccTest 前置清理只用于清历史脏关系,不能替代资源 Delete。清理或删除后轮询 NotFound/终态并等待一致性后再 invite。
 - 多 AK 测试脚本不要假设 `aliyun` 环境变量一定覆盖默认 profile;优先显式传 `--mode AK --access-key-id ... --access-key-secret ... --region ... --endpoint ...`,避免把 AK1/AK2 都打到同一个默认账号。
 - 可复制 Example 必须能 `terraform init/validate`:包含 `required_providers`,跨账号资源用 provider alias 区分管理账号/受邀账号;真实 AK/SK 不写进文档、评论或仓库,只用 sensitive variables/env。
+- **Optional + Computed 字段的 `HasChange` drift 陷阱**:当 schema 里字段是 `Optional: true, Computed: true`,`Read` 又调 `d.Set(<字段>, <API 值>)` 回填,那么二次 apply 时即使客户 tf config 里没设该字段,state 也会带 API 回填的值——`d.HasChange(<字段>)` 会返回 `true`(config 空 vs state 非空),Update 逻辑若无 guard 直接把 `d.Get(<字段>)` 空字符串塞给下游 API 就会踩 Duplicate/InvalidParameter 类错误。**修法**:Update 里所有 `HasChange(<Optional+Computed 字段>)` 分支必须叠加 `if v := d.Get(<字段>).(string); v != ""` 过滤,只有客户显式设了非空值才调下游 API;若下游 API 对同值请求返回 `Duplicate` 类错误,还要在错误处理里 `IsExpectedErrors(err, []string{"...Duplicate"})` tolerate 兜底(视为 no-op)。参见 2026-07-06 kvstore_instance Modify `private_connection_port` 因 Computed drift 二次 apply 报 Duplicate 教训。**规则**:审自己写的 Update 逻辑时,凡 schema 是 Optional+Computed 的字段,check 三处:① Read 是否有 `d.Set` 回填;② Update 是否只用 `HasChange` 不 filter 空;③ 下游 API 对"相同值"的错误码是否被 tolerate。
+
+## PR 侧规则(对外)
+
+- **PR title 必须符合 upstream CI 检查**:aliyun/terraform-provider-alicloud 的 CI 检查 PR title 前缀模式为 `resource/alicloud_<resource>:` / `data-source/alicloud_<resource>:` / `docs:` / `testcase:` 等,**不接受 conventional commit 格式**(`fix(xxx): ...` / `feat(xxx): ...`)。提 PR 前 title 命中格式错会被 CI 阻断;如需改 title,`gh pr edit --title` 后可能需 close/reopen PR 触发 CI 重跑(admin 权限才能 `gh run rerun`)。参见 2026-07-06 PR #9937 首次因 `fix(resource_...)` 前缀被卡住的教训。
+- **对外产物 sanitize**:GitHub 公开仓 PR title/body、`git commit` message、code comments 严禁内部信息(Aone URL、客户名、账号 UID、实例 ID、RequestId、内部人员花名工号引用等)。完整清单见 AGENTS.md 工作纪律 #5 + `terraform-provider-release` SKILL Step 11.1;**push 前自查**:`git log -p origin/master..HEAD` 通读 diff 与 commit message,命中禁品即卡住修。
 
 ## 红线
 不碰 master;无可评审 diff 不空发;对外无 AI 署名;Aone 唯一真源(进展 sync/完工 done);**修 bug 无回归用例又不写豁免原因 = 空发**。

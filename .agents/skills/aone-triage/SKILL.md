@@ -85,6 +85,8 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 3. **provider 源码层**(仅当涉 Terraform 资源):先 `bash .Codex/skills/aone-triage/scripts/sync-provider.sh` 同步,再在 `$(bash bootstrap/workspace.sh dir terraform_provider)/alicloud/` grep 资源 .go,核对 schema / `Importer` / Create 实际下发参数。单复数陷阱:`*_instances` 多半是数据源。
 4. **文档兜底**:GitHub raw markdown、`aliyun help <product>` 命令列表。
 
+**「文档 vs 代码一致性」分诊起点**(涉 endpoint/schema 键名/枚举值/属性行为类问题):**先对比"文档承诺"vs"代码实际行为"两侧**,不要只看代码或只看文档,更不要只看客户报错。**两侧不一致时,修哪一侧不是一定的**——代码追上文档 / 文档追上代码 / 两侧都改(通常最全面)/ 引导客户 workaround 都是可行方案,取决于兼容性、云产品长期路线图、客户改动成本、历史 tf 广泛度等,分诊者的**职责是把可行方案(常见 3-4 种)完整提交给决策者**(见下方"转单/建关联单 body 内容原则"),不预设"哪一侧才是权威"的结论。
+
 **Terraform-specific 领域**详细 branch(专属维护名单 / 类比 API 原生 vs Provider 适配 / 镇元覆盖度 / 生成器 vs 手写)全在 `references/tf-customer-request-routing.md`。tf_customer 域必读,其它域按需借鉴。
 
 ### 4. 回复草稿(结构固定,先给用户过目)
@@ -110,6 +112,16 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | 更新详情(description) | `bin/a1id -- project workitem update <id> --body-file <path>`(单行小改可 `--body "<text>"`)。**何时必须**:重审/复核推翻了 description 里的根因或方案、方案实施与描述已相左、验收证伪原描述——评论只是过程审计追加在尾部,新读者第一眼看的是详情,详情停在已否决结论=持续误导接手者。重写时开头加一行 `> ⚠️ 本 description 于 <date> 重写:<被否决的旧结论一句话>,演进见评论区`,保住审计链。**边界**:仅限我方创建/维护的工单(tf_provider 关联单/研发单/probe 单);客户主单 description 是客户原声,禁改 |
 | 字段必填缺失 | `bin/a1id -- project workitem field options <field> --project <id>` 查枚举补 `--cfs` |
 | GitHub PR/评论/推分支(Jarvis 身份) | 必须先 `bootstrap/github-identity.sh check`;`gh` 走 `bootstrap/github-identity.sh gh ...`;推分支 `bootstrap/github-identity.sh push`;账号必须 `api-tool-agent`;PR head 必须 `api-tool-agent:<branch>` |
+
+### 转单/建关联单 body 内容原则
+
+给他人写关联单 body(尤其转出的分支 D-新山 / D-谜拟 / G-新山 / H-夏节 等**非过载承接**)时,body 是承接方唯一的**决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问。规则:
+
+- **多方案覆盖**:分析出根因后,不要只写"我倾向"的单一方案;至少列 3-4 种可行方案(**代码修复 / 只改文档 / 代码+文档双改 / 客户 workaround** 是常见 4 种),给对比表(改动量/兼容性/长期语义/优缺点),jarvis 明说自己倾向哪个 + 依赖对方哪个信息拍板(如"取决于产品长期路线图")。
+- **根因定位含完整代码引用**:引用具体文件:行号(如 `alicloud/provider.go:2273-2286`)+ 完整代码片段(不是省略号或概括)+ 一句话解释每处做什么。承接方一眼能顺着行号跳读,不用自己 grep。
+- **推理链完整**:根因是"A 导致 B 导致 C"时,把每一环写清,不跳步。让承接方能验证 jarvis 的定位对不对,不是被动接受结论。
+- **影响面 + acc test 建议**:影响范围(仅某云产品 / 全局)、客户 tf 兼容性、需要覆盖的 acc test case 列表,承接方能据此评估回归风险。
+- **body 可 update 不必只追加 comment**:分析扩展后走 `a1 update --body-file` 覆盖(见上表"更新详情"),让新读者第一眼看到完整版;evolution 走评论区 audit trail。**追加 comment** 适合 diff-式补充(如"补充方案 Z-C/Z-D"),**update body** 适合完整重写。两者可并用:先追加 comment 让承接方收到通知,再 update body 让详情整洁。
 
 ## Bookend(动工必走)
 
