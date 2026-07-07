@@ -1174,34 +1174,75 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("kms_encryption_context")
 		d.SetPartial("password")
 	}
-	update = false
+	// ModifyDBInstanceConnectionString rejects a new prefix or port that equals the
+	// current private endpoint value (InvalidConnectionStringOrPort.Duplicate) and
+	// requires CurrentConnectionString. Create chains into Update, so for a brand new
+	// resource HasChange is true for every explicitly configured attribute even when
+	// the value already matches the instance default (e.g. port 6379). Diff against
+	// the live private endpoint first and only send fields that actually differ.
 	modifyDBInstanceConnectionStringReq := r_kvstore.CreateModifyDBInstanceConnectionStringRequest()
 	modifyDBInstanceConnectionStringReq.DBInstanceId = d.Id()
+	modifyDBInstanceConnectionStringReq.IPType = "Private"
+	var targetPrefix, targetPort string
 	if d.HasChange("private_connection_prefix") {
-		update = true
-		modifyDBInstanceConnectionStringReq.NewConnectionString = d.Get("private_connection_prefix").(string)
+		targetPrefix = d.Get("private_connection_prefix").(string)
 	}
 	if d.HasChange("private_connection_port") {
-		update = true
-		modifyDBInstanceConnectionStringReq.Port = d.Get("private_connection_port").(string)
+		targetPort = d.Get("private_connection_port").(string)
 	}
-	modifyDBInstanceConnectionStringReq.IPType = "Private"
-	if update {
-		object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
-		modifyDBInstanceConnectionStringReq.CurrentConnectionString = fmt.Sprint(object["ConnectionDomain"])
-		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
-			return r_kvstoreClient.ModifyDBInstanceConnectionString(modifyDBInstanceConnectionStringReq)
-		})
-		addDebug(modifyDBInstanceConnectionStringReq.GetActionName(), raw)
+	if targetPrefix != "" || targetPort != "" {
+		netInfoList, err := r_kvstoreService.DescribeKvStoreInstanceNetInfo(d.Id())
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyDBInstanceConnectionStringReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		var currentDomain, currentPort string
+		for _, netInfo := range netInfoList {
+			arg := netInfo.(map[string]interface{})
+			if fmt.Sprint(arg["DBInstanceNetType"]) != "2" {
+				continue
+			}
+			if _, ok := arg["IsSlaveProxy"]; ok {
+				continue
+			}
+			currentDomain = fmt.Sprint(arg["ConnectionString"])
+			currentPort = fmt.Sprint(arg["Port"])
+			break
 		}
-		d.SetPartial("private_connection_prefix")
-		d.SetPartial("private_connection_port")
+		// currentDomain is the full private endpoint (e.g. "myprefix.redis.rds.aliyuncs.com");
+		// NewConnectionString is only the leading prefix segment.
+		if targetPrefix != "" && currentDomain != "" && strings.HasPrefix(currentDomain, targetPrefix+".") {
+			targetPrefix = ""
+		}
+		if targetPort != "" && targetPort == currentPort {
+			targetPort = ""
+		}
+		if targetPrefix != "" || targetPort != "" {
+			if currentDomain == "" {
+				return WrapError(Error("no private connection endpoint found for %s; cannot modify private connection string/port", d.Id()))
+			}
+			modifyDBInstanceConnectionStringReq.CurrentConnectionString = currentDomain
+			if targetPrefix != "" {
+				modifyDBInstanceConnectionStringReq.NewConnectionString = targetPrefix
+			}
+			if targetPort != "" {
+				modifyDBInstanceConnectionStringReq.Port = targetPort
+			}
+			raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+				return r_kvstoreClient.ModifyDBInstanceConnectionString(modifyDBInstanceConnectionStringReq)
+			})
+			addDebug(modifyDBInstanceConnectionStringReq.GetActionName(), raw)
+			// Tolerate Duplicate only as a fallback for concurrent external modification
+			// between the Describe above and this Modify; the diff filter is the primary defense.
+			if err != nil && !IsExpectedErrors(err, []string{"InvalidConnectionStringOrPort.Duplicate"}) {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyDBInstanceConnectionStringReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("private_connection_prefix")
+			d.SetPartial("private_connection_port")
+		}
 	}
 	update = false
 	modifySecurityIpsReq := r_kvstore.CreateModifySecurityIpsRequest()

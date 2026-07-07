@@ -179,7 +179,7 @@ func SkipTestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "port"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -528,7 +528,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "port"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -857,7 +857,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "port"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1157,7 +1157,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "port"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1490,7 +1490,7 @@ func SkipTestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "port"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1830,7 +1830,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "port"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2188,7 +2188,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "port"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2499,7 +2499,7 @@ func TestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "port"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2644,6 +2644,295 @@ func TestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudKVStoreRedisInstance_privateConnectionCreate is a regression for
+// a create-time config that pins the connection string fields to the instance's
+// default private endpoint values (e.g. private_connection_port = "6379"). The
+// Create -> Update chain marks every explicitly configured attribute as changed
+// on a brand new resource, and ModifyDBInstanceConnectionString used to reject
+// same-value modifications with InvalidConnectionStringOrPort.Duplicate, tainting
+// the resource and forcing an unrecoverable replace on the next apply.
+func TestAccAliCloudKVStoreRedisInstance_privateConnectionCreate(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisPrivConnCreate%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create step carries both connection string fields, with port pinned to
+				// the instance default (6379). Historical bug: create failed here.
+				// Uses redis.master.small.default (classic master/replica, engine 5.0)
+				// since it is broadly sellable; the sharded proxy class is not.
+				// password is set here (rather than in the attributesCoverage test's
+				// step 1) because this test does not exercise the plain-password ->
+				// KMS migration path, so it steers clear of the kmsDiffSuppressFunc
+				// misread that would otherwise fail on that migration step.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":            "redis.master.small.default",
+					"db_instance_name":          name,
+					"instance_type":             "Redis",
+					"engine_version":            "5.0",
+					"payment_type":              "PostPaid",
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"password":                  "YourPassword_123",
+					"private_connection_prefix": fmt.Sprintf("privateprefixcreate%d", rand),
+					"private_connection_port":   "6379",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":            "redis.master.small.default",
+						"db_instance_name":          name,
+						"instance_type":             "Redis",
+						"engine_version":            "5.0",
+						"payment_type":              "PostPaid",
+						"resource_group_id":         CHECKSET,
+						"zone_id":                   CHECKSET,
+						"vswitch_id":                CHECKSET,
+						"private_connection_port":   "6379",
+						"private_connection_prefix": CHECKSET,
+					}),
+				),
+			},
+			{
+				// In-place prefix change: verifies the diff filter still forwards a real change.
+				Config: testAccConfig(map[string]interface{}{
+					"private_connection_prefix": fmt.Sprintf("privateprefixmodify%d", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_prefix": CHECKSET,
+						"private_connection_port":   "6379",
+					}),
+				),
+			},
+			{
+				// Unrelated update while connection fields stay put: the diff filter must
+				// collapse to a no-op instead of re-sending the current prefix/port.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_name": name + "_upd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_name":        name + "_upd",
+						"private_connection_port": "6379",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudKVStoreRedisInstance_attributesCoverage is a create-only
+// coverage-focused test: it wires up in step 1 every Optional attribute the
+// resource is capable of exercising on redis.master.small.default (community
+// Redis, engine 5.0, PostPaid), including create-only fields such as capacity
+// / private_ip / auto_use_coupon / global_instance / business_info /
+// coupon_no / effective_time / force_upgrade / order_type. It has no
+// ImportState step on purpose: several of the attributes we need to cover
+// are ForceNew and would necessarily diff on import. Subsequent steps
+// exercise the real Update paths (resource_group_id ModifyResourceGroup,
+// security_group_id ModifyInstanceSpec, kms_encrypted_password / context via
+// ModifyInstanceAttribute's KMS Decrypt path), giving modify coverage for
+// attributes not otherwise exercised.
+//
+// The KMS credential (kms_encrypted_password + kms_encryption_context) is
+// introduced at create time rather than migrated from a plain password in a
+// later step. The migration path (REMOVEKEY password + set KMS in the same
+// step) hits a kmsDiffSuppressFunc bug: the suppress reads the still-set
+// password out of state and suppresses the KMS diff, so the migration step
+// arrives at ModifyInstanceAttribute with neither password nor KMS set and
+// the provider bails at :1144 ("One of the 'password' and
+// 'kms_encrypted_password' should be set"). Sidestepping the migration
+// still gives full must-set + modify coverage for the KMS pair; the
+// plain-password path stays covered by
+// TestAccAliCloudKVStoreRedisInstance_privateConnectionCreate.
+//
+// Attributes deliberately NOT covered here (require external prerequisites the
+// provider cannot synthesize, or the API path is systemically unreachable in
+// the test environment):
+//   - backup_id / restore_time / srcdb_instance_id: need an existing backup.
+//   - dedicated_host_group_id: needs a dedicated host cluster.
+//   - global_instance_id: needs an existing global-instance to join.
+//   - tde_status / encryption_name / encryption_key / role_arn: TDE update
+//     path (see resource_alicloud_kvstore_instance.go :1514) fires whenever
+//     any of the four HasChange, calls ModifyInstanceTDE, and community
+//     Redis (redis.master.small.default) returns IsSupportTDE=false at
+//     Read (:764), so the API rejects the call on this class.
+//   - port: only reachable together with enable_public +
+//     connection_string_prefix via AllocateInstancePublicConnection. That
+//     API returned InternalFailure for two independent instances (both at
+//     create time and as a follow-up step) in the test environment, so
+//     the public-endpoint path is skipped end-to-end here. port stays in
+//     ImportStateVerifyIgnore for import safety of any future test that
+//     does set it.
+//   - engine_version modify (create-time set is still covered): the
+//     classic redis.master.*.default series only has 5.0 available for
+//     purchase in the test region (4.0 retired, 6.0 / 7.0 not offered on
+//     this series), so ModifyInstanceMajorVersion has no reachable
+//     in-place upgrade target and returns InvalidDBInstanceClass.NotFound.
+func TestAccAliCloudKVStoreRedisInstance_attributesCoverage(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisAttrCoverage%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceAttributesCoverageDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Full create-time set. See function-level comment for why the
+				// ForceNew and deprecated fields have to land in the create step.
+				// The public-endpoint knobs (enable_public /
+				// connection_string_prefix / port) are intentionally NOT set:
+				// see the function-level comment for why.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type":    "Redis",
+					"instance_class":   "redis.master.small.default",
+					"engine_version":   "5.0",
+					"payment_type":     "PostPaid",
+					"db_instance_name": name,
+					"zone_id":          "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":       "${alicloud_vswitch.default.id}",
+					// kms_encrypted_password + kms_encryption_context land at
+					// create time (rather than migrating from plain password in
+					// a later step) because kmsDiffSuppressFunc misreads the
+					// still-populated password state and suppresses the KMS
+					// diff, leaving the migration step with neither value set
+					// (kvstore rejects that at :1144). Starting with KMS avoids
+					// the suppress condition; the plain-password path is still
+					// covered by TestAccAliCloudKVStoreRedisInstance_privateConnectionCreate.
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{"kv": "1"},
+					"capacity":               "1024",
+					"private_ip":             "172.16.0.100",
+					"business_info":          "terraform_test",
+					"coupon_no":              "youhuiquan_promotion_option_id_for_blank",
+					// auto_use_coupon and global_instance have DiffSuppressFunc
+					// !d.IsNewResource() and no Read setter, so their post-create
+					// state is empty; keep them in config (for must-set coverage
+					// and for the real API round-trip) but skip Check assertions
+					// below to avoid TestCheckResourceAttr "not found" failures.
+					"auto_use_coupon":             "false",
+					"global_instance":             "false",
+					"effective_time":              "Immediately",
+					"force_upgrade":               "true",
+					"order_type":                  "UPGRADE",
+					"security_group_id":           "${alicloud_security_group.default.id}",
+					"security_ip_group_attribute": "tftest",
+					"security_ip_group_name":      "coveragegrp1",
+					"security_ips":                []string{"10.23.12.24"},
+					"enable_backup_log":           "0",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"tags": map[string]string{
+						"coverage": "yes",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":            "redis.master.small.default",
+						"engine_version":            "5.0",
+						"payment_type":              "PostPaid",
+						"db_instance_name":          name,
+						"private_ip":                "172.16.0.100",
+						"business_info":             "terraform_test",
+						"coupon_no":                 "youhuiquan_promotion_option_id_for_blank",
+						"kms_encrypted_password":    CHECKSET,
+						"kms_encryption_context.%":  "1",
+						"kms_encryption_context.kv": "1",
+						// auto_use_coupon and global_instance intentionally omitted here
+						// (see config-side comment above; DiffSuppressFunc + no Read setter
+						// means the attribute never lands in state after Read).
+						"effective_time":              "Immediately",
+						"force_upgrade":               "true",
+						"order_type":                  "UPGRADE",
+						"security_group_id":           CHECKSET,
+						"security_ip_group_attribute": "tftest",
+						"security_ip_group_name":      "coveragegrp1",
+						"enable_backup_log":           "0",
+						"resource_group_id":           CHECKSET,
+						"tags.%":                      "1",
+						"tags.coverage":               "yes",
+					}),
+				),
+			},
+			{
+				// resource_group_id modify -> ModifyResourceGroup.
+				// security_ip_group_name modify -> ModifySecurityIps (piggybacked
+				// so the same round-trip also covers this attribute's modify).
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"security_ip_group_name": "coveragegrp2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id":      CHECKSET,
+						"security_ip_group_name": "coveragegrp2",
+					}),
+				),
+			},
+			{
+				// security_group_id modify -> ModifyInstanceSpec / security-group swap.
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": "${alicloud_security_group.update.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				// Swap to the second KMS ciphertext with a different
+				// encryption_context: gives modify coverage for
+				// kms_encrypted_password AND kms_encryption_context and
+				// exercises ModifyInstanceAttribute's KMS Decrypt path
+				// (:1138). password stays unset throughout this test, so the
+				// kmsDiffSuppressFunc suppress condition (see step 1 comment)
+				// is not triggered.
+				Config: testAccConfig(map[string]interface{}{
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.update.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"kv": "2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kms_encrypted_password":    CHECKSET,
+						"kms_encryption_context.%":  "1",
+						"kms_encryption_context.kv": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AliCloudKVStoreMap0 = map[string]string{
 	"connection_domain": CHECKSET,
 	"bandwidth":         CHECKSET,
@@ -2728,4 +3017,69 @@ func AliCloudKVStoreMemcacheInstanceVpcBasicDependence0(name string) string {
   		zone_id = "cn-hangzhou-i"
 	}
 	`)
+}
+
+// AliCloudKVStoreRedisInstanceAttributesCoverageDependence provisions the
+// full support cast for TestAccAliCloudKVStoreRedisInstance_attributesCoverage:
+// a self-owned VPC + vswitch (predictable CIDR so private_ip can be pinned),
+// two security groups (for a modify step), and a KMS key with two ciphertexts
+// (for the kms_encrypted_password / kms_encryption_context modify pair).
+func AliCloudKVStoreRedisInstanceAttributesCoverageDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_kvstore_zones" "default" {
+		instance_charge_type = "PostPaid"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+		status = "OK"
+	}
+
+	resource "alicloud_vpc" "default" {
+		vpc_name   = var.name
+		cidr_block = "172.16.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+		vpc_id       = alicloud_vpc.default.id
+		cidr_block   = "172.16.0.0/24"
+		zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+		vswitch_name = var.name
+	}
+
+	resource "alicloud_security_group" "default" {
+		name   = "${var.name}-1"
+		vpc_id = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_security_group" "update" {
+		name   = "${var.name}-2"
+		vpc_id = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_kms_key" "default" {
+		description            = var.name
+		pending_window_in_days = 7
+		status                 = "Enabled"
+	}
+
+	resource "alicloud_kms_ciphertext" "default" {
+		key_id    = alicloud_kms_key.default.id
+		plaintext = "YourPassword_kms1"
+		encryption_context = {
+			kv = "1"
+		}
+	}
+
+	resource "alicloud_kms_ciphertext" "update" {
+		key_id    = alicloud_kms_key.default.id
+		plaintext = "YourPassword_kms2"
+		encryption_context = {
+			kv = "2"
+		}
+	}
+	`, name)
 }
