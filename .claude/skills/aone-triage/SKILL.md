@@ -62,7 +62,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | **528766** tf_provider | Terraform Provider 内部研发(通常由客户主单派生的关联单) | 无独立 reference;跟 tf_customer 主单同域 |
 | **2124589** mcp_server | 自家应用交付(Agent门户/AgentRuntime/aliyun-automation-agent/PlayGround) | `references/delivery-aliyun-automation-agent.md` |
 | cwd 在 cloudspec repo 或诉求涉 cloudspec / OpenAPI MCP Server | 自家应用交付(cloudspec) | `references/delivery-cloudspec.md` |
-| **2165097** upstream.cloudspec_gap | 上游 Cloudspec 需求池(谜拟) | 提单 only,submit_only |
+| **2165097** upstream.cloudspec_gap | 谜拟主池:上游 Cloudspec 需求 + tf_customer 分支 E 谜拟关联单 | submit_only(建单 + @谜拟,不 claim) |
 | 其它 | 无 domain reference → 走本文件通用流程 | — |
 
 **判断规则**:先看 `space` 命中 池,再看 `涉及云产品` / 标题 / cwd 辅助定位。有 domain reference 就**加载并跟随**它的决策树;无 reference 走本文件下方通用查证。
