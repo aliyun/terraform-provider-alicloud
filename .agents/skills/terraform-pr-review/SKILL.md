@@ -75,4 +75,5 @@ bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicl
 - PR 评论要求“可用 Example”时,先在本地用 PR provider 包/override 验证 `terraform init/validate`。示例必须含 `required_providers`,跨账号资源用 aliased providers;AK/SK 只通过 `sensitive` 变量或环境变量传入,禁止写真实值。
 - 跨账号 AccTest 不只看 `TF_ACC`:先隔离 ambient `ALICLOUD_ACCESS_KEY`/`ALICLOUD_SECRET_KEY`,再显式检查 `ALICLOUD_ACCESS_KEY_1/2` 解析到的账号是否符合预期。测试前置清理只用于清历史脏关系,不能替代 provider Delete;若 CLI/API 能清理关系,资源 Delete 也应实现同等删除并校验幂等。
 - CI 失败诊断必须按失败 check 的 job id 拉日志:先 `gh pr checks --json name,link,state,bucket,workflow`,从失败项 URL 拿 run/job,再用 `gh run view <run_id> --job <job_id> --log`;同一个 workflow 里的其它 job 日志不能替代失败 job。
+- **`TestingCoverageRate` 红时不许简单定性"存量必挂/非阻塞"**:该检查按被改资源全量 schema 三层核验(must-set 100% / ignore 数组合法 / modify 覆盖)。评审/修复都按 provider-resource-dev SKILL 步骤 7.5「TestingCoverageRate CI 门」执行——能真实补的补(含 create-only 无 import step 的属性覆盖 test 解法),明确补不了的逐属性在关联工单说明原因,禁占位值凑覆盖。本地复现:`go run scripts/testing/testing_coverage_rate_check.go -resource=alicloud_<name>`。
 - Terraform Provider PR 的 Jarvis 内部研发动作要单独落内部 Aone:PR 评审/CI/AccTest/skill 沉淀默认进 `tf_provider`(528766)或对应 Jarvis/API 工具内部池;禁止同步到 tf_customer 客户池,除非用户明确要求同步客户主单关键节点。

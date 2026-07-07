@@ -40,6 +40,15 @@ description: Use when DEVELOPING, DIAGNOSING, or FIXING an alicloud Terraform pr
    - 若是概率事件(如服务端锁冲突、限流),可用同一 Config 里 declare N 个 resource 让 Terraform 并发 apply 触发。参照本 PR 9916 `TestAccAliCloudESARoutineRoute_lockRetry` 模式:同一 SiteId+RoutineName 下起 N 个 route,未打 patch 会 LockFailed 挂;打 patch 后 apply/destroy 全过。
    - 真无法测(需实体网关/外部依赖/无稳定复现路径)才允许豁免:在 PR body 明写"无法用例复现:<原因>",并列出替代验证(同类资源对比 / 静态查证 / manual repro log)。审阅人可拒。
 7. **验收** — 真实 AccTest 优先用 `invoke-terraform-acc-test-remote` 走 ACube/FC 远程执行,避免长时间占用本机;本地只跑 `go test ./alicloud -run '^$'`、小单测、lint、示例 `terraform validate` 等轻量检查。远程 AccTest 过 create+update+import 才算数(**修复模式**至少要过 6.5 补的回归用例 + 原有主用例);跨账号/企业账号资源要隔离 ambient `ALICLOUD_ACCESS_KEY`/`ALICLOUD_SECRET_KEY`,显式声明测试需要的多把 AK 环境变量,并用 STS/CLI 验证每把 AK 的 caller account,但任何文档/评论/示例都不能泄露真实 AK/SK。
+7.5. **TestingCoverageRate CI 门(改既有资源必过)** — PR 动了 `alicloud/resource_alicloud_<name>.go` 或其 `_test.go`,CI 就按**该资源全量 schema** 跑 `scripts/testing/testing_coverage_rate_check.go`;本地先复现:`go run scripts/testing/testing_coverage_rate_check.go -resource=alicloud_<name>`。三层检查全过才绿:
+   - ① **must-set**:每个 active `Optional/Required` 属性(仅豁免 `dry_run`/`Deprecated`/`Removed`)至少在一个 test 的 config map 出现;
+   - ② **ignore 合法**:`ForceNew` 属性禁入 `ImportStateVerifyIgnore`;数组禁含非 active-schema 项(拼错遗留常见)。**数组通常在文件内所有带 import 的 test 重复出现,改必须全改**(工具取全文件并集);
+   - ③ **modify**:非 ForceNew 可修改属性需在 step 间取过不同值;已在 ignore 数组或文档标注 immutable 的豁免。
+   缺口处理次序(**禁占位值/空串凑覆盖**,对齐 CI 失败禁绕过纪律):
+   - 能真实测的补真实 test;下发型/ForceNew/无回填属性集中放一个 **create-only、无 import step** 的属性覆盖 test(化解「ForceNew 禁入 ignore」vs「set 后 import verify 必 diff」的死锁);
+   - 无回填的非 ForceNew 属性(如公网 `port`)加 ignore 数组——import 本就无法 verify,语义正当,顺带豁免 modify;
+   - 常用真实化手段:`kms_encrypted_password` → `alicloud_kms_ciphertext` 真密文(先例 `resource_alicloud_rds_account_test.go`);`coupon_no` → 官方"不用券"占位值 `youhuiquan_promotion_option_id_for_blank`;`private_ip` → dependence 自建 vpc/vswitch 固定 cidr;`capacity` → 取与 `instance_class` 规格一致值;企业版特性(如 TDE)→ 扩展既有 amber/企业版规格 test;
+   - **明确补不了的**(需外部前置:真实备份/专属集群/既有全球实例等)**不硬凑**,在关联工单逐属性列明原因(区分「不可测」与「可补但需扩 scope,建议 follow-up」),PR 里给 maintainer 一段简短英文说明。
 8. **PR** — 提交走 `bootstrap/github-identity.sh commit -m "..."`(而非裸 `git commit`)→ `bootstrap/github-identity.sh check` → `bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud HEAD <branch>` → `bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicloud --head api-tool-agent:<branch>`;带 resource+test+service+provider注册+website 文档;无 AI 署名。缺 `JARVIS_GITHUB_TOKEN` 或登录名不是 `api-tool-agent` 时阻断并升级,禁止回退个人账号或 ambient git 凭据。
    - **commit 作者硬门(CLA)**:CLA-assistant 按 **commit 作者邮箱**核验,不是 push token 也不是 PR opener。裸 `git commit` 会用本地默认身份(如 `jarvis@jarvis.local`)→ `license/cla` 必挂。子代理提交一律走 `github-identity.sh commit`(自动署名 `api-tool-agent <cloudspec_bot@alibaba-inc.com>`);已用裸 commit 的用 `bootstrap/github-identity.sh commit --amend --no-edit` 重署名后再 force-push。`push` 会对 tip 作者不符时 WARN。参见 `escalation/cap-github-commit-identity.md`。
 
