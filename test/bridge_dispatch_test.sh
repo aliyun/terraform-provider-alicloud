@@ -1218,6 +1218,45 @@ class BacklogDrainTest(unittest.TestCase):
         self.assertEqual([iid for iid, _ in got], ["older"], "same priority → earlier gmtCreate first")
 
 
+class TataSessionIdTest(unittest.TestCase):
+    """Regression: Tata 会话 id 必须是合法 UUID(而非 staffId)。
+
+    一次性冷起模式(默认 JARVIS_TATA_RESIDENT unset → pool None)下，claude CLI 对
+    --session-id/--resume 强校验；曾直传 staffId → "Invalid session ID. Must be a
+    valid UUID." 门面整条 Tata 链报错。见 _tata_session()。"""
+
+    def _handler(self):
+        os.environ.pop("JARVIS_TATA_RESIDENT", None)  # 默认一次性冷起 → pool None
+        h = b.JarvisHandler(no_dingtalk=True)
+        self.assertIsNone(h.pool, "test 依赖一次性冷起模式(pool None)")
+        return h
+
+    def test_session_id_is_uuid_not_staffid(self):
+        import uuid as _uuid
+        h = self._handler()
+        staff = "320687"
+        sid, resume = h._tata_session(staff)
+        _uuid.UUID(sid)  # 非法 UUID 会抛 → 失败
+        self.assertNotEqual(sid, staff, "session id 不能是 staffId")
+        self.assertFalse(resume, "首轮应 --session-id 建会话, 非 --resume")
+
+    def test_session_stable_and_resumes_after_first_turn(self):
+        h = self._handler()
+        staff = "320687"
+        sid1, r1 = h._tata_session(staff)
+        sid2, r2 = h._tata_session(staff)
+        self.assertEqual(sid1, sid2, "同 staff 会话 id 需稳定(续聊)")
+        self.assertFalse(r1, "首轮 session")
+        self.assertTrue(r2, "后续轮 resume")
+
+    def test_distinct_staff_distinct_session(self):
+        h = self._handler()
+        sid_a, _ = h._tata_session("111")
+        sid_b, r_b = h._tata_session("222")
+        self.assertNotEqual(sid_a, sid_b, "不同 staff 会话隔离")
+        self.assertFalse(r_b, "新 staff 首轮 session")
+
+
 def _run():
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
