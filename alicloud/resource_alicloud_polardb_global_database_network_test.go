@@ -131,9 +131,9 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -188,28 +188,23 @@ data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
 }
 
+data "alicloud_polardb_zones" "default" {}
+
 resource "alicloud_vpc" "default" {
 	vpc_name = var.name
 }
-	
+
 resource "alicloud_vswitch" "default" {
-	zone_id = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+	zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 	vpc_id = alicloud_vpc.default.id
 	cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
-}
-
-data "alicloud_polardb_node_classes" "default" {
-	pay_type   = "PostPaid"
-	db_type    = "MySQL"
-	db_version = "8.0"
-	category   = "Normal"
 }
 
 resource "alicloud_polardb_cluster" "default" {
 	db_type       = "MySQL"
 	db_version    = "8.0"
 	pay_type      = "PostPaid"
-	db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.2.db_node_class
+	db_node_class = "polar.mysql.x4.medium"
 	vswitch_id    = alicloud_vswitch.default.id
 	description   = "${var.name}"
 }
