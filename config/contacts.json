@@ -1,5 +1,5 @@
 {
-  "_desc": "API 工具团队联系人花名表：姓名/花名/工号。建单时解析指派(assignee)/抄送(tracker)/参与者(participant)。花名为 '-' 表示该成员无花名(外包/工号 WB 前缀)。",
+  "_desc": "API 工具团队联系人花名表：姓名/花名/工号。建单时解析指派(assignee)/抄送(tracker)/参与者(participant)。花名为 null 表示该成员无花名(外包/工号 WB 前缀)。id 为 WORKER_ 前缀=agent/机器人身份。注意：bridge _load_human_operators 仅将 jarvis 自身(open-jarvis)排除出「人工介入门」白名单(否则其收尾动作触发 idle 单自我重派)；其它 agent(如 镇元agent)仍算人工介入。",
   "contacts": [
     {"name": "逄磊",   "flower": "马裘",   "id": "404709"},
     {"name": "徐文平", "flower": null,     "id": "WB01146046"},
@@ -21,6 +21,7 @@
     {"name": "杜亚男", "flower": "南禾",   "id": "257646"},
     {"name": "郭子龙", "flower": "过载",   "id": "484483"},
     {"name": "靳滢",   "flower": "夏节",   "id": "401498"},
-    {"name": "镇元agent", "flower": null,  "id": "WORKER_1783326253279"}
+    {"name": "镇元agent", "flower": null,  "id": "WORKER_1783326253279"},
+    {"name": "open-jarvis", "flower": null, "id": "WORKER_1782379562571"}
   ]
 }

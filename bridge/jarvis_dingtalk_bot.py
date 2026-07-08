@@ -346,6 +346,11 @@ def broadcast_type():
 # Aone 终态状态集合：处于这些状态的工单已闭环，扫描到也不再派实例。
 TERMINAL_STATUSES = {"已发布", "已取消", "已完成", "已关闭", "已解决", "Fixed", "已发布待需求方验收"}
 
+# jarvis 自身身份标识(activity operator 可能显示为 worker id / 域账号 / 花名)。用于把**自身**
+# 排除出「人工介入门」白名单——jarvis 收尾打 idle 标签是它自己的 activity，若算人工介入会导致
+# idle 单自我无限重派。静态维护(不动态查 whoami)；jarvis 换身份时同步更新此集合。
+JARVIS_SELF_IDS = {"WORKER_1782379562571", "open-jarvis", "open_jarvis@alibaba-inc.com"}
+
 
 def _tagset(item):
     """Normalize an item's ``tag`` field (list | comma-string | None) to a set of strings."""
@@ -765,16 +770,21 @@ class ScanScheduler:
 
     def _load_human_operators(self):
         """从 config/contacts.json 动态加载人类操作者白名单(name+flower+id)。
-        文件不存在/解析失败 → 返回空集(保守:无白名单=所有人都不算人工介入,不误派)。"""
+        文件不存在/解析失败 → 返回空集(保守:无白名单=所有人都不算人工介入,不误派)。
+        **仅排除 jarvis 自身身份**(JARVIS_SELF_IDS)——否则 jarvis 收尾打 idle 标签这条
+        自己的 activity 会被判「人工介入」→ idle 单自我无限重派。其它 agent(如 镇元agent)
+        仍算人工介入:其评论会正常触发重派。"""
+        self_ids = JARVIS_SELF_IDS
         try:
             cfg = Path(REPO_ROOT) / "config" / "contacts.json"
             data = json.loads(cfg.read_text())
             ops = set()
             for c in data.get("contacts", []):
-                for field in ("name", "flower", "id"):
-                    v = (c.get(field) or "").strip()
-                    if v:
-                        ops.add(v)
+                fields = {(c.get(f) or "").strip() for f in ("name", "flower", "id")}
+                fields.discard("")
+                if fields & self_ids:
+                    continue  # 命中 jarvis 自身 → 整条排除出人工门
+                ops |= fields
             return ops
         except Exception:  # noqa: BLE001
             return set()
