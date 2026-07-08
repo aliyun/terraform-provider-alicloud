@@ -45,6 +45,11 @@ Env:
                                            那轮不消化; 24h 去重台账 + claim 打标防重派。
   JARVIS_DISPATCH_MAX                      max concurrent headless dispatch workers (default 3).
   JARVIS_BACKLOG_MAX_SLOTS                 max slots backlog drain may occupy per tick (default 1).
+  JARVIS_BACKLOG_ANY_ASSIGNEE             1=空闲槽放开指派人限制: backlog drain 从「全池任何人的
+                                           开放单」挑(另跑 any-assignee 全池扫描, 落独立 scan-any.json,
+                                           30min TTL); 默认 0=仅 jarvis worker 指派的单。**仅**影响空闲
+                                           槽——新单/更新单派发始终守 jarvis 指派。注意: 开启后会 headless
+                                           claim/处理指派给他人的工单。
   JARVIS_DISPATCH_QUEUE_MAX                pending queue depth beyond the concurrency cap
                                            before new dispatches are dropped (default 20).
   JARVIS_DISPATCH_DEDUP_TTL                soft-dedup window in seconds: same id not re-dispatched
@@ -740,6 +745,9 @@ class ScanScheduler:
         # 空闲机会式消化积压(默认开)：无新单/更新单且池有空闲运行槽的 tick，涓流派发从未被
         # jarvis 碰过的积压单填满空闲槽；新单永远优先。JARVIS_BACKLOG_DRAIN=0 恢复纯新单派发。
         self.backlog_drain = os.environ.get("JARVIS_BACKLOG_DRAIN", "1") != "0"
+        # 空闲槽放开指派人(默认关，保守+可逆)：开时 backlog drain 从「全池任何人的开放单」里挑，
+        # 而非仅 jarvis worker 指派的单；新单/更新单派发不受影响。JARVIS_BACKLOG_ANY_ASSIGNEE=1 开启。
+        self.backlog_any_assignee = os.environ.get("JARVIS_BACKLOG_ANY_ASSIGNEE", "0") == "1"
 
     def _load_human_operators(self):
         """从 config/contacts.json 动态加载人类操作者白名单(name+flower+id)。
@@ -777,12 +785,22 @@ class ScanScheduler:
 
     # -- scan + decide (pure-ish, unit-testable) -----------------------------
 
-    def _scan(self):
-        """Run scan.sh --force → list of item dicts, or None on any failure."""
-        cmd = [str(REPO_ROOT / "bootstrap" / "scan.sh"), "--force"]
+    def _scan(self, any_assignee=False):
+        """Run scan.sh → list of item dicts, or None on any failure.
+
+        any_assignee=True: 不限关注人扫全池(JARVIS_SCAN_ANY_ASSIGNEE=1)，供空闲槽 backlog drain
+        消化「指派给任何人」的开放积压。落独立 scan-any.json 缓存、**不带 --force**——靠 30min TTL
+        兜住频次(空闲 tick 每次都全池扫太重)，且绝不污染主 scan.json(新单/更新单检测仍守 jarvis 指派)。
+        """
+        cmd = [str(REPO_ROOT / "bootstrap" / "scan.sh")]
+        if not any_assignee:
+            cmd.append("--force")
+        env = os.environ.copy()
+        if any_assignee:
+            env["JARVIS_SCAN_ANY_ASSIGNEE"] = "1"
         try:
             result = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True,
-                                    text=True, timeout=120)
+                                    text=True, timeout=120, env=env)
         except Exception as e:  # noqa: BLE001
             log.warning("scan.sh invocation failed: %s", e)
             return None
@@ -1229,6 +1247,12 @@ class ScanScheduler:
             return
         backlog_cap = int(os.environ.get("JARVIS_BACKLOG_MAX_SLOTS", "1"))
         free = min(free, backlog_cap)
+        # 空闲槽放开指派人：另跑一次 any-assignee 全池扫描(独立 scan-any.json 缓存)作为候选源，
+        # 让 backlog 覆盖「指派给任何人」的开放单；失败/为空则退回 jarvis 指派的 snapshot(不放大故障面)。
+        if self.backlog_any_assignee:
+            wide = self._scan(any_assignee=True)
+            if wide:
+                snapshot = {str(it["id"]): it for it in wide if it.get("id")}
         backlog = [it for it in snapshot.values() if self._is_backlog(it)]
         if not backlog:
             return

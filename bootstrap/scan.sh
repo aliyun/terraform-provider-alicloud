@@ -22,6 +22,10 @@ A1="${JARVIS_A1:-$jarvis_root/bin/a1id --}"
 # 30min TTL gate: serve cached scan.json if younger than TTL, unless --force (or JARVIS_SCAN_TTL=0).
 # 走 cache.sh age 消除内嵌 stat -f %m/-c %Y 跨平台重实现(P1.d)。
 out_f="$jarvis_root/.my-day/scan.json"
+# JARVIS_SCAN_ANY_ASSIGNEE=1 → 不限关注人扫全池(供空闲槽 backlog drain 用)。落**独立**缓存
+# scan-any.json，绝不写主 scan.json——否则全员单会污染主快照，让 ScanScheduler 把「指派给别人的
+# 新单」误判成新单去自动派发(方案只放开空闲槽，新单/更新单仍守 jarvis 指派)。
+[ "${JARVIS_SCAN_ANY_ASSIGNEE:-0}" = 1 ] && out_f="$jarvis_root/.my-day/scan-any.json"
 ttl="${JARVIS_SCAN_TTL:-1800}"   # 30min
 [ "${1:-}" = "--force" ] && ttl=0
 if [ "$ttl" -gt 0 ] && [ -s "$out_f" ]; then
@@ -94,6 +98,8 @@ if $has_pools; then
   fetch_pool() {  # args: key project status_csv title_csv assignee_spec → prints transformed JSON array
     local pool_key="$1" pool_project="$2" exclude_status="$3" exclude_title="$4" assignee_spec="$5"
     local filter="" pat pool_out="[]" cat page pg n _rc asg_flag=""
+    # JARVIS_SCAN_ANY_ASSIGNEE=1 → 无视 pools.json 逐池 assignee，一律扫全池(不限关注人)。
+    [ "${JARVIS_SCAN_ANY_ASSIGNEE:-0}" = 1 ] && assignee_spec=__ANY__
     # 关注人过滤(per-pool assignee, config/pools.json)——三态语义:
     #   __ANY__     ("assignee":"any") → 不限关注人,扫全池(不带 --assignee,无 assignedTo 子句)
     #   __GLOBAL__  (池未配 assignee)  → 回退全局 $scan_assignee,经 --assignee 传(保持旧行为)
