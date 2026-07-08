@@ -189,12 +189,54 @@ def tata_root():
     return p
 
 
+def _probe_settings(path, timeout=5):
+    """探活一个 settings 档：文件存在 + 拿档里 env(BASE_URL/MODEL/AUTH_TOKEN) 向
+    /v1/messages 发 1-token 请求，timeout 内 2xx 才算健康。语义对齐 ~/.zshrc _claude_probe。
+    返回 True=健康 / False=不健康(缺文件/超时/非 2xx/档格式坏)。"""
+    if not os.path.isfile(path):
+        return False
+    try:
+        env = json.load(open(path))["env"]
+        url = env["ANTHROPIC_BASE_URL"].rstrip("/") + "/v1/messages"
+        body = json.dumps({
+            "model": env["ANTHROPIC_MODEL"].split("[")[0],
+            "max_tokens": 1,
+            "messages": [{"role": "user", "content": "."}],
+        }).encode()
+        req = Request(url, data=body, headers={
+            "authorization": "Bearer " + env["ANTHROPIC_AUTH_TOKEN"],
+            "anthropic-version": "2023-06-01",
+            "user-agent": "claude-cli/1.0",
+            "content-type": "application/json",
+        })
+        with urlopen(req, timeout=timeout) as r:
+            return r.status // 100 == 2
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _resolve_settings(chain):
+    """把一个逗号分隔的 failover 档链（主,备,...）解析成一个可用的 settings 档路径。
+    ~ 展开；逐档 _probe_settings 取第一个健康的；全挂则退回最后一档（起码传个东西给
+    --settings，让 claude 自己报错而不是把整串当文件名）。单档不探活（零延迟，行为同旧版）。"""
+    cands = [os.path.expanduser(c.strip()) for c in chain.split(",") if c.strip()]
+    if not cands:
+        return chain
+    if len(cands) == 1:
+        return cands[0]
+    for c in cands:
+        if _probe_settings(c):
+            return c
+    return cands[-1]
+
+
 def tata_cmd():
     """Tata 基命令 = idea = claude --settings idea_settings.json（走 idealab 网关，
-    自带 token，与主账号隔离）。JARVIS_TATA_SETTINGS 可覆盖设置档路径。"""
-    settings = os.environ.get("JARVIS_TATA_SETTINGS") or str(
+    自带 token，与主账号隔离）。JARVIS_TATA_SETTINGS 可覆盖设置档路径，
+    支持逗号分隔 failover 档链（主,备）：主档探活失败自动顶到备档。"""
+    raw = os.environ.get("JARVIS_TATA_SETTINGS") or str(
         Path.home() / ".claude" / "idea_settings.json")
-    return [claude_bin(), "--settings", settings]
+    return [claude_bin(), "--settings", _resolve_settings(raw)]
 
 
 def tata_resident_enabled():
@@ -205,10 +247,12 @@ def tata_resident_enabled():
 def jarvis_cmd(session_id=None):
     """Jarvis 基命令 = claude --settings idea_settings.json（走 idealab 网关）。JARVIS_CC 可覆盖完整命令。
 
-    JARVIS_SETTINGS 支持冒号分隔多档（摊额度/token）。多档时按 session_id 做**确定性**
-    取档（sticky-random）：不同工单落不同档天然摊负载，但同一工单建会话轮与 --resume 轮
-    必落同一档——否则 resume 会串到别的网关/token，claude --resume 直接失败。
-    单值时行为与旧版一致；缺 session_id（无从粘）退回第一档。"""
+    JARVIS_SETTINGS 支持两级组合、正交：
+    - **冒号 `:` = 摊额度池**：多档时按 session_id 做**确定性**取档（sticky-random）——
+      不同工单落不同档天然摊负载，但同一工单建会话轮与 --resume 轮必落同一档，否则
+      resume 会串到别的网关/token，claude --resume 直接失败。
+    - **逗号 `,` = failover 档链**：池内选中的那一档可再写成「主,备」，主档探活失败自动顶到备档。
+    单档时行为与旧版一致（不探活、零延迟）；缺 session_id（无从粘）退回第一档。"""
     cc = os.environ.get("JARVIS_CC")
     if cc:
         return [cc]
@@ -217,10 +261,10 @@ def jarvis_cmd(session_id=None):
     pool = [s.strip() for s in raw.split(":") if s.strip()]
     if len(pool) > 1 and session_id:
         idx = int(hashlib.md5(session_id.encode()).hexdigest(), 16) % len(pool)
-        settings = pool[idx]
+        member = pool[idx]
     else:
-        settings = pool[0]
-    return [claude_bin(), "--settings", settings]
+        member = pool[0]
+    return [claude_bin(), "--settings", _resolve_settings(member)]
 
 
 AT_BOT_PREFIX = re.compile(r"^\s*@\S+\s*")
