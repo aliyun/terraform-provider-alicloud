@@ -164,10 +164,45 @@ python3 {SKILL_DIR}/scripts/acctest.py logs --task-id <taskId> --download-dir ./
 | ACube `status` | FC `fcStatus` | 含义 |
 |---|---|---|
 | `processing` | `Enqueued` / `Running` / `Retrying` | 仍在运行 |
-| `success` | `Succeeded` | AccTest 通过 |
+| `success` | `Succeeded` | runner 未 FAIL；真 PASS/SKIP 需读 run.log 才能区分（见「SKIP ≠ PASS」小节） |
 | `failed` | `Succeeded` | FC 正常结束，但测试失败；看 `tf-debug.log` |
 | `failed` | `Failed` / `Stopped` | FC 实例异常或被取消；看 `fcInvocationErrorMessage` |
 | `failed` | `Expired` | FC 排队过期；检查配额或重试 |
+
+### SKIP ≠ PASS —— runner "success" 判定的陷阱
+
+远程 runner 把 `--- SKIP: X (0.00s)` 也判成 `success`（"非 FAIL" 即绿），JSON 里的 `最终测试状态: passed` 和 `testStatus: "passed"` 都是 **"没跑失败"** 的意思，不是 **"验证过"**。看到 `status=success` 就以为绿了 → 用例可能连一个 API 包都没发出去。
+
+**每次 upload-run 拿到终态后必做**：从 run.log 读真实的 case 结果，别只看顶层 status：
+
+```bash
+grep -E "^\s*--- (PASS|FAIL|SKIP):" acctest_logs/<taskId>_run.log
+# 或找 "统计: PASS=x FAIL=y SKIP=z" 那行
+```
+
+- `PASS` → 真验证过
+- `SKIP` → **没验证**，别当绿；进入下方排查链
+- `FAIL` → 挂了
+
+#### SKIP → PASS 的排查链
+
+SKIP 通常来自 `testAccPreCheckWithXxx(t)` 门闩——读某 env var 不到就 `t.Skipf`。**修法不是删门闩**（gate 本身是设计出来兜"账号没这能力就别跑"的），而是**让门闩不必要**：
+
+1. `grep -n "func testAccPreCheckWith" alicloud/provider_test.go` 找到 gate 函数，看它读什么 env var / 检查什么条件；
+2. 全文 `grep -rn testAccPreCheckWithXxx alicloud/` 看**谁在用这个 gate**——常常只有 1-2 个 test；
+3. 反过来找**不调这个 gate 的兄弟资源 test**（如 `resource_alicloud_xxx_test.go`），看它的 test config HCL 怎么让所需功能真跑起来——**多半是资源 schema 里某个 `config` / `enable_xxx` 字段在 create 时就把能力开出来**；
+4. 把兄弟的 test config 模式抄到你的 test 里，preCheck 换成 `testAccPreCheckWithRegions` 之类通用门，原 gate 就不用调了。
+
+#### 实例：alikafka_sasl_acls datasource test（工单 83992418）
+
+- Gate `testAccPreCheckWithAlikafkaAclEnable` 要 `ALICLOUD_ALIKAFKA_ACL_ENABLE=true`，数年 SKIP，没人真跑过；
+- 兄弟 `resource_alicloud_alikafka_sasl_acl_test.go` 从不调它——它建实例时直接 `config = "{\"enable.acl\":\"true\"}"` 把 ACL 开出来，precheck 只 pin `cn-hangzhou`；
+- 抄兄弟的 config（serverless + `enable.acl` JSON）+ preCheck（region pin + basic）→ 测试真跑通（680s：create instance → sasl_user → sasl_acl → query datasource → destroy）；
+- **副产品**：真跑之后暴露了断言与 API 返回大小写不一致（`Topic`/`Write` 断言 vs API 返回 `TOPIC`/`WRITE`）——这类**只有真跑才能发现的差异**，是 SKIP 一直掩盖的老坑。
+
+#### 反模式：改 gate function 强行跑过 SKIP
+
+把 `testAccPreCheckWithXxx` 改成 no-op（`_ = os.Getenv(...)` 之类）只能**假装绕开 Go 侧 gate**，阿里云 API 侧真门（如 `BIZ_ACL_NOT_ENABLED`）会立刻把测试挂掉，而且引入的空调用还得清理。**正确路径永远是改 test config 让功能真能开出来**，不是改 gate。
 
 ## 6. 没有跑到用例
 
