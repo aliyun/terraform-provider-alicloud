@@ -62,7 +62,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | **528766** tf_provider | Terraform Provider 内部研发(通常由客户主单派生的关联单) | 无独立 reference;跟 tf_customer 主单同域 |
 | **2124589** mcp_server | 自家应用交付(Agent门户/AgentRuntime/aliyun-automation-agent/PlayGround) | `references/delivery-aliyun-automation-agent.md` |
 | cwd 在 cloudspec repo 或诉求涉 cloudspec / OpenAPI MCP Server | 自家应用交付(cloudspec) | `references/delivery-cloudspec.md` |
-| **2165097** upstream.cloudspec_gap | 谜拟主池:上游 Cloudspec 需求 + tf_customer 分支 E 谜拟关联单 | submit_only(建单 + @谜拟,不 claim) |
+| **2165097** upstream.cloudspec_gap | 镇元 agent 池:上游 Cloudspec 需求 + tf_customer 分支 E agent 关联单(谜拟做人类兜底 owner) | submit_only(建单 assignee=`WORKER_1783326253279` + body 必带 `## 机读信息` JSON,agent 自动接单,不 claim;详见 `references/templates.md` 硬契约) |
 | 其它 | 无 domain reference → 走本文件通用流程 | — |
 
 **判断规则**:先看 `space` 命中 池,再看 `涉及云产品` / 标题 / cwd 辅助定位。有 domain reference 就**加载并跟随**它的决策树;无 reference 走本文件下方通用查证。
@@ -112,18 +112,18 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | 动作 | 命令 |
 |---|---|
 | 回复评论 | 走 wrap.sh done(见 bookend;多行用 `--summary-stdin`/`--summary-file`),别单独 `a1 comment create`(会与 wrap 里的重复,a1 无 delete) |
-| 转需求(Cloudspec 缺口) | `bin/a1id -- project workitem create --project 2165097 --category req --assignee 479782 -m "<7 字段模板+机读 JSON,见 references/templates.md>"` |
+| 转需求(Cloudspec 缺口) | `bin/a1id -- project workitem create --project 2165097 --category req --assignee WORKER_1783326253279 --body-file <path>`;body **必须严格按** `references/templates.md` 的「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全);缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底(不指派谜拟 479782;她做人类兜底 owner 挂在源客户主单上) |
 | 建关联单(自家团队接手) | tf_customer 域走 `references/tf-customer-request-routing.md` 分工表 |
 | 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **调两次**(A→B, B→A) |
 | 状态更新 | `bin/a1id -- project workitem update <id> --status "<value>"` |
 | 更新详情(description) | `bin/a1id -- project workitem update <id> --body-file <path>`(单行小改可 `--body "<text>"`)。**何时必须**:重审/复核推翻了 description 里的根因或方案、方案实施与描述已相左、验收证伪原描述——评论只是过程审计追加在尾部,新读者第一眼看的是详情,详情停在已否决结论=持续误导接手者。重写时开头加一行 `> ⚠️ 本 description 于 <date> 重写:<被否决的旧结论一句话>,演进见评论区`,保住审计链。**边界**:仅限我方创建/维护的工单(tf_provider 关联单/研发单/probe 单);客户主单 description 是客户原声,禁改 |
 | 字段必填缺失 | `bin/a1id -- project workitem field options <field> --project <id>` 查枚举补 `--cfs` |
 | GitHub PR/评论/推分支(Jarvis 身份) | 必须先 `bootstrap/github-identity.sh check`;`gh` 走 `bootstrap/github-identity.sh gh ...`;推分支 `bootstrap/github-identity.sh push`;账号必须 `api-tool-agent`;PR head 必须 `api-tool-agent:<branch>` |
-| **钉钉私信**(所有实质动作补充通知) | `bash bootstrap/notify-dingtalk.sh <staffId> "<title>" "<body>"`;jarvis 做实质动作就私信相关方——转单/补建关联单/分支 F 上游缺口→承接方或提单人;模板 D/F/E→提单人+承接方;仅"观察等待<30 天"不发。缺凭据/`JARVIS_NOTIFY_DINGTALK=0`/opt-out 均静默降级不阻断。详见 `references/tf-customer-request-routing.md` §"钉钉私信 · 通用调用姿势" |
+| **钉钉私信**(所有实质动作补充通知) | `bash bootstrap/notify-dingtalk.sh <staffId> "<title>" "<body>"`;jarvis 做实质动作就私信相关方——转单/补建关联单/分支 F 上游缺口→承接方或提单人;模板 D/F/E→提单人+承接方;仅"观察等待<30 天"不发。**agent 承接方一律用人类 owner 顶替**:凡承接方是镇元 agent(`WORKER_1783326253279`)——`WORKER_` 前缀无 IM 通道,`notify-dingtalk.sh` 传该 id 会 400/静默——分支 E 一律改私信谜拟(479782,agent 归她维护);紧急双单再加私信新山(521957)。缺凭据/`JARVIS_NOTIFY_DINGTALK=0`/opt-out 均静默降级不阻断。详见 `references/tf-customer-request-routing.md` §"钉钉私信 · 通用调用姿势" |
 
 ### 转单/建关联单 body 内容原则
 
-给他人写关联单 body(尤其转出的分支 D-新山 / D-谜拟 / G-新山 / H-夏节 等**非过载承接**)时,body 是承接方唯一的**决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问。规则:
+给他人写关联单 body(尤其转出的分支 D-新山 / E-镇元 agent / G-新山 / H-夏节 等**非过载承接**)时,body 是承接方唯一的**决策依据**,jarvis 给的信息完备度决定承接方能否直接拍板还是回来反复问(**分支 E 镇元 agent 走机读契约,body 完备度直接决定 agent 能否接单,详见 references/templates.md**)。规则:
 
 - **多方案覆盖**:分析出根因后,不要只写"我倾向"的单一方案;至少列 3-4 种可行方案(**代码修复 / 只改文档 / 代码+文档双改 / 客户 workaround** 是常见 4 种),给对比表(改动量/兼容性/长期语义/优缺点),jarvis 明说自己倾向哪个 + 依赖对方哪个信息拍板(如"取决于产品长期路线图")。
 - **根因定位含完整代码引用**:引用具体文件:行号(如 `alicloud/provider.go:2273-2286`)+ 完整代码片段(不是省略号或概括)+ 一句话解释每处做什么。承接方一眼能顺着行号跳读,不用自己 grep。
@@ -163,7 +163,7 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 - Aone 评论说明「MR 已提交待合并验收,链接: <PR_URL>」
 - `claim.sh finish` 内置了硬闸门(退码 2),即使遗漏也会拦截
 
-**关联单 claim 规则**:指派给过载(484483)的关联单,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人(谜拟/新山/临钧等)或 Cloudspec(2165097)池的关联单不 claim,建单 + @ 即可,不 touch 标签。
+**关联单 claim 规则**:指派给过载(484483)的关联单,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人(新山/临钧等)或 Cloudspec(2165097)池的关联单(镇元 agent 接单)不 claim,建单 + @ 即可,不 touch 标签。
 
 ## 自己交付(改自家应用)
 
@@ -197,7 +197,9 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 ## 反模式
 
 - ❌ 读单只看标题不读 description 末段"限制/差异/仍需" —— 常藏真实诉求(memory `read-description-last-paragraph`)
-- ❌ Terraform 相关工单不加载 `references/tf-customer-request-routing.md` —— 会漏专属维护名单直接被路由到过载/谜拟
+- ❌ Terraform 相关工单不加载 `references/tf-customer-request-routing.md` —— 会漏专属维护名单直接被路由到过载/新山/镇元 agent
+- ❌ 建 2165097 池 Cloudspec 关联单 body 缺 `## 机读信息` + JSON 段 —— 镇元 agent 靠机读契约驱动 spec/映射/覆盖度动作,marker/字段/JSON 缺任何一项都接不了单,单沉底(2165097 池又不在 jarvis 视检范围,会长期烂在里面);正确姿势严格按 `references/templates.md` 「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架
+- ❌ 分支 E 关联单 assignee 写谜拟 479782 —— 谜拟已不解单(2026-07-08 切换到镇元 agent),关联单硬指派 `WORKER_1783326253279`;写 479782 = 落回人手不再走 agent 自动化(谜拟保留在**源客户主单** assignee 上做人类兜底 owner)
 - ❌ 用 next.api 网页 curl 拿 API meta —— SPA 拿不到 JSON,用 `aliyun <product> <Action> --help` 或 MCP `ListApis/GetApiDefinition`
 - ❌ 写操作跳过用户授权(supervised 模式) —— 每一步 comment/create/relation/status 都先给草稿等 yes
 - ❌ 用 wrap.sh done 之前先手动 `a1 comment create` —— 重复评论且 a1 无 delete
