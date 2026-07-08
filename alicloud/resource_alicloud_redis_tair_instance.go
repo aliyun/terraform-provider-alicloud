@@ -204,6 +204,16 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"security_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if old != "" && new != "" && old != new {
+						oldParts := strings.Split(old, ",")
+						sort.Strings(oldParts)
+						newParts := strings.Split(new, ",")
+						sort.Strings(newParts)
+						return reflect.DeepEqual(newParts, oldParts)
+					}
+					return false
+				},
 			},
 			"security_ip_group_name": {
 				Type:     schema.TypeString,
