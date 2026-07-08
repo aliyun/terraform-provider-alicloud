@@ -1,4 +1,9 @@
 ## 1.285.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- data-source/alicloud_alikafka_sasl_acls: Added the field id.
+
 ## 1.284.0 (July 2, 2026)
 
 - **New Resource:** `alicloud_resource_manager_handshake_acceptance` ([#9907](https://github.com/aliyun/terraform-provider-alicloud/issues/9907))
