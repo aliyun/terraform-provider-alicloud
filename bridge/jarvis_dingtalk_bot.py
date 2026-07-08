@@ -498,22 +498,32 @@ def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None):
 
 
 def run_tata_stream(text, session_id, resume):
-    """轻量 Tata 一轮：同 run_claude_stream，但 cwd=tata_root()（空目录，不吃
-    jarvis CLAUDE.md），附 --append-system-prompt 灌 Tata 人设。yield 累积文本。"""
+    """轻量 Tata 一轮：cwd=tata_root()（空目录，不吃 jarvis CLAUDE.md）。yield 累积文本。
+
+    首轮对话注入 Tata 人设——idealab 网关忽略 --append-system-prompt, 故走对话首轮
+    priming（对齐常驻 TataPool._spawn_primed）, 随 --session-id 持久化, resume 轮不重注。
+    必须带 tata_cmd() 的 --settings(idea 网关+隔离 token)——否则裸 claude 拿不到
+    ANTHROPIC_AUTH_TOKEN, 回退订阅(OAuth)鉴权, 组织禁用时报
+    "Your organization has disabled Claude subscription access"。对齐常驻 TataPool。"""
     timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
-    # 必须带 tata_cmd() 的 --settings(idea 网关+隔离 token)——否则裸 claude 拿不到
-    # ANTHROPIC_AUTH_TOKEN, 回退订阅(OAuth)鉴权, 组织禁用时报
-    # "Your organization has disabled Claude subscription access"。对齐常驻 TataPool。
-    cmd = tata_cmd() + ["-p", text, "--output-format", "stream-json",
-           "--include-partial-messages", "--verbose",
-           "--append-system-prompt", TATA_PROMPT]
+    cmd = tata_cmd() + ["--input-format", "stream-json", "--output-format", "stream-json",
+                        "--include-partial-messages", "--verbose"]
     cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
     deadline = time.time() + timeout
     p = subprocess.Popen(cmd, cwd=tata_root(), text=True,
+                         stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     saw_any = False
     try:
-        for acc in parse_stream_lines(p.stdout):
+        if not resume:
+            # 首轮 priming 注入 Tata 人设(随 --session-id 持久化, resume 轮不重注)
+            p.stdin.write(_tata_settings_round(TATA_PRIMING) + "\n")
+            p.stdin.flush()
+            for _ in parse_stream_lines(_one_round(p.stdout)):
+                pass
+        p.stdin.write(_tata_settings_round(text) + "\n")
+        p.stdin.flush()
+        for acc in parse_stream_lines(_one_round(p.stdout)):
             saw_any = True
             yield acc
             if time.time() > deadline:
@@ -528,6 +538,10 @@ def run_tata_stream(text, session_id, resume):
             pass
         yield "⚠️ 调用失败: %s" % e
         return
+    try:
+        p.stdin.close()   # 关 stdin, 进程收工退出
+    except Exception:  # noqa: BLE001
+        pass
     rc = p.wait()
     err = (p.stderr.read() if p.stderr else "") or ""
     if not saw_any:
