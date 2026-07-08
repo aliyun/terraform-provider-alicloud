@@ -28,9 +28,9 @@ func TestAccAliCloudPolarDbDatabase_basic11854(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -81,9 +81,9 @@ func TestAccAliCloudPolarDbDatabase_basic11854_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -125,26 +125,21 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_polardb_node_classes" "default" {
-  db_type    = "MySQL"
-  db_version = "8.0"
-  pay_type   = "PostPaid"
-  category   = "Normal"
-}
-
 data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
 }
 
+data "alicloud_polardb_zones" "default" {}
+
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+  zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 }
 
 resource "alicloud_polardb_cluster" "default" {
   db_type       = "MySQL"
   db_version    = "8.0"
-  db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+  db_node_class = "polar.mysql.x4.medium"
   pay_type      = "PostPaid"
   vswitch_id    = data.alicloud_vswitches.default.ids.0
 }
@@ -175,9 +170,9 @@ func TestAccAliCloudPolarDbDatabase_basic9535(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -230,9 +225,9 @@ func TestAccAliCloudPolarDbDatabase_basic9535_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
