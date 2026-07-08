@@ -229,6 +229,55 @@ Terraform 只是一个客户端资源编排工具,所有功能特性都基于云
 
 ## Step 3 — 执行路由动作(写操作,先授权)
 
+### 钉钉私信 · 通用调用姿势(所有实质动作)
+
+Aone 评论 + @花名(工号) 仍是**主通知渠道**;钉钉私信是**补充**,让承接方/提单人在 Aone 通知易被漏看时也能第一时间知道。**jarvis 做实质动作就私信相关方**:
+
+| 动作 | 私信对象 |
+|---|---|
+| **转单**(分支 A/B/C/D-新山/D-过载/D-临钧/E/G/H) | 承接方(新指派人) |
+| **分支 F 上游 API 缺口** | 提单人(阿里前线/PD) |
+| **补建关联单**(前次漏建) | 承接方(前次没关联单不知道) |
+| **模板 D 进度跟进**(≥30 天无实质进展) | 承接方(Aone 明显没在看,私信更有效) |
+| **模板 F 补料提醒** | 提单人 + 承接方(球回客户手里,承接方知会可歇) |
+| **模板 E 关单提示** | 提单人 + 最后处理人 |
+
+**不发**:观察等待(<30 天,承接方正在处理,不打搅)。
+
+提单人一定是**阿里前线/PD**(不是外部客户),内部账号可以私信。
+
+**调用**:
+
+```bash
+# 单行 body
+bash bootstrap/notify-dingtalk.sh <staffId> "<title>" "<body>"
+
+# 多行 body(推荐,避免 shell 转义)
+bash bootstrap/notify-dingtalk.sh <staffId> "<title>" --body-file /tmp/notify-<id>.txt
+# 或
+cat <<'EOF' | bash bootstrap/notify-dingtalk.sh <staffId> "<title>" --body-stdin
+第一行
+第二行
+EOF
+
+# dry-run(不实际发,打印骨架用来 debug 消息内容)
+bash bootstrap/notify-dingtalk.sh --dry-run <staffId> "<title>" "<body>"
+```
+
+**消息内容规范**——**只贴关键索引**,不复述 Aone 评论全文(双通道内容重复=噪声):
+- **一句结论**(接了什么/关了什么)
+- **分支说明**(为什么走到你名下,如"分支 D-过载·纯 datasource·非紧急")
+- **Aone 主单链接** `https://project.aone.alibaba-inc.com/v2/project/1086837/req/<主单ID>`
+- **关联单链接**(若有,如 tf_provider 关联单 528766 / 谜拟 2165097 / acube 自动建单)
+
+**失败降级**(`notify-dingtalk.sh` 自身兜住,不阻断 bookend):
+- 缺 `DINGTALK_APP_KEY/SECRET/TEMPLATE_ID` → stderr `[NOTIFY-SKIP: missing env]`,退 0
+- `JARVIS_NOTIFY_DINGTALK=0` → 全局关闭,退 0
+- staffId ∈ `config/dingtalk-optout.txt` → 个人 opt-out,退 0
+- 网络/API 失败 → 落 `escalation/notify-fail-<ts>-<staffId>.md`,退 0
+
+**staffId 假设**:阿里 empId(Aone 工号)= 钉钉 staffId,直接用 team-roster 里的工号即可。首次全量启用前先跑 dry-run 三人小样(仓库主人 + 过载 + 新山)确认能收到。
+
 ### 前置 Gate — 评论区/状态变化扫描
 
 Step 1 读单 → Step 2 查证期间存在**时间窗口**：原指派人(常被前线随机指派)或团队成员可能已回帖修复/贴 PR/接手。执行任何路由写操作**前**,必须 point-read 一次:
@@ -274,6 +323,12 @@ bin/a1id -- project workitem update <源工单ID> --assignee <工号>
 bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 # 3. 走 wrap.sh done 发模板 C 评论并 @负责人;bookend 内 claim → wrap done → release
 #    评论正文参见 Step 4 模板 C(不提关联单)
+# 4. 钉钉私信承接方(补充通知,失败不阻断)
+bash bootstrap/notify-dingtalk.sh <工号> \
+  "Aone 转单 · <产品中文名>" \
+  "分支 A · 专属维护名单
+主单: <一句诉求>
+链接: https://project.aone.alibaba-inc.com/v2/project/1086837/req/<源工单ID>"
 ```
 
 **为什么不建关联单**:专属维护名单本身表示"该产品 provider 由这个人独立维护、不走 tf_provider 共享池",研发在其自己团队/仓库内闭环,建 tf_provider 关联单是重复档案。若该产品出现"专人已推 PR / 已修复"的短路情形,按 Step 3 前置 Gate 短路即可,一样不建单。
@@ -337,8 +392,17 @@ NEW_ID=<新单 id>
 bin/a1id -- project workitem relation add <源工单ID> relate:$NEW_ID
 
 # 3. 源工单指派 + 状态(原单优先级 / DDL 保持不动)
+#    补建关联单场景(判定表"补建"行)跳过本步:前次已改 assignee/status,不重复改
 bin/a1id -- project workitem update <源工单ID> --assignee <工号>
 bin/a1id -- project workitem update <源工单ID> --status 问题解决中
+
+# 4. 钉钉私信承接方(补充通知,失败不阻断;分支 E 双单时两人各发一条;补建也发)
+bash bootstrap/notify-dingtalk.sh <工号> \
+  "Aone 转单 · <一句诉求>" \
+  "分支 <D-过载|D-新山|E-谜拟|E-新山> · <紧急度/纯 datasource/镇元 NOT OK 等>
+关联单: #$NEW_ID (<528766 tf_provider|2165097 镇元对接>)
+主单: https://project.aone.alibaba-inc.com/v2/project/1086837/req/<源工单ID>
+关联单: https://project.aone.alibaba-inc.com/v2/project/<528766|2165097>/req/\$NEW_ID"
 ```
 
 **分支 E · 紧急双关联单(谜拟 479782 + 新山 521957)**:与镇元相关且镇元 NOT OK 的单,谜拟的关联单**无论紧急与否都建**(镇元侧根因主责);若紧急(优先级=紧急 OR 距 DDL<14 天 OR 缺陷类型覆写),**再按同一脚本建第二张**关联单指派新山,两单并行。要点:
@@ -390,13 +454,32 @@ bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 
 **完整 bash 脚本(含 workId/workName 抓取、轮询、关联)、接口 URL/body 详情、环境说明** 见 [acube-createBuildTaskV2-workflow.md](./acube-createBuildTaskV2-workflow.md)。
 
+**钉钉私信临钧**(拿到 aoneId + 关联完成后追加,与其他分支一致):
+
+```bash
+bash bootstrap/notify-dingtalk.sh 429768 \
+  "Aone 转单 · <一句诉求,如 alicloud_xxx 新资源>" \
+  "分支 D-临钧 · 生成器产出
+关联单: #\$AONE_ID (528766 tf_provider,acube V2 自动建)
+taskId: <acube taskId>
+主单: https://project.aone.alibaba-inc.com/v2/project/1086837/req/<源工单ID>
+关联单: https://project.aone.alibaba-inc.com/v2/project/528766/req/\$AONE_ID"
+```
+
 ### 分支 F(上游 API 缺口,只 @提单人)
 
-无需建关联单,只发评论 + 改状态:
+无需建关联单,只发评论 + 改状态 + 钉钉私信提单人:
 
 ```bash
 bin/a1id -- project workitem update <源工单ID> --status 待上游排期
 # (CLI 报 unsupported 可实际写入,若拒绝改用 "待排期")
+
+# 钉钉私信提单人(补充通知,失败不阻断)
+bash bootstrap/notify-dingtalk.sh <提单人工号> \
+  "Aone 需转上游 · <一句诉求>" \
+  "分支 F · 上游 <产品> API 缺口,Terraform Provider 侧无法闭环
+状态: 待上游排期
+链接: https://project.aone.alibaba-inc.com/v2/project/1086837/req/<源工单ID>"
 ```
 
 ## Step 4 — 回复模板
@@ -407,12 +490,12 @@ bin/a1id -- project workitem update <源工单ID> --status 待上游排期
 
 | 触发条件(必须都命中) | 动作 | 模板 | 写操作 |
 |---|---|---|---|
-| 新工单 or **前次路由错**(如 78365505 从 NPE 撤回改路由到豁朗) | **转单** | A/B/C(按分支 A-H) | **分支 A(专属维护名单)**:仅源单 assignee 改 + 状态改「问题解决中」+ wrap done + release,**不建关联单**;**分支 B/C(其它)**:建关联单 + 源单 assignee 改 + 状态改「问题解决中」+ wrap done + release |
-| **前次路由对 + 缺关联单**(源单 assignee 已改到本团队分工里正确的人,但没有对应关联单——常见于前一轮 jarvis 只改了 assignee/状态却漏建关联单,或客户单历史长且前线随机指派;对应池按分工走:过载/新山/夏节/G/H → 528766,谜拟 → 2165097) | **补建关联单** | B/C(按分支,不重复改 assignee/状态) | 建关联单 + relation add(双向)+ comment 通知承接方新单号;**源单 assignee/状态保持不动**(前次已对)。**分支 A(专属维护名单)不适用本行**——A 本身无关联单,前次已按 A 转对即为终态,不再"补建" |
-| **前次路由对 + 关联单齐 + 距上次实质进展 <30 天** | **观察等待** | 无 | **不发评论、不改状态、不建单**;jarvis 内部记录本轮观察时间(bridge revisit 日轮会重扫,新进展进来自然触发);避免频繁打搅承接方 |
-| 前次路由对 + 关联单齐 + **距上次实质进展 ≥30 天**(不算 canned/@ 追问,以承接方给出的技术信息或时间承诺为准) | **进度跟进** | D | 只发 comment,免 bookend;不改状态、不建关联单 |
-| 承接方已给结论(拒接/根因/待客户验证)但客户或云产品未回,且已有 ≥1 次追问未响应 | **追料/补料提醒** | F | 只发 comment,免 bookend;提醒里给出建议补齐时间(默认 today+14 天)与到期处理方式(默认"按无法复现/信息不足关单");评论**同时 @ 客户/提单人 + 承接方**(提单人负责补料/确认,承接方获知补料进度) |
-| 承接方已闭环(PR merged / 已发布 / 明确拒接结论),但主单状态仍是 New/评估中/问题解决中 | **关单提示** | E | wrap done + 状态改「已发布待需求方验收」/「已拒绝」/「方案功能已存在」+ finish 或 release;评论**同时 @ 提单人 + 最后处理人** |
+| 新工单 or **前次路由错**(如 78365505 从 NPE 撤回改路由到豁朗) | **转单** | A/B/C(按分支 A-H) | **分支 A(专属维护名单)**:仅源单 assignee 改 + 状态改「问题解决中」+ wrap done + release,**不建关联单**;**分支 B/C(其它)**:建关联单 + 源单 assignee 改 + 状态改「问题解决中」+ wrap done + release。**所有转单动作 + 钉钉私信承接方**(A/D/E/G/H/临钧 每个分支落地脚本尾部各带一步,分支 F 只 @提单人不建单也不私信) |
+| **前次路由对 + 缺关联单**(源单 assignee 已改到本团队分工里正确的人,但没有对应关联单——常见于前一轮 jarvis 只改了 assignee/状态却漏建关联单,或客户单历史长且前线随机指派;对应池按分工走:过载/新山/夏节/G/H → 528766,谜拟 → 2165097) | **补建关联单** | B/C(按分支,不重复改 assignee/状态) | 建关联单 + relation add(双向)+ comment 通知承接方新单号;**源单 assignee/状态保持不动**(前次已对);**钉钉私信承接方**(前次没关联单不知道,现在必须通知)。**分支 A(专属维护名单)不适用本行**——A 本身无关联单,前次已按 A 转对即为终态,不再"补建" |
+| **前次路由对 + 关联单齐 + 距上次实质进展 <30 天** | **观察等待** | 无 | **不发评论、不改状态、不建单、不私信**;jarvis 内部记录本轮观察时间(bridge revisit 日轮会重扫,新进展进来自然触发);避免频繁打搅承接方 |
+| 前次路由对 + 关联单齐 + **距上次实质进展 ≥30 天**(不算 canned/@ 追问,以承接方给出的技术信息或时间承诺为准) | **进度跟进** | D | 只发 comment,免 bookend;不改状态、不建关联单;**钉钉私信承接方**(Aone 明显没在看,私信更有效) |
+| 承接方已给结论(拒接/根因/待客户验证)但客户或云产品未回,且已有 ≥1 次追问未响应 | **追料/补料提醒** | F | 只发 comment,免 bookend;提醒里给出建议补齐时间(默认 today+14 天)与到期处理方式(默认"按无法复现/信息不足关单");评论**同时 @ 客户/提单人 + 承接方**(提单人负责补料/确认,承接方获知补料进度);**钉钉私信提单人 + 承接方**(球回客户,承接方可歇) |
+| 承接方已闭环(PR merged / 已发布 / 明确拒接结论),但主单状态仍是 New/评估中/问题解决中 | **关单提示** | E | wrap done + 状态改「已发布待需求方验收」/「已拒绝」/「方案功能已存在」+ finish 或 release;评论**同时 @ 提单人 + 最后处理人**;**钉钉私信提单人 + 最后处理人**(见模板 E 段落) |
 
 ### assignee 转向规则(补齐,防止隐式推断)
 
@@ -550,7 +633,14 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 若已闭环烦请回帖同步(附 PR/资源链接);若延期请给出新时间线;若长期无进展,建议 <升级到 XX 或转 XX>。
 ```
 
-**发送方式**:进度跟进属于**只发评论、不改状态、不建关联单**,可直接 `bin/a1id -- project workitem comment create <id> -m "$(cat body-file)"` 免 bookend。避免走 `wrap.sh done` 的 heredoc,规避反引号/`$var:字母` 展开风险(见反模式)。发前 point-read 一次最新评论,避免与承接人刚回帖的进展撞车。
+**发送方式**:进度跟进属于**只发评论、不改状态、不建关联单**,可直接 `bin/a1id -- project workitem comment create <id> -m "$(cat body-file)"` 免 bookend。避免走 `wrap.sh done` 的 heredoc,规避反引号/`$var:字母` 展开风险(见反模式)。发前 point-read 一次最新评论,避免与承接人刚回帖的进展撞车。**评论发完追加一条钉钉私信承接方**(失败不阻断):
+
+```bash
+bash bootstrap/notify-dingtalk.sh <承接人工号> \
+  "Aone 进度跟进 · <一句诉求>" \
+  "距上次进展 <X> 天,请更新:<关键问题一句话>
+链接: https://project.aone.alibaba-inc.com/v2/project/<pool>/req/<单号>"
+```
 
 ### 模板 E:关单提示(承接方已闭环 / 云产品明确拒接 / 已修复但主单未同步)
 
@@ -574,6 +664,22 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - **状态选择**:PR 已合待客户验收 → 「已发布待需求方验收」;云产品/API 明确拒接 → 「已拒绝」;资源已支持只是客户版本旧 → 「方案功能已存在」;客户配置根因非 provider bug → 走模板 F 追料确认后关(而非本模板)。
 - **双 @ 语法**:`@<提单人花名>(<提单人工号>)` 和 `@<最后处理人花名>(<最后处理人工号>)` 各带工号,提单人放 "客户侧" 段落,承接方放 "承接方" 段落——语义清晰,notification 两侧都收到。
 - **最后处理人识别**:从 activity 或 comment list 找最后一条**给出实质进展**的评论(非 canned/@ 追问),其作者即最后处理人;若最后处理人 = 提单人自己(自派单),仅 @ 一次即可。
+- **钉钉私信提单人 + 最后处理人**(bookend 完成后追加两条,失败不阻断):
+
+  ```bash
+  # 提单人一定是阿里前线/PD(不是外部客户),可以私信
+  bash bootstrap/notify-dingtalk.sh <提单人工号> \
+    "Aone 关单 · <一句结论>" \
+    "本单已归档:<PR 已发布 vX.Y.Z / 云产品已拒接 / 方案已存在>
+  状态:<已发布待需求方验收 / 已拒绝 / 方案功能已存在>
+  链接: https://project.aone.alibaba-inc.com/v2/project/1086837/req/<源工单ID>"
+
+  # 若最后处理人 ≠ 提单人,再发一条
+  bash bootstrap/notify-dingtalk.sh <最后处理人工号> \
+    "Aone 关单 · <一句结论>" \
+    "感谢跟进,本单已归档,后续同题会另开新单直连你。
+  链接: https://project.aone.alibaba-inc.com/v2/project/1086837/req/<源工单ID>"
+  ```
 
 ### 模板 F:追料/补料提醒(承接方已给结论,客户/云产品未回)
 
@@ -608,6 +714,20 @@ provider 专人维护(不接镇元)。已指派 @<花名>(<工号>) 跟进,状�
 - **到期后**:若客户/云产品补齐 → 走正常处理;若仍未回 → 走模板 E 关单(状态改「客户未响应」或对应闭环状态)。
 - **默认建议补齐时间**:today+14 天;若情况紧急(如 P1 缺陷)可缩短到 7 天,但需在评论中说明加急理由。
 - **不要**在同一单反复发补料提醒——若前一轮提醒到期仍未回已按流程关单,再遇同题另开新单跟踪。
+- **钉钉私信提单人 + 承接方**(评论发完后追加,失败不阻断):
+
+  ```bash
+  bash bootstrap/notify-dingtalk.sh <提单人工号> \
+    "Aone 待补料 · <一句诉求或阻塞点>" \
+    "麻烦两周内(YYYY-MM-DD 前)补齐:<关键材料一句话>
+  链接: https://project.aone.alibaba-inc.com/v2/project/1086837/req/<源工单ID>"
+
+  # 若承接方 ≠ 提单人,再发一条知会
+  bash bootstrap/notify-dingtalk.sh <承接方工号> \
+    "Aone 待补料 · <一句诉求>" \
+    "本轮球在客户手里,已请其补料,到期未回将按'无法复现'关单,无需你再追。
+  链接: https://project.aone.alibaba-inc.com/v2/project/1086837/req/<源工单ID>"
+  ```
 
 ## bookend 与 wrap.sh 参数
 

@@ -119,6 +119,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | 更新详情(description) | `bin/a1id -- project workitem update <id> --body-file <path>`(单行小改可 `--body "<text>"`)。**何时必须**:重审/复核推翻了 description 里的根因或方案、方案实施与描述已相左、验收证伪原描述——评论只是过程审计追加在尾部,新读者第一眼看的是详情,详情停在已否决结论=持续误导接手者。重写时开头加一行 `> ⚠️ 本 description 于 <date> 重写:<被否决的旧结论一句话>,演进见评论区`,保住审计链。**边界**:仅限我方创建/维护的工单(tf_provider 关联单/研发单/probe 单);客户主单 description 是客户原声,禁改 |
 | 字段必填缺失 | `bin/a1id -- project workitem field options <field> --project <id>` 查枚举补 `--cfs` |
 | GitHub PR/评论/推分支(Jarvis 身份) | 必须先 `bootstrap/github-identity.sh check`;`gh` 走 `bootstrap/github-identity.sh gh ...`;推分支 `bootstrap/github-identity.sh push`;账号必须 `api-tool-agent`;PR head 必须 `api-tool-agent:<branch>` |
+| **钉钉私信**(所有实质动作补充通知) | `bash bootstrap/notify-dingtalk.sh <staffId> "<title>" "<body>"`;jarvis 做实质动作就私信相关方——转单/补建关联单/分支 F 上游缺口→承接方或提单人;模板 D/F/E→提单人+承接方;仅"观察等待<30 天"不发。缺凭据/`JARVIS_NOTIFY_DINGTALK=0`/opt-out 均静默降级不阻断。详见 `references/tf-customer-request-routing.md` §"钉钉私信 · 通用调用姿势" |
 
 ### 转单/建关联单 body 内容原则
 
