@@ -12,7 +12,7 @@ Provides a Hybrid Backup Recovery (HBR) Cross Account resource.
 
 The cross account is used for the cross-account backup in the Cloud Backup. The management account can back up the resources under the cross account.
 
-For information about Hybrid Backup Recovery (HBR) Cross Account and how to use it, see [What is Cross Account](https://www.alibabacloud.com/help/en/).
+For information about Hybrid Backup Recovery (HBR) Cross Account and how to use it, see [AddCrossAccount](https://www.alibabacloud.com/help/en/cloud-backup/developer-reference/api-hbr-2017-09-08-addcrossaccount) and [DeleteCrossAccount](https://www.alibabacloud.com/help/en/cloud-backup/developer-reference/api-hbr-2017-09-08-deletecrossaccount).
 
 -> **NOTE:** Available since v1.241.0.
 

@@ -57,7 +57,7 @@ func resourceAliCloudPolarDbAccount() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Normal", "Super"}, false),
+				ValidateFunc: StringInSlice([]string{"Normal", "Super", "DynamoDB"}, false),
 			},
 			"db_cluster_id": {
 				Type:     schema.TypeString,
@@ -80,6 +80,12 @@ func resourceAliCloudPolarDbAccount() *schema.Resource {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
 				Elem: schema.TypeString,
+			},
+			"dynamodb_auth_password": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Sensitive:   true,
+				Description: "The DynamoDB authentication password. Only available for DynamoDB account type.",
 			},
 		},
 	}
@@ -178,6 +184,9 @@ func resourceAliCloudPolarDbAccountRead(d *schema.ResourceData, meta interface{}
 	d.Set("account_type", objectRaw["AccountType"])
 	d.Set("status", objectRaw["AccountStatus"])
 	d.Set("account_name", objectRaw["AccountName"])
+	if v, ok := objectRaw["DynamoDBAuthPassword"]; ok && v != nil {
+		d.Set("dynamodb_auth_password", v)
+	}
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_cluster_id", parts[0])
@@ -306,6 +315,11 @@ func resourceAliCloudPolarDbAccountUpdate(d *schema.ResourceData, meta interface
 }
 
 func resourceAliCloudPolarDbAccountDelete(d *schema.ResourceData, meta interface{}) error {
+
+	// DynamoDB type account does not support deletion
+	if v, ok := d.GetOk("account_type"); ok && v.(string) == "DynamoDB" {
+		return nil
+	}
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
