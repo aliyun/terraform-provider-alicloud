@@ -132,9 +132,10 @@
   "upstream": {
     "cloudspec_gap": {
       "project": 2165097,
-      "assignee": 479782,
+      "assignee": "WORKER_1783326253279",
+      "human_fallback": 479782,
       "access": "submit_only",
-      "desc": "上游依赖(谜拟)，无管理权，缺口只可提单升级，不纳入 pools.sh 视检"
+      "desc": "上游依赖(镇元 agent)，无管理权，缺口只可提单升级，不纳入 pools.sh 视检。assignee=镇元agent WORKER_ 自动接单(body 必须含 ## 机读信息 JSON,见 aone-triage skill templates.md);human_fallback=谜拟 479782,agent 断电/复杂决策时兜底。"
     }
   },
   "claim": {

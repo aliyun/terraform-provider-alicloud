@@ -20,22 +20,69 @@
 三、解决方案:1) 短期绕过(OpenAPI/CLI 或 null_resource)2) 正解(给 provider+spec 提 PR)
 ```
 
-## Requirement skeleton (Cloudspec 需求池标准格式)
-7 字段正文 + 末尾机读 JSON。标准来源:钉钉文档 https://alidocs.dingtalk.com/i/nodes/YQBnd5ExVEjea40qC2vjQyxPJyeZqMmz
-```
-background: 缺口一句话 + 来源诉求
-requirement: 1. 资源:<Namespace::Type>(alicloud_x) 缺<attr> 对应<CreateX> 预期透传+import. 2. …
-documentUrl: https://api.aliyun.com/document/<Product>/<ver>/<Action>
-mappingCheckUrl: https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformResourceSpec?terraformResourceType=alicloud_x
-acceptance: <spec补齐+映射建立+getTerraformResourceSpec有效+偏差检测可见>
-deadline: <date>
-source: <工单 url 或 用户咨询>
+## Requirement skeleton (Cloudspec 关联单 · 镇元 agent 接单硬契约)
 
+**这是硬契约,不是可选参考**。落 **Terraform镇元对接(2165097)** 池的关联单(包括 tf_customer 分支 E 谜拟单、其它域上游 Cloudspec 缺口单)交由 **镇元 agent(`WORKER_1783326253279`)** 自动接手,agent 从 description 里解析结构化字段驱动后续处理(spec 补齐 / 映射建立 / 生成器触发)。**字段缺失 / marker 缺失 / JSON 语法错 = agent 无法接单 = 单沉底**——jarvis 自己不能替 agent 干活,漏契约就是把单丢黑洞。
+
+**契约来源**:谜拟本人钉钉文档 https://alidocs.dingtalk.com/i/nodes/YQBnd5ExVEjea40qC2vjQyxPJyeZqMmz
+
+### 字段清单(全部必填,无可选)
+
+| 字段 | 放什么 | 示例 |
+|---|---|---|
+| `background` | 原文【背景】段落:客户诉求 + 现状(为什么现在做不到) | "OSS 已支持通过 OpenAPI 配置桶清单规则,但 Terraform Provider 中不存在 alicloud_oss_bucket_inventory 资源,客户无法通过 Terraform 管理 OSS 桶清单规则。" |
+| `requirement` | 原文【需求】段落整体:要什么资源/属性/接口,一条一条列 | "新增 alicloud_oss_bucket_inventory 资源,支持桶清单规则的完整 CRUD 操作。" |
+| `documentUrl` | 官方 API 文档链接(api.aliyun.com/document/) | "https://api.aliyun.com/document/Oss/2019-05-17/PutBucketInventory" |
+| `mappingCheckUrl` | acube getTerraformResourceSpec 映射查询接口 | "https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformResourceSpec?terraformResourceType=alicloud_oss_bucket_inventory" |
+| `acceptance` | 验收标准:spec 补齐 / 映射建立 / 查询返回有效 / 偏差检测可见 | "Cloudspec 资源 spec 补齐,alicloud_oss_bucket_inventory ↔ Cloudspec 映射建立,getTerraformResourceSpec 查询返回有效映射。" |
+| `deadline` | 交付时间(YYYY-MM-DD;无明确 DDL 传空串,别省字段) | "2026-06-30" 或 "" |
+| `source` | 需求来源(源工单号 + 类别 或 咨询上下文) | "工单 82845574（Terraform - 客户问题）" |
+
+### description 完整正文骨架(必须严格照抄结构)
+
+````markdown
+## 背景
+<原文【背景】段落 · 与 JSON background 字段一致>
+
+## 需求
+<原文【需求】段落 · 与 JSON requirement 字段一致>
+
+## 机读信息
 ```json
-{"background":"…","requirement":"…","documentUrl":"…","mappingCheckUrl":"…","acceptance":"…","deadline":"YYYY-MM-DD","source":"…"}
+{
+  "background": "<与上方【背景】段落一致>",
+  "requirement": "<与上方【需求】段落一致>",
+  "documentUrl": "https://api.aliyun.com/document/<Product>/<ver>/<Action>",
+  "mappingCheckUrl": "https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformResourceSpec?terraformResourceType=alicloud_x",
+  "acceptance": "<spec补齐 + 映射建立 + getTerraformResourceSpec 有效 + 偏差检测可见>",
+  "deadline": "YYYY-MM-DD 或 空串",
+  "source": "工单 <ID>（Terraform - 客户问题）"
+}
 ```
-```
-保持需求导向:写"缺什么/对应哪个API",不罗列现有属性清单。两层正文 + JSON 字段必须一致。
+````
+
+### 硬性规则
+
+1. **`## 机读信息` marker 段名不可省不可改**——agent 靠这个 marker 定位 JSON 块;写成 "机读信息"、"机读 JSON"、`### 机读信息` 都不认。
+2. **JSON 必须在 ` ```json ` 代码块内**——纯文本 JSON 或用 ` ``` ` (无语言标记) 也可能不认。
+3. **7 字段全部必填,顺序建议同上**;`deadline` 无明确日期时传空串 `""`,别删字段。
+4. **JSON 字段与上方【背景】【需求】段落必须逐字一致**——两处不一致 agent 有可能取错。
+5. **需求导向,不罗列现有属性清单**——写"缺什么/对应哪个API",不写"现有 x/y/z 属性"。
+6. **`source` 必须能反查源客户工单**——形如 `工单 <ID>（Terraform - 客户问题）` 或 `用户咨询 <API url>`;别只写"客户需求"。
+
+### 参考样本
+
+样本工单 [83120127](https://project.aone.alibaba-inc.com/v2/project/2165097/req/83120127) 是标准姿势(谜拟本人给的示范单),需要抄骨架时对着它抄。
+
+### 反模式速查
+
+- ❌ description 只有【背景】【需求】两段,没有 `## 机读信息` + JSON → agent 完全不接单,单沉底
+- ❌ 只放 JSON、没有【背景】【需求】自然语言段落 → 人类看不懂,评审无从下手
+- ❌ JSON 字段名拼错(如 `docUrl` / `mappingUrl` / `dueDate`)→ agent 解析错,把 default 值当输入
+- ❌ 引用 <mcreference>...</mcreference> 之类的模型标记留在 background/requirement 里 → agent 语义污染,建议先剥掉
+- ❌ `documentUrl` 用 help.aliyun.com/document_detail/xxx.html → 应用 api.aliyun.com/document/<Product>/<ver>/<Action>(agent 后续拉 OpenAPI spec 用)
+- ❌ `mappingCheckUrl` 里 `terraformResourceType` 参数值和 requirement 里资源名不一致 → agent 查错映射
+- ❌ 主观倾向/裁决建议塞进 requirement → 只放客户诉求本身,方案由 agent 或后手研发决定
 
 ## Requirement skeleton (Terraform 生成器问题/API 工具团队)
 默认池: `api_toolkit` / project `2100304`;产品字段优先选 Terraform;标题聚焦生成器行为,不要写成客户资源诉求。

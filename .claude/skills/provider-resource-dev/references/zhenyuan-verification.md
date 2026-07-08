@@ -144,7 +144,7 @@ head -3 "$provider_repo/alicloud/resource_alicloud_<product>_<resource>.go" 2>/d
 
 若资源文件不存在:说明 provider 代码尚未合入(镇元 OK 但 provider 未生成/合入)——按"生成器产出待跑"处理,同样走 Step 3 · 分支 D-临钧 的 acube V2 接口(接口内部会跑生成器 + PR),不必 jarvis 手动 comment 提醒生成。
 
-### 分支 E:与镇元相关且镇元 NOT OK → 谜拟(紧急加建新山双单)
+### 分支 E:与镇元相关且镇元 NOT OK → 镇元 agent 关联单(紧急加建新山双单)
 
 ```bash
 priority=$(bash bootstrap/aone-get.sh <id> | python3 -c '
@@ -170,9 +170,10 @@ else:
 echo "days_left=$days_left"
 ```
 
-- 关联单指派 谜拟(479782)——镇元侧根因主责,**无论紧急与否都建**
-- `priority == '紧急'` 或 `days_left < 14`(或缺陷类型覆写为紧急)→ **同时再建一张**关联单指派 新山(521957),双单并行(谜拟修镇元侧根因,新山紧急兜底 provider 侧);原单指派谜拟,评论 @谜拟+@新山(见 Step 3 · 分支 E 紧急双关联单)
-- 否则 → 仅谜拟一张
+- 关联单指派 **镇元 agent (`WORKER_1783326253279`)** 自动接单——镇元侧根因主责,**无论紧急与否都建**(2026-07-08 谜拟本人切换:她不再自己解单,由 agent 从关联单 body 里的机读 JSON 驱动)
+- **body 硬契约**:关联单 body 必须严格按 `.claude/skills/aone-triage/references/templates.md` 「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架写(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全),缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底
+- `priority == '紧急'` 或 `days_left < 14`(或缺陷类型覆写为紧急)→ **同时再建一张**关联单指派 新山(521957),双单并行(agent 修镇元侧根因,新山紧急兜底 provider 侧);原单指派谜拟(479782,人类兜底 owner),评论 @谜拟+@新山(agent 不接 IM 不 @;详见 `.claude/skills/aone-triage/references/tf-customer-request-routing.md` Step 3 · 分支 E 紧急双关联单)
+- 否则 → 仅镇元 agent 一张
 
 ### 分支 F:上游 API 缺口
 
