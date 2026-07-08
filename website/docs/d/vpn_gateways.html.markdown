@@ -85,6 +85,7 @@ The following arguments are supported:
 * `output_file` - (Optional) Save the result to the file.
 * `enable_ipsec` - (Deprecated, Optional, Available 1.161.0+, has been deprecated from provider version 1.193.0, it will be removed in the future version.) Indicates whether the IPsec-VPN feature is enabled.
 * `ssl_vpn` - (Optional, ForceNew, Available since v1.243.0) Indicates whether the SSL-VPN feature is enabled. Valid value is `enable`, `disable`.
+* `gateway_type` - (Optional, ForceNew, Available since v1.285.0) Limit search to specific gateway type. Valid values: `Traditional`, `Enhanced.SiteToSite`.
 * `include_reservation_data` - (Optional, ForceNew, Available 1.193.0+) Include ineffective ordering data.
 
 ## Attributes Reference

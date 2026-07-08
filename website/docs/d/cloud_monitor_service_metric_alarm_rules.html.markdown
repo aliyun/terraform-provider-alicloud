@@ -3,18 +3,16 @@ subcategory: "Cloud Monitor Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cloud_monitor_service_metric_alarm_rules"
 description: |-
-  Provides a list of Cloud Monitor Service Metric Alarm Rules to the user.
+  Provides a list of Cloud Monitor Service Metric Alarm Rule owned by an Alibaba Cloud account.
 ---
 
 # alicloud_cloud_monitor_service_metric_alarm_rules
 
-This data source provides the Cloud Monitor Service Metric Alarm Rules of the current Alibaba Cloud user.
+This data source provides Cloud Monitor Service Metric Alarm Rule available to the user.[What is Metric Alarm Rule](https://next.api.alibabacloud.com/document/Cms/2019-01-01/PutResourceMetricRule)
 
 -> **NOTE:** Available since v1.256.0.
 
 ## Example Usage
-
-Basic Usage
 
 ```terraform
 variable "name" {
@@ -79,73 +77,96 @@ output "cloud_monitor_service_metric_alarm_rules_id_0" {
 ## Argument Reference
 
 The following arguments are supported:
+* `dimensions` - (ForceNew, Optional) The monitoring dimensions for the specified resource.
+Format: a set of key:value pairs, for example: `{"userId":"120886317861****"}` and `{"instanceId":"i-2ze2d6j5uhg20x47****"}`.
+* `metric_alarm_rule_id` - (ForceNew, Optional) The ID of the alarm rule.
 
-* `ids` - (Optional, ForceNew, List) A list of Metric Alarm Rule IDs.
-* `dimensions` - (Optional, ForceNew) The monitoring dimensions of the specified resource.
-* `metric_name` - (Optional, ForceNew) The name of the metric.
-* `namespace` - (Optional, ForceNew) The namespace of the cloud service.
-* `rule_name` - (Optional, ForceNew) The name of the alert rule.
-* `status` - (Optional, ForceNew) Specifies whether to query enabled or disabled alert rules. Valid values: `true`, `false`.
-* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+You can specify a new alarm rule ID or use an existing alarm rule ID from CloudMonitor. For information about how to query alarm rule IDs, see [DescribeMetricRuleList](https://help.aliyun.com/document_detail/114941.html).
+
+-> **NOTE:**  Specifying a new alarm rule ID creates a threshold-based alarm rule.
+
+* `metric_name` - (ForceNew, Optional) The name of the metric. For information about how to query metric names, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+
+-> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter specifies the metric store name. For information about how to obtain the metric store name, see [DescribeHybridMonitorNamespaceList](https://help.aliyun.com/document_detail/428880.html).
+
+* `namespace` - (ForceNew, Optional) The namespace of the cloud service metric data. For information about how to query the namespace of a cloud service, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+
+-> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter must be set to `acs_prometheus`.
+
+* `rule_name` - (ForceNew, Optional) Alert rule name.
+
+You can enter a new alert rule name or use an existing alert rule name in CloudMonitor. For information about how to query alert rule names, see [DescribeMetricRuleList](https://help.aliyun.com/document_detail/114941.html).
+
+-> **NOTE:**  Entering a new alert rule name creates a threshold-based alert rule.
+
+* `status` - (ForceNew, Optional) The enabled status of the alarm rule. Valid values:
+  - true: enabled.
+  - false: disabled.
+* `ids` - (Optional, ForceNew, Computed) A list of Metric Alarm Rule IDs. 
+* `enable_details` - (Optional, ForceNew) Default to `false`. Set it to `true` can output more details about resource attributes.
+* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-
-* `rules` - A list of Hybrid Double Writes. Each element contains the following attributes:
-  * `id` - The ID of the alert rule.
-  * `contact_groups` - The alert contact group.
-  * `dimensions` - The dimensions of the alert rule.
-  * `effective_interval` - The time period during which the alert rule is effective.
-  * `email_subject` - The subject of the alert notification email.
-  * `metric_name` - The name of the metric.
-  * `namespace` - The namespace of the cloud service.
-  * `no_data_policy` - The method that is used to handle alerts when no monitoring data is found.
-  * `no_effective_interval` - The time period during which the alert rule is ineffective.
-  * `period` - The statistical period.
-  * `resources` - The resources that are associated with the alert rule.
-  * `rule_name` - The name of the alert rule.
-  * `silence_time` - The mute period during which new alert notifications are not sent even if the trigger conditions are met.
-  * `source_type` - The type of the alert rule.
-  * `status` - Indicates whether the alert rule is enabled.
-  * `webhook` - The callback URL.
-  * `composite_expression` - The trigger conditions for multiple metrics.
-    * `times` - The number of consecutive triggers.
-    * `expression_raw` - The trigger conditions that are created by using expressions.
-    * `expression_list_join` - The relationship between the trigger conditions for multiple metrics.
-    * `level` - The alert level.
-    * `expression_list` - The trigger conditions that are created in standard mode.
-      * `metric_name` - The metric that is used to monitor the cloud service.
-      * `comparison_operator` - The operator that is used to compare the metric value with the threshold.
-      * `period` - The aggregation period of the metric.
-      * `statistics` - The statistical method of the metric.
-      * `threshold` - The alert threshold.
-  * `escalations` - The conditions for triggering different levels of alerts.
-    * `critical` - The conditions for triggering Critical-level alerts.
-      * `comparison_operator` - The comparison operator that is used to compare the metric value with the threshold.
-      * `times` - The consecutive number of times for which the metric value meets the alert condition before a Critical-level alert is triggered.
-      * `pre_condition` - The additional conditions for triggering Critical-level alerts.
-      * `statistics` - The statistical methods for Critical-level alerts.
-      * `threshold` - The threshold for Critical-level alerts.
-    * `info` - The conditions for triggering Info-level alerts.
-      * `comparison_operator` - The comparison operator that is used to compare the metric value with the threshold.
-      * `times` - The consecutive number of times for which the metric value meets the alert condition before a Info-level alert is triggered.
-      * `pre_condition` - The additional conditions for triggering Info-level alerts.
-      * `statistics` - The statistical methods for Info-level alerts.
-      * `threshold` - The threshold for Info-level alerts.
-    * `warn` - The conditions for triggering Warn-level alerts.
-      * `comparison_operator` - The comparison operator that is used to compare the metric value with the threshold.
-      * `times` - The consecutive number of times for which the metric value meets the alert condition before a Warn-level alert is triggered.
-      * `pre_condition` - The additional conditions for triggering Warn-level alerts.
-      * `statistics` - The statistical methods for Warn-level alerts.
-      * `threshold` - The threshold for Warn-level alerts. 
-  * `labels` - The tags of the alert rule.
-    * `value` - The tag value of the alert rule.
-    * `key` - The tag key of the alert rule.
-  * `prometheus` - The Prometheus alerts.
-    * `prom_ql` - The PromQL query statement.
-    * `times` - The number of consecutive triggers.
-    * `level` - The alert level.
-    * `annotations` - The annotations of the Prometheus alert rule.
-      * `value` - The value of the annotation.
-      * `key` - The subject of the alert notificaThe key of the annotation.
+* `ids` - A list of Metric Alarm Rule IDs.
+* `rules` - A list of Metric Alarm Rule Entries. Each element contains the following attributes:
+    * `composite_expression` - Alert condition for multiple metrics.
+        * `expression_list` - A list of alert conditions created using standard expressions.
+            * `comparison_operator` - Threshold comparison operator.
+            * `metric_name` - The name of the cloud service metric.
+            * `period` - Aggregation period of the metric.
+            * `statistics` - Statistical method of the metric.
+            * `threshold` - Alert threshold.
+        * `expression_list_join` - The logical relationship between multiple metric-based alert conditions.
+        * `expression_raw` - The alert condition created by an expression.
+        * `level` - The alert severity level.
+        * `times` - Number of consecutive times the alert condition must be met before an alert notification is sent.
+    * `contact_groups` - Alarm contact groups.
+    * `dimensions` - The monitoring dimensions for the specified resource.
+    * `effective_interval` - The time range during which the alert rule is effective.
+    * `email_subject` - Subject of alert emails.
+    * `escalations` - The trigger conditions for alert levels.
+        * `critical` - The trigger condition for Critical-level alerts.
+            * `comparison_operator` - The comparison operator for the Critical-level threshold.
+            * `pre_condition` - The precondition for triggering a Critical-level alarm.
+            * `statistics` - Statistical method for Critical-level alerts.
+            * `threshold` - Threshold for Critical-level alerts.
+            * `times` - The number of consecutive occurrences required to trigger a Critical-level alarm.
+        * `info` - Trigger conditions for Info-level alerts.
+            * `comparison_operator` - Comparison operator for Info-level thresholds.
+            * `pre_condition` - Precondition for triggering an Info-level alert.
+            * `statistics` - Statistical method used for Info-level alerts.
+            * `threshold` - Threshold value for Info-level alerts.
+            * `times` - Number of consecutive occurrences required to trigger an Info-level alert.
+        * `warn` - Trigger condition for Warn-level alerts.
+            * `comparison_operator` - Comparison operator for the Warn-level threshold.
+            * `pre_condition` - Precondition for triggering a Warn-level alert.
+            * `statistics` - Statistical method for Warn-level alerts.
+            * `threshold` - Threshold for Warn-level alerts.
+            * `times` - Number of consecutive occurrences required to trigger a Warn-level alert.
+    * `labels` - When a metric meets the alert condition and an alert is triggered, the labels are written to the metric and displayed in the alert notification.
+        * `key` - The tag key.
+        * `value` - Label value.
+    * `metric_alarm_rule_id` - The ID of the alarm rule.
+    * `metric_name` - The name of the metric.
+    * `namespace` - The namespace of the cloud service metric data.
+    * `no_data_policy` - The policy to apply when no monitoring data is available.
+    * `no_effective_interval` - The time range during which the alarm rule is inactive.
+    * `period` - The statistical period of the metric.
+    * `prometheus` - Prometheus alert.
+        * `annotations` - When a Prometheus alert is triggered, the key-value pairs of annotations are rendered to help you better understand the metric or alert rule.
+            * `key` - The key of the annotation.
+            * `value` - The value of the annotation.
+        * `level` - Alert severity level.
+        * `prom_ql` - The PromQL query statement.
+        * `times` - The number of times the alert condition must be met before an alert notification is sent.
+    * `resources` - Resource information, for example: `[{"instanceId":"i-uf6j91r34rnwawoo****"}]`, `[{"userId":"100931896542****"}]`.
+    * `rule_name` - Alert rule name.
+    * `send_ok` - Specifies whether to send recovery notifications.
+    * `silence_time` - Channel silence period.
+    * `source_type` - The type of the alarm rule.
+    * `status` - The enabled status of the alarm rule.
+    * `webhook` - The URL address specified for callback when an alert is triggered.
+    * `id` - The ID of the resource supplied above.

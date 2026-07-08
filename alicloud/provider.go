@@ -172,6 +172,8 @@ func Provider() *schema.Provider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_express_connect_router_tr_associations":     dataSourceAliCloudExpressConnectRouterTrAssociations(),
+			"alicloud_express_connect_router_vbr_child_instances": dataSourceAliCloudExpressConnectRouterVbrChildInstances(),
 			"alicloud_cr_artifact_lifecycle_rules":                dataSourceAliCloudCrArtifactLifecycleRules(),
 			"alicloud_cms_alert_rule_v2s":                         dataSourceAliCloudCmsAlertRuleV2s(),
 			"alicloud_oss_bucket_inventories":                     dataSourceAliCloudOssBucketInventories(),
@@ -931,8 +933,10 @@ func Provider() *schema.Provider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 			"alicloud_vpc_ipam_ipams":                                   dataSourceAliCloudVpcIpamIpams(),
 			"alicloud_das_sql_log_configs":                              dataSourceAliCloudDasSqlLogConfigs(),
+			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_apig_plugin_class":                                    resourceAliCloudApigPluginClass(),
 			"alicloud_cr_artifact_lifecycle_rule":                           resourceAliCloudCrArtifactLifecycleRule(),
 			"alicloud_das_sql_log_config":                                   resourceAliCloudDasSqlLogConfig(),
 			"alicloud_cms_alert_rule_v2":                                    resourceAliCloudCmsAlertRuleV2(),
@@ -940,6 +944,7 @@ func Provider() *schema.Provider {
 			"alicloud_resource_manager_resource_directory_sharing":          resourceAliCloudResourceManagerResourceDirectorySharing(),
 			"alicloud_wafv3_address_book":                                   resourceAliCloudWafv3AddressBook(),
 			"alicloud_threat_detection_service_linked_role":                 resourceAliCloudThreatDetectionServiceLinkedRole(),
+			"alicloud_cloud_monitor_service_metric_alarm_rule":              resourceAliCloudCloudMonitorServiceMetricAlarmRule(),
 			"alicloud_amqp_open_source_account":                             resourceAliCloudAmqpOpenSourceAccount(),
 			"alicloud_vpc_ipv6_cidr_block":                                  resourceAliCloudVpcIpv6CidrBlock(),
 			"alicloud_amqp_open_source_permission":                          resourceAliCloudAmqpOpenSourcePermission(),
