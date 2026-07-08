@@ -496,7 +496,10 @@ def run_tata_stream(text, session_id, resume):
     """轻量 Tata 一轮：同 run_claude_stream，但 cwd=tata_root()（空目录，不吃
     jarvis CLAUDE.md），附 --append-system-prompt 灌 Tata 人设。yield 累积文本。"""
     timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
-    cmd = [claude_bin(), "-p", text, "--output-format", "stream-json",
+    # 必须带 tata_cmd() 的 --settings(idea 网关+隔离 token)——否则裸 claude 拿不到
+    # ANTHROPIC_AUTH_TOKEN, 回退订阅(OAuth)鉴权, 组织禁用时报
+    # "Your organization has disabled Claude subscription access"。对齐常驻 TataPool。
+    cmd = tata_cmd() + ["-p", text, "--output-format", "stream-json",
            "--include-partial-messages", "--verbose",
            "--append-system-prompt", TATA_PROMPT]
     cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
