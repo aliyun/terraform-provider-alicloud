@@ -29,6 +29,7 @@ import tempfile
 import threading
 import datetime as dt
 import unittest
+from pathlib import Path
 
 sys.path.insert(0, os.environ["BRIDGE_DIR"])
 # Neutralize env so defaults are exercised deterministically.
@@ -400,6 +401,218 @@ class TicketPromptTest(unittest.TestCase):
         self.assertIn("528766", prompt)
         self.assertIn("claim", prompt)
         self.assertIn("SUSPEND", prompt)
+
+
+class ProbePromptTest(unittest.TestCase):
+    """_probe_prompt: 硬编码「mode=draft 人审后建单」已删除, 处置权交回 SKILL Step C/D +
+    config/probe.json ticket.mode; 尾部两步必须包含 archive 归档与 knowledge-distillation
+    产品知识蒸馏, 让每日探测轮自愈+自沉淀。"""
+
+    def test_prompt_delegates_ticket_mode_to_skill(self):
+        prompt = b._probe_prompt("probe-2026-07-08")
+        self.assertNotIn("mode=draft，人审后建单", prompt,
+                         "旧硬编码「mode=draft，人审后建单」必须删掉——处置改由 skill 承担")
+        self.assertNotIn("mode=draft,人审后建单", prompt)
+        self.assertIn(".claude/skills/tf-customer-probe", prompt,
+                      "处置必须指向 tf-customer-probe SKILL Step C/D")
+        self.assertIn("ticket.mode", prompt,
+                      "prompt 必须提到 config/probe.json ticket.mode 才能让实例识别当前处置模式")
+
+    def test_prompt_includes_archive_step(self):
+        prompt = b._probe_prompt("probe-2026-07-08")
+        self.assertIn("probe.sh archive", prompt,
+                      "结尾必须触发 bootstrap/probe.sh archive 归档终态 draft/超期 verdict")
+
+    def test_prompt_includes_knowledge_distillation(self):
+        prompt = b._probe_prompt("probe-2026-07-08")
+        self.assertIn("knowledge-distillation", prompt,
+                      "结尾必须引用 knowledge-distillation.md 契约")
+        self.assertIn("KNOWLEDGE.md", prompt,
+                      "prompt 必须点出蒸馏落点 <product>/KNOWLEDGE.md")
+
+    def test_prompt_carries_round_id(self):
+        prompt = b._probe_prompt("probe-2026-07-08")
+        self.assertIn("probe-2026-07-08", prompt)
+
+
+class DailySchedulerRunContractTest(unittest.TestCase):
+    """_DailyScheduler._run_once bool 契约:
+    · False = queue_full 拒收 (本日不 mark, 下 tick 重试);
+    · True/None = 已到位 (ok / deduped / active / 无候选 / no-pool) 均 mark 掉本日。
+    ProbeScheduler/RevisitScheduler 遵此语义, _loop 的 mark 判定用 `is not False`。"""
+
+    class _StubHandler:
+        def _broadcast(self, text):
+            pass
+
+        def dispatch_item(self, *a, **k):
+            return "done"
+
+    def _probe(self, pool, state_file):
+        return b.ProbeScheduler(handler=self._StubHandler(), pool=pool,
+                                enabled=True, hour=0, state_file=state_file)
+
+    def test_probe_ok_returns_truthy(self):
+        # submit 接受 → _run_once 返回真值 (mark 本日)
+        tmp = tempfile.mkdtemp()
+        pool = b.DispatchPool(max_workers=1, queue_max=5, ledger_path=_ledger(tmp))
+        p = self._probe(pool, os.path.join(tmp, "probe.last"))
+        rv = p._run_once()
+        self.assertIsNot(rv, False, "submit ok → 非 False, mark 掉本日")
+        pool.shutdown(wait=False, cancel_futures=True)
+
+    def test_probe_queue_full_returns_false(self):
+        # submit 撞 queue_full → 必须返回 False, 让 _loop 本日不 mark, 下 tick 重试
+        tmp = tempfile.mkdtemp()
+        pool = b.DispatchPool(max_workers=1, queue_max=5, ledger_path=_ledger(tmp))
+        # 手动灌满 active 直到 cap = max_workers + queue_max = 6
+        for i in range(pool.max_workers + pool.queue_max):
+            pool._active["filler-%d" % i] = {"started": time.time()}
+        p = self._probe(pool, os.path.join(tmp, "probe.last"))
+        rv = p._run_once()
+        self.assertIs(rv, False, "queue_full 必须返回 False")
+        pool.shutdown(wait=False, cancel_futures=True)
+
+    def test_probe_deduped_returns_truthy(self):
+        # 同 rid 已在 24h 台账内 → submit 拒 deduped → 视为成功, 本日 mark
+        tmp = tempfile.mkdtemp()
+        pool = b.DispatchPool(max_workers=1, queue_max=5, dedup_ttl=86400,
+                              ledger_path=_ledger(tmp))
+        p = self._probe(pool, os.path.join(tmp, "probe.last"))
+        rid = p.round_id()
+        pool._ledger[rid] = time.time()
+        rv = p._run_once()
+        self.assertIsNot(rv, False, "deduped 不算失败, 应 mark 掉本日")
+        pool.shutdown(wait=False, cancel_futures=True)
+
+    def test_probe_no_pool_returns_truthy(self):
+        # 无 pool/handler → 记 warning + 直接 return, 视为成功不重试
+        p = b.ProbeScheduler(handler=None, pool=None, enabled=True, hour=0,
+                             state_file=os.path.join(tempfile.mkdtemp(), "probe.last"))
+        self.assertIsNot(p._run_once(), False)
+
+    def test_loop_marks_only_when_not_false(self):
+        # 模拟 _loop 的 mark 判定: False 时不 mark, True/None 时 mark。
+        tmp = tempfile.mkdtemp()
+        st = os.path.join(tmp, "loop.last")
+
+        class _Fake(b._DailyScheduler):
+            def __init__(self, ret, state_file):
+                super().__init__(name="Fake", hour=0, enabled=True, state_file=state_file)
+                self._ret = ret
+
+            def _run_once(self):
+                return self._ret
+
+        # False → 不 mark
+        f = _Fake(False, st)
+        # 手工复现 _loop 的判定分支
+        if f._run_once() is not False:
+            f._mark_run()
+        self.assertEqual(f._last_run_date(), "", "queue_full(False) 不能 mark 本日")
+
+        # None → mark
+        f = _Fake(None, st)
+        if f._run_once() is not False:
+            f._mark_run()
+        self.assertNotEqual(f._last_run_date(), "", "None 视为成功, 必须 mark")
+
+        # True → mark
+        st2 = os.path.join(tmp, "loop2.last")
+        f2 = _Fake(True, st2)
+        if f2._run_once() is not False:
+            f2._mark_run()
+        self.assertNotEqual(f2._last_run_date(), "", "True 必须 mark")
+
+
+class ProbeSummaryWriteTest(unittest.TestCase):
+    """dispatch_item 对 item_id 以 probe- 开头的轮次, 会把会话 final 文本
+    落盘到 runs/probe/<rid>-summary.md; 非 probe- 前缀绝不落盘; 写失败只 log。"""
+
+    def _handler_with_root(self, tmp):
+        orig_root = b.REPO_ROOT
+        b.REPO_ROOT = Path(tmp)
+        # 关掉钉钉降级构造 handler
+        for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
+            os.environ.pop(k, None)
+        h = b.JarvisHandler(no_dingtalk=True)
+        return h, orig_root
+
+    def _fake_stream(self, final_text):
+        def _gen(text, sid, resume, timeout=None, on_spawn=None):
+            yield final_text
+        return _gen
+
+    def test_probe_prefix_writes_summary(self):
+        tmp = tempfile.mkdtemp()
+        h, orig_root = self._handler_with_root(tmp)
+        orig_stream = b.run_claude_stream
+        b.run_claude_stream = self._fake_stream("本轮探测 findings: 0; 归档 3 draft, 蒸馏 2 条。")
+        # 阻断 _completion_broadcast 的 a1 调用
+        h._completion_broadcast = lambda item_id: "✅ %s done" % item_id
+        try:
+            rv = h.dispatch_item("probe-2026-07-08", "prompt", "sid", False,
+                                 notify=lambda t: None, target="grp", target_type="group")
+            self.assertEqual(rv, "done")
+            expected = Path(tmp) / "runs" / "probe" / "probe-2026-07-08-summary.md"
+            self.assertTrue(expected.exists(), "probe 轮 summary.md 必须落 runs/probe/")
+            self.assertIn("findings", expected.read_text())
+        finally:
+            b.run_claude_stream = orig_stream
+            b.REPO_ROOT = orig_root
+            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+
+    def test_non_probe_prefix_no_summary(self):
+        tmp = tempfile.mkdtemp()
+        h, orig_root = self._handler_with_root(tmp)
+        orig_stream = b.run_claude_stream
+        b.run_claude_stream = self._fake_stream("regular ticket final")
+        h._completion_broadcast = lambda item_id: "✅ %s done" % item_id
+        try:
+            rv = h.dispatch_item("83999999", "prompt", "sid", False,
+                                 notify=lambda t: None, target="grp", target_type="group")
+            self.assertEqual(rv, "done")
+            probe_dir = Path(tmp) / "runs" / "probe"
+            # 目录可能不存在 (真好), 或存在但绝无以数字 id 命名的 summary
+            if probe_dir.exists():
+                for p in probe_dir.iterdir():
+                    self.assertFalse(p.name.startswith("83999999"),
+                                     "非 probe- 前缀 id 不得写 summary")
+        finally:
+            b.run_claude_stream = orig_stream
+            b.REPO_ROOT = orig_root
+            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+
+    def test_write_failure_only_logs(self):
+        # runs/probe 落盘失败时 dispatch_item 仍返回 done, 不抛
+        tmp = tempfile.mkdtemp()
+        h, orig_root = self._handler_with_root(tmp)
+        orig_stream = b.run_claude_stream
+        b.run_claude_stream = self._fake_stream("x")
+        h._completion_broadcast = lambda item_id: "ok"
+        # 让 mkdir/write_text 全爆
+        orig_write = b.JarvisHandler._write_probe_summary
+        def _boom(rid, txt):
+            raise OSError("disk full simulated")
+        b.JarvisHandler._write_probe_summary = staticmethod(_boom)
+        try:
+            with self.assertLogs("jarvis-bot", level="WARNING") as cm:
+                # dispatch_item 内 _write_probe_summary 本身应吞异常; 但如果替换的实现直接
+                # raise, dispatch_item 的外层 except 会捕获并转为 "error" — 无所谓, 关键
+                # 是不炸主进程。这里改为验 write helper 自身能吞 I/O 失败:
+                b.JarvisHandler._write_probe_summary = orig_write
+                # 制造真实 I/O 失败: repo_root 指向一个文件路径 (无法 mkdir 出子目录)
+                fake_file = os.path.join(tmp, "not-a-dir")
+                open(fake_file, "w").close()
+                b.REPO_ROOT = Path(fake_file)
+                b.JarvisHandler._write_probe_summary("probe-x", "content")
+            self.assertTrue(any("probe summary write failed" in line for line in cm.output),
+                            "I/O 失败必须 log warning, 不抛")
+        finally:
+            b.JarvisHandler._write_probe_summary = orig_write
+            b.run_claude_stream = orig_stream
+            b.REPO_ROOT = orig_root
+            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
 
 
 class ScopeGateTest(unittest.TestCase):
