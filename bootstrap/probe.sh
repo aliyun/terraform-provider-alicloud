@@ -1159,8 +1159,17 @@ _cmd_run() {
     if [ "$STEP_RC" -ne 0 ]; then
         # expect_fail 优先分流:validate 阶段失败 vs 声明阶段的三态判定
         if [ -n "$expect_fail" ]; then
+            _LAST_EXPECT_VERDICT=""
             _emit_expect_finding "$expect_fail" validate "$expect_err_contains" "$PRUN_WD/validate.log" \
                 validate_fail S3 "官方文档示例组合 validate 不通过"
+            # F2:validate 期望内失败(expected 或 expected_but_error_mismatch)必须立即收尾——
+            # 续跑 plan/apply 只会连锁失败,还会把 apply 阶段误算成 late_validation。
+            # late_validation 在此不可能(declared==actual==validate),普通 fallthrough 才继续。
+            case "$_LAST_EXPECT_VERDICT" in
+                expected|expected_but_error_mismatch)
+                    _finalize_verdict; return "$(_verdict_exit)"
+                    ;;
+            esac
         else
             _emit_finding validate_fail validate "官方文档示例组合 validate 不通过" "$PRUN_WD/validate.log" S3
         fi
@@ -1185,8 +1194,9 @@ _cmd_run() {
         fi
         _finalize_verdict; return "$(_verdict_exit)"
     fi
-    # A2 LRU 索引:仅在真实执行推进到 plan 完成及以后才更新,避免被阻断场景(no_creds/prepaid_block/tier1_disabled)永远失去 LRU 优先权。
-    _t1_last_run_update "$PRUN_SID"
+    # A2 LRU 索引更新已挪进 _finalize_verdict:凡是 plan 或 validate 步骤真的跑过(即使按预期
+    # 失败),且未被 5 类环境阻断(no_creds/prepaid_block/tier1_disabled_plan_only/
+    # apply_disabled_by_scenario/drift_disabled),都要更新 LRU,避免负路径场景霸榜 t1-last-run.json。
 
     # 场景级 apply 门:scenario.yaml apply:false(生成器命中成本安全门写入)→ 止步 plan,不真实创建
     if [ "$apply_off" -eq 1 ]; then
@@ -1272,49 +1282,10 @@ _cmd_run() {
         done
     fi
 
-    # B2 provider_version_from:upgrader dance —— sed 改 workdir 副本 pin → init → apply → 改回 → init -upgrade → plan;非空 diff → upgrade_diff。
-    #   注:进入此分支时 apply 已跑过(target=current pin)。upgrader 需要的是"旧版本先立起来 → 升级 → 观察 diff"。
-    #   本实现按契约:①现场 tf 备份 → sed pin → init → apply → sed 回 current pin → init -upgrade → plan;②非空 diff→upgrade_diff。
-    #   TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=1 防双全量下载 lock 冲突。
+    # B2 provider_version_from:upgrader dance(见 _probe_upgrader_dance)
     if [ -n "$provider_from" ]; then
-        local _cur_pin _mtf _lockbak
-        _cur_pin="$(cfg '.provider.version')"
-        _mtf="$PRUN_WD/main.tf"
-        export TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=1
-        if [ -f "$_mtf" ] && [ -n "$_cur_pin" ]; then
-            # 备份 lock,sed 改 pin
-            [ -f "$PRUN_WD/.terraform.lock.hcl" ] && cp "$PRUN_WD/.terraform.lock.hcl" "$PRUN_WD/.terraform.lock.hcl.bak" 2>/dev/null
-            sed -i.bak "s/version = \"${_cur_pin//./\\.}\"/version = \"${provider_from//./\\.}\"/" "$_mtf" 2>/dev/null
-            _run_step upgrade_init_old "$PRUN_WD/upgrade_init_old.log" -- terraform init -input=false -upgrade
-            if [ "$STEP_RC" -ne 0 ]; then
-                _emit_env upgrade_init_fail "upgrader init(pin=$provider_from) 失败,见 $PRUN_WD/upgrade_init_old.log"
-            else
-                _run_step upgrade_apply_old "$PRUN_WD/upgrade_apply_old.log" -- terraform apply -auto-approve -var "run_id=$PRUN_RUN_ID"
-                if [ "$STEP_RC" -ne 0 ]; then
-                    _emit_env upgrade_apply_fail "upgrader 旧版本 apply 失败(pin=$provider_from)"
-                else
-                    # 改回 current pin,init -upgrade,plan
-                    sed -i.bak "s/version = \"${provider_from//./\\.}\"/version = \"${_cur_pin//./\\.}\"/" "$_mtf" 2>/dev/null
-                    _run_step upgrade_init_new "$PRUN_WD/upgrade_init_new.log" -- terraform init -input=false -upgrade
-                    if [ "$STEP_RC" -ne 0 ]; then
-                        _emit_env upgrade_init_new_fail "upgrader init(升级至 $_cur_pin)失败"
-                    else
-                        _run_step upgrade_plan "$PRUN_WD/upgrade_plan.log" -- terraform plan -detailed-exitcode -out=tf.plan_upgrade -var "run_id=$PRUN_RUN_ID"
-                        if [ "$STEP_RC" -eq 2 ]; then
-                            # 非空 diff → upgrade_diff;delete+create → S1
-                            local _upj="$PRUN_WD/plan_upgrade.json" _usev="S2"
-                            ( cd "$PRUN_WD" && terraform show -json tf.plan_upgrade > "$_upj" 2>/dev/null )
-                            if [ -s "$_upj" ] && jq -e 'any(.resource_changes[]?; (.change.actions|index("delete")) and (.change.actions|index("create")))' "$_upj" >/dev/null 2>&1; then
-                                _usev="S1"
-                            fi
-                            _emit_finding upgrade_diff upgrade_plan "provider $provider_from → $_cur_pin 升级后 plan 出现 diff(state 兼容性破坏)" "$PRUN_WD/upgrade_plan.log" "$_usev"
-                        fi
-                    fi
-                fi
-            fi
-            # 清理 sed .bak(不影响 destroy 阶段)
-            rm -f "$_mtf.bak" 2>/dev/null
-        fi
+        _probe_upgrader_dance "$provider_from"
+        rm -f "$PRUN_WD/main.tf.bak" 2>/dev/null
     fi
 
     # B2 drift_cli:drifter 五重护栏(见函数注释);drift_enabled 门 + action 白名单 + tokenize + 占位符 + 凭证钉死
@@ -1373,11 +1344,16 @@ _probe_drift_dance() {
     export ALIBABA_CLOUD_ACCESS_KEY_ID="$ALICLOUD_ACCESS_KEY"
     export ALIBABA_CLOUD_ACCESS_KEY_SECRET="$ALICLOUD_SECRET_KEY"
     export ALIBABA_CLOUD_REGION_ID="$PRUN_REGION"
-    # ① tokenize
-    local -a argv=()
-    while IFS= read -r _tok; do argv+=("$_tok"); done < <(_drift_tokenize "$cli" 2>>"$PRUN_WD/drift.log")
-    if [ "${#argv[@]}" -lt 3 ]; then
+    # ① tokenize:process substitution 不透传 rc,改用命令替换 + 显式退码检查,拒绝态绝不进 exec
+    local _drift_toks
+    if ! _drift_toks="$(_drift_tokenize "$cli" 2>>"$PRUN_WD/drift.log")"; then
         _emit_env drift_cli_rejected "drift_cli tokenize 失败(见 drift.log)"
+        return 0
+    fi
+    local -a argv=()
+    while IFS= read -r _tok; do [ -n "$_tok" ] && argv+=("$_tok"); done <<< "$_drift_toks"
+    if [ "${#argv[@]}" -lt 3 ]; then
+        _emit_env drift_cli_rejected "drift_cli tokenize 结果为空(见 drift.log)"
         return 0
     fi
     # ④ 白名单
@@ -1409,10 +1385,96 @@ _probe_drift_dance() {
         _emit_env drift_exec_fail "aliyun CLI drift 命令执行失败(rc=$_drift_rc),见 $PRUN_WD/drift.log"
         return 0
     fi
-    # post-drift plan:无 diff → drift_undetected
+    # post-drift plan:rc==0 → 无 diff → drift_undetected;rc==2 → 检出 diff(预期,不出 finding);
+    # rc==1 → plan 本身失败,按鉴权/其它分流入 env_issue,不当 drift_undetected 误报。
     _run_step plan_drift "$PRUN_WD/plan_drift.log" -- terraform plan -detailed-exitcode -var "run_id=$PRUN_RUN_ID"
-    if [ "$STEP_RC" -ne 2 ]; then
-        _emit_finding drift_undetected plan_drift "带外改动后 plan 未检出 diff(drift detection 失效)" "$PRUN_WD/plan_drift.log" S2
+    case "$STEP_RC" in
+        0)
+            _emit_finding drift_undetected plan_drift "带外改动后 plan 未检出 diff(drift detection 失效)" "$PRUN_WD/plan_drift.log" S2
+            ;;
+        2) : ;;  # 检出 diff,预期,不发 finding
+        *)
+            if _is_auth_error "$PRUN_WD/plan_drift.log"; then
+                _emit_env auth_error "drift 后置 plan 报鉴权类错误(归 env,不算 drift_undetected)"
+            else
+                _emit_env plan_fail "drift 后置 plan 失败(rc=$STEP_RC,非鉴权),归 env,不算 drift_undetected"
+            fi
+            ;;
+    esac
+}
+
+# F3 _probe_upgrader_dance <provider_from> — provider 升级探测(sed 改 workdir 副本 pin →
+#   init → apply → sed 回 current pin → init -upgrade → plan;非空 diff → upgrade_diff)。
+#   与旧内联版本的差异:
+#     ① provider_from 值校验(半版正则),不合规 → env upgrade_from_invalid,拒跑
+#     ② sed 前后各一次 grep 命中校验,防止 sed pattern 未命中导致静默滑过或没改成新 pin
+#     ③ upgrade_init_old / upgrade_apply_old 任一失败 → 回滚 main.tf.bak,再返回
+#        避免污染 cleanup 阶段(否则 destroy 用错版本 pin,残留资源)
+#     ④ init 类失败若 log 命中 _is_network_error → 收敛到 init_network_fail(文档对齐,一律
+#        走网络故障口径),非网络才走 upgrade_init_fail/upgrade_init_new_fail
+_probe_upgrader_dance() {
+    local provider_from="$1"
+    local _cur_pin _mtf
+    _cur_pin="$(cfg '.provider.version')"
+    _mtf="$PRUN_WD/main.tf"
+    export TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=1
+    # 前置守卫
+    [ -f "$_mtf" ] || return 0
+    [ -n "$_cur_pin" ] || return 0
+    # ① provider_from 值校验:X.Y.Z[.suffix|-suffix]
+    if ! [[ "$provider_from" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][A-Za-z0-9]+)*$ ]]; then
+        _emit_env upgrade_from_invalid "provider_version_from='$provider_from' 不合规(需 X.Y.Z[.-suffix]),upgrader 拒跑"
+        return 0
+    fi
+    # ② 前置:main.tf 必须含形如 'version = "<current pin>"' 的行,否则 sed 无命中静默滑过
+    if ! grep -q "version = \"$_cur_pin\"" "$_mtf"; then
+        _emit_env upgrade_pin_not_found "main.tf 未见 'version = \"$_cur_pin\"' 目标行,upgrader 拒跑(避免 sed 未命中静默滑过)"
+        return 0
+    fi
+    # 备份 lock
+    [ -f "$PRUN_WD/.terraform.lock.hcl" ] && cp "$PRUN_WD/.terraform.lock.hcl" "$PRUN_WD/.terraform.lock.hcl.bak" 2>/dev/null
+    sed -i.bak "s/version = \"${_cur_pin//./\\.}\"/version = \"${provider_from//./\\.}\"/" "$_mtf" 2>/dev/null
+    # 后置:sed 完成后 main.tf 必须含 pin=provider_from,否则回滚
+    if ! grep -q "version = \"$provider_from\"" "$_mtf"; then
+        _emit_env upgrade_pin_rewrite_fail "sed 未把 pin 改为 '$provider_from',upgrader 拒跑"
+        [ -f "$_mtf.bak" ] && mv "$_mtf.bak" "$_mtf" 2>/dev/null
+        return 0
+    fi
+    _run_step upgrade_init_old "$PRUN_WD/upgrade_init_old.log" -- terraform init -input=false -upgrade
+    if [ "$STEP_RC" -ne 0 ]; then
+        if _is_network_error "$PRUN_WD/upgrade_init_old.log"; then
+            _emit_env init_network_fail "upgrader init(pin=$provider_from) 失败,日志含 registry/网络关键词"
+        else
+            _emit_env upgrade_init_fail "upgrader init(pin=$provider_from) 失败,见 $PRUN_WD/upgrade_init_old.log"
+        fi
+        [ -f "$_mtf.bak" ] && mv "$_mtf.bak" "$_mtf" 2>/dev/null
+        return 0
+    fi
+    _run_step upgrade_apply_old "$PRUN_WD/upgrade_apply_old.log" -- terraform apply -auto-approve -var "run_id=$PRUN_RUN_ID"
+    if [ "$STEP_RC" -ne 0 ]; then
+        _emit_env upgrade_apply_fail "upgrader 旧版本 apply 失败(pin=$provider_from)"
+        [ -f "$_mtf.bak" ] && mv "$_mtf.bak" "$_mtf" 2>/dev/null
+        return 0
+    fi
+    # 改回 current pin,init -upgrade,plan
+    sed -i.bak "s/version = \"${provider_from//./\\.}\"/version = \"${_cur_pin//./\\.}\"/" "$_mtf" 2>/dev/null
+    _run_step upgrade_init_new "$PRUN_WD/upgrade_init_new.log" -- terraform init -input=false -upgrade
+    if [ "$STEP_RC" -ne 0 ]; then
+        if _is_network_error "$PRUN_WD/upgrade_init_new.log"; then
+            _emit_env init_network_fail "upgrader init(升级至 $_cur_pin)失败,日志含 registry/网络关键词"
+        else
+            _emit_env upgrade_init_new_fail "upgrader init(升级至 $_cur_pin)失败"
+        fi
+        return 0
+    fi
+    _run_step upgrade_plan "$PRUN_WD/upgrade_plan.log" -- terraform plan -detailed-exitcode -out=tf.plan_upgrade -var "run_id=$PRUN_RUN_ID"
+    if [ "$STEP_RC" -eq 2 ]; then
+        local _upj="$PRUN_WD/plan_upgrade.json" _usev="S2"
+        ( cd "$PRUN_WD" && terraform show -json tf.plan_upgrade > "$_upj" 2>/dev/null )
+        if [ -s "$_upj" ] && jq -e 'any(.resource_changes[]?; (.change.actions|index("delete")) and (.change.actions|index("create")))' "$_upj" >/dev/null 2>&1; then
+            _usev="S1"
+        fi
+        _emit_finding upgrade_diff upgrade_plan "provider $provider_from → $_cur_pin 升级后 plan 出现 diff(state 兼容性破坏)" "$PRUN_WD/upgrade_plan.log" "$_usev"
     fi
 }
 
@@ -1428,6 +1490,17 @@ _detect_unexpected_replace() { # planlog stage
 
 # verdict.json 落工作目录 + 复制到 runs/probe + 生成人读 md
 _finalize_verdict() {
+    # F4:LRU 索引更新——凡是 plan 或 validate 步骤已真跑(即使按预期失败,expect_fail:validate/plan
+    # 也算跑过,避免负路径场景永远选中霸榜),且未被 5 类环境阻断都要更新 t1-last-run.json:
+    #   no_creds / prepaid_block / tier1_disabled_plan_only / apply_disabled_by_scenario / drift_disabled
+    if [ -n "${PRUN_SID:-}" ] && [ -s "${STEPS_FILE:-/dev/null}" ]; then
+        if grep -qE '"name":"(plan|validate)"' "$STEPS_FILE" 2>/dev/null; then
+            if ! grep -qE '"code":"(no_creds|prepaid_block|tier1_disabled_plan_only|apply_disabled_by_scenario|drift_disabled)"' "${ENV_FILE:-/dev/null}" 2>/dev/null; then
+                _t1_last_run_update "$PRUN_SID"
+            fi
+        fi
+    fi
+
     local audit; audit="$(probe_audit_dir)"; mkdir -p "$audit"
     local dur=$(( $(date +%s) - PRUN_START_EPOCH ))
     local verdict="$PRUN_WD/verdict.json"
@@ -1534,14 +1607,18 @@ _expect_fail_verdict() {
 #   B2 expect_fail 分流:声明阶段=actual → expected(不报) 或 expected_but_error_mismatch(S3);
 #   声明阶段>actual → early_failure_fallthrough(用 fallback 常规 finding);
 #   声明阶段<actual → late_validation(S3)。
+#   副作用:全局 _LAST_EXPECT_VERDICT 写入分流结果,caller 可据此决定是否早退
+#   (F2:validate 期望内失败后不应继续跑 plan/apply,避免连锁失败被误报 late_validation)。
+#   err_contains 用 fixed-string 匹配(-F),避免 [ ] . * 被当 BRE 元字符误配。
 _emit_expect_finding() {
     local declared="$1" actual="$2" err_contains="$3" errlog="$4"
     local fb_code="$5" fb_sev="$6" fb_sum="$7"
     local err_ok=1
     if [ -n "$err_contains" ]; then
-        grep -qi -- "$err_contains" "$errlog" 2>/dev/null && err_ok=1 || err_ok=0
+        grep -qiF -- "$err_contains" "$errlog" 2>/dev/null && err_ok=1 || err_ok=0
     fi
     local verdict; verdict="$(_expect_fail_verdict "$declared" "$actual" "$err_ok")"
+    _LAST_EXPECT_VERDICT="$verdict"
     case "$verdict" in
         expected)
             _emit_env expected_failure "阶段 $actual 按预期失败(expect_fail=$declared;error_contains 命中)"
@@ -1560,12 +1637,17 @@ _emit_expect_finding() {
     esac
 }
 
-# _drift_tokenize <cli_string> — 按空白切 argv,元字符黑名单 + argv[0] 必须字面 aliyun。
-#   护栏#1(无 shell 直执):任一 token 含 `; & | $ ( ) < > \` 反引号/换行/反斜杠即拒绝;argv[0] != aliyun 拒绝。
-#   stdout:每行一个 token(过白名单);non-zero 退码表示被拒(stderr 有原因)。
+# _drift_tokenize <cli_string> — 按空白切 argv,元字符黑名单 + argv[0] 必须字面 aliyun + argv[3+] 拒绝
+#   aliyun CLI 全局 flag(避免绕过凭证/端点/profile/region)。
+#   护栏#1(无 shell 直执):任一 token 含 `; & | $ ( ) < > \` 反引号/换行/回车/反斜杠即拒绝;
+#   argv[0] != aliyun 拒绝;argv[3+] 命中 --endpoint/--profile/--access-key-id/
+#   --access-key-secret/--sts-token/--config-path/--mode/--region-id(大小写不敏感,
+#   兼容 `--flag=value` 与 `--flag value` 写法)即拒绝。
+#   stdout:必须先全量通过所有校验、才把每行一个 token 写出(避免部分 token 已流出后再拒绝);
+#   non-zero 退码 = 被拒(stderr 有原因)。
 _drift_tokenize() {
-    local s="$1" tok
-    # 换行/反斜杠一律不允许
+    local s="$1" tok i flag_only lower
+    # 换行/回车/反斜杠一律不允许
     case "$s" in
         *$'\n'*|*$'\r'*) echo "drift_cli: 含换行/回车,拒绝" >&2; return 1 ;;
         *\\*) echo "drift_cli: 含反斜杠,拒绝" >&2; return 1 ;;
@@ -1576,13 +1658,25 @@ _drift_tokenize() {
     read -ra argv <<< "$s"
     [ "${#argv[@]}" -ge 3 ] || { echo "drift_cli: 至少需 aliyun <product> <Action> 三段" >&2; return 1; }
     [ "${argv[0]}" = "aliyun" ] || { echo "drift_cli: argv[0] 必须字面 aliyun(拒绝 ${argv[0]})" >&2; return 1; }
-    for tok in "${argv[@]}"; do
+    # ① 全量校验:元字符 + argv[3+] aliyun 全局 flag 黑名单;任一 token 命中即拒绝,绝不流出半成品
+    for i in "${!argv[@]}"; do
+        tok="${argv[$i]}"
         case "$tok" in
             *';'*|*'&'*|*'|'*|*'$'*|*'('*|*')'*|*'<'*|*'>'*|*'`'*)
                 echo "drift_cli: token 含元字符(拒绝:'$tok')" >&2; return 1 ;;
         esac
-        printf '%s\n' "$tok"
+        if [ "$i" -ge 3 ]; then
+            flag_only="${tok%%=*}"
+            lower="$(printf '%s' "$flag_only" | tr '[:upper:]' '[:lower:]')"
+            case "$lower" in
+                --endpoint|--profile|--access-key-id|--access-key-secret|--sts-token|--config-path|--mode|--region-id)
+                    echo "drift_cli: token 命中 aliyun CLI 全局 flag 黑名单(拒绝:'$tok'),禁止绕过凭证/端点/profile" >&2
+                    return 1 ;;
+            esac
+        fi
     done
+    # ② 全部校验通过 → 统一输出(边校验边 printf 会让部分 token 先流出,拒绝后果为止不住)
+    for tok in "${argv[@]}"; do printf '%s\n' "$tok"; done
 }
 
 # _drift_action_allowed <product> <action> — 0=白名单命中,1=拒绝。config `.tiers.tier1.drift_action_allow` <product>:<Action>。
@@ -1746,10 +1840,15 @@ _archive_workdir_gc() {
         # 中间夹 T/Z 非纯数字,故放宽为 ^[0-9]{8,}[A-Za-z0-9]*-.+$ —— 覆盖两种 <ts>-<sid> 写法,
         # 仍排除 .plugin-cache / manual-* / notmatching-dir 等非 runner 目录。
         [[ "$name" =~ ^[0-9]{8,}[A-Za-z0-9]*-.+$ ]] || continue
-        # tfstate 存在且 resources 非空 → 绝不删(sweep 残留即停语义)
+        # tfstate 存在且 resources 非空 → 绝不删(sweep 残留即停语义)。
+        # F6:jq 失败 / 输出非数字 → 视作损坏(不知道有没有残留),保守不删,清单里报 corrupt 提示。
         if [ -f "$d/terraform.tfstate" ]; then
             state_n="$(jq -r '.resources | length' "$d/terraform.tfstate" 2>/dev/null)"
-            [ -z "$state_n" ] && state_n=0
+            local _jq_rc=$?
+            if [ "$_jq_rc" -ne 0 ] || ! [[ "$state_n" =~ ^[0-9]+$ ]]; then
+                echo "  corrupt tfstate (待人工): $d/terraform.tfstate" >&2
+                continue
+            fi
             [ "$state_n" -gt 0 ] && continue
         fi
         # mtime 判老

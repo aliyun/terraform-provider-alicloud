@@ -133,9 +133,12 @@ for f in _verdict_glob:
         tier1 += 1
     for fd in (v.get("findings") or []):
         # A4 去重:(code, resource, attribute) 三元组本周只算一次;缺 resource/attribute 用 stage/summary 兜底
+        # F5:tier1 verdict 加 scenario_id 进 dedup key,不同场景相同 code+stage+summary 各算一份;
+        #     tier0 verdict 无 scenario_id 字段自然为空串,与旧键等效(空串对齐)。
         code = fd.get("code") or ""
         key = (code, fd.get("resource") or fd.get("stage") or "",
-               fd.get("attribute") or fd.get("summary", "")[:64])
+               fd.get("attribute") or fd.get("summary", "")[:64],
+               v.get("scenario_id", "") or "")
         if key in _seen_findings:
             continue
         _seen_findings.add(key)

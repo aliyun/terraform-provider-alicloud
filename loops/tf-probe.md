@@ -51,7 +51,7 @@ bootstrap/probe.sh tier0 --dry                  # 只列将扫资源 + mech 模�
   `probe-meta` 不可用 → 自动降级为纯 doc↔source + 全 queue(现行为)。
 - **verifier 只判疑点**:收窄后的 `judgment_queue`(每条带 `reason`:prose_review/unmapped_params/enum_unparsed/no_triple/
   meta_unavailable)走双层查证,产 `doc_api_gap`。**范围红线:只核对已接入 TF 的面,未接入的资源/参数不报 gap(需求非 bug)**。
-- 落盘 `runs/probe/<日期>-tier0.json`(verdict `mech` 字段标 on/off/degraded) + 人读 md。退出码:0 无 findings / 1 有 findings / 2 runner 错误。
+- 落盘 `runs/probe/<YYYYMMDD>-<HHMMSS>-tier0.json`(verdict `mech` 字段标 on/off/degraded) + 人读 md。退出码:0 无 findings / 1 有 findings / 2 runner 错误。
 
 ---
 
@@ -78,7 +78,7 @@ bootstrap/probe.sh run <id> --dry               # 只看步骤计划(region 解�
 - region 优先级:`--region` > scenario.yaml `region:` > config `regions.focus` > 环境 `ALICLOUD_REGION`。
 - **prepaid 销毁性守门**:apply 前扫 plan,命中 PrePaid/Subscription 计费类型默认阻断(`prepaid_block`);场景 `allow_prepaid: true` 豁免。
 - `tiers.tier1.enabled=false` → **封顶 plan-only**(不 apply,env_issue `tier1_disabled_plan_only`)。
-- 读产出 `verdict.json`(工作目录 + `runs/probe/<日期>-<id>.json` + md)。退出码:0/1/2/**3 清理失败(最高优先级人工介入)**。
+- 读产出 `verdict.json`(工作目录 + `runs/probe/<YYYYMMDD>-<HHMMSS>-<id>.json` + md)。退出码:0/1/2/**3 清理失败(最高优先级人工介入)**。
 - **findings 判定是 Claude 的职责**:逐 finding 对照 evidence、`references/severity-rubric.md`、CHANGELOG Unreleased 段(已修掉的标「已修复未发布」不建单)。
 
 ---

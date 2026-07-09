@@ -247,6 +247,39 @@ jqeq "$DEDUP_OUT" '.findings.total' 1 "同 (code,resource,attribute) 只计 1(�
 jqeq "$DEDUP_OUT" '.findings.api_gap.api_gap_required' 1 "api_gap 分布也去重"
 rm -rf "$DEDUP_ROOT"
 
+# F5:不同 scenario_id 的 tier1 verdict 含相同 (code,stage,summary) → dedup key 加 scenario_id 后各算一份
+echo "Test 12b: F5 — tier1 verdict 去重 key 加 scenario_id,不同场景相同 code+stage+summary 不合并"
+F5_ROOT="$(mktemp -d)"
+mkdir -p "$F5_ROOT/config" "$F5_ROOT/runs/probe" "$F5_ROOT/escalation/probe-drafts" "$F5_ROOT/.my-day/probe" "$F5_ROOT/bin"
+cp "$REAL_PROBE_CONFIG" "$F5_ROOT/config/probe.json"
+cp "$PROJ_ROOT/config/pools.json" "$F5_ROOT/config/pools.json"
+echo '[]' > "$F5_ROOT/.my-day/scan.json"
+# 两个不同 scenario_id 的 tier1 verdict,含 code/stage/summary 一致的 finding
+cat > "$F5_ROOT/runs/probe/${D0}-${D0_HMS}-net-vpc-basic.json" <<JSON
+{"schema_version":1,"mode":"tier1","scenario_id":"net-vpc-basic","started_at":"${D0_ISO}",
+ "findings":[{"code":"perpetual_diff","stage":"plan2","summary":"drift observed","evidence":"log","severity_hint":"S2"}]}
+JSON
+cat > "$F5_ROOT/runs/probe/${D0}-100001-net-vswitch-basic.json" <<JSON
+{"schema_version":1,"mode":"tier1","scenario_id":"net-vswitch-basic","started_at":"${D0_ISO}",
+ "findings":[{"code":"perpetual_diff","stage":"plan2","summary":"drift observed","evidence":"log","severity_hint":"S2"}]}
+JSON
+F5_OUT="$(JARVIS_ROOT="$F5_ROOT" JARVIS_TF_PLAYGROUND="$F5_ROOT/nope" JARVIS_A1="$A1_FAIL" bash "$BOARD" probe 2>/dev/null)"
+jqeq "$F5_OUT" '.findings.rounds' 2 "两轮 tier1 都计轮数=2(不同 scenario_id)"
+jqeq "$F5_OUT" '.findings.total' 2 "不同 scenario_id 相同 code+stage+summary → dedup 后各算一份(不合并)"
+# 兼容性:tier0 verdict 无 scenario_id 也不受影响,仍走原键
+cat > "$F5_ROOT/runs/probe/${D0}-100002-tier0.json" <<JSON
+{"schema_version":2,"mode":"tier0","mech":"on","started_at":"${D0_ISO}",
+ "findings":[{"code":"doc_gap_phantom","resource":"alicloud_vpc","attribute":"acl","summary":"z","severity_hint":"S3"}]}
+JSON
+cat > "$F5_ROOT/runs/probe/${D0}-100003-tier0.json" <<JSON
+{"schema_version":2,"mode":"tier0","mech":"on","started_at":"${D0_ISO}",
+ "findings":[{"code":"doc_gap_phantom","resource":"alicloud_vpc","attribute":"acl","summary":"z","severity_hint":"S3"}]}
+JSON
+F5_OUT2="$(JARVIS_ROOT="$F5_ROOT" JARVIS_TF_PLAYGROUND="$F5_ROOT/nope" JARVIS_A1="$A1_FAIL" bash "$BOARD" probe 2>/dev/null)"
+# tier1: 2 + tier0: 1(去重后)= 3
+jqeq "$F5_OUT2" '.findings.total' 3 "tier0 无 scenario_id 走原键,仍去重(2 tier1 + 1 tier0 dedup)"
+rm -rf "$F5_ROOT"
+
 echo "Test 12: 零值 tile 渲染为 '0'(不因 e() 的 (s or '') 而空白)"
 HROOT="$(mktemp -d)"
 mkdir -p "$HROOT/config" "$HROOT/.my-day" "$HROOT/runs/probe" "$HROOT/escalation/probe-drafts" "$HROOT/docs"

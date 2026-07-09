@@ -401,7 +401,7 @@ def _probe_prompt(round_id):
         "3) tier-1：bootstrap/probe.sh list 挑最久未跑的 ≤ config.limits.max_scenarios_per_run 个场景，"
         "逐个 bootstrap/probe.sh run <id>（region 默认 focus）。\n"
         "4) findings 处置严格按 .claude/skills/tf-customer-probe SKILL.md Step C/D 与 "
-        "config/probe.json ticket.mode 执行（当前 file=直接建单，去重+日上限纪律见 skill）。\n"
+        "config/probe.json ticket.mode 执行（去重+日上限纪律见 skill）。\n"
         "5) bootstrap/probe.sh sweep 清残留（残留退 1 即停并升级）。\n"
         "6) bootstrap/probe.sh archive 归档终态 draft / 超期 verdict / 工作目录。\n"
         "7) 按 .claude/skills/tf-customer-probe/references/knowledge-distillation.md 契约把本轮学到的"
@@ -1565,7 +1565,7 @@ class WaitWatcher:
         with self._lock:
             self.suspended.pop(aone_id, None)
         self._remove_persisted(aone_id)
-        wl = JarvisDingTalkBot._workitem_line(aone_id)
+        wl = JarvisHandler._workitem_line(aone_id)
         line = wl[0] if isinstance(wl, tuple) else wl
         self.handler._quick_card(
             task["target"],

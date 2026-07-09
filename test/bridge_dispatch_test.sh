@@ -413,6 +413,11 @@ class ProbePromptTest(unittest.TestCase):
         self.assertNotIn("mode=draft，人审后建单", prompt,
                          "旧硬编码「mode=draft，人审后建单」必须删掉——处置改由 skill 承担")
         self.assertNotIn("mode=draft,人审后建单", prompt)
+        # 顺带删掉「当前 file=直接建单」快照——ticket.mode 现值不再落在 prompt 里,严格由 skill 读 config
+        self.assertNotIn("file=直接建单", prompt,
+                         "当前 file=直接建单 快照必须删掉——ticket.mode 现值改由 skill 从 config 读取")
+        self.assertNotIn("file=", prompt,
+                         "prompt 不应再固化任一 ticket.mode 值快照(file/draft/…) — 严格按 config 执行")
         self.assertIn(".claude/skills/tf-customer-probe", prompt,
                       "处置必须指向 tf-customer-probe SKILL Step C/D")
         self.assertIn("ticket.mode", prompt,
@@ -433,6 +438,27 @@ class ProbePromptTest(unittest.TestCase):
     def test_prompt_carries_round_id(self):
         prompt = b._probe_prompt("probe-2026-07-08")
         self.assertIn("probe-2026-07-08", prompt)
+
+
+class WaitWatcherExpireClassRefTest(unittest.TestCase):
+    """WaitWatcher._expire 曾误引 JarvisDingTalkBot._workitem_line(而 bot 模块内根本没有
+    这个类/属性),真到 48h 超时时会 NameError/AttributeError 崩溃且不发升级卡片。
+    修复后必须走 JarvisHandler._workitem_line(该类实际存在且承载该 static)。"""
+
+    def test_handler_has_workitem_line_static(self):
+        self.assertTrue(hasattr(b.JarvisHandler, "_workitem_line"),
+                        "JarvisHandler._workitem_line 应作为 static/class method 存在")
+        # 该模块内没有 JarvisDingTalkBot 类——旧代码引用它必定 NameError
+        self.assertFalse(hasattr(b, "JarvisDingTalkBot"),
+                         "bridge/jarvis_dingtalk_bot.py 模块不应存在 JarvisDingTalkBot 类(旧误引来源)")
+
+    def test_expire_source_uses_handler_ref(self):
+        import inspect
+        src = inspect.getsource(b.WaitWatcher._expire)
+        self.assertIn("JarvisHandler._workitem_line", src,
+                      "WaitWatcher._expire 必须显式引 JarvisHandler._workitem_line")
+        self.assertNotIn("JarvisDingTalkBot._workitem_line", src,
+                         "WaitWatcher._expire 不得再引 JarvisDingTalkBot._workitem_line(会 NameError)")
 
 
 class DailySchedulerRunContractTest(unittest.TestCase):

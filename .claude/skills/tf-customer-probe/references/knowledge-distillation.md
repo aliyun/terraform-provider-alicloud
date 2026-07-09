@@ -45,7 +45,7 @@ env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > `bootstrap/workspac
 ```
 
 - **日期**=蒸馏当日（UTC，`date -u +%F`）。
-- **来源**=可回追的锚点：Aone 工单 URL / verdict 路径（`runs/probe/<日期>-<HHMMSS>-<sid>.json`）/
+- **来源**=可回追的锚点：Aone 工单 URL / verdict 路径（`runs/probe/<YYYYMMDD>-<HHMMSS>-<sid>.json`）/
   上游 GitHub PR URL / provider 源码行号（`alicloud/resource_alicloud_xxx.go:LNN`）。
 - **正文**=**一条可执行的产品级事实**（客户/开发者读到就能照做/避坑的一句话）；避免流程性/时序性叙述、
   避免"我们做了 X"式过程记录——那些进 verdict/工单评论，不进 KNOWLEDGE。

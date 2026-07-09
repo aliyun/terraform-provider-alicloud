@@ -45,7 +45,7 @@ probe 发现(tier-0 doc gap / tier-1 生命周期 bug) → 建单(tf_provider 52
 | tier-0 fixture | `test/fixtures/probe/` | 手造迷你 doc + go,供解析器 hermetic 单测(五类 gap) |
 | 技能 | `.claude/skills/tf-customer-probe/` | 全流程 + severity/ticket/authoring references |
 | 循环 | `loops/tf-probe.md` | 触发→预检→tier0→tier1→分流→清理→Done runbook |
-| 审计 | `runs/probe/<日期>-<id>.{json,md}` + `<日期>-tier0.{json,md}` | verdict 落盘(本地缓存,真源在 Aone) |
+| 审计 | `runs/probe/<YYYYMMDD>-<HHMMSS>-<id>.{json,md}` + `<YYYYMMDD>-<HHMMSS>-tier0.{json,md}` | verdict 落盘(本地缓存,真源在 Aone) |
 | draft 队列 | `escalation/probe-drafts/` | 工单草稿(未跟踪文件 = 待审信号) |
 
 ## tier 分层与当前开关(2026-07-03 重定义)

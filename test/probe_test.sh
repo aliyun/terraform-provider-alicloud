@@ -679,6 +679,9 @@ ncols_head="$(awk '{print NF}' <<<"$head1")"
 # 关键护栏:数据行的 $2 仍是场景 id(rc-gate 依赖)
 row2_col2="$(printf '%s\n' "$OUT" | awk 'NR>1 && $2!="" {print $2; exit}')"
 grep -qw "$row2_col2" <<<"$OUT" && ok "list 行 \$2 是场景 id($row2_col2)" || bad "list 行 \$2 结构破坏"
+# 硬契约:fixture 里已知 sid net-vpc-basic 必须以 $2 出现在 list 输出的某一行(rc-gate.sh:146 awk '$2' 取值)
+awk_row="$(printf '%s\n' "$OUT" | awk 'NR>1 && $2=="net-vpc-basic" {print; exit}')"
+[ -n "$awk_row" ] && ok "list 中 net-vpc-basic 精确落在 \$2(rc-gate awk 契约)" || bad "net-vpc-basic 未落在 \$2 位置"
 
 # ---------------------------------------------------------------------------
 echo "Test 37: 文件名新旧回退解析(_t1_last_run_get 兼容 <YYYYMMDD>-<sid>.json 与 <YYYYMMDD>-<HHMMSS>-<sid>.json)"
@@ -728,6 +731,52 @@ tokprobe $'aliyun vpc TagResources\nrm x'      && bad "换行未拒" || ok "换�
 tokprobe 'aliyun vpc TagResources \\bad'       && bad "反斜杠未拒" || ok "反斜杠 → 拒"
 tokprobe 'bash vpc TagResources'               && bad "argv[0]!=aliyun 未拒" || ok "argv[0]!=aliyun → 拒"
 tokprobe 'aliyun vpc'                          && bad "参数不足未拒" || ok "至少三段 → 拒少段"
+
+# F1 新增:aliyun CLI 全局 flag 黑名单(argv[3+])
+tokprobe 'aliyun vpc TagResources --endpoint http://evil'                && bad "--endpoint 未拒" || ok "--endpoint 空格式 → 拒"
+tokprobe 'aliyun vpc TagResources --endpoint=http://evil'                && bad "--endpoint= 未拒" || ok "--endpoint=xxx → 拒"
+tokprobe 'aliyun vpc TagResources --Endpoint=http://evil'                && bad "--Endpoint 大小写不敏感未拒" || ok "--Endpoint(大小写不敏感) → 拒"
+tokprobe 'aliyun vpc TagResources --profile prod'                        && bad "--profile 未拒" || ok "--profile → 拒"
+tokprobe 'aliyun vpc TagResources --access-key-id AKI'                   && bad "--access-key-id 未拒" || ok "--access-key-id → 拒"
+tokprobe 'aliyun vpc TagResources --access-key-secret SK'                && bad "--access-key-secret 未拒" || ok "--access-key-secret → 拒"
+tokprobe 'aliyun vpc TagResources --sts-token TK'                        && bad "--sts-token 未拒" || ok "--sts-token → 拒"
+tokprobe 'aliyun vpc TagResources --config-path /tmp/x'                  && bad "--config-path 未拒" || ok "--config-path → 拒"
+tokprobe 'aliyun vpc TagResources --mode AK'                             && bad "--mode 未拒" || ok "--mode → 拒"
+tokprobe 'aliyun vpc TagResources --region-id us-east-1'                 && bad "--region-id 未拒" || ok "--region-id → 拒"
+tokprobe 'aliyun vpc TagResources --Foo bar'                             && ok "非黑名单 --Foo 不误拒" || bad "非黑名单 --Foo 误拒"
+
+# F1 新增:tokenize 全量校验通过后才输出(拒绝态绝不半流出)——
+# 尾部含 `;` 的命令必须整体拒绝且不发出任何 token,更绝不 exec。
+tokdump() { bash -c 'source "$1"; _drift_tokenize "$2" 2>/dev/null' _ "$PROBE" "$1"; }
+_bad_out="$(tokdump 'aliyun vpc TagResources; rm -rf /')"
+[ -z "$_bad_out" ] && ok "尾部 ; token 命令 → tokenize 输出为空(不流出半成品)" || bad "拒绝态却流出 token: '$_bad_out'"
+_bad_out2="$(tokdump 'aliyun vpc TagResources arg $(id)')"
+[ -z "$_bad_out2" ] && ok "\$( ) 命令 → tokenize 输出为空" || bad "\$( ) 拒绝态流出: '$_bad_out2'"
+
+# F1 新增:_probe_drift_dance 必须显式检查 tokenize 退码——命中 --endpoint 即 drift_cli_rejected,
+# 不能进 exec。走 --dry 只能验计划,真调走 fixture:直接用 _probe_drift_dance + 拒绝态 stub 校验。
+drift_reject_probe() {
+    bash -c '
+        source "$1"
+        # stub 全局环境:凭证/工作目录/region
+        export ALICLOUD_ACCESS_KEY=fake ALICLOUD_SECRET_KEY=fake
+        PRUN_REGION="cn-hangzhou"
+        PRUN_WD="'"$tmp"'/drift_ws_'"$$"'_$$"
+        mkdir -p "$PRUN_WD"
+        ENV_FILE="$PRUN_WD/.env.jsonl"; : > "$ENV_FILE"
+        FINDINGS_FILE="$PRUN_WD/.findings.jsonl"; : > "$FINDINGS_FILE"
+        STEPS_FILE="$PRUN_WD/.steps.jsonl"; : > "$STEPS_FILE"
+        # 强制 drift_enabled=true(否则会走 drift_disabled)
+        printf "%s" "{\"tiers\":{\"tier1\":{\"drift_enabled\":true,\"drift_action_allow\":[\"vpc:TagResources\"]}}}" > "$PRUN_WD/cfg.json"
+        PROBE_CONFIG="$PRUN_WD/cfg.json"
+        export PROBE_CONFIG
+        _probe_drift_dance "$2" >/dev/null 2>&1
+        # 校验 env_issue = drift_cli_rejected
+        grep -q "drift_cli_rejected" "$ENV_FILE"
+    ' _ "$PROBE" "$1"
+}
+drift_reject_probe 'aliyun vpc TagResources --endpoint=http://evil' && ok "--endpoint 命令进 _probe_drift_dance → drift_cli_rejected(护栏拦截)" || bad "--endpoint 未被 drift_cli_rejected"
+drift_reject_probe 'aliyun vpc TagResources --profile x'            && ok "--profile 命令进 _probe_drift_dance → drift_cli_rejected" || bad "--profile 未被 drift_cli_rejected"
 
 # ---------------------------------------------------------------------------
 echo "Test 40: drift_cli action 白名单拒绝(_drift_action_allowed)"
@@ -931,6 +980,606 @@ fi
 # 幂等:再跑一次不出错(前次已 archived)
 run_probe env JARVIS_ROOT="$arc" JARVIS_TF_PLAYGROUND="$arc/nope" bash "$PROBE" archive
 [ "$RC" = "0" ] && ok "archive 幂等(重跑退 0)" || bad "archive 重跑退 $RC"
+
+# 硬幂等:第二次 dry 计数必须全 0(前次已 archived 完毕,再无可搬)
+run_probe env JARVIS_ROOT="$arc" JARVIS_TF_PLAYGROUND="$arc/nope" bash "$PROBE" archive --dry
+[ "$RC" = "0" ] && ok "archive 二次 --dry 退 0" || bad "二次 --dry 退 $RC"
+grep -q "drafts: moved=0" <<<"$OUT"   && ok "二次 --dry drafts: moved=0"   || bad "二次 --dry drafts 应 0: $OUT"
+grep -q "verdicts: moved=0" <<<"$OUT" && ok "二次 --dry verdicts: moved=0" || bad "二次 --dry verdicts 应 0"
+grep -q "workdir: gc=0" <<<"$OUT"     && ok "二次 --dry workdir: gc=0"     || bad "二次 --dry workdir 应 0"
+# archived/ 下不允许嵌套 archived/(二次搬移会导致 archived/archived/xxx 出现)
+[ ! -d "$arc/escalation/probe-drafts/archived/archived" ] && ok "archived/ 下无嵌套 archived/(二次未误搬)" || bad "archived/ 下出现嵌套 archived/"
+ls "$arc/runs/probe/archive/"*/archive/ >/dev/null 2>&1 && bad "runs/probe/archive/*/archive/ 嵌套(二次搬移污染)" || ok "runs/probe/archive 下无嵌套 archive/"
+# ledger 尾行必须是本次 archive_dry,且 moved.drafts/verdicts/workdirs 全 0
+if [ -f "$arc/runs/probe/ledger.jsonl" ]; then
+    last="$(tail -1 "$arc/runs/probe/ledger.jsonl")"
+    jq -e '.kind=="archive_dry" and .moved.drafts==0 and .moved.verdicts==0 and .moved.workdirs==0' <<<"$last" >/dev/null 2>&1 \
+        && ok "ledger 尾行 archive_dry 且 moved 全 0(幂等台账证据)" \
+        || bad "ledger 尾行异常: $last"
+fi
+
+# ===========================================================================
+# F1-F6 + 小改进 集成测试(可 source 单测 / stub-terraform 集成)
+# ===========================================================================
+
+# 通用 stub:PATH 前置一个假 terraform,子命令 rc 由 env 控制
+# 用法:make_tf_stub <dir> [<name>=terraform]
+make_tf_stub() {
+    local _d="$1" _n="${2:-terraform}"
+    mkdir -p "$_d"
+    cat > "$_d/$_n" <<'STUB'
+#!/usr/bin/env bash
+# rc 由 TF_<STAGE>_RC 控制;output/show/state 恒 0
+case "$1" in
+    version)      echo "Terraform stub v0.0"; exit 0 ;;
+    init)
+        for _a in "$@"; do
+            [ "$_a" = "-upgrade" ] && exit "${TF_INIT_UPGRADE_RC:-0}"
+        done
+        exit "${TF_INIT_RC:-0}" ;;
+    validate)     exit "${TF_VALIDATE_RC:-0}" ;;
+    plan)         exit "${TF_PLAN_RC:-0}" ;;
+    apply)        exit "${TF_APPLY_RC:-0}" ;;
+    destroy)      exit "${TF_DESTROY_RC:-0}" ;;
+    output)       echo ""; exit 0 ;;
+    show)         echo "{}"; exit 0 ;;
+    state)        exit 0 ;;
+    fmt)          exit 0 ;;
+    *)            exit 0 ;;
+esac
+STUB
+    # aliyun 桩:drift 场景需要;默认成功
+    cat > "$_d/aliyun" <<'ALI'
+#!/usr/bin/env bash
+exit "${ALIYUN_RC:-0}"
+ALI
+    chmod +x "$_d/aliyun"
+    chmod +x "$_d/$_n"
+}
+
+# ---------------------------------------------------------------------------
+echo "Test 46: F2 expect_fail validate 早退——validate 按预期失败后不跑 plan/apply(避免 late_validation 误报)"
+f2_run() {
+    # <fixture_pg> <sid> <expected_env_code_or_no_finding_of_late_val>
+    local pg="$1" sid="$2" wd audit stub
+    wd="$(mktemp -d)"; audit="$(mktemp -d)"; stub="$(mktemp -d)"
+    make_tf_stub "$stub"
+    env PATH="$stub:$PATH" \
+        JARVIS_TF_PLAYGROUND="$pg" \
+        PROBE_WORKDIR="$wd" \
+        PROBE_AUDIT_DIR="$audit" \
+        ALICLOUD_ACCESS_KEY=fake ALICLOUD_SECRET_KEY=fake ALICLOUD_REGION=cn-hangzhou \
+        TF_VALIDATE_RC="${TF_VALIDATE_RC:-0}" \
+        TF_PLAN_RC="${TF_PLAN_RC:-0}" \
+        TF_APPLY_RC="${TF_APPLY_RC:-0}" \
+        bash "$PROBE" run "$sid" >/dev/null 2>&1
+    # 找 audit 里最新 <sid>.json(带 HHMMSS)
+    verdict="$(ls -t "$audit"/*-"$sid".json 2>/dev/null | head -1)"
+    echo "$verdict"
+}
+
+# ── 46.1 expect_fail: validate + validate 真失败 → 应 expected 且不出 late_validation
+efpg="$tmp/f2_efpg"; mkdir -p "$efpg/vpc/expfail-validate"
+cat > "$efpg/vpc/expfail-validate/scenario.yaml" <<'YAML'
+id: expfail-validate
+title: expect_fail validate
+persona: beginner
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: expected_failure
+update_step: false
+import_check: false
+expect_fail: validate
+source_docs: https://example
+YAML
+cat > "$efpg/vpc/expfail-validate/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+# validate 失败(stub 强制 rc=1),plan/apply 都 rc=0(会导致 late_validation 误报;修好后应早退)
+verdict="$(TF_VALIDATE_RC=1 TF_PLAN_RC=0 TF_APPLY_RC=0 f2_run "$efpg" expfail-validate)"
+if [ -n "$verdict" ] && [ -f "$verdict" ]; then
+    ok "F2 expect_fail:validate verdict 落盘"
+    n_late="$(jq -r '[.findings[]|select(.code=="late_validation")]|length' "$verdict")"
+    [ "$n_late" = "0" ] && ok "F2 validate expected → 无 late_validation 误报" || bad "F2 出现 late_validation(n=$n_late,验证早退失败)"
+    n_missed="$(jq -r '[.findings[]|select(.code=="expected_fail_missed")]|length' "$verdict")"
+    [ "$n_missed" = "0" ] && ok "F2 validate expected → 无 expected_fail_missed 误报" || bad "F2 出现 expected_fail_missed(n=$n_missed)"
+    jq -e '.env_issues[]|select(.code=="expected_failure")' "$verdict" >/dev/null 2>&1 \
+        && ok "F2 env_issues 含 expected_failure(按预期失败被归口)" \
+        || bad "F2 缺 expected_failure env_issue"
+    # 早退证据:steps 里只应有 init + validate,没有 plan/apply
+    have_plan="$(jq -r '[.steps[]|select(.name=="plan")]|length' "$verdict")"
+    [ "$have_plan" = "0" ] && ok "F2 validate expected → steps 内无 plan(证明早退)" || bad "F2 出现 plan 步骤(未早退)"
+else
+    bad "F2 expect_fail:validate 未落盘 verdict"
+fi
+
+# ── 46.2 apply 失败版:expect_fail=apply 且 apply 真失败 → 现有分流不受影响,仍 expected
+apg="$tmp/f2_apply_pg"; mkdir -p "$apg/vpc/expfail-apply"
+cat > "$apg/vpc/expfail-apply/scenario.yaml" <<'YAML'
+id: expfail-apply
+title: expect_fail apply
+persona: beginner
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: expected_failure
+update_step: false
+import_check: false
+expect_fail: apply
+source_docs: https://example
+YAML
+cat > "$apg/vpc/expfail-apply/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+verdict2="$(TF_VALIDATE_RC=0 TF_PLAN_RC=0 TF_APPLY_RC=1 f2_run "$apg" expfail-apply)"
+if [ -n "$verdict2" ] && [ -f "$verdict2" ]; then
+    jq -e '.env_issues[]|select(.code=="expected_failure")' "$verdict2" >/dev/null 2>&1 \
+        && ok "F2 apply expected → env_issues 含 expected_failure(分流不受早退改动影响)" \
+        || bad "F2 apply expected 分流被破坏"
+    n_late2="$(jq -r '[.findings[]|select(.code=="late_validation")]|length' "$verdict2")"
+    [ "$n_late2" = "0" ] && ok "F2 apply expected → 无 late_validation" || bad "F2 apply 分流误报 late"
+else
+    bad "F2 expect_fail:apply verdict 未落盘"
+fi
+
+# ---------------------------------------------------------------------------
+echo "Test 47: F3 upgrader sed 命中校验 + 失败回滚 + provider_from 值校验"
+# 47.1 provider_from 值不合规 → upgrade_from_invalid
+inv_pg="$tmp/f3_inv_pg"; mkdir -p "$inv_pg/vpc/inv-upgrader"
+cat > "$inv_pg/vpc/inv-upgrader/scenario.yaml" <<'YAML'
+id: inv-upgrader
+title: invalid provider_from
+persona: upgrader
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: upgrade_from_invalid
+update_step: false
+import_check: false
+provider_version_from: not-a-version
+source_docs: https://example
+YAML
+cat > "$inv_pg/vpc/inv-upgrader/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+vinv="$(f2_run "$inv_pg" inv-upgrader)"
+if [ -n "$vinv" ] && [ -f "$vinv" ]; then
+    jq -e '.env_issues[]|select(.code=="upgrade_from_invalid")' "$vinv" >/dev/null 2>&1 \
+        && ok "F3 provider_version_from 非法值 → upgrade_from_invalid" \
+        || bad "F3 非法值未被 upgrade_from_invalid 拒跑"
+    # 未跑 upgrade_init_old
+    n_uio="$(jq -r '[.steps[]|select(.name=="upgrade_init_old")]|length' "$vinv")"
+    [ "$n_uio" = "0" ] && ok "F3 非法值 → 未进 upgrade_init_old" || bad "F3 非法值却进 upgrade_init_old"
+fi
+
+# 47.2 pin 目标行不存在 → upgrade_pin_not_found
+nopin_pg="$tmp/f3_nopin_pg"; mkdir -p "$nopin_pg/vpc/nopin-upgrader"
+cat > "$nopin_pg/vpc/nopin-upgrader/scenario.yaml" <<'YAML'
+id: nopin-upgrader
+title: no pin found
+persona: upgrader
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: upgrade_pin_not_found
+update_step: false
+import_check: false
+provider_version_from: 1.283.0
+source_docs: https://example
+YAML
+# 关键:main.tf 里 pin 是 9.9.9,不是 config 里的 1.284.0 → sed 无命中
+cat > "$nopin_pg/vpc/nopin-upgrader/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "9.9.9" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+vnopin="$(f2_run "$nopin_pg" nopin-upgrader)"
+if [ -n "$vnopin" ] && [ -f "$vnopin" ]; then
+    jq -e '.env_issues[]|select(.code=="upgrade_pin_not_found")' "$vnopin" >/dev/null 2>&1 \
+        && ok "F3 sed 前置校验:目标 pin 不存在 → upgrade_pin_not_found" \
+        || bad "F3 pin 不存在未拒跑"
+fi
+
+# 47.3 upgrade_init_old 失败 → main.tf 应回滚为原 pin(1.284.0)
+initfail_pg="$tmp/f3_initfail_pg"; mkdir -p "$initfail_pg/vpc/initfail-upgrader"
+cat > "$initfail_pg/vpc/initfail-upgrader/scenario.yaml" <<'YAML'
+id: initfail-upgrader
+title: upgrade init fails
+persona: upgrader
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: upgrade_init_fail
+update_step: false
+import_check: false
+provider_version_from: 1.283.0
+source_docs: https://example
+YAML
+cat > "$initfail_pg/vpc/initfail-upgrader/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+# 让 upgrade_init(-upgrade)失败:TF_INIT_UPGRADE_RC=1
+_wd_if="$(mktemp -d)"; _audit_if="$(mktemp -d)"; _stub_if="$(mktemp -d)"
+make_tf_stub "$_stub_if"
+env PATH="$_stub_if:$PATH" \
+    JARVIS_TF_PLAYGROUND="$initfail_pg" \
+    PROBE_WORKDIR="$_wd_if" \
+    PROBE_AUDIT_DIR="$_audit_if" \
+    ALICLOUD_ACCESS_KEY=fake ALICLOUD_SECRET_KEY=fake ALICLOUD_REGION=cn-hangzhou \
+    TF_INIT_UPGRADE_RC=1 \
+    bash "$PROBE" run initfail-upgrader >/dev/null 2>&1
+vif="$(ls -t "$_audit_if"/*-initfail-upgrader.json 2>/dev/null | head -1)"
+if [ -n "$vif" ] && [ -f "$vif" ]; then
+    jq -e '.env_issues[]|select(.code=="upgrade_init_fail" or .code=="init_network_fail")' "$vif" >/dev/null 2>&1 \
+        && ok "F3 upgrade_init_old 失败 → env upgrade_init_fail/init_network_fail" \
+        || bad "F3 upgrade_init_old 失败未归 env"
+    # main.tf 回滚:workdir 里的 main.tf 应含 1.284.0(原 pin),不留在 1.283.0
+    _wd_actual="$(ls -td "$_wd_if"/*-initfail-upgrader/ 2>/dev/null | head -1)"
+    if [ -n "$_wd_actual" ] && [ -f "$_wd_actual/main.tf" ]; then
+        grep -q 'version = "1.284.0"' "$_wd_actual/main.tf" && ok "F3 upgrade_init_old 失败后 main.tf 回滚到 1.284.0" || bad "F3 main.tf 未回滚:$(grep 'version' "$_wd_actual/main.tf")"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+echo "Test 48: F4 t1-last-run LRU 位置迁移到 finalize_verdict(env 阻断不更新 / expect_fail 按预期失败要更新)"
+# 48.1 no_creds 阻断 → t1-last-run 不含 sid
+noc_pg="$tmp/f4_noc_pg"; mkdir -p "$noc_pg/vpc/noc-scn"
+cat > "$noc_pg/vpc/noc-scn/scenario.yaml" <<'YAML'
+id: noc-scn
+title: no creds test
+persona: beginner
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: no_creds
+update_step: false
+import_check: false
+source_docs: https://example
+YAML
+cat > "$noc_pg/vpc/noc-scn/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+_wd_noc="$(mktemp -d)"; _audit_noc="$(mktemp -d)"; _stub_noc="$(mktemp -d)"
+make_tf_stub "$_stub_noc"
+env PATH="$_stub_noc:$PATH" \
+    JARVIS_TF_PLAYGROUND="$noc_pg" \
+    PROBE_WORKDIR="$_wd_noc" \
+    PROBE_AUDIT_DIR="$_audit_noc" \
+    bash "$PROBE" run noc-scn >/dev/null 2>&1
+# t1-last-run.json 落 PROBE_WORKDIR/t1-last-run.json
+if [ -f "$_wd_noc/t1-last-run.json" ]; then
+    jq -e '. | has("noc-scn")' "$_wd_noc/t1-last-run.json" >/dev/null 2>&1 \
+        && bad "F4 no_creds 阻断 t1-last-run.json 却含 noc-scn(应不含)" \
+        || ok "F4 no_creds 阻断 → t1-last-run.json 不含 noc-scn(env 阻断门生效)"
+else
+    ok "F4 no_creds 阻断 → t1-last-run.json 未创建(等价不含 sid)"
+fi
+
+# 48.2 tier1_disabled_plan_only 阻断 → t1-last-run 不含 sid
+tdis_pg="$tmp/f4_tdis_pg"; mkdir -p "$tdis_pg/vpc/tdis-scn"
+cat > "$tdis_pg/vpc/tdis-scn/scenario.yaml" <<'YAML'
+id: tdis-scn
+title: tier1 disabled test
+persona: beginner
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: tier1_disabled_plan_only
+update_step: false
+import_check: false
+source_docs: https://example
+YAML
+cat > "$tdis_pg/vpc/tdis-scn/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+_wd_tdis="$(mktemp -d)"; _audit_tdis="$(mktemp -d)"; _stub_tdis="$(mktemp -d)"; _cfg_tdis="$(mktemp)"
+make_tf_stub "$_stub_tdis"
+jq '.tiers.tier1.enabled=false' "$CONFIG" > "$_cfg_tdis"
+env PATH="$_stub_tdis:$PATH" \
+    JARVIS_TF_PLAYGROUND="$tdis_pg" \
+    PROBE_WORKDIR="$_wd_tdis" \
+    PROBE_AUDIT_DIR="$_audit_tdis" \
+    PROBE_CONFIG="$_cfg_tdis" \
+    ALICLOUD_ACCESS_KEY=fake ALICLOUD_SECRET_KEY=fake ALICLOUD_REGION=cn-hangzhou \
+    bash "$PROBE" run tdis-scn >/dev/null 2>&1
+if [ -f "$_wd_tdis/t1-last-run.json" ]; then
+    jq -e '. | has("tdis-scn")' "$_wd_tdis/t1-last-run.json" >/dev/null 2>&1 \
+        && bad "F4 tier1_disabled 阻断 t1-last-run.json 却含 tdis-scn" \
+        || ok "F4 tier1_disabled → t1-last-run.json 不含 tdis-scn"
+else
+    ok "F4 tier1_disabled → t1-last-run.json 未创建"
+fi
+
+# 48.3 apply_disabled_by_scenario 阻断
+apo_pg="$tmp/f4_apo_pg"; mkdir -p "$apo_pg/vpc/apo-scn"
+cat > "$apo_pg/vpc/apo-scn/scenario.yaml" <<'YAML'
+id: apo-scn
+title: apply off
+persona: beginner
+products: VPC
+resources: alicloud_vpc
+cost: paid
+detect: apply_disabled_by_scenario
+update_step: false
+import_check: false
+apply: false
+source_docs: https://example
+YAML
+cat > "$apo_pg/vpc/apo-scn/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+_wd_apo="$(mktemp -d)"; _audit_apo="$(mktemp -d)"; _stub_apo="$(mktemp -d)"
+make_tf_stub "$_stub_apo"
+env PATH="$_stub_apo:$PATH" \
+    JARVIS_TF_PLAYGROUND="$apo_pg" \
+    PROBE_WORKDIR="$_wd_apo" \
+    PROBE_AUDIT_DIR="$_audit_apo" \
+    ALICLOUD_ACCESS_KEY=fake ALICLOUD_SECRET_KEY=fake ALICLOUD_REGION=cn-hangzhou \
+    bash "$PROBE" run apo-scn >/dev/null 2>&1
+if [ -f "$_wd_apo/t1-last-run.json" ]; then
+    jq -e '. | has("apo-scn")' "$_wd_apo/t1-last-run.json" >/dev/null 2>&1 \
+        && bad "F4 apply_disabled 阻断 t1-last-run.json 却含 apo-scn" \
+        || ok "F4 apply_disabled → t1-last-run.json 不含 apo-scn"
+else
+    ok "F4 apply_disabled → t1-last-run.json 未创建"
+fi
+
+# 48.4 prepaid_block(mock plan 里含 PrePaid)——用桩 tf 生成 plan.json
+prepaid_pg="$tmp/f4_prepaid_pg"; mkdir -p "$prepaid_pg/vpc/prepaid-scn"
+cat > "$prepaid_pg/vpc/prepaid-scn/scenario.yaml" <<'YAML'
+id: prepaid-scn
+title: prepaid block
+persona: beginner
+products: VPC
+resources: alicloud_instance
+cost: paid
+detect: prepaid_block
+update_step: false
+import_check: false
+source_docs: https://example
+YAML
+cat > "$prepaid_pg/vpc/prepaid-scn/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_instance" "m" { instance_name = "probe-${var.run_id}" instance_charge_type = "PrePaid" }
+HCL
+# 造一个能吐 PrePaid 的 show json 桩(用 wrapper 覆盖 terraform show)
+_stub_pp="$(mktemp -d)"
+make_tf_stub "$_stub_pp"
+cat > "$_stub_pp/terraform" <<'PPS'
+#!/usr/bin/env bash
+case "$1" in
+    show)
+        if [ "$2" = "-json" ]; then
+            echo '{"resource_changes":[{"mode":"managed","type":"alicloud_instance","change":{"after":{"instance_charge_type":"PrePaid"}}}]}'
+            exit 0
+        fi
+        exit 0 ;;
+    version) echo "Terraform stub v0.0"; exit 0 ;;
+    init|validate|plan|apply|destroy|output|state|fmt) exit 0 ;;
+    *) exit 0 ;;
+esac
+PPS
+chmod +x "$_stub_pp/terraform"
+_wd_pp="$(mktemp -d)"; _audit_pp="$(mktemp -d)"
+env PATH="$_stub_pp:$PATH" \
+    JARVIS_TF_PLAYGROUND="$prepaid_pg" \
+    PROBE_WORKDIR="$_wd_pp" \
+    PROBE_AUDIT_DIR="$_audit_pp" \
+    ALICLOUD_ACCESS_KEY=fake ALICLOUD_SECRET_KEY=fake ALICLOUD_REGION=cn-hangzhou \
+    bash "$PROBE" run prepaid-scn >/dev/null 2>&1
+if [ -f "$_wd_pp/t1-last-run.json" ]; then
+    jq -e '. | has("prepaid-scn")' "$_wd_pp/t1-last-run.json" >/dev/null 2>&1 \
+        && bad "F4 prepaid_block 阻断 t1-last-run.json 却含 prepaid-scn" \
+        || ok "F4 prepaid_block → t1-last-run.json 不含 prepaid-scn"
+else
+    ok "F4 prepaid_block → t1-last-run.json 未创建"
+fi
+
+# 48.5 drift_disabled(drifter 场景) → t1-last-run 不含 sid
+ddis_pg="$tmp/f4_ddis_pg"; mkdir -p "$ddis_pg/vpc/ddis-scn"
+cat > "$ddis_pg/vpc/ddis-scn/scenario.yaml" <<'YAML'
+id: ddis-scn
+title: drift disabled
+persona: drifter
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: drift_disabled
+update_step: false
+import_check: false
+drift_cli: aliyun vpc TagResources --VpcId {{output.vpc_id}}
+source_docs: https://example
+YAML
+cat > "$ddis_pg/vpc/ddis-scn/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+output "vpc_id" { value = alicloud_vpc.m.id }
+HCL
+_wd_dd="$(mktemp -d)"; _audit_dd="$(mktemp -d)"; _stub_dd="$(mktemp -d)"
+make_tf_stub "$_stub_dd"
+env PATH="$_stub_dd:$PATH" \
+    JARVIS_TF_PLAYGROUND="$ddis_pg" \
+    PROBE_WORKDIR="$_wd_dd" \
+    PROBE_AUDIT_DIR="$_audit_dd" \
+    ALICLOUD_ACCESS_KEY=fake ALICLOUD_SECRET_KEY=fake ALICLOUD_REGION=cn-hangzhou \
+    bash "$PROBE" run ddis-scn >/dev/null 2>&1
+if [ -f "$_wd_dd/t1-last-run.json" ]; then
+    jq -e '. | has("ddis-scn")' "$_wd_dd/t1-last-run.json" >/dev/null 2>&1 \
+        && bad "F4 drift_disabled 阻断 t1-last-run.json 却含 ddis-scn" \
+        || ok "F4 drift_disabled → t1-last-run.json 不含 ddis-scn"
+fi
+
+# 48.6 expect_fail: plan 场景按预期失败 → t1-last-run 应含 sid(负路径也算跑过)
+efp_pg="$tmp/f4_efp_pg"; mkdir -p "$efp_pg/vpc/expfail-plan-scn"
+cat > "$efp_pg/vpc/expfail-plan-scn/scenario.yaml" <<'YAML'
+id: expfail-plan-scn
+title: expect_fail plan lru
+persona: beginner
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: expected_failure
+update_step: false
+import_check: false
+expect_fail: plan
+source_docs: https://example
+YAML
+cat > "$efp_pg/vpc/expfail-plan-scn/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+_wd_efp="$(mktemp -d)"; _audit_efp="$(mktemp -d)"; _stub_efp="$(mktemp -d)"
+make_tf_stub "$_stub_efp"
+env PATH="$_stub_efp:$PATH" \
+    JARVIS_TF_PLAYGROUND="$efp_pg" \
+    PROBE_WORKDIR="$_wd_efp" \
+    PROBE_AUDIT_DIR="$_audit_efp" \
+    ALICLOUD_ACCESS_KEY=fake ALICLOUD_SECRET_KEY=fake ALICLOUD_REGION=cn-hangzhou \
+    TF_PLAN_RC=1 \
+    bash "$PROBE" run expfail-plan-scn >/dev/null 2>&1
+if [ -f "$_wd_efp/t1-last-run.json" ]; then
+    jq -e '. | has("expfail-plan-scn")' "$_wd_efp/t1-last-run.json" >/dev/null 2>&1 \
+        && ok "F4 expect_fail:plan 按预期失败 → t1-last-run.json 含 sid(负路径也算跑过)" \
+        || bad "F4 expect_fail:plan 未更新 LRU(会导致负路径场景永远选中霸榜)"
+else
+    bad "F4 expect_fail:plan 未创建 t1-last-run.json"
+fi
+
+# ---------------------------------------------------------------------------
+echo "Test 49: F6 _archive_workdir_gc 损坏 tfstate 保护(截断/非法 JSON → 视作非空,不删)"
+gc_root="$tmp/f6_gc_root"; mkdir -p "$gc_root/config" "$gc_root/.my-day/probe"
+cp "$CONFIG" "$gc_root/config/probe.json"
+# 一个损坏(截断)tfstate 目录 + 一个正常空 tfstate 目录(应删)
+mkdir -p "$gc_root/.my-day/probe/20200101T000000Z-corrupt"
+printf '{"resources":[' > "$gc_root/.my-day/probe/20200101T000000Z-corrupt/terraform.tfstate"  # 截断 JSON
+touch -t 202001010000 "$gc_root/.my-day/probe/20200101T000000Z-corrupt" 2>/dev/null || true
+mkdir -p "$gc_root/.my-day/probe/20200101T000000Z-empty"
+echo '{"resources":[]}' > "$gc_root/.my-day/probe/20200101T000000Z-empty/terraform.tfstate"
+touch -t 202001010000 "$gc_root/.my-day/probe/20200101T000000Z-empty" 2>/dev/null || true
+
+run_probe env JARVIS_ROOT="$gc_root" JARVIS_TF_PLAYGROUND="$gc_root/nope" bash "$PROBE" archive --dry
+[ "$RC" = "0" ] && ok "F6 archive --dry 退 0(损坏 tfstate 场景)" || bad "F6 archive --dry 退 $RC"
+# 计数只应包含 empty 目录一个
+grep -q "workdir: gc=1" <<<"$OUT" && ok "F6 --dry workdir: gc=1(损坏 tfstate 不计入)" || bad "F6 workdir gc 计数错(损坏 tfstate 未保护): $OUT"
+# 清单里应有 corrupt 提示
+grep -qi "corrupt tfstate" <<<"$OUT" && ok "F6 --dry 清单含 corrupt tfstate 待人工提示" || bad "F6 --dry 未报 corrupt 提示"
+# 真跑:损坏目录不被删,空目录被删
+run_probe env JARVIS_ROOT="$gc_root" JARVIS_TF_PLAYGROUND="$gc_root/nope" bash "$PROBE" archive
+[ -d "$gc_root/.my-day/probe/20200101T000000Z-corrupt" ] && ok "F6 archive 真跑:损坏 tfstate 目录保留(不误删)" || bad "F6 损坏 tfstate 目录被误删"
+[ ! -d "$gc_root/.my-day/probe/20200101T000000Z-empty" ] && ok "F6 archive 真跑:空 tfstate 老目录被删(不误伤保留)" || bad "F6 空目录未删"
+
+# ---------------------------------------------------------------------------
+echo "Test 50: 小改进—— _emit_expect_finding grep -F(fixed string,避免 [ ] . 被当 BRE 元字符)"
+_efe_wd="$(mktemp -d)"; _efe_log="$_efe_wd/err.log"
+echo "some error message with [square-bracket-tag] and details" > "$_efe_log"
+# err_contains 含 `[`:BRE 模式会当字符组解析,-F 则字面匹配
+: > "$_efe_wd/.env.jsonl"; : > "$_efe_wd/.findings.jsonl"
+# source probe.sh 并调用 _emit_expect_finding;伪造 FINDINGS_FILE/ENV_FILE 全局
+efe_probe() {
+    bash -c '
+        source "$1"
+        FINDINGS_FILE="'"$_efe_wd"'/.findings.jsonl"
+        ENV_FILE="'"$_efe_wd"'/.env.jsonl"
+        _LAST_EXPECT_VERDICT=""
+        _emit_expect_finding validate validate "$2" "$3" fb S3 "fb sum" >/dev/null 2>&1
+        echo "$_LAST_EXPECT_VERDICT"
+    ' _ "$PROBE" "$2" "$_efe_log"
+}
+verd="$(efe_probe . '[square-bracket-tag]')"
+[ "$verd" = "expected" ] && ok "小改进 grep -F: err_contains 含 [ ] 也能字面命中(expected)" || bad "-F 修复失败,verdict='$verd'"
+
+# ---------------------------------------------------------------------------
+echo "Test 51: 小改进—— _probe_drift_dance 后置 plan rc=1 分流(auth_error / plan_fail),非 drift_undetected"
+# 用 stub 让 plan 后置返回 rc=1 且日志含鉴权关键词
+drf_pg="$tmp/f_drf_pg"; mkdir -p "$drf_pg/vpc/drift-planfail"
+cat > "$drf_pg/vpc/drift-planfail/scenario.yaml" <<'YAML'
+id: drift-planfail
+title: drift post-plan fails auth
+persona: drifter
+products: VPC
+resources: alicloud_vpc
+cost: free
+detect: auth_error
+update_step: false
+import_check: false
+drift_cli: aliyun vpc TagResources
+source_docs: https://example
+YAML
+cat > "$drf_pg/vpc/drift-planfail/main.tf" <<'HCL'
+variable "run_id" { type = string }
+terraform { required_providers { alicloud = { source = "aliyun/alicloud", version = "1.284.0" } } }
+resource "alicloud_vpc" "m" { vpc_name = "probe-${var.run_id}" }
+HCL
+# 需要 drift_enabled=true 才会进 _probe_drift_dance;打开 vpc:TagResources 白名单
+_dcfg="$(mktemp)"
+jq '.tiers.tier1.drift_enabled=true|.tiers.tier1.drift_action_allow=["vpc:TagResources"]' "$CONFIG" > "$_dcfg"
+# 特殊 stub:第一次 plan(-out=tf.plan) rc=0,plan2 rc=0,plan_drift rc=1 且 log 含 InvalidAccessKeyId
+_stub_drf="$(mktemp -d)"
+cat > "$_stub_drf/terraform" <<'DRFS'
+#!/usr/bin/env bash
+case "$1" in
+    plan)
+        # 判断 out 目标区分 plan/plan2/plan_drift
+        _is_drift=0
+        # 通过父进程 pipe 追加日志到 stderr 也无用 → 直接 echo 到 stdout,让 _run_step 落到当前 log
+        for arg in "$@"; do
+            case "$arg" in
+                -out=tf.plan) exit 0 ;;
+                -out=tf.plan2) exit 0 ;;
+            esac
+        done
+        # 没有 -out 的 plan 即 plan_drift(post-drift plan 用 -detailed-exitcode,无 -out)
+        echo "Error: InvalidAccessKeyId.NotFound: the specified access key id is not valid"
+        exit 1 ;;
+    show) [ "$2" = "-json" ] && echo '{}' ; exit 0 ;;
+    version) echo "Terraform stub v0.0"; exit 0 ;;
+    init|validate|apply|destroy|output|state|fmt) exit 0 ;;
+    *) exit 0 ;;
+esac
+DRFS
+chmod +x "$_stub_drf/terraform"
+# aliyun 桩:drift 场景需要,恒 0(让 drift exec 成功进入 post-drift plan)
+cat > "$_stub_drf/aliyun" <<'ALI'
+#!/usr/bin/env bash
+exit 0
+ALI
+chmod +x "$_stub_drf/aliyun"
+_wd_drf="$(mktemp -d)"; _audit_drf="$(mktemp -d)"
+env PATH="$_stub_drf:$PATH" \
+    JARVIS_TF_PLAYGROUND="$drf_pg" \
+    PROBE_WORKDIR="$_wd_drf" \
+    PROBE_AUDIT_DIR="$_audit_drf" \
+    PROBE_CONFIG="$_dcfg" \
+    ALICLOUD_ACCESS_KEY=fake ALICLOUD_SECRET_KEY=fake ALICLOUD_REGION=cn-hangzhou \
+    bash "$PROBE" run drift-planfail >/dev/null 2>&1
+vdrf="$(ls -t "$_audit_drf"/*-drift-planfail.json 2>/dev/null | head -1)"
+if [ -n "$vdrf" ] && [ -f "$vdrf" ]; then
+    n_undet="$(jq -r '[.findings[]|select(.code=="drift_undetected")]|length' "$vdrf")"
+    [ "$n_undet" = "0" ] && ok "小改进 drift post-plan rc=1 → 不报 drift_undetected(rc==0 才报)" || bad "drift post-plan rc=1 却报 drift_undetected(n=$n_undet)"
+    jq -e '.env_issues[]|select(.code=="auth_error")' "$vdrf" >/dev/null 2>&1 \
+        && ok "小改进 drift post-plan rc=1 且鉴权 → env auth_error" \
+        || bad "drift post-plan rc=1 鉴权未归 env auth_error"
+else
+    bad "小改进 drift-planfail verdict 未落盘"
+fi
 
 # ---------------------------------------------------------------------------
 echo ""
