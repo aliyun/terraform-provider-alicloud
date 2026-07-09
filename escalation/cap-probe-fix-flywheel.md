@@ -27,6 +27,8 @@
 2. **规模**——✅ **首发线已落地（F3 T0-mech，2026-07-05）**：`tier0 --all/--limit/--rotate` 支持 website/docs/r 全资源清单 + LRU 轮换巡检；未竟：场景语料生成器 + cloudspec 覆盖矩阵（tier-1 侧）。
 3. **判定成本**——✅ **首发线已落地（F3 T0-mech，2026-07-05）**：OpenAPI 侧从「verifier 人海判定」升级为「机械 diff 预筛（六类 `api_gap_*`）+ verifier 只判 `judgment_queue` 疑点」；`bootstrap/probe-meta.sh` 薄封装 amp 元数据 + `cache.sh` 7d 缓存，`probe.sh tier0` 抽 (product,version,action) 三元组 + `StringInSlice`/`IntBetween`/`Default` 解析做机械 diff。精度护栏:拿不准一律 queue + 抑制表 + 容差表 + coverage_note。首轮 8 资源标定复现 ClassicLink deprecated、RAM/SG 零新增误报、OSS SDK 风格正确降级为 queue。
 
+（原「规模」缺口所列「场景语料生成器 + cloudspec 覆盖矩阵」中的**探测侧语料生成器已被 F3 Corpus-gen 覆盖**（`bootstrap/probe-corpus.sh` 从 website docs 机械造场景，2026-07-06 已合入 master）；剩余 cloudspec 覆盖矩阵驱动的属性组合生成移入 cap-tf-customer-probe P3 路线图。）
+
 ## 飞轮六段架构
 
 | 段 | 触发 | 执行机件 | 现状 | 缺口 | 人工门 |
@@ -35,8 +37,8 @@
 | ② 立项 File | findings → 分级 → 去重 → 建单 528766 指派 jarvis | draft 管道 + 建单模板/标签/上限(100) | ✅ `mode=file` **已毕业**(2026-07-05 主人拍板提前毕业,首轮采纳率 7/8=87.5%);直接建单 | draft 保留可回退开关(`ticket.mode=draft`) | 无(临时人审门已撤) |
 | ③ 修复 Fix | bridge ScanScheduler 扫池(probe 单指派 jarvis 被 `scan.sh` 自然扫到) → headless dispatch → aone-triage 认领 → **按 `probe-ticket-routing` 路由** | (a) provider 代码修 → `provider-resource-dev` → fork+UT → `invoke-terraform-acc-test-remote` 验收 → GitHub PR(`github-identity` 硬门,`api-tool-agent`);(b) TF 文档修 → 同 PR 路径 docs-only;(c) 上游协作 → cloudspec_gap 等 `submit_only` 转发;(d) 需实验定性 → 先跑 tier-1 变体场景再归入 a/b/c | 机件**全部已存在** | 只缺**路由规范**(本 commit 落地) | upstream PR merge(maintainer) |
 | ④ 验证 Verify-fix | PR 合并 → master 复验 | tier-0 重扫该项应消失 / tier-1 场景复跑应绿 →「已修未发布」→ 发布后复跑绿 → `claim.sh finish`(jarvis-done) | 靠工单溯源字段映射回场景/资源,无需新 runner 子命令 | 复验编排规范(routing reference 内定义)+ 状态机落 tag/评论 | 无 |
-| ⑤ 发布 Release | changelog 聚合 → 发版 | `terraform-changelog` skill(已有) | 已有 | 发布前 RC 门禁 = 全场景语料过一遍(P2) | release_prod(autonomy.md 永久停止项) |
-| ⑥ 回灌 Regress | 每张修复完成的 probe 单 + 每张真实客户单 | `regression-<aone-id>` 场景落 **git 化 `terraflow/tf_playground`**(2026-07-06:直推 master + 工单报备,取代原仓外裸目录)+ 工单评论报备场景路径 | 规则已立(2026-07-03 外置 → 2026-07-06 git 化) | 收尾清单挂钩 | 工单报备(仓库主人查验;git 直推 master 无 MR 门) |
+| ⑤ 发布 Release | changelog 聚合 → 发版 | `terraform-changelog` skill(已有) + **`bootstrap/rc-gate.sh` RC 门禁线**(2026-07-06 F3 已落地:tier-0 全量 + tier-1 全场景一次过闸,红/黄/绿判定) | ✅ RC 门禁已落地 | provider 新版本自动触发(P3);发版事件级蒸馏钩子 | release_prod(autonomy.md 永久停止项) |
+| ⑥ 回灌+蒸馏 Regress+Distill | 每张修复完成的 probe 单 + 每张真实客户单 | `regression-<aone-id>` 场景落 **git 化 `terraflow/tf_playground`**(2026-07-06:直推 master + 工单报备,取代原仓外裸目录)+ 工单评论报备场景路径;**收尾同步蒸馏产品级知识到 `<playground>/<product>/KNOWLEDGE.md`**(2026-07-08 契约,`tf-customer-probe/references/knowledge-distillation.md` 跨 skill 单点,三个触发点=probe Step E / triage bookend / dev 完成后) | 规则已立(2026-07-03 外置 → 2026-07-06 git 化 → 2026-07-08 蒸馏契约) | 收尾清单挂钩(**probe-ticket-routing 四件套已挂**);KNOWLEDGE→产品级 skill 毕业(P3) | 工单报备(仓库主人查验;git 直推 master 无 MR 门) |
 
 ## 三个永久人工硬门（其余全自动）
 
@@ -62,7 +64,7 @@
   上限 `JARVIS_DISPATCH_MAX`、软去重台账 `.my-day/bridge/dispatched.json`、钉钉播报、授权前置降为 `JARVIS_AUTO_DISPATCH=0` 回退）
   + DispatchPool（并发/排队/软去重复用 `_dispatch_bg` 核心与 SUSPEND/WaitWatcher）+ ProbeScheduler 每日探测轮（跑 `loops/tf-probe.md`）
   + RevisitScheduler 每日 `jarvis-idle` 人工门重访 + `--dry-run-once` 验证入口 + hermetic 单测 `test/bridge_dispatch_test.sh`。
-  **未竟**：provider 新版本事件触发；复验步骤进 triage 收尾清单。（`mode=file` 毕业已于 2026-07-05 主人拍板翻开关。）
+  **未竟**：provider 新版本事件触发。（`mode=file` 毕业已于 2026-07-05 主人拍板翻开关；**「复验步骤进 triage 收尾清单」已于 2026-07-08 本轮落地**——`aone-triage/references/probe-ticket-routing.md` §三扩为**四件套**：复验 → 回灌 regression → 蒸馏知识（引 knowledge-distillation.md）→ draft/ledger 归档联动。）
 - **F3（规模化）已落地清单**——机械化 / 语料 / 门禁 / 度量 / 降级 / 单一入口全数成 MR（2026-07-05～06），**已全数合入 master**（2026-07-06 经 `worktree-f3-consolidated` 整合合并落地）：
   - ✅ **T0-mech**（`worktree-f3-t0mech`）—— tier-0 OpenAPI 侧机械化（`probe-meta.sh` + `tier0` 六类
     `api_gap_*` 机械 diff 预筛 + `--all/--rotate` 全资源轮换巡检 + doctor 探针可用性降级）。**已合入 master**（2026-07-05）。

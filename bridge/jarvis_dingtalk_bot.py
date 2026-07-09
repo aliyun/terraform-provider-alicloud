@@ -400,10 +400,14 @@ def _probe_prompt(round_id):
         "2) tier-0：bootstrap/probe.sh tier0 增量扫本轮涉及资源，judgment_queue 走双层查证。\n"
         "3) tier-1：bootstrap/probe.sh list 挑最久未跑的 ≤ config.limits.max_scenarios_per_run 个场景，"
         "逐个 bootstrap/probe.sh run <id>（region 默认 focus）。\n"
-        "4) findings 去重后按建单纪律落 draft 到 escalation/probe-drafts/（当前 mode=draft，人审后建单）。\n"
+        "4) findings 处置严格按 .claude/skills/tf-customer-probe SKILL.md Step C/D 与 "
+        "config/probe.json ticket.mode 执行（去重+日上限纪律见 skill）。\n"
         "5) bootstrap/probe.sh sweep 清残留（残留退 1 即停并升级）。\n"
+        "6) bootstrap/probe.sh archive 归档终态 draft / 超期 verdict / 工作目录。\n"
+        "7) 按 .claude/skills/tf-customer-probe/references/knowledge-distillation.md 契约把本轮学到的"
+        "产品级知识蒸馏进 playground <product>/KNOWLEDGE.md，并在轮次汇报列出。\n"
         "这是纯探测轮，不持有工单、免 bookend；结束把轮次摘要"
-        "（tier0 资源数/findings、tier1 场景数/draft 数/env 数）汇报即可。"
+        "（tier0 资源数/findings、tier1 场景数/draft 数/env 数、归档件数、蒸馏条目数）汇报即可。"
         % round_id
     )
 
@@ -1650,7 +1654,7 @@ class WaitWatcher:
         with self._lock:
             self.suspended.pop(aone_id, None)
         self._remove_persisted(aone_id)
-        wl = JarvisDingTalkBot._workitem_line(aone_id)
+        wl = JarvisHandler._workitem_line(aone_id)
         line = wl[0] if isinstance(wl, tuple) else wl
         self.handler._quick_card(
             task["target"],
@@ -1903,7 +1907,11 @@ class _DailyScheduler:
 
     Persists the last-run date to a state file so a restart within the same day does not
     re-fire. Subclasses override ``_run_once()``. Poll cadence is coarse (5 min) — hour
-    granularity is the contract, not the minute. Skeleton mirrors ReconcileScheduler."""
+    granularity is the contract, not the minute. Skeleton mirrors ReconcileScheduler.
+
+    _run_once() return contract (bool-tri): False = 本轮真正失败(唯一场景: DispatchPool
+    submit 被 queue_full 拒), 本日不 mark, 下个 5min tick 会重试; True 或 None =
+    成功/已去重/无候选/pool 不可用等既定终态, mark 掉本日, 到明日再跑。"""
 
     CHECK_INTERVAL = 300
 
@@ -1948,8 +1956,12 @@ class _DailyScheduler:
             try:
                 if self._due():
                     log.info("%s: firing daily round", self.name)
-                    self._run_once()
-                    self._mark_run()
+                    # Only genuine failures (queue_full → False) skip the daily mark so
+                    # the next 5-min tick retries; None (兼容不返回) 视为成功。
+                    if self._run_once() is not False:
+                        self._mark_run()
+                    else:
+                        log.info("%s: run deferred (queue_full); will retry next tick", self.name)
             except Exception:  # noqa: BLE001 — never crash
                 log.exception("%s tick failed", self.name)
             time.sleep(self.CHECK_INTERVAL)
@@ -1976,9 +1988,11 @@ class ProbeScheduler(_DailyScheduler):
         return "probe-%s" % (when or datetime.now()).date().isoformat()
 
     def _run_once(self):
+        # 返回契约: False = queue_full(本日不 mark, 下个 tick 重试); True/其它 = 视为成功。
+        # no-pool / 已去重 / 已 active 都视为已到位, mark 掉本日。
         if self.pool is None or self.handler is None:
             log.warning("ProbeScheduler: no pool/handler; skip")
-            return
+            return True
         rid = self.round_id()
         prompt = _probe_prompt(rid)
         tgt, ttype = broadcast_target(), broadcast_type()
@@ -1988,8 +2002,9 @@ class ProbeScheduler(_DailyScheduler):
         ok, reason = self.pool.submit(rid, work, notify=notify, kind="probe")
         if ok:
             notify("🔎 已启动每日探测轮 %s（tf-probe tier0 + tier1 轮换，纯探测无单）" % rid)
-        else:
-            log.info("ProbeScheduler: round %s not submitted (%s)", rid, reason)
+            return True
+        log.info("ProbeScheduler: round %s not submitted (%s)", rid, reason)
+        return False if reason == "queue_full" else True
 
 
 class RevisitScheduler(_DailyScheduler):
@@ -2077,16 +2092,19 @@ class RevisitScheduler(_DailyScheduler):
         return cands
 
     def _run_once(self):
+        # 返回契约: 只要有任一候选被 queue_full 拒即整体 False(下个 tick 重试整批);
+        # active/deduped/无候选/no-pool 视为成功, 由本日 mark 收敛。
         if self.pool is None or self.handler is None:
             log.warning("RevisitScheduler: no pool/handler; skip")
-            return
+            return True
         cands = self._query()
         notify = self.handler._broadcast
         tgt, ttype = broadcast_target(), broadcast_type()
         if not cands:
             log.info("RevisitScheduler: no jarvis-idle revisit candidates this round")
-            return
+            return True
         submitted = []
+        queue_full_hit = False
         for it in cands:
             iid = str(it["id"])
             prompt = _revisit_prompt(iid, it.get("title", ""), it.get("pool_project", ""))
@@ -2097,10 +2115,13 @@ class RevisitScheduler(_DailyScheduler):
             if ok:
                 submitted.append(iid)
             else:
+                if reason == "queue_full":
+                    queue_full_hit = True
                 log.info("RevisitScheduler: #%s not submitted (%s)", iid, reason)
         if submitted:
             notify("🔁 人工门重访：已投 %d 条 jarvis-idle 工单复查：%s"
                    % (len(submitted), ", ".join("#" + i for i in submitted)))
+        return not queue_full_hit
 
 
 class JarvisHandler(AsyncChatbotHandler):
@@ -2257,7 +2278,14 @@ class JarvisHandler(AsyncChatbotHandler):
     def _completion_broadcast(self, item_id):
         """Build the completion broadcast text. Distinguishes the final tag
         state (jarvis-done / jarvis-idle / jarvis-claimed) and appends a clickable Aone
-        link matching the dispatch-card format."""
+        link matching the dispatch-card format.
+
+        Uses class-qualified access to the static _workitem_line so tests that stub self=None
+        also work (the helper touches no instance state).
+
+        Fallback text discriminates: non-numeric ids (probe rounds 等) → "任务 #<rid>"
+        (无工单概念); numeric id 查询失败 → "工单 #<sid> 处理完成（headless）" 标注
+        ambient identifier."""
         result = JarvisHandler._workitem_line(item_id)
         if isinstance(result, tuple):
             line, tag = result
@@ -2290,7 +2318,12 @@ class JarvisHandler(AsyncChatbotHandler):
         gateway fails). Terminal errors (timeout / max-turns) fast-fail without retry.
         A clean SUSPEND is is_error=False so it breaks normally and suspends as before.
         On final failure the death cause is posted to Aone and the claim released
-        (ticket kind only, via ``project``). Returns done / suspended / error."""
+        (ticket kind only, via ``project``).
+
+        Probe rounds (item_id prefix "probe-") 额外把会话 final 文本落
+        ``runs/probe/<item_id>-summary.md`` 供 board.sh 拉取/审计。
+
+        Returns done / suspended / error."""
         max_retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
         backoff = int(os.environ.get("JARVIS_DISPATCH_RETRY_BACKOFF", "30"))
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
@@ -2333,6 +2366,10 @@ class JarvisHandler(AsyncChatbotHandler):
                 log.info("dispatch_item #%s failed (subtype=%s, attempts=%d)",
                          item_id, res.subtype, attempt + 1)
                 return "error"
+            # 成功路径:probe 轮把 final 文本落 summary.md(失败不落——tail 已由
+            # _dispatch_failed 贴 Aone 保留死因,避免 board.sh 拉到半截错误当结论)
+            if str(item_id).startswith("probe-"):
+                self._write_probe_summary(str(item_id), final)
             notify(self._completion_broadcast(item_id))
             log.info("dispatch_item #%s done", item_id)
             return "done"
@@ -2340,6 +2377,17 @@ class JarvisHandler(AsyncChatbotHandler):
             log.exception("dispatch_item #%s failed: %s", item_id, e)
             notify("⚠️ 工单 #%s 后台处理异常: %s" % (item_id, e))
             return "error"
+
+    @staticmethod
+    def _write_probe_summary(round_id, final_text):
+        """Persist a probe round's final text to runs/probe/<rid>-summary.md.
+        Best-effort: I/O failures only log, never abort the completion path."""
+        try:
+            target_dir = Path(REPO_ROOT) / "runs" / "probe"
+            target_dir.mkdir(parents=True, exist_ok=True)
+            (target_dir / ("%s-summary.md" % round_id)).write_text(final_text or "")
+        except Exception as e:  # noqa: BLE001 — summary 落盘失败不阻塞收尾
+            log.warning("probe summary write failed for %s: %s", round_id, e)
 
     @staticmethod
     def _post_death_cause(item_id, cause):
@@ -2362,7 +2410,7 @@ class JarvisHandler(AsyncChatbotHandler):
         """Retries exhausted / terminal error: record the death cause on Aone, release
         the claim (ticket kind only — probe/revisit/wake pass project=None), and
         broadcast a failure notice. Every step is best-effort: any failure is
-        log.warning-ed, never raised, so善后 can't drag the worker down. The cause
+        log.warning-ed, never raised, so 善后 can't drag the worker down. The cause
         carries ONLY the numeric id + subtype + a trimmed output tail — no internal
         sensitive content."""
         retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))

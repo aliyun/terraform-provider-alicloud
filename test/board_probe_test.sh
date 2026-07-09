@@ -38,13 +38,17 @@ cp "$PROJ_ROOT/config/pools.json" "$ROOT/config/pools.json"
 echo '[]' > "$ROOT/.my-day/scan.json"
 
 # 时间戳/文件名:本周(今天) vs 窗外(40 天前),用 python3 保证可移植
+# A3 v2.1:审计副本文件名带 HHMMSS(<YYYYMMDD>-<HHMMSS>-<sid>.json),兼容 archive/<YYYYMM>/ 子目录
 D0="$(python3 -c 'import datetime;print(datetime.datetime.utcnow().strftime("%Y%m%d"))')"
+D0_HMS="$(python3 -c 'import datetime;print(datetime.datetime.utcnow().strftime("%H%M%S"))')"
 D0_ISO="$(python3 -c 'import datetime;print(datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))')"
 D40="$(python3 -c 'import datetime;print((datetime.datetime.utcnow()-datetime.timedelta(days=40)).strftime("%Y%m%d"))')"
+D40_HMS="$(python3 -c 'import datetime;print((datetime.datetime.utcnow()-datetime.timedelta(days=40)).strftime("%H%M%S"))')"
+D40_YM="$(python3 -c 'import datetime;print((datetime.datetime.utcnow()-datetime.timedelta(days=40)).strftime("%Y%m"))')"
 D40_ISO="$(python3 -c 'import datetime;print((datetime.datetime.utcnow()-datetime.timedelta(days=40)).strftime("%Y-%m-%dT%H:%M:%SZ"))')"
 
-# 本周 tier0 verdict(mech=on;3 findings:2 api_gap_* + 1 doc_gap;S3x3)
-cat > "$ROOT/runs/probe/${D0}-tier0.json" <<JSON
+# 本周 tier0 verdict(mech=on;3 findings:2 api_gap_* + 1 doc_gap;S3x3)—— A3 文件名带 HHMMSS
+cat > "$ROOT/runs/probe/${D0}-${D0_HMS}-tier0.json" <<JSON
 {"schema_version":2,"mode":"tier0","mech":"on","provider_version":"1.284.0",
  "started_at":"${D0_ISO}","duration_s":12,"resources_scanned":["alicloud_vpc","alicloud_oss_bucket"],
  "findings":[
@@ -55,23 +59,24 @@ cat > "$ROOT/runs/probe/${D0}-tier0.json" <<JSON
 JSON
 
 # 本周 tier1 verdict(1 finding S2)
-cat > "$ROOT/runs/probe/${D0}-net-vpc-basic.json" <<JSON
+cat > "$ROOT/runs/probe/${D0}-${D0_HMS}-net-vpc-basic.json" <<JSON
 {"schema_version":1,"mode":"tier1","scenario_id":"net-vpc-basic","provider_version":"1.284.0",
  "terraform_version":"1.9.0","region":"eu-central-1","started_at":"${D0_ISO}","duration_s":40,
  "findings":[{"code":"perpetual_diff","stage":"plan2","summary":"drift","evidence":"log","severity_hint":"S2"}],
  "env_issues":[],"cleanup":{"applied":true,"destroyed":true,"state_empty":true}}
 JSON
 
-# 窗外 tier0(40 天前,mech=degraded,api_gap_type)——须被本周窗口剔除
-cat > "$ROOT/runs/probe/${D40}-tier0.json" <<JSON
+# A4:窗外 tier0(40 天前,mech=degraded,api_gap_type)—— retention 已归档到 archive/<YYYYMM>/;本周窗口剔除
+mkdir -p "$ROOT/runs/probe/archive/${D40_YM}"
+cat > "$ROOT/runs/probe/archive/${D40_YM}/${D40}-${D40_HMS}-tier0.json" <<JSON
 {"schema_version":2,"mode":"tier0","mech":"degraded","provider_version":"1.284.0",
  "started_at":"${D40_ISO}","duration_s":9,"resources_scanned":["alicloud_vswitch"],
  "findings":[{"code":"api_gap_type","resource":"alicloud_vswitch","attribute":"n","summary":"t","severity_hint":"S3"}],
  "stats":{"resources":1,"findings":1,"api_findings":1}}
 JSON
 
-# 窗外 tier1(40 天前)——比本周 tier1 旧,验证 last_tier1_round 取最近一轮
-cat > "$ROOT/runs/probe/${D40}-import-vpc.json" <<JSON
+# A4:窗外 tier1(40 天前)—— 也在 archive/<YYYYMM>/,验证 last_tier1_round 扫子目录、周窗口仍剔除
+cat > "$ROOT/runs/probe/archive/${D40_YM}/${D40}-${D40_HMS}-import-vpc.json" <<JSON
 {"schema_version":1,"mode":"tier1","scenario_id":"import-vpc","provider_version":"1.284.0",
  "terraform_version":"1.9.0","region":"eu-central-1","started_at":"${D40_ISO}","duration_s":33,
  "findings":[],"env_issues":[],"cleanup":{"applied":true,"destroyed":true,"state_empty":true}}
@@ -83,6 +88,12 @@ mkdraft d-filed-a filed "https://x/1"
 mkdraft d-filed-b filed "https://x/2"
 mkdraft d-pending pending-review ""
 mkdraft d-reject  rejected ""
+
+# A4:drafts_archived 里的历史归档 draft 也计入 total + adoption_rate 分母(archive 命令搬进去的)
+mkdir -p "$ROOT/escalation/probe-drafts/archived"
+mkdraft_arc() { printf -- '---\nstatus: %s\nticket: %s\n---\n\n# [probe][%s] demo\n' "$2" "${3:-}" "$1" > "$ROOT/escalation/probe-drafts/archived/$1.md"; }
+mkdraft_arc d-arc-filed-1 filed "https://x/10"
+mkdraft_arc d-arc-rej-1   rejected ""
 
 # tier0 rotate 覆盖状态:3 资源(键数=已巡检资源数)
 cat > "$ROOT/.my-day/probe/t0mech-scanned.json" <<JSON
@@ -143,12 +154,12 @@ jqeq "$OUT" '.findings.api_gap.api_gap_type // 0' 0 "窗外 api_gap_type 已剔�
 jqeq "$OUT" '.findings.mech.on' 1 "本周 tier0 mech=on 计 1"
 jqeq "$OUT" '.findings.mech.degraded // 0' 0 "窗外 degraded 已剔除"
 
-echo "Test 3: drafts 段 — status 分布 + 采纳率 filed/(filed+rejected)"
-jqeq "$OUT" '.drafts.total' 4 "drafts 总数=4"
-jqeq "$OUT" '.drafts.filed' 2 "filed=2"
+echo "Test 3: drafts 段 — status 分布(含 archived/ 子目录) + 采纳率 filed/(filed+rejected)"
+jqeq "$OUT" '.drafts.total' 6 "drafts 总数=6(4 顶层 + 2 archived/)"
+jqeq "$OUT" '.drafts.filed' 3 "filed=3(2+1 archived)"
 jqeq "$OUT" '.drafts.pending' 1 "pending(含 pending-review)=1"
-jqeq "$OUT" '.drafts.rejected' 1 "rejected=1"
-jqeq "$OUT" '((.drafts.adoption_rate*1000)|round)' 667 "采纳率≈0.667"
+jqeq "$OUT" '.drafts.rejected' 2 "rejected=2(1+1 archived)"
+jqeq "$OUT" '((.drafts.adoption_rate*1000)|round)' 600 "采纳率=3/5=0.6"
 
 echo "Test 4: tickets 段 — a1 成功路径 单量/状态分布/关单数"
 jqeq "$OUT" '.tickets.source' "aone" "tickets.source=aone"
@@ -176,7 +187,7 @@ jqeq "$OUT2" '.tickets.total' "null" "降级 tickets.total=null"
 grep -qi "WARN" "$ERRF" && ok "降级打印 WARN 到 stderr" || bad "降级未打印 WARN"
 # 关键:降级只影响 tickets,其余段照常聚合
 jqeq "$OUT2" '.findings.total' 4 "降级后 findings 仍聚合=4"
-jqeq "$OUT2" '.drafts.filed' 2 "降级后 drafts 仍聚合 filed=2"
+jqeq "$OUT2" '.drafts.filed' 3 "降级后 drafts 仍聚合 filed=3(含 archived)"
 jqeq "$OUT2" '.scenarios.total' 4 "降级后 scenarios 仍聚合=4"
 
 echo "Test 8: a1 输出非法 JSON 也走降级"
@@ -214,6 +225,60 @@ if [ -f "$HTMLF" ]; then
 else
     bad "board.html 未生成"
 fi
+
+echo "Test 12a: A4 — findings 周窗口按 (code,resource,attribute) 去重(同日多轮 tier0 并存不重复计数)"
+DEDUP_ROOT="$(mktemp -d)"
+mkdir -p "$DEDUP_ROOT/config" "$DEDUP_ROOT/runs/probe" "$DEDUP_ROOT/escalation/probe-drafts" "$DEDUP_ROOT/.my-day/probe" "$DEDUP_ROOT/bin"
+cp "$REAL_PROBE_CONFIG" "$DEDUP_ROOT/config/probe.json"
+cp "$PROJ_ROOT/config/pools.json" "$DEDUP_ROOT/config/pools.json"
+echo '[]' > "$DEDUP_ROOT/.my-day/scan.json"
+# 两轮 tier0 同日,含相同 (code,resource,attribute) 三元组 → 去重后 findings.total 计 1
+cat > "$DEDUP_ROOT/runs/probe/${D0}-100000-tier0.json" <<JSON
+{"schema_version":2,"mode":"tier0","mech":"on","started_at":"${D0_ISO}",
+ "findings":[{"code":"api_gap_required","resource":"alicloud_vpc","attribute":"cidr","summary":"x","severity_hint":"S3"}]}
+JSON
+cat > "$DEDUP_ROOT/runs/probe/${D0}-140000-tier0.json" <<JSON
+{"schema_version":2,"mode":"tier0","mech":"on","started_at":"${D0_ISO}",
+ "findings":[{"code":"api_gap_required","resource":"alicloud_vpc","attribute":"cidr","summary":"x","severity_hint":"S3"}]}
+JSON
+DEDUP_OUT="$(JARVIS_ROOT="$DEDUP_ROOT" JARVIS_TF_PLAYGROUND="$DEDUP_ROOT/nope" JARVIS_A1="$A1_FAIL" bash "$BOARD" probe 2>/dev/null)"
+jqeq "$DEDUP_OUT" '.findings.rounds' 2 "两轮 tier0 都计轮数=2"
+jqeq "$DEDUP_OUT" '.findings.total' 1 "同 (code,resource,attribute) 只计 1(去重生效)"
+jqeq "$DEDUP_OUT" '.findings.api_gap.api_gap_required' 1 "api_gap 分布也去重"
+rm -rf "$DEDUP_ROOT"
+
+# F5:不同 scenario_id 的 tier1 verdict 含相同 (code,stage,summary) → dedup key 加 scenario_id 后各算一份
+echo "Test 12b: F5 — tier1 verdict 去重 key 加 scenario_id,不同场景相同 code+stage+summary 不合并"
+F5_ROOT="$(mktemp -d)"
+mkdir -p "$F5_ROOT/config" "$F5_ROOT/runs/probe" "$F5_ROOT/escalation/probe-drafts" "$F5_ROOT/.my-day/probe" "$F5_ROOT/bin"
+cp "$REAL_PROBE_CONFIG" "$F5_ROOT/config/probe.json"
+cp "$PROJ_ROOT/config/pools.json" "$F5_ROOT/config/pools.json"
+echo '[]' > "$F5_ROOT/.my-day/scan.json"
+# 两个不同 scenario_id 的 tier1 verdict,含 code/stage/summary 一致的 finding
+cat > "$F5_ROOT/runs/probe/${D0}-${D0_HMS}-net-vpc-basic.json" <<JSON
+{"schema_version":1,"mode":"tier1","scenario_id":"net-vpc-basic","started_at":"${D0_ISO}",
+ "findings":[{"code":"perpetual_diff","stage":"plan2","summary":"drift observed","evidence":"log","severity_hint":"S2"}]}
+JSON
+cat > "$F5_ROOT/runs/probe/${D0}-100001-net-vswitch-basic.json" <<JSON
+{"schema_version":1,"mode":"tier1","scenario_id":"net-vswitch-basic","started_at":"${D0_ISO}",
+ "findings":[{"code":"perpetual_diff","stage":"plan2","summary":"drift observed","evidence":"log","severity_hint":"S2"}]}
+JSON
+F5_OUT="$(JARVIS_ROOT="$F5_ROOT" JARVIS_TF_PLAYGROUND="$F5_ROOT/nope" JARVIS_A1="$A1_FAIL" bash "$BOARD" probe 2>/dev/null)"
+jqeq "$F5_OUT" '.findings.rounds' 2 "两轮 tier1 都计轮数=2(不同 scenario_id)"
+jqeq "$F5_OUT" '.findings.total' 2 "不同 scenario_id 相同 code+stage+summary → dedup 后各算一份(不合并)"
+# 兼容性:tier0 verdict 无 scenario_id 也不受影响,仍走原键
+cat > "$F5_ROOT/runs/probe/${D0}-100002-tier0.json" <<JSON
+{"schema_version":2,"mode":"tier0","mech":"on","started_at":"${D0_ISO}",
+ "findings":[{"code":"doc_gap_phantom","resource":"alicloud_vpc","attribute":"acl","summary":"z","severity_hint":"S3"}]}
+JSON
+cat > "$F5_ROOT/runs/probe/${D0}-100003-tier0.json" <<JSON
+{"schema_version":2,"mode":"tier0","mech":"on","started_at":"${D0_ISO}",
+ "findings":[{"code":"doc_gap_phantom","resource":"alicloud_vpc","attribute":"acl","summary":"z","severity_hint":"S3"}]}
+JSON
+F5_OUT2="$(JARVIS_ROOT="$F5_ROOT" JARVIS_TF_PLAYGROUND="$F5_ROOT/nope" JARVIS_A1="$A1_FAIL" bash "$BOARD" probe 2>/dev/null)"
+# tier1: 2 + tier0: 1(去重后)= 3
+jqeq "$F5_OUT2" '.findings.total' 3 "tier0 无 scenario_id 走原键,仍去重(2 tier1 + 1 tier0 dedup)"
+rm -rf "$F5_ROOT"
 
 echo "Test 12: 零值 tile 渲染为 '0'(不因 e() 的 (s or '') 而空白)"
 HROOT="$(mktemp -d)"

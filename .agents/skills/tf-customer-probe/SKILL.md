@@ -67,12 +67,18 @@ bootstrap/probe.sh tier0 --no-mech              # 关机械层(纯 doc↔source 
 
 ### B. tier-1 真实 apply 生命周期探测
 ```bash
-bootstrap/probe.sh list                       # 选场景(最久未跑优先,看 runs/probe/ 日期);单轮 ≤ limits.max_scenarios_per_run
+bootstrap/probe.sh list                       # 选场景(最久未跑优先,LAST_RUN 列由 t1-last-run.json 索引);单轮 ≤ limits.max_scenarios_per_run
 bootstrap/probe.sh run <id>                    # region 默认 config.regions.focus(eu-central-1)
 bootstrap/probe.sh run <id> --region cn-hangzhou   # 切 region(重点方向 eu-central-1,但非唯一)
 bootstrap/probe.sh run <id> --dry              # 只看步骤计划(region 解析、prepaid 守门),不需 terraform
 ```
-读产出 `verdict.json`(工作目录 + `runs/probe/<日期>-<id>.json`)。退出码:0 无 findings / 1 有 findings / 2 env 阻断(含 `prepaid_block`/`tier1_disabled_plan_only`) / 3 清理失败(最高优先级人工介入)。
+读产出 `verdict.json`(工作目录 + `runs/probe/<YYYYMMDD>-<HHMMSS>-<id>.json`)。退出码:0 无 findings / 1 有 findings / 2 env 阻断(含 `prepaid_block`/`tier1_disabled_plan_only`) / 3 清理失败(最高优先级人工介入)。
+
+`scenario.yaml` 可选新键(全部由 runner 支撑,persona 一行带过,详细语义/护栏见 `references/scenario-authoring.md`):
+- `steps: step2,step3`(CSV)+ `step<N>_expect: changed|no_changes|fail`——泛化 update_step,逐步声明期望;
+- `expect_fail: validate|plan|apply` + `expect_error_contains`——四态判定(expected/expected_but_error_mismatch/late_validation/expected_fail_missed);
+- `provider_version_from: <old-pin>`——upgrader 场景 A→B state 兼容;
+- `drift_cli: aliyun <product> <Action> ...`——drifter 场景(默认 `drift_enabled=false` 关闭,转正走 config MR)。
 
 ### C. 逐 finding 判定(Claude 的判断职责,不是脚本)
 1. **复核是否真 provider 问题**:对照 `evidence`、`references/severity-rubric.md`;tier-0 findings 还要看 doc/source 上下文是否确为不一致。
@@ -85,11 +91,28 @@ bootstrap/probe.sh run <id> --dry              # 只看步骤计划(region 解�
 - `config.ticket.mode=file`(**当前默认**)→ 走 adhoc-intake 建单纪律(category `req`、project/assignee/tag 按 config),受 `daily_new_tickets` 上限,**直接建 Aone 单**。
 - `config.ticket.mode=draft`(**可回退开关**,切回即恢复 draft 人审)→ 按 `references/ticket-template.md` 写 `escalation/probe-drafts/<日期>-<资源或场景>-<code>.md`,头加 `status: pending-review`,**不写 Aone**。
 
-### E. 清理核查 + 审计汇报
+### D.5. 建单后回写 ledger(kind=ticket)
+每建成一张 probe 工单,追加一条 `runs/probe/ledger.jsonl` 记录,供 board/`archive` 后续对账与消费:
+```bash
+jq -nc --arg ts "$(date -u +%FT%TZ)" \
+       --arg tid "<新建工单 id>" \
+       --arg code "<finding code>" \
+       --arg v "<verdict path,如 runs/probe/20260708-193012-<sid>.json>" \
+       '{ts:$ts, kind:"ticket", ticket_id:$tid, finding_code:$code, verdict:$v}' \
+    >> runs/probe/ledger.jsonl
+```
+(mode=draft 不入 ledger;draft 归档由 `probe.sh archive` 按 frontmatter `status` 自动收纳。)
+
+### E. 清理核查 + 归档 + 蒸馏 + 审计汇报
 ```bash
 bootstrap/probe.sh sweep     # 有残留立即停并升级
+bootstrap/probe.sh archive   # 幂等归档:draft 终态/verdict retention/workdir gc/plugin-cache 报告/待办清单(--dry 演习)
 ```
-`runs/probe/` 已由 runner 落盘。会话汇报:`tier0 扫描资源数 / findings / judgment_queue 数`,`tier1 场景数 / findings / draft 数 / env 问题数`,逐 draft 附路径与建议优先级。
+`runs/probe/` 已由 runner 落盘。**收尾必做**：按 `references/knowledge-distillation.md` 契约把本轮学到的
+产品级知识蒸馏进 `<playground>/<product>/KNOWLEDGE.md`(触发点①probe 轮 Step E 收尾)。
+
+会话汇报:`tier0 扫描资源数 / findings / judgment_queue 数`,`tier1 场景数 / findings / draft 数 / env 问题数`,
+归档件数(drafts moved / verdicts moved / workdirs gc),蒸馏条目数(逐产品);逐 draft/工单附路径与建议优先级。
 
 ## references
 
@@ -97,4 +120,5 @@ bootstrap/probe.sh sweep     # 有残留立即停并升级
 |------|------|
 | `references/severity-rubric.md` | tier-0/tier-1 finding 码默认 severity_hint + S1–S4 危害分级 + 升降级判则 + Aone 优先级映射 |
 | `references/ticket-template.md` | draft/工单标题与正文骨架、建单参数块、禁 AK/SK 与 AI 署名硬规则 |
-| `references/scenario-authoring.md` | 场景来源优先级、persona 定义、prepaid 守门、region 声明、update/import 声明、tier-0 范围红线 |
+| `references/scenario-authoring.md` | 场景来源优先级、persona 定义(beginner/composer/updater/importer/migrator/upgrader/refactorer/drifter/ds-checker/ci-runner)、新键(steps/expect_fail/upgrader/drifter)、prepaid 守门、region 声明、tier-0 范围红线 |
+| `references/knowledge-distillation.md` | 云产品 KNOWLEDGE.md 蒸馏契约(跨 skill 单点):五节结构 / 条目格式 / 触发点(probe/triage/dev)/ 收录判据 / sanitize / 毕业标准 |

@@ -8,7 +8,7 @@
 
 - **标签 `jarvis-probe`** 或**标题前缀 `[probe]`**(528766 池)即 probe 工单。
 - 正文含两节:
-  - **「溯源」节**:tier-0 资源(`alicloud_xxx`)或 tier-1 场景(`terraform_playground/<product>/<id>/`)+ verdict 路径(`runs/probe/<日期>-*.json`)。
+  - **「溯源」节**:tier-0 资源(`alicloud_xxx`)或 tier-1 场景(`terraform_playground/<product>/<id>/`)+ verdict 路径(`runs/probe/<YYYYMMDD>-<HHMMSS>-*.json`)。
   - **「修复建议」节**:探测判定给出的处置方向。
 - 路由判定**读工单正文**(尤其「修复建议」+「溯源」),不臆断。
 
@@ -21,16 +21,36 @@
 | **上游协作** | 问题在 **OpenAPI 文档 / 云产品侧**,不在 provider | **不改 provider**;按 `config/pools.json` upstream(`submit_only`)渠道或工单评论**明确转交**,标注「上游依赖」后 release(等待时不空占) |
 | **需实验定性** | 处置建议含「tier-1 变体实测」/ 需实证才能定类 | 先 `bootstrap/probe.sh run <变体场景>`(按工单建变体场景),拿实证后**归入前三类**;实证(verdict 摘录)写回工单评论 |
 
-## 三、复验与关单状态机（收尾必做）
+## 三、复验与关单状态机（收尾必做）—— 四件套
 
-修复 PR **合并后**,按溯源节复验:
+修复 PR **合并后**，按下列**四件套**收尾（缺一不算闭环，源于 `escalation/cap-probe-fix-flywheel.md` F2 未竟
+「复验步骤进 triage 收尾清单」补齐）：
 
-1. **tier-0 溯源** → `bootstrap/probe.sh tier0 <resource>` 复扫,**该 finding 项应消失**。
-2. **tier-1 溯源** → `bootstrap/probe.sh run <scenario>` 复跑,**应绿**(无对应 finding)。
+### ① 复验（tier-0/tier-1 溯源复扫）
+
+1. **tier-0 溯源** → `bootstrap/probe.sh tier0 <resource>` 复扫，**该 finding 项应消失**。
+2. **tier-1 溯源** → `bootstrap/probe.sh run <scenario>` 复跑，**应绿**（无对应 finding）。
 3. master 已修但**未发布** → 工单评论标「**已修复待发布**」+ `bootstrap/claim.sh release <id> 528766`。
-4. **发布后**复验绿 → `bootstrap/wrap.sh done` + `bootstrap/claim.sh finish <id> 528766`(打 `jarvis-done`)。
+4. **发布后**复验绿 → `bootstrap/wrap.sh done` + `bootstrap/claim.sh finish <id> 528766`（打 `jarvis-done`）。
 
-**复验证据(verdict 路径 / 输出摘录)必须贴回工单**——溯源可追、闭环可查。
+**复验证据（verdict 路径 / 输出摘录）必须贴回工单**——溯源可追、闭环可查。
+
+### ② 回灌 regression（见下节四、直落 playground + 工单报备）
+
+### ③ 蒸馏知识（KNOWLEDGE.md 契约）
+
+按 `.claude/skills/tf-customer-probe/references/knowledge-distillation.md` 契约，把本单在**复验/修复过程**中
+学到的产品级事实追加进 `<playground>/<product>/KNOWLEDGE.md`（触发点②aone-triage bookend 收尾——这是评审
+阻断项，客户单/probe 单皆算）。收录判据：可执行 / 跨场景复用 / 非文档已明示；条目格式
+`- [YYYY-MM-DD][来源: 工单URL 或 verdict 路径 或 PR URL] <一条可执行的产品级事实>`。
+
+### ④ draft / ledger 归档联动
+
+- 若该单来自 draft（mode=draft 阶段落 `escalation/probe-drafts/*.md`），关单前把 draft frontmatter `status`
+  改为 `filed`——**归档动作**由 `probe.sh archive` 自动做（下一轮 probe 收尾或独立跑 `archive` 时把 filed
+  draft 移入 `escalation/probe-drafts/archived/`）；本 triage 会话只**在评论里带上 verdict 与 ledger 指针**
+  （`runs/probe/<YYYYMMDD>-<HHMMSS>-<sid>.json` + `runs/probe/ledger.jsonl` 对应行）即可，不手工搬文件。
+- mode=file 场合（当前默认）本无 draft，回灌 + 蒸馏 + 复验证据贴回后直接进关单状态机。
 
 ## 四、回灌（关单前直落 playground + 工单报备）
 

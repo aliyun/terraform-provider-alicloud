@@ -50,10 +50,14 @@ status: pending-review
 - 建议 Aone 优先级：紧急/高/中/低
 
 ## 溯源
-- tier-1:场景 terraform_playground/<product>/<id>/ + verdict runs/probe/<日期>-<id>.json
-- tier-0:资源 <alicloud_xxx> + verdict runs/probe/<日期>-tier0.json(含 doc/source 位置、judgment_queue)
+- tier-1:场景 terraform_playground/<product>/<id>/ + verdict runs/probe/<YYYYMMDD>-<HHMMSS>-<id>.json
+- tier-0:资源 <alicloud_xxx> + verdict runs/probe/<YYYYMMDD>-<HHMMSS>-tier0.json(含 doc/source 位置、judgment_queue)
 - 来源：jarvis tf-customer-probe
 ```
+
+> **draft 归档语义**：`mode=draft` 时 draft 落 `escalation/probe-drafts/`，头 `status: pending-review`；
+> 人审改 `status: filed`(已建单)/`rejected*`(拒绝) 后，`probe.sh archive` 会把终态 draft 自动收纳到
+> `escalation/probe-drafts/archived/`（`pending-review`/未知 status 留原地进 archive 待办清单）。
 
 ## 建单参数块（mode=file 建单用；mode=draft 时只记录不执行）
 

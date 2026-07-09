@@ -8,7 +8,13 @@
   "name_prefix": "jvp",
   "tiers": {
     "tier0": { "desc": "静态三方一致性扫描: TF文档↔OpenAPI文档↔provider源码, 只测TF已支持面" },
-    "tier1": { "enabled": true, "prepaid_guard": true, "desc": "真实 apply 全生命周期探测" }
+    "tier1": {
+      "enabled": true,
+      "prepaid_guard": true,
+      "drift_enabled": false,
+      "drift_action_allow": ["vpc:TagResources", "vpc:UnTagResources", "vpc:ModifyVpcAttribute"],
+      "desc": "真实 apply 全生命周期探测(drift_enabled 默认关;drift_action_allow=<product>:<Action> 白名单锚在过 MR 的 config,playground 只提供参数)"
+    }
   },
   "tier0_mech": {
     "desc": "T0-mech OpenAPI 侧机械化 diff 的精度护栏(抑制表)",
@@ -27,7 +33,13 @@
     "period_fields": ["period"],
     "period_subscription_max": 12
   },
-  "limits": { "max_scenarios_per_run": 3, "step_timeout_min": 20, "daily_new_tickets": 100 },
+  "limits": {
+    "max_scenarios_per_run": 3,
+    "step_timeout_min": 20,
+    "daily_new_tickets": 100,
+    "audit_retention_days": 60,
+    "workdir_retention_days": 7
+  },
   "ticket": {
     "mode": "file",
     "pool": "tf_provider",
@@ -40,6 +52,7 @@
     "workdir": ".my-day/probe",
     "audit": "runs/probe",
     "drafts": "escalation/probe-drafts",
+    "drafts_archived": "escalation/probe-drafts/archived",
     "playground_dir": null
   }
 }
