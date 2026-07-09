@@ -25,7 +25,7 @@ description: >-
 
 ## 前置 · a1 CLI
 
-全流程走 `a1`(封装 `bootstrap/a1id -- <args>`,默认 jarvis 身份;个人身份 `chenyi/guozai/linjun` 仅当仓库主人当面授权本轮才可 `a1id as <id> -- ...`)。
+全流程走 `a1`(封装 `bin/a1id -- <args>`,默认 jarvis 身份;数字人身份 `terraform-pd/terraform-rd/terraform-qa` 由对应子代理按职责用 `a1id as <role> --` 或 `JARVIS_A1_IDENTITY=<role>`;个人身份 `chenyi/guozai/linjun` 仅当仓库主人当面授权本轮才可 `a1id as <id> -- ...`)。
 先 `bin/a1id -- auth whoami` 验登录;`command not found` 或认证错误 → **征得用户同意后**装:
 ```
 curl -fsSL https://git.cn-hangzhou.oss-cdn.aliyun-inc.com/aone-cli/install.sh | sh

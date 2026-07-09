@@ -46,6 +46,7 @@ cat > "$tmpconfig/config/pools.json" << 'JSON'
 JSON
 
 export PATH="$tmpbin:$PATH"
+export JARVIS_A1=a1   # pools.sh 现在走 bin/a1id --,测试点桩到 PATH 上的 a1 stub
 
 # ---------------------------------------------------------------------------
 # Test 1: happy path – 2 pools both succeed → 2 "active=2" lines + names + exit 0

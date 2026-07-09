@@ -16,7 +16,7 @@
 
 1. **改文件先开 worktree，严禁直改主干**：任何 tracked 文件修改必须先 `git worktree add -b worktree-<slug>`；分支只走 PR/MR 待仓库主人合并，主 Agent 严禁自 `git merge`/`push` 入 master。**例外仅当仓库主人本轮明说「go on master」/「直接改 <path>」/「不用 worktree」等指令级授权**——任务级委托（如「refactor 这段」）**不含直改 master 授权**。授权后一律通过 `JARVIS_MASTER_OK=1 <单次工具调用>` 显式执行（对齐 PreToolUse `bootstrap/worktree-guard.sh`），长期免管路径入 `bootstrap/master-allowlist`。**切 worktree 前 `git pull` 主干；完工清 worktree 后再 `git pull` 同步 master**。
 
-2. **编码交子代理，主会话只编排**：优先 `.claude/agents/` 三类（developer / reviewer / verifier）；也可自由委派 general-purpose / Explore / Plan / claude-code-guide 等，按任务挑最合适的。单工单执行由 `bootstrap/triage-one.sh` bookend，主会话调度即可。
+2. **专职工作交数字人子代理，主会话（jarvis）只分发编排**：优先 `.claude/agents/` 三个数字人（terraform-pd 分诊查证 / terraform-rd 编码与 PR·CR 评审 / terraform-qa 验收测试，各绑独立 Aone 身份）；也可自由委派 general-purpose / Explore / Plan / claude-code-guide 等，按任务挑最合适的。单工单执行由 `bootstrap/triage-one.sh` bookend，主会话调度即可。
 
 3. **Aone 唯一真源 + 凡动工单必 bookend**：任何 jarvis 工作必须有 Aone 工作项（无则按 [loops/adhoc-intake.md](loops/adhoc-intake.md) 建/补单），拿到 id 就 `claim.sh claim` 开局，收尾走 bookend（`triage-one.sh` 或 `wrap.sh done` + `claim.sh release`）；开 MR/CR 立刻 `wrap.sh sync` 贴链回工单。**漏 claim → 标签/状态/对账全失灵**；流程细节见 [loops/aone-triage.md](loops/aone-triage.md) §4。纯只读不动任何工单可免。
 
@@ -31,7 +31,7 @@
    
    **完整禁品清单 + PR body 骨架** 见 [terraform-provider-release SKILL Step 11.1](.claude/skills/terraform-provider-release/SKILL.md)。**push 前自查**（provider worktree 里跑）：`git log -p origin/master..HEAD` 通读全部 diff + commit message，看有无 `aone`、内部客户名（本轮工单里出现过的）、`r-[0-9a-f]{8,}` / `i-[0-9a-f]{8,}` 类实例 ID、`RequestId`、`@<花名>(<工号>)` 引用——命中任一即卡住修，不允许 push。
 
-6. **身份纪律**：a1 一律走 `bin/a1id`，默认 jarvis（`a1id -- <args>`）；个人身份（chenyi/guozai/linjun）禁擅用，仅仓库主人本轮当面授权时才 `a1id as <id> -- <args>` 临时切，用完即回。GitHub PR/评论/推分支必须先 `bootstrap/github-identity.sh check`（token 账号必须 `api-tool-agent`，PR head `api-tool-agent:<branch>`），缺 token/账号不匹配一律阻断升级，禁回退 ambient `gh auth`。terraform-pr-review skill 有完整清单。
+6. **身份纪律**：a1 一律走 `bin/a1id`，默认 jarvis（`a1id -- <args>`）；数字人角色身份 terraform-pd / terraform-rd / terraform-qa 由对应子代理按职责使用，两种入口语义**不同**——`a1id as <role> --` 显式指定身份（未登录直接报错，**不回退**），`JARVIS_A1_IDENTITY=<role>` 整链路由（未登录自动回退 jarvis 并 stderr 提示）；个人身份（chenyi/guozai/linjun）禁擅用，仅仓库主人本轮当面授权时才 `a1id as <id> -- <args>` 临时切，用完即回。GitHub PR/评论/推分支必须先 `bootstrap/github-identity.sh check`（token 账号必须 `api-tool-agent`，PR head `api-tool-agent:<branch>`），缺 token/账号不匹配一律阻断升级，禁回退 ambient `gh auth`。terraform-pr-review skill 有完整清单。
 
 7. **auto-memory 只存 personal/machine，技术知识入 skill**：save memory 前扫本仓 skills 全集，已覆盖则不写；技术/团队/项目类且 skill 未覆盖 → 补入相关 skill/reference，不落 memory；仅个人偏好/机器状态/临时上下文才走 auto-memory。**why**：auto-memory per-machine 不跨设备，skill 走 git 天然跨设备并在 trigger 时自然加载。策略与已清理清单见 [escalation/archived/cap-auto-memory-save-policy.md](escalation/archived/cap-auto-memory-save-policy.md)（已归档）。
 

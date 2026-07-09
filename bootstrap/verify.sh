@@ -105,7 +105,9 @@ fi
 # 空/报错(过期会话) 或 半死(EmpID 在但 Account 空) → WARN. Parser matches bin/a1id.
 a1id_bin="${JARVIS_A1ID:-$repo_root/bin/a1id}"
 a1_expect="WORKER_1782379562571"
-a1_account="$("$a1id_bin" -- auth whoami 2>/dev/null | awk '/Account:/{print $2}' || true)"
+# 显式 pin JARVIS_A1_IDENTITY=jarvis 防环境残留(如上一步 headless 用了角色身份)导致
+# 检错身份出假 WARN——本 check 就是要验 jarvis 默认身份的登录态。
+a1_account="$(JARVIS_A1_IDENTITY=jarvis "$a1id_bin" -- auth whoami 2>/dev/null | awk '/Account:/{print $2}' || true)"
 if [ "$a1_account" = "$a1_expect" ]; then
     echo "PASS jarvis-a1-session"
 else
@@ -188,8 +190,8 @@ else
     ((fail_count++))
 fi
 
-# Check the 3 agent definition files exist (主会话即总领，不单设 jarvis 子代理)
-for agent in developer reviewer verifier; do
+# Check the 3 数字人 agent 定义 files exist (主会话即总领，不单设 jarvis 子代理)
+for agent in terraform-pd terraform-rd terraform-qa; do
     agent_file="${repo_root}/.claude/agents/${agent}.md"
     if [ -f "$agent_file" ]; then
         echo "PASS agent/${agent}"

@@ -26,6 +26,10 @@ export JARVIS_ROOT
 
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
+# a1 一律走 bin/a1id --(CLAUDE.md 身份纪律 #6):默认 jarvis 身份,不吃环境 ambient 登录。
+# JARVIS_A1 覆盖(测试打桩用),与 wrap.sh / claim.sh 同款。
+A1="${JARVIS_A1:-$JARVIS_ROOT/bin/a1id --}"
+
 # ---------------------------------------------------------------------------
 # Window: default 7, env JARVIS_WEEK_DAYS, --days N (flag wins)
 # ---------------------------------------------------------------------------
@@ -75,7 +79,7 @@ found=0
 while IFS= read -r project; do
     [ -z "$project" ] && continue
 
-    json=$(a1 project workitem list --project "$project" --tag "$DONE_TAG" -f json 2>/dev/null || echo "[]")
+    json=$($A1 project workitem list --project "$project" --tag "$DONE_TAG" -f json 2>/dev/null || echo "[]")
 
     # id<TAB>gmtModified<TAB>subject per line, jarvis-done only
     rows=$(printf '%s' "$json" | jq -r --arg t "$DONE_TAG" '
