@@ -19,8 +19,9 @@
 └─ NO ↓                                                              │
                                                                      │
 诉求仅涉及文档改造(website/docs 变更,无 provider 代码改动)?           │
-├─ YES → 仍走镇元查证(确保文档与 schema/API 一致),但路由固定          │
-│        关联单指派 过载(484483),不受镇元 OK/NOT OK 影响 [end]         │
+├─ YES → 仍走镇元查证(确保文档与 schema/API 一致),路由固定            │
+│        关联单指派 过载(484483),jarvis claim 跟进 [end]               │
+│        镇元查证发现 metadata 问题 → 额外建镇元 agent 侧单(2165097)   │
 └─ NO ↓                                                              │
                                                                      │
 诉求是"现有资源缺 X 属性/值/行为"(有 analog 产品/资源可类比)?         │
@@ -61,12 +62,15 @@
     ├─ 紧急 → 关联单指派 新山(521957) [D-新山]                        │
     └─ 不紧急 → 关联单指派 过载(484483) [D-过载]                      │
     原单同步指派 + status=问题解决中 + @指派人                         │
+    过载(484483)关联单 → jarvis claim 跟进 + 评论跟进度                 │
                                                                      │
 以上所有分支均未匹配的特殊情况(NPE 兜底)                              │
 → 关联单指派 夏节(401498) + 打标签 jarvis-npe [分支 H,end]           │
 ```
 
 **「与镇元相关性」定义**(2026-07-06 路由重整的核心概念):以下两类为**与镇元不相关的问题**——① **纯 datasource 问题**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段),不涉资源 schema/生命周期。datasource 是 provider 侧对 List/Describe 类查询 API 的只读封装,镇元(Cloudspec)只管资源 schema,查镇元无意义(跳过镇元查证);resource+datasource 混合诉求不算"纯",按资源主线走。② **镇元侧无问题、provider 侧存在问题**:镇元 OK 三条件全满足,缺口在 provider 实现(bug/适配缺失/文档行为不符)。与镇元不相关的问题**不进 2165097 池**——紧急转新山(521957),不紧急转过载(484483);生成器产出资源例外走临钧 acube 管道。反之,**2165097 池镇元 agent 只接「与镇元相关且镇元 NOT OK」**的单;该类单若紧急,则镇元 agent 关联单 + 新山关联单**两张都建**并行处理。
+
+**过载 = jarvis 自动接手**(2026-07-09 新增):所有路由到**过载(484483)**的关联单(文档改造分支 + D-过载不紧急分支),jarvis **直接 claim 关联单干活**(worktree 开发 / PR / 合入),不等过载本人处理。评论区跟进进度(每步动作都发评论:查证结论 → PR 链接 → 合入状态)。**bookend 纪律不变**:claim → 干活 → wrap done → release/finish。过载是团队共享的"jarvis 工作账号"——路由到过载等于 jarvis 自己接单闭环。**钉钉私信仍发过载(484483)**(建关联单时通知,通用规则不变)。
 
 **镇元 agent 接单机制**(2026-07-08 谜拟本人切换 · 关键变更):分支 E 的 Terraform镇元对接(2165097) 关联单不再指派谜拟本人,而是指派 **镇元 agent (`WORKER_1783326253279`)** 自动接单——谜拟自己不解单,由 agent 从关联单 description 里的机读 JSON 解析后驱动 spec 补齐 / 映射建立 / 生成器触发。**契约硬要求**:关联单 body 必须严格按 [templates.md 的 "Requirement skeleton (Cloudspec 关联单 · 镇元 agent 接单硬契约)"](./templates.md#requirement-skeleton-cloudspec-关联单--镇元-agent-接单硬契约) 骨架写(`## 背景` / `## 需求` / `## 机读信息` + `\`\`\`json` 代码块 + 7 字段全);少任何一项 agent 都无法接,单会沉底。谜拟(479782) **保留在源客户主单的 assignee + 参与者/@ 里** 做**人类兜底 owner**(客户可见),但**关联单 assignee 不再是她**;钉钉私信也只发谜拟/新山,不发 agent 工号(`WORKER_` 前缀无 IM 通道)。
 
@@ -451,7 +455,7 @@ bash bootstrap/notify-dingtalk.sh <工号> \
 - **原单指派谜拟(479782,人类兜底 owner)** + status=问题解决中;评论 `@谜拟(479782)`(紧急时并 `@新山(521957)`),注明"关联单已交镇元 agent 自动处理,agent 断电/复杂决策时 @谜拟兜底"。**钉钉私信只发谜拟/新山,不发 agent 工号**(`WORKER_` 前缀无 IM 通道,notify-dingtalk.sh 传 WORKER_ id 会 400)
 - 非紧急:仅镇元 agent 一张(落 2165097),原单指派谜拟,@谜拟
 
-**分支 D-新山 / D-过载 · 与镇元不相关(纯 datasource / 镇元 OK 但 provider 侧问题,手写代码)**:落地脚本与分支 A 完全一致,按紧急度选指派人——紧急 `--assignee 521957`(新山),不紧急 `--assignee 484483`(过载);`--title` 注明问题面("纯 datasource"/"provider 侧实现"),纯 datasource 单在 `--body` 说明已按定义跳过镇元查证。过载的关联单 jarvis 直接 claim 跟进(bookend 纪律不变);新山的建单 + @对方。
+**分支 D-新山 / D-过载 · 与镇元不相关(纯 datasource / 镇元 OK 但 provider 侧问题,手写代码)**:落地脚本与分支 A 完全一致,按紧急度选指派人——紧急 `--assignee 521957`(新山),不紧急 `--assignee 484483`(过载);`--title` 注明问题面("纯 datasource"/"provider 侧实现"),纯 datasource 单在 `--body` 说明已按定义跳过镇元查证。**D-过载**:jarvis 直接 claim 关联单跟进(worktree → PR → 合入 → bookend),评论区逐步跟进度(见上方"过载 = jarvis 自动接手"段);**D-新山**:建单 + @对方。两者都须**钉钉私信承接方**(通用规则 line 434-443)。
 
 **分支 G · Provider 全局改造(→ 新山 521957)**:适用于"诉求不涉及单一 alicloud_xxx 资源、而是 provider 侧全局改动"的场景(region 白名单/框架 utility/公共 endpoint/provider.go 基础/SDK bump 等)。**落地脚本与上面完全一致**,只需 3 处微调:
 - `--assignee` 填 `521957`(新山)
@@ -466,8 +470,8 @@ bash bootstrap/notify-dingtalk.sh <工号> \
 - `--category` 视原单类型(需求/缺陷)
 - `--title` 注明"文档改造"字样
 - **仍走镇元查证**(Step 2 不跳过):probe tier-0 的 `doc_gap_*` 发现依赖 TF 文档 ↔ OpenAPI 文档 ↔ provider 源码三方比对,文档改造同样需要确认镇元 schema 定义准确
-- 路由固定过载,**不受镇元 OK/NOT OK 影响**(不像分支 D/E 会因镇元结果分到不同人)
-- 过载的关联单 jarvis 直接 claim 跟进(与 D-过载手写分支一致的 bookend 流程)
+- 路由固定过载,**不受镇元 OK/NOT OK 影响**(不像分支 D/E 会因镇元结果分到不同人);jarvis claim 关联单跟进(见"过载 = jarvis 自动接手"段)
+- **镇元 metadata 问题 → 额外建镇元 agent 侧单**(2026-07-09 新增):若镇元查证发现 Cloudspec/镇元侧 metadata 也存在同类问题(如枚举值描述过时、属性定义与实际不符),**在主路由关联单之外**,额外建一张镇元 agent 关联单(`--project 2165097 --assignee WORKER_1783326253279`,body 按 templates.md 硬契约)。两张单各管各的:过载单修 TF 文档,jarvis 跟进;镇元 agent 单修 Cloudspec metadata,agent 自动接。**不冲突、不替代**。钉钉私信发谜拟(479782,agent 兜底 owner)
 
 **分支 H · NPE 兜底(→ 夏节 401498 + 标签 `jarvis-npe`)**:适用于"以上所有分支均未命中"的兜底场景。典型触发:
 - 需求跨多个云产品无法拆解到单一负责人(如 EMR SparkServerless / StarRocksServerless / DLF 三块独立产品线,本团队无路径拆分)
@@ -794,12 +798,14 @@ bash bootstrap/notify-dingtalk.sh <承接人工号> \
 - ❌ 跳过 Step 1.5 共通 gate 直接发 canned —— 分类误建 / 重复单情形下会与承接单重复打搅客户
 - ❌ Provider 全局改造(region 白名单/框架 utility/公共 endpoint/SDK bump)走"镇元 OK/NOT OK"判定 —— 镇元管资源 schema,不管 provider 基础;直接分支 G → 新山(521957),不必查 acube 覆盖度
 - ❌ 只按 acube V2 `CoverageScore==1.0` 判"镇元 OK",忽略"当前 schema 属性是否覆盖客户诉求字段" —— 覆盖度分只反映已建 schema 的属性测试完备度,客户想要新字段而 schema 未建时,覆盖度分再高也是 NOT OK(缺口在镇元)
-- ❌ 仅文档改造的工单因镇元 NOT OK 就转给镇元 agent/新山 —— 文档改造路由固定过载(484483),镇元查证仍要走(确保文档与 schema/API 一致),但结果不影响指派对象
+- ❌ 仅文档改造的工单因镇元 NOT OK 就把**主路由**转给镇元 agent/新山 —— TF 文档改造路由固定过载(484483) + jarvis 跟进,镇元查证仍要走(确保文档与 schema/API 一致),但结果不影响主指派对象;**但**(2026-07-09 补规):若查证发现镇元 metadata 也有同类问题,**必须额外建一张镇元 agent 侧单**(2165097),两张单各管各的
+- ❌ 文档改造查证发现镇元 metadata 有问题却不建镇元 agent 侧单 —— 主路由走 TF 文档修复(过载),镇元 metadata 问题是独立线,不建单 = 镇元侧问题无人跟进、下次同类文档改动又撞同一个坑。正确:额外建镇元 agent 关联单(2165097,body 按硬契约),私信谜拟(479782)
 - ❌ 缺陷类型工单沿用原单 `priority` 字段值 —— 缺陷(功能缺陷/线上问题/性能瓶颈)优先级一律覆写为"紧急",无视原单标记;覆写后影响两处紧急判定(分支 E 紧急→镇元 agent 单+新山双单;与镇元不相关分流紧急→新山)及关联单 `--priority` 传值
 - ❌ 镇元 OK 但 provider 侧有问题的单仍派镇元 agent —— 2165097 池的镇元 agent 只接「与镇元相关且镇元 NOT OK」;镇元侧无问题即「与镇元不相关」,紧急→新山(521957),不紧急→过载(484483),生成器产出走临钧管道
 - ❌ **分支 E 关联单 body 不含 `## 机读信息` + JSON 段** —— 镇元 agent 靠机读 JSON 驱动 spec/映射/覆盖度动作,没有机读段 agent 完全接不了,单沉底(2165097 池又不在 jarvis 视检范围,单会长期烂在里面);正确姿势:严格按 [templates.md 硬契约](./templates.md) 骨架写 `## 背景` / `## 需求` / `## 机读信息` 三段 + 7 字段 JSON,少一样就是漏契约
 - ❌ **分支 E 关联单 assignee 写谜拟 479782** —— 谜拟已不解单(2026-07-08 切换),关联单硬指派镇元 agent (`WORKER_1783326253279`) 自动接单;写成 479782 = 落到人手不再走 agent 自动化,单会滞留
 - ❌ **分支 E 主单 assignee 改成镇元 agent 工号** —— 客户主单在 tf_customer(1086837) 池,客户可见;指派机器人工号客户看不懂;正确姿势是主单 assignee 保留谜拟(479782,人类兜底 owner) + 关联单 assignee 才是镇元 agent
+- ❌ **转单/建关联单不发钉钉私信** —— 通用规则(line 434-443)要求所有实质动作(转单/补建关联单/进度跟进/关单提示)后私信承接方;Aone @ 是主通道但易被漏看,钉钉是补充通知。**每个分支落地脚本尾部都带 `notify-dingtalk.sh` 步骤**,漏跑 = 承接方不知道有新单,工单响应延迟
 - ❌ **钉钉私信直接发镇元 agent 工号** —— `WORKER_` 前缀是 agent 身份,无 IM 通道,notify-dingtalk.sh 传该 id 会 400/静默;正确姿势是私信谜拟(479782)兜底,紧急场景并私信新山(521957)
 - ❌ 纯 datasource 工单去查镇元覆盖度 —— datasource 是 provider 侧对查询 API 的只读封装,镇元只管资源 schema;纯 datasource(不涉资源 schema/生命周期)直接判「与镇元不相关」分流,查镇元浪费一轮且可能误路由。resource+datasource 混合诉求不算"纯",仍按资源主线查镇元
 - ❌ **未复现客户报错就直接路由** —— 分诊模糊时直接甩 NPE 兜底/上游是**懒惰误诊**。**正确顺序**:先读 description 全文(尤其客户 tf 代码 + 完整报错栈的堆栈行号),按报错文件路径 grep provider 源码定位根因,再决定路由。**规则**:客户 tf 代码 + 完整报错栈齐备时,先做静态复现(source 定位根因)再路由;仅"canned 类咨询/无报错/跨多产品"才走 NPE
