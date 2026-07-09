@@ -82,6 +82,72 @@ type RamService struct {
 type PolicyDocumentStatementPrincipalSet []PolicyDocumentStatementPrincipal
 type PolicyDocumentStatementConditionSet []PolicyDocumentStatementCondition
 
+// validateRamPolicyDocumentStructure performs a conservative, structural
+// pre-flight check on a RAM policy document string, on top of the JSON-syntax
+// check done by validation.StringIsJSON. It only rejects the two invariants
+// that the RAM API always rejects with MalformedPolicyDocument, so that such
+// policies fail at plan time instead of apply time:
+//  1. a statement whose "Effect" is a string other than "Allow"/"Deny";
+//  2. a statement carrying neither "Action" nor "NotAction".
+//
+// It stays lenient about everything else (Version, Resource, Principal,
+// Condition, statement shape) to avoid rejecting policies the API accepts.
+func validateRamPolicyDocumentStructure(v interface{}, k string) (ws []string, errors []error) {
+	value, ok := v.(string)
+	if !ok {
+		return
+	}
+
+	var raw interface{}
+	if err := json.Unmarshal([]byte(value), &raw); err != nil {
+		// Not valid JSON; leave the syntax error to validation.StringIsJSON.
+		return
+	}
+
+	doc, ok := raw.(map[string]interface{})
+	if !ok {
+		// Not a JSON object; leave it to the API.
+		return
+	}
+
+	rawStatement, ok := doc["Statement"]
+	if !ok {
+		return
+	}
+
+	var statements []interface{}
+	switch s := rawStatement.(type) {
+	case []interface{}:
+		statements = s
+	case map[string]interface{}:
+		statements = []interface{}{s}
+	default:
+		// Unexpected shape; do not risk a false positive.
+		return
+	}
+
+	for i, rawStmt := range statements {
+		stmt, ok := rawStmt.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		if effect, ok := stmt["Effect"]; ok {
+			if es, ok := effect.(string); ok && es != "Allow" && es != "Deny" {
+				errors = append(errors, fmt.Errorf("%q statement %d has invalid \"Effect\" %q: must be \"Allow\" or \"Deny\"", k, i, es))
+			}
+		}
+
+		_, hasAction := stmt["Action"]
+		_, hasNotAction := stmt["NotAction"]
+		if !hasAction && !hasNotAction {
+			errors = append(errors, fmt.Errorf("%q statement %d must contain either \"Action\" or \"NotAction\"", k, i))
+		}
+	}
+
+	return
+}
+
 func (s *RamService) ParseRolePolicyDocument(policyDocument string) (RolePolicy, error) {
 	var policy RolePolicy
 	err := json.Unmarshal([]byte(policyDocument), &policy)
