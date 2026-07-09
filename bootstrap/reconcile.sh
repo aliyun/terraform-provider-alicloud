@@ -33,18 +33,27 @@ source "$_reconcile_dir/log.sh"
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
 # Active DispatchPool worker IDs — reconcile must not touch these.
+# bash 3.2 兼容:不用关联数组(declare -A / arr["k"]),把 skip 列表规整为逗号包裹字符串
+# `,id1,id2,`,判定时 case 模式匹 `*",$id,"*`;语义保持:逗号分隔、容忍空白、空值=无跳过。
 _SKIP_IDS_RAW="${JARVIS_RECONCILE_SKIP_IDS:-}"
-declare -A _SKIP_ID_MAP
+_SKIP_IDS_NORM=""
 if [ -n "$_SKIP_IDS_RAW" ]; then
-    IFS=',' read -ra _skip_arr <<< "$_SKIP_IDS_RAW"
-    for _sid in "${_skip_arr[@]}"; do
-        _sid="$(echo "$_sid" | tr -d '[:space:]')"
-        [ -n "$_sid" ] && _SKIP_ID_MAP["$_sid"]=1
-    done
+    _clean="$(printf '%s' "$_SKIP_IDS_RAW" | tr -d '[:space:]')"
+    if [ -n "$_clean" ]; then
+        _SKIP_IDS_NORM=",${_clean},"
+        # 折叠空段(应对 ",,id,," 类脏输入),避免误判空 id 命中
+        while [ "$_SKIP_IDS_NORM" != "${_SKIP_IDS_NORM/,,/,}" ]; do
+            _SKIP_IDS_NORM="${_SKIP_IDS_NORM/,,/,}"
+        done
+    fi
 fi
 
 _is_active_dispatch() {
-    [ "${_SKIP_ID_MAP[$1]+_}" ]
+    [ -n "$_SKIP_IDS_NORM" ] || return 1
+    case "$_SKIP_IDS_NORM" in
+        *",$1,"*) return 0 ;;
+        *)        return 1 ;;
+    esac
 }
 
 # a1 via bin/a1id → act as the jarvis identity regardless of ambient login (CLAUDE.md #6).

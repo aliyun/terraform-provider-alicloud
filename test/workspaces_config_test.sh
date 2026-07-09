@@ -35,15 +35,20 @@ jq -e '.workspaces.tf_playground.default_branch=="master"' \
 jq -e '.workspaces.tf_playground.repo=="tf_playground"' \
   "$repo_root/config/workspaces.json" >/dev/null
 
+# fixture 段:关闭 workspaces.local.json 合并(用 JARVIS_WORKSPACES_LOCAL=none)。
+# 本机若有 local.json(gitignored)把 tf_playground/terraform_provider 等指向别处,
+# 会绕过 JARVIS_WORKSPACE_ROOT 的 fixture 目录导致断言飘。工作纪律见 workspace.sh 头注释。
 mkdir -p "$tmpdir/tf_playground"
-resolved_pg="$(JARVIS_WORKSPACE_ROOT="$tmpdir" bash "$repo_root/bootstrap/workspace.sh" dir tf_playground)"
+resolved_pg="$(JARVIS_WORKSPACES_LOCAL=none JARVIS_WORKSPACE_ROOT="$tmpdir" \
+  bash "$repo_root/bootstrap/workspace.sh" dir tf_playground)"
 if [ "$resolved_pg" != "$tmpdir/tf_playground" ]; then
   echo "expected $tmpdir/tf_playground, got $resolved_pg" >&2
   exit 1
 fi
 
 mkdir -p "$tmpdir/terraform-generator-v4"
-resolved="$(JARVIS_WORKSPACE_ROOT="$tmpdir" bash "$repo_root/bootstrap/workspace.sh" dir terraform_generator_v4)"
+resolved="$(JARVIS_WORKSPACES_LOCAL=none JARVIS_WORKSPACE_ROOT="$tmpdir" \
+  bash "$repo_root/bootstrap/workspace.sh" dir terraform_generator_v4)"
 
 if [ "$resolved" != "$tmpdir/terraform-generator-v4" ]; then
   echo "expected $tmpdir/terraform-generator-v4, got $resolved" >&2
@@ -51,7 +56,8 @@ if [ "$resolved" != "$tmpdir/terraform-generator-v4" ]; then
 fi
 
 mkdir -p "$tmpdir/jarvis"
-resolved_jarvis="$(JARVIS_WORKSPACE_ROOT="$tmpdir" bash "$repo_root/bootstrap/workspace.sh" dir jarvis)"
+resolved_jarvis="$(JARVIS_WORKSPACES_LOCAL=none JARVIS_WORKSPACE_ROOT="$tmpdir" \
+  bash "$repo_root/bootstrap/workspace.sh" dir jarvis)"
 
 if [ "$resolved_jarvis" != "$tmpdir/jarvis" ]; then
   echo "expected $tmpdir/jarvis, got $resolved_jarvis" >&2

@@ -6,30 +6,49 @@
 #   (b) 否则 ${JARVIS_WORKSPACE_ROOT:-~/workspace}/<repo> 存在 → 用之
 #   (c) 否则有 git_url → 打印 clone 目标(ROOT/repo)供调用方 clone
 #   (d) 无 git_url → escalate(missing_capability)
+#
+# 环境变量:
+#   JARVIS_ROOT              — jarvis repo 根(测试常用来指向 fixture)
+#   JARVIS_WORKSPACE_ROOT    — 覆盖 ~/workspace 作为 (b) 的 ROOT
+#   JARVIS_WORKSPACES_LOCAL  — 覆盖 local.json 选择:显式给路径=用之;设为空串/`none`/
+#                              `/dev/null`=禁用 local 合并(测试封闭化用);未设=保持
+#                              原行为(先看 $JARVIS_ROOT/config/workspaces.local.json,
+#                              worktree 场景回退主仓 local.json)。
+#
 # Read-only. Commands: dir <key> | config [<key>] | list. Exit 4 = missing_capability.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
 base="$jarvis_root/config/workspaces.json"
-local="$jarvis_root/config/workspaces.local.json"
 ws_root="${JARVIS_WORKSPACE_ROOT:-$HOME/workspace}"
 
-# workspaces.local.json is gitignored, so a `git worktree add` checkout never gets
-# a copy — only the tracked workspaces.json comes along. When run from a worktree,
-# fall back to the PRIMARY repo's local.json, else the machine-local path override
-# is silently lost inside every worktree. `git rev-parse --git-common-dir` yields
-# <main>/.git (absolute) from a worktree vs a plain ".git" from the main checkout,
-# so its parent is the main repo root. Guarded by -f + root!=jarvis_root so the
-# main-checkout case (no local.json genuinely absent) is a no-op.
-if [ ! -f "$local" ]; then
-  gcd="$(git -C "$jarvis_root" rev-parse --git-common-dir 2>/dev/null || true)"
-  if [ -n "$gcd" ]; then
-    case "$gcd" in /*) : ;; *) gcd="$jarvis_root/$gcd" ;; esac  # normalize to absolute
-    main_root="$(cd "$(dirname "$gcd")" 2>/dev/null && pwd)"
-    if [ -n "$main_root" ] && [ "$main_root" != "$jarvis_root" ] \
-       && [ -f "$main_root/config/workspaces.local.json" ]; then
-      local="$main_root/config/workspaces.local.json"
+# local.json 解析:显式 env 覆盖优先于默认 + worktree 回退,让测试能真正封闭化
+# (不被本机 config/workspaces.local.json 污染),生产未设 env 时行为完全不变。
+if [ -n "${JARVIS_WORKSPACES_LOCAL+set}" ]; then
+  # 显式设置(含空串);空串 / "none" / "/dev/null" 语义=禁用 local 合并
+  case "$JARVIS_WORKSPACES_LOCAL" in
+    ""|none|/dev/null) local="" ;;
+    *)                 local="$JARVIS_WORKSPACES_LOCAL" ;;
+  esac
+else
+  local="$jarvis_root/config/workspaces.local.json"
+  # workspaces.local.json is gitignored, so a `git worktree add` checkout never gets
+  # a copy — only the tracked workspaces.json comes along. When run from a worktree,
+  # fall back to the PRIMARY repo's local.json, else the machine-local path override
+  # is silently lost inside every worktree. `git rev-parse --git-common-dir` yields
+  # <main>/.git (absolute) from a worktree vs a plain ".git" from the main checkout,
+  # so its parent is the main repo root. Guarded by -f + root!=jarvis_root so the
+  # main-checkout case (no local.json genuinely absent) is a no-op.
+  if [ ! -f "$local" ]; then
+    gcd="$(git -C "$jarvis_root" rev-parse --git-common-dir 2>/dev/null || true)"
+    if [ -n "$gcd" ]; then
+      case "$gcd" in /*) : ;; *) gcd="$jarvis_root/$gcd" ;; esac  # normalize to absolute
+      main_root="$(cd "$(dirname "$gcd")" 2>/dev/null && pwd)"
+      if [ -n "$main_root" ] && [ "$main_root" != "$jarvis_root" ] \
+         && [ -f "$main_root/config/workspaces.local.json" ]; then
+        local="$main_root/config/workspaces.local.json"
+      fi
     fi
   fi
 fi
