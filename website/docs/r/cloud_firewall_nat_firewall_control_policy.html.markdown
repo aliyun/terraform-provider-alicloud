@@ -169,7 +169,7 @@ The following arguments are supported:
   - `2`: dynamic resolution based on FQDN and DNS.
 * `end_time` - (Optional) The end time of the policy validity period of the access control policy. Expresses using the second-level timestamp format. Must be full or half time and at least half an hour greater than the start time.
 
-  -> **NOTE:**  When RepeatType is set to permit, EndTime is null. When the RepeatType is None, Daily, Weekly, or Monthly, EndTime must have a value and you need to set the end time.
+  -> **NOTE:**  When RepeatType is set to Permanent, EndTime is null. When the RepeatType is None, Daily, Weekly, or Monthly, EndTime must have a value and you need to set the end time.
 
 * `ip_version` - (Optional) Supported IP address version. Value:
   - `4` (default): indicates the IPv4 address.
@@ -189,14 +189,14 @@ The following arguments are supported:
   - RepeatDays cannot be empty when RepeatType is 'Monthly. For example:`[1, 31]`. When RepeatType is set to Monthly, RepeatDays cannot be repeated.
 * `repeat_end_time` - (Optional) The recurring end time of the policy validity period of the access control policy. For example: 23:30, it must be the whole point or half point time, and at least half an hour greater than the repeat start time.
 
-  -> **NOTE:**  When RepeatType is set to normal or None, RepeatEndTime is null. When the RepeatType is Daily, Weekly, or Monthly, the RepeatEndTime must have a value, and you need to set the repeat end time.
+  -> **NOTE:**  When RepeatType is set to Permanent or None, RepeatEndTime is null. When the RepeatType is Daily, Weekly, or Monthly, the RepeatEndTime must have a value, and you need to set the repeat end time.
 
 * `repeat_start_time` - (Optional) The recurring start time of the policy validity period of the access control policy. For example: 08:00, it must be the whole point or half point time, and at least half an hour less than the repeat end time.
 
-  -> **NOTE:**  When RepeatType is set to permit or None, RepeatStartTime is empty. When the RepeatType is Daily, Weekly, or Monthly, the RepeatStartTime must have a value and you need to set the repeat start time.
+  -> **NOTE:**  When RepeatType is set to Permanent or None, RepeatStartTime is empty. When the RepeatType is Daily, Weekly, or Monthly, the RepeatStartTime must have a value and you need to set the repeat start time.
 
 * `repeat_type` - (Optional) The type of repetition for the policy validity period of the access control policy. Value:
-  - `Permit` (default): Always
+  - `Permanent` (default): Always
   - `None`: Specify a single time
   - `Daily`: Daily
   - `Weekly`: Weekly
@@ -209,7 +209,7 @@ The following arguments are supported:
   - `group`: The source address book
 * `start_time` - (Optional) The start time of the policy validity period of the access control policy. Expresses using the second-level timestamp format. It must be a full or half hour and at least half an hour less than the end time.
 
-  -> **NOTE:**  When RepeatType is set to normal, StartTime is null. When the RepeatType is None, Daily, Weekly, or Monthly, StartTime must have a value and you need to set the start time.
+  -> **NOTE:**  When RepeatType is set to Permanent, StartTime is null. When the RepeatType is None, Daily, Weekly, or Monthly, StartTime must have a value and you need to set the start time.
 
 ## Attributes Reference
 
