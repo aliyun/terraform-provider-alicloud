@@ -116,15 +116,17 @@ func resourceAliCloudRedisBackupCreate(d *schema.ResourceData, meta interface{})
 						d.SetId(fmt.Sprintf("%v:%v", instanceID, backupID))
 
 						// Resolve the owning cluster backup set id (cb-*) for cluster-architecture
-						// instances. Standalone instances legitimately return an empty result — that
-						// is not an error. A real API failure (network / auth / bad parameter) must
-						// surface: a silent empty cluster_backup_id would break downstream clone
-						// resources with an unactionable InvalidParameter.Missing.
+						// instances. Standalone instances are signalled either by an empty result
+						// or by InvalidClusterInstance.NotFound; both are non-fatal. Any other API
+						// error must surface — a silent empty cluster_backup_id would break
+						// downstream clone resources with an unactionable InvalidParameter.Missing.
 						clusterBackupID, cbErr := redisServiceV2.DescribeRedisClusterBackupId(instanceID, fmt.Sprint(backupID))
 						if cbErr != nil {
-							return WrapErrorf(cbErr, DefaultErrorMsg, d.Id(), "DescribeClusterBackupList", AlibabaCloudSdkGoERROR)
-						}
-						if clusterBackupID != "" {
+							if !IsExpectedErrors(cbErr, []string{"InvalidClusterInstance.NotFound"}) {
+								return WrapErrorf(cbErr, DefaultErrorMsg, d.Id(), "DescribeClusterBackupList", AlibabaCloudSdkGoERROR)
+							}
+							log.Printf("[DEBUG] alicloud_redis_backup: no cluster backup set for %s (standalone instance)", d.Id())
+						} else if clusterBackupID != "" {
 							d.Set("cluster_backup_id", clusterBackupID)
 						} else {
 							log.Printf("[DEBUG] alicloud_redis_backup: no cluster backup set for %s (standalone instance)", d.Id())
@@ -183,9 +185,12 @@ func resourceAliCloudRedisBackupDelete(d *schema.ResourceData, meta interface{})
 	if clusterBackupID, ok := d.Get("cluster_backup_id").(string); ok && clusterBackupID != "" {
 		shardIDs, listErr := redisServiceV2.ListClusterBackupShardIds(instanceID, clusterBackupID)
 		if listErr != nil {
-			return WrapErrorf(listErr, DefaultErrorMsg, d.Id(), "DescribeClusterBackupList", AlibabaCloudSdkGoERROR)
-		}
-		if len(shardIDs) > 0 {
+			// The cluster instance may already be gone (destroy order or manual cleanup);
+			// treat that as no fan-out needed and fall back to the state-recorded shard.
+			if !IsExpectedErrors(listErr, []string{"InvalidClusterInstance.NotFound"}) {
+				return WrapErrorf(listErr, DefaultErrorMsg, d.Id(), "DescribeClusterBackupList", AlibabaCloudSdkGoERROR)
+			}
+		} else if len(shardIDs) > 0 {
 			backupIDs = shardIDs
 		}
 	}
