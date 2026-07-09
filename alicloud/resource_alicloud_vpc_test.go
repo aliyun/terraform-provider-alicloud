@@ -1143,7 +1143,7 @@ func TestUnitAlicloudVPCdsafa(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudVpcVpc_basic3113(t *testing.T) {
+func TestAccAliCloudVPCVPC_basic3113(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcVpcMap3113)
@@ -1350,7 +1350,7 @@ variable "name" {
 }
 
 // Case 3113  twin
-func TestAccAliCloudVpcVpc_basic3113_twin(t *testing.T) {
+func TestAccAliCloudVPCVPC_basic3113_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcVpcMap3113)
@@ -1462,7 +1462,7 @@ func TestAccAliCloudVpcVpc_basic3113_twin(t *testing.T) {
 
 // Test Vpc Vpc. >>> Resource test cases, automatically generated.
 // Case 从IPAM地址池创建VPC及添加附加网段 9656
-func TestAccAliCloudVpcVpc_basic9656(t *testing.T) {
+func TestAccAliCloudVPCVPC_basic9656(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcVpcMap9656)
