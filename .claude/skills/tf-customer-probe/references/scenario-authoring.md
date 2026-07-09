@@ -44,6 +44,12 @@
 | `composer` | 进阶，把多资源/多内联块拼成真实用法 | 组合下的 schema 冲突、JSON 归一化、永久 diff |
 | `updater` | 已上线后改配置重跑（step2 覆盖层） | 更新是否生效、改/删字段后是否永久 diff、误重建 |
 | `importer` | 用 `terraform import` 纳管存量资源 | import 是否还原完整 state（import 断链） |
+| `migrator` | 配置形态迁移（内联块→子资源、废弃字段→新字段） | 迁移前后语义等价——`steps: step2` + `step2_expect: no_changes`；出 diff = `refactor_replace` |
+| `upgrader` | provider 版本 A→B 升级客户 | 旧 pin apply 后升 pin 再 plan 应无 diff——`provider_version_from: <old-pin>`；有 diff = `upgrade_diff` |
+| `refactorer` | 用 `moved` block / 资源改名重构 | 语义等价重构不触发替换重建——`steps: step2` + `step2_expect: no_changes`；delete+create = S1 |
+| `drifter` | 带外改动后期望 provider 检出 drift | terraform apply 后走 `drift_cli` 做带外改动，再 plan——无 diff = `drift_undetected` |
+| `ds-checker` | 资源 ↔ 数据源读回一致性 | 纯 HCL data source + postcondition，零 runner 改动；读回值 ≠ 声明 → assertion 挂 |
+| `ci-runner` | CI 中批量跑 provider 场景 | 分类骨架（本轮先立不写场景），未来接场景池并发/回归度量 |
 
 ## 批量生成(probe-corpus.sh)—— 从 website docs 机械造场景
 
@@ -144,6 +150,68 @@ bootstrap/probe-corpus.sh validate --all          # 或 validate <id>...
   否则测的是重建不是更新）。
 - **import 场景**：`import_check: true` + 成对声明 `import_address`（如 `alicloud_vpc.main`）与 `import_id_output`
   （提供真实 id 的 output 名）。runner 会 `state rm` → `import`（id 取自该 output）→ `plan`。
+
+## 新键(可选叠加,由 runner 支撑) —— steps / step<N>_expect / expect_fail / provider_version_from / drift_cli
+
+必填 10 键 schema 不变;新键全部可选叠加,新场景仍写 update_step/import_check 兼容既有断言。
+
+### `steps: step2,step3`(CSV,泛化 update_step)
+
+- CSV 列出 apply 后要依次覆盖的目录名(`step2/`、`step3/` 等,与 `sdir/<name>` 同名),每步 runner 覆盖 tf 后再 apply + re-plan。
+- 向后兼容:`update_step: true` ≡ `steps: step2`(runner 会自动归一)。
+
+### `step<N>_expect: no_changes|changed|fail`(每步 apply 后置 plan 判定;缺省 = `changed`)
+
+- `changed`(默认)：apply 后 plan 应无 diff;仍有 diff → finding `perpetual_diff`(S2)。
+- `no_changes`：期望语义等价的重构(migrator/refactorer)——apply 后 plan 应无 diff;若出现 diff → finding
+  **`refactor_replace`**;计划包含 delete+create 升级为 **S1**(误替换重建),否则 S2。
+- `fail`：期望该步 apply 失败;实际 apply 成功 → finding **`expected_fail_missed`** S2。
+
+### `expect_fail: validate|plan|apply`(+ 可选 `expect_error_contains`) —— 四态判定
+
+期望某个**声明阶段**失败(错配/非法 policy/非法枚举等负路径场景)。runner 按声明阶段与实际失败阶段比较:
+
+| 情况 | 判定 |
+|------|------|
+| 在声明阶段失败,且 `expect_error_contains` 匹配(或未声明) | `expected` — 不算 finding(env_issue `expected_failure`) |
+| 在声明阶段失败,但错误信息未含 `expect_error_contains` | finding **`expected_but_error_mismatch`** S3(错因不符合) |
+| **早于**声明阶段失败 | 走**常规**分流(现行为，不当 expect 处理),用 `validate_fail`/`plan_fail`/`apply_fail` 标准码 |
+| **晚于**声明阶段才失败 | finding **`late_validation`** S3(声明期望早失败但实际前置校验太宽) |
+| 全程未失败 | finding **`expected_fail_missed`** S2(预期错误未触发) |
+
+- 阶段序 `validate=1 < plan=2 < apply=3`;判定抽成纯函数 `_expect_fail_verdict`(源可单测,先例 `_prepaid_should_block`)。
+- **负路径断言**是 `expect_fail` 键的语义,不是 persona——负路径场景照旧按客户画像选 persona(常见 `beginner`),写 `expect_fail:` 声明期望即可。
+
+### `provider_version_from: 1.283.0`(upgrader 场景)
+
+runner 逻辑:workdir 副本 `sed` 改 pin → init → apply(**旧版本先立起来**)→ 改回 config pin → `init -upgrade` → `plan`;
+非空 diff → finding **`upgrade_diff`** S2;plan JSON 出现 delete+create → **S1**。
+- runner 显式设 `TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=1` 防双全量下载 lock 冲突;
+- registry 拉不到走既有 `init_network_fail` env_issue 分流,不误报为 finding。
+
+### `drift_cli: aliyun <product> <Action> --参数... {{output.NAME}} {{region}}`(drifter 场景)
+
+带外改动 → 期望 provider `plan` 检出 drift(diff);无 diff → finding **`drift_undetected`** S2
+(rubric 注明 Claude 复核后静默错配可升 S1)。runner 有**五重护栏,缺一不可**:
+
+1. **无 shell 直执**:runner 按空白 tokenize 成 argv,任一 token 含 `; & | $ ( ) < > \` 反引号/换行/反斜杠即拒绝;
+   `argv[0]` 必须字面 `aliyun`;`"${argv[@]}"` 直接 exec,**绝不过 sh -c/eval**。
+2. **占位符受限注入**:仅 `{{output.<name>}}`(terraform output 取值,值须过 `^[A-Za-z0-9._:/-]+$`)与 `{{region}}`;
+   **无通用变量展开**。
+3. **凭证钉死**:runner 显式导出 `ALIBABA_CLOUD_ACCESS_KEY_ID/SECRET`(映射自测试 `ALICLOUD_ACCESS_KEY/SECRET_KEY`)+
+   `ALIBABA_CLOUD_REGION_ID=$PRUN_REGION`;映射不成立 → env_issue `drift_env_missing` 拒跑;doctor 加 `aliyun` CLI
+   存在性检查(WARN 级)。
+4. **action 白名单锚在 jarvis config**:`config/probe.json` `tiers.tier1.drift_action_allow`(`<product>:<Action>` 数组,
+   初始 `vpc:TagResources`、`vpc:UnTagResources`、`vpc:ModifyVpcAttribute`);`argv[1]:argv[2]` 不在白名单 → env_issue
+   `drift_action_denied`。playground(免评审直推仓)只提供参数,**信任锚在过 MR 的 config**。
+5. `tiers.tier1.drift_enabled` **默认 `false`**(无人值守日轮不跑;临时验证用 `PROBE_CONFIG=<临时 config>` 显式开启;
+   转正开关走仓库主人 MR 决策)。关闭时记 env_issue `drift_disabled`。
+
+## 跨产品组合场景落位约定
+
+跨产品的组合场景(如 `vpc+vswitch+sg+ram+oss` composer)落**主产品目录**——按场景语义里"最核心/最先牵头"
+的产品认定主产品(通常是 `variable "run_id"` 后第一个声明的资源所属产品)。场景 id 保持全局唯一即可,
+不为组合场景另设一级目录;`resources:` 里把跨产品资源都列进去,tier-0 扫描并集会自然覆盖。
 
 ## tier-0 扫描范围红线(资源级,不写成场景)
 

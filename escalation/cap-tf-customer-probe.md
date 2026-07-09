@@ -90,9 +90,14 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
   7/8=87.5% 提前毕业,`ticket.mode=file`;draft 保留为可回退开关);a1 建单命令与优先级枚举固化。
 - **P2**：cron/bridge 定时接入(**调度与修复闭环统一由 `cap-probe-fix-flywheel` F2 承接**);场景库批量扩容
   (website docs 全量 tier-0 覆盖);发布前 RC 门禁(接 terraform-changelog 发版流程,发版前全资源 tier-0 + 全场景
-  tier-1 过一遍);upgrader persona(版本升级 state 兼容探测)。
+  tier-1 过一遍);~~upgrader persona~~ **已落地(2026-07-08)——`provider_version_from` 键 + upgrader dance**;
+  `probe-corpus.sh` 生成 persona 变体(migrator/refactorer/ds-checker,同资源不同角度)。
 - **P3**：cloudspec/OpenAPI 覆盖矩阵驱动属性组合生成(优先探从未被示例覆盖的属性);真实架构级组合场景;
-  度量看板(发现数/采纳率/发现→修复周期,接 board.sh)。
+  度量看板(发现数/采纳率/发现→修复周期,接 board.sh);**scale/throttling persona**(API 限流/大规模并发);
+  **provider 新版本三件套**(发布检测 + config/playground pin 批量 bump + 触发全量轮);**`_quarantine` 自动出队**
+  (再校验 + 修好归位);**acc-test / pr-review / release 场合蒸馏钩子**(把 KNOWLEDGE 契约挂到 provider-resource-review
+  / terraform-pr-review / terraform-provider-release 的收尾流程);**KNOWLEDGE → 产品级 skill 毕业**
+  (某产品 ≥15 条 + 消费 ≥3 次 → 起草 `.claude/skills/<product>-*`)。
 
 ## 置信度
 
@@ -151,6 +156,43 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
 ②**场景语料库 git 化**——`terraform_playground` 升级为 git 仓 **`terraflow/tf_playground`**,**直推 master + 工单报备**模型
 (取代原仓外裸目录无 MR 方案,同时天然收敛多机语料分叉)。③**AMP 白名单凭证已配置**——T0-mech 机械面全量点亮,
 `tier0 --all` 全量实拉元数据可端到端跑,解除上条 07-05「待有凭证环境」约束。(第四条 `bridge/run.sh` 单一入口属 bridge 侧,不涉本能力。)
+
+### 2026-07-08（探测链 v2 —— 归档自动处理 + persona 扩容 + 知识蒸馏契约 + board 适配,锚单 Aone 84080465）
+
+四块一并落地(worktree `probe-chain-v2` → MR):
+
+1. **归档自动处理**——新子命令 `probe.sh archive [--dry]`(幂等):draft frontmatter `status=filed/rejected*` 收入
+   `escalation/probe-drafts/archived/`;`runs/probe/` 顶层 verdict 超 `limits.audit_retention_days`(默认 60)搬
+   `runs/probe/archive/<YYYYMM>/`(排 `ledger.jsonl`/`*-summary.md`);`.my-day/probe/<ts-sid>/` 过期 + tfstate 空 → rm
+   (排 `.plugin-cache/`/`manual-*`/索引文件);plugin-cache 陌生版本只报体积不删;pending drafts + `_quarantine/` +
+   `origin: generated` 未校订三类待办清单一次打印。新增 config `paths.drafts_archived`、`limits.audit_retention_days`、
+   `limits.workdir_retention_days`;**所有新 config 键必有代码内默认值**(config 分裂防御)。**verdict 同日覆盖修复**:
+   审计副本文件名加 `HHMMSS`(`<YYYYMMDD>-<HHMMSS>-tier0.json`/`<YYYYMMDD>-<HHMMSS>-<sid>.json`),同日多轮不再互相覆盖;
+   board.sh 侧 findings 周窗口按 (code,resource,attribute) 去重相应适配。台账 `runs/probe/ledger.jsonl` append-only:
+   tier0/tier1 finalize 追加 + skill Step D.5 建单追加 + archive 追加(dry=`archive_dry`);LRU 索引
+   `.my-day/probe/t1-last-run.json`(仅推进到 plan 完成及以后才更新,`probe.sh list` 行尾列 LAST_RUN 追加)。
+2. **persona 扩容 5 类 + 新键**——`migrator`/`upgrader`/`refactorer`/`drifter`/`ds-checker`(+`ci-runner` taxonomy 骨架);
+   scenario.yaml 新键(全部可选叠加):`steps: step2,step3` CSV(泛化 update_step)+ `step<N>_expect: no_changes|changed|fail`
+   逐步声明期望 → `refactor_replace`(no_changes 却出 diff;delete+create S1);`expect_fail: validate|plan|apply`
+   +`expect_error_contains` 四态(`expected`/`expected_but_error_mismatch` S3/`late_validation` S3/`expected_fail_missed` S2);
+   `provider_version_from: <old-pin>` upgrader 版本 dance → `upgrade_diff`(S2;delete+create S1);
+   `drift_cli: aliyun <product> <Action> ...` drifter 五重护栏(tokenize+元字符黑名单/受限占位符/凭证显式映射
+   `ALIBABA_CLOUD_ACCESS_KEY_ID/SECRET/REGION_ID`/action 白名单锚在 jarvis config `tiers.tier1.drift_action_allow`
+   /默认 `drift_enabled: false` 关)→ `drift_undetected`(S2;Claude 复核后静默错配可升 S1)。判定抽成纯函数
+   (`_expect_fail_verdict` 源可单测,先例 `_prepaid_should_block`)。
+3. **知识蒸馏契约**——新 reference `.claude/skills/tf-customer-probe/references/knowledge-distillation.md`
+   (**跨 skill 单点**,先例 `provider-resource-dev/references/zhenyuan-verification.md`)。数据在
+   `tf_playground/<product>/KNOWLEDGE.md`(五节:命名/参数 quirk/生命周期/API 行为/报错→原因→解法),条目格式
+   `- [YYYY-MM-DD][来源: 链接/路径] <可执行的产品级事实>`。**三个触发点**:①probe 轮 Step E 收尾;
+   ②**aone-triage bookend 收尾**(客户单场合的蒸馏钩子挂在 aone-triage 主流程——评审阻断项,不能只挂 probe 侧);
+   ③provider-resource-dev 完成开发后。收录判据=可执行/跨场景复用/非文档已明示;消费约定=dev/review/probe 涉及
+   产品 X 先读 `<playground>/<X>/KNOWLEDGE.md`(存在即读);对外流转按 CLAUDE.md #5 禁品清单 sanitize;毕业标准=
+   某产品 ≥15 条 + 消费 ≥3 次 → 起草产品级 skill(cap P3)。
+4. **board 适配 + bridge 修复**——board.sh 加 archived/ drafts + verdict archive/<YYYYMM>/ 支持 + findings 周窗口
+   (code,resource,attribute) 去重;bridge `_probe_prompt` 删「mode=draft 人审」硬编码改按 SKILL Step C/D 与
+   `config/probe.json ticket.mode` 执行,尾部追加 `probe.sh archive` + 按 knowledge-distillation 契约蒸馏两步;
+   `_DailyScheduler._run_once` bool 契约(仅 queue_full 返 False 当日不 mark,5min tick 重试)+ probe- 前缀 final
+   文本落 `runs/probe/<rid>-summary.md`。
 
 ## 关联
 

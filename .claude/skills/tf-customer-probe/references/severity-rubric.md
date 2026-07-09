@@ -39,6 +39,12 @@ probe 发现的 finding 先落 detector 的 `severity_hint`（机判，见下表
 | `import_diff` | S2 | import 失败或 import 后 plan 非空 |
 | `destroy_fail` | S1 | destroy 失败 |
 | `state_residue` | S1 | destroy 后 state 仍残留资源 |
+| `refactor_replace` | S2 | `step<N>_expect: no_changes` 但 plan 出现 diff（migrator/refactorer 触发替换重建）；plan JSON 出现 **delete+create → 升 S1** |
+| `late_validation` | S3 | `expect_fail` 声明期望的阶段（validate/plan）没失败，直到更晚阶段才失败（前置校验太宽） |
+| `expected_fail_missed` | S2 | `expect_fail` 声明期望失败但全程未失败（负路径的预期错误未触发）；亦覆盖 `step<N>_expect: fail` 但 apply 成功 |
+| `expected_but_error_mismatch` | S3 | `expect_fail` 声明阶段确实失败了，但 `expect_error_contains` 未命中（错因不符合预期） |
+| `upgrade_diff` | S2 | `provider_version_from` 从旧 pin apply 后升到 current pin，`plan` 出现非空 diff（state 兼容性破坏）；plan JSON 出现 **delete+create → 升 S1** |
+| `drift_undetected` | S2 | `drift_cli` 带外改动后 `plan` 未检出 diff（drift detection 失效）；Claude 复核后若为静默错配（云端实际与声明脱钩）**升 S1** |
 
 ### tier-0（静态三方一致性扫描）
 
