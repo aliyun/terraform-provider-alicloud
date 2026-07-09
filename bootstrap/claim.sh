@@ -60,9 +60,9 @@ PROGRESS_STATUS=$(jq -r '.claim.progress_status // empty' "$pools_cfg")
 # so finish must use the target project's own completion status. Echoes "" if neither set.
 #
 # The per-pool .done_status may be EITHER a string (one completion status for the whole
-# pool) OR an object keyed by workitem type displayValue (e.g. {"需求":"已发布","功能缺陷":
+# pool) OR an object keyed by workitem type displayValue (e.g. {"产品类需求":"已发布","功能缺陷":
 # "Fixed"}) — because a single Aone project's status enum differs by workitem category
-# (api_toolkit「需求」完成态=已发布, but「功能缺陷」枚举无「已发布」, 完成态=Fixed). When the
+# (产品类需求 完成态=已发布, but 功能缺陷 枚举无「已发布」, 完成态=Fixed; 需求问题 完成态=已发布待需求方验收). When the
 # per-pool value is an object, select by <wtype> (2nd arg); an unknown/empty wtype falls
 # back to the object's first value to avoid an empty status. When it is a (non-empty)
 # string, return it verbatim (backward compatible). If no per-pool value, fall back to the
@@ -132,6 +132,17 @@ _in_start_statuses() {
     local cur="$1"
     jq -e -n --arg cur "$cur" --slurpfile cfg "$pools_cfg" \
         '($cfg[0].claim.start_statuses // []) | index($cur) != null' >/dev/null 2>&1
+}
+
+# True (exit 0) if <cur> is a member of .claim.done_statuses — the set of terminal statuses
+# (已发布/已完成/已拒绝…) at which work is already concluded. finish uses this to skip the
+# status write when a ticket is ALREADY terminal: forcing done_status onto an already-done
+# ticket is at best a no-op WARN and at worst a backward move (e.g. dragging 已完成/已拒绝
+# back to 已发布). Empty list → never matches (preserves old always-write behavior).
+_in_done_statuses() {
+    local cur="$1"
+    jq -e -n --arg cur "$cur" --slurpfile cfg "$pools_cfg" \
+        '($cfg[0].claim.done_statuses // []) | index($cur) != null' >/dev/null 2>&1
 }
 
 # Best-effort, non-fatal advance of a claimed workitem's Aone status to the pool's in-progress
@@ -493,7 +504,12 @@ if cands:
         eff_status="$(_pool_done_status "$project_id" "$wtype")"
         _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG"
         rm -f "$(_claim_prefix_path "$workitem_id")"
-        if [ -n "$eff_status" ]; then
+        cur_status="$(_get_status "$workitem_id")"
+        if [ -n "$cur_status" ] && _in_done_statuses "$cur_status"; then
+            # Already at a terminal status (已发布/已完成/已拒绝…) — leave it. Writing done_status
+            # here would either no-op-WARN or drag a 已完成/已拒绝 ticket back to 已发布.
+            echo "claim.sh: finished workitem $workitem_id in project $project_id (already terminal: $cur_status)"
+        elif [ -n "$eff_status" ]; then
             if $A1 project workitem update "$workitem_id" --status "$eff_status" >/dev/null 2>&1; then
                 echo "claim.sh: finished workitem $workitem_id in project $project_id (status=$eff_status)"
             else
