@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -185,11 +186,35 @@ func (s *RedisServiceV2) DescribeTairInstanceDescribeSecurityGroupConfiguration(
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.EcsSecurityGroupRelation[*]", response)
 	}
 
-	if len(v.([]interface{})) == 0 {
+	relations, ok := v.([]interface{})
+	if !ok || len(relations) == 0 {
 		return object, WrapErrorf(NotFoundErr("TairInstance", id), NotFoundMsg, response)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	// Join every EcsSecurityGroupRelation[*].SecurityGroupId in sorted order so state is
+	// stable across API return-order fluctuations. Build a fresh map (never alias into
+	// relations[0]) so we do not mutate the RPC response; the caller only reads RegionId
+	// and SecurityGroupId, so those are the only fields we carry over.
+	securityGroupIds := make([]string, 0, len(relations))
+	for _, relation := range relations {
+		rel, ok := relation.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		securityGroupIds = append(securityGroupIds, fmt.Sprint(rel["SecurityGroupId"]))
+	}
+	sort.Strings(securityGroupIds)
+
+	object = map[string]interface{}{
+		"SecurityGroupId": strings.Join(securityGroupIds, ","),
+	}
+	if first, ok := relations[0].(map[string]interface{}); ok {
+		if regionId, ok := first["RegionId"]; ok {
+			object["RegionId"] = regionId
+		}
+	}
+
+	return object, nil
 }
 func (s *RedisServiceV2) DescribeTairInstanceDescribeInstanceTDEStatus(id string) (object map[string]interface{}, err error) {
 	client := s.client
