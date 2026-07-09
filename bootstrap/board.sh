@@ -99,11 +99,21 @@ def verdict_dt(v, fname):
     return None
 
 # ── findings: runs/probe/*.json(本周窗口聚合)──────────────────────────
+# A4:last_tier1_round 兼容 archive/<YYYYMM>/(retention 归档后老 tier1 verdict 从顶层挪到子目录);
+#     findings 周窗口按 (code, resource, attribute) 去重(同日多轮 tier0 并存不重复计数)。
 audit_dir = os.environ.get("PROBE_AUDIT_DIR") or os.path.join(root, paths.get("audit", "runs/probe"))
 rounds = tier0 = tier1 = ftotal = 0
 by_sev, api_gap, mech = {}, {}, {}
 last_t1 = None  # (dt, iso) — 最近一轮 tier1(all-time,新鲜度信号)
-for f in sorted(glob.glob(os.path.join(audit_dir, "*.json"))):
+_seen_findings = set()  # A4:(code, resource, attribute) 周窗口去重
+_verdict_glob = sorted(
+    glob.glob(os.path.join(audit_dir, "*.json"))
+    + glob.glob(os.path.join(audit_dir, "archive", "*", "*.json"))
+)
+for f in _verdict_glob:
+    # 排除 ledger.jsonl(*.jsonl 已被 *.json 排除,但作为纪律显式过滤)
+    if os.path.basename(f) == "ledger.jsonl":
+        continue
     v = load(f)
     if not isinstance(v, dict): continue
     mode = v.get("mode", "")
@@ -122,10 +132,16 @@ for f in sorted(glob.glob(os.path.join(audit_dir, "*.json"))):
     elif mode == "tier1":
         tier1 += 1
     for fd in (v.get("findings") or []):
+        # A4 去重:(code, resource, attribute) 三元组本周只算一次;缺 resource/attribute 用 stage/summary 兜底
+        code = fd.get("code") or ""
+        key = (code, fd.get("resource") or fd.get("stage") or "",
+               fd.get("attribute") or fd.get("summary", "")[:64])
+        if key in _seen_findings:
+            continue
+        _seen_findings.add(key)
         ftotal += 1
         sev = fd.get("severity_hint") or "?"
         by_sev[sev] = by_sev.get(sev, 0) + 1
-        code = fd.get("code") or ""
         if code.startswith("api_gap"):
             api_gap[code] = api_gap.get(code, 0) + 1
 
@@ -134,7 +150,9 @@ findings = {"rounds": rounds, "tier0_rounds": tier0, "tier1_rounds": tier1,
 
 # ── drafts: escalation/probe-drafts/*.md frontmatter status ───────────
 # 采纳率 = filed / (filed + rejected)(只算已决断的;pending/未知不入分母)。
+# A4:同时扫 paths.drafts_archived 子目录(archive 命令搬移过去的历史 filed/rejected),adoption_rate 分母含归档件。
 drafts_dir = os.path.join(root, paths.get("drafts", "escalation/probe-drafts"))
+drafts_archived_dir = os.path.join(root, paths.get("drafts_archived", "escalation/probe-drafts/archived"))
 dc = {"filed": 0, "pending": 0, "rejected": 0, "other": 0}
 
 def draft_status(path):
@@ -151,7 +169,10 @@ def draft_status(path):
     return None
 
 dtotal = 0
-for f in glob.glob(os.path.join(drafts_dir, "*.md")):
+_draft_globs = glob.glob(os.path.join(drafts_dir, "*.md"))
+if os.path.isdir(drafts_archived_dir):
+    _draft_globs += glob.glob(os.path.join(drafts_archived_dir, "*.md"))
+for f in _draft_globs:
     if os.path.basename(f) == ".gitkeep": continue
     dtotal += 1
     st = (draft_status(f) or "").lower()

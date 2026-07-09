@@ -15,6 +15,10 @@
 #                                     默认扫场景 resources 并集;--all=website/docs/r 全量轮换巡检)
 #   run <scenario-id> [--region r] [--dry] [--keep] — tier-1 真实 apply 生命周期探测
 #   sweep                           — 扫 .my-day/probe/*/terraform.tfstate 报告残留 state
+#   archive [--dry]                 — 幂等归档:draft filed/rejected → drafts_archived/;
+#                                     verdict retention → runs/probe/archive/<YYYYMM>/(排 ledger/summary);
+#                                     .my-day/probe/<ts-sid> 空 state 且过期 → rm(排 .plugin-cache/manual-*/索引文件);
+#                                     plugin-cache 陌生版本报体积;pending drafts + _quarantine + origin:generated 待办清单
 #
 # 退出码(run/tier0):0=无 findings;1=有 findings;2=runner 自身错误/env 阻断;3=清理失败(run 专属,最高优先级人工介入)。
 #
@@ -52,6 +56,73 @@ probe_audit_dir()     { echo "${PROBE_AUDIT_DIR:-$(probe_root)/runs/probe}"; }
 
 # cfg <jq-filter> — 读一个 config 值(-r 原始输出)
 cfg() { jq -r "$1" "$(probe_config)" 2>/dev/null; }
+
+# cfg_or <jq-filter> <default> — 读 config,遇 null / 空 / 解析失败回 default。
+#   config 分裂防御:所有新键必须有代码内默认值,防止老 PROBE_CONFIG 缺键时 runner 报空。
+cfg_or() {
+    local v; v="$(jq -r "$1" "$(probe_config)" 2>/dev/null)"
+    if [ -z "$v" ] || [ "$v" = "null" ]; then echo "$2"; else echo "$v"; fi
+}
+
+# ── A2:台账 + recency 索引 ────────────────────────────────────────
+# ledger.jsonl(append-only,本机加速索引;真源在 Aone)。tier0/tier1 finalize + archive 各追加一行。
+probe_ledger_file() { echo "$(probe_audit_dir)/ledger.jsonl"; }
+
+# _ledger_append <jq-filter> <--argjson/--arg> ... — 追加一条 JSONL(带 ts+kind)。调用方给 filter+参数。
+#   例:_ledger_append '{ts:$ts, kind:"tier0", resources:$r}' --argjson r "$reslist_json"
+_ledger_append() {
+    local filter="$1"; shift
+    local f; f="$(probe_ledger_file)"
+    mkdir -p "$(dirname "$f")" 2>/dev/null
+    jq -nc --arg ts "$(date -u +%FT%TZ)" "$@" "$filter" >> "$f" 2>/dev/null
+}
+
+# .my-day/probe/t1-last-run.json — scenario→epoch;LRU 用。仅在真实执行推进到 plan 完成及以后才更新。
+_t1_last_run_file() { echo "$(probe_workdir_base)/t1-last-run.json"; }
+
+# _t1_last_run_update <sid> — 追加 sid→now(合并式;文件不存在则初始化为 {})
+_t1_last_run_update() {
+    local sid="$1" sf; sf="$(_t1_last_run_file)"
+    [ -n "$sid" ] || return 0
+    mkdir -p "$(dirname "$sf")" 2>/dev/null
+    [ -s "$sf" ] || echo '{}' > "$sf"
+    local tmp; tmp="$(mktemp)"
+    jq --arg s "$sid" --argjson t "$(date +%s)" '.[$s]=$t' "$sf" > "$tmp" 2>/dev/null && mv -f "$tmp" "$sf" || rm -f "$tmp"
+}
+
+# _t1_last_run_get <sid> — 打印 sid 最近 epoch;索引无则扫 runs/probe 文件名回退(新旧两种正则,sid 含连字符禁 naive cut)。
+#   返回值:纯整数 epoch(0 = 无)。
+_t1_last_run_get() {
+    local sid="$1" sf epoch=0 v
+    sf="$(_t1_last_run_file)"
+    if [ -s "$sf" ]; then
+        v="$(jq -r --arg s "$sid" '.[$s] // 0' "$sf" 2>/dev/null)"
+        [ -n "$v" ] && [ "$v" != "null" ] && epoch="$v"
+    fi
+    if [ "$epoch" = "0" ] || [ -z "$epoch" ]; then
+        # 文件名回退:兼容 <YYYYMMDD>-<sid>.json 和 <YYYYMMDD>-<HHMMSS>-<sid>.json
+        # sid 含连字符,禁 naive cut;直接 basename 剥前缀正则,尾部 -<sid>.json 匹配。
+        local audit; audit="$(probe_audit_dir)"
+        local latest=0 f base d
+        shopt -s nullglob
+        for f in "$audit"/*"-${sid}.json"; do
+            [ -f "$f" ] || continue
+            base="$(basename "$f")"
+            # 只接受新旧两种前缀正则(避免其它 sid 前缀误命中):新 8+HHMMSS+"-"+sid.json 或旧 8+"-"+sid.json
+            if [[ "$base" =~ ^[0-9]{8}-[0-9]{6}-${sid}\.json$ ]] || [[ "$base" =~ ^[0-9]{8}-${sid}\.json$ ]]; then
+                d="$(jq -r '.started_at // empty' "$f" 2>/dev/null)"
+                if [ -n "$d" ]; then
+                    v="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$d" +%s 2>/dev/null || date -u -d "$d" +%s 2>/dev/null || echo 0)"
+                else
+                    v="$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null || echo 0)"
+                fi
+                [ -n "$v" ] && [ "$v" -gt "$latest" ] && latest="$v"
+            fi
+        done
+        epoch="$latest"
+    fi
+    echo "${epoch:-0}"
+}
 
 # 场景根(playground)解析。语料库外置 jarvis 仓外(已 git 化:数据仓 tf_playground,直推 master + 工单报备),
 #   按云产品维度两级归档 <root>/<product>/<id>/scenario.yaml。
@@ -248,26 +319,44 @@ _cmd_doctor() {
         echo "WARN probe-meta: OpenAPI 元数据获取层不可用(缺 venv/凭证)→ tier-0 自动降级为纯 doc↔source + 全 judgment_queue(现行为)"
         echo "       启用: bash .claude/skills/amp-resource-metadata/scripts/setup.sh + 配 AMP_/ALIBABA_CLOUD_ 凭证(白名单见 skill SKILL.md)"
     fi
+    # B2/doctor:aliyun CLI 存在性(drifter 场景 drift_cli 直执 aliyun 需要);WARN 级不阻断——drift 场景默认关。
+    if command -v aliyun >/dev/null 2>&1; then
+        echo "OK   aliyun CLI: $(aliyun version 2>/dev/null | head -1 || echo installed) (drifter 场景可用)"
+    else
+        echo "WARN aliyun CLI 未安装(drifter 场景 drift_cli 需要;drift_enabled 默认关不阻断)"
+        echo "       安装: https://help.aliyun.com/document_detail/121541.html;drift 场景转正前需在 config 开启 tiers.tier1.drift_enabled"
+    fi
     return "$rc"
 }
 
 # ── list ────────────────────────────────────────────────────────────
 # 两级布局 <playground>/<product>/<id>/:PRODUCT 列取 <id> 的父目录名。
+# LAST_RUN 列(A2):追加在**行尾**——rc-gate.sh:146 awk '{print $2}' 取 ID 列,前两列(PRODUCT/ID)不能挪。
+#   值:t1-last-run.json 索引优先;缺失时回退扫 runs/probe 文件名(新旧两种正则,含连字符 sid 用 [[ =~ ]] 精确匹配)。
+#   格式:ISO UTC(便于人读+机读),从未跑过打 '-'。
 _cmd_list() {
-    local root d y product
+    local root d y product sid epoch iso
     root="$(probe_playground_dir)"
-    printf '%-10s %-18s %-9s %-64s %s\n' PRODUCT ID PERSONA RESOURCES DETECT
+    printf '%-10s %-18s %-9s %-64s %-72s %s\n' PRODUCT ID PERSONA RESOURCES DETECT LAST_RUN
     shopt -s nullglob
     for d in "$root"/*/*/; do
         y="$d/scenario.yaml"
         [ -f "$y" ] || continue
         product="$(basename "$(dirname "${d%/}")")"
-        printf '%-10s %-18s %-9s %-64s %s\n' \
+        sid="$(_yaml_get "$y" id)"
+        epoch="$(_t1_last_run_get "$sid")"
+        if [ -n "$epoch" ] && [ "$epoch" != "0" ]; then
+            iso="$(date -u -r "$epoch" +%FT%TZ 2>/dev/null || date -u -d "@$epoch" +%FT%TZ 2>/dev/null || echo "$epoch")"
+        else
+            iso="-"
+        fi
+        printf '%-10s %-18s %-9s %-64s %-72s %s\n' \
             "$product" \
-            "$(_yaml_get "$y" id)" \
+            "$sid" \
             "$(_yaml_get "$y" persona)" \
             "$(_yaml_get "$y" resources)" \
-            "$(_yaml_get "$y" detect)"
+            "$(_yaml_get "$y" detect)" \
+            "$iso"
     done
 }
 
@@ -835,11 +924,22 @@ _cmd_tier0() {
           suppressed:$suppressed, coverage_notes:$coverage, stats:$stats}' \
         > "$verdict" 2>/dev/null
 
-    local day; day="$(date -u +%Y%m%d)"
-    cp "$verdict" "$audit/${day}-tier0.json" 2>/dev/null
-    _write_tier0_md "$verdict" "$audit/${day}-tier0.md"
-    echo "verdict: $audit/${day}-tier0.json"
+    # A3 verdict 同日覆盖修复:审计副本文件名带 HHMMSS,cp 目标和 echo verdict: 行必须一致(rc-gate.sh:105 依赖此行解析)。
+    local day hms; day="$(date -u +%Y%m%d)"; hms="$(date -u +%H%M%S)"
+    local audit_json="$audit/${day}-${hms}-tier0.json"
+    local audit_md="$audit/${day}-${hms}-tier0.md"
+    cp "$verdict" "$audit_json" 2>/dev/null
+    _write_tier0_md "$verdict" "$audit_md"
+    echo "verdict: $audit_json"
     echo "mech: $mech / findings: $nf (api_gap_* $api_nf) / resources: $res_ok / judgment_queue: $(_count_lines "$JQUEUE_FILE") / suppressed: $(_count_lines "$SUPPRESS_FILE")"
+
+    # A2 ledger append(tier0 finalize)——本机加速索引,真源在 Aone。
+    _ledger_append \
+        '{ts:$ts, kind:"tier0", mech:$mech, resources:$r, findings:$f, verdict:$v}' \
+        --arg mech "$mech" \
+        --argjson r "$reslist_json" \
+        --argjson f "$nf" \
+        --arg v "$audit_json"
 
     rm -rf "$tmp"
     [ "$nf" -gt 0 ] && return 1 || return 0
@@ -945,6 +1045,7 @@ _cmd_run() {
     yaml="$sdir/scenario.yaml"
 
     local scn_region update_step import_check import_address import_id_output allow_prepaid apply_off
+    local steps_csv expect_fail expect_err_contains provider_from drift_cli
     scn_region="$(_yaml_get "$yaml" region)"
     update_step="$(_yaml_get "$yaml" update_step)"
     import_check="$(_yaml_get "$yaml" import_check)"
@@ -952,6 +1053,14 @@ _cmd_run() {
     import_id_output="$(_yaml_get "$yaml" import_id_output)"
     allow_prepaid="$(_yaml_get "$yaml" allow_prepaid)"
     apply_off=0; _apply_disabled "$yaml" && apply_off=1
+    # B2 新键(全部可选;缺省=向后兼容 update_step 语义)
+    steps_csv="$(_yaml_get "$yaml" steps)"
+    expect_fail="$(_yaml_get "$yaml" expect_fail)"
+    expect_err_contains="$(_yaml_get "$yaml" expect_error_contains)"
+    provider_from="$(_yaml_get "$yaml" provider_version_from)"
+    drift_cli="$(_yaml_get "$yaml" drift_cli)"
+    # 向后兼容:update_step: true 等价 steps: step2
+    if [ -z "$steps_csv" ] && [ "$update_step" = "true" ]; then steps_csv="step2"; fi
 
     local region; region="$(_resolve_region "$cli_region" "$scn_region")"
     local tier1_enabled; tier1_enabled="$(cfg '.tiers.tier1.enabled')"
@@ -978,7 +1087,23 @@ _cmd_run() {
             fi
             echo "    - apply -auto-approve"
             echo "    - plan -detailed-exitcode(退2 → perpetual_diff)"
-            [ "$update_step" = "true" ] && echo "    - step2 覆盖 apply + re-plan(抓 更新不生效)"
+            # B2 步骤:steps CSV 泛化 update_step,step<N>_expect 逐步声明期望
+            if [ -n "$steps_csv" ]; then
+                local _s _e
+                IFS=',' read -ra _steps_arr <<< "$steps_csv"
+                for _s in "${_steps_arr[@]}"; do
+                    _s="$(echo "$_s" | tr -d '[:space:]')"; [ -z "$_s" ] && continue
+                    _e="$(_yaml_get "$yaml" "${_s}_expect")"
+                    [ -z "$_e" ] && _e="changed"
+                    echo "    - $_s 覆盖 apply + re-plan(expect=$_e:changed=perpetual_diff/no_changes=refactor_replace/fail=expected_fail_missed)"
+                done
+            fi
+            # B2 expect_fail:三态判定纯函数 _expect_fail_verdict
+            [ -n "$expect_fail" ] && echo "    - expect_fail=$expect_fail contains='${expect_err_contains}' → 阶段对齐=expected;早=常规;晚=late_validation(S3);未失败=expected_fail_missed(S2)"
+            # B2 provider_version_from:upgrader 场景
+            [ -n "$provider_from" ] && echo "    - upgrader: pin $provider_from → init → apply → 改回 config pin → init -upgrade → plan → diff → upgrade_diff(S2;delete+create→S1)"
+            # B2 drift_cli:drifter 场景(默认 drift_enabled=false → env_issue drift_disabled)
+            [ -n "$drift_cli" ] && echo "    - drift: 五重护栏 tokenize + 白名单 + 占位符 + 凭证映射 + drift_enabled 门;post plan 无 diff → drift_undetected(S2)"
             [ "$import_check" = "true" ] && echo "    - state rm $import_address → import(id 取自 output $import_id_output) → plan(退2 → import_diff)"
             echo "    - destroy -auto-approve + state-empty 校验(--keep 跳过;destroy 失败/残留 → finding + 退3)"
         fi
@@ -1031,7 +1156,15 @@ _cmd_run() {
     fi
 
     _run_step validate "$PRUN_WD/validate.log" -- terraform validate
-    [ "$STEP_RC" -ne 0 ] && _emit_finding validate_fail validate "官方文档示例组合 validate 不通过" "$PRUN_WD/validate.log" S3
+    if [ "$STEP_RC" -ne 0 ]; then
+        # expect_fail 优先分流:validate 阶段失败 vs 声明阶段的三态判定
+        if [ -n "$expect_fail" ]; then
+            _emit_expect_finding "$expect_fail" validate "$expect_err_contains" "$PRUN_WD/validate.log" \
+                validate_fail S3 "官方文档示例组合 validate 不通过"
+        else
+            _emit_finding validate_fail validate "官方文档示例组合 validate 不通过" "$PRUN_WD/validate.log" S3
+        fi
+    fi
 
     if [ "$have_creds" -eq 0 ]; then
         _emit_env no_creds "未设置 ALICLOUD 凭证,跳过 plan/apply"
@@ -1044,11 +1177,16 @@ _cmd_run() {
             _emit_env auth_error "plan 报鉴权类错误(归 env,不算 provider bug)"
         elif _has_panic "$PRUN_WD/plan.log"; then
             _emit_finding plan_crash plan "terraform plan 触发 provider panic" "$PRUN_WD/plan.log" S1
+        elif [ -n "$expect_fail" ]; then
+            _emit_expect_finding "$expect_fail" plan "$expect_err_contains" "$PRUN_WD/plan.log" \
+                plan_fail S2 "合法配置 plan 失败"
         else
             _emit_finding plan_fail plan "合法配置 plan 失败" "$PRUN_WD/plan.log" S2
         fi
         _finalize_verdict; return "$(_verdict_exit)"
     fi
+    # A2 LRU 索引:仅在真实执行推进到 plan 完成及以后才更新,避免被阻断场景(no_creds/prepaid_block/tier1_disabled)永远失去 LRU 优先权。
+    _t1_last_run_update "$PRUN_SID"
 
     # 场景级 apply 门:scenario.yaml apply:false(生成器命中成本安全门写入)→ 止步 plan,不真实创建
     if [ "$apply_off" -eq 1 ]; then
@@ -1074,6 +1212,9 @@ _cmd_run() {
     if [ "$STEP_RC" -ne 0 ]; then
         if _is_auth_error "$PRUN_WD/apply.log"; then
             _emit_env auth_error "apply 报鉴权类错误"
+        elif [ -n "$expect_fail" ]; then
+            _emit_expect_finding "$expect_fail" apply "$expect_err_contains" "$PRUN_WD/apply.log" \
+                apply_fail S2 "合法配置 apply 失败"
         else
             _emit_finding apply_fail apply "合法配置 apply 失败" "$PRUN_WD/apply.log" S2
         fi
@@ -1085,16 +1226,106 @@ _cmd_run() {
     [ "$STEP_RC" -eq 2 ] && _emit_finding perpetual_diff plan2 "apply 后立即 plan 仍有 diff(幂等性破坏/永久 diff)" "$PRUN_WD/plan2.log" S2
     _detect_unexpected_replace "$PRUN_WD/plan2.log" plan2
 
-    # step2 覆盖(更新场景)
-    if [ "$update_step" = "true" ] && [ -d "$sdir/step2" ]; then
-        cp "$sdir"/step2/*.tf "$PRUN_WD"/ 2>/dev/null
-        _run_step apply_step2 "$PRUN_WD/apply_step2.log" -- terraform apply -auto-approve -var "run_id=$PRUN_RUN_ID"
-        if [ "$STEP_RC" -ne 0 ]; then
-            _emit_finding apply_fail apply_step2 "更新(step2) apply 失败" "$PRUN_WD/apply_step2.log" S2
-        else
-            _run_step plan_step2 "$PRUN_WD/plan_step2.log" -- terraform plan -detailed-exitcode -var "run_id=$PRUN_RUN_ID"
-            [ "$STEP_RC" -eq 2 ] && _emit_finding perpetual_diff plan_step2 "step2 更新后 plan 仍有 diff(更新不生效)" "$PRUN_WD/plan_step2.log" S2
+    # B2 steps CSV(泛化 update_step;update_step:true 已在前面归一为 steps=step2)
+    if [ -n "$steps_csv" ]; then
+        local _step _expect _plan_rc _step_apply_rc
+        IFS=',' read -ra _steps_arr <<< "$steps_csv"
+        for _step in "${_steps_arr[@]}"; do
+            _step="$(echo "$_step" | tr -d '[:space:]')"; [ -z "$_step" ] && continue
+            [ -d "$sdir/$_step" ] || { _emit_env "step_dir_missing" "steps 声明 $_step 但 $sdir/$_step 不存在,跳过"; continue; }
+            _expect="$(_yaml_get "$yaml" "${_step}_expect")"; [ -z "$_expect" ] && _expect="changed"
+            cp "$sdir/$_step"/*.tf "$PRUN_WD"/ 2>/dev/null
+            _run_step "apply_${_step}" "$PRUN_WD/apply_${_step}.log" -- terraform apply -auto-approve -var "run_id=$PRUN_RUN_ID"
+            _step_apply_rc="$STEP_RC"
+            if [ "$_step_apply_rc" -ne 0 ]; then
+                # apply 失败:expect=fail 视为符合;其它当 apply_fail
+                if [ "$_expect" = "fail" ]; then
+                    _emit_env "step_fail_expected" "步骤 $_step apply 按预期失败(expect=fail)"
+                else
+                    _emit_finding apply_fail "apply_${_step}" "步骤 $_step apply 失败" "$PRUN_WD/apply_${_step}.log" S2
+                fi
+                continue
+            fi
+            # apply 成功:按 expect 分流
+            _run_step "plan_${_step}" "$PRUN_WD/plan_${_step}.log" -- terraform plan -detailed-exitcode -out="tf.plan_${_step}" -var "run_id=$PRUN_RUN_ID"
+            _plan_rc="$STEP_RC"
+            case "$_expect" in
+                changed)
+                    [ "$_plan_rc" -eq 2 ] && _emit_finding perpetual_diff "plan_${_step}" "步骤 $_step 更新后 plan 仍有 diff(更新不生效)" "$PRUN_WD/plan_${_step}.log" S2
+                    ;;
+                no_changes)
+                    if [ "$_plan_rc" -eq 2 ]; then
+                        # no_changes 却出现 diff → refactor_replace(delete+create → S1;否则 S2);复用 _detect_unexpected_replace 判断
+                        local _pj="$PRUN_WD/plan_${_step}.json" _sev="S2"
+                        ( cd "$PRUN_WD" && terraform show -json "tf.plan_${_step}" > "$_pj" 2>/dev/null )
+                        if [ -s "$_pj" ] && jq -e 'any(.resource_changes[]?; (.change.actions|index("delete")) and (.change.actions|index("create")))' "$_pj" >/dev/null 2>&1; then
+                            _sev="S1"
+                        fi
+                        _emit_finding refactor_replace "plan_${_step}" "步骤 $_step 声明 no_changes 但 plan 出现 diff(refactor 触发替换重建)" "$PRUN_WD/plan_${_step}.log" "$_sev"
+                    fi
+                    ;;
+                fail)
+                    # apply 已经成功了(fail 期望未达)→ expected_fail_missed
+                    _emit_finding expected_fail_missed "apply_${_step}" "步骤 $_step 声明 expect=fail 但 apply 成功" "$PRUN_WD/apply_${_step}.log" S2
+                    ;;
+            esac
+        done
+    fi
+
+    # B2 provider_version_from:upgrader dance —— sed 改 workdir 副本 pin → init → apply → 改回 → init -upgrade → plan;非空 diff → upgrade_diff。
+    #   注:进入此分支时 apply 已跑过(target=current pin)。upgrader 需要的是"旧版本先立起来 → 升级 → 观察 diff"。
+    #   本实现按契约:①现场 tf 备份 → sed pin → init → apply → sed 回 current pin → init -upgrade → plan;②非空 diff→upgrade_diff。
+    #   TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=1 防双全量下载 lock 冲突。
+    if [ -n "$provider_from" ]; then
+        local _cur_pin _mtf _lockbak
+        _cur_pin="$(cfg '.provider.version')"
+        _mtf="$PRUN_WD/main.tf"
+        export TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=1
+        if [ -f "$_mtf" ] && [ -n "$_cur_pin" ]; then
+            # 备份 lock,sed 改 pin
+            [ -f "$PRUN_WD/.terraform.lock.hcl" ] && cp "$PRUN_WD/.terraform.lock.hcl" "$PRUN_WD/.terraform.lock.hcl.bak" 2>/dev/null
+            sed -i.bak "s/version = \"${_cur_pin//./\\.}\"/version = \"${provider_from//./\\.}\"/" "$_mtf" 2>/dev/null
+            _run_step upgrade_init_old "$PRUN_WD/upgrade_init_old.log" -- terraform init -input=false -upgrade
+            if [ "$STEP_RC" -ne 0 ]; then
+                _emit_env upgrade_init_fail "upgrader init(pin=$provider_from) 失败,见 $PRUN_WD/upgrade_init_old.log"
+            else
+                _run_step upgrade_apply_old "$PRUN_WD/upgrade_apply_old.log" -- terraform apply -auto-approve -var "run_id=$PRUN_RUN_ID"
+                if [ "$STEP_RC" -ne 0 ]; then
+                    _emit_env upgrade_apply_fail "upgrader 旧版本 apply 失败(pin=$provider_from)"
+                else
+                    # 改回 current pin,init -upgrade,plan
+                    sed -i.bak "s/version = \"${provider_from//./\\.}\"/version = \"${_cur_pin//./\\.}\"/" "$_mtf" 2>/dev/null
+                    _run_step upgrade_init_new "$PRUN_WD/upgrade_init_new.log" -- terraform init -input=false -upgrade
+                    if [ "$STEP_RC" -ne 0 ]; then
+                        _emit_env upgrade_init_new_fail "upgrader init(升级至 $_cur_pin)失败"
+                    else
+                        _run_step upgrade_plan "$PRUN_WD/upgrade_plan.log" -- terraform plan -detailed-exitcode -out=tf.plan_upgrade -var "run_id=$PRUN_RUN_ID"
+                        if [ "$STEP_RC" -eq 2 ]; then
+                            # 非空 diff → upgrade_diff;delete+create → S1
+                            local _upj="$PRUN_WD/plan_upgrade.json" _usev="S2"
+                            ( cd "$PRUN_WD" && terraform show -json tf.plan_upgrade > "$_upj" 2>/dev/null )
+                            if [ -s "$_upj" ] && jq -e 'any(.resource_changes[]?; (.change.actions|index("delete")) and (.change.actions|index("create")))' "$_upj" >/dev/null 2>&1; then
+                                _usev="S1"
+                            fi
+                            _emit_finding upgrade_diff upgrade_plan "provider $provider_from → $_cur_pin 升级后 plan 出现 diff(state 兼容性破坏)" "$PRUN_WD/upgrade_plan.log" "$_usev"
+                        fi
+                    fi
+                fi
+            fi
+            # 清理 sed .bak(不影响 destroy 阶段)
+            rm -f "$_mtf.bak" 2>/dev/null
         fi
+    fi
+
+    # B2 drift_cli:drifter 五重护栏(见函数注释);drift_enabled 门 + action 白名单 + tokenize + 占位符 + 凭证钉死
+    if [ -n "$drift_cli" ]; then
+        _probe_drift_dance "$drift_cli"
+    fi
+
+    # B2 expect_fail 收尾判定:走过完整生命周期(validate/plan/apply 均 rc=0)都没失败 → expected_fail_missed(S2)
+    #   注:各失败早退分支中,若 expect_fail 命中,会用 _emit_expect_finding 分流(expected/late/early),不到这里。
+    if [ -n "$expect_fail" ]; then
+        _emit_finding expected_fail_missed apply "场景声明 expect_fail=$expect_fail 但全程未失败(预期错误未触发)" "$PRUN_WD/apply.log" S2
     fi
 
     # import 断链检查
@@ -1118,6 +1349,71 @@ _cmd_run() {
     _probe_cleanup
     _finalize_verdict
     return "$(_verdict_exit)"
+}
+
+# B2 _probe_drift_dance <cli_string> — drifter 五重护栏 orchestrator。
+#   ①无 shell 直执:_drift_tokenize 切 argv + argv[0] 字面 aliyun + 元字符黑名单
+#   ②占位符:_drift_expand_placeholders 仅认 {{output.NAME}}/{{region}} 且值过白名单正则
+#   ③凭证:显式导出 ALIBABA_CLOUD_ACCESS_KEY_ID/SECRET/REGION_ID(映射 ALICLOUD_*);映射不成立=env_issue drift_env_missing
+#   ④action 白名单:.tiers.tier1.drift_action_allow 按 <product>:<Action> 匹配 argv[1]:argv[2]
+#   ⑤drift_enabled 默认 false:关闭时 env_issue drift_disabled 不跑
+#   post-drift plan 无 diff → finding drift_undetected(默认 S2)
+_probe_drift_dance() {
+    local cli="$1"
+    # ⑤ drift_enabled 门
+    if [ "$(cfg_or '.tiers.tier1.drift_enabled' 'false')" != "true" ]; then
+        _emit_env drift_disabled "config .tiers.tier1.drift_enabled=false,drift 场景不跑(无人值守日轮默认关;转正开关走 MR)"
+        return 0
+    fi
+    # ③ 凭证钉死:ALICLOUD_ACCESS_KEY/SECRET_KEY → ALIBABA_CLOUD_ACCESS_KEY_ID/SECRET;缺则拒跑
+    if [ -z "${ALICLOUD_ACCESS_KEY:-}" ] || [ -z "${ALICLOUD_SECRET_KEY:-}" ] || [ -z "${PRUN_REGION:-}" ]; then
+        _emit_env drift_env_missing "ALICLOUD_ACCESS_KEY/SECRET_KEY 或 region 未设,drift 拒跑(runner 显式映射不成立)"
+        return 0
+    fi
+    export ALIBABA_CLOUD_ACCESS_KEY_ID="$ALICLOUD_ACCESS_KEY"
+    export ALIBABA_CLOUD_ACCESS_KEY_SECRET="$ALICLOUD_SECRET_KEY"
+    export ALIBABA_CLOUD_REGION_ID="$PRUN_REGION"
+    # ① tokenize
+    local -a argv=()
+    while IFS= read -r _tok; do argv+=("$_tok"); done < <(_drift_tokenize "$cli" 2>>"$PRUN_WD/drift.log")
+    if [ "${#argv[@]}" -lt 3 ]; then
+        _emit_env drift_cli_rejected "drift_cli tokenize 失败(见 drift.log)"
+        return 0
+    fi
+    # ④ 白名单
+    if ! _drift_action_allowed "${argv[1]}" "${argv[2]}"; then
+        _emit_env drift_action_denied "drift_cli action ${argv[1]}:${argv[2]} 不在 tiers.tier1.drift_action_allow 白名单"
+        return 0
+    fi
+    # ② 占位符展开(每个 token 独立展开)
+    local -a expanded=()
+    local i tok exp
+    for i in "${!argv[@]}"; do
+        tok="${argv[$i]}"
+        if [[ "$tok" == *"{{"*"}}"* ]]; then
+            exp="$(_drift_expand_placeholders "$tok" "$PRUN_WD" "$PRUN_REGION" 2>>"$PRUN_WD/drift.log")"
+            if [ -z "$exp" ]; then
+                _emit_env drift_cli_rejected "drift_cli 占位符展开失败(见 drift.log)"
+                return 0
+            fi
+            expanded+=("$exp")
+        else
+            expanded+=("$tok")
+        fi
+    done
+    # exec:数组直执,绝不过 sh -c/eval
+    { echo "### drift exec :: $(date -u +%FT%TZ)"; printf '$ '; printf '%q ' "${expanded[@]}"; echo; } >> "$PRUN_WD/drift.log"
+    "${expanded[@]}" >> "$PRUN_WD/drift.log" 2>&1
+    local _drift_rc=$?
+    if [ "$_drift_rc" -ne 0 ]; then
+        _emit_env drift_exec_fail "aliyun CLI drift 命令执行失败(rc=$_drift_rc),见 $PRUN_WD/drift.log"
+        return 0
+    fi
+    # post-drift plan:无 diff → drift_undetected
+    _run_step plan_drift "$PRUN_WD/plan_drift.log" -- terraform plan -detailed-exitcode -var "run_id=$PRUN_RUN_ID"
+    if [ "$STEP_RC" -ne 2 ]; then
+        _emit_finding drift_undetected plan_drift "带外改动后 plan 未检出 diff(drift detection 失效)" "$PRUN_WD/plan_drift.log" S2
+    fi
 }
 
 # apply 后 plan JSON 若出现 delete+create(替换重建)→ unexpected_replace(S1)
@@ -1157,11 +1453,24 @@ _finalize_verdict() {
           cleanup:{applied:$applied, destroyed:$destroyed, state_empty:$state_empty}}' \
         > "$verdict" 2>/dev/null
 
-    local day; day="$(date -u +%Y%m%d)"
-    cp "$verdict" "$audit/${day}-${PRUN_SID}.json" 2>/dev/null
-    _write_summary_md "$verdict" "$audit/${day}-${PRUN_SID}.md"
+    # A3 verdict 同日覆盖修复:审计副本文件名带 HHMMSS。
+    local day hms; day="$(date -u +%Y%m%d)"; hms="$(date -u +%H%M%S)"
+    local audit_json="$audit/${day}-${hms}-${PRUN_SID}.json"
+    local audit_md="$audit/${day}-${hms}-${PRUN_SID}.md"
+    cp "$verdict" "$audit_json" 2>/dev/null
+    _write_summary_md "$verdict" "$audit_md"
     echo "verdict: $verdict"
-    echo "audit:   $audit/${day}-${PRUN_SID}.json"
+    # A3 echo verdict: 一行必须与 cp 目标一致(rc-gate.sh:105 用它取 verdict 路径解析)。tier1 保留原双行契约。
+    echo "verdict: $audit_json"
+    echo "audit:   $audit_json"
+
+    # A2 ledger append(tier1 finalize):findings 计数 + verdict 路径。
+    local nf; nf="$(jq '.findings|length' "$verdict" 2>/dev/null)"; [ -z "$nf" ] && nf=0
+    _ledger_append \
+        '{ts:$ts, kind:"tier1", scenario:$sid, findings:$f, verdict:$v}' \
+        --arg sid "$PRUN_SID" \
+        --argjson f "$nf" \
+        --arg v "$audit_json"
 }
 
 _write_summary_md() { # verdict.json out.md
@@ -1184,6 +1493,368 @@ _write_summary_md() { # verdict.json out.md
         echo
         echo "来源:jarvis tf-customer-probe"
     } > "$out"
+}
+
+# ════════════════════════════════════════════════════════════════════
+# B2 纯函数:expect_fail 三态判定 + drift_cli 五重护栏
+# ════════════════════════════════════════════════════════════════════
+# 阶段序:validate=1 < plan=2 < apply=3。用于 expect_fail 早晚比较。
+_stage_ord() { case "$1" in validate) echo 1;; plan) echo 2;; apply) echo 3;; *) echo 0;; esac; }
+
+# _expect_fail_verdict <declared_stage> <failed_stage> <err_contains_ok(1|0)>
+#   源可单测(先例 _prepaid_should_block)。stdout=码 tag:
+#     expected                     — 在声明阶段失败,且 error_contains 匹配(或无 error_contains)
+#     expected_but_error_mismatch  — 阶段对上但 error_contains 未命中 → S3(证据不符合;非预期错因)
+#     early_failure_fallthrough    — 早于声明阶段失败 → 走现行 finding 分流(runner 不当 expect finding 处理)
+#     late_validation              — 晚于声明阶段才失败 → finding late_validation S3
+#     expected_fail_missed         — 全程未失败(failed_stage 为空)→ finding expected_fail_missed S2
+#   declared_stage/failed_stage ∈ {validate,plan,apply,""};failed_stage="" 表示从未失败。
+_expect_fail_verdict() {
+    local declared="$1" failed="$2" err_ok="${3:-1}"
+    if [ -z "$failed" ]; then
+        echo "expected_fail_missed"; return
+    fi
+    local dord ford
+    dord=$(_stage_ord "$declared"); ford=$(_stage_ord "$failed")
+    if [ "$dord" -eq 0 ] || [ "$ford" -eq 0 ]; then
+        # 无效阶段名一律按现行分流(不当 expect 特化处理)
+        echo "early_failure_fallthrough"; return
+    fi
+    if [ "$ford" -lt "$dord" ]; then
+        echo "early_failure_fallthrough"; return
+    fi
+    if [ "$ford" -gt "$dord" ]; then
+        echo "late_validation"; return
+    fi
+    # 相等
+    if [ "$err_ok" = "1" ]; then echo "expected"; else echo "expected_but_error_mismatch"; fi
+}
+
+# _emit_expect_finding <declared> <actual_failed> <err_contains> <errlog> <fallback_code> <fallback_sev> <fallback_summary>
+#   B2 expect_fail 分流:声明阶段=actual → expected(不报) 或 expected_but_error_mismatch(S3);
+#   声明阶段>actual → early_failure_fallthrough(用 fallback 常规 finding);
+#   声明阶段<actual → late_validation(S3)。
+_emit_expect_finding() {
+    local declared="$1" actual="$2" err_contains="$3" errlog="$4"
+    local fb_code="$5" fb_sev="$6" fb_sum="$7"
+    local err_ok=1
+    if [ -n "$err_contains" ]; then
+        grep -qi -- "$err_contains" "$errlog" 2>/dev/null && err_ok=1 || err_ok=0
+    fi
+    local verdict; verdict="$(_expect_fail_verdict "$declared" "$actual" "$err_ok")"
+    case "$verdict" in
+        expected)
+            _emit_env expected_failure "阶段 $actual 按预期失败(expect_fail=$declared;error_contains 命中)"
+            ;;
+        expected_but_error_mismatch)
+            _emit_finding expected_but_error_mismatch "$actual" \
+                "阶段 $actual 按预期失败但 error 未含 '$err_contains'(错因不符合)" "$errlog" S3
+            ;;
+        late_validation)
+            _emit_finding late_validation "$actual" \
+                "声明期望 $declared 失败,但直到 $actual 才失败(前置校验太宽)" "$errlog" S3
+            ;;
+        early_failure_fallthrough|*)
+            _emit_finding "$fb_code" "$actual" "$fb_sum" "$errlog" "$fb_sev"
+            ;;
+    esac
+}
+
+# _drift_tokenize <cli_string> — 按空白切 argv,元字符黑名单 + argv[0] 必须字面 aliyun。
+#   护栏#1(无 shell 直执):任一 token 含 `; & | $ ( ) < > \` 反引号/换行/反斜杠即拒绝;argv[0] != aliyun 拒绝。
+#   stdout:每行一个 token(过白名单);non-zero 退码表示被拒(stderr 有原因)。
+_drift_tokenize() {
+    local s="$1" tok
+    # 换行/反斜杠一律不允许
+    case "$s" in
+        *$'\n'*|*$'\r'*) echo "drift_cli: 含换行/回车,拒绝" >&2; return 1 ;;
+        *\\*) echo "drift_cli: 含反斜杠,拒绝" >&2; return 1 ;;
+    esac
+    # 用 read -ra 按 IFS 空白切,不过 shell
+    local -a argv=()
+    # shellcheck disable=SC2162
+    read -ra argv <<< "$s"
+    [ "${#argv[@]}" -ge 3 ] || { echo "drift_cli: 至少需 aliyun <product> <Action> 三段" >&2; return 1; }
+    [ "${argv[0]}" = "aliyun" ] || { echo "drift_cli: argv[0] 必须字面 aliyun(拒绝 ${argv[0]})" >&2; return 1; }
+    for tok in "${argv[@]}"; do
+        case "$tok" in
+            *';'*|*'&'*|*'|'*|*'$'*|*'('*|*')'*|*'<'*|*'>'*|*'`'*)
+                echo "drift_cli: token 含元字符(拒绝:'$tok')" >&2; return 1 ;;
+        esac
+        printf '%s\n' "$tok"
+    done
+}
+
+# _drift_action_allowed <product> <action> — 0=白名单命中,1=拒绝。config `.tiers.tier1.drift_action_allow` <product>:<Action>。
+#   config 分裂防御:缺键回默认 vpc:TagResources 三件套。
+_drift_action_allowed() {
+    local product="$1" action="$2"
+    local allow key
+    # cfg 会输出 null;这里手动取值,遇 null 走默认。
+    allow="$(jq -r '.tiers.tier1.drift_action_allow // ["vpc:TagResources","vpc:UnTagResources","vpc:ModifyVpcAttribute"] | .[]' "$(probe_config)" 2>/dev/null)"
+    key="${product}:${action}"
+    while IFS= read -r a; do
+        [ -n "$a" ] || continue
+        [ "$a" = "$key" ] && return 0
+    done <<< "$allow"
+    return 1
+}
+
+# _drift_expand_placeholders <token> <workdir> <region>
+#   护栏#2(占位符受限注入):仅 `{{output.<name>}}`(terraform output -raw)与 `{{region}}`;
+#   注入值须过 `^[A-Za-z0-9._:/-]+$`;不满足即 stdout 打印占位符原文并退非零。
+#   stdout=展开后的 token;returns:0=展开 ok(可能未含占位符,原样返回)。
+_drift_expand_placeholders() {
+    local tok="$1" wd="$2" region="$3"
+    local out="$tok"
+    # {{region}}
+    if [[ "$out" == *"{{region}}"* ]]; then
+        # region 必过白名单(实际是 ALIBABA_CLOUD_REGION_ID 值,已由 runner 校验非空)
+        [[ "$region" =~ ^[A-Za-z0-9._:/-]+$ ]] || { echo "drift_cli: region 值不合规($region)" >&2; return 1; }
+        out="${out//\{\{region\}\}/$region}"
+    fi
+    # {{output.NAME}}
+    while [[ "$out" =~ \{\{output\.([A-Za-z0-9_]+)\}\} ]]; do
+        local name="${BASH_REMATCH[1]}" val
+        val="$(cd "$wd" && terraform output -raw "$name" 2>/dev/null)"
+        [ -n "$val" ] || { echo "drift_cli: output '$name' 空,占位符展开失败" >&2; return 1; }
+        [[ "$val" =~ ^[A-Za-z0-9._:/-]+$ ]] || { echo "drift_cli: output '$name' 值不过白名单(${val:0:80}…)" >&2; return 1; }
+        # 全量替换(简单场景够用;若需多占位符也一并处理)
+        out="${out//\{\{output.$name\}\}/$val}"
+    done
+    printf '%s' "$out"
+}
+
+# ════════════════════════════════════════════════════════════════════
+# A1 archive [--dry] — 幂等归档(draft/verdict retention/workdir gc/plugin-cache 报告/待办清单)
+# ════════════════════════════════════════════════════════════════════
+# 判老:优先 JSON started_at,缺则文件 mtime。返回 epoch(0=解析失败,视为未老,不动)。
+_archive_verdict_epoch() {
+    local f="$1" d v
+    d="$(jq -r '.started_at // empty' "$f" 2>/dev/null)"
+    if [ -n "$d" ]; then
+        v="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$d" +%s 2>/dev/null || date -u -d "$d" +%s 2>/dev/null || echo 0)"
+        [ -n "$v" ] && [ "$v" != "0" ] && echo "$v" && return
+    fi
+    stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null || echo 0
+}
+
+# _draft_status <path> — 抽 frontmatter status 值(小写),缺失/坏文件回空。
+_draft_status() {
+    local f="$1"
+    awk 'NR==1 && $0=="---" {infm=1; next}
+         infm && $0=="---" {exit}
+         infm && /^[[:space:]]*status[[:space:]]*:/ { sub(/^[[:space:]]*status[[:space:]]*:[[:space:]]*/,""); gsub(/"|'"'"'/,""); sub(/[[:space:]]+$/,""); print tolower($0); exit }' "$f" 2>/dev/null
+}
+
+# _archive_drafts <dry> — draft 归档;stdout 打印摘要;stderr 打印每项动作。写入全局 __ARCH_MOVED_DRAFTS(计数)。
+__ARCH_MOVED_DRAFTS=0
+__ARCH_PENDING_DRAFTS=""
+_archive_drafts() {
+    local dry="$1"
+    local root drafts arc dest st f base
+    root="$(probe_root)"
+    drafts="$root/$(cfg_or '.paths.drafts' 'escalation/probe-drafts')"
+    arc="$root/$(cfg_or '.paths.drafts_archived' 'escalation/probe-drafts/archived')"
+    [ -d "$drafts" ] || { echo "  drafts: 无 $drafts 目录,跳过"; return 0; }
+    [ "$dry" = "0" ] && mkdir -p "$arc" 2>/dev/null
+    __ARCH_MOVED_DRAFTS=0
+    __ARCH_PENDING_DRAFTS=""
+    shopt -s nullglob
+    for f in "$drafts"/*.md; do
+        base="$(basename "$f")"
+        [ "$base" = ".gitkeep" ] && continue
+        st="$(_draft_status "$f")"
+        case "$st" in
+            filed|rejected|rejected-*)
+                __ARCH_MOVED_DRAFTS=$((__ARCH_MOVED_DRAFTS+1))
+                if [ "$dry" = "1" ]; then
+                    echo "  DRY draft mv: $base → archived/ (status=$st)" >&2
+                else
+                    mv -f "$f" "$arc/$base" 2>/dev/null && echo "  draft mv: $base → archived/ (status=$st)" >&2
+                fi
+                ;;
+            pending-review|pending)
+                __ARCH_PENDING_DRAFTS="$__ARCH_PENDING_DRAFTS $base"
+                ;;
+            *)
+                # 空/未知 status 留原地,进 pending 清单
+                __ARCH_PENDING_DRAFTS="$__ARCH_PENDING_DRAFTS $base"
+                ;;
+        esac
+    done
+    echo "  drafts: moved=$__ARCH_MOVED_DRAFTS pending=$(printf '%s' "$__ARCH_PENDING_DRAFTS" | wc -w | tr -d ' ')"
+}
+
+# _archive_verdicts <dry> — verdict retention;写 __ARCH_MOVED_VERDICTS。
+__ARCH_MOVED_VERDICTS=0
+_archive_verdicts() {
+    local dry="$1"
+    local audit ret_days now cutoff f base ep ym destdir
+    audit="$(probe_audit_dir)"
+    [ -d "$audit" ] || { echo "  verdicts: 无 $audit 目录,跳过"; return 0; }
+    ret_days="$(cfg_or '.limits.audit_retention_days' '60')"
+    now="$(date +%s)"
+    cutoff=$(( now - ret_days * 86400 ))
+    __ARCH_MOVED_VERDICTS=0
+    shopt -s nullglob
+    for f in "$audit"/*.json "$audit"/*.md; do
+        [ -f "$f" ] || continue
+        base="$(basename "$f")"
+        # 排除项:ledger.jsonl 与 *-summary.md
+        case "$base" in
+            ledger.jsonl|*-summary.md) continue ;;
+        esac
+        ep="$(_archive_verdict_epoch "$f")"
+        [ -z "$ep" ] || [ "$ep" = "0" ] && continue
+        [ "$ep" -lt "$cutoff" ] || continue
+        ym="$(date -u -r "$ep" +%Y%m 2>/dev/null || date -u -d "@$ep" +%Y%m 2>/dev/null)"
+        [ -n "$ym" ] || continue
+        destdir="$audit/archive/$ym"
+        __ARCH_MOVED_VERDICTS=$((__ARCH_MOVED_VERDICTS+1))
+        if [ "$dry" = "1" ]; then
+            echo "  DRY verdict mv: $base → archive/$ym/ (age=$(( (now-ep)/86400 ))d)" >&2
+        else
+            mkdir -p "$destdir" 2>/dev/null
+            mv -f "$f" "$destdir/$base" 2>/dev/null && echo "  verdict mv: $base → archive/$ym/" >&2
+        fi
+    done
+    echo "  verdicts: moved=$__ARCH_MOVED_VERDICTS (retention=${ret_days}d)"
+}
+
+# _archive_workdir_gc <dry> — 工作目录 gc;仅匹配 ^[0-9]{8,}-.+$ 目录形态;
+#   显式排除 .plugin-cache/、t0mech-scanned.json、t1-last-run.json、manual-*;tfstate 非空绝不删。
+__ARCH_MOVED_WORKDIRS=0
+_archive_workdir_gc() {
+    local dry="$1"
+    local base ret_days now cutoff d name mt state_n
+    base="$(probe_workdir_base)"
+    [ -d "$base" ] || { echo "  workdir: 无 $base 目录,跳过"; return 0; }
+    ret_days="$(cfg_or '.limits.workdir_retention_days' '7')"
+    now="$(date +%s)"
+    cutoff=$(( now - ret_days * 86400 ))
+    __ARCH_MOVED_WORKDIRS=0
+    shopt -s nullglob
+    for d in "$base"/*/; do
+        d="${d%/}"
+        name="$(basename "$d")"
+        # 排除项:.plugin-cache、manual-* 前缀(非文件形态的排除)
+        case "$name" in
+            .plugin-cache|manual-*) continue ;;
+        esac
+        # 目录形态限定:契约 ^[0-9]{8,}-.+$(<ts>-<sid> 形态);实际 runner 用 YYYYMMDDTHHMMSSZ-<sid>,
+        # 中间夹 T/Z 非纯数字,故放宽为 ^[0-9]{8,}[A-Za-z0-9]*-.+$ —— 覆盖两种 <ts>-<sid> 写法,
+        # 仍排除 .plugin-cache / manual-* / notmatching-dir 等非 runner 目录。
+        [[ "$name" =~ ^[0-9]{8,}[A-Za-z0-9]*-.+$ ]] || continue
+        # tfstate 存在且 resources 非空 → 绝不删(sweep 残留即停语义)
+        if [ -f "$d/terraform.tfstate" ]; then
+            state_n="$(jq -r '.resources | length' "$d/terraform.tfstate" 2>/dev/null)"
+            [ -z "$state_n" ] && state_n=0
+            [ "$state_n" -gt 0 ] && continue
+        fi
+        # mtime 判老
+        mt="$(stat -f %m "$d" 2>/dev/null || stat -c %Y "$d" 2>/dev/null || echo "$now")"
+        [ "$mt" -lt "$cutoff" ] || continue
+        __ARCH_MOVED_WORKDIRS=$((__ARCH_MOVED_WORKDIRS+1))
+        if [ "$dry" = "1" ]; then
+            echo "  DRY workdir rm: $name (age=$(( (now-mt)/86400 ))d)" >&2
+        else
+            rm -rf "$d" 2>/dev/null && echo "  workdir rm: $name" >&2
+        fi
+    done
+    # 排除文件:t0mech-scanned.json / t1-last-run.json 不被扫到(不是目录),但显式声明纪律
+    echo "  workdir: gc=$__ARCH_MOVED_WORKDIRS (retention=${ret_days}d; 排除 .plugin-cache/manual-*/tfstate 非空;不动 t0mech-scanned.json/t1-last-run.json)"
+}
+
+# _archive_plugin_cache_report — 报告与 provider.version + 各场景 provider_version_from 都不符的版本(只报体积不删)。
+_archive_plugin_cache_report() {
+    local base cache_dir pv from set_of pgroot d y v hits=0 dir
+    base="$(probe_workdir_base)"
+    cache_dir="$base/.plugin-cache"
+    [ -d "$cache_dir" ] || { echo "  plugin-cache: 无 $cache_dir 目录,跳过"; return 0; }
+    pv="$(cfg '.provider.version')"
+    # 场景声明的 provider_version_from 并集
+    pgroot="$(probe_playground_dir)"
+    from=""
+    shopt -s nullglob
+    for d in "$pgroot"/*/*/; do
+        y="$d/scenario.yaml"; [ -f "$y" ] || continue
+        v="$(_yaml_get "$y" provider_version_from)"
+        [ -n "$v" ] && from="$from $v"
+    done
+    set_of=" $pv $from "  # 空格包夹便于 grep -F 精确匹配
+    # registry.terraform.io/aliyun/alicloud/<version>/... 结构下,version 为目录名
+    for dir in "$cache_dir"/registry.terraform.io/aliyun/alicloud/*/; do
+        [ -d "$dir" ] || continue
+        v="$(basename "${dir%/}")"
+        case "$set_of" in
+            *" $v "*) continue ;;
+        esac
+        local sz; sz="$(du -sh "$dir" 2>/dev/null | awk '{print $1}')"
+        echo "  plugin-cache 陌生版本: $v ($sz) 与 provider.version=$pv 及任何场景 provider_version_from 都不符" >&2
+        hits=$((hits+1))
+    done
+    echo "  plugin-cache: 陌生版本=$hits(只报体积不删,人工评估)"
+}
+
+# _archive_todos — 待办清单(pending drafts / _quarantine / origin: generated 未校订)
+_archive_todos() {
+    local root pgroot d y n qc qdir base
+    root="$(probe_root)"
+    pgroot="$(probe_playground_dir)"
+    # pending-review drafts
+    local pend
+    pend="$(echo "$__ARCH_PENDING_DRAFTS" | tr ' ' '\n' | grep . || true)"
+    if [ -n "$pend" ]; then
+        echo "  TODO drafts pending-review:"
+        while IFS= read -r base; do [ -n "$base" ] && echo "    - $base"; done <<< "$pend"
+    fi
+    # playground _quarantine
+    qdir="$pgroot/_quarantine"
+    qc=0
+    if [ -d "$qdir" ]; then
+        shopt -s nullglob
+        for d in "$qdir"/*/*/; do
+            [ -d "$d" ] || continue
+            qc=$((qc+1))
+            echo "    - _quarantine: ${d#$pgroot/}" >&2
+        done
+    fi
+    echo "  TODO _quarantine: $qc"
+    # origin: generated 未校订(scenario.yaml 有 origin: generated)
+    n=0
+    shopt -s nullglob
+    for d in "$pgroot"/*/*/; do
+        y="$d/scenario.yaml"; [ -f "$y" ] || continue
+        [ "$(_yaml_get "$y" origin)" = "generated" ] && n=$((n+1))
+    done
+    echo "  TODO origin=generated 未校订: $n"
+}
+
+_cmd_archive() {
+    local dry=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --dry) dry=1; shift ;;
+            -*) echo "archive: 未知参数 '$1'" >&2; return 2 ;;
+            *) echo "archive: 多余参数 '$1'" >&2; return 2 ;;
+        esac
+    done
+    if [ "$dry" = "1" ]; then echo "archive plan (dry-run,不做真操作):"; else echo "archive run:"; fi
+    _archive_drafts    "$dry"
+    _archive_verdicts  "$dry"
+    _archive_workdir_gc "$dry"
+    _archive_plugin_cache_report
+    _archive_todos
+    # A2 ledger:archive 追加一行(dry 也追加,便于审计;dry 用 kind:"archive_dry")
+    local kind; [ "$dry" = "1" ] && kind="archive_dry" || kind="archive"
+    _ledger_append \
+        '{ts:$ts, kind:$k, moved:{drafts:$md, verdicts:$mv, workdirs:$mw}}' \
+        --arg k "$kind" \
+        --argjson md "$__ARCH_MOVED_DRAFTS" \
+        --argjson mv "$__ARCH_MOVED_VERDICTS" \
+        --argjson mw "$__ARCH_MOVED_WORKDIRS"
+    return 0
 }
 
 # ── sweep ───────────────────────────────────────────────────────────
@@ -1213,11 +1884,12 @@ _usage() { sed -n '2,30p' "$0"; }
 main() {
     local cmd="${1:-}"; shift 2>/dev/null || true
     case "$cmd" in
-        doctor) _cmd_doctor "$@" ;;
-        list)   _cmd_list "$@" ;;
-        tier0)  _cmd_tier0 "$@" ;;
-        run)    _cmd_run "$@" ;;
-        sweep)  _cmd_sweep "$@" ;;
+        doctor)  _cmd_doctor "$@" ;;
+        list)    _cmd_list "$@" ;;
+        tier0)   _cmd_tier0 "$@" ;;
+        run)     _cmd_run "$@" ;;
+        sweep)   _cmd_sweep "$@" ;;
+        archive) _cmd_archive "$@" ;;
         -h|--help|"") _usage ;;
         *) echo "probe: 未知命令 '$cmd'" >&2; _usage; exit 2 ;;
     esac
