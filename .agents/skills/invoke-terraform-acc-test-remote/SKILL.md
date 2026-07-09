@@ -204,6 +204,18 @@ SKIP 通常来自 `testAccPreCheckWithXxx(t)` 门闩——读某 env var 不到�
 
 把 `testAccPreCheckWithXxx` 改成 no-op（`_ = os.Getenv(...)` 之类）只能**假装绕开 Go 侧 gate**，阿里云 API 侧真门（如 `BIZ_ACL_NOT_ENABLED`）会立刻把测试挂掉，而且引入的空调用还得清理。**正确路径永远是改 test config 让功能真能开出来**，不是改 gate。
 
+### 既有用例全绿 ≠ 修复验证过 —— 修 bug 必用报告者的确切输入复现
+
+跑既有 `TestAcc*` 全 PASS 只证明**没回归**，**不证明你的修复命中了报告的失败路径**。既有用例的 config 常常**恰好绕开触发条件**——bug 才一直没被它们暴露。所以修 bug 收口前，**必须新增一条用报告者确切输入的 repro 用例**（客户/工单里的那段 HCL、那个属性值），先让它在**修复前 FAIL、修复后 PASS**，才算验证闭环。repro 用例是临时验证件，不进 PR（跑完删）；namespace/实例名之类可随机化避免撞名，但**触发字段（key/值/组合）必须原样照抄**。
+
+#### 实例：esa_kv 创建失败（工单 84090290）
+
+- 工单描述判定根因是「EdgeKV 最终一致性 → 写后读 404」，建议「加重试」；据此改的第一版把 `NotFound` 当可重试。
+- 既有 `TestAccAliCloudESAKvKv_test1/test2` 全 PASS（且 tf-debug.log 里 `InvalidKey.NotFound` **0 次**）——看着像修好了，其实**重试分支一次都没被执行**，只证明了 happy path。
+- 用工单里客户**确切 HCL** 包成 repro 用例（key = `test:resource-managed`，**含冒号**原样保留）真跑：**FAIL 302.54s**（空转到 Create 超时），debug trace 显示反复查一个**错的 key**。
+- 真根因是 id = `namespace:key` 被 `strings.Split(id, ":")` 按每个冒号拆，含冒号的 key 被拆错 → 查错 key → **确定性** 404，与时序无关。正解是 `strings.SplitN(id, ":", 2)`。修复后同一 repro **PASS 4.02s**，test1/test2 无回归（`PASS=3 FAIL=0 SKIP=0`）。
+- **教训**：既有用例 key 不含冒号，永远触不到 bug；不跑客户确切输入，就会把「最终一致性」这个误诊一路带到 PR，还把「秒失败」改成「5 分钟空转」的负优化。与「SKIP≠PASS」同族——**acc 绿有多种假绿，真信心只来自读 run.log 里真实 case 结果 + 确认触发条件真被跑到**。
+
 ## 6. 没有跑到用例
 
 `run.log` 显示 0 个 case 或 `no tests to run` 时：
