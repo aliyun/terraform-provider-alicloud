@@ -10,6 +10,13 @@
 #          first business comment to avoid an independent claim-only comment), then
 #          point-reads the workitem to verify our claimed tag landed. Exits 0 on success,
 #          1 if the claimed tag is not visible in the readback (lost race; prefix cleaned).
+#          On a successful claim it ALSO advances the Aone status to the pool's in-progress
+#          status (.progress_status, e.g. 处理中/开发中/问题解决中/Open) — but ONLY when the
+#          ticket's CURRENT status is a starting state (.claim.start_statuses), so a
+#          mid/late-flight ticket is never dragged backward and the write is idempotent.
+#          This is best-effort/non-fatal: a rejected status is a WARN and never affects
+#          claim's exit code or the lock semantics (tag + ledger stay the sole truth).
+#          Set JARVIS_CLAIM_PROGRESS=0 to disable the status advance entirely.
 # release: tags the workitem jarvis-idle —— 本轮 jarvis 处理完毕、释放锁、等待人或下一个 jarvis
 #          接手；不动 Aone status。cleans up any leftover prefix. Exits 0.
 # finish:  tags the workitem jarvis-done + 改 Aone status 为 .claim.done_status（默认"已发布
@@ -21,7 +28,8 @@
 # jarvis-probe across the claim→release→finish lifecycle.
 #
 # Reads tag names from config/pools.json (.claim.tag / .claim.idle_tag / .claim.done_tag /
-# .claim.done_status). Respects JARVIS_ROOT env override for the repo root.
+# .claim.done_status / .claim.progress_status / .claim.start_statuses). Respects JARVIS_ROOT
+# env override for the repo root.
 
 set -uo pipefail
 
@@ -44,6 +52,7 @@ CLAIM_TAG=$(jq -r '.claim.tag' "$pools_cfg")
 IDLE_TAG=$(jq -r '.claim.idle_tag' "$pools_cfg")
 DONE_TAG=$(jq -r '.claim.done_tag' "$pools_cfg")
 DONE_STATUS=$(jq -r '.claim.done_status' "$pools_cfg")
+PROGRESS_STATUS=$(jq -r '.claim.progress_status // empty' "$pools_cfg")
 
 # Resolve the done status for a project: a per-pool .done_status (matched by project id)
 # overrides the global .claim.done_status. Different Aone projects have different status
@@ -69,6 +78,26 @@ _pool_done_status() {
     if [ -n "$ps" ]; then echo "$ps"; else jq -r '.claim.done_status // empty' "$pools_cfg" 2>/dev/null; fi
 }
 
+# Resolve the in-progress status for a project — an exact clone of _pool_done_status but
+# resolving .progress_status per-pool and falling back to the global .claim.progress_status.
+# Same string/object-by-workitemType/first-value-fallback semantics: different Aone projects
+# name their "in progress" state differently (处理中 / 开发中 / 问题解决中 / Open / In Progress),
+# and within a single project the enum differs by workitem category (需求 vs 功能缺陷), so a
+# per-pool .progress_status may be EITHER a string OR an object keyed by workitem type
+# displayValue. Object → select by <wtype> (2nd arg), unknown/empty wtype falls back to the
+# object's first value. Non-empty string → verbatim. No per-pool value → global
+# .claim.progress_status. Echoes "" if neither set.
+_pool_progress_status() {
+    local project="$1" wtype="${2:-}" ps
+    ps="$(jq -r --arg p "$project" --arg w "$wtype" \
+        '(.pools[]? | select((.project|tostring) == $p) | .progress_status)
+         | if . == null then empty
+           elif type == "object" then (.[$w] // (to_entries[0].value // empty))
+           else . end' \
+        "$pools_cfg" 2>/dev/null)"
+    if [ -n "$ps" ]; then echo "$ps"; else jq -r '.claim.progress_status // empty' "$pools_cfg" 2>/dev/null; fi
+}
+
 # Point-read a workitem's type displayValue (e.g. 需求 / 功能缺陷 / 任务), used to pick the
 # per-category done_status. The top-level categoryIdentifier/workitemType are null; the
 # real value lives in fields[] under identifier=="workitemType". Echoes "" on any failure
@@ -79,6 +108,59 @@ _get_wtype() {
     printf '%s' "$json" | jq -r '
         (.fields // [])[] | select(.identifier=="workitemType") | .displayValue // empty
     ' 2>/dev/null || return 0
+}
+
+# Point-read a workitem's CURRENT status displayValue (e.g. 待处理 / 处理中 / 已发布), used to
+# decide whether a claim may advance the status (only from a starting state). Same fields[]
+# shape as _get_wtype: identifier=="status". Echoes "" on any failure (get call fails / field
+# absent) so callers degrade gracefully — an empty status means "can't verify starting state",
+# and _advance_status then skips the write rather than risk a backward move.
+_get_status() {
+    local id="$1" json
+    json="$($A1 project workitem get "$id" -f json 2>/dev/null)" || return 0
+    printf '%s' "$json" | jq -r '
+        (.fields // [])[] | select(.identifier=="status") | .displayValue // empty
+    ' 2>/dev/null || return 0
+}
+
+# True (exit 0) if <cur> is a member of .claim.start_statuses, else 1. The start set (待处理/
+# 新建/New/待认领/Reopen…) is the only set from which claim advances the status: it excludes
+# every in-progress/mid/late/terminal state, so a ticket already moving is never dragged back,
+# and — since the target progress_status is never itself a start status — the advance is
+# idempotent across repeated claims.
+_in_start_statuses() {
+    local cur="$1"
+    jq -e -n --arg cur "$cur" --slurpfile cfg "$pools_cfg" \
+        '($cfg[0].claim.start_statuses // []) | index($cur) != null' >/dev/null 2>&1
+}
+
+# Best-effort, non-fatal advance of a claimed workitem's Aone status to the pool's in-progress
+# status. Mirrors finish's tag/status separation: this NEVER exits non-zero or otherwise fails
+# the claim — the lock's truth is the jarvis-claimed tag + ledger, not the status write.
+# Guards, in order (any → skip silently, no backward move, no noise):
+#   - env gate JARVIS_CLAIM_PROGRESS (default 1); "0" disables the whole advance.
+#   - empty current status → can't verify the starting state, don't risk a backward move.
+#   - current status NOT in .claim.start_statuses → already in-progress/mid-flight/terminal.
+#   - empty resolved progress_status → nothing configured for this pool/category.
+# Only then write; a rejected status (enum mismatch / invalid transition) is a WARN, not fatal.
+_advance_status() {
+    local id="$1" project="$2" cur wtype prog
+    [ "${JARVIS_CLAIM_PROGRESS:-1}" = "0" ] && return 0
+    cur="$(_get_status "$id")"
+    if [ -z "$cur" ]; then
+        echo "claim.sh: note: could not read current status for $id; skipping status advance" >&2
+        return 0
+    fi
+    _in_start_statuses "$cur" || return 0   # not a starting state → leave as-is (no backward move)
+    wtype="$(_get_wtype "$id")"
+    prog="$(_pool_progress_status "$project" "$wtype")"
+    [ -n "$prog" ] || return 0
+    if $A1 project workitem update "$id" --status "$prog" >/dev/null 2>&1; then
+        echo "claim.sh: advanced $id status → $prog"
+    else
+        echo "claim.sh: warning: claimed but status '$prog' rejected for $id (enum mismatch? not a valid transition from '$cur') — set a valid per-pool progress_status in pools.json" >&2
+    fi
+    return 0
 }
 
 # Check for unmerged MRs/PRs associated with a workitem.
@@ -313,6 +395,8 @@ case "$cmd" in
         settle="${JARVIS_CLAIM_SETTLE:-0}"
         if ! [ "$settle" -gt 0 ] 2>/dev/null; then
             echo "claim.sh: claimed workitem $workitem_id in project $project_id"
+            # Best-effort advance Aone status to the pool's in-progress status (non-fatal).
+            _advance_status "$workitem_id" "$project_id"
             _ledger_upsert "$workitem_id" false
             exit 0
         fi
@@ -361,6 +445,8 @@ if cands:
         # Otherwise an earlier claim from another host exists → stand down and roll back.
         if [ -z "$winner_host" ] || [ "$winner_host" = "$host" ]; then
             echo "claim.sh: claimed workitem $workitem_id in project $project_id (arbitration won)"
+            # Best-effort advance Aone status to the pool's in-progress status (non-fatal).
+            _advance_status "$workitem_id" "$project_id"
             _ledger_upsert "$workitem_id" false
             exit 0
         fi

@@ -11,6 +11,7 @@
       "desc": "来自客户侧的需求",
       "assignee": "WORKER_1782379562571",
       "dev": false,
+      "progress_status": {"需求问题": "问题解决中", "功能缺陷": "Open"},
       "exclude_status": [
         "Closed",
         "Fixed",
@@ -35,6 +36,7 @@
       "desc": "内部发布单 + Terraform 生产流程优化",
       "assignee": "WORKER_1782379562571",
       "dev": false,
+      "progress_status": {"产品类需求": "开发中", "功能缺陷": "Open"},
       "exclude_status": [
         "已发布",
         "已取消",
@@ -68,6 +70,7 @@
       "assignee": "WORKER_1782379562571",
       "dev": true,
       "version_cfs": 100340,
+      "progress_status": {"需求问题": "问题解决中", "功能缺陷": "Open"},
       "exclude_status": [
         "Closed",
         "需求撤回",
@@ -83,6 +86,7 @@
       "assignee": "WORKER_1782379562571",
       "dev": false,
       "done_status": {"需求": "已发布", "功能缺陷": "Fixed"},
+      "progress_status": {"产品类需求": "开发中", "功能缺陷": "Open"},
       "exclude_status": [
         "已发布",
         "已取消",
@@ -144,6 +148,8 @@
     "idle_tag": "jarvis-idle",
     "done_tag": "jarvis-done",
     "done_status": "已发布待需求排期",
+    "progress_status": "处理中",
+    "start_statuses": ["待处理", "新建", "New", "待认领", "Reopen"],
     "ttl_min": 45
   }
 }
