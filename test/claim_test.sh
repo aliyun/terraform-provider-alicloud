@@ -36,11 +36,13 @@ cat > "$tmpconfig/config/pools.json" << 'JSON'
     "idle_tag": "jarvis-idle",
     "done_tag": "jarvis-done",
     "done_status": "已发布待需求排期",
+    "progress_status": "处理中",
+    "start_statuses": ["待处理", "新建", "New", "待认领", "Reopen"],
     "ttl_min": 45
   },
   "pools": {
-    "with_override": { "project": 2100304, "name": "override pool", "done_status": "已完成" },
-    "cat_override":  { "project": 2100305, "name": "per-category pool", "done_status": {"需求": "已发布", "功能缺陷": "Fixed"} },
+    "with_override": { "project": 2100304, "name": "override pool", "done_status": "已完成", "progress_status": "处理中" },
+    "cat_override":  { "project": 2100305, "name": "per-category pool", "done_status": {"需求": "已发布", "功能缺陷": "Fixed"}, "progress_status": {"需求": "问题解决中", "功能缺陷": "Open"} },
     "no_override":   { "project": 1086837, "name": "plain pool" }
   }
 }
@@ -62,6 +64,9 @@ JSON
 #   A1_WTYPE          – workitem type displayValue returned by `workitem get` in a
 #                       fields[] entry identifier=="workitemType" (default 需求). Lets
 #                       finish exercise per-category done_status selection.
+#   A1_STATUS         – current status displayValue returned by `workitem get` in a
+#                       fields[] entry identifier=="status" (default 待处理, a start state).
+#                       Drives claim's status-advance path (advance only from a start state).
 # A --tag-less update (e.g. finish's separate --status call) must NOT clobber A1_STATE tags.
 # ---------------------------------------------------------------------------
 cat > "$tmpbin/a1" << 'STUB'
@@ -91,8 +96,15 @@ if [ "$1 $2 $3" = "project workitem get" ]; then
         if [ "$c" = "1" ]; then exit 1; fi
     fi
     tags=$(cat "$A1_STATE" 2>/dev/null || echo "")
+    # Real Aone multiList tag fields join displayValue/value with a comma-SPACE, and `value`
+    # carries the tag IDs (which _get_tag_pairs preserves by, so cross-project tags survive).
+    # The stub stores the tag set comma-only in A1_STATE; convert to comma-space here and let
+    # NAMES double as their own IDs (value == displayValue) so the by-ID preservation path
+    # round-trips and the name-based assertions below still hold.
+    tags_ml="${tags//,/, }"
     wtype="${A1_WTYPE:-需求}"
-    printf '{"fields":[{"identifier":"tag","displayValue":"%s","format":"multiList"},{"identifier":"workitemType","displayValue":"%s"}]}\n' "$tags" "$wtype"
+    status="${A1_STATUS:-待处理}"
+    printf '{"fields":[{"identifier":"tag","displayValue":"%s","value":"%s","format":"multiList"},{"identifier":"workitemType","displayValue":"%s"},{"identifier":"status","displayValue":"%s"}]}\n' "$tags_ml" "$tags_ml" "$wtype" "$status"
     exit 0
 fi
 if [ "$1 $2 $3" = "project workitem update" ]; then
@@ -130,6 +142,17 @@ run_claim() {
     : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
     out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
         bash "$proj_root/bootstrap/claim.sh" "$1" "$WORKITEM_ID" "$PROJECT_ID" 2>&1)
+    rc=$?
+}
+
+# run_claim_prog <project> — claim exercising the status-advance path. Resets log/capture/
+# getcnt AND the status-capture file, so each case sees a clean status write (or the absence
+# of one). Callers set A1_STATUS / A1_WTYPE / A1_REJECT_STATUS / JARVIS_CLAIM_PROGRESS in the
+# environment beforehand. Sets $out/$rc; the written status lands in $tmpstatuscap.
+run_claim_prog() {
+    : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"; : > "$tmpstatuscap"; : > "$tmpstate"
+    out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" JARVIS_CLAIM_READBACK_SLEEP=0 \
+        bash "$proj_root/bootstrap/claim.sh" claim "$WORKITEM_ID" "$1" 2>&1)
     rc=$?
 }
 
@@ -591,6 +614,95 @@ print(len(ns))
 if [ "$distinct_nonces" = "2" ]; then assert_pass "two distinct nonces present"; else assert_fail "expected 2 distinct nonces, got $distinct_nonces"; fi
 
 rm -f "$ARB_STATE" "$ARB_COMMENTS" "$ARB_LOGA" "$ARB_CAPA" "$ARB_CNTA" "$ARB_LOGB" "$ARB_CAPB" "$ARB_CNTB"
+
+# ===========================================================================
+# claim → advance Aone status to the pool's in-progress status (best-effort, non-fatal,
+# only from a starting state). A1_STATUS drives the workitem's CURRENT status; the write
+# lands in $tmpstatuscap (reset per run by run_claim_prog).
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Test 20: advance from a start state (string pool) — 待处理 → pool progress_status
+# ---------------------------------------------------------------------------
+echo "=== Test 20: claim advances status from start state (string pool → 处理中) ==="
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE COORD_ID JARVIS_CLAIM_PROGRESS
+export A1_STATUS=待处理
+run_claim_prog 2100304          # with_override, progress_status="处理中"
+unset A1_STATUS
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc status_set='$cap'"
+if [ "$rc" = "0" ]; then assert_pass "claim from start state exits 0"; else assert_fail "claim from start state exit $rc"; fi
+if [ "$cap" = "处理中" ]; then assert_pass "string pool: status advanced to 处理中"; else assert_fail "string pool status should be 处理中, got '$cap'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 21: advance per-category (object pool) — 功能缺陷 → Open, 需求 → 问题解决中
+# ---------------------------------------------------------------------------
+echo "=== Test 21: claim advances per-category status (object pool) ==="
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID JARVIS_CLAIM_PROGRESS
+export A1_STATUS=待处理 A1_WTYPE=功能缺陷
+run_claim_prog 2100305          # cat_override, progress_status={需求:问题解决中,功能缺陷:Open}
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc(bug) status_set='$cap'"
+if [ "$cap" = "Open" ]; then assert_pass "object pool 功能缺陷: status advanced to Open"; else assert_fail "object pool 功能缺陷 status should be Open, got '$cap'"; fi
+
+export A1_WTYPE=需求
+run_claim_prog 2100305
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc(req) status_set='$cap'"
+if [ "$cap" = "问题解决中" ]; then assert_pass "object pool 需求: status advanced to 问题解决中"; else assert_fail "object pool 需求 status should be 问题解决中, got '$cap'"; fi
+unset A1_STATUS A1_WTYPE
+
+# ---------------------------------------------------------------------------
+# Test 22: NO advance when current status is NOT a start state (no backward move)
+# ---------------------------------------------------------------------------
+echo "=== Test 22: claim does NOT advance status when not in start_statuses ==="
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE COORD_ID JARVIS_CLAIM_PROGRESS
+export A1_STATUS=问题解决中     # mid-flight, not a start state
+run_claim_prog 2100304
+unset A1_STATUS
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc status_set='$cap'"
+if [ "$rc" = "0" ]; then assert_pass "claim from non-start state exits 0"; else assert_fail "claim from non-start state exit $rc"; fi
+if [ -z "$cap" ]; then assert_pass "non-start state: no status write (stays empty)"; else assert_fail "non-start state should not write status, got '$cap'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 23: rejected status is non-fatal — claim still exits 0 + WARN, tag still lands
+# ---------------------------------------------------------------------------
+echo "=== Test 23: claim resilient to a rejected status ==="
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_WTYPE COORD_ID JARVIS_CLAIM_PROGRESS
+export A1_STATUS=待处理 A1_REJECT_STATUS=处理中
+run_claim_prog 2100304          # string pool → progress 处理中, which a1 stub rejects
+unset A1_STATUS A1_REJECT_STATUS
+state=$(cat "$tmpstate" 2>/dev/null)
+echo "rc=$rc out='$out' tags='$state'"
+if [ "$rc" = "0" ]; then assert_pass "rejected status: claim still exits 0"; else assert_fail "rejected status: claim exit $rc"; fi
+if printf '%s' "$out" | grep -qi "warning"; then assert_pass "rejected status: emits warning"; else assert_fail "rejected status: no warning emitted"; fi
+if printf '%s' "$state" | grep -q "jarvis-claimed"; then assert_pass "rejected status: still tagged jarvis-claimed (lock intact)"; else assert_fail "rejected status: claimed tag lost, got '$state'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 24: JARVIS_CLAIM_PROGRESS=0 disables the status advance
+# ---------------------------------------------------------------------------
+echo "=== Test 24: JARVIS_CLAIM_PROGRESS=0 disables status advance ==="
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE COORD_ID
+export A1_STATUS=待处理 JARVIS_CLAIM_PROGRESS=0
+run_claim_prog 2100304
+unset A1_STATUS JARVIS_CLAIM_PROGRESS
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc status_set='$cap'"
+if [ "$rc" = "0" ]; then assert_pass "JARVIS_CLAIM_PROGRESS=0: claim exits 0"; else assert_fail "JARVIS_CLAIM_PROGRESS=0: claim exit $rc"; fi
+if [ -z "$cap" ]; then assert_pass "JARVIS_CLAIM_PROGRESS=0: no status write"; else assert_fail "JARVIS_CLAIM_PROGRESS=0 should not write status, got '$cap'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 25: no per-pool progress_status → global .claim.progress_status fallback
+# ---------------------------------------------------------------------------
+echo "=== Test 25: claim falls back to global progress_status ==="
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_WTYPE COORD_ID JARVIS_CLAIM_PROGRESS
+export A1_STATUS=新建            # another start state
+run_claim_prog 1086837          # no_override pool → global 处理中
+unset A1_STATUS
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc status_set='$cap'"
+if [ "$cap" = "处理中" ]; then assert_pass "global fallback: status advanced to 处理中"; else assert_fail "global fallback status should be 处理中, got '$cap'"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

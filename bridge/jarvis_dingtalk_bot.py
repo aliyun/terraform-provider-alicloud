@@ -82,7 +82,7 @@ import signal
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from datetime import datetime
 from urllib.request import Request, urlopen
 from urllib.error import URLError
@@ -504,6 +504,95 @@ def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None):
             yield "⚠️ claude 返回错误: %s" % last[0]
         else:
             yield "(空回复)"
+
+
+ClaudeResult = namedtuple("ClaudeResult", "text is_error subtype")
+
+
+def _classify_result(out, err, rc):
+    """Pure classifier for a `claude --output-format json` run — no subprocess, no
+    side effects, fully unit-testable.
+
+    Walk every stdout line, ``json.loads`` each (tolerating a leading non-JSON
+    banner), and keep the LAST object with ``type == 'result'``. From it read
+    ``result`` (text), ``is_error`` and ``subtype``. A non-zero return code ALWAYS
+    forces ``is_error=True`` (the stream path's original bug was reading only the
+    text and never rc/is_error, so a gateway error that still emitted output was
+    silently swallowed). If no result object was emitted at all and rc != 0, fall
+    back to the last stderr line with subtype ``no_result``."""
+    last = None
+    for raw in (out or "").splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            obj = json.loads(raw)
+        except (ValueError, TypeError):
+            continue
+        if isinstance(obj, dict) and obj.get("type") == "result":
+            last = obj
+    if last is not None:
+        text = last.get("result")
+        if not isinstance(text, str):
+            text = ""
+        is_error = bool(last.get("is_error"))
+        subtype = last.get("subtype") or ("success" if not is_error else "error")
+        if rc != 0:
+            is_error = True
+        return ClaudeResult(text, is_error, subtype)
+    # No terminal result object at all.
+    if rc != 0:
+        last_err = (err or "").strip().splitlines()[-1:] or ["unknown"]
+        return ClaudeResult(last_err[0], True, "no_result")
+    return ClaudeResult("", False, "no_result")
+
+
+def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None):
+    """Buffered (non-streaming) claude round for the headless dispatch path.
+
+    Unlike run_claude_stream this uses ``--output-format json`` (NOT stream-json,
+    and WITHOUT --include-partial-messages/--verbose) so the terminal result
+    object — is_error / subtype / result — is actually parsed. It MUST reuse the
+    SAME ``session_id`` across retries: jarvis_cmd picks the settings file
+    (gateway/token) by md5(session_id) % pool, so a --resume that mints a new sid
+    would land on a different gateway and fail outright.
+
+    Because a buffered stdout never drives a stream loop, the soft deadline used by
+    run_claude_stream cannot apply here — so we enforce a hard timeout via
+    ``communicate(timeout=…)`` and kill the whole process group on TimeoutExpired
+    (returning subtype 'timeout'). ``on_spawn(p)`` is invoked immediately so the
+    DispatchPool can record the Popen and terminate_all can still kill it. Never
+    used by the Tata / live-card path (that stays stream-json for the typewriter
+    effect)."""
+    if timeout is None:
+        timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
+    argv = jarvis_cmd(session_id) + ["-p", text, "--output-format", "json"]
+    argv += ["--resume", session_id] if resume else ["--session-id", session_id]
+    p = subprocess.Popen(argv, cwd=jarvis_root(), text=True,
+                         stdin=subprocess.DEVNULL,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         start_new_session=True)
+    if on_spawn:
+        try:
+            on_spawn(p)
+        except Exception:  # noqa: BLE001
+            pass
+    try:
+        out, err = p.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+        except (ProcessLookupError, OSError):
+            try:
+                p.kill()
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            out, err = p.communicate(timeout=5)
+        except Exception:  # noqa: BLE001
+            out, err = "", ""
+        return ClaudeResult(out or "", True, "timeout")
+    return _classify_result(out, err, p.returncode)
 
 
 def run_tata_stream(text, session_id, resume):
@@ -1075,7 +1164,7 @@ class ScanScheduler:
         notify = self.handler._broadcast if self.handler else (lambda t: None)
         work = (lambda: self.handler.dispatch_item(
             iid, prompt, sid, False, notify, tgt, ttype,
-            on_spawn=lambda p: self.pool.set_proc(iid, p)))
+            on_spawn=lambda p: self.pool.set_proc(iid, p), project=pool_project))
         return self.pool.submit(iid, work, notify=notify, kind="ticket",
                                 project=pool_project, force=force)
 
@@ -2194,17 +2283,18 @@ class JarvisHandler(AsyncChatbotHandler):
         Uses class-qualified access to the static _workitem_line so tests that stub self=None
         also work (the helper touches no instance state).
 
-        Fallback text discriminates: non-numeric ids (probe rounds等) → "任务 #<rid>"
+        Fallback text discriminates: non-numeric ids (probe rounds 等) → "任务 #<rid>"
         (无工单概念); numeric id 查询失败 → "工单 #<sid> 处理完成（headless）" 标注
         ambient identifier."""
-        sid = str(item_id)
         result = JarvisHandler._workitem_line(item_id)
         if isinstance(result, tuple):
             line, tag = result
+        elif str(item_id).isdigit():
+            # numeric ticket but the workitem query failed → generic headless fallback
+            return "✅ 工单 #%s 处理完成（headless）" % item_id
         else:
-            if not sid.isdigit():
-                return "✅ 任务 #%s 处理完成" % sid
-            return "✅ 工单 #%s 处理完成（headless）" % sid
+            # non-numeric pseudo-id (probe-*/handoff-*) has no workitem
+            return "✅ 任务 #%s 处理完成" % item_id
         if "jarvis-done" in tag:
             prefix = "✅ 工单处理完成"
         elif "jarvis-idle" in tag:
@@ -2215,20 +2305,55 @@ class JarvisHandler(AsyncChatbotHandler):
             prefix = "✅ 工单处理完成"
         return prefix + "\n" + line
 
-    def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type, on_spawn=None):
+    def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type,
+                      on_spawn=None, project=None):
         """Headless path (auto-dispatch / probe / revisit): run one Jarvis instance to
         completion WITHOUT a live card (no "回复某人" binding); broadcast the result via
-        ``notify``. Shares the SUSPEND + WaitWatcher core with the card path. Returns an
-        outcome string (done / suspended / error).
+        ``notify``. Shares the SUSPEND + WaitWatcher core with the card path.
 
-        Probe rounds (item_id prefix "probe-") 额外把会话 final 文本落 runs/probe/
-        <item_id>-summary.md 供 board.sh 拉取/审计。"""
-        dispatch_timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
+        Resilience: runs through run_claude_buffered (--output-format json) so
+        is_error/subtype/rc are actually read, and retries transient failures with a
+        bounded resume loop. The SAME ``sid`` is reused every attempt so jarvis_cmd's
+        sticky gateway/token selection stays put (a --resume that lands on a different
+        gateway fails). Terminal errors (timeout / max-turns) fast-fail without retry.
+        A clean SUSPEND is is_error=False so it breaks normally and suspends as before.
+        On final failure the death cause is posted to Aone and the claim released
+        (ticket kind only, via ``project``).
+
+        Probe rounds (item_id prefix "probe-") 额外把会话 final 文本落
+        ``runs/probe/<item_id>-summary.md`` 供 board.sh 拉取/审计。
+
+        Returns done / suspended / error."""
+        max_retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
+        backoff = int(os.environ.get("JARVIS_DISPATCH_RETRY_BACKOFF", "30"))
+        timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
         try:
-            log.info("dispatch_item #%s start (timeout=%ds)", item_id, dispatch_timeout)
-            final = ""
-            for acc in run_claude_stream(prompt, sid, resume, timeout=dispatch_timeout, on_spawn=on_spawn):
-                final = acc
+            log.info("dispatch_item #%s start (timeout=%ds, retry_max=%d)",
+                     item_id, timeout, max_retries)
+            attempt = 0
+            cur_prompt, cur_resume = prompt, resume
+            while True:
+                res = run_claude_buffered(cur_prompt, sid, cur_resume,
+                                          timeout=timeout, on_spawn=on_spawn)
+                if not res.is_error:
+                    break  # clean completion or SUSPEND (both is_error=False)
+                if res.subtype in ("timeout", "error_max_turns"):
+                    break  # terminal error → fast fail, a retry won't help
+                if attempt >= max_retries:
+                    break
+                attempt += 1
+                # resume iff the last attempt produced output (session likely already
+                # built); otherwise fall back to a fresh run with the original prompt.
+                if res.text:
+                    cur_resume = True
+                    cur_prompt = "上一次执行因瞬时错误中断，请从中断处继续完成本工单的 SOP。"
+                else:
+                    cur_resume = False
+                    cur_prompt = prompt
+                log.warning("dispatch_item #%s transient error (subtype=%s); retry %d/%d",
+                            item_id, res.subtype, attempt, max_retries)
+                time.sleep(min(backoff * attempt, 300))
+            final = res.text
             info = self._maybe_suspend(final, sid, target, target_type)
             if info:
                 wl = self._workitem_line(info["aone_id"])
@@ -2236,6 +2361,13 @@ class JarvisHandler(AsyncChatbotHandler):
                 notify("⏸️ 工单已挂起，等待 @%s 回复\n%s" % (
                     info.get("wait_for", "?"), line))
                 return "suspended"
+            if res.is_error:
+                self._dispatch_failed(item_id, res, notify, project)
+                log.info("dispatch_item #%s failed (subtype=%s, attempts=%d)",
+                         item_id, res.subtype, attempt + 1)
+                return "error"
+            # 成功路径:probe 轮把 final 文本落 summary.md(失败不落——tail 已由
+            # _dispatch_failed 贴 Aone 保留死因,避免 board.sh 拉到半截错误当结论)
             if str(item_id).startswith("probe-"):
                 self._write_probe_summary(str(item_id), final)
             notify(self._completion_broadcast(item_id))
@@ -2254,8 +2386,52 @@ class JarvisHandler(AsyncChatbotHandler):
             target_dir = Path(REPO_ROOT) / "runs" / "probe"
             target_dir.mkdir(parents=True, exist_ok=True)
             (target_dir / ("%s-summary.md" % round_id)).write_text(final_text or "")
-        except Exception as e:  # noqa: BLE001 — summary落盘失败不阻塞收尾
+        except Exception as e:  # noqa: BLE001 — summary 落盘失败不阻塞收尾
             log.warning("probe summary write failed for %s: %s", round_id, e)
+
+    @staticmethod
+    def _post_death_cause(item_id, cause):
+        """Best-effort: post the failure cause onto the Aone workitem via
+        ``wrap.sh sync --summary-stdin``. Only numeric ticket ids get a comment —
+        probe-*/handoff-* pseudo-ids have no workitem. Wrapped whole in try/except;
+        NEVER raises (善后 must not crash the worker)."""
+        if not str(item_id).isdigit():
+            return
+        try:
+            subprocess.run(
+                [str(REPO_ROOT / "bootstrap" / "wrap.sh"), "sync",
+                 str(item_id), "--summary-stdin"],
+                input=cause, cwd=str(REPO_ROOT), text=True, timeout=90,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as e:  # noqa: BLE001
+            log.warning("_post_death_cause #%s failed: %s", item_id, e)
+
+    def _dispatch_failed(self, item_id, res, notify, project):
+        """Retries exhausted / terminal error: record the death cause on Aone, release
+        the claim (ticket kind only — probe/revisit/wake pass project=None), and
+        broadcast a failure notice. Every step is best-effort: any failure is
+        log.warning-ed, never raised, so 善后 can't drag the worker down. The cause
+        carries ONLY the numeric id + subtype + a trimmed output tail — no internal
+        sensitive content."""
+        retries = int(os.environ.get("JARVIS_DISPATCH_RETRY_MAX", "2"))
+        tail = (res.text or "").strip()
+        if len(tail) > 800:
+            tail = "…" + tail[-800:]
+        cause = ("headless 派发失败（已重试 %d 次）\nsubtype: %s\n---\n%s"
+                 % (retries, res.subtype, tail or "(无输出)"))
+        try:
+            self._post_death_cause(item_id, cause)
+        except Exception as e:  # noqa: BLE001
+            log.warning("_dispatch_failed #%s post_death_cause failed: %s", item_id, e)
+        if project and str(item_id).isdigit():
+            try:
+                _release_claim(item_id, project)
+            except Exception as e:  # noqa: BLE001
+                log.warning("_dispatch_failed #%s release failed: %s", item_id, e)
+        try:
+            notify("⚠️ #%s 处理失败（已重试 %d 次）: %s …" % (item_id, retries, res.subtype))
+        except Exception as e:  # noqa: BLE001
+            log.warning("_dispatch_failed #%s notify failed: %s", item_id, e)
 
     def _submit_card(self, item_id, target, target_type, prompt, sid, resume, force=True):
         """Submit a card-path dispatch through the shared pool. Human/wake/handoff paths

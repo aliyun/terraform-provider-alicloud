@@ -564,16 +564,18 @@ class ProbeSummaryWriteTest(unittest.TestCase):
         h = b.JarvisHandler(no_dingtalk=True)
         return h, orig_root
 
-    def _fake_stream(self, final_text):
-        def _gen(text, sid, resume, timeout=None, on_spawn=None):
-            yield final_text
-        return _gen
+    def _fake_buffered(self, final_text):
+        # dispatch_item 迁到 run_claude_buffered 后必须 stub 它;返回 clean 完成态
+        # (is_error=False)让主路径进入 completion_broadcast + probe summary 落盘分支。
+        def _one(text, sid, resume, timeout=None, on_spawn=None):
+            return b.ClaudeResult(final_text, False, "ok")
+        return _one
 
     def test_probe_prefix_writes_summary(self):
         tmp = tempfile.mkdtemp()
         h, orig_root = self._handler_with_root(tmp)
-        orig_stream = b.run_claude_stream
-        b.run_claude_stream = self._fake_stream("本轮探测 findings: 0; 归档 3 draft, 蒸馏 2 条。")
+        orig_buf = b.run_claude_buffered
+        b.run_claude_buffered = self._fake_buffered("本轮探测 findings: 0; 归档 3 draft, 蒸馏 2 条。")
         # 阻断 _completion_broadcast 的 a1 调用
         h._completion_broadcast = lambda item_id: "✅ %s done" % item_id
         try:
@@ -584,15 +586,15 @@ class ProbeSummaryWriteTest(unittest.TestCase):
             self.assertTrue(expected.exists(), "probe 轮 summary.md 必须落 runs/probe/")
             self.assertIn("findings", expected.read_text())
         finally:
-            b.run_claude_stream = orig_stream
+            b.run_claude_buffered = orig_buf
             b.REPO_ROOT = orig_root
             h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
 
     def test_non_probe_prefix_no_summary(self):
         tmp = tempfile.mkdtemp()
         h, orig_root = self._handler_with_root(tmp)
-        orig_stream = b.run_claude_stream
-        b.run_claude_stream = self._fake_stream("regular ticket final")
+        orig_buf = b.run_claude_buffered
+        b.run_claude_buffered = self._fake_buffered("regular ticket final")
         h._completion_broadcast = lambda item_id: "✅ %s done" % item_id
         try:
             rv = h.dispatch_item("83999999", "prompt", "sid", False,
@@ -605,7 +607,7 @@ class ProbeSummaryWriteTest(unittest.TestCase):
                     self.assertFalse(p.name.startswith("83999999"),
                                      "非 probe- 前缀 id 不得写 summary")
         finally:
-            b.run_claude_stream = orig_stream
+            b.run_claude_buffered = orig_buf
             b.REPO_ROOT = orig_root
             h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
 
@@ -613,8 +615,8 @@ class ProbeSummaryWriteTest(unittest.TestCase):
         # runs/probe 落盘失败时 dispatch_item 仍返回 done, 不抛
         tmp = tempfile.mkdtemp()
         h, orig_root = self._handler_with_root(tmp)
-        orig_stream = b.run_claude_stream
-        b.run_claude_stream = self._fake_stream("x")
+        orig_buf = b.run_claude_buffered
+        b.run_claude_buffered = self._fake_buffered("x")
         h._completion_broadcast = lambda item_id: "ok"
         # 让 mkdir/write_text 全爆
         orig_write = b.JarvisHandler._write_probe_summary
@@ -636,7 +638,7 @@ class ProbeSummaryWriteTest(unittest.TestCase):
                             "I/O 失败必须 log warning, 不抛")
         finally:
             b.JarvisHandler._write_probe_summary = orig_write
-            b.run_claude_stream = orig_stream
+            b.run_claude_buffered = orig_buf
             b.REPO_ROOT = orig_root
             h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
 
@@ -1494,6 +1496,335 @@ class TataSessionIdTest(unittest.TestCase):
         sid_b, r_b = h._tata_session("222")
         self.assertNotEqual(sid_a, sid_b, "不同 staff 会话隔离")
         self.assertFalse(r_b, "新 staff 首轮 session")
+
+
+# ==========================================================================
+# Headless dispatch resilience (feat/bridge-dispatch-resilience)
+# run_claude_buffered + _classify_result + bounded resume retry + failure→Aone.
+# All mocked: no live claude / a1 / wrap.sh / DingTalk.
+# ==========================================================================
+
+RESUME_HINT = "从中断处继续"
+
+
+class _RetrySelf:
+    """Minimal fake ``self`` for exercising JarvisHandler.dispatch_item in isolation.
+    Stubs the collaborators dispatch_item touches so no live claude/a1/DingTalk runs."""
+
+    def __init__(self, suspend=None, completion="✅ done"):
+        self._suspend = suspend
+        self._completion = completion
+        self.failed_calls = []
+
+    def _maybe_suspend(self, final, sid, target, target_type):
+        return self._suspend
+
+    def _completion_broadcast(self, item_id):
+        return self._completion
+
+    def _workitem_line(self, aone_id):
+        return "#%s" % aone_id
+
+    def _dispatch_failed(self, item_id, res, notify, project):
+        self.failed_calls.append((item_id, res, project))
+
+
+def _scripted_runner(results):
+    """(fake_run_claude_buffered, calls): each entry records prompt/sid/resume so the
+    retry semantics (same sid, resume/续跑 vs fresh) can be asserted per attempt."""
+    calls = []
+    it = iter(results)
+
+    def fake(text, session_id, resume, timeout=None, on_spawn=None):
+        calls.append({"text": text, "sid": session_id, "resume": resume})
+        return next(it)
+
+    return fake, calls
+
+
+class ClassifyResultTest(unittest.TestCase):
+    """_classify_result: pure parse of `claude --output-format json`. Reads
+    is_error/subtype/result from the LAST result object; rc!=0 always overrides
+    is_error True (the stream-path bug it fixes); no result + rc!=0 → stderr tail."""
+
+    def test_success(self):
+        out = json.dumps({"type": "result", "is_error": False,
+                          "subtype": "success", "result": "hi there"})
+        self.assertEqual(b._classify_result(out, "", 0),
+                         b.ClaudeResult("hi there", False, "success"))
+
+    def test_is_error_true(self):
+        out = json.dumps({"type": "result", "is_error": True,
+                          "subtype": "error_during_execution", "result": "partial"})
+        r = b._classify_result(out, "", 0)
+        self.assertTrue(r.is_error)
+        self.assertEqual(r.subtype, "error_during_execution")
+
+    def test_rc_override_forces_error(self):
+        out = json.dumps({"type": "result", "is_error": False,
+                          "subtype": "success", "result": "ok"})
+        r = b._classify_result(out, "", 1)
+        self.assertTrue(r.is_error, "rc!=0 must force is_error True even if json says False")
+        self.assertEqual(r.text, "ok")
+
+    def test_leading_banner_tolerated_takes_last(self):
+        lines = "\n".join([
+            "Some non-JSON banner line the gateway printed",
+            json.dumps({"type": "system", "subtype": "init"}),
+            json.dumps({"type": "result", "is_error": False,
+                        "subtype": "success", "result": "first"}),
+            json.dumps({"type": "result", "is_error": False,
+                        "subtype": "success", "result": "last"}),
+        ])
+        r = b._classify_result(lines, "", 0)
+        self.assertEqual(r.text, "last", "must take the LAST result object")
+        self.assertFalse(r.is_error)
+
+    def test_no_result_rc_nonzero_uses_stderr(self):
+        r = b._classify_result("garbage not json\n\n",
+                               "boom line1\nfatal: gateway 400 模型提供方错误", 1)
+        self.assertEqual(
+            r, b.ClaudeResult("fatal: gateway 400 模型提供方错误", True, "no_result"))
+
+
+class BufferedRunnerCmdTest(unittest.TestCase):
+    """run_claude_buffered: argv shape (json, NOT stream-json/partial/verbose),
+    session/resume flag selection, and hard-timeout killpg. Popen fully faked."""
+
+    def setUp(self):
+        self._orig_popen = b.subprocess.Popen
+        self._orig_cmd = b.jarvis_cmd
+        b.jarvis_cmd = lambda sid=None: ["claude", "--settings", "/fake/idea.json"]
+
+    def tearDown(self):
+        b.subprocess.Popen = self._orig_popen
+        b.jarvis_cmd = self._orig_cmd
+
+    def _fake_popen(self, captured, out):
+        class FakeP:
+            def __init__(s, argv, **kw):
+                captured["argv"] = argv
+                s.pid = 4242
+                s.returncode = 0
+
+            def communicate(s, timeout=None):
+                return (out, "")
+        return FakeP
+
+    def test_argv_json_no_stream_flags_session(self):
+        captured = {}
+        out = json.dumps({"type": "result", "is_error": False,
+                          "subtype": "success", "result": "ok"})
+        b.subprocess.Popen = self._fake_popen(captured, out)
+        res = b.run_claude_buffered("hello", "sid-1", False, timeout=10)
+        argv = captured["argv"]
+        self.assertEqual(argv[argv.index("--output-format") + 1], "json")
+        self.assertNotIn("--include-partial-messages", argv)
+        self.assertNotIn("--verbose", argv)
+        self.assertIn("--session-id", argv)
+        self.assertEqual(argv[argv.index("--session-id") + 1], "sid-1")
+        self.assertNotIn("--resume", argv)
+        self.assertEqual(res, b.ClaudeResult("ok", False, "success"))
+
+    def test_resume_flag(self):
+        captured = {}
+        out = json.dumps({"type": "result", "is_error": False,
+                          "subtype": "success", "result": "ok"})
+        b.subprocess.Popen = self._fake_popen(captured, out)
+        b.run_claude_buffered("hi", "sid-2", True, timeout=10)
+        argv = captured["argv"]
+        self.assertIn("--resume", argv)
+        self.assertEqual(argv[argv.index("--resume") + 1], "sid-2")
+        self.assertNotIn("--session-id", argv)
+
+    def test_timeout_kills_group(self):
+        killed = {}
+
+        class FakeP:
+            def __init__(s, argv, **kw):
+                s.pid = 9999
+
+            def communicate(s, timeout=None):
+                raise b.subprocess.TimeoutExpired(cmd="claude", timeout=timeout or 1)
+        b.subprocess.Popen = FakeP
+        orig_killpg, orig_getpgid = b.os.killpg, b.os.getpgid
+        b.os.getpgid = lambda pid: pid
+        b.os.killpg = lambda pgid, sig: killed.setdefault("pgid", pgid)
+        try:
+            res = b.run_claude_buffered("hi", "sid-3", False, timeout=1)
+        finally:
+            b.os.killpg, b.os.getpgid = orig_killpg, orig_getpgid
+        self.assertTrue(res.is_error)
+        self.assertEqual(res.subtype, "timeout")
+        self.assertEqual(killed.get("pgid"), 9999, "must attempt killpg on the group")
+
+
+class DispatchRetryTest(unittest.TestCase):
+    """dispatch_item bounded resume retry loop: same sid, retry transient, fast-fail
+    terminal, SUSPEND not treated as failure. run_claude_buffered scripted, sleep noop."""
+
+    def setUp(self):
+        self._orig_rcb = b.run_claude_buffered
+        self._orig_sleep = b.time.sleep
+        b.time.sleep = lambda *a, **k: None
+        os.environ["JARVIS_DISPATCH_RETRY_MAX"] = "2"
+
+    def tearDown(self):
+        b.run_claude_buffered = self._orig_rcb
+        b.time.sleep = self._orig_sleep
+        os.environ.pop("JARVIS_DISPATCH_RETRY_MAX", None)
+
+    def _dispatch(self, fs, results, sid="sid-fixed", project=None):
+        runner, calls = _scripted_runner(results)
+        b.run_claude_buffered = runner
+        notifies = []
+        outcome = b.JarvisHandler.dispatch_item(
+            fs, "123", "orig prompt", sid, False,
+            notifies.append, "grp", "group", project=project)
+        return outcome, calls, notifies
+
+    def test_retry_then_success(self):
+        ERR = b.ClaudeResult("partial", True, "error")
+        OK = b.ClaudeResult("done text", False, "success")
+        fs = _RetrySelf()
+        outcome, calls, _ = self._dispatch(fs, [ERR, ERR, OK])
+        self.assertEqual(outcome, "done")
+        self.assertEqual(len(calls), 3, "1 initial + 2 retries")
+        self.assertEqual({c["sid"] for c in calls}, {"sid-fixed"}, "same sid every attempt")
+        for c in calls[1:]:
+            self.assertTrue(c["resume"], "retry attempts resume=True")
+            self.assertIn(RESUME_HINT, c["text"], "retry attempts use 续跑 prompt")
+        self.assertEqual(fs.failed_calls, [], "clean finish → no _dispatch_failed")
+
+    def test_all_error_bounded(self):
+        ERR = b.ClaudeResult("partial", True, "error")
+        fs = _RetrySelf()
+        outcome, calls, _ = self._dispatch(fs, [ERR] * 6)
+        self.assertEqual(outcome, "error")
+        self.assertEqual(len(calls), 3, "MAX=2 → exactly 3 calls, no runaway")
+        self.assertEqual(len(fs.failed_calls), 1)
+
+    def test_first_clean_no_retry(self):
+        OK = b.ClaudeResult("done", False, "success")
+        fs = _RetrySelf()
+        outcome, calls, _ = self._dispatch(fs, [OK])
+        self.assertEqual(outcome, "done")
+        self.assertEqual(len(calls), 1)
+
+    def test_suspend_not_retried(self):
+        SUS = b.ClaudeResult("blah [[SUSPEND:{...}]]", False, "success")
+        fs = _RetrySelf(suspend={"aone_id": "123", "wait_for": "someone"})
+        outcome, calls, notifies = self._dispatch(fs, [SUS])
+        self.assertEqual(outcome, "suspended")
+        self.assertEqual(len(calls), 1, "clean SUSPEND → no retry")
+        self.assertEqual(fs.failed_calls, [], "SUSPEND is not a failure")
+
+    def test_terminal_timeout_not_retried(self):
+        TO = b.ClaudeResult("", True, "timeout")
+        fs = _RetrySelf()
+        outcome, calls, _ = self._dispatch(fs, [TO])
+        self.assertEqual(outcome, "error")
+        self.assertEqual(len(calls), 1, "terminal timeout → no retry")
+        self.assertEqual(len(fs.failed_calls), 1)
+
+
+class ResumeFallbackTest(unittest.TestCase):
+    """Retry continuation choice: last attempt produced output → resume=True + 续跑;
+    no output → fall back to fresh (resume=False + original prompt)."""
+
+    def setUp(self):
+        self._orig_rcb = b.run_claude_buffered
+        self._orig_sleep = b.time.sleep
+        b.time.sleep = lambda *a, **k: None
+        os.environ["JARVIS_DISPATCH_RETRY_MAX"] = "2"
+
+    def tearDown(self):
+        b.run_claude_buffered = self._orig_rcb
+        b.time.sleep = self._orig_sleep
+        os.environ.pop("JARVIS_DISPATCH_RETRY_MAX", None)
+
+    def _calls(self, results):
+        runner, calls = _scripted_runner(results)
+        b.run_claude_buffered = runner
+        b.JarvisHandler.dispatch_item(
+            _RetrySelf(), "123", "ORIGINAL", "sid-x", False,
+            (lambda t: None), "grp", "group")
+        return calls
+
+    def test_empty_text_falls_back_to_fresh(self):
+        ERR = b.ClaudeResult("", True, "error")
+        OK = b.ClaudeResult("done", False, "success")
+        calls = self._calls([ERR, OK])
+        self.assertFalse(calls[1]["resume"], "no output → fresh restart (resume=False)")
+        self.assertEqual(calls[1]["text"], "ORIGINAL", "fresh restart reuses original prompt")
+
+    def test_nonempty_text_resumes(self):
+        ERR = b.ClaudeResult("some progress", True, "error")
+        OK = b.ClaudeResult("done", False, "success")
+        calls = self._calls([ERR, OK])
+        self.assertTrue(calls[1]["resume"], "had output → resume=True")
+        self.assertIn(RESUME_HINT, calls[1]["text"])
+
+
+class _DFSelf:
+    _post_death_cause = staticmethod(b.JarvisHandler._post_death_cause)
+
+
+class DispatchFailedTest(unittest.TestCase):
+    """_dispatch_failed: post death cause via wrap.sh sync (numeric id only) + release
+    claim (project set only) + notify. wrap.sh & _release_claim fully stubbed."""
+
+    def setUp(self):
+        self._orig_run = b.subprocess.run
+        self._orig_release = b._release_claim
+        self.run_calls = []
+        self.release_calls = []
+
+        class R:
+            returncode = 0
+            stdout = ""
+            stderr = ""
+
+        def fake_run(*a, **k):
+            self.run_calls.append((a, k))
+            return R()
+
+        b.subprocess.run = fake_run
+        b._release_claim = lambda iid, project: self.release_calls.append((iid, project))
+
+    def tearDown(self):
+        b.subprocess.run = self._orig_run
+        b._release_claim = self._orig_release
+
+    def _fail(self, item_id, project, text="internal tail output"):
+        res = b.ClaudeResult(text, True, "error")
+        notifies = []
+        b.JarvisHandler._dispatch_failed(_DFSelf(), item_id, res, notifies.append, project)
+        return notifies
+
+    def test_numeric_id_posts_and_releases(self):
+        notifies = self._fail("84080203", "528766")
+        self.assertEqual(len(self.run_calls), 1, "one wrap.sh sync")
+        argv = self.run_calls[0][0][0]
+        self.assertIn(str(b.REPO_ROOT / "bootstrap" / "wrap.sh"), argv)
+        self.assertIn("sync", argv)
+        self.assertIn("84080203", argv)
+        self.assertIn("--summary-stdin", argv)
+        stdin = self.run_calls[0][1].get("input", "")
+        self.assertIn("subtype: error", stdin, "death cause carries the subtype")
+        self.assertEqual(self.release_calls, [("84080203", "528766")])
+        self.assertTrue(any("失败" in n for n in notifies), "notify carries a failure line")
+
+    def test_project_none_posts_but_no_release(self):
+        notifies = self._fail("84080203", None)
+        self.assertEqual(len(self.run_calls), 1, "death cause still posted")
+        self.assertEqual(self.release_calls, [], "no project → no release")
+        self.assertTrue(any("失败" in n for n in notifies))
+
+    def test_non_numeric_id_no_subprocess(self):
+        self._fail("probe-2026-07-08", "528766")
+        self.assertEqual(len(self.run_calls), 0, "pseudo-id has no workitem → no wrap.sh")
+        self.assertEqual(self.release_calls, [], "non-numeric id → no release")
 
 
 def _run():
