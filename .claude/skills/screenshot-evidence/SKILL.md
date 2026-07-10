@@ -1,0 +1,141 @@
+# screenshot-evidence — 可视化查证截图取证
+
+> 在 aone-triage 查证环节补充浏览器截图证据，让人工审核一目了然。
+
+## 触发条件
+
+以下场景应在文字查证之外**追加截图取证**：
+
+- aone-triage 查证阶段（证据 1-4 层完成后）
+- terraform-pr-review 需要对比 OpenAPI 文档与 PR diff 时
+- provider-resource-dev 需要展示当前文档 bug 与修复对比时
+- 任何需要在 Aone 工单/评论中提供可视化证据的场景
+
+## 前置条件
+
+- **Playwright MCP** 已连接（`mcp__playwright__*` 工具可用）
+- **aliyun CLI** 已认证（`aliyun oss` 可用）
+- **OSS bucket**: `jarvis-report-images`（cn-hangzhou, private）
+- **JARVIS_HTML_REPORT_TOKEN** 已设置（pre-agent 上传）
+- **html-report-preview.sh** 已修 WAF header（`worktree/fix-report-waf-header` 分支合入后自动可用）
+
+## 取证流程
+
+### Step 1: 确定截图目标
+
+根据查证对象选择截图页面：
+
+| 证据层 | 目标 URL | 截取内容 |
+|--------|---------|---------|
+| OpenAPI 定义 | `https://next.api.alibabacloud.com/document/{Product}/{Version}/{Action}` | 参数表中目标字段行（含 Valid Values） |
+| Provider 文档（当前） | `https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/{resource_name}` | 目标字段的描述和 Valid values |
+| 兄弟资源文档（对比） | 同上，替换为兄弟资源名 | 同字段的正确描述 |
+| GitHub PR diff | `https://github.com/aliyun/terraform-provider-alicloud/pull/{N}/files` | Files changed 标签页的 diff |
+| Provider 源码 | `https://github.com/aliyun/terraform-provider-alicloud/blob/master/alicloud/{file}.go` | 目标字段的 schema 定义 |
+
+### Step 2: Playwright 截图
+
+用 `mcp__playwright__browser_run_code_unsafe` 定位元素截图（绕过滚动问题）：
+
+```javascript
+async (page) => {
+  await page.goto('<URL>', {waitUntil: 'domcontentloaded', timeout: 60000});
+  await page.waitForTimeout(3000);
+  
+  // 定位包含目标文本的元素
+  const items = await page.$$('li, td, tr');
+  for (const item of items) {
+    const text = await item.innerText();
+    if (text.includes('<目标字段名>')) {
+      await item.screenshot({path: '.my-day/screenshots/<aone-id>/<name>.png'});
+      return 'Captured';
+    }
+  }
+  return 'Not found';
+}
+```
+
+**关键规则：**
+- 截图保存到 `.my-day/screenshots/<aone-id>/`（gitignored）
+- **不压缩**：保留原始 PNG 质量
+- OpenAPI 页面是 SPA，需等待渲染完成
+- Terraform Registry 有右侧 sidebar 遮挡，用元素级截图（`element.screenshot()`）而非 viewport
+
+### Step 3: 上传 OSS + 生成签名 URL
+
+```bash
+BUCKET="oss://jarvis-report-images"
+ENDPOINT="oss-cn-hangzhou.aliyuncs.com"
+PREFIX="reports/<aone-id>"
+TIMEOUT=15768000  # 6 个月
+
+# 上传（private ACL）
+aliyun oss cp <file>.png "${BUCKET}/${PREFIX}/<file>.png" --acl private -e "$ENDPOINT" -f
+
+# 生成签名 URL
+aliyun oss sign "${BUCKET}/${PREFIX}/<file>.png" --timeout "$TIMEOUT" -e "$ENDPOINT"
+```
+
+**辅助脚本**批量处理上传 + 签名：
+
+```bash
+bash .claude/skills/screenshot-evidence/scripts/upload-screenshots.sh <aone-id> <screenshot-dir>
+# 输出: name|signed_url 格式的映射文件
+```
+
+### Step 4: 组装 HTML 报告
+
+用 Python 组装 HTML，要点：
+
+1. **图片用 OSS 签名 URL**（`<img src="<signed-url>">`），不用 base64（WAF 拦截）
+2. **来源文字加超链接**：如 `来源：<a href="...">next.api.alibabacloud.com · Cloudfw / CreateNatFirewallControlPolicy</a>`
+3. **对比用 grid 布局**：左红（❌ 错误）右绿（✅ 正确）
+4. **附交叉验证表**：验证层 / 结果 / 证据链接
+
+报告模板见 `references/report-template.html`（可变量替换）。
+
+### Step 5: 上传到 pre-agent 预览
+
+```bash
+bash bootstrap/html-report-preview.sh upload <aone-id> <report.html> --comment
+```
+
+返回预览 URL 并自动发 Aone 评论。
+
+### Step 6: 更新 Aone 工单详情
+
+用 `a1 project workitem update <id> --body-file <path>` 在 description 中：
+- 添加「可视化查证报告」章节，含超链接指向在线预览
+- 证据来源用超链接（description 支持 markdown 链接渲染）
+- **不要在 description 中嵌入 `<img>` 标签**——Aone 渲染器剥离 img src 的 query 参数
+
+## 平台限制（已验证）
+
+| 限制 | 影响 | 应对 |
+|------|------|------|
+| Aone 评论区不渲染 `[text](url)` markdown 链接 | 评论中链接显示为原始文本 | 评论区贴纯 URL；详情区用 markdown 链接 |
+| Aone 渲染器剥离 `<img src>` 的 query 参数 | OSS 签名 URL 失效 → 403 | 图片只在 pre-agent 在线报告中展示 |
+| 账号级 Block Public Access | OSS 对象无法 public-read | 必须用签名 URL |
+| pre-agent WAF 拦截 base64 data URI | HTML 中不能内嵌图片 | 图片走 OSS 签名 URL |
+
+## OSS Bucket 规范
+
+- **Bucket**: `jarvis-report-images`（cn-hangzhou）
+- **ACL**: 对象级 private
+- **路径规则**: `reports/<aone-id>/<screenshot-name>.png`
+- **签名有效期**: 6 个月（`15768000` 秒）
+- **禁止**: public-read（账号策略阻止 + skill 规范禁止）
+- **禁止**: 使用个人 AKSK 或其他 bucket
+
+## 与 aone-triage 集成
+
+在 aone-triage 查证阶段（SKILL.md §3）完成后，追加调用本 skill：
+
+```
+查证（文字）→ 截图取证（本 skill）→ 组装报告 → 上传预览 → 更新工单详情
+```
+
+aone-triage 的 wrap.sh done草稿中增加一行：
+``````
+📊 可视化查证报告：[在线查看](<preview-url>)
+```
