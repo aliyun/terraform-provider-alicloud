@@ -1,22 +1,55 @@
 ## 1.285.0 (Unreleased)
 
+- **New Resource:** `alicloud_cloud_monitor_service_metric_alarm_rule` [GH-9876]
+- **New Resource:** `alicloud_das_sql_log_config` [GH-9917]
+- **New Resource:** `alicloud_cms_alert_rule_v2` [GH-9923]
+- **New Resource:** `alicloud_cr_artifact_lifecycle_rule` [GH-9926]
+- **New Resource:** `alicloud_apig_plugin_class` [GH-9944]
+- **New Data Source:** `alicloud_das_sql_log_configs` [GH-9917]
+- **New Data Source:** `alicloud_drds_polardbx_instances` [GH-9918]
+- **New Data Source:** `alicloud_cms_alert_rules_v2` [GH-9923]
+- **New Data Source:** `alicloud_cr_artifact_lifecycle_rules` [GH-9926]
+- **New Data Source:** `alicloud_express_connect_router_vbr_child_instances` [GH-9932]
+- **New Data Source:** `alicloud_express_connect_router_tr_associations` [GH-9943]
+- **New Data Source:** `alicloud_apig_plugin_classes` [GH-9944]
+- **New Data Source:** `alicloud_express_connect_router_vpc_associations` [GH-9953]
+
 ENHANCEMENTS:
 
-- data-source/alicloud_alikafka_sasl_acls: Added the field id.
+- resource/alicloud_polardb_cluster: support target minor version. [GH-9911]
+- resource/alicloud_esa_routine: , resource/alicloud_esa_routine_related_record: , resource/alicloud_esa_routine_route: retry LockFailed on concurrent writes. [GH-9916]
+- resource/alicloud_drds_polardbx_instance: support ModifyDBInstanceClass. [GH-9918]
+- resource/alicloud_amqp_instance: Added the field auth_model. [GH-9919]
+- resource/alicloud_polardb_endpoint: support dynamodb endpoint resource/alicloud_polardb_account: support dynamodb account. [GH-9931]
+- resource/alicloud_ram_user_group_attachment: handle 409 already-exists, paginate describe, wait for state. [GH-9945]
+- resource/alicloud_cdn_domain_config: Fixed the diff error caused by field function_args. [GH-9951]
+- data-source/alicloud_cloud_monitor_service_metric_alarm_rules: regenerate from CMS IDL. [GH-9876]
+- data-source/alicloud_das_sql_log_configs: address review feedback. [GH-9927]
+- data-source/alicloud_vpn_gateways: add gateway_type filter and fix panic on enhanced gateways. [GH-9930]
+- data-source/alicloud_alikafka_sasl_acls: Added the field id. [GH-9940]
+- docs: fix vpc_route_entry example / cdn_real_time_log_delivery import / hbr_cross_account API links. [GH-9934]
+- docs: fix RepeatType value descriptions from Permit/normal to Permanent in cloud_firewall_nat_firewall_control_policy. [GH-9957]
+
+BUG FIXES:
+
+- resource/alicloud_vpc: fix dns_hostname_status validation to reject read-only value MODIFYING. [GH-9922]
+- resource/alicloud_redis_tair_instance: fix perpetual diff when security_group_id contains multiple comma-separated security groups. [GH-9954]
 
 ## 1.284.0 (July 2, 2026)
 
 - **New Resource:** `alicloud_resource_manager_handshake_acceptance` ([#9907](https://github.com/aliyun/terraform-provider-alicloud/issues/9907))
+- **New Resource:** `alicloud_oss_bucket_inventory` ([#9913](https://github.com/aliyun/terraform-provider-alicloud/issues/9913))
+- **New Data Source:** `alicloud_oss_bucket_inventories` ([#9913](https://github.com/aliyun/terraform-provider-alicloud/issues/9913))
 
 ENHANCEMENTS:
 
+- provider: add support for ap-southeast-8 region validation. ([#9909](https://github.com/aliyun/terraform-provider-alicloud/issues/9909))
 - resource/alicloud_instance: Added the field network_interface_id, source_dest_check, network_interfaces.source_dest_check. ([#9897](https://github.com/aliyun/terraform-provider-alicloud/issues/9897))
 - resource/alicloud_mongodb_audit_policy: support service_type and hot_storage_period; data-source/alicloud_mongodb_audit_policies: support service_type, storage_period and hot_storage_period. ([#9899](https://github.com/aliyun/terraform-provider-alicloud/issues/9899))
 - resource/alicloud_oos_execution: support tags attribute; data-source/alicloud_oos_executions: support tags attribute. ([#9901](https://github.com/aliyun/terraform-provider-alicloud/issues/9901))
 - resource/alicloud_polardb_aicluster: support conn string and api key. ([#9902](https://github.com/aliyun/terraform-provider-alicloud/issues/9902))
 - resource/alicloud_bastionhost_instance: Add bandwidth validation. ([#9903](https://github.com/aliyun/terraform-provider-alicloud/issues/9903))
 - resource/alicloud_resource_manager_handshake: remove accepted account. ([#9907](https://github.com/aliyun/terraform-provider-alicloud/issues/9907))
-- provider: add support for ap-southeast-8 region validation. ([#9909](https://github.com/aliyun/terraform-provider-alicloud/issues/9909))
 - docs: wafv3_defense_rule - list in-list and not-in-list op_value enums. ([#9904](https://github.com/aliyun/terraform-provider-alicloud/issues/9904))
 
 BUG FIXES:
