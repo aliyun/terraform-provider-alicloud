@@ -83,18 +83,31 @@ is_personal(){
   esac
 }
 
-# label → 期望 BUC 账号(护栏基线;login 后 whoami 必须回来匹配,否则不落盘)。
+# label → 期望 BUC 账号集合(空格分隔;护栏基线:login 后 whoami 的 Account 命中集合之一才落盘)。
+# 数字人 worker 两代开号 whoami 呈现不同:老式(jarvis)Account=WORKER_<empId>;新式(terraform-*)
+# Account=账号名(实测 terraform-rd 登录后 Account 为 'terraform-rd'),故各收录 empId 与账号名两种。
 expected_account_for(){
   case "$1" in
     jarvis)       echo "WORKER_1782379562571" ;;
-    terraform-pd) echo "WORKER_1783582374386" ;;
-    terraform-rd) echo "WORKER_1783582458263" ;;
-    terraform-qa) echo "WORKER_1783582593461" ;;
+    terraform-pd) echo "WORKER_1783582374386 terraform-pd" ;;
+    terraform-rd) echo "WORKER_1783582458263 terraform-rd" ;;
+    terraform-qa) echo "WORKER_1783582593461 terraform-qa" ;;
     chenyi) echo "chenhanzhang.chz" ;;
     guozai) echo "guozai.gzl" ;;
     linjun) echo "lichaolin.lcl" ;;
     *) return 1 ;;
   esac
+}
+
+# got 是否命中 label 可接受账号集合之一(空值一律不命中)
+account_matches(){
+  _am_label="$1"; _am_got="$2"
+  [ -n "$_am_got" ] || return 1
+  for _am_acct in $(expected_account_for "$_am_label"); do
+    if [ "$_am_got" = "$_am_acct" ]; then unset _am_label _am_got _am_acct; return 0; fi
+  done
+  unset _am_label _am_got _am_acct
+  return 1
 }
 
 id_dir(){ echo "$STORE/$1"; }
@@ -123,7 +136,7 @@ if [ -f "$LIVE" ] && [ ! -f "$(id_auth jarvis)" ] && [ ! -f "$STORE/jarvis.auth.
   # whoami 必须锚定 A1ID_ROOT(=$LIVE 所在),否则环境残留的 A1_CONFIG_DIR 会让门校验与
   # 待收编文件不同源,可能误把别人凭据判成 jarvis。
   _live_acct=$(A1_CONFIG_DIR="$A1ID_ROOT" "$A1" auth whoami 2>/dev/null | awk '/Account:/{print $2}' || true)
-  if [ "$_live_acct" = "$(expected_account_for jarvis)" ]; then
+  if account_matches jarvis "$_live_acct"; then
     mkdir -p "$(id_dir jarvis)"
     cp "$LIVE" "$(id_auth jarvis)"
     echo jarvis > "$ACTIVE"
@@ -217,8 +230,8 @@ case "$cmd" in
       die "a1 auth login 失败(退非零);$(_rollback_note),live 全程未动。"
     fi
     got=$(A1_CONFIG_DIR="$dir" "$A1" auth whoami 2>/dev/null | awk '/Account:/{print $2}' || true)
-    if [ "$got" != "$expected" ]; then
-      die "身份不匹配:请求登入 '$id'(期望账号 $expected),实际浏览器 BUC 会话是 '${got:-<空>}'。
+    if ! account_matches "$id" "$got"; then
+      die "身份不匹配:请求登入 '$id'(可接受账号: $expected),实际浏览器 BUC 会话是 '${got:-<空>}'。
      修:1) 浏览器登出 BUC (https://buc.alibaba-inc.com/);
         2) 或用无痕/其它浏览器登 '$expected';
         3) 重跑 'bin/a1id login $id'。
