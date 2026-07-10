@@ -88,7 +88,7 @@ func testSweepOosExecution(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOOSExecution_basic(t *testing.T) {
+func TestAccAliCloudOOSExecution_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_execution.default"
 	ra := resourceAttrInit(resourceId, OosExecutionMap)
@@ -104,22 +104,20 @@ func TestAccAlicloudOOSExecution_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"template_name": "${alicloud_oos_template.default.template_name}",
-					"description":   "From TF Test",
 					"parameters":    `{\"Status\":\"Running\"}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"template_name": CHECKSET,
-						"description":   "From TF Test",
 						"parameters":    CHECKSET,
+						"mode":          "Automatic",
 					}),
 				),
 			},
@@ -127,7 +125,70 @@ func TestAccAlicloudOOSExecution_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"description", "loop_mode", "safety_check", "parameters"},
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudOOSExecution_complete(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_execution.default"
+	ra := resourceAttrInit(resourceId, OosExecutionMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosExecution")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccOosExecution%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, OosExecutionBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_name":       "${alicloud_oos_template.default.template_name}",
+					"description":         "From TF Test",
+					"parameters":          `{\"Status\":\"Running\"}`,
+					"mode":                "Automatic",
+					"safety_check":        "Skip",
+					"template_version":    "${alicloud_oos_template.default.template_version}",
+					"loop_mode":           "",
+					"parent_execution_id": "",
+					"template_content":    "",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Execution Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"template_name":       CHECKSET,
+						"description":         "From TF Test",
+						"parameters":          CHECKSET,
+						"mode":                "Automatic",
+						"safety_check":        "Skip",
+						"template_version":    CHECKSET,
+						"loop_mode":           "",
+						"parent_execution_id": "",
+						"template_content":    "",
+						"tags.%":              "2",
+						"tags.Created":        "TF",
+						"tags.For":            "Execution Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
@@ -196,6 +257,10 @@ func TestUnitAlicloudOOSExecution(t *testing.T) {
 		"template_content":    "template_content",
 		"template_name":       "template_name",
 		"template_version":    "template_version",
+		"tags": map[string]interface{}{
+			"Created": "TF",
+			"For":     "Test",
+		},
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -212,14 +277,18 @@ func TestUnitAlicloudOOSExecution(t *testing.T) {
 	ReadMockResponse := map[string]interface{}{
 		"Executions": []interface{}{
 			map[string]interface{}{
-				"Counters":          "counters",
-				"CreateDate":        "create_date",
-				"EndDate":           "end_date",
-				"ExecutedBy":        "executed_by",
-				"IsParent":          "is_parent",
-				"Mode":              "mode",
-				"Outputs":           "outputs",
-				"Parameters":        "parameters",
+				"Counters":   "counters",
+				"CreateDate": "create_date",
+				"EndDate":    "end_date",
+				"ExecutedBy": "executed_by",
+				"IsParent":   "is_parent",
+				"Mode":       "mode",
+				"Outputs":    "outputs",
+				"Parameters": map[string]interface{}{"Status": "Running"},
+				"Tags": map[string]interface{}{
+					"Created": "TF",
+					"For":     "Test",
+				},
 				"ParentExecutionId": "parent_execution_id",
 				"RamRole":           "ram_role",
 				"StartDate":         "start_date",

@@ -7,25 +7,25 @@ description: |-
     Provides a list of OOS Executions.
 ---
 
-# alicloud\_oos\_executions
+# alicloud_oos_executions
 
 This data source provides a list of OOS Executions in an Alibaba Cloud account according to the specified filters.
- 
--> **NOTE:** Available in v1.93.0+.
+
+-> **NOTE:** Available since v1.93.0.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 
 data "alicloud_oos_executions" "example" {
-  ids = ["execution_id"]
+  ids           = ["execution_id"]
   template_name = "name"
-  status = "Success"
+  status        = "Success"
 }
 
 output "first_execution_id" {
-  value = "${data.alicloud_oos_executions.example.executions.0.id}"
+  value = data.alicloud_oos_executions.example.executions.0.id
 }
 ```
 
@@ -40,7 +40,7 @@ The following arguments are supported:
 * `executed_by` - (Optional) The user who execute the template.
 * `include_child_execution` - (Optional) Whether to include sub-execution.
 * `mode` - (Optional) The mode of OOS Execution. Valid: `Automatic`, `Debug`.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.284.0) A mapping of tags to assign to the resource.
 * `parent_execution_id` - (Optional) The id of parent OOS Execution.
 * `ram_role` - (Optional) The role that executes the current template.
 * `sort_field` - (Optional) The sort field.
@@ -58,15 +58,24 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` -  A list of OOS Execution ids.
 * `executions` - A list of OOS Executions. Each element contains the following attributes:
   * `id` - ID of the OOS Executions.
+  * `category` - The category of OOS Execution.
   * `counters` - The counters of OOS Execution.
   * `create_date` - The time when the execution was created.
+  * `end_date` - The time when the execution was ended.
+  * `executed_by` - The user who execute the template.
   * `execution_id` - ID of the OOS Executions.
   * `is_parent` - Whether to include subtasks.
+  * `mode` - The mode of OOS Execution.
   * `outputs` - The outputs of OOS Executions.
-  * `parameters` - The parameters required by the template
+  * `parameters` - The parameters required by the template.
+  * `parent_execution_id` - The id of parent OOS Execution.
+  * `ram_role` - The role that executes the current template.
   * `start_date` - The time when the template was started.
+  * `status` - The status of OOS Execution.
   * `status_message` - The message of status.
   * `status_reason` - The reason of status.
   * `template_id` - The id of execution template.
+  * `template_name` - The name of execution template.
   * `template_version` - The version of execution template.
+  * `tags` - (Available since v1.284.0) A mapping of tags assigned to the OOS Execution.
   * `update_date` - The time when the template was updated.

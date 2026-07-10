@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
+func TestAccAliCloudPvtzZoneAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone_attachment.default"
@@ -32,9 +32,9 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -133,7 +133,7 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudPvtzZoneAttachment_multi(t *testing.T) {
+func TestAccAliCloudPvtzZoneAttachment_multi(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone_attachment.default.4"
@@ -156,9 +156,9 @@ func TestAccAlicloudPvtzZoneAttachment_multi(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

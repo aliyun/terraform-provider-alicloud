@@ -163,6 +163,11 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: IntBetween(5, 5000),
 			},
+			"auto_asset_protection": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"modify_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -291,6 +296,13 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 		})
 	}
 
+	if v, ok := d.GetOk("auto_asset_protection"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "AutoAssetProtection",
+			"Value": v,
+		})
+	}
+
 	// v1 instance and subType is `Subscription` -> set CfwOverflow=true
 	if (request["ProductCode"].(string)) == "vipcloudfw" && (request["SubscriptionType"].(string)) == "Subscription" {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -354,6 +366,7 @@ func resourceAliCloudCloudFirewallInstanceRead(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	bssOpenApiService := BssOpenApiService{client}
 	cloudfwService := CloudfwService{client}
+	cloudFirewallServiceV2 := CloudFirewallServiceV2{client}
 
 	getQueryInstanceObject, err := bssOpenApiService.QueryAvailableInstance(d.Id())
 	if err != nil {
@@ -385,6 +398,15 @@ func resourceAliCloudCloudFirewallInstanceRead(d *schema.ResourceData, meta inte
 	d.Set("ip_number", object["IpNumber"])
 	d.Set("user_status", object["UserStatus"])
 	d.Set("status", object["InstanceStatus"])
+
+	assetStatistic, err := cloudFirewallServiceV2.DescribeInstanceDescribeAssetStatistic(d.Id())
+	if err != nil {
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+	} else {
+		d.Set("auto_asset_protection", fmt.Sprint(assetStatistic["AutoResourceEnable"]))
+	}
 
 	return nil
 }
@@ -645,6 +667,36 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 
 	}
 
+	update = false
+	setAutoProtectNewAssetsRequest := make(map[string]interface{})
+	setAutoProtectNewAssetsQuery := make(map[string]interface{})
+
+	if !d.IsNewResource() && d.HasChange("auto_asset_protection") {
+		update = true
+	}
+	setAutoProtectNewAssetsRequest["AutoProtect"] = d.Get("auto_asset_protection")
+
+	if update {
+		var err error
+		action := "SetAutoProtectNewAssets"
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Cloudfw", "2017-12-07", action, setAutoProtectNewAssetsQuery, setAutoProtectNewAssetsRequest, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, setAutoProtectNewAssetsRequest)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
 	cfwInstance, err := cloudFireWallService.DescribeCloudFirewallInstanceUserBuyVersion(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -742,6 +794,27 @@ func resourceAliCloudCloudFirewallInstanceDelete(d *schema.ResourceData, meta in
 
 	if fmt.Sprint(response["Success"]) == "false" || fmt.Sprint(response["ReleaseStatus"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+
+	bssOpenApiService := BssOpenApiService{client}
+	wait = incrementalWait(10*time.Second, 10*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		_, err = bssOpenApiService.QueryAvailableInstance(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		wait()
+		return resource.RetryableError(fmt.Errorf("Cloud Firewall instance %s still exists", d.Id()))
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForReleasePostInstance", AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

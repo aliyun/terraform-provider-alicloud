@@ -12,8 +12,12 @@ description: |-
 Provides a PolarDB endpoint resource to manage custom endpoint of PolarDB cluster.
 
 -> **NOTE:** Available since v1.80.0.
+
 -> **NOTE:** After v1.80.0 and before v1.121.0, you can only use this resource to manage the custom endpoint. Since v1.121.0, you also can import the primary endpoint and the cluster endpoint, to modify their ssl status and so on.
+
 -> **NOTE:** The primary endpoint and the default cluster endpoint can not be created or deleted manually.
+
+-> **NOTE:** The DynamoDB type endpoint does not support deletion. When destroying the Terraform resource, the DynamoDB endpoint will be removed from state but not deleted from the cloud.
 
 ## Example Usage
 

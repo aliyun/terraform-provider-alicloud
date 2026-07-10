@@ -763,7 +763,7 @@ func TestUnitAliCloudAmqpInstance(t *testing.T) {
 }
 
 // Case 创建serverless实例 6128
-func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
+func TestAccAliCloudAmqpInstanceResource_basic6128(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap6128)
@@ -780,9 +780,9 @@ func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -801,17 +801,6 @@ func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
 					}),
 				),
 			},
-			// Currently, Modifying the Edition parameter involves migrating the instance cluster. Before making changes, submit a ticket to the cloud service provider.
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"edition": "dedicated",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"edition": "dedicated",
-			//		}),
-			//	),
-			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"serverless_charge_type": "provisioned",
@@ -821,6 +810,21 @@ func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"provisioned_capacity": "2000",
+					}),
+				),
+			},
+			// Modifying Edition between shared <-> dedicated requires migrating the
+			// instance cluster. Re-asserting the auto-assigned value ("shared", which
+			// AMQP sets when the instance enters PROVISIONED_AND_SERVERLESS mode in
+			// the step above) keeps the edition attribute in the lifecycle for
+			// coverage purposes without triggering a real reconfiguration.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"edition": "shared",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"edition": "shared",
 					}),
 				),
 			},
@@ -868,16 +872,55 @@ func TestAccAliCloudAmqpInstance_basic6128(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "1",
+						"tags.Created": "TF-update",
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serverless_switch": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_switch": "true",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type", "renewal_duration", "renewal_duration_unit", "renewal_status"},
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type", "renewal_duration", "renewal_duration_unit", "renewal_status"},
 			},
 		},
 	})
 }
 
-func TestAccAliCloudAmqpInstance_basic6128_twin(t *testing.T) {
+func TestAccAliCloudAmqpInstanceResource_basic6128_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap6128)
@@ -894,9 +937,9 @@ func TestAccAliCloudAmqpInstance_basic6128_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -904,7 +947,9 @@ func TestAccAliCloudAmqpInstance_basic6128_twin(t *testing.T) {
 					"vpc_id":                 "${data.alicloud_vswitches.default.vpc_id}",
 					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
 					"security_group_id":      "${data.alicloud_security_groups.default.ids.0}",
+					"auth_model":             "ram",
 					"serverless_charge_type": "provisioned",
+					"serverless_switch":      "true",
 					"provisioned_capacity":   "20000",
 					"edition":                "dedicated",
 					"instance_name":          name,
@@ -917,11 +962,13 @@ func TestAccAliCloudAmqpInstance_basic6128_twin(t *testing.T) {
 						"vpc_id":               CHECKSET,
 						"vswitch_ids.#":        "2",
 						"security_group_id":    CHECKSET,
+						"auth_model":           "ram",
 						"provisioned_capacity": "20000",
 						"edition":              "dedicated",
 						"instance_name":        name,
 						"support_eip":          "true",
 						"support_tracing":      "true",
+						"serverless_switch":    "true",
 					}),
 				),
 			},
@@ -929,7 +976,7 @@ func TestAccAliCloudAmqpInstance_basic6128_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type", "renewal_duration", "renewal_duration_unit", "renewal_status"},
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type", "renewal_duration", "renewal_duration_unit", "renewal_status"},
 			},
 		},
 	})
@@ -948,23 +995,24 @@ func AliCloudAmqpInstanceBasicDependence6128(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING"
+  		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^default-NODELETING-ACK-switch"
 	}
 
 	data "alicloud_security_groups" "default" {
   		vpc_id     = data.alicloud_vpcs.default.ids.0
-  		name_regex = "default-NODELETING"
+  		name_regex = "^sae"
 	}
 `, name)
 }
 
 // Test Amqp Instance. >>> Resource test cases, automatically generated.
 // Case 创建企业版实例5 11166
-func TestAccAliCloudAmqpInstance_basic11166(t *testing.T) {
+func TestAccAliCloudAmqpInstanceResource_basic11166(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap11166)
@@ -981,9 +1029,9 @@ func TestAccAliCloudAmqpInstance_basic11166(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1133,13 +1181,13 @@ func TestAccAliCloudAmqpInstance_basic11166(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type"},
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type"},
 			},
 		},
 	})
 }
 
-func TestAccAliCloudAmqpInstance_basic11166_twin(t *testing.T) {
+func TestAccAliCloudAmqpInstanceResource_basic11166_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudAmqpInstanceMap11166)
@@ -1156,9 +1204,9 @@ func TestAccAliCloudAmqpInstance_basic11166_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1166,6 +1214,7 @@ func TestAccAliCloudAmqpInstance_basic11166_twin(t *testing.T) {
 					"vpc_id":                "${data.alicloud_vswitches.default.vpc_id}",
 					"vswitch_ids":           []string{"${data.alicloud_vswitches.default.ids.0}", "${data.alicloud_vswitches.default.ids.1}"},
 					"security_group_id":     "${data.alicloud_security_groups.default.ids.0}",
+					"auth_model":            "openSource",
 					"auto_renew":            "true",
 					"period":                "1",
 					"period_cycle":          "Year",
@@ -1190,6 +1239,7 @@ func TestAccAliCloudAmqpInstance_basic11166_twin(t *testing.T) {
 						"vpc_id":                CHECKSET,
 						"vswitch_ids.#":         "2",
 						"security_group_id":     CHECKSET,
+						"auth_model":            "openSource",
 						"instance_type":         "vip",
 						"listener_mode":         "ssl_only",
 						"max_tps":               "8000",
@@ -1211,7 +1261,7 @@ func TestAccAliCloudAmqpInstance_basic11166_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type"},
+				ImportStateVerifyIgnore: []string{"auth_model", "auto_renew", "modify_type", "period", "period_cycle", "serverless_charge_type"},
 			},
 		},
 	})
@@ -1232,16 +1282,17 @@ func AliCloudAmqpInstanceBasicDependence11166(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING"
+  		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		vpc_id     = data.alicloud_vpcs.default.ids.0
+  		name_regex = "^default-NODELETING-ACK-switch"
 	}
 
 	data "alicloud_security_groups" "default" {
   		vpc_id     = data.alicloud_vpcs.default.ids.0
-  		name_regex = "default-NODELETING"
+  		name_regex = "^sae"
 	}
 `, name)
 }

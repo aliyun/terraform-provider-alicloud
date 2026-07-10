@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -34,6 +35,15 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			Create: schema.DefaultTimeout(90 * time.Minute),
 			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(60 * time.Minute),
+		},
+
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Version: 0,
+				Type:    resourceAlicloudCSManagedKubernetesV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceAlicloudCSManagedKubernetesStateUpgradeV0,
+			},
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -339,7 +349,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
+				ValidateFunc: StringInSlice([]string{"ack.standard", "ack.pro.small", "ack.pro.xlarge", "ack.pro.2xlarge", "ack.pro.4xlarge"}, false),
 			},
 			"maintenance_window": {
 				Type:     schema.TypeList,
@@ -1588,4 +1598,453 @@ func modifyManagedK8sCluster(d *schema.ResourceData, meta interface{}, invoker *
 	}
 
 	return nil
+}
+
+func resourceAlicloudCSManagedKubernetesV0() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"name_prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"profile": {
+				Type:     schema.TypeString,
+				Computed: true,
+				ForceNew: true,
+				Optional: true,
+			},
+			"worker_vswitch_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"zone_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"vswitch_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"pod_vswitch_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"pod_cidr": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"service_cidr": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"node_cidr_mask": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"new_nat_gateway": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"user_ca": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"proxy_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ip_stack": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"addons": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"config": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"disabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"slb_internet_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"load_balancer_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"enable_rrsa": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"timezone": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"cluster_domain": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"custom_san": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"encryption_provider_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"disable_encryption": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"client_cert": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"client_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"cluster_ca_cert": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			// lintignore: S022
+			"certificate_authority": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"skip_set_certificate_authority": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			// lintignore: S022
+			"connections": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"api_server_internet": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"api_server_intranet": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"master_public_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"service_domain": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"slb_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"slb_internet": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"slb_intranet": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"is_enterprise_security_group": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"nat_gateway_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"worker_ram_role_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"service_account_issuer": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"api_audiences": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			// lintignore: S006
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"cluster_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"maintenance_window": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"maintenance_time": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"duration": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"weekly_period": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"operation_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_auto_upgrade": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"channel": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"control_plane_log_ttl": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
+			"control_plane_log_project": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
+			"control_plane_log_components": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"audit_log_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+							Optional: true,
+						},
+						"sls_project_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"auto_mode": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							ForceNew: true,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"retain_resources": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"delete_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"delete_mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"rrsa_metadata": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"rrsa_oidc_issuer_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_arn": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"upgrade_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"control_plane_only": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func resourceAlicloudCSManagedKubernetesStateUpgradeV0(_ context.Context, rawState map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+	for _, field := range []string{"certificate_authority", "connections"} {
+		if v, ok := rawState[field]; ok && v != nil {
+			switch val := v.(type) {
+			case map[string]interface{}:
+				if len(val) > 0 {
+					rawState[field] = []interface{}{val}
+				} else {
+					rawState[field] = []interface{}{}
+				}
+			}
+		}
+	}
+	return rawState, nil
 }

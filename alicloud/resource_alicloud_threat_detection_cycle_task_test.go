@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -9,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
+
+// NOTE: Test depends on data source or hardcoded are not stable and may fail at any time
 
 // Test ThreatDetection CycleTask. >>> Resource test cases, automatically generated.
 // Case CycleTask 10574
@@ -29,16 +30,16 @@ func TestAccAliCloudThreatDetectionCycleTask_basic10574(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"target_end_time":   "6",
 					"task_name":         "VIRUS_VUL_SCHEDULE_SCAN",
 					"task_type":         "VIRUS_VUL_SCHEDULE_SCAN",
-					"param":             "{\\n      \\\"targetInfo\\\": [\\n            {\\n                  \\\"type\\\": \\\"groupId\\\",\\n                  \\\"name\\\": \\\"TI HOST\\\",\\n                  \\\"target\\\": 10597***\\n            },\\n            {\\n                  \\\"type\\\": \\\"groupId\\\",\\n                  \\\"name\\\": \\\"expense HOST\\\",\\n                  \\\"target\\\": 10597***\\n            }\\n      ]\\n}",
+					"param":             "{\\\"targetInfo\\\":[{\\\"name\\\":\\\"未分组\\\",\\\"type\\\":\\\"groupId\\\",\\\"target\\\":10358625},{\\\"name\\\":\\\"test\\\",\\\"type\\\":\\\"groupId\\\",\\\"target\\\":12206415}]}",
 					"first_date_str":    "1650556800000",
 					"interval_period":   "7",
 					"enable":            "1",
@@ -64,7 +65,7 @@ func TestAccAliCloudThreatDetectionCycleTask_basic10574(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"target_end_time":   "12",
-					"param":             "{\\n      \\\"targetInfo\\\": [\\n            {\\n                  \\\"type\\\": \\\"groupId\\\",\\n                  \\\"name\\\": \\\"TI HOST\\\",\\n                  \\\"target\\\": 10597***\\n            }\\n      ]\\n}",
+					"param":             "{\\\"targetInfo\\\": [{\\\"name\\\":\\\"未分组\\\",\\\"type\\\":\\\"groupId\\\",\\\"target\\\":10358625}]}",
 					"first_date_str":    "1664380800000",
 					"interval_period":   "14",
 					"enable":            "0",
@@ -99,10 +100,7 @@ func AlicloudThreatDetectionCycleTaskBasicDependence10574(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
-}
-
-
-`, name)
+}`, name)
 }
 
 // Test ThreatDetection CycleTask. <<< Resource test cases, automatically generated.

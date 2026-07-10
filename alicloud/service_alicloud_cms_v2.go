@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/tidwall/sjson"
 )
 
 type CmsServiceV2 struct {
@@ -390,3 +392,168 @@ func (s *CmsServiceV2) CmsAddonReleaseStateRefreshFuncWithApi(id string, field s
 }
 
 // DescribeCmsAddonRelease >>> Encapsulated.
+
+// DescribeCmsAggTaskGroup <<< Encapsulated get interface for Cms AggTaskGroup.
+
+func (s *CmsServiceV2) DescribeCmsAggTaskGroup(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	groupId := parts[1]
+	instanceId := parts[0]
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/prometheus-instances/%s/agg-task-groups/%s", instanceId, groupId)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"404"}) {
+			return object, WrapErrorf(NotFoundErr("AggTaskGroup", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.aggTaskGroup", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.aggTaskGroup", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CmsServiceV2) CmsAggTaskGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CmsAggTaskGroupStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsAggTaskGroup)
+}
+
+func (s *CmsServiceV2) CmsAggTaskGroupStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsAggTaskGroup >>> Encapsulated.
+
+// DescribeCmsAlertRuleV2 <<< Encapsulated get interface for Cms AlertRuleV2.
+
+func (s *CmsServiceV2) DescribeCmsAlertRuleV2(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	query["RegionId"] = StringPointer(client.RegionId)
+	jsonString := convertObjectToJsonString(request)
+	jsonString, _ = sjson.Set(jsonString, "filter.uuid.eq", id)
+	_ = json.Unmarshal([]byte(jsonString), &request)
+
+	action := fmt.Sprintf("/queryAlertRules")
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaPost("Cms", "2024-03-30", action, query, nil, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("AlertRuleV2", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.data.alertRules[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.alertRules[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("AlertRuleV2", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *CmsServiceV2) CmsAlertRuleV2StateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CmsAlertRuleV2StateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsAlertRuleV2)
+}
+
+func (s *CmsServiceV2) CmsAlertRuleV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsAlertRuleV2 >>> Encapsulated.

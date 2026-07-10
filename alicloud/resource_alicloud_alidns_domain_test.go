@@ -80,7 +80,7 @@ func testSweepAlidnsDomain(region string) error {
 	return nil
 }
 
-func TestAccAlicloudAlinsDomain_basic(t *testing.T) {
+func TestAccAliCloudAlidnsDomain_basic(t *testing.T) {
 	resourceId := "alicloud_alidns_domain.default"
 	randInt := acctest.RandIntRange(10000, 99999)
 	var v alidns.DescribeDomainInfoResponse
@@ -99,9 +99,9 @@ func TestAccAlicloudAlinsDomain_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

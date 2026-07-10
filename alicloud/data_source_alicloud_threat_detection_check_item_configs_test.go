@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -10,16 +9,35 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudThreatDetectionCheckItemConfigDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+// NOTE: Test depends on data source or hardcoded are not stable and may fail at any time
+// Uninitialized resource; assumes the resource already exists.
+
+func TestAccAliCloudThreatDetectionCheckItemConfigsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
-	ThreatDetectionCheckItemConfigCheckInfo.dataSourceTestCheck(t, rand)
+	pagingConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudThreatDetectionCheckItemConfigSourceConfig(rand, map[string]string{
+			"lang":        `"zh"`,
+			"page_number": `1`,
+			"page_size":   `10`,
+		}),
+		fakeConfig: testAccCheckAlicloudThreatDetectionCheckItemConfigSourceConfig(rand, map[string]string{
+			"lang":        `"zh"`,
+			"page_number": `1`,
+			"page_size":   `10`,
+			"ids":         `["fake-id-not-exist"]`,
+		}),
+	}
+
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	}
+	ThreatDetectionCheckItemConfigCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, pagingConf)
 }
 
 var existThreatDetectionCheckItemConfigMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"configs.#":                   "1",
+		"configs.#":                   CHECKSET,
 		"configs.0.section_ids.#":     CHECKSET,
 		"configs.0.description.#":     CHECKSET,
 		"configs.0.check_show_name":   CHECKSET,
@@ -53,7 +71,7 @@ func testAccCheckAlicloudThreatDetectionCheckItemConfigSourceConfig(rand int, at
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccThreatDetectionCheckItemConfig%d"
+  default = "tf-testAccThreatDetectionCheckItemConfig%d"
 }
 
 data "alicloud_threat_detection_check_item_configs" "default" {

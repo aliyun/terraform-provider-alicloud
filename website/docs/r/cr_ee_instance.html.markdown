@@ -67,6 +67,7 @@ The following arguments are supported:
 * `image_scanner` - (Optional, Available since v1.235.0) The security scan engine used by the Enterprise Edition of Container Image Service. Value:
   - `ACR`: Uses the Trivy scan engine provided by default.
   - `SAS`: uses the enhanced cloud security scan engine.
+  - `DISABLE`: Disables the image security scan engine.
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -75,6 +76,7 @@ The following arguments are supported:
   - `Basic`: Basic instance
   - `Standard`: Standard instance
   - `Advanced`: Advanced Edition Instance
+  - `Economy`: Economy instance
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 

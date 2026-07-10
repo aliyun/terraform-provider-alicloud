@@ -428,12 +428,21 @@ func TestAccAliCloudAmqpVirtualHost_basic7216(t *testing.T) {
 var AliCloudAmqpVirtualHostMap7216 = map[string]string{}
 
 func AliCloudAmqpVirtualHostBasicDependence7216(name string) string {
-	return fmt.Sprintf(`
-	variable "name" {
+		return fmt.Sprintf(`
+		variable "name" {
     	default = "%s"
-	}
-
-	resource "alicloud_amqp_instance" "default" {
+		}
+		data "alicloud_vpcs" "default" {
+			name_regex = "^default-NODELETING$"
+		}
+		data "alicloud_vswitches" "default" {
+			vpc_id = data.alicloud_vpcs.default.ids.0
+		}
+		data "alicloud_security_groups" "default" {
+			vpc_id     = data.alicloud_vpcs.default.ids.0
+			name_regex = "^default-NODELETING$"
+		}
+		resource "alicloud_amqp_instance" "default" {
   		instance_name         = var.name
   		instance_type         = "enterprise"
   		max_tps               = 3000
@@ -444,8 +453,11 @@ func AliCloudAmqpVirtualHostBasicDependence7216(name string) string {
   		renewal_duration      = 1
   		renewal_duration_unit = "Year"
   		support_eip           = true
-	}
-`, name)
+  		vpc_id                = data.alicloud_vpcs.default.ids.0
+  		vswitch_ids           = [data.alicloud_vswitches.default.ids.0, data.alicloud_vswitches.default.ids.1]
+  		security_group_id     = data.alicloud_security_groups.default.ids.0
+		}
+		`, name)
 }
 
 // Test Amqp VirtualHost. <<< Resource test cases, automatically generated.

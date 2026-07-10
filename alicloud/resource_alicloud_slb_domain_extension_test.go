@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudSLBDomainExtensionBasic(t *testing.T) {
+func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
 	var v *slb.DescribeDomainExtensionAttributeResponse
 	resourceId := "alicloud_slb_domain_extension.default"
 	ra := resourceAttrInit(resourceId, nil)

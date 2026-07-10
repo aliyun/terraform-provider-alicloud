@@ -131,6 +131,23 @@ func resourceAliCloudDataWorksProjectCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
+	// Enabling PAI for a project is asynchronous: DescribeDataWorksProject may keep
+	// returning PaiTaskEnabled=false for a short while after the project reaches the
+	// Available state, which leads to a perpetual "false -> true" diff. Wait until the
+	// server-side value converges to the requested one before reading the resource back.
+	//
+	// Use a bounded timeout (2 minutes) and degrade gracefully if it elapses:
+	// some accounts/regions silently reject PAI enablement (e.g. PAI is not
+	// purchased in the target region). In that case the value will never
+	// converge and we should not fail Create — proceed to Read and let the
+	// caller see the actual server-side value rather than hanging until the
+	// Create timeout elapses.
+	paiStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("pai_task_enabled"))}, 2*time.Minute, 10*time.Second, dataWorksServiceV2.DataWorksProjectStateRefreshFunc(d.Id(), "$.Project.PaiTaskEnabled", []string{}))
+	if _, err := paiStateConf.WaitForState(); err != nil {
+		log.Printf("[WARN] alicloud_data_works_project %s: PaiTaskEnabled did not converge to %v within timeout; the account may not have PAI enabled in this region. Proceeding with current server-side value: %s",
+			d.Id(), d.Get("pai_task_enabled"), err)
+	}
+
 	return resourceAliCloudDataWorksProjectUpdate(d, meta)
 }
 
@@ -208,7 +225,7 @@ func resourceAliCloudDataWorksProjectUpdate(d *schema.ResourceData, meta interfa
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("dataworks-public", "2020-05-18", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -260,7 +277,7 @@ func resourceAliCloudDataWorksProjectUpdate(d *schema.ResourceData, meta interfa
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -306,7 +323,7 @@ func resourceAliCloudDataWorksProjectDelete(d *schema.ResourceData, meta interfa
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

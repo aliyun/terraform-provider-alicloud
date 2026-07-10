@@ -33,6 +33,7 @@ func TestAccAliCloudCloudStorageGatewayGatewayCacheDisk_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -42,17 +43,23 @@ func TestAccAliCloudCloudStorageGatewayGatewayCacheDisk_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"gateway_id":            "${alicloud_cloud_storage_gateway_gateway.default.id}",
 					"cache_disk_size_in_gb": "50",
+					"cache_disk_category":   "cloud_essd",
+					"performance_level":     "PL1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"gateway_id":            CHECKSET,
 						"cache_disk_size_in_gb": "50",
+						"cache_disk_category":   "cloud_essd",
+						"performance_level":     "PL1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cache_disk_size_in_gb": "100",
+					"cache_disk_category":   "cloud_essd",
+					"performance_level":     "PL1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -84,6 +91,7 @@ func TestAccAliCloudCloudStorageGatewayGatewayCacheDisk_basic0_twin(t *testing.T
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,

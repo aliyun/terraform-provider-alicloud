@@ -2,8 +2,10 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,6 +46,10 @@ func resourceAliCloudEsaRoutineRelatedRecord() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"site_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -68,7 +74,7 @@ func resourceAliCloudEsaRoutineRelatedRecordCreate(d *schema.ResourceData, meta 
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -106,7 +112,12 @@ func resourceAliCloudEsaRoutineRelatedRecordRead(d *schema.ResourceData, meta in
 		d.Set("site_id", v)
 	}
 
-	d.Set("record_id", objectRaw["RecordId"])
+	d.Set("site_name", objectRaw["SiteName"])
+	recordId, err := strconv.ParseInt(objectRaw["RecordId"].(json.Number).String(), 10, 64)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("record_id", recordId)
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("name", parts[0])
@@ -133,7 +144,7 @@ func resourceAliCloudEsaRoutineRelatedRecordDelete(d *schema.ResourceData, meta 
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

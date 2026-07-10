@@ -177,11 +177,6 @@ resource "alicloud_log_store" "source" {
   append_meta           = true
 }
 
-resource "alicloud_log_project" "default1" {
-  project_name = format("%%supdate", var.name)
-  description  = format("%%supdate", var.name)
-}
-
 resource "alicloud_fcv3_function" "function" {
   memory_size = "512"
   cpu         = 0.5

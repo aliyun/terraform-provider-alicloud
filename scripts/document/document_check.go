@@ -327,6 +327,6 @@ func main() {
 		fmt.Println("\n[Error] Error: import block has not been closed.")
 		exitCode = 1
 	}
-	fmt.Println("\n--- Finished!\n")
+	fmt.Println("\n--- Finished!")
 	os.Exit(exitCode)
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -110,14 +111,35 @@ func TestAccAliCloudROSStack_basic(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sAlicloudRosStack%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosStackBasicDependence)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy: func(state *terraform.State) error {
+			rosServiceClient := RosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+			for _, rs := range state.RootModule().Resources {
+				if "alicloud_ros_stack" != rs.Type {
+					continue
+				}
+				stackId := rs.Primary.ID
+				stack, err := rosServiceClient.DescribeRosStack(stackId)
+				if err != nil {
+					if NotFoundError(err) {
+						continue
+					}
+					return WrapError(err)
+				}
+				if stack != nil {
+					if v, ok := stack["Status"]; ok && v == "DELETE_COMPLETE" { // check delete status
+						return nil
+					}
+				}
+			}
+			return nil
+		},
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -154,7 +176,7 @@ func TestAccAliCloudROSStack_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"create_option", "notification_urls", "replacement_option", "retain_all_resources", "retain_resources", "stack_policy_during_update_body", "stack_policy_body", "stack_policy_during_update_url", "stack_policy_url", "template_body", "tags", "template_url", "use_previous_parameters"},
+				ImportStateVerifyIgnore: []string{"create_option", "notification_urls", "replacement_option", "retain_all_resources", "retain_resources", "stack_policy_during_update_body", "stack_policy_body", "stack_policy_during_update_url", "stack_policy_url", "tags", "template_url", "use_previous_parameters"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

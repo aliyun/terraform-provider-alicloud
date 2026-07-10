@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -586,6 +587,467 @@ func TestAccAliCloudVPCVSwitch_basic5(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"enable_ipv6", "ipv6_cidr_block_mask"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudVPCVSwitch_ipv6MaskRemoval — scenario ① (mask removal).
+// With ipv6_cidr_block_mask as Optional-only, removing it from config drove the int
+// to 0 with HasChange=true, so the Update sent "Ipv6CidrBlock":0 to
+// ModifyVSwitchAttribute and the backend re-assigned subnet 0 (reproduced bug).
+// After making the attribute Optional+Computed, removing it from config produces NO
+// diff (Terraform keeps the prior value), HasChange is false, the block is skipped,
+// and no Ipv6CidrBlock is sent — so the already-assigned IPv6 CIDR must stay
+// unchanged. We capture the assigned CIDR after step 0 and assert it does not change
+// after the mask is removed: fails on the old (Optional-only) code, passes with the
+// Computed fix.
+func TestAccAliCloudVPCVSwitch_ipv6MaskRemoval(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vswitch.default"
+	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVswitch")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVswitchBasicDependence0)
+
+	var ipv6Before string
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Step 0: create the vswitch with IPv6 enabled and an explicit mask = 1 (user scenario).
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":               "${alicloud_vpc.default.id}",
+					"cidr_block":           "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
+					"enable_ipv6":          "true",
+					"ipv6_cidr_block_mask": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":              CHECKSET,
+						"vpc_id":               CHECKSET,
+						"cidr_block":           CHECKSET,
+						"enable_ipv6":          "true",
+						"ipv6_cidr_block_mask": "1",
+						"ipv6_cidr_block":      CHECKSET,
+					}),
+					// Capture the IPv6 CIDR the backend assigned, so we can assert it is not changed below.
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceId]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceId)
+						}
+						ipv6Before = rs.Primary.Attributes["ipv6_cidr_block"]
+						return nil
+					},
+				),
+			},
+			// Step 1: remove ONLY ipv6_cidr_block_mask from the config (enable_ipv6 stays true).
+			// Per the report, the Modify API must not carry Ipv6CidrBlock, so the assigned
+			// IPv6 CIDR must stay identical. If the bug exists, the provider sends
+			// Ipv6CidrBlock=0 and the CIDR flips to subnet 0, failing this assertion.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_cidr_block_mask": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPtr(resourceId, "ipv6_cidr_block", &ipv6Before),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudVPCVSwitch_ipv6MaskSetZero — scenario ② (explicit mask = 0).
+// After making ipv6_cidr_block_mask Optional+Computed, this checks whether a user can
+// still EXPLICITLY set the mask to 0. On SDK v1.17.2 (no GetRawConfig) the zero value
+// of an Optional+Computed int is the ambiguous case, so this is exactly what might
+// regress. We create with mask=1, then set mask=0, and expect it to take effect:
+// ipv6_cidr_block_mask=0 in state AND the backend re-assigns subnet 0 (ipv6_cidr_block
+// changes from the captured value). The tf-debug.log confirms whether
+// ModifyVSwitchAttribute actually received Ipv6CidrBlock:0. If v1 swallows the explicit
+// 0, this test fails and tells us Computed alone is not enough to keep 0 settable.
+func TestAccAliCloudVPCVSwitch_ipv6MaskSetZero(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vswitch.default"
+	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVswitch")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVswitchBasicDependence0)
+
+	var ipv6Before string
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Step 0: create with IPv6 enabled and an explicit mask = 1.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":               "${alicloud_vpc.default.id}",
+					"cidr_block":           "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
+					"enable_ipv6":          "true",
+					"ipv6_cidr_block_mask": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ipv6":          "true",
+						"ipv6_cidr_block_mask": "1",
+						"ipv6_cidr_block":      CHECKSET,
+					}),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceId]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceId)
+						}
+						ipv6Before = rs.Primary.Attributes["ipv6_cidr_block"]
+						return nil
+					},
+				),
+			},
+			// Step 1: explicitly set mask = 0 (enable_ipv6 stays true). Desired behaviour:
+			// the 0 is applied (ipv6_cidr_block_mask=0) and the backend re-assigns subnet 0,
+			// so ipv6_cidr_block changes. If the explicit 0 is swallowed, both checks fail.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_cidr_block_mask": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_cidr_block_mask": "0",
+					}),
+					func(s *terraform.State) error {
+						got := s.RootModule().Resources[resourceId].Primary.Attributes["ipv6_cidr_block"]
+						if got == ipv6Before {
+							return fmt.Errorf("ipv6_cidr_block did not change after setting mask=0 (still %q): the explicit 0 was not pushed to the backend", got)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudVPCVSwitch_enableIpv6FalseAfterComputedTrue(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vswitch.default"
+	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVswitch")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVswitchBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":               "${alicloud_vpc.default.id}",
+					"cidr_block":           "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
+					"ipv6_cidr_block_mask": "4",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "true"),
+					resource.TestCheckResourceAttr(resourceId, "ipv6_cidr_block_mask", "4"),
+					resource.TestCheckResourceAttrSet(resourceId, "ipv6_cidr_block"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6":          false,
+					"ipv6_cidr_block_mask": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "false"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceId]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceId)
+						}
+						if got := rs.Primary.Attributes["ipv6_cidr_block"]; got != "" {
+							return fmt.Errorf("expected ipv6_cidr_block to be empty after enable_ipv6=false, got %q", got)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudVPCVSwitch_ipv6EnableZeroMaskFromDisabled(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vswitch.default"
+	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVswitch")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVswitchBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":    "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":     "${alicloud_vpc.default.id}",
+					"cidr_block": "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "false"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6":          true,
+					"ipv6_cidr_block_mask": 0,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "true"),
+					resource.TestCheckResourceAttr(resourceId, "ipv6_cidr_block_mask", "0"),
+					resource.TestCheckResourceAttrSet(resourceId, "ipv6_cidr_block"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudVPCVSwitch_ipv6EnableNoMask: enabling IPv6 on an existing vswitch
+// (enable_ipv6 false -> true) WITHOUT ipv6_cidr_block_mask must fail fast with a clear
+// provider error — instead of silently sending Ipv6CidrBlock=0 (forcing subnet 0) or
+// letting the backend return the opaque MissingParam.Ipv6CidrBlock. The ModifyVSwitchAttribute
+// API requires Ipv6CidrBlock whenever EnableIPv6=true.
+func TestAccAliCloudVPCVSwitch_ipv6EnableNoMask(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vswitch.default"
+	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVswitch")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVswitchBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Step 0: create the vswitch without IPv6.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":    "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":     "${alicloud_vpc.default.id}",
+					"cidr_block": "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "false"),
+				),
+			},
+			// Step 1: enable IPv6 with NO ipv6_cidr_block_mask -> must error (not silently use 0).
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6": true,
+				}),
+				ExpectError: regexp.MustCompile("ipv6_cidr_block_mask.*is required when enabling"),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudVPCVSwitch_ipv6EnableWithMask: enabling IPv6 on an existing vswitch WITH
+// ipv6_cidr_block_mask set works normally — Ipv6CidrBlock is sent with the user's value.
+func TestAccAliCloudVPCVSwitch_ipv6EnableWithMask(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vswitch.default"
+	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVswitch")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVswitchBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Step 0: create the vswitch without IPv6.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":    "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":     "${alicloud_vpc.default.id}",
+					"cidr_block": "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "false"),
+				),
+			},
+			// Step 1: enable IPv6 WITH a mask -> succeeds.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6":          true,
+					"ipv6_cidr_block_mask": 8,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "true"),
+					resource.TestCheckResourceAttr(resourceId, "ipv6_cidr_block_mask", "8"),
+					resource.TestCheckResourceAttrSet(resourceId, "ipv6_cidr_block"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudVPCVSwitch_ipv6MaskWhileDisabled: setting/changing ipv6_cidr_block_mask while
+// IPv6 is disabled (enable_ipv6 is not true and not changing) must NOT enable IPv6. The mask
+// only takes effect when enable_ipv6 is true; it must never silently turn IPv6 on by itself.
+func TestAccAliCloudVPCVSwitch_ipv6MaskWhileDisabled(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vswitch.default"
+	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVswitch")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVswitchBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Step 0: create without IPv6.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":    "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":     "${alicloud_vpc.default.id}",
+					"cidr_block": "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "false"),
+				),
+			},
+			// Step 1: set ipv6_cidr_block_mask but DON'T enable IPv6 -> IPv6 must stay disabled
+			// (enable_ipv6 stays false); the mask is recorded but has no effect.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_cidr_block_mask": 8,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "false"),
+					resource.TestCheckResourceAttr(resourceId, "ipv6_cidr_block_mask", "8"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudVPCVSwitch_ipv6ReenableSameMaskAfterDisable(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vswitch.default"
+	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVswitch")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVswitchBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":               "${alicloud_vpc.default.id}",
+					"cidr_block":           "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
+					"enable_ipv6":          true,
+					"ipv6_cidr_block_mask": 4,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "true"),
+					resource.TestCheckResourceAttr(resourceId, "ipv6_cidr_block_mask", "4"),
+					resource.TestCheckResourceAttrSet(resourceId, "ipv6_cidr_block"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6":          false,
+					"ipv6_cidr_block_mask": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "false"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6":          true,
+					"ipv6_cidr_block_mask": 4,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "enable_ipv6", "true"),
+					resource.TestCheckResourceAttr(resourceId, "ipv6_cidr_block_mask", "4"),
+					resource.TestCheckResourceAttrSet(resourceId, "ipv6_cidr_block"),
+				),
 			},
 		},
 	})

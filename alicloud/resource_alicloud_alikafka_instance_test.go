@@ -121,9 +121,9 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rc.checkResourceDestroy(),
+		CheckDestroy:      rc.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -319,9 +319,9 @@ func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -402,9 +402,9 @@ func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -474,9 +474,9 @@ func TestAccAliCloudAlikafkaInstance_VpcId(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -528,6 +528,7 @@ func TestAccAliCloudAlikafkaInstance_VpcId(t *testing.T) {
 						"ssl_endpoint":                CHECKSET,
 						"ssl_domain_endpoint":         CHECKSET,
 						"sasl_domain_endpoint":        CHECKSET,
+						"vpc_sasl_domain_endpoint":    CHECKSET,
 					}),
 				),
 			},
@@ -590,9 +591,9 @@ func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -619,19 +620,21 @@ func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"deploy_type":         "4",
-						"instance_type":       "alikafka_serverless",
-						"paid_type":           "PostPaid",
-						"spec_type":           "normal",
-						"service_version":     "3.3.1",
-						"config":              CHECKSET,
-						"vswitch_ids.#":       "2",
-						"serverless_config.#": "1",
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "acceptance test",
-						"ssl_endpoint":        CHECKSET,
-						"ssl_domain_endpoint": CHECKSET,
+						"deploy_type":              "4",
+						"instance_type":            "alikafka_serverless",
+						"paid_type":                "PostPaid",
+						"spec_type":                "normal",
+						"service_version":          "3.3.1",
+						"config":                   CHECKSET,
+						"vswitch_ids.#":            "2",
+						"serverless_config.#":      "1",
+						"tags.%":                   "2",
+						"tags.Created":             "TF",
+						"tags.For":                 "acceptance test",
+						"ssl_endpoint":             CHECKSET,
+						"ssl_domain_endpoint":      CHECKSET,
+						"sasl_domain_endpoint":     CHECKSET,
+						"vpc_sasl_domain_endpoint": CHECKSET,
 					}),
 				),
 			},
@@ -647,6 +650,18 @@ func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"serverless_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deploy_type": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deploy_type":         "5",
+						"ssl_endpoint":        REMOVEKEY,
+						"ssl_domain_endpoint": REMOVEKEY,
 					}),
 				),
 			},
@@ -678,9 +693,9 @@ func SkipTestAccAliCloudAlikafkaInstance_Confluent(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -36,8 +36,7 @@ func TestAccAliCloudRealtimeComputeJob_basic0(t *testing.T) {
 					"resource_id":         "${alicloud_realtime_compute_vvp_instance.create_VvpInstance.resource_id}",
 					"restore_strategy": []map[string]interface{}{
 						{
-							"savepoint_id": "5eea97ad-f619-40f8-a96b-e8073e335ffe",
-							"kind":         "FROM_SAVEPOINT",
+							"kind": "NONE",
 						},
 					},
 					"namespace":     "${alicloud_realtime_compute_vvp_instance.create_VvpInstance.vvp_instance_name}-default",
@@ -196,7 +195,7 @@ resource "alicloud_oss_bucket" "create_bucket" {
 }
 
 resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
-  vvp_instance_name = "code-test-tf-deployment"
+  vvp_instance_name = "${var.name}"
   storage {
     oss {
       bucket = alicloud_oss_bucket.create_bucket.id
@@ -214,7 +213,7 @@ resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
 
 resource "alicloud_realtime_compute_deployment" "create_Deployment5" {
   deployment_name = "tf-test-deployment-sql-24"
-  engine_version  = "vvr-8.0.10-flink-1.17"
+  engine_version  = "vvr-8.0.11-flink-1.17"
   resource_id     = alicloud_realtime_compute_vvp_instance.create_VvpInstance.resource_id
   execution_mode  = "STREAMING"
   

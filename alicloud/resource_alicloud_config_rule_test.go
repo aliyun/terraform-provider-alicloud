@@ -229,6 +229,18 @@ func TestAccAliCloudConfigRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"config_rule_trigger_types":   "ScheduledNotification",
+					"maximum_execution_frequency": "One_Hour",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config_rule_trigger_types":   "ScheduledNotification",
+						"maximum_execution_frequency": "One_Hour",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"rule_name":                  name,
 					"risk_level":                 "1",
 					"source_identifier":          "ecs-instances-in-vpc",

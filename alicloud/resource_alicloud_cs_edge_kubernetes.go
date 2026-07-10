@@ -1,13 +1,17 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
@@ -25,7 +29,7 @@ const (
 func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSEdgeKubernetesCreate,
-		Read:   resourceAlicloudCSKubernetesRead, // TODO Refactor read from k8s resources
+		Read:   resourceAlicloudCSEdgeKubernetesRead,
 		Update: resourceAlicloudCSEdgeKubernetesUpdate,
 		Delete: resourceAlicloudCSKubernetesDelete, // TODO Refactor delete from k8s resources
 		Importer: &schema.ResourceImporter{
@@ -37,6 +41,15 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 			Create: schema.DefaultTimeout(EdgeKubernetesDefaultTimeoutInMinutes * time.Minute),
 			Update: schema.DefaultTimeout(EdgeKubernetesDefaultTimeoutInMinutes * time.Minute),
 			Delete: schema.DefaultTimeout(EdgeKubernetesDefaultTimeoutInMinutes * time.Minute),
+		},
+
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Version: 0,
+				Type:    resourceAlicloudCSEdgeKubernetesV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceAlicloudCSEdgeKubernetesStateUpgradeV0,
+			},
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -483,7 +496,147 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudCSKubernetesRead(d, meta)
+	return resourceAlicloudCSEdgeKubernetesRead(d, meta)
+}
+
+func resourceAlicloudCSEdgeKubernetesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+
+	object, err := csService.DescribeCsKubernetes(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cs_kubernetes DescribeCsKubernetes Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	d.Set("name", object.Name)
+	d.Set("vpc_id", object.VpcId)
+	d.Set("security_group_id", object.SecurityGroupId)
+	d.Set("version", object.CurrentVersion)
+	d.Set("worker_ram_role_name", object.WorkerRamRoleName)
+	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("deletion_protection", object.DeletionProtection)
+
+	if object.ClusterType == cs.ManagedKubernetes {
+		d.Set("cluster_spec", object.ClusterSpec)
+	}
+
+	// compat for default value
+	if spec := d.Get("load_balancer_spec").(string); spec != "" {
+		d.Set("load_balancer_spec", spec)
+	}
+
+	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
+		return WrapError(err)
+	}
+
+	//request.Parameters
+	if object.ClusterType != "Kubernetes" {
+		if v, ok := object.Parameters["WorkerVSwitchIds"]; ok {
+			d.Set("worker_vswitch_ids", strings.Split(Interface2String(v), ","))
+		}
+	}
+	if object.Profile == EdgeProfile {
+		if v, ok := object.Parameters["WorkerInstanceChargeType"]; ok {
+			d.Set("worker_instance_charge_type", Interface2String(v))
+		}
+		if v, ok := object.Parameters["WorkerInstanceTypes"]; ok {
+			d.Set("worker_instance_types", strings.Split(Interface2String(v), ","))
+		}
+		if v, ok := object.Parameters["WorkerSystemDiskCategory"]; ok {
+			d.Set("worker_disk_category", Interface2String(v))
+		}
+		if v, ok := object.Parameters["WorkerSystemDiskSize"]; ok {
+			d.Set("worker_disk_size", formatInt(v))
+		}
+		if v, ok := object.Parameters["CloudMonitorFlags"]; ok {
+			d.Set("install_cloud_monitor", Interface2Bool(v))
+		}
+		// only works with default-nodepool
+		workerNodes := fetchWorkerNodes(d, meta)
+		d.Set("worker_nodes", workerNodes)
+		d.Set("worker_number", len(workerNodes))
+	}
+	if object.ClusterType == "Kubernetes" {
+		if v, ok := object.Parameters["CloudMonitorFlags"]; ok {
+			d.Set("install_cloud_monitor", Interface2Bool(v))
+		}
+		if v, ok := object.Parameters["MasterKeyPair"]; ok {
+			d.Set("key_name", Interface2String(v))
+		}
+	}
+	if v, ok := object.Parameters["ProxyMode"]; ok {
+		d.Set("proxy_mode", Interface2String(v))
+	}
+	if v, ok := object.Parameters["ServiceCIDR"]; ok {
+		d.Set("service_cidr", Interface2String(v))
+	}
+	if v, ok := object.Parameters["ContainerCIDR"]; ok {
+		d.Set("pod_cidr", Interface2String(v))
+	}
+	//if v, ok := object.Parameters["SNatEntry"]; ok {
+	//	d.Set("new_nat_gateway", Interface2String(v))
+	//}
+
+	// Cluster capabilities
+	capabilities := fetchClusterCapabilities(object.MetaData)
+	if v, ok := capabilities["PublicSLB"]; ok {
+		d.Set("slb_internet_enabled", Interface2Bool(v))
+	}
+	if v, ok := capabilities["NodeCIDRMask"]; ok {
+		d.Set("node_cidr_mask", formatInt(v))
+	}
+
+	// Get slb information and set connect
+	connection := make(map[string]string)
+	masterURL := object.MasterURL
+	endPoint := make(map[string]string)
+	_ = json.Unmarshal([]byte(masterURL), &endPoint)
+	connection["api_server_internet"] = endPoint["api_server_endpoint"]
+	connection["api_server_intranet"] = endPoint["intranet_api_server_endpoint"]
+	if endPoint["api_server_endpoint"] != "" {
+		connection["master_public_ip"] = strings.Split(strings.Split(endPoint["api_server_endpoint"], ":")[1], "/")[2]
+	}
+	if object.Profile != EdgeProfile {
+		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), object.RegionId)
+	}
+
+	d.Set("connections", []interface{}{connection})
+	d.Set("slb_internet", connection["master_public_ip"])
+	if endPoint["intranet_api_server_endpoint"] != "" {
+		d.Set("slb_intranet", strings.Split(strings.Split(endPoint["intranet_api_server_endpoint"], ":")[1], "/")[2])
+	}
+
+	// set nat gateway
+	natRequest := vpc.CreateDescribeNatGatewaysRequest()
+	natRequest.VpcId = object.VpcId
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DescribeNatGateways(natRequest)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), natRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(natRequest.GetActionName(), raw, natRequest.RpcRequest, natRequest)
+	nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
+	if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
+		d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
+	}
+
+	// get cluster conn certs
+	// If the cluster is failed, there is no need to get cluster certs
+	if object.State == "failed" || object.State == "delete_failed" || object.State == "deleting" {
+		return nil
+	}
+
+	if err = setCerts(d, meta, d.Get("skip_set_certificate_authority").(bool)); err != nil {
+		return WrapError(err)
+	}
+
+	return nil
 }
 
 func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -529,11 +682,6 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 				} else {
 					args.UserData = base64.StdEncoding.EncodeToString([]byte(userData.(string)))
 				}
-			}
-
-			if imageID, ok := d.GetOk("image_id"); ok {
-				args.ImageId = imageID.(string)
-
 			}
 
 			if v, ok := d.GetOk("worker_disk_category"); ok {
@@ -670,7 +818,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 	d.Partial(false)
-	return resourceAlicloudCSKubernetesRead(d, meta)
+	return resourceAlicloudCSEdgeKubernetesRead(d, meta)
 }
 
 func buildEdgeKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.DelicatedKubernetesClusterCreationRequest, error) {
@@ -680,9 +828,6 @@ func buildEdgeKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Deli
 
 	var vswitchID string
 	list := make([]string, 0)
-	if v, ok := d.GetOk("master_vswitch_ids"); ok {
-		list = append(list, expandStringList(v.([]interface{}))...)
-	}
 	if v, ok := d.GetOk("worker_vswitch_ids"); ok {
 		list = append(list, expandStringList(v.([]interface{}))...)
 	}
@@ -726,13 +871,6 @@ func buildEdgeKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Deli
 		}
 	}
 
-	var apiAudiences string
-	if d.Get("api_audiences") != nil {
-		if list := expandStringList(d.Get("api_audiences").([]interface{})); len(list) > 0 {
-			apiAudiences = strings.Join(list, ",")
-		}
-	}
-
 	creationArgs := &cs.DelicatedKubernetesClusterCreationRequest{
 		ClusterArgs: cs.ClusterArgs{
 			DisableRollback:    true,
@@ -750,47 +888,13 @@ func buildEdgeKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Deli
 			EndpointPublicAccess:      d.Get("slb_internet_enabled").(bool),
 			SnatEntry:                 d.Get("new_nat_gateway").(bool),
 			Addons:                    addons,
-			ApiAudiences:              apiAudiences,
 		},
-	}
-
-	if enableRRSA, ok := d.GetOk("enable_rrsa"); ok {
-		creationArgs.EnableRRSA = enableRRSA.(bool)
 	}
 
 	if lbSpec, ok := d.GetOk("load_balancer_spec"); ok {
 		creationArgs.LoadBalancerSpec = lbSpec.(string)
 	}
 
-	if osType, ok := d.GetOk("os_type"); ok {
-		creationArgs.OsType = osType.(string)
-	}
-
-	if platform, ok := d.GetOk("platform"); ok {
-		creationArgs.Platform = platform.(string)
-	}
-
-	if timezone, ok := d.GetOk("timezone"); ok {
-		creationArgs.Timezone = timezone.(string)
-	}
-
-	if clusterDomain, ok := d.GetOk("cluster_domain"); ok {
-		creationArgs.ClusterDomain = clusterDomain.(string)
-	}
-
-	if customSan, ok := d.GetOk("custom_san"); ok {
-		creationArgs.CustomSAN = customSan.(string)
-	}
-
-	if imageId, ok := d.GetOk("image_id"); ok {
-		creationArgs.ClusterArgs.ImageId = imageId.(string)
-	}
-	if nodeNameMode, ok := d.GetOk("node_name_mode"); ok {
-		creationArgs.ClusterArgs.NodeNameMode = nodeNameMode.(string)
-	}
-	if saIssuer, ok := d.GetOk("service_account_issuer"); ok {
-		creationArgs.ClusterArgs.ServiceAccountIssuer = saIssuer.(string)
-	}
 	if resourceGroupId, ok := d.GetOk("resource_group_id"); ok {
 		creationArgs.ClusterArgs.ResourceGroupId = resourceGroupId.(string)
 	}
@@ -804,73 +908,18 @@ func buildEdgeKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Deli
 		}
 	}
 
-	if _, ok := d.GetOk("pod_vswitch_ids"); ok {
-		creationArgs.PodVswitchIds = expandStringList(d.Get("pod_vswitch_ids").([]interface{}))
-	} else {
-		creationArgs.ContainerCidr = d.Get("pod_cidr").(string)
-	}
+	creationArgs.ContainerCidr = d.Get("pod_cidr").(string)
 
-	if password := d.Get("password").(string); password == "" {
-		if v, ok := d.GetOk("kms_encrypted_password"); ok && v != "" {
-			kmsService := KmsService{client}
-			decryptResp, err := kmsService.Decrypt(v.(string), d.Get("kms_encryption_context").(map[string]interface{}))
-			if err != nil {
-				return nil, WrapError(err)
-			}
-			password = decryptResp
-		}
-		creationArgs.LoginPassword = password
-	} else {
-		creationArgs.LoginPassword = password
-	}
+	creationArgs.LoginPassword = d.Get("password").(string)
 
 	if tags, err := ConvertCsTags(d); err == nil {
 		creationArgs.Tags = tags
 	}
-	// CA default is empty
-	if userCa, ok := d.GetOk("user_ca"); ok {
-		userCaContent, err := loadFileContent(userCa.(string))
-		if err != nil {
-			return nil, fmt.Errorf("reading user_ca file failed %s", err)
-		}
-		creationArgs.UserCa = string(userCaContent)
-	}
-
 	// set proxy mode and default is ipvs
 	if proxyMode := d.Get("proxy_mode").(string); proxyMode != "" {
 		creationArgs.ProxyMode = cs.ProxyMode(proxyMode)
 	} else {
 		creationArgs.ProxyMode = cs.ProxyMode(cs.IPVS)
-	}
-
-	// dedicated kubernetes must provide master_vswitch_ids
-	if _, ok := d.GetOk("master_vswitch_ids"); ok {
-		creationArgs.MasterArgs = cs.MasterArgs{
-			MasterCount:              len(d.Get("master_vswitch_ids").([]interface{})),
-			MasterVSwitchIds:         expandStringList(d.Get("master_vswitch_ids").([]interface{})),
-			MasterInstanceTypes:      expandStringList(d.Get("master_instance_types").([]interface{})),
-			MasterSystemDiskCategory: aliyungoecs.DiskCategory(d.Get("master_disk_category").(string)),
-			MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
-			// TODO support other params
-		}
-	}
-
-	if v, ok := d.GetOk("master_disk_snapshot_policy_id"); ok && v != "" {
-		creationArgs.MasterArgs.MasterSnapshotPolicyId = v.(string)
-	}
-
-	if v, ok := d.GetOk("master_disk_performance_level"); ok && v != "" {
-		creationArgs.MasterArgs.MasterSystemDiskPerformanceLevel = v.(string)
-	}
-
-	if v, ok := d.GetOk("master_instance_charge_type"); ok {
-		creationArgs.MasterInstanceChargeType = v.(string)
-		if creationArgs.MasterInstanceChargeType == string(PrePaid) {
-			creationArgs.MasterAutoRenew = d.Get("master_auto_renew").(bool)
-			creationArgs.MasterAutoRenewPeriod = d.Get("master_auto_renew_period").(int)
-			creationArgs.MasterPeriod = d.Get("master_period").(int)
-			creationArgs.MasterPeriodUnit = d.Get("master_period_unit").(string)
-		}
 	}
 
 	var workerDiskSize int64
@@ -922,12 +971,6 @@ func buildEdgeKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Deli
 
 	if v, ok := d.GetOk("worker_instance_charge_type"); ok {
 		creationArgs.WorkerInstanceChargeType = v.(string)
-		if creationArgs.WorkerInstanceChargeType == string(PrePaid) {
-			creationArgs.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
-			creationArgs.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
-			creationArgs.WorkerPeriod = d.Get("worker_period").(int)
-			creationArgs.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
-		}
 	}
 
 	if v, ok := d.GetOk("cluster_spec"); ok {
@@ -938,10 +981,6 @@ func buildEdgeKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Deli
 		creationArgs.RdsInstances = expandStringList(rdsInstances.([]interface{}))
 	}
 
-	if nodePortRange, ok := d.GetOk("node_port_range"); ok {
-		creationArgs.NodePortRange = nodePortRange.(string)
-	}
-
 	if runtime, ok := d.GetOk("runtime"); ok {
 		if raw := runtime.([]interface{}); len(raw) > 0 {
 			if v := raw[0].(map[string]interface{}); len(v) > 0 {
@@ -950,29 +989,373 @@ func buildEdgeKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Deli
 		}
 	}
 
-	if taints, ok := d.GetOk("taints"); ok {
-		if v := taints.([]interface{}); len(v) > 0 {
-			creationArgs.Taints = expandKubernetesTaintsConfig(v)
+	return creationArgs, nil
+}
+
+func resourceAlicloudCSEdgeKubernetesV0() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"name_prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"cluster_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"worker_vswitch_ids": {
+				Type:     schema.TypeList,
+				Required: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"worker_instance_types": {
+				Type:     schema.TypeList,
+				Required: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"worker_number": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"worker_disk_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"worker_disk_category": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"worker_disk_performance_level": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"worker_disk_snapshot_policy_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"proxy_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"worker_instance_charge_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"worker_data_disks": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"size": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"category": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"snapshot_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"device": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"encrypted": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"performance_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"worker_ram_role_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"pod_cidr": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"service_cidr": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			// lintignore: S022
+			"runtime": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"node_cidr_mask": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"new_nat_gateway": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"key_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"install_cloud_monitor": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"addons": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"config": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"disabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"slb_internet_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"load_balancer_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"kube_config": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"client_cert": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"client_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"cluster_ca_cert": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"rds_instances": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			// lintignore: S022
+			"certificate_authority": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"skip_set_certificate_authority": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			// lintignore: S022
+			"connections": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"api_server_internet": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"api_server_intranet": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"master_public_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"service_domain": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"slb_internet": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"slb_intranet": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"is_enterprise_security_group": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"nat_gateway_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"worker_nodes": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"private_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"availability_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"log_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"project": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			// lintignore: S006
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"retain_resources": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+		},
+	}
+}
+
+func resourceAlicloudCSEdgeKubernetesStateUpgradeV0(_ context.Context, rawState map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+	for _, field := range []string{"runtime", "certificate_authority", "connections"} {
+		if v, ok := rawState[field]; ok && v != nil {
+			switch val := v.(type) {
+			case map[string]interface{}:
+				if len(val) > 0 {
+					rawState[field] = []interface{}{val}
+				} else {
+					rawState[field] = []interface{}{}
+				}
+			}
 		}
 	}
-
-	// Cluster maintenance window. Effective only in the professional managed cluster
-	if v, ok := d.GetOk("maintenance_window"); ok {
-		creationArgs.MaintenanceWindow = expandMaintenanceWindowConfig(v.([]interface{}))
-	}
-
-	// Configure control plane log. Effective only in the professional managed cluster
-	if v, ok := d.GetOk("control_plane_log_components"); ok {
-		creationArgs.ControlplaneComponents = expandStringList(v.([]interface{}))
-		// ttl default is 30 days
-		creationArgs.ControlplaneLogTTL = "30"
-	}
-	if v, ok := d.GetOk("control_plane_log_ttl"); ok {
-		creationArgs.ControlplaneLogTTL = v.(string)
-	}
-	if v, ok := d.GetOk("control_plane_log_project"); ok {
-		creationArgs.ControlplaneLogProject = v.(string)
-	}
-
-	return creationArgs, nil
+	return rawState, nil
 }

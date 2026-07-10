@@ -172,6 +172,13 @@ The following arguments are supported:
 * `http_endpoint` - (Optional, Available since v1.263.0) Specifies whether to enable the access channel for instance metadata. Valid values: enabled, disabled.
 * `spot_strategy` - (Optional, Available since v1.151.0) The spot strategy for a Pay-As-You-Go instance. Valid values: `NoSpot`, `SpotAsPriceGo`, `SpotWithPriceLimit`.
 * `spot_price_limit` - (Optional, Available since v1.151.0) Sets the maximum price hourly for instance types. See [`spot_price_limit`](#spot_price_limit) below for details.
+* `resource_pool_options_private_pool_tags` - (Optional, Available since v1.282.0) Sets private pool tags. See [`resource_pool_options_private_pool_tags`](#resource_pool_options_private_pool_tags) below for details.
+* `resource_pool_options_private_pool_ids` - (Optional, Available since v1.282.0) Specifies whether to enable the access channel for instance metadata. Valid values: enabled, disabled.
+* `resource_pool_options_strategy` - (Optional, Available since v1.282.0) The ID of the private pool. The value can be the ID of an elastic assurance service or a capacity reservation service. You can specify only Target-mode private pool IDs. You cannot specify this parameter and the PrivatePoolTags parameter at the same time. N is an integer from 1 to 20.
+  - `PrivatePoolFirst`: Prioritizes private pools. The system attempts to launch instances in the following order: 1. The specific private pool matching ResourcePoolOptions.PrivatePoolIds or PrivatePoolTags. 2. Any available open private pool. 3. The public pool.
+  - `PrivatePoolOnly`: Launches instances only from a specific private pool. You must specify ResourcePoolOptions.PrivatePoolIds. If the specified private pool has insufficient capacity, the launch fails.
+  - `PublicPoolFirst`: Public pool first. The system prioritizes the public pool to create instances. If the public pool has insufficient resources, the system uses private pool resources as a supplement. The system first tries to automatically match an open private pool. If no suitable private pool is found, the system uses the Target-type private pool specified by ResourcePoolOptions.PrivatePoolIds or a Target-type private pool that meets the conditions of PrivatePoolTags.
+  - `None`: Does not use a resource pool policy.
 
 -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
@@ -263,6 +270,12 @@ The spotPriceLimit mapping supports the following:
 * `instance_type` - (Optional, Available since v1.151.0) Resource type of an ECS instance.
 * `price_limit` - (Optional, Available since v1.151.0) Price limit hourly of instance type, 2 decimals is allowed at most.
 
+### `resource_pool_options_private_pool_tags`
+
+The resourcePoolOptionsPrivatePoolTags mapping supports the following:
+
+* `key` - (Optional, Available since v1.282.0) The key of the private pool tag. Filters available Target-mode private pools by tag.
+* `value` - (Optional, Available since v1.282.0) The value of the private pool tag.
 
 ## Attributes Reference
 

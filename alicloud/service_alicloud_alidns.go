@@ -62,8 +62,20 @@ func (s *AlidnsService) DescribeAlidnsRecord(id string) (object alidns.DescribeD
 
 	request.RecordId = id
 
-	raw, err := s.client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
-		return alidnsClient.DescribeDomainRecordInfo(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	var raw interface{}
+	err = resource.Retry(s.client.GetRetryTimeout(5*time.Minute), func() *resource.RetryError {
+		raw, err = s.client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
+			return alidnsClient.DescribeDomainRecordInfo(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DomainRecordNotBelongToUser", "InvalidRR.NoExist"}) {

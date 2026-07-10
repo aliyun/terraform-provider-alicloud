@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -10,16 +9,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudThreatDetectionCheckStructureDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+func TestAccAliCloudThreatDetectionCheckStructuresDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
-	ThreatDetectionCheckStructureCheckInfo.dataSourceTestCheck(t, rand)
+	pagingConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudThreatDetectionCheckStructureSourceConfig(rand, map[string]string{
+			"lang":         `"zh"`,
+			"current_page": `1`,
+			"page_size":    `10`,
+		}),
+		fakeConfig: testAccCheckAlicloudThreatDetectionCheckStructureSourceConfig(rand, map[string]string{
+			"lang":         `"zh"`,
+			"current_page": `1`,
+			"page_size":    `10`,
+			"ids":          `["fake-id-not-exist"]`,
+		}),
+	}
+
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	}
+	ThreatDetectionCheckStructureCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, pagingConf)
 }
 
 var existThreatDetectionCheckStructureMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"structures.#":               "1",
+		"structures.#":               CHECKSET,
 		"structures.0.standards.#":   CHECKSET,
 		"structures.0.standard_type": CHECKSET,
 	}
@@ -44,7 +59,7 @@ func testAccCheckAlicloudThreatDetectionCheckStructureSourceConfig(rand int, att
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccThreatDetectionCheckStructure%d"
+  default = "tf-testAccThreatDetectionCheckStructure%d"
 }
 
 data "alicloud_threat_detection_check_structures" "default" {

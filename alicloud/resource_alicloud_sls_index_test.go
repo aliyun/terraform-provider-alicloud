@@ -26,7 +26,7 @@ func TestAccAliCloudSlsIndex_basic10982(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsIndexBasicDependence10982)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-nanjing"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -46,7 +46,7 @@ func TestAccAliCloudSlsIndex_basic10982(t *testing.T) {
 						},
 					},
 					"logstore_name": "${alicloud_log_store.default7MW26R.logstore_name}",
-					"project_name":  "${var.project_name}",
+					"project_name":  "${var.name}",
 					"keys":          "{\\\"test\\\":{\\\"caseSensitive\\\":false,\\\"token\\\":[\\\"\\\\n\\\",\\\"\\\\t\\\",\\\",\\\",\\\" \\\",\\\";\\\",\\\"\\\\\\\"\\\",\\\"'\\\",\\\"(\\\",\\\")\\\",\\\"{\\\",\\\"}\\\",\\\"[\\\",\\\"]\\\",\\\"<\\\",\\\">\\\",\\\"?\\\",\\\"/\\\",\\\"#\\\",\\\":\\\"],\\\"type\\\":\\\"text\\\",\\\"doc_value\\\":false,\\\"alias\\\":\\\"\\\",\\\"chn\\\":false}}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -104,7 +104,7 @@ variable "project_name" {
 
 resource "alicloud_log_project" "defaultdCM1bA" {
   description = "terrafrom test"
-  name        = var.project_name
+  name        = var.name
 }
 
 resource "alicloud_log_store" "default7MW26R" {

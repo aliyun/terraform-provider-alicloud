@@ -8,7 +8,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
@@ -2523,6 +2522,47 @@ func (s *EsaServiceV2) DescribeEsaClientCaCertificate(id string) (object map[str
 	return response, nil
 }
 
+func (s *EsaServiceV2) DescribeClientCaCertificateGetClientCaCertificateHostnames(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Id"] = parts[1]
+	request["SiteId"] = parts[0]
+
+	action := "GetClientCaCertificateHostnames"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"SiteNotFound", "Certificate.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("ClientCaCertificate", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
 func (s *EsaServiceV2) EsaClientCaCertificateStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return s.EsaClientCaCertificateStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaClientCaCertificate)
 }
@@ -3329,7 +3369,7 @@ func (s *EsaServiceV2) DescribeEsaRoutineRoute(id string) (object map[string]int
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests", "LockFailed"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -3474,6 +3514,7 @@ func (s *EsaServiceV2) EsaVersionStateRefreshFuncWithApi(id string, field string
 }
 
 // DescribeEsaVersion >>> Encapsulated.
+
 // DescribeEsaCustomScenePolicy <<< Encapsulated get interface for Esa CustomScenePolicy.
 
 func (s *EsaServiceV2) DescribeEsaCustomScenePolicy(id string) (object map[string]interface{}, err error) {
@@ -3518,22 +3559,20 @@ func (s *EsaServiceV2) DescribeEsaCustomScenePolicy(id string) (object map[strin
 }
 
 func (s *EsaServiceV2) EsaCustomScenePolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.EsaCustomScenePolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeEsaCustomScenePolicy)
+}
+
+func (s *EsaServiceV2) EsaCustomScenePolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEsaCustomScenePolicy(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
-		if field == "$.Objects" {
-			e := jsonata.MustCompile("$reduce($.Objects, function($i, $j){$i & ',' & $j})")
-			v, _ = e.Eval(object)
-			currentStatus = fmt.Sprint(v)
-		}
 
 		if strings.HasPrefix(field, "#") {
 			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
@@ -4272,6 +4311,9 @@ func (s *EsaServiceV2) DescribeEsaTransportLayerApplication(id string) (object m
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"TransportLayerApplicationNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("TransportLayerApplication", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

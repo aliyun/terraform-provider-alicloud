@@ -36,38 +36,37 @@ func TestAccAliCloudMongoDBAuditPolicy_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_id": "${alicloud_mongodb_instance.default.id}",
-					"audit_status":   "enable",
+					"db_instance_id":     "${alicloud_mongodb_instance.default.id}",
+					"audit_status":       "enable",
+					"service_type":       "V2_Standard",
+					"storage_period":     "30",
+					"hot_storage_period": "7",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_id": CHECKSET,
-						"audit_status":   "enable",
+						"db_instance_id":     CHECKSET,
+						"audit_status":       "enable",
+						"service_type":       "V2_Standard",
+						"storage_period":     "30",
+						"hot_storage_period": "7",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"storage_period": "20",
+					"service_type":       "V2_Standard",
+					"storage_period":     "180",
+					"hot_storage_period": "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"storage_period": "20",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"audit_status": "disabled",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"audit_status": "disabled",
+						"storage_period":     "180",
+						"hot_storage_period": "5",
 					}),
 				),
 			},
@@ -75,7 +74,7 @@ func TestAccAliCloudMongoDBAuditPolicy_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"service_type"},
 			},
 		},
 	})
@@ -99,20 +98,24 @@ func TestAccAliCloudMongoDBAuditPolicy_basic0_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_id": "${alicloud_mongodb_instance.default.id}",
-					"audit_status":   "enable",
-					"storage_period": "20",
+					"db_instance_id":     "${alicloud_mongodb_instance.default.id}",
+					"audit_status":       "enable",
+					"storage_period":     "30",
+					"service_type":       "V2_Standard",
+					"hot_storage_period": "7",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_id": CHECKSET,
-						"audit_status":   "enable",
-						"storage_period": "20",
+						"db_instance_id":     CHECKSET,
+						"audit_status":       "enable",
+						"storage_period":     "30",
+						"service_type":       "V2_Standard",
+						"hot_storage_period": "7",
 					}),
 				),
 			},
@@ -129,6 +132,7 @@ func TestAccAliCloudMongoDBAuditPolicy_basic0_twin(t *testing.T) {
 var AliCloudMongoDBAuditPolicyMap0 = map[string]string{
 	"storage_period": CHECKSET,
 	"filter":         CHECKSET,
+	"service_type":   "V2_Standard",
 }
 
 func AliCloudMongoDBAuditPolicyBasicDependence0(name string) string {
@@ -403,7 +407,7 @@ func TestAccAliCloudMongodbAuditPolicy_basic11599(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -415,6 +419,7 @@ func TestAccAliCloudMongodbAuditPolicy_basic11599(t *testing.T) {
 					testAccCheck(map[string]string{
 						"db_instance_id": CHECKSET,
 						"audit_status":   "enable",
+						"service_type":   "Standard",
 					}),
 				),
 			},
@@ -435,6 +440,7 @@ func TestAccAliCloudMongodbAuditPolicy_basic11599(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"audit_status": "enable",
+						"service_type": "Standard",
 					}),
 				),
 			},
@@ -485,7 +491,7 @@ func TestAccAliCloudMongodbAuditPolicy_basic11599_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -517,6 +523,7 @@ func TestAccAliCloudMongodbAuditPolicy_basic11599_twin(t *testing.T) {
 var AliCloudMongodbAuditPolicyMap11599 = map[string]string{
 	"storage_period": CHECKSET,
 	"filter":         CHECKSET,
+	"service_type":   "Standard",
 }
 
 func AliCloudMongodbAuditPolicyBasicDependence11599(name string) string {
@@ -525,15 +532,18 @@ variable "name" {
     default = "%s"
 }
 
-data "alicloud_mongodb_zones" "default" {}
-
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+# mongo.x8.large/local_ssd is not offered in every zone (e.g. cn-beijing-a is closed for it),
+# so create a dedicated VPC/VSwitch in a zone that currently has stock for this spec.
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.17.3.0/24"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = "cn-beijing-h"
 }
 
 resource "alicloud_mongodb_instance" "default" {
@@ -543,9 +553,88 @@ resource "alicloud_mongodb_instance" "default" {
   storage_engine      = "WiredTiger"
   storage_type        = "local_ssd"
   name                = var.name
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
+  vswitch_id          = alicloud_vswitch.default.id
 }
 `, name)
+}
+
+// TestAccAliCloudMongoDBAuditPolicy_disabledImport verifies that importing a resource
+// whose audit_status is `disabled` does not create a perpetual diff on `service_type`.
+// This is the core scenario the DiffSuppressFunc + disabled-preserve Read logic exist
+// for: on import, state starts empty; if Read wrote back the API's actual value (which
+// the server flips to the trial edition while disabled) the plan would forever want to
+// change service_type back to the config's declared value. The step chain is:
+//
+//	create (audit_status = enable, service_type = Standard)
+//	  → toggle audit_status to disabled
+//	    → import
+//	      → follow-up plan must be empty (verified implicitly by ImportStateVerify).
+//
+// lintignore: AT001
+func TestAccAliCloudMongoDBAuditPolicy_disabledImport(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_audit_policy.default"
+	checkoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"storage_period": CHECKSET,
+		"filter":         CHECKSET,
+		"service_type":   "Standard",
+	})
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MongodbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMongodbAuditPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-mongodbauditpolicy-di-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBAuditPolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id": "${alicloud_mongodb_instance.default.id}",
+					"audit_status":   "enable",
+					"service_type":   "Standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id": CHECKSET,
+						"audit_status":   "enable",
+						"service_type":   "Standard",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id": "${alicloud_mongodb_instance.default.id}",
+					"audit_status":   "disabled",
+					"service_type":   "Standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"audit_status": "disabled",
+						"service_type": "Standard",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// When audit is disabled the resource Read intentionally skips writing service_type
+				// (see Read's disabled branch), so a freshly imported state has an empty value while
+				// the pre-import state carries "Standard". Skip the raw state comparison for this
+				// field; the follow-up plan the test framework runs after import is what actually
+				// verifies DiffSuppress prevents a perpetual diff.
+				ImportStateVerifyIgnore: []string{"service_type"},
+			},
+		},
+	})
 }
 
 // Test Mongodb AuditPolicy. <<< Resource test cases, automatically generated.

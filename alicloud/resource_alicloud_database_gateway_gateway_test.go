@@ -115,7 +115,7 @@ func testSweepDatabaseGatewayGateway(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDatabaseGatewayGateway_basic0(t *testing.T) {
+func TestAccAliCloudDatabaseGatewayGateway_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_database_gateway_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudDatabaseGatewayGatewayMap0)

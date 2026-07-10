@@ -141,7 +141,7 @@ func resourceAliCloudVpcIpamIpamPoolCidrDelete(d *schema.ResourceData, meta inte
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "OperationDenied.IpamPoolAllocationExist"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccAlicloudGaBasicAccelerateIpEndpointRelation_basic0(t *testing.T) {
+func TestAccAliCloudGaBasicAccelerateIpEndpointRelation_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_basic_accelerate_ip_endpoint_relation.default"

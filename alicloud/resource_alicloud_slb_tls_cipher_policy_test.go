@@ -113,7 +113,7 @@ func testSweepSLBTlsCipherPolicy(region string) error {
 
 }
 
-func TestAccAlicloudSLBTlsCipherPolicy_basic0(t *testing.T) {
+func TestAccAliCloudSLBTlsCipherPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_tls_cipher_policy.default"
 	ra := resourceAttrInit(resourceId, AlicloudSLBTlsCipherPolicyMap0)

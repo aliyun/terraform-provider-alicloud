@@ -1,7 +1,7 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -45,6 +45,14 @@ func dataSourceAlicloudEssNotifications() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"time_zone": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"message_encoding": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -54,32 +62,37 @@ func dataSourceAlicloudEssNotifications() *schema.Resource {
 
 func dataSourceAlicloudEssNotificationsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := ess.CreateDescribeNotificationConfigurationsRequest()
-	request.RegionId = client.RegionId
-	if scalingGroupId, ok := d.GetOk("scaling_group_id"); ok && scalingGroupId.(string) != "" {
-		request.ScalingGroupId = scalingGroupId.(string)
+	action := "DescribeNotificationConfigurations"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
 	}
-	var allNotifications []ess.NotificationConfigurationModel
+	if scalingGroupId, ok := d.GetOk("scaling_group_id"); ok && scalingGroupId.(string) != "" {
+		request["ScalingGroupId"] = scalingGroupId.(string)
+	}
+	var allNotifications []interface{}
 	for {
-		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DescribeNotificationConfigurations(request)
-		})
+		raw, err := client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_notifications", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_notifications", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response := raw.(*ess.DescribeNotificationConfigurationsResponse)
-		if len(response.NotificationConfigurationModels.NotificationConfigurationModel) < 1 {
+		v, err := jsonpath.Get("$.NotificationConfigurationModels.NotificationConfigurationModel", raw)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, "$.NotificationConfigurationModels.NotificationConfigurationModel", raw)
+		}
+		addDebug(action, raw, request)
+
+		if len(v.([]interface{})) < 1 {
 			break
 		}
-		allNotifications = append(allNotifications, response.NotificationConfigurationModels.NotificationConfigurationModel...)
-		if len(response.NotificationConfigurationModels.NotificationConfigurationModel) < PageSizeLarge {
+		allNotifications = append(allNotifications, v.([]interface{})...)
+		if len(v.([]interface{})) < PageSizeLarge {
 			break
 		} else {
 			continue
 		}
 	}
-	var filteredNotifications = make([]ess.NotificationConfigurationModel, 0)
+
+	var filteredNotifications []interface{}
 	idsMap := make(map[string]string)
 	if ids, okIds := d.GetOk("ids"); okIds {
 		for _, i := range ids.([]interface{}) {
@@ -89,7 +102,9 @@ func dataSourceAlicloudEssNotificationsRead(d *schema.ResourceData, meta interfa
 			idsMap[i.(string)] = i.(string)
 		}
 		for _, n := range allNotifications {
-			if _, ok := idsMap[n.NotificationArn]; !ok {
+			var object map[string]interface{}
+			object = n.(map[string]interface{})
+			if _, ok := idsMap[object["NotificationArn"].(string)]; !ok {
 				continue
 			}
 			filteredNotifications = append(filteredNotifications, n)
@@ -102,16 +117,30 @@ func dataSourceAlicloudEssNotificationsRead(d *schema.ResourceData, meta interfa
 	return notificationsDescriptionAttribute(d, filteredNotifications, meta)
 }
 
-func notificationsDescriptionAttribute(d *schema.ResourceData, notifications []ess.NotificationConfigurationModel, meta interface{}) error {
+func notificationsDescriptionAttribute(d *schema.ResourceData, notifications []interface{}, meta interface{}) error {
 	var ids []string
 	var s = make([]map[string]interface{}, 0)
 	for _, n := range notifications {
+		var object map[string]interface{}
+		object = n.(map[string]interface{})
 		mapping := map[string]interface{}{
-			"notification_arn":   n.NotificationArn,
-			"notification_types": n.NotificationTypes.NotificationType,
-			"scaling_group_id":   n.ScalingGroupId,
+			"notification_arn": object["NotificationArn"].(string),
+			"scaling_group_id": object["ScalingGroupId"].(string),
 		}
-		ids = append(ids, n.NotificationArn)
+		var notificationTypes []string
+		if object["NotificationTypes"] != nil && len(object["NotificationTypes"].(map[string]interface{})["NotificationType"].([]interface{})) > 0 {
+			for _, v := range object["NotificationTypes"].(map[string]interface{})["NotificationType"].([]interface{}) {
+				notificationTypes = append(notificationTypes, v.(string))
+			}
+			mapping["notification_types"] = notificationTypes
+		}
+		if object["TimeZone"] != nil {
+			mapping["time_zone"] = object["TimeZone"].(string)
+		}
+		if object["MessageEncoding"] != nil {
+			mapping["message_encoding"] = object["MessageEncoding"].(string)
+		}
+		ids = append(ids, object["NotificationArn"].(string))
 		s = append(s, mapping)
 	}
 	d.SetId(dataResourceIdHash(ids))

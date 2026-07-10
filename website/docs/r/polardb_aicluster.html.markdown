@@ -17,6 +17,12 @@ Provides a PolarDB AI Cluster resource. A PolarDB AI Cluster is a managed infere
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_aicluster&exampleId=fe7cf825-a403-e4b1-0392-cb8d9f8831fbd973c279&activeTab=example&spm=docs.r.polardb_aicluster.0.fe7cf825a4&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_polardb_aicluster" "default" {
   region_id              = "cn-beijing"
@@ -34,6 +40,10 @@ resource "alicloud_polardb_aicluster" "default" {
   security_group_id      = "sg-xxx"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_aicluster&spm=docs.r.polardb_aicluster.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
@@ -65,6 +75,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `id` - The resource ID (same as the AI cluster ID).
 * `status` - The status of the AI cluster.
 * `model_type` - The model type. Example: `public`.
+* `connection_string` - (Available since 1.284.0) The connection string of the AI cluster endpoint.
+* `api_key` - (Sensitive, Available since 1.284.0) The API key for accessing the AI cluster. This field is marked as sensitive and will be hidden in Terraform plan/apply output. To retrieve its value, use `terraform output` with `-json` flag or read from state file directly.
 
 ## Timeouts
 

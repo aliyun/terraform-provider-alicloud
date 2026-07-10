@@ -707,7 +707,7 @@ The following arguments are supported:
   - Before: The system collects the statistics of the instance before the switchover to ensure service stability. If the instance contains a large amount of data, the upgrade may require a long period of time.
   - After: The system collects the statistics of the instance after the switchover to accelerate the upgrade. After the upgrade, if you access tables for which no statistics are generated, the query plans may be inaccurate, and your database service may be unavailable during peak hours.
 
-    -> **NOTE:** If you set the SwitchOver parameter to false, the value Before specifies that the system collects the statistics of the instance before the instance starts to process read and write requests, and the value After specifies that the system collects the statistics of the instance after the instance starts to process read and write requests.
+    -> **NOTE:** This parameter is required when performing a major version upgrade (`engine_version` changes), because RDS for PostgreSQL only supports local upgrade. The value Before specifies that the system collects the statistics of the instance before the instance starts to process read and write requests, and the value After specifies that the system collects the statistics of the instance after the instance starts to process read and write requests.
 
 * `collation` - (Optional, Available since v1.277.0) The character set collation of the instance. By default, the system does not modify the character set collation of the instance. Valid values:
   - `Chinese_PRC_CI_AS`
@@ -728,7 +728,7 @@ The following arguments are supported:
 
   -> **NOTE:** The default time zone of the instance is China Standard Time. You must specify one of the Collation and Timezone parameters.
 
-* `force_encryption` - (Optional, Available since v1.277.0) Specifies whether to enable the forceful SSL encryption feature. This parameter is supported only for ApsaraDB RDS for SQL Server instances.Valid values:
+* `force_encryption` - (Optional, Available since v1.277.0) Specifies whether to enable the forceful SSL encryption feature. This parameter is supported only for ApsaraDB RDS for MySQL and SQL Server instances. Valid values:
   - 1: enables the feature.
   - 0: disables the feature.
 * `ssl_certificate` -(Optional, Available in 1.277.0) The custom certificate.

@@ -825,11 +825,11 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"trail_region": defaultRegionToTest,
+					"trail_region":               "cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"trail_region": defaultRegionToTest,
+						"trail_region":               "cn-hangzhou",
 					}),
 				),
 			},
@@ -907,7 +907,7 @@ func TestAccAliCloudActiontrailTrail_basic11012_twin(t *testing.T) {
 					"sls_project_arn":            "acs:log:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_log_project.default.name}",
 					"sls_write_role_arn":         "${data.alicloud_ram_roles.default.roles.0.arn}",
 					"status":                     "Enable",
-					"trail_region":               defaultRegionToTest,
+					"trail_region":               "cn-hangzhou",
 					"is_organization_trail":      "false",
 					"event_selectors":            "[{\\\"ServiceName\\\":\\\"PDS\\\"}]",
 					"data_event_trail_region":    "cn-hangzhou",
@@ -924,7 +924,7 @@ func TestAccAliCloudActiontrailTrail_basic11012_twin(t *testing.T) {
 						"sls_project_arn":            CHECKSET,
 						"sls_write_role_arn":         CHECKSET,
 						"status":                     "Enable",
-						"trail_region":               defaultRegionToTest,
+						"trail_region":               "cn-hangzhou",
 						"is_organization_trail":      "false",
 						"event_selectors":            CHECKSET,
 						"data_event_trail_region":    "cn-hangzhou",
@@ -1117,11 +1117,11 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"trail_region": defaultRegionToTest,
+					"trail_region":               "cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"trail_region": defaultRegionToTest,
+						"trail_region":               "cn-hangzhou",
 					}),
 				),
 			},
@@ -1199,7 +1199,7 @@ func TestAccAliCloudActiontrailTrail_basic11016_twin(t *testing.T) {
 					"sls_project_arn":            "acs:log:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":project/" + "${alicloud_log_project.default.name}",
 					"sls_write_role_arn":         "${data.alicloud_ram_roles.default.roles.0.arn}",
 					"status":                     "Enable",
-					"trail_region":               defaultRegionToTest,
+					"trail_region":               "cn-hangzhou",
 					"is_organization_trail":      "false",
 					"event_selectors":            "[{\\\"ServiceName\\\":\\\"PDS\\\"}]",
 					"data_event_trail_region":    "cn-hangzhou",
@@ -1216,7 +1216,7 @@ func TestAccAliCloudActiontrailTrail_basic11016_twin(t *testing.T) {
 						"sls_project_arn":            CHECKSET,
 						"sls_write_role_arn":         CHECKSET,
 						"status":                     "Enable",
-						"trail_region":               defaultRegionToTest,
+						"trail_region":               "cn-hangzhou",
 						"is_organization_trail":      "false",
 						"event_selectors":            CHECKSET,
 						"data_event_trail_region":    "cn-hangzhou",

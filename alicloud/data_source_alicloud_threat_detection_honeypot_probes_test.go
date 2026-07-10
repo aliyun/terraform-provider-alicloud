@@ -8,7 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudThreatDetectionHoneypotProbeDataSource(t *testing.T) {
+// NOTE: Test depends on data source or hardcoded are not stable and may fail at any time
+
+func TestAccAliCloudThreatDetectionHoneypotProbesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	idsConf := dataSourceTestAccConfig{
@@ -99,19 +101,21 @@ func testAccCheckAlicloudThreatDetectionHoneypotProbeSourceConfig(rand int, attr
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccThreatDetectionHoneypotProbe%d"
+  default = "tf-testAccThreatDetectionHoneypotProbe%d"
 }
 
 data "alicloud_threat_detection_assets" "default" {
-    machine_types = "ecs"
-    ids = ["e52c7872-29d1-4aa1-9908-0299abd53606"]
+  machine_types = "ecs"
+  //ids = ["e52c7872-29d1-4aa1-9908-0299abd53606"]
 }
 
 resource "alicloud_threat_detection_honeypot_node" "default" {
-  node_name           = var.name
-  available_probe_num = 20
+  node_name                    = var.name
+  available_probe_num          = 20
   security_group_probe_ip_list = ["0.0.0.0/0"]
 }
+
+data "alicloud_threat_detection_honeypot_images" "default" {}
 
 resource "alicloud_threat_detection_honey_pot" "default" {
   honeypot_image_name = "ruoyi"

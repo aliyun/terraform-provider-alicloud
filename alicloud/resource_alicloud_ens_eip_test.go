@@ -34,13 +34,13 @@ func TestAccAliCloudEnsEip_basic5131(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":         "PayAsYouGo",
-					"ens_region_id":        "cn-chenzhou-telecom_unicom_cmcc",
+					"ens_region_id":        "cn-wuxi-telecom_unicom_cmcc-2",
 					"internet_charge_type": "95BandwidthByMonth",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":         "PayAsYouGo",
-						"ens_region_id":        "cn-chenzhou-telecom_unicom_cmcc",
+						"ens_region_id":        "cn-wuxi-telecom_unicom_cmcc-2",
 						"internet_charge_type": "95BandwidthByMonth",
 					}),
 				),
@@ -129,7 +129,7 @@ func TestAccAliCloudEnsEip_basic5131_twin(t *testing.T) {
 					"bandwidth":            "6",
 					"isp":                  "cmcc",
 					"payment_type":         "PayAsYouGo",
-					"ens_region_id":        "cn-chenzhou-telecom_unicom_cmcc",
+					"ens_region_id":        "cn-wuxi-telecom_unicom_cmcc-2",
 					"eip_name":             name,
 					"internet_charge_type": "95BandwidthByMonth",
 				}),
@@ -139,7 +139,7 @@ func TestAccAliCloudEnsEip_basic5131_twin(t *testing.T) {
 						"bandwidth":            "6",
 						"isp":                  "cmcc",
 						"payment_type":         "PayAsYouGo",
-						"ens_region_id":        "cn-chenzhou-telecom_unicom_cmcc",
+						"ens_region_id":        "cn-wuxi-telecom_unicom_cmcc-2",
 						"eip_name":             name,
 						"internet_charge_type": "95BandwidthByMonth",
 					}),

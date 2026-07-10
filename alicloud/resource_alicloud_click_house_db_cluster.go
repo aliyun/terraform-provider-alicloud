@@ -798,6 +798,12 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+		rgStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickhouseService.ClickHouseDbClusterResourceGroupIdRefreshFunc(d.Id()))
+		rgStateConf.ContinuousTargetOccurence = 3
+		rgStateConf.PollInterval = 5 * time.Second
+		if _, err := rgStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 	if d.HasChange("allocate_public_connection") {
 		openPublicConnection := d.Get("allocate_public_connection").(bool)

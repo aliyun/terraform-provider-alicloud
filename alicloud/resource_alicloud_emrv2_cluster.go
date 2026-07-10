@@ -2513,8 +2513,12 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					}
 					nodeGroupParam["PrivatePoolOptions"] = privatePoolOptions
 				}
+				// CreateNodeGroup does not accept an embedded AutoScalingPolicy (the service
+				// validates it against a not-yet-existing nodeGroupId); apply it via
+				// PutAutoScalingPolicy after the node group is created.
+				var newNodeGroupAutoScalingPolicy map[string]interface{}
 				if value, exists := newNodeGroup["auto_scaling_policy"]; exists && len(value.([]interface{})) > 0 {
-					nodeGroupParam["AutoScalingPolicy"] = adaptAutoScalingPolicyRequest(value.([]interface{})[0].(map[string]interface{}))
+					newNodeGroupAutoScalingPolicy = adaptAutoScalingPolicyRequest(value.([]interface{})[0].(map[string]interface{}))
 				}
 				if value, exists := newNodeGroup["deployment_set_strategy"]; exists && value.(string) != "" {
 					nodeGroupParam["DeploymentSetStrategy"] = value.(string)
@@ -2629,6 +2633,41 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 				}
 
 				nodeGroupId := resp.([]interface{})[0].(map[string]interface{})["NodeGroupId"].(string)
+
+				if newNodeGroupAutoScalingPolicy != nil {
+					putScalingPolicyRequest := map[string]interface{}{
+						"RegionId":    client.RegionId,
+						"ClusterId":   d.Id(),
+						"NodeGroupId": nodeGroupId,
+					}
+					scalingPolicyExists := false
+					if aspValue, aspExists := newNodeGroupAutoScalingPolicy["scalingRules"]; aspExists {
+						scalingPolicyExists = true
+						putScalingPolicyRequest["ScalingRules"] = aspValue
+					}
+					if aspValue, aspExists := newNodeGroupAutoScalingPolicy["constraints"]; aspExists {
+						scalingPolicyExists = true
+						putScalingPolicyRequest["Constraints"] = aspValue
+					}
+					if scalingPolicyExists {
+						action = "PutAutoScalingPolicy"
+						err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+							response, err = client.RpcPost("Emr", "2021-03-20", action, nil, putScalingPolicyRequest, false)
+							if err != nil {
+								if NeedRetry(err) {
+									wait()
+									return resource.RetryableError(err)
+								}
+								return resource.NonRetryableError(err)
+							}
+							return nil
+						})
+						addDebug(action, response, putScalingPolicyRequest)
+						if err != nil {
+							return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						}
+					}
+				}
 
 				newNodeCount := formatInt(newNodeGroup["node_count"])
 				if newNodeCount > 0 {

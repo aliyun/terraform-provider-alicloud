@@ -195,6 +195,7 @@ func resourceAliCloudRdsCustom() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							ForceNew: true,
+							Computed: true,
 						},
 						"size": {
 							Type:     schema.TypeString,

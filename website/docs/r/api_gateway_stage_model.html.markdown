@@ -19,6 +19,12 @@ For information about Api Gateway Stage Model and how to use it, see [What is St
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_api_gateway_stage_model&exampleId=b49cf602-5be1-e1e4-5b73-9c692ee8401c4cd9458b&activeTab=example&spm=docs.r.api_gateway_stage_model.0.b49cf6025b&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_api_gateway_stage_model" "default" {
   stage_model_name  = "DEVELOP"
@@ -26,6 +32,10 @@ resource "alicloud_api_gateway_stage_model" "default" {
   description       = "Develop stage for testing"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_api_gateway_stage_model&spm=docs.r.api_gateway_stage_model.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

@@ -24,6 +24,7 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -153,6 +154,10 @@ var AlicloudCenTransitRouterEcrAttachmentMap5366 = map[string]string{
 }
 
 func AlicloudCenTransitRouterEcrAttachmentBasicDependence5366(name string) string {
+	region := defaultRegionToTest
+	if region == "" {
+		region = "cn-hangzhou"
+	}
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -192,7 +197,7 @@ resource "alicloud_express_connect_router_tr_association" "defaultedPu6c" {
 }
 
 
-`, name, defaultRegionToTest)
+`, name, region)
 }
 
 // Case ECR Attachment 5366  twin
@@ -211,6 +216,7 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -269,6 +275,7 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366_raw(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,

@@ -371,15 +371,18 @@ func (s *RdsServiceV2) DescribeRdsCustomDisk(id string) (object map[string]inter
 }
 
 func (s *RdsServiceV2) RdsCustomDiskStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.RdsCustomDiskStateRefreshFuncWithApi(id, field, failStates, s.DescribeRdsCustomDisk)
+}
+
+func (s *RdsServiceV2) RdsCustomDiskStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeRdsCustomDisk(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -399,7 +402,8 @@ func (s *RdsServiceV2) RdsCustomDiskStateRefreshFunc(id string, field string, fa
 	}
 }
 
-// DescribeRdsDatabase >>> Encapsulated.
+// DescribeRdsCustomDisk >>> Encapsulated.
+
 // DescribeRdsDatabase <<< Encapsulated get interface for Rds Database.
 
 func (s *RdsServiceV2) DescribeRdsDatabase(id string) (object map[string]interface{}, err error) {

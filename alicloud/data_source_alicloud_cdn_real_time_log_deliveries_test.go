@@ -25,7 +25,7 @@ func TestAccAlicloudCDNRealTimeLogDeliveriesDataSource(t *testing.T) {
 	var existAlicloudCdnRealTimeLogDeliveriesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"deliveries.#":        "1",
-			"deliveries.0.domain": fmt.Sprintf("tf-testaccrealtimelogdeliveries-%d.example.com", rand),
+			"deliveries.0.domain": fmt.Sprintf("tf-testaccrealtimelogdeliveries-%d.alicloud-provider.cn", rand),
 		}
 	}
 	var fakeAlicloudCdnRealTimeLogDeliveriesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -52,7 +52,10 @@ variable "name" {
 	default = "tf-testaccrealtimelogdeliveries-%d"
 }
 variable "domain_name" {	
-	default = "tf-testaccrealtimelogdeliveries-%d.example.com"
+	default = "tf-testaccrealtimelogdeliveries-%d.alicloud-provider.cn"
+}
+data "alicloud_regions" "default" {
+  current = true
 }
 resource "alicloud_cdn_domain_new" "default" {
   domain_name = var.domain_name
@@ -82,11 +85,11 @@ resource "alicloud_cdn_real_time_log_delivery" "default" {
   domain = alicloud_cdn_domain_new.default.domain_name
   project = alicloud_log_project.default.name
   logstore = alicloud_log_store.default.name
-  sls_region = "%s"
+  sls_region = data.alicloud_regions.default.regions.0.id
 }
 data "alicloud_cdn_real_time_log_deliveries" "default" {	
 	%s
 }
-`, rand, rand, defaultRegionToTest, strings.Join(pairs, " \n "))
+`, rand, rand, strings.Join(pairs, " \n "))
 	return config
 }

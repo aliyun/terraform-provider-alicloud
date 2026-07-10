@@ -9,8 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+// NOTE: Test depends on data source or hardcoded are not stable and may fail at any time
 // Case 1
-func TestAccAlicloudThreatDetectionHoneypotProbe_basic2046(t *testing.T) {
+func TestAccAliCloudThreatDetectionHoneypotProbe_basic2046(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_honeypot_probe.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionHoneypotProbeMap2046)
@@ -26,9 +27,9 @@ func TestAccAlicloudThreatDetectionHoneypotProbe_basic2046(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -96,8 +97,8 @@ variable "name" {
     default = "%s"
 }
 data "alicloud_threat_detection_assets" "default" {
-    machine_types = "ecs"
-    ids = ["53926396-0690-49a4-aa08-a38ca4853cdf"]
+  machine_types = "ecs"
+  //ids = ["038dcf91-3168-436c-a8cd-e5d36d80d872"]
 }
 
 resource "alicloud_threat_detection_honeypot_node" "default" {

@@ -29,6 +29,7 @@ const (
 	APSouthEast5 = Region("ap-southeast-5")
 	APSouthEast6 = Region("ap-southeast-6")
 	APSouthEast7 = Region("ap-southeast-7")
+	APSouthEast8 = Region("ap-southeast-8")
 
 	APSouth1 = Region("ap-south-1")
 
@@ -63,7 +64,7 @@ const (
 var ValidRegions = []Region{
 	Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote, ChengDu, HeYuan, WuLanChaBu, GuangZhou, NanJing, FuZhou, ZhongWei,
 	USWest1, USEast1, USSouthEast1,
-	APNorthEast1, APNorthEast2, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, APSouthEast6, APSouthEast7,
+	APNorthEast1, APNorthEast2, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, APSouthEast6, APSouthEast7, APSouthEast8,
 	APSouth1,
 	MEEast1, MECentral1,
 	EUCentral1, EUWest1, RusWest1,
@@ -76,7 +77,7 @@ var ValidRegions = []Region{
 
 var EcsClassicSupportedRegions = []Region{Shenzhen, Shanghai, Beijing, Qingdao, Hangzhou, Hongkong, USWest1, APSouthEast1}
 var EcsSpotNoSupportedRegions = []Region{APSouth1}
-var EcsSccSupportedRegions = []Region{Shanghai, Beijing, Zhangjiakou}
+var EcsSccSupportedRegions = []Region{Hangzhou, Shanghai, Beijing, Zhangjiakou}
 var SlbGuaranteedSupportedRegions = []Region{Qingdao, Beijing, Hangzhou, Shanghai, Shenzhen, Zhangjiakou, Huhehaote, APSouthEast1, USEast1}
 var DrdsSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Qingdao, Hongkong, Shanghai, Huhehaote, Zhangjiakou, APSouthEast1}
 var DrdsClassicNoSupportedRegions = []Region{Hongkong}

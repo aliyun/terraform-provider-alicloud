@@ -332,6 +332,10 @@ func resourceAliCloudPaiWorkspaceDatasetUpdate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("options"); ok || d.HasChange("options") {
 		request["Options"] = v
 	}
+	if d.HasChange("accessibility") {
+		update = true
+		request["Accessibility"] = d.Get("accessibility")
+	}
 	if d.HasChange("dataset_name") {
 		update = true
 	}

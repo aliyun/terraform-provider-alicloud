@@ -7,26 +7,26 @@ require (
 	github.com/alibabacloud-go/tea-roa v1.3.4
 	github.com/alibabacloud-go/tea-rpc v1.2.0
 	github.com/alibabacloud-go/tea-utils v1.4.5
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.590
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aliyun/aliyun-datahub-sdk-go v0.1.5
 	github.com/aliyun/aliyun-log-go-sdk v0.1.108
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.9+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v1.7.16
-	github.com/aliyun/credentials-go v1.4.10
+	github.com/aliyun/credentials-go v1.4.12
 	github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050
 	github.com/deckarep/golang-set v1.8.0
 	github.com/denverdino/aliyungo v0.0.0-20220929054937-e3c8bf5ad947
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-uuid v1.0.3
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.0
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.1
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.3
 	github.com/stretchr/testify v1.11.1
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d
-	golang.org/x/net v0.52.0
+	golang.org/x/net v0.55.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.25.3
 	k8s.io/apimachinery v0.25.3
@@ -49,7 +49,7 @@ require (
 	github.com/keybase/go-crypto v0.0.0-20190416182011-b785b22cc757
 	github.com/samber/lo v1.49.1
 	github.com/tidwall/sjson v1.2.5
-	golang.org/x/tools v0.43.0
+	golang.org/x/tools v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -126,7 +126,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl/v2 v2.24.0 // indirect
 	github.com/hashicorp/logutils v1.0.0 // indirect
-	github.com/hashicorp/terraform-exec v0.25.0 // indirect
+	github.com/hashicorp/terraform-exec v0.25.1 // indirect
 	github.com/hashicorp/terraform-json v0.27.2 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
@@ -167,19 +167,19 @@ require (
 	github.com/valyala/fasthttp v1.34.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	github.com/zclconf/go-cty v1.17.0 // indirect
+	github.com/zclconf/go-cty v1.18.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
+	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/term v0.41.0 // indirect
-	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
@@ -196,4 +196,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-go 1.25.0
+go 1.25.8

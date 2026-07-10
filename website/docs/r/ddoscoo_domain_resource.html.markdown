@@ -100,6 +100,7 @@ The following arguments are supported:
 -> **NOTE:**   If you specify a value for the CertName, Cert, and Key parameters, you do not need to specify a value for the CertId parameter.
 
 * `cert_region` - (Optional, Available since v1.231.0) The region of the certificate. `cn-hangzhou` and `ap-southeast-1` are supported. The default value is `cn-hangzhou`. 
+* `custom_ciphers` - (Optional, List, Available since v1.281.0) A custom list of cipher suites for TLS 1.2 and earlier versions.
 * `custom_headers` - (Optional, Available since v1.261.0) The key-value pair of the custom header. The key specifies the header name, and the value specifies the header value. You can specify up to five key-value pairs. The key-value pairs can be up to 200 characters in length.
   Take note of the following items:
   - Do not use the following default HTTP headers:
@@ -141,6 +142,19 @@ The following arguments are supported:
   - `1`: domain name
 
     If you deploy proxies, such as a Web Application Firewall (WAF) instance, between the origin server and the Anti-DDoS Pro or Anti-DDoS Premium instance, set the value to 1. If you use the domain name, you must enter the address of the proxy, such as the CNAME of WAF.
+* `ssl13_enabled` - (Optional, Bool, Available since v1.281.0) Specifies whether to enable TLS 1.3. Valid values:
+  - `true`: indicates that it is enabled.
+  - `false`: indicates that it is not enabled.
+* `ssl_ciphers` - (Optional, Available since v1.281.0) The type of cipher suite. Valid values:
+  - `all`: All supported cipher suites, including both strong and weak cipher suites.
+  - `improved`: (Available since v1.282.0) The enhanced cipher suites.
+  - `strong`: The strong cipher suites.
+  - `default`: The default cipher suites, which include only strong cipher suites.
+* `ssl_protocols` - (Optional, Available since v1.281.0) The TLS protocol version. Valid values:
+  - `tls1.0`: Sets the minimum supported version to TLS 1.0.
+  - `tls1.1`: Sets the minimum supported version to TLS 1.1.
+  - `tls1.2`: Sets the minimum supported version to TLS 1.2.
+* `tls13_custom_ciphers` - (Optional, List, Available since v1.281.0) A custom list of cipher suites for TLS 1.3.
 * `white_list` - (Optional, List, Available since v1.270.0) IP whitelist list.
 
 ### `proxy_types`

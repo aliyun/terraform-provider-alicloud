@@ -7,7 +7,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -16,14 +15,6 @@ func TestAccAliCloudGaBasicEndpoint_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_basic_endpoint.default"
 	ra := resourceAttrInit(resourceId, resourceAliCloudGaBasicEndpointMap)
-	var providers []*schema.Provider
-	providerFactories := map[string]func() (*schema.Provider, error){
-		"alicloud": func() (*schema.Provider, error) {
-			p := Provider()
-			providers = append(providers, p)
-			return p, nil
-		},
-	}
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccGaBasicEndpoint-name%d", rand)
@@ -33,12 +24,11 @@ func TestAccAliCloudGaBasicEndpoint_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName:     resourceId,
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckGaBasicEndpointDestroyWithProviders(&providers),
+		ProviderFactories: testAccProviderFactoriesAlternate(),
+		CheckDestroy:      testAccCheckGaBasicEndpointDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"provider":                  "alicloud.hz",
 					"accelerator_id":            "${alicloud_ga_basic_accelerator.default.id}",
 					"endpoint_group_id":         "${alicloud_ga_basic_endpoint_group.default.id}",
 					"endpoint_type":             "ENI",
@@ -49,7 +39,7 @@ func TestAccAliCloudGaBasicEndpoint_basic0(t *testing.T) {
 					"basic_endpoint_name":       name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGaBasicEndpointExistsWithProviders(resourceId, v, &providers),
+					testAccCheckGaBasicEndpointExists(resourceId, &v),
 					testAccCheck(map[string]string{
 						"accelerator_id":            CHECKSET,
 						"endpoint_group_id":         CHECKSET,
@@ -67,7 +57,7 @@ func TestAccAliCloudGaBasicEndpoint_basic0(t *testing.T) {
 					"basic_endpoint_name": name + "-update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGaBasicEndpointExistsWithProviders(resourceId, v, &providers),
+					testAccCheckGaBasicEndpointExists(resourceId, &v),
 					testAccCheck(map[string]string{
 						"basic_endpoint_name": name + "-update",
 					}),
@@ -77,22 +67,8 @@ func TestAccAliCloudGaBasicEndpoint_basic0(t *testing.T) {
 	})
 }
 
-func testAccCheckGaBasicEndpointDestroyWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		for _, provider := range *providers {
-			if provider.Meta() == nil {
-				continue
-			}
-			if err := testAccCheckGaBasicEndpointDestroyWithProvider(s, provider); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
-func testAccCheckGaBasicEndpointDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
-	client := provider.Meta().(*connectivity.AliyunClient)
+func testAccCheckGaBasicEndpointDestroy(s *terraform.State) error {
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
 	for _, rs := range s.RootModule().Resources {
@@ -105,15 +81,14 @@ func testAccCheckGaBasicEndpointDestroyWithProvider(s *terraform.State, provider
 				continue
 			}
 			return err
-		} else {
-			return fmt.Errorf("Ga Basic Endpoint still exist,  ID %s ", fmt.Sprint(resp["EndPointId"]))
 		}
+		return fmt.Errorf("Ga Basic Endpoint still exist, ID %s ", fmt.Sprint(resp["EndPointId"]))
 	}
 
 	return nil
 }
 
-func testAccCheckGaBasicEndpointExistsWithProviders(n string, res map[string]interface{}, providers *[]*schema.Provider) resource.TestCheckFunc {
+func testAccCheckGaBasicEndpointExists(n string, res *map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -123,25 +98,16 @@ func testAccCheckGaBasicEndpointExistsWithProviders(n string, res map[string]int
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No alicloud_ga_basic_endpoint ID is set")
 		}
-		for _, provider := range *providers {
-			if provider.Meta() == nil {
-				continue
-			}
 
-			client := provider.Meta().(*connectivity.AliyunClient)
-			gaService := GaService{client}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		gaService := GaService{client}
 
-			resp, err := gaService.DescribeGaBasicEndpoint(rs.Primary.ID)
-			if err != nil {
-				if NotFoundError(err) {
-					continue
-				}
-				return err
-			}
-			res = resp
-			return nil
+		resp, err := gaService.DescribeGaBasicEndpoint(rs.Primary.ID)
+		if err != nil {
+			return err
 		}
-		return fmt.Errorf("alicloud_ga_basic_endpoint not found")
+		*res = resp
+		return nil
 	}
 }
 
@@ -156,33 +122,25 @@ func resourceAliCloudGaBasicEndpointBasicDependence(name string) string {
   		default = "%s"
 	}
 
-	provider "alicloud" {
-  		alias  = "sz"
-  		region = "cn-shenzhen"
-	}
-
-	provider "alicloud" {
-  		alias  = "hz"
-  		region = "cn-hangzhou"
-	}
+	`, name) + configAlternateRegionProvider("cn-shenzhen") + `
 
 	data "alicloud_vpcs" "default" {
-  		provider   = "alicloud.sz"
+  		provider   = alicloudalt
   		name_regex = "default-NODELETING"
 	}
 
 	data "alicloud_vswitches" "default" {
-  		provider = "alicloud.sz"
+  		provider = alicloudalt
   		vpc_id   = data.alicloud_vpcs.default.ids.0
 	}
 
 	resource "alicloud_security_group" "default" {
-  		provider = "alicloud.sz"
+  		provider = alicloudalt
   		vpc_id   = data.alicloud_vpcs.default.ids.0
 	}
 
 	resource "alicloud_ecs_network_interface" "default" {
-  		provider           = "alicloud.sz"
+  		provider           = alicloudalt
   		vswitch_id         = data.alicloud_vswitches.default.ids.0
   		security_group_ids = [alicloud_security_group.default.id]
 	}
@@ -203,5 +161,5 @@ func resourceAliCloudGaBasicEndpointBasicDependence(name string) string {
   		accelerator_id        = alicloud_ga_basic_accelerator.default.id
   		endpoint_group_region = "cn-shenzhen"
 	}
-`, name)
+`
 }

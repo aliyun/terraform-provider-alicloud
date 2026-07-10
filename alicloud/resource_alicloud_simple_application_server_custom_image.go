@@ -84,6 +84,12 @@ func resourceAlicloudSimpleApplicationServerCustomImageCreate(d *schema.Resource
 
 	d.SetId(fmt.Sprint(response["ImageId"]))
 
+	swasOpenService := SwasOpenService{client}
+	stateConf := BuildStateConf([]string{}, []string{"Exist"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, swasOpenService.SimpleApplicationServerCustomImageStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAlicloudSimpleApplicationServerCustomImageUpdate(d, meta)
 }
 func resourceAlicloudSimpleApplicationServerCustomImageRead(d *schema.ResourceData, meta interface{}) error {
@@ -192,6 +198,11 @@ func resourceAlicloudSimpleApplicationServerCustomImageDelete(d *schema.Resource
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	swasOpenService := SwasOpenService{client}
+	stateConf := BuildStateConf([]string{"Exist"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, swasOpenService.SimpleApplicationServerCustomImageStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }

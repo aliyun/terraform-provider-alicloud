@@ -473,3 +473,133 @@ func (s *CrServiceV2) CrStorageDomainRoutingRuleStateRefreshFuncWithApi(id strin
 }
 
 // DescribeCrStorageDomainRoutingRule >>> Encapsulated.
+
+// DescribeCrEERepo <<< Encapsulated get interface for Cr EE Repo.
+
+func (s *CrServiceV2) DescribeCrEERepo(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":          client.RegionId,
+		"InstanceId":        parts[0],
+		"RepoNamespaceName": parts[1],
+		"RepoName":          parts[2],
+	}
+	query := make(map[string]interface{})
+	action := "GetRepository"
+	var response map[string]interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"REPO_NOT_EXIST"}) {
+			return object, WrapErrorf(NotFoundErr("CrEE:Repo", id), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	code, _ := jsonpath.Get("$.Code", response)
+	if fmt.Sprint(code) == "REPO_NOT_EXIST" {
+		return object, WrapErrorf(NotFoundErr("CrEE:Repo", id), NotFoundMsg, ProviderERROR)
+	}
+	if isSuccess, ok := response["IsSuccess"].(bool); ok && !isSuccess {
+		return object, WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeCrEERepo >>> Encapsulated.
+
+// DescribeCrArtifactLifecycleRule <<< Encapsulated get interface for Cr ArtifactLifecycleRule.
+
+func (s *CrServiceV2) DescribeCrArtifactLifecycleRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["RuleId"] = parts[1]
+	query["InstanceId"] = parts[0]
+	query["RegionId"] = client.RegionId
+	action := "GetArtifactLifecycleRule"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("cr", "2018-12-01", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) {
+			return object, WrapErrorf(NotFoundErr("ArtifactLifecycleRule", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *CrServiceV2) CrArtifactLifecycleRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CrArtifactLifecycleRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrArtifactLifecycleRule)
+}
+
+func (s *CrServiceV2) CrArtifactLifecycleRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCrArtifactLifecycleRule >>> Encapsulated.

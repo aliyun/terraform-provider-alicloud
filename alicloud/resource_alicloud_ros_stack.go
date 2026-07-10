@@ -231,7 +231,7 @@ func resourceAlicloudRosStackCreate(d *schema.ResourceData, meta interface{}) er
 	addDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["StackId"]))
-	stateConf := BuildStateConf([]string{}, []string{"CREATE_COMPLETE"}, d.Timeout(schema.TimeoutCreate), 100*time.Second, rosService.RosStackStateRefreshFunc(d.Id(), []string{"CREATE_FAILED", "CREATE_ROLLBACK_COMPLETE", "CREATE_ROLLBACK_FAILED"}))
+	stateConf := BuildStateConf([]string{}, []string{"CREATE_COMPLETE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, rosService.RosStackStateRefreshFunc(d.Id(), []string{"CREATE_FAILED", "CREATE_ROLLBACK_COMPLETE", "CREATE_ROLLBACK_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -241,7 +241,8 @@ func resourceAlicloudRosStackCreate(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudRosStackRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rosService := RosService{client}
-	object, err := rosService.DescribeRosStack(d.Id())
+	stackId := d.Id()
+	object, err := rosService.DescribeRosStack(stackId)
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ros_stack rosService.DescribeRosStack Failed!!! %s", err)
@@ -275,13 +276,19 @@ func resourceAlicloudRosStackRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("status", object["Status"])
 	d.Set("timeout_in_minutes", formatInt(object["TimeoutInMinutes"]))
 
-	listTagResourcesObject, err := rosService.ListTagResources(d.Id(), "stack")
+	template, err := rosService.DescribeRosTemplateByStackId(stackId)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("template_body", template["TemplateBody"])
+
+	listTagResourcesObject, err := rosService.ListTagResources(stackId, "stack")
 	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("tags", tagsToMap(listTagResourcesObject))
 
-	getStackPolicyObject, err := rosService.GetStackPolicy(d.Id())
+	getStackPolicyObject, err := rosService.GetStackPolicy(stackId)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -384,7 +391,7 @@ func resourceAlicloudRosStackUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"UPDATE_COMPLETE"}, d.Timeout(schema.TimeoutUpdate), 100*time.Second, rosService.RosStackStateRefreshFunc(d.Id(), []string{"UPDATE_FAILED", "ROLLBACK_FAILED"}))
+		stateConf := BuildStateConf([]string{}, []string{"UPDATE_COMPLETE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rosService.RosStackStateRefreshFunc(d.Id(), []string{"UPDATE_FAILED", "ROLLBACK_FAILED"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -431,7 +438,7 @@ func resourceAlicloudRosStackDelete(d *schema.ResourceData, meta interface{}) er
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{"DELETE_COMPLETE"}, d.Timeout(schema.TimeoutDelete), 100*time.Second, rosService.RosStackStateRefreshFunc(d.Id(), []string{"DELETE_FAILED"}))
+	stateConf := BuildStateConf([]string{}, []string{"DELETE_COMPLETE"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, rosService.RosStackStateRefreshFunc(d.Id(), []string{"DELETE_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

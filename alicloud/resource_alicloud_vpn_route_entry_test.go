@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudVPNRouteEntry_basic(t *testing.T) {
+func TestAccAliCloudVPNRouteEntry_basic(t *testing.T) {
 	var v vpc.VpnRouteEntry
 
 	resourceId := "alicloud_vpn_route_entry.default"
@@ -34,9 +34,9 @@ func TestAccAlicloudVPNRouteEntry_basic(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -93,7 +93,7 @@ func TestAccAlicloudVPNRouteEntry_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPNRouteEntry_multi(t *testing.T) {
+func TestAccAliCloudVPNRouteEntry_multi(t *testing.T) {
 	var v vpc.VpnRouteEntry
 
 	resourceId := "alicloud_vpn_route_entry.default.1"
@@ -113,9 +113,9 @@ func TestAccAlicloudVPNRouteEntry_multi(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -207,19 +207,19 @@ func resourceAliCloudSlsLogtailPipelineConfigRead(d *schema.ResourceData, meta i
 	}
 	flushersRaw := objectRaw["flushers"]
 	if flushersRaw != nil {
-		if err := d.Set("flushers", convertSlsMapTypesToStrings(flushersRaw)); err != nil {
+		if err := d.Set("flushers", filterSlsApiExtraFields(d, "flushers", convertSlsMapTypesToStrings(flushersRaw))); err != nil {
 			return err
 		}
 	}
 	inputsRaw := objectRaw["inputs"]
 	if inputsRaw != nil {
-		if err := d.Set("inputs", convertSlsMapTypesToStrings(inputsRaw)); err != nil {
+		if err := d.Set("inputs", filterSlsApiExtraFields(d, "inputs", convertSlsMapTypesToStrings(inputsRaw))); err != nil {
 			return err
 		}
 	}
 	processorsRaw := objectRaw["processors"]
 	if processorsRaw != nil {
-		if err := d.Set("processors", convertSlsMapTypesToStrings(processorsRaw)); err != nil {
+		if err := d.Set("processors", filterSlsApiExtraFields(d, "processors", convertSlsMapTypesToStrings(processorsRaw))); err != nil {
 			return err
 		}
 	}
@@ -470,3 +470,30 @@ func convertToString(v interface{}) string {
 		return fmt.Sprintf("%v", val)
 	}
 }
+
+// filterSlsApiExtraFields removes keys from API response maps that don't exist
+// in the current state/config. SLS API auto-populates fields like Region and
+// Endpoint in flusher configs, which causes unexpected plan diffs in SDKv2.
+func filterSlsApiExtraFields(d *schema.ResourceData, attr string, apiMaps []map[string]interface{}) []map[string]interface{} {
+	oldVal, _ := d.GetOk(attr)
+	oldList, ok := oldVal.([]interface{})
+	if !ok || len(oldList) == 0 {
+		return apiMaps
+	}
+	for i, apiMap := range apiMaps {
+		if i >= len(oldList) {
+			break
+		}
+		oldMap, ok := oldList[i].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for key := range apiMap {
+			if _, exists := oldMap[key]; !exists {
+				delete(apiMap, key)
+			}
+		}
+	}
+	return apiMaps
+}
+

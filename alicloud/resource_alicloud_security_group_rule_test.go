@@ -630,7 +630,7 @@ variable "name" {
 }
 
 variable "cidr_ip_list" {
-  type    = "list"
+  type    = list(string)
   default = ["50.255.255.255/32", "75.250.250.250/32", "45.20.250.240/32"]
 }
 

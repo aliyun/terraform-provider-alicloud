@@ -28,7 +28,7 @@ For information about VPC VPC and how to use it, see [What is VPC](https://www.a
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc&exampleId=d5070149-7922-e5bb-2494-de31dd34464d70a607da&activeTab=example&spm=docs.r.vpc.0.d507014979&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_vpc&exampleId=247e539a-c7d6-e6c1-1df2-d0d46196e457950e5da4&activeTab=example&spm=docs.r.vpc.0.247e539ac7&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -72,6 +72,9 @@ The description must be 1 to 256 characters in length, and cannot start with `ht
 * `enable_ipv6` - (Optional, Computed, Available since v1.119.0) Whether to enable the IPv6 network segment. Value:
   - `false` (default): Not enabled.
   - `true`: enabled.
+
+-> **NOTE:** If you use the `alicloud_vpc_ipv6_cidr_block` resource to add an IPv6 CIDR block to the VPC, you do not need to set `enable_ipv6`.
+
 * `force_delete` - (Optional, Available since v1.248.0) Force delete vpc or not.
 * `ipv4_cidr_mask` - (Optional, Int, Available since v1.240.0) Allocate VPC from The IPAM address pool by entering a mask.
 

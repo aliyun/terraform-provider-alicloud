@@ -395,7 +395,7 @@ func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 					"used_time":               "1",
 					"db_node_storage":         "100",
 					"storage_type":            "cloud_essd",
-					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":              "${local.vswitch_ids[0]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -699,7 +699,7 @@ func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
 					"used_time":               "1",
 					"db_node_storage":         "100",
 					"storage_type":            "cloud_essd",
-					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":              "${local.vswitch_ids[0]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1152,8 +1152,12 @@ func AliCloudClickHouseDBClusterBasicDependence1(name string) string {
 	}
 
 	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	locals {
+  		ch_zone_ids = [for z in data.alicloud_click_house_regions.default.regions.0.zone_ids : z.zone_id]
+  		vswitch_ids = [for v in data.alicloud_vswitches.default.vswitches : v.id if contains(local.ch_zone_ids, v.zone_id)]
 	}
 `, name)
 }

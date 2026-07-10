@@ -109,6 +109,7 @@ func resourceAlicloudSimpleApplicationServerFirewallRuleRead(d *schema.ResourceD
 }
 func resourceAlicloudSimpleApplicationServerFirewallRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	swasOpenService := SwasOpenService{client}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -137,6 +138,10 @@ func resourceAlicloudSimpleApplicationServerFirewallRuleDelete(d *schema.Resourc
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	stateConf := BuildStateConf([]string{"Exist"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, swasOpenService.SimpleApplicationServerFirewallRuleStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }

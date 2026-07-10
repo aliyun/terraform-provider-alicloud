@@ -15,8 +15,6 @@ For information about Cloud Firewall Instance and how to use it, see [What is In
 
 -> **NOTE:** Available since v1.139.0.
 
--> **NOTE:** Deprecated since v1.269.0.
-
 -> **DEPRECATED:** This resource has been deprecated from version `1.269.0`. Please use new resource [alicloud_cloud_firewall_instance_v2](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cloud_firewall_instance_v2).
 
 ## Example Usage
@@ -60,7 +58,7 @@ The following arguments are supported:
   - `ManualRenewal`: Manual renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
 **NOTE:** `renewal_status` takes effect only if `payment_type` is set to `Subscription`.
-* `logistics` - (Optional) The logistics.
+* `logistics` - (Optional) The logistics address of this order. The parameter is immutable after resource creation.
 * `modify_type` - (Optional) The type of modification. Valid values: `Upgrade`, `Downgrade`. **NOTE:** The `modify_type` is required when you execute an update operation.
 * `spec` - (Optional) Current version. Valid values: `premium_version`, `enterprise_version`,`ultimate_version`.
 * `cfw_log` - (Optional) Whether to use log audit. Valid values: `true`, `false`. **NOTE:** From version 1.232.0, When `payment_type` is set to `PayAsYouGo`, `cfw_log` can only be set to `true`, `cfw_log` cannot be modified to `false`.
@@ -80,6 +78,7 @@ The following arguments are supported:
   * `enterprise_version` - The valid cfw_log_storage is [2, 200] with the step size 1. Default Value: `2`.
   * `ultimate_version` - The valid cfw_log_storage is [5, 500] with the step size 1. Default Value: `5`.
 * `instance_count` - (Optional)  The number of assets.
+* `auto_asset_protection` - (Optional, Computed, Available since v1.283.0) Internet asset protection switch. Valid values: `true`, `false`.
 * `cfw_account` - (Optional, Available since v1.209.1, Bool) Whether to use multi-account. Valid values: `true`, `false`.
 * `account_number` - (Optional, Available since v1.209.1, Int) The number of multi account. It will be ignored when `cfw_account = false`.
   * `premium_version` - The valid account number is [1, 20].

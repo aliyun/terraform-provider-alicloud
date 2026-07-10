@@ -8,20 +8,11 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func TestAccAlicloudCenInterRegionTrafficQosQueuesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
-	var providers []*schema.Provider
-	providerFactories := map[string]func() (*schema.Provider, error){
-		"alicloud": func() (*schema.Provider, error) {
-			p := Provider()
-			providers = append(providers, p)
-			return p, nil
-		},
-	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenInterRegionTrafficQosQueuesDataSourceName(rand, map[string]string{
 			"ids":                   `["${alicloud_cen_inter_region_traffic_qos_queue.default.id}"]`,
@@ -65,8 +56,8 @@ func TestAccAlicloudCenInterRegionTrafficQosQueuesDataSource(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckCenInterRegionTrafficQosQueueDestroyWithProviders(&providers),
+		ProviderFactories: testAccProviderFactoriesAlternate(),
+		CheckDestroy:      nil,
 		Steps:             steps,
 	})
 }
@@ -82,46 +73,33 @@ func testAccCheckAlicloudCenInterRegionTrafficQosQueuesDataSourceName(rand int, 
   		default = "tf-testAccCenInterRegionTrafficQosPolicy-%d"
 	}
 
-	provider "alicloud" {
-  		alias  = "bj"
-  		region = "cn-beijing"
-	}
-
-	provider "alicloud" {
-  		alias  = "hz"
-  		region = "cn-hangzhou"
-	}
+	%s
 
 	resource "alicloud_cen_instance" "default" {
-  		provider          = alicloud.hz
   		cen_instance_name = var.name
 	}
 
 	resource "alicloud_cen_bandwidth_package" "default" {
-  		provider               = alicloud.hz
   		bandwidth              = 5
   		geographic_region_a_id = "China"
   		geographic_region_b_id = "China"
 	}
 
 	resource "alicloud_cen_bandwidth_package_attachment" "default" {
-  		provider             = alicloud.hz
   		instance_id          = alicloud_cen_instance.default.id
   		bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
 	}
 
 	resource "alicloud_cen_transit_router" "hz" {
-  		provider = alicloud.hz
   		cen_id   = alicloud_cen_bandwidth_package_attachment.default.instance_id
 	}
 
 	resource "alicloud_cen_transit_router" "bj" {
-  		provider = alicloud.bj
+  		provider = alicloudalt
   		cen_id   = alicloud_cen_transit_router.hz.cen_id
 	}
 
 	resource "alicloud_cen_transit_router_peer_attachment" "default" {
-  		provider                      = alicloud.hz
   		cen_id                        = alicloud_cen_instance.default.id
   		transit_router_id             = alicloud_cen_transit_router.hz.transit_router_id
   		peer_transit_router_region_id = "cn-beijing"
@@ -131,7 +109,6 @@ func testAccCheckAlicloudCenInterRegionTrafficQosQueuesDataSourceName(rand int, 
 	}
 
 	resource "alicloud_cen_inter_region_traffic_qos_policy" "default" {
-  		provider                                    = alicloud.hz
   		transit_router_id                           = alicloud_cen_transit_router.hz.transit_router_id
   		transit_router_attachment_id                = alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id
   		inter_region_traffic_qos_policy_name        = var.name
@@ -149,6 +126,6 @@ func testAccCheckAlicloudCenInterRegionTrafficQosQueuesDataSourceName(rand int, 
 	data "alicloud_cen_inter_region_traffic_qos_queues" "default" {
 		%s
 	}
-`, rand, strings.Join(pairs, " \n "))
+`, rand, configAlternateRegionProvider("cn-beijing"), strings.Join(pairs, " \n "))
 	return config
 }

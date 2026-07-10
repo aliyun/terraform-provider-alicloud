@@ -505,6 +505,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: polardbAndCreationDiffSuppressFunc,
 			},
+			"target_minor_version": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "The target minor version of the cluster. Used during creation.",
+			},
 			"db_revision_version_list": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -551,7 +557,6 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 }
 
 func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := PolarDBService{client}
 	request, err := buildPolarDBCreateRequest(d, meta)
@@ -603,6 +608,34 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 	if len(allConfig) > 0 {
 		if err := polarDBService.WaitForPolarDBParameter(d.Id(), DefaultLongTimeout, allConfig); err != nil {
 			return WrapError(err)
+		}
+	}
+
+	if v, ok := d.GetOk("global_security_group_list"); ok {
+		ids := expandStringList(v.(*schema.Set).List())
+		if len(ids) > 0 {
+			action := "ModifyGlobalSecurityIPGroupRelation"
+			request := map[string]interface{}{
+				"RegionId":              client.RegionId,
+				"DBClusterId":           d.Id(),
+				"GlobalSecurityGroupId": strings.Join(ids, COMMA_SEPARATED),
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, ProviderERROR)
+			}
 		}
 	}
 
@@ -1971,6 +2004,9 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	}
 	if v, ok := d.GetOk("db_minor_version"); ok && v.(string) != "" {
 		request["DBMinorVersion"] = d.Get("db_minor_version").(string)
+	}
+	if v, ok := d.GetOk("target_minor_version"); ok && v.(string) != "" {
+		request["TargetMinorVersion"] = v.(string)
 	}
 	if v, ok := d.GetOk("provisioned_iops"); ok && v.(string) != "" {
 		request["ProvisionedIops"], _ = strconv.ParseInt(v.(string), 10, 64)

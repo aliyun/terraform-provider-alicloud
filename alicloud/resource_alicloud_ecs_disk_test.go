@@ -973,7 +973,7 @@ func TestAccAliCloudECSDisk_basic8017_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":             "cloud_efficiency",
+					"category":             "cloud_essd",
 					"delete_auto_snapshot": "true",
 					"delete_with_instance": "true",
 					"description":          name,
@@ -991,7 +991,7 @@ func TestAccAliCloudECSDisk_basic8017_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":             "cloud_efficiency",
+						"category":             "cloud_essd",
 						"delete_auto_snapshot": "true",
 						"delete_with_instance": "true",
 						"description":          name,
@@ -1038,34 +1038,38 @@ func AliCloudEcsDiskBasicDependence8017(name string) string {
   		status = "OK"
 	}
 
-	data "alicloud_zones" "default" {
- 		available_resource_creation = "VSwitch"
-	}
-
 	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
+  		instance_type_family = "ecs.g6"
+		system_disk_category = "cloud_essd"
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
+	data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+		available_disk_category     = "cloud_essd"
 	}
 
-	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_zones.default.zones.0.id
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vpc_id       = alicloud_vpc.default.id
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		cidr_block   = "172.16.0.0/24"
+  		vswitch_name = var.name
 	}
 
 	resource "alicloud_security_group" "default" {
   		name        = var.name
   		description = "New security group"
-  		vpc_id      = data.alicloud_vpcs.default.ids.0
+  		vpc_id      = alicloud_vpc.default.id
 	}
 
 	resource "alicloud_disk" "default" {
   		name              = var.name
   		availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-  		category          = "cloud_efficiency"
+  		category          = "cloud_essd"
   		size              = "20"
 	}
 
@@ -1076,13 +1080,14 @@ func AliCloudEcsDiskBasicDependence8017(name string) string {
 	}
 
 	resource "alicloud_instance" "default" {
-  		availability_zone = data.alicloud_zones.default.zones.0.id
-  		instance_name     = var.name
-  		host_name         = "tf-testAcc"
-  		image_id          = data.alicloud_images.default.images.0.id
-  		instance_type     = data.alicloud_instance_types.default.instance_types.0.id
-  		security_groups   = [alicloud_security_group.default.id]
-  		vswitch_id        = data.alicloud_vswitches.default.ids.0
+  		availability_zone    = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		instance_name        = var.name
+  		host_name            = "tf-testAcc"
+  		image_id             = data.alicloud_images.default.images.0.id
+  		instance_type        = data.alicloud_instance_types.default.instance_types.0.id
+  		security_groups      = [alicloud_security_group.default.id]
+  		vswitch_id           = alicloud_vswitch.default.id
+  		system_disk_category = "cloud_essd"
 	}
 
 	resource "alicloud_disk_attachment" "default" {
@@ -1671,6 +1676,7 @@ func AliCloudEcsDiskBasicDependence8018(name string) string {
 
 	data "alicloud_zones" "default" {
  		available_resource_creation = "VSwitch"
+		available_disk_category     = "cloud_essd"
 	}
 
 	resource "alicloud_kms_key" "default" {
@@ -1935,6 +1941,7 @@ func AliCloudEcsDiskBasicDependence8020(name string) string {
 
 	data "alicloud_instance_types" "default" {
 		instance_charge_type = "PrePaid"
+		system_disk_category = "cloud_essd"
 	}
 
 	data "alicloud_images" "default" {
@@ -1943,25 +1950,28 @@ func AliCloudEcsDiskBasicDependence8020(name string) string {
 		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	}
 
-	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+	resource "alicloud_vpc" "default" {
+		vpc_name   = var.name
+		cidr_block = "172.16.0.0/16"
 	}
 
-	data "alicloud_vswitches" "default" {
-		vpc_id  = data.alicloud_vpcs.default.ids.0
-		zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+	resource "alicloud_vswitch" "default" {
+		vpc_id       = alicloud_vpc.default.id
+		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+		cidr_block   = "172.16.0.0/24"
+		vswitch_name = var.name
 	}
 
 	resource "alicloud_security_group" "default" {
 		name   = var.name
-		vpc_id = data.alicloud_vswitches.default.vswitches.0.vpc_id
+		vpc_id = alicloud_vpc.default.id
 	}
 
 	resource "alicloud_instance" "default" {
 		image_id                      = data.alicloud_images.default.images.0.id
 		security_groups               = [alicloud_security_group.default.id]
 		instance_type                 = data.alicloud_instance_types.default.instance_types.0.id
-		system_disk_category          = "cloud_efficiency"
+		system_disk_category          = "cloud_essd"
 		instance_name                 = var.name
 		spot_strategy                 = "NoSpot"
 		spot_price_limit              = "0"
@@ -1969,7 +1979,7 @@ func AliCloudEcsDiskBasicDependence8020(name string) string {
 		user_data                     = "I_am_user_data"
 		instance_charge_type          = "PrePaid"
 		period                        = 1
-		vswitch_id                    = data.alicloud_vswitches.default.ids.0
+		vswitch_id                    = alicloud_vswitch.default.id
 		force_delete                  = true
 	}
 `, name)

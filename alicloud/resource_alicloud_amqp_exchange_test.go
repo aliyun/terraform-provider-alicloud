@@ -251,20 +251,33 @@ func TestAccAliCloudAmqpExchange_TOPIC(t *testing.T) {
 }
 
 func resourceAmqpExchangeConfigDependence(name string) string {
-	return fmt.Sprintf(`
+		return fmt.Sprintf(`
 		variable "name" {
  			default = "%v"
 		}
+		data "alicloud_vpcs" "default" {
+			name_regex = "^default-NODELETING$"
+		}
+		data "alicloud_vswitches" "default" {
+			vpc_id = data.alicloud_vpcs.default.ids.0
+		}
+		data "alicloud_security_groups" "default" {
+			vpc_id     = data.alicloud_vpcs.default.ids.0
+			name_regex = "^default-NODELETING$"
+		}
 		resource "alicloud_amqp_instance" "default" {
-		  instance_name  = var.name
-		  instance_type  = "enterprise"
-		  max_tps        = "3000"
-		  queue_capacity = "200"
-		  period_cycle   = "Year"
-		  support_eip    = "false"
-		  period         = "1"
-		  auto_renew     = "true"
-		  payment_type   = "Subscription"
+		  instance_name     = var.name
+		  instance_type     = "enterprise"
+		  max_tps           = "3000"
+		  queue_capacity    = "200"
+		  period_cycle      = "Year"
+		  support_eip       = "false"
+		  period            = "1"
+		  auto_renew        = "true"
+		  payment_type      = "Subscription"
+		  vpc_id            = data.alicloud_vpcs.default.ids.0
+		  vswitch_ids       = [data.alicloud_vswitches.default.ids.0, data.alicloud_vswitches.default.ids.1]
+		  security_group_id = data.alicloud_security_groups.default.ids.0
 		}
 		resource "alicloud_amqp_virtual_host" "default" {
 		  instance_id       = alicloud_amqp_instance.default.id

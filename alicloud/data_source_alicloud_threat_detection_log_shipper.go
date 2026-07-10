@@ -100,7 +100,6 @@ func dataSourceAlicloudThreatDetectionLogShipperRead(d *schema.ResourceData, met
 	d.Set("buy_status", object["BuyStatus"])
 	d.Set("sls_project_status", object["SlsProjectStatus"])
 	d.Set("sls_service_status", object["SlsServiceStatus"])
-
 	d.SetId("ThreatDetectionLogShipperHasBeenOpened")
 
 	d.Set("status", "Opened")

@@ -686,7 +686,8 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: IntInSlice([]int{0, 1}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("engine").(string) != "SQLServer"
+					engine := d.Get("engine").(string)
+					return engine != "MySQL" && engine != "SQLServer"
 				},
 			},
 			"ssl_certificate": {
@@ -810,7 +811,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -1080,11 +1081,11 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
-		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, rdsService.RdsUpgradeMajorVersionRefreshFunc(d.Id(), formatInt(response["TaskId"]), []string{"Failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, rdsService.RdsUpgradeMajorVersionRefreshFunc(d.Id(), formatInt(response["TaskId"]), []string{"Failed"}))
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -1106,11 +1107,20 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("collect_stat_mode"); ok && v.(string) != "" {
 			request["CollectStatMode"] = v
 		}
+		if PayType(request["PayType"].(string)) == Prepaid {
+			period := d.Get("period").(int)
+			request["UsedTime"] = strconv.Itoa(period)
+			request["Period"] = Month
+			if period > 9 {
+				request["UsedTime"] = strconv.Itoa(period / 12)
+				request["Period"] = Year
+			}
+		}
 		wait = incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -1170,7 +1180,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") && d.Get("engine").(string) == string(MySQL) {
+	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") {
 		action := "ModifySQLCollectorRetention"
 		request := map[string]interface{}{
 			"RegionId":     client.RegionId,
@@ -1557,10 +1567,12 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 
-		if d.Get("engine").(string) == "SQLServer" {
+		if engine := d.Get("engine").(string); engine == "MySQL" || engine == "SQLServer" {
 			if v, ok := d.GetOkExists("force_encryption"); ok {
 				request["ForceEncryption"] = v.(int)
 			}
+		}
+		if d.Get("engine").(string) == "SQLServer" {
 			if d.HasChange("ssl_certificate") {
 				if v, ok := d.GetOk("ssl_certificate"); ok && v.(string) != "" {
 					request["Certificate"] = v.(string)
@@ -1831,6 +1843,31 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		if d.HasChange("optimized_writes") {
+			expected := d.Get("optimized_writes").(string)
+			stateConf := &resource.StateChangeConf{
+				Pending: []string{},
+				Target:  []string{expected},
+				Refresh: func() (interface{}, string, error) {
+					object, err := rdsService.DescribeDBInstance(d.Id())
+					if err != nil {
+						return nil, "", WrapError(err)
+					}
+					actual := ""
+					if v, ok := object["OptimizedWritesInfo"]; ok {
+						actual = ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(v))
+					}
+					return object, actual, nil
+				},
+				Timeout:    d.Timeout(schema.TimeoutUpdate),
+				Delay:      5 * time.Second,
+				MinTimeout: 3 * time.Second,
+			}
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 	}
 

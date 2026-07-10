@@ -22,7 +22,10 @@ const (
 )
 
 type MaxItems int
+type MinItems int
 
 const (
 	MaxScalingConfigurationInstanceTypes = MaxItems(10)
+	MaxResourcePoolOptionsPrivatePoolIds = MaxItems(20)
+	MinResourcePoolOptionsPrivatePoolIds = MinItems(1)
 )

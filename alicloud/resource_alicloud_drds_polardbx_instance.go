@@ -26,10 +26,8 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"cn_class": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"polarx.x4.medium.2e", "polarx.x4.large.2e", "polarx.x8.large.2e", "polarx.x4.xlarge.2e", "polarx.x8.xlarge.2e", "polarx.x4.2xlarge.2e", "polarx.x8.2xlarge.2e", "polarx.x4.4xlarge.2e", "polarx.x8.4xlarge.2e", "polarx.st.8xlarge.2e", "polarx.st.12xlarge.2e"}, false),
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"cn_node_count": {
 				Type:         schema.TypeInt,
@@ -45,15 +43,18 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 				Optional: true,
 			},
 			"dn_class": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"mysql.n4.medium.25", "mysql.n4.large.25", "mysql.x8.large.25", "mysql.n4.xlarge.25", "mysql.x8.xlarge.25", "mysql.n4.2xlarge.25", "mysql.x8.2xlarge.25", "mysql.x4.4xlarge.25", "mysql.x8.4xlarge.25", "mysql.st.8xlarge.25", "mysql.st.12xlarge.25"}, false),
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"dn_node_count": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: IntAtLeast(2),
+			},
+			"dn_storage_space": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"engine_version": {
 				Type:         schema.TypeString,
@@ -89,9 +90,32 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"specified_dn_scale": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"specified_dn_spec_map_json": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"custom_local_ssd", "cloud_auto"}, false),
+			},
+			"switch_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"switch_time_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"tertiary_zone": {
 				Type:     schema.TypeString,
@@ -164,6 +188,12 @@ func resourceAliCloudDrdsPolardbxInstanceCreate(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("primary_db_instance_name"); ok {
 		request["PrimaryDBInstanceName"] = v
 	}
+	if v, ok := d.GetOk("storage_type"); ok {
+		request["StorageType"] = v
+	}
+	if v, ok := d.GetOk("dn_storage_space"); ok {
+		request["DnStorageSpace"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
@@ -213,12 +243,14 @@ func resourceAliCloudDrdsPolardbxInstanceRead(d *schema.ResourceData, meta inter
 	d.Set("description", objectRaw["Description"])
 	d.Set("dn_class", objectRaw["DnNodeClassCode"])
 	d.Set("dn_node_count", objectRaw["DnNodeCount"])
+	d.Set("dn_storage_space", objectRaw["DnStorageSpace"])
 	d.Set("engine_version", objectRaw["EngineVersion"])
 	d.Set("primary_zone", objectRaw["PrimaryZone"])
 	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("secondary_zone", objectRaw["SecondaryZone"])
 	d.Set("status", objectRaw["Status"])
+	d.Set("storage_type", objectRaw["StorageType"])
 	d.Set("tertiary_zone", objectRaw["TertiaryZone"])
 	d.Set("topology_type", objectRaw["TopologyType"])
 	d.Set("vswitch_id", objectRaw["VSwitchId"])
@@ -250,6 +282,68 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 		update = true
 	}
 	request["DNNodeCount"] = d.Get("dn_node_count")
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("polardbx", "2020-02-02", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		drdsServiceV2 := DrdsServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, drdsServiceV2.DrdsPolardbxInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "ModifyDBInstanceClass"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DBInstanceName"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	if !d.IsNewResource() && d.HasChange("cn_class") {
+		update = true
+	}
+	request["CnClass"] = d.Get("cn_class")
+	if !d.IsNewResource() && d.HasChange("dn_class") {
+		update = true
+	}
+	request["DnClass"] = d.Get("dn_class")
+	if !d.IsNewResource() && d.HasChange("dn_storage_space") {
+		update = true
+		request["DnStorageSpace"] = d.Get("dn_storage_space")
+	}
+	if d.HasChange("specified_dn_scale") {
+		if v, ok := d.GetOkExists("specified_dn_scale"); ok {
+			request["SpecifiedDNScale"] = v
+		}
+	}
+	if d.HasChange("specified_dn_spec_map_json") {
+		if v, ok := d.GetOk("specified_dn_spec_map_json"); ok {
+			request["SpecifiedDNSpecMapJson"] = v
+		}
+	}
+	if d.HasChange("switch_time_mode") {
+		if v, ok := d.GetOk("switch_time_mode"); ok {
+			request["SwitchTimeMode"] = v
+		}
+	}
+	if d.HasChange("switch_time") {
+		if v, ok := d.GetOk("switch_time"); ok {
+			request["SwitchTime"] = v
+		}
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {

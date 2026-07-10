@@ -26,6 +26,11 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auth_model": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"ram", "openSource"}, false),
+			},
 			"auto_renew": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -157,6 +162,11 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"serverless_switch": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -180,6 +190,7 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 			"tracing_storage_time": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -218,7 +229,9 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("period_cycle"); ok {
 		request["PeriodCycle"] = v
 	}
-	request["SecurityGroupId"] = d.Get("security_group_id")
+	if v, ok := d.GetOk("security_group_id"); ok {
+		request["SecurityGroupId"] = v
+	}
 	if v, ok := d.GetOk("max_eip_tps"); ok {
 		request["MaxEipTps"] = v
 	}
@@ -230,6 +243,9 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	}
 	if v, ok := d.GetOk("instance_type"); ok {
 		request["InstanceType"] = v
+	}
+	if v, ok := d.GetOk("auth_model"); ok {
+		request["AuthModel"] = v
 	}
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request["RenewStatus"] = v
@@ -261,9 +277,14 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOkExists("support_eip"); ok {
 		request["SupportEip"] = v
 	}
+	if v, ok := d.GetOkExists("serverless_switch"); ok {
+		request["ServerlessSwitch"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		request["Tags"] = ConvertTags(v.(map[string]interface{}))
+	}
 	if v, ok := d.GetOk("vswitch_ids"); ok {
 		vswitchIdsMapsArray := convertListToJsonString(convertToInterfaceArray(v))
-
 		request["VswitchIds"] = vswitchIdsMapsArray
 	}
 
@@ -273,7 +294,9 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("queue_capacity"); ok {
 		request["QueueCapacity"] = v
 	}
-	request["VpcId"] = d.Get("vpc_id")
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v
+	}
 	if v, ok := d.GetOkExists("provisioned_capacity"); ok {
 		request["ProvisionedCapacity"] = v
 	}
@@ -337,6 +360,7 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("provisioned_capacity", objectRaw["ProvisionedCapacity"])
 	d.Set("queue_capacity", objectRaw["MaxQueue"])
 	d.Set("security_group_id", objectRaw["SecurityGroupId"])
+	d.Set("serverless_switch", objectRaw["ServerlessSwitch"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("storage_size", objectRaw["StorageSize"])
 	d.Set("support_eip", objectRaw["SupportEIP"])
@@ -351,6 +375,12 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 
 	d.Set("vswitch_ids", vswitchIdsRaw)
 
+	tagsObject, err := amqpServiceV2.DescribeInstanceListTagResources(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+	d.Set("tags", tagsToMap(tagsObject["TagResources"]))
+
 	if convertAmqpInstanceDataInstanceTypeResponse(objectRaw["InstanceType"]) == "SERVERLESS" {
 		d.Set("payment_type", "PayAsYouGo")
 		return nil
@@ -361,7 +391,11 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreateTime"])
+	if v, ok := objectRaw["CreateTime"].(string); ok {
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			d.Set("create_time", t.UnixMilli())
+		}
+	}
 	d.Set("payment_type", objectRaw["SubscriptionType"])
 	d.Set("renewal_duration", objectRaw["RenewalDuration"])
 	d.Set("renewal_duration_unit", convertAmqpInstanceDataInstanceListRenewalDurationUnitResponse(objectRaw["RenewalDurationUnit"]))
@@ -582,6 +616,45 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		stateConf := BuildStateConf([]string{}, []string{"SERVING"}, d.Timeout(schema.TimeoutUpdate), 4*time.Minute, amqpServiceV2.AmqpInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	update = false
+	action = "UpdateInstanceServerlessSwitch"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	if d.HasChange("serverless_switch") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("serverless_switch"); ok {
+		request["ServerlessSwitch"] = v
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("amqp-open", "2019-12-12", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("tags") {
+		amqpServiceV2 := AmqpServiceV2{client}
+		if err := amqpServiceV2.SetResourceTags(d, "instance"); err != nil {
+			return WrapError(err)
 		}
 	}
 

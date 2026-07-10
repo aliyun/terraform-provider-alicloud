@@ -701,8 +701,10 @@ func resourceAliCloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}
 		d.Set("vswitch_id", fmt.Sprint(v["VSwitchId"]))
 	}
 
-	if v, ok := instance["Tags"]; ok {
-		d.Set("tags", tagsToMap(v))
+	if v, ok := instance["Tags"].(map[string]interface{}); ok {
+		if tagList, ok := v["Tag"]; ok {
+			d.Set("tags", tagsToMap(tagList))
+		}
 	}
 
 	var disk ecs.Disk

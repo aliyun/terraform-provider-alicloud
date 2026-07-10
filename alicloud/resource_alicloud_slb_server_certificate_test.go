@@ -69,7 +69,7 @@ func testSweepSlbServerCertificate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSLBServerCertificate_basic(t *testing.T) {
+func TestAccAliCloudSLBServerCertificate_basic(t *testing.T) {
 	var v *slb.ServerCertificate
 	resourceId := "alicloud_slb_server_certificate.default"
 	ra := resourceAttrInit(resourceId, serverCertificateMap)

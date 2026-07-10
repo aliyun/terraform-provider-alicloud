@@ -60,12 +60,17 @@ func resourceAliCloudInstance() *schema.Resource {
 					string(CreditSpecificationUnlimited),
 				}, false),
 			},
+			"network_interface_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"security_groups": {
-				Type:         schema.TypeSet,
-				Elem:         &schema.Schema{Type: schema.TypeString},
-				Computed:     true,
-				Optional:     true,
-				AtLeastOneOf: []string{"security_groups", "launch_template_id", "launch_template_name"},
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"instance_name": {
 				Type:         schema.TypeString,
@@ -207,11 +212,19 @@ func resourceAliCloudInstance() *schema.Resource {
 			"network_card_index": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"queue_pair_number": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"source_dest_check": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"data_disks": {
@@ -328,6 +341,12 @@ func resourceAliCloudInstance() *schema.Resource {
 						},
 						"queue_pair_number": {
 							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+						},
+						"source_dest_check": {
+							Type:     schema.TypeBool,
 							Optional: true,
 							ForceNew: true,
 							Computed: true,
@@ -610,10 +629,6 @@ func resourceAliCloudInstance() *schema.Resource {
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"ipv6_address_count"},
 			},
-			"network_interface_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"cpu": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -699,6 +714,10 @@ func resourceAliCloudInstance() *schema.Resource {
 					},
 				},
 			},
+			"enable_high_density_mode": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"cpu_options": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -737,11 +756,10 @@ func resourceAliCloudInstance() *schema.Resource {
 				Deprecated:       "The attribute is invalid and no any affect for the instance. So it has been deprecated since version v1.121.2.",
 			},
 			"role_name": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Computed:         true,
-				DiffSuppressFunc: vpcTypeResourceDiffSuppressFunc,
-				Deprecated:       "Field `role_name` has been deprecated from provider version 1.275.0. New resource `alicloud_ecs_ram_role_attachment` instead.",
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field `role_name` has been deprecated from provider version 1.275.0. New resource `alicloud_ecs_ram_role_attachment` instead.",
 			},
 		},
 	}
@@ -987,12 +1005,14 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 				disksMap["Device"] = device
 			}
 
-			if device, ok := item["provisioned_iops"].(string); ok && disksMap["Category"] == string(DiskCloudAuto) {
-				disksMap["ProvisionedIops"] = device
-			}
+			if disksMap["Category"] == string(DiskCloudAuto) {
+				if v, ok := item["provisioned_iops"]; ok {
+					disksMap["ProvisionedIops"] = v.(int)
+				}
 
-			if device, ok := item["bursting_enabled"].(string); ok && disksMap["Category"] == string(DiskCloudAuto) {
-				disksMap["BurstingEnabled"] = device
+				if v, ok := item["bursting_enabled"]; ok {
+					disksMap["BurstingEnabled"] = v.(bool)
+				}
 			}
 
 			if performanceLevel, ok := item["performance_level"].(string); ok && performanceLevel != "" && disksMap["Category"] == string(DiskCloudESSD) {
@@ -1010,50 +1030,60 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 	networkInterfacesMaps := make([]map[string]interface{}, 0)
 
+	_, networkInterfaceIdOk := d.GetOk("network_interface_id")
 	_, networkInterfaceTrafficModeOk := d.GetOk("network_interface_traffic_mode")
 	_, networkCardIndexOk := d.GetOkExists("network_card_index")
 	_, queuePairNumberOk := d.GetOkExists("queue_pair_number")
+	_, sourceDestCheckOk := d.GetOkExists("source_dest_check")
 
-	if networkInterfaceTrafficModeOk || networkCardIndexOk || queuePairNumberOk {
+	if networkInterfaceIdOk || networkInterfaceTrafficModeOk || networkCardIndexOk || queuePairNumberOk || sourceDestCheckOk {
 		primaryNetworkInterfacesMap := make(map[string]interface{})
 		primaryNetworkInterfacesMap["InstanceType"] = "Primary"
 
-		if v, ok := d.GetOk("security_groups"); ok {
-			// At present, the classic network instance does not support multi sg in runInstances
-			sgs := expandStringList(v.(*schema.Set).List())
-			if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
-				primaryNetworkInterfacesMap["SecurityGroupId"] = sgs[0]
-			} else {
-				primaryNetworkInterfacesMap["SecurityGroupIds"] = sgs
+		if networkInterfaceId, ok := d.GetOk("network_interface_id"); ok && fmt.Sprint(networkInterfaceId) != "" {
+			primaryNetworkInterfacesMap["NetworkInterfaceId"] = networkInterfaceId
+		} else {
+			if v, ok := d.GetOk("security_groups"); ok {
+				// At present, the classic network instance does not support multi sg in runInstances
+				sgs := expandStringList(v.(*schema.Set).List())
+				if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
+					primaryNetworkInterfacesMap["SecurityGroupId"] = sgs[0]
+				} else {
+					primaryNetworkInterfacesMap["SecurityGroupIds"] = sgs
+				}
 			}
-		}
 
-		if vswitchValue != "" {
-			primaryNetworkInterfacesMap["VSwitchId"] = vswitchValue
+			if vswitchValue != "" {
+				primaryNetworkInterfacesMap["VSwitchId"] = vswitchValue
 
-			if v, ok := d.GetOk("private_ip"); ok {
-				primaryNetworkInterfacesMap["PrimaryIpAddress"] = v
+				if v, ok := d.GetOk("private_ip"); ok {
+					primaryNetworkInterfacesMap["PrimaryIpAddress"] = v
+				}
 			}
-		}
 
-		if v, ok := d.GetOk("ipv6_addresses"); ok {
-			primaryNetworkInterfacesMap["Ipv6Address"] = v.(*schema.Set).List()
-		}
+			if v, ok := d.GetOk("ipv6_addresses"); ok {
+				primaryNetworkInterfacesMap["Ipv6Address"] = v.(*schema.Set).List()
+			}
 
-		if v, ok := d.GetOkExists("ipv6_address_count"); ok {
-			primaryNetworkInterfacesMap["Ipv6AddressCount"] = v
-		}
+			if v, ok := d.GetOkExists("ipv6_address_count"); ok {
+				primaryNetworkInterfacesMap["Ipv6AddressCount"] = v
+			}
 
-		if v, ok := d.GetOk("network_interface_traffic_mode"); ok {
-			primaryNetworkInterfacesMap["NetworkInterfaceTrafficMode"] = v
-		}
+			if v, ok := d.GetOk("network_interface_traffic_mode"); ok {
+				primaryNetworkInterfacesMap["NetworkInterfaceTrafficMode"] = v
+			}
 
-		if v, ok := d.GetOkExists("network_card_index"); ok {
-			primaryNetworkInterfacesMap["NetworkCardIndex"] = v
-		}
+			if v, ok := d.GetOkExists("network_card_index"); ok {
+				primaryNetworkInterfacesMap["NetworkCardIndex"] = v
+			}
 
-		if v, ok := d.GetOkExists("queue_pair_number"); ok {
-			primaryNetworkInterfacesMap["QueuePairNumber"] = v
+			if v, ok := d.GetOkExists("queue_pair_number"); ok {
+				primaryNetworkInterfacesMap["QueuePairNumber"] = v
+			}
+
+			if v, ok := d.GetOkExists("source_dest_check"); ok {
+				primaryNetworkInterfacesMap["SourceDestCheck"] = v
+			}
 		}
 
 		networkInterfacesMaps = append(networkInterfacesMaps, primaryNetworkInterfacesMap)
@@ -1114,6 +1144,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 				if queuePairNumber, ok := secondaryNetworkInterfacesArg["queue_pair_number"]; ok && fmt.Sprint(queuePairNumber) != "0" {
 					secondaryNetworkInterfacesMap["QueuePairNumber"] = queuePairNumber
+				}
+
+				if sourceDestCheck, ok := secondaryNetworkInterfacesArg["source_dest_check"]; ok {
+					secondaryNetworkInterfacesMap["SourceDestCheck"] = sourceDestCheck
 				}
 
 				if securityGroupIds, ok := secondaryNetworkInterfacesArg["security_group_ids"]; ok {
@@ -1192,6 +1226,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
+	if v, ok := d.GetOk("enable_high_density_mode"); ok {
+		request["AdditionalInfo.EnableHighDensityMode"] = v
+	}
+
 	if coreCount, ok := d.GetOkExists("cpu_options.0.core_count"); ok {
 		request["CpuOptions.Core"] = coreCount
 	}
@@ -1255,32 +1293,32 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	disk, err := ecsService.DescribeEcsSystemDisk(d.Id())
+	sysDisk, err := ecsService.DescribeEcsSystemDisk(d.Id())
 	if err != nil {
-		// if old resource happenes an not found error, there may system has been detached
+		// if old resource happens a not found error, the system disk my have been detached
 		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[WARNING] describing instance %s system disk failed. Error: %v", d.Id(), err)
 		} else {
 			return WrapError(err)
 		}
 	} else {
-		d.Set("system_disk_category", disk["Category"])
-		d.Set("system_disk_name", disk["DiskName"])
-		d.Set("system_disk_description", disk["Description"])
-		d.Set("system_disk_size", disk["Size"])
-		d.Set("system_disk_auto_snapshot_policy_id", disk["AutoSnapshotPolicyId"])
-		d.Set("system_disk_storage_cluster_id", disk["StorageClusterId"])
-		d.Set("system_disk_encrypted", disk["Encrypted"])
-		d.Set("system_disk_kms_key_id", disk["KMSKeyId"])
-		d.Set("system_disk_provisioned_iops", disk["ProvisionedIops"])
-		d.Set("system_disk_id", disk["DiskId"])
-		d.Set("system_disk_performance_level", disk["PerformanceLevel"])
+		d.Set("system_disk_category", sysDisk["Category"])
+		d.Set("system_disk_name", sysDisk["DiskName"])
+		d.Set("system_disk_description", sysDisk["Description"])
+		d.Set("system_disk_size", sysDisk["Size"])
+		d.Set("system_disk_auto_snapshot_policy_id", sysDisk["AutoSnapshotPolicyId"])
+		d.Set("system_disk_storage_cluster_id", sysDisk["StorageClusterId"])
+		d.Set("system_disk_encrypted", sysDisk["Encrypted"])
+		d.Set("system_disk_kms_key_id", sysDisk["KMSKeyId"])
+		d.Set("system_disk_provisioned_iops", sysDisk["ProvisionedIops"])
+		d.Set("system_disk_id", sysDisk["DiskId"])
+		d.Set("system_disk_performance_level", sysDisk["PerformanceLevel"])
 
-		if disk["BurstingEnabled"] != nil {
-			d.Set("system_disk_bursting_enabled", disk["BurstingEnabled"])
+		if sysDisk["BurstingEnabled"] != nil {
+			d.Set("system_disk_bursting_enabled", sysDisk["BurstingEnabled"])
 		}
 
-		if v, ok := disk["Tags"].(map[string]interface{}); ok {
+		if v, ok := sysDisk["Tags"].(map[string]interface{}); ok {
 			d.Set("volume_tags", tagsToMap(v["Tag"]))
 		}
 	}
@@ -1333,6 +1371,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("create_time", instance.CreationTime)
 	d.Set("start_time", instance.StartTime)
 	d.Set("expired_time", instance.ExpiredTime)
+	d.Set("enable_high_density_mode", instance.AdditionalInfo.EnableHighDensityMode)
 
 	imageOptionsMaps := make([]map[string]interface{}, 0)
 	imageOptionsMap := make(map[string]interface{})
@@ -1411,6 +1450,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 			d.Set("primary_ip_address", obj.PrimaryIpAddress)
 			d.Set("network_interface_traffic_mode", object["NetworkInterfaceTrafficMode"])
 			d.Set("queue_pair_number", object["QueuePairNumber"])
+			d.Set("source_dest_check", object["SourceDestCheck"])
 
 			if attachment, ok := object["Attachment"]; ok {
 				attachmentArg := attachment.(map[string]interface{})
@@ -1431,6 +1471,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 			networkInterfaceMap["vswitch_id"] = object["VSwitchId"]
 			networkInterfaceMap["network_interface_traffic_mode"] = object["NetworkInterfaceTrafficMode"]
 			networkInterfaceMap["queue_pair_number"] = object["QueuePairNumber"]
+			networkInterfaceMap["source_dest_check"] = object["SourceDestCheck"]
 
 			if securityGroupIds, ok := object["SecurityGroupIds"]; ok {
 				securityGroupIdsArg := securityGroupIds.(map[string]interface{})
@@ -3055,6 +3096,11 @@ func modifyInstanceAttributeNeedStopped(d *schema.ResourceData, meta interface{}
 		update = true
 	}
 
+	if d.HasChange("enable_high_density_mode") {
+		request["AdditionalInfo.EnableHighDensityMode"] = d.Get("enable_high_density_mode")
+		update = true
+	}
+
 	if !run {
 		return update, nil
 	}
@@ -3126,7 +3172,8 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 					wait()
 					return resource.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{"InternalError"}) {
+				if IsExpectedErrors(err, []string{"InternalError", "UnknownError"}) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

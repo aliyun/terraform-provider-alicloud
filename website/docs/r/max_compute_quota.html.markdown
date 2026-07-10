@@ -120,7 +120,7 @@ If PaymentType is PayAsYouGo, you do not need to fill in
 
 * `payment_type` - (Required, ForceNew) Payment type. Valid values: Subscription/PayAsYouGo
 
--> **NOTE:** -- PayAsYouGo only needs to be opened once per region
+-> **NOTE:** -- PayAsYouGo only needs to be opened once per region. Since the pay-as-you-go quota cannot be deleted, creating this resource with `payment_type = "PayAsYouGo"` adopts the existing pay-as-you-go quota of the region when it has already been opened
 
 * `sub_quota_info_list` - (Optional, Set) Secondary Quota list
 

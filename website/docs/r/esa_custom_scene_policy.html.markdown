@@ -57,15 +57,17 @@ resource "alicloud_esa_custom_scene_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `create_time` - (Required) The time when the policy takes effect.
-The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+
 * `custom_scene_policy_name` - (Required) The policy name.
+* `start_time` - (Optional, Available since v1.281.0) The time when the policy takes effect.
+The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `end_time` - (Required) The time when the policy expires.
 The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
-* `site_ids` - (Required) The IDs of websites associated.
+* `site_ids` - (Required) The IDs of the sites to associate with the policy. Separate multiple site IDs with commas.
 * `template` - (Required) The name of the policy template. Valid value:
   - `promotion`: major events.
 * `status` - (Optional) Policy effective status. Valid values: `Disabled`, `Running`.
+* `create_time` - (Optional, Deprecated since v1.281.0) Field `create_time` has been deprecated from provider version 1.281.0. New field `start_time` instead.
 
 ## Attributes Reference
 

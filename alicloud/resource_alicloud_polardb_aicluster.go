@@ -149,6 +149,17 @@ func resourceAlicloudPolarDBAICluster() *schema.Resource {
 				Computed:    true,
 				Description: "The model type. Example: `public`.",
 			},
+			"connection_string": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The connection string of the AI cluster endpoint.",
+			},
+			"api_key": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Sensitive:   true,
+				Description: "The API key for accessing the AI cluster.",
+			},
 		},
 	}
 }
@@ -305,6 +316,34 @@ func resourceAlicloudPolarDBAIClusterRead(d *schema.ResourceData, meta interface
 			}
 		}
 	}
+
+	// Extract connection_string from EndpointList
+	if endpointList, ok := attribute["EndpointList"].([]interface{}); ok && len(endpointList) > 0 {
+		if endpoint, ok := endpointList[0].(map[string]interface{}); ok {
+			if netInfoItems, ok := endpoint["NetInfoItems"].([]interface{}); ok && len(netInfoItems) > 0 {
+				if netInfo, ok := netInfoItems[0].(map[string]interface{}); ok {
+					if connectionString, ok := netInfo["ConnectionString"].(string); ok {
+						d.Set("connection_string", connectionString)
+					}
+				}
+			}
+		}
+	}
+
+	// Get api_key from DescribeAIDBClusterApiKeys
+	regionId := d.Get("region_id").(string)
+	apiKeysResponse, err := polarDBService.DescribeAIDBClusterApiKeys(regionId)
+	if err != nil {
+		return WrapError(err)
+	}
+	if apiKeys, ok := apiKeysResponse["ApiKeys"].([]interface{}); ok && len(apiKeys) > 0 {
+		if apiKey, ok := apiKeys[0].(map[string]interface{}); ok {
+			if key, ok := apiKey["ApiKey"].(string); ok {
+				d.Set("api_key", key)
+			}
+		}
+	}
+
 	return nil
 }
 

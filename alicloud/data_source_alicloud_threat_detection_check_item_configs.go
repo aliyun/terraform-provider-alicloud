@@ -1,20 +1,21 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAliCloudThreatDetectionCheckItemConfigs() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudThreatDetectionCheckItemConfigRead,
+		ReadContext: dataSourceAliCloudThreatDetectionCheckItemConfigRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -27,12 +28,14 @@ func dataSourceAliCloudThreatDetectionCheckItemConfigs() *schema.Resource {
 				Optional: true,
 			},
 			"page_number": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntAtLeast(1),
 			},
 			"page_size": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntAtLeast(1),
 			},
 			"task_sources": {
 				Type:     schema.TypeList,
@@ -136,7 +139,7 @@ func dataSourceAliCloudThreatDetectionCheckItemConfigs() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudThreatDetectionCheckItemConfigRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudThreatDetectionCheckItemConfigRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*connectivity.AliyunClient)
 
 	var objects []map[string]interface{}
@@ -151,43 +154,51 @@ func dataSourceAliCloudThreatDetectionCheckItemConfigRead(d *schema.ResourceData
 		}
 	}
 
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
 	action := "ListCheckItem"
+	pageSize := PageSizeLarge
+	if v := d.Get("page_size").(int); v > 0 {
+		pageSize = v
+	}
+	pageNumber := 1
+	singlePage := false
+	if v := d.Get("page_number").(int); v > 0 {
+		pageNumber = v
+		singlePage = true
+	}
+	request := map[string]interface{}{
+		"PageSize":   pageSize,
+		"PageNumber": pageNumber,
+	}
+	query := map[string]interface{}{}
+	var response map[string]interface{}
 	var err error
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
+
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
 	if v, ok := d.GetOk("task_sources"); ok {
-		taskSourcesMapsArray := convertToInterfaceArray(v)
-
-		request["TaskSources"] = taskSourcesMapsArray
+		request["TaskSources"] = convertToInterfaceArray(v)
 	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return diag.FromErr(WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR))
 		}
 
 		resp, _ := jsonpath.Get("$.CheckItems[*]", response)
@@ -196,21 +207,20 @@ func dataSourceAliCloudThreatDetectionCheckItemConfigRead(d *schema.ResourceData
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprint()]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["CheckId"])]; !ok {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
 
-		if len(result) < PageSizeLarge {
+		if singlePage || len(result) < pageSize {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
 	ids := make([]string, 0)
-	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, objectRaw := range objects {
 		mapping := map[string]interface{}{}
@@ -260,18 +270,17 @@ func dataSourceAliCloudThreatDetectionCheckItemConfigRead(d *schema.ResourceData
 		}
 		mapping["description"] = descriptionMaps
 
-		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, objectRaw[""])
+		ids = append(ids, fmt.Sprint(objectRaw["CheckId"]))
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 
 	if err := d.Set("configs", s); err != nil {
-		return WrapError(err)
+		return diag.FromErr(WrapError(err))
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

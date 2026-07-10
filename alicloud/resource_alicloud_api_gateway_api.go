@@ -174,6 +174,18 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"arn_role": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"region": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"timeout": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
 						"function_version": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -183,10 +195,6 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: StringInSlice([]string{"FCEvent", "HttpTrigger"}, false),
-						},
-						"region": {
-							Type:     schema.TypeString,
-							Required: true,
 						},
 						"function_name": {
 							Type:     schema.TypeString,
@@ -213,17 +221,20 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
-						"arn_role": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
 						"qualifier": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-						"timeout": {
-							Type:     schema.TypeInt,
-							Required: true,
+						"content_type_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"content_type_category": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validation.StringInSlice([]string{"DEFAULT", "CUSTOM", "CLIENT"}, false),
 						},
 					},
 				},
@@ -779,6 +790,8 @@ func getFcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	serviceConfig.FcConfig.FunctionName = config["function_name"].(string)
 	serviceConfig.FcConfig.ServiceName = config["service_name"].(string)
 	serviceConfig.FcConfig.Arn = config["arn_role"].(string)
+	serviceConfig.FcConfig.ContentTypeValue = config["content_type_value"].(string)
+	serviceConfig.FcConfig.ContentTypeCategory = config["content_type_category"].(string)
 	serviceConfig.Timeout = config["timeout"].(int)
 	serviceConfig.VpcEnable = "FALSE"
 	serviceConfig.MockEnable = "FALSE"
@@ -1119,6 +1132,8 @@ func convertApiGatewayApiServiceConfigFcServiceConfigResponse(serviceConfig map[
 		fcServiceConfig["function_name"] = fcConfig["FunctionName"]
 		fcServiceConfig["service_name"] = fcConfig["ServiceName"]
 		fcServiceConfig["arn_role"] = fcConfig["RoleArn"]
+		fcServiceConfig["content_type_value"] = fcConfig["ContentTypeValue"]
+		fcServiceConfig["content_type_category"] = fcConfig["ContentTypeCatagory"]
 	}
 
 	return fcServiceConfig

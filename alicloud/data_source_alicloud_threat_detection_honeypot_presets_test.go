@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudThreatDetectionHoneypotPresetDataSource(t *testing.T) {
+func TestAccAliCloudThreatDetectionHoneypotPresetsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	idsConf := dataSourceTestAccConfig{

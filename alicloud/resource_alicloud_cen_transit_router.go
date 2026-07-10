@@ -45,6 +45,7 @@ func resourceAliCloudCenTransitRouter() *schema.Resource {
 			"support_multicast": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"tags": tagsSchema(),

@@ -42,14 +42,14 @@ func TestAccAlicloudSimpleApplicationServerFirewallRule_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":   "${alicloud_simple_application_server_instance.default.id}",
-					"rule_protocol": "TcpAndUdp",
+					"rule_protocol": "Tcp",
 					"port":          "1024/1055",
 					"remark":        "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id":   CHECKSET,
-						"rule_protocol": "TcpAndUdp",
+						"rule_protocol": "Tcp",
 						"port":          "1024/1055",
 						"remark":        name,
 					}),

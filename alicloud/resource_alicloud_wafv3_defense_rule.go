@@ -169,7 +169,7 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 									"op_value": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: StringInSlice([]string{"not-contain", "contain", "none", "ne", "eq", "lt", "gt", "len-lt", "len-eq", "len-gt", "not-match", "match-one", "all-not-match", "all-not-contain", "contain-one", "not-regex", "regex", "all-not-regex", "regex-one", "prefix-match", "suffix-match", "empty", "exists", "inl"}, false),
+										ValidateFunc: StringInSlice([]string{"not-contain", "contain", "none", "ne", "eq", "lt", "gt", "len-lt", "len-eq", "len-gt", "not-match", "match-one", "all-not-match", "all-not-contain", "contain-one", "not-regex", "regex", "all-not-regex", "regex-one", "prefix-match", "suffix-match", "empty", "exists", "inl", "in-list", "not-in-list"}, false),
 									},
 									"values": {
 										Type:     schema.TypeString,
@@ -380,6 +380,10 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"template", "resource", "global"}, false),
+			},
+			"gmt_modified": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -823,6 +827,7 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 
 	d.Set("defense_origin", objectRaw["DefenseOrigin"])
 	d.Set("defense_scene", objectRaw["DefenseScene"])
+	d.Set("gmt_modified", objectRaw["GmtModified"])
 	d.Set("resource", objectRaw["Resource"])
 	d.Set("rule_name", objectRaw["RuleName"])
 	d.Set("rule_status", objectRaw["Status"])
@@ -1023,7 +1028,9 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 						ruleDetailMap := make(map[string]interface{})
 						ruleDetailChildRaw := ruleDetailChildRaw.(map[string]interface{})
 						ruleDetailMap["rule_action"] = ruleDetailChildRaw["ruleAction"]
-						ruleDetailMap["rule_id"] = ruleDetailChildRaw["ruleId"]
+						if v := ruleDetailChildRaw["ruleId"]; v != nil {
+							ruleDetailMap["rule_id"] = fmt.Sprint(v)
+						}
 						ruleDetailMap["rule_status"] = formatInt(ruleDetailChildRaw["ruleStatus"])
 
 						ruleDetailMaps = append(ruleDetailMaps, ruleDetailMap)
@@ -1052,7 +1059,6 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	d.Partial(true)
 
 	var err error
 	parts := strings.Split(d.Id(), ":")
@@ -1498,7 +1504,6 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	d.Partial(false)
 	return resourceAliCloudWafv3DefenseRuleRead(d, meta)
 }
 
