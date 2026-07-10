@@ -395,6 +395,32 @@ A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" bash "$A1ID" ready jarvis >/dev/null 2>&1
 rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
 
 # ---------------------------------------------------------------------------
+# Test 11b: 数字人 worker 两种 whoami 呈现都可登录(账号名 / empId),错账号仍拒
+# (实测:新开 worker 的 whoami Account=账号名 'terraform-rd',非 WORKER_empId)
+# ---------------------------------------------------------------------------
+echo "=== Test 11b: login 账号集合匹配(账号名/empId 双形态)==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+CAP=$(mktemp); ERR=$(mktemp)
+STUB_WHOAMI_ACCOUNT="terraform-rd" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" login terraform-rd >/dev/null 2>"$ERR"
+[ $? -eq 0 ] && pass "whoami=账号名 'terraform-rd' → login 放行" \
+             || fail "账号名形态应放行 err=$(cat "$ERR")"
+[ -s "$ROOT/identities/terraform-rd/auth.yaml" ] \
+    && pass "账号名形态 auth.yaml 已落盘" || fail "账号名形态 auth.yaml 未落盘"
+rm -rf "$ROOT/identities/terraform-rd"
+STUB_WHOAMI_ACCOUNT="WORKER_1783582458263" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" login terraform-rd >/dev/null 2>"$ERR"
+[ $? -eq 0 ] && pass "whoami=empId 'WORKER_1783582458263' → login 放行" \
+             || fail "empId 形态应放行 err=$(cat "$ERR")"
+STUB_WHOAMI_ACCOUNT="guozai.gzl" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" login terraform-rd >/dev/null 2>"$ERR"
+rc=$?
+[ "$rc" != "0" ] && pass "whoami=别人账号 → 仍拒(退非零)" || fail "错账号应拒 got=$rc"
+grep -qF "身份不匹配" "$ERR" && pass "错账号 stderr 报'身份不匹配'" \
+                             || fail "错账号应报身份不匹配: $(cat "$ERR")"
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ---------------------------------------------------------------------------
 # Test 12: login mismatch 时既有凭据不被破坏(marker 内容原样保留)
 # ---------------------------------------------------------------------------
 echo "=== Test 12: mismatch 时既有 auth.yaml 被 EXIT trap 回滚(marker 保留)==="
