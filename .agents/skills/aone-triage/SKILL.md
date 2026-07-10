@@ -63,6 +63,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | **2124589** mcp_server | 自家应用交付(Agent门户/AgentRuntime/aliyun-automation-agent/PlayGround) | `references/delivery-aliyun-automation-agent.md` |
 | cwd 在 cloudspec repo 或诉求涉 cloudspec / OpenAPI MCP Server | 自家应用交付(cloudspec) | `references/delivery-cloudspec.md` |
 | **2165097** upstream.cloudspec_gap | 镇元 agent 池:上游 Cloudspec 需求 + tf_customer 分支 E agent 关联单(谜拟做人类兜底 owner) | submit_only(建单 assignee=`WORKER_1783326253279` + body 必带 `## 机读信息` JSON,agent 自动接单,不 claim;详见 `references/templates.md` 硬契约) |
+| **2169561** cloudspec_docs_quality | CloudSpec 文档质量问题池:tf_customer 分支 I 关联单(镇元资源文档源头修复,防 provider PR 被下次发版覆盖) | submit_only(建单 assignee=`373108` 念依,body 自然语言写清 provider 侧 PR 链接 + 镇元资源文档 URL + 具体错误位置/正确值,不 claim;详见 `references/tf-customer-request-routing.md` 分支 I) |
 | 其它 | 无 domain reference → 走本文件通用流程 | — |
 
 **判断规则**:先看 `space` 命中 池,再看 `涉及云产品` / 标题 / cwd 辅助定位。有 domain reference 就**加载并跟随**它的决策树;无 reference 走本文件下方通用查证。
@@ -72,7 +73,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | 标题子类型 | 正确处理 |
 |---|---|
 | **[Terraform 资源发布自动审核流程]** | **调 `terraform-provider-release` skill 跑完整 SOP**——需求差距分析(AMP 元数据 vs provider 代码)+ 远程 ACC 实测 + 出 PR。平台流水线的「源码生成/打包上传容器」只是构建产物,**不等于代码已进 provider 仓、更不等于 ACC 验证过**;jarvis 仍须按 SOP 补 ACC + PR(PR merge 是人工门)。**禁止只复核告警就 release**——那是漏跑发布流程,不算处理达标。 |
-| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 SOP):用镇元 `GetResourceType` 核验文档告警落在 provider 公开 schema 还是镇元元数据侧——落 provider 侧 → `provider-fix-documentation` 补文档+PR;落镇元侧/无缺口 → 复核结论 + 路由发布流程或上游 owner。无资源开发,不跑 ACC。 |
+| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 SOP):用镇元 `GetResourceType` 核验文档告警落在 provider 公开 schema 还是镇元元数据侧——落 provider 侧 → `provider-fix-documentation` 补文档+PR;落镇元侧 → **建关联单到 CloudSpec 文档质量问题(2169561) 池指派念依(373108) 修镇元资源文档源头**(见 `references/tf-customer-request-routing.md` 分支 I),provider 侧另建过载(484483) 关联单紧急合 PR 双单并行,防 provider PR 下次发版被镇元覆盖。无资源开发,不跑 ACC。 |
 
 ### 2. 按类型分诊(通用)
 
@@ -204,6 +205,8 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 - ❌ Terraform 相关工单不加载 `references/tf-customer-request-routing.md` —— 会漏专属维护名单直接被路由到过载/新山/镇元 agent
 - ❌ 建 2165097 池 Cloudspec 关联单 body 缺 `## 机读信息` + JSON 段 —— 镇元 agent 靠机读契约驱动 spec/映射/覆盖度动作,marker/字段/JSON 缺任何一项都接不了单,单沉底(2165097 池又不在 jarvis 视检范围,会长期烂在里面);正确姿势严格按 `references/templates.md` 「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架
 - ❌ 分支 E 关联单 assignee 写谜拟 479782 —— 谜拟已不解单(2026-07-08 切换到镇元 agent),关联单硬指派 `WORKER_1783326253279`;写 479782 = 落回人手不再走 agent 自动化(谜拟保留在**源客户主单** assignee 上做人类兜底 owner)
+- ❌ 纯镇元文档修改问题(资源描述/字段解释/枚举值文案)转到镇元 agent(2165097) —— agent 只接"资源本身需变更"类,纯文档修改会被临钧/agent 判定后取消(84123415 就是取消先例);正确路径 → 分支 I:CloudSpec 文档质量问题(2169561) 池指派念依(373108) 修镇元源头(见 `references/tf-customer-request-routing.md` 分支 I)
+- ❌ 只在 provider 侧仓库改 markdown 就当"文档已修复" —— TF provider docs 从镇元资源文档自动生成,provider PR 只是紧急兜底,不修镇元源头下次发版会覆盖回旧值;文档改造分支必与 528766 过载单 + 2169561 念依单**双建**
 - ❌ 用 next.api 网页 curl 拿 API meta —— SPA 拿不到 JSON,用 `aliyun <product> <Action> --help` 或 MCP `ListApis/GetApiDefinition`
 - ❌ 写操作跳过用户授权(supervised 模式) —— 每一步 comment/create/relation/status 都先给草稿等 yes
 - ❌ 用 wrap.sh done 之前先手动 `a1 comment create` —— 重复评论且 a1 无 delete
