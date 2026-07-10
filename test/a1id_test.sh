@@ -1,0 +1,663 @@
+#!/usr/bin/env bash
+# test/a1id_test.sh — TDD for bin/a1id v2 并发多身份切换器
+#
+# 所有测试通过 A1ID_ROOT=<tmp> 隔离,绝不触碰真实 ~/.config/a1;
+# A1_BIN 指向一个记录 argv+A1_CONFIG_DIR 的 stub。
+#
+# 用例覆盖(见 SUMMARY 一节):
+#   1  as <label> -- args 命中已登录身份 dir
+#   2  as <label> 未登录 → die + 报 'login <id>'
+#   3  JARVIS_A1_IDENTITY=<label> 且已登录 → -- 走该 dir
+#   4  JARVIS_A1_IDENTITY=<label> 未登录 + jarvis 已登录 → 回退 + 警告
+#   4b JARVIS_A1_STRICT=1 覆盖 → die,不回退
+#   5  v1→v2 迁移:identities/<label>.auth.yaml 存在 → 首跑生成 identities/<label>/auth.yaml
+#   6  ready 已/未登录退码 0/1
+#   7  别名:as pd 等价 as terraform-pd
+#   8  login 账号不匹配 → die 且清 auth.yaml
+#   9  并发冒烟:两 as 不同身份后台并跑无串扰
+#   10 JARVIS_A1_IDENTITY=guozai(个人身份)→ 警告但可执行
+
+set -uo pipefail
+
+test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+proj_root="$(cd "$test_dir/.." && pwd)"
+A1ID="$proj_root/bin/a1id"
+
+if [ ! -x "$A1ID" ]; then
+    echo "FATAL: $A1ID 不可执行" >&2
+    exit 1
+fi
+
+PASS=0; FAIL=0
+pass(){ echo "PASS: $1"; PASS=$((PASS+1)); }
+fail(){ echo "FAIL: $1"; FAIL=$((FAIL+1)); }
+
+# 每 case 一个新根,彻底隔离
+new_root(){ mktemp -d; }
+
+# stub a1 二进制:
+#   auth login  → 在 A1_CONFIG_DIR 内写 auth.yaml(内容 account=STUB_WHOAMI_ACCOUNT);
+#                 STUB_LOGIN_FAIL=1 → 不写 auth.yaml 且退 42(模拟 a1 login 自身失败)
+#   auth whoami → 打印 Account: <STUB_WHOAMI_ACCOUNT>;STUB_WHOAMI_EMPTY=1 → 退非零无输出
+#   其他        → 把 A1_CONFIG_DIR + argv 一行写入 STUB_CAPTURE(TAB 分隔)
+make_stub(){
+    local tmpbin="$1"
+    cat > "$tmpbin/a1" <<'STUB'
+#!/usr/bin/env bash
+if [ -n "${STUB_CAPTURE:-}" ]; then
+    printf 'A1_CONFIG_DIR=%s\tARGS=%s\n' "${A1_CONFIG_DIR:-}" "$*" >> "$STUB_CAPTURE"
+fi
+if [ "${1:-}" = "auth" ] && [ "${2:-}" = "login" ]; then
+    if [ "${STUB_LOGIN_FAIL:-0}" = "1" ]; then
+        echo "stub a1 auth login: simulated failure" >&2
+        exit 42
+    fi
+    mkdir -p "${A1_CONFIG_DIR:-.}"
+    cat > "${A1_CONFIG_DIR}/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: ${STUB_WHOAMI_ACCOUNT:-unknown}
+        user: ${STUB_WHOAMI_ACCOUNT:-unknown}
+EOF
+    exit 0
+fi
+if [ "${1:-}" = "auth" ] && [ "${2:-}" = "whoami" ]; then
+    if [ "${STUB_WHOAMI_EMPTY:-0}" = "1" ]; then
+        echo "not logged in" >&2
+        exit 1
+    fi
+    cat <<EOF
+Account:  ${STUB_WHOAMI_ACCOUNT:-unknown}
+Name:     stub
+Emp ID:   000000
+Email:    stub@example.com
+EOF
+    exit 0
+fi
+exit 0
+STUB
+    chmod +x "$tmpbin/a1"
+}
+
+# 预置一个身份为「已登录」(直接写 auth.yaml,不走 a1 login)
+seed_login(){
+    local root="$1" label="$2"
+    mkdir -p "$root/identities/$label"
+    cat > "$root/identities/$label/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: seeded-$label
+EOF
+}
+
+# ===========================================================================
+# Test 1: as terraform-pd -- <args> 走 pd 目录,argv 正确
+# ===========================================================================
+echo "=== Test 1: as terraform-pd -- ... 走 pd 目录 + argv 正确 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "terraform-pd"
+CAP=$(mktemp)
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" as terraform-pd -- project foo bar >/dev/null 2>&1
+rc=$?
+line=$(cat "$CAP")
+[ "$rc" = "0" ] && pass "as terraform-pd 退 0" || fail "as terraform-pd exit=$rc"
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-pd	" "$CAP"; then
+    pass "stub 收到 A1_CONFIG_DIR 指向 terraform-pd dir"
+else
+    fail "A1_CONFIG_DIR 未指向 terraform-pd 目录: $line"
+fi
+if grep -qF "ARGS=project foo bar" "$CAP"; then
+    pass "stub 收到 argv 完整"
+else
+    fail "argv 传错: $line"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP"
+
+# ===========================================================================
+# Test 2: as terraform-rd 未登录 → die + 报错含 'login terraform-rd'
+# ===========================================================================
+echo "=== Test 2: as terraform-rd 未登录 → die ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+CAP=$(mktemp); ERR=$(mktemp)
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" as terraform-rd -- x >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" != "0" ] && pass "未登录 as 退非零" || fail "未登录 as 应退非零, got=$rc"
+if printf '%s' "$err" | grep -qF "login terraform-rd"; then
+    pass "错误消息含修复指引 'login terraform-rd'"
+else
+    fail "错误消息缺 'login terraform-rd': $err"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ===========================================================================
+# Test 3: JARVIS_A1_IDENTITY=terraform-qa 且 qa 已登录 → -- 走 qa dir
+# ===========================================================================
+echo "=== Test 3: JARVIS_A1_IDENTITY=terraform-qa (qa 已登录) → -- 走 qa dir ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "terraform-qa"
+seed_login "$ROOT" "jarvis"
+CAP=$(mktemp)
+JARVIS_A1_IDENTITY=terraform-qa A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" -- y >/dev/null 2>&1
+rc=$?
+[ "$rc" = "0" ] && pass "-- with qa 退 0" || fail "exit=$rc"
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-qa	" "$CAP"; then
+    pass "qa 已登录 → -- 走 qa dir"
+else
+    fail "qa 未走对目录: $(cat "$CAP")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP"
+
+# ===========================================================================
+# Test 4: qa 未登录 + jarvis 已登录 → 回退 jarvis + 警告(非 strict 时)
+# ===========================================================================
+echo "=== Test 4: qa 未登录, jarvis 已登录 → 回退 jarvis + 警告 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "jarvis"
+CAP=$(mktemp); ERR=$(mktemp)
+JARVIS_A1_IDENTITY=terraform-qa A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" -- z >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" = "0" ] && pass "回退退 0" || fail "回退 exit=$rc"
+if printf '%s' "$err" | grep -qF "回退"; then
+    pass "stderr 有回退警告"
+else
+    fail "stderr 缺回退警告: $err"
+fi
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/jarvis	" "$CAP"; then
+    pass "capture 走 jarvis dir(回退落地)"
+else
+    fail "未回退到 jarvis dir: $(cat "$CAP")"
+fi
+
+echo "=== Test 4b: 同场景 STRICT=1 → die,不回退 ==="
+: > "$CAP"; : > "$ERR"
+JARVIS_A1_IDENTITY=terraform-qa JARVIS_A1_STRICT=1 A1ID_ROOT="$ROOT" \
+    A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" bash "$A1ID" -- z >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" != "0" ] && pass "STRICT=1 未登录 die" || fail "STRICT=1 应 die, exit=$rc"
+if printf '%s' "$err" | grep -qF "STRICT" || printf '%s' "$err" | grep -qF "未登录"; then
+    pass "STRICT 错误消息合理"
+else
+    fail "STRICT 错误缺关键字: $err"
+fi
+if [ ! -s "$CAP" ]; then
+    pass "STRICT die 后未 exec a1(capture 空)"
+else
+    fail "STRICT die 后不应 exec a1, capture=$(cat "$CAP")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ===========================================================================
+# Test 5: v1 → v2 迁移
+# ===========================================================================
+echo "=== Test 5: v1→v2 迁移(jarvis) ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+mkdir -p "$ROOT/identities"
+cat > "$ROOT/identities/jarvis.auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: WORKER_1782379562571
+EOF
+CAP=$(mktemp); ERR=$(mktemp)
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" status >/dev/null 2>"$ERR"
+rc=$?
+[ -f "$ROOT/identities/jarvis/auth.yaml" ] && pass "v2 dir 已生成" || fail "v2 dir 未生成"
+[ -f "$ROOT/identities/jarvis.auth.yaml" ] && pass "v1 文件保留(未删)" || fail "v1 文件被删了"
+if diff "$ROOT/identities/jarvis.auth.yaml" "$ROOT/identities/jarvis/auth.yaml" >/dev/null 2>&1; then
+    pass "v1/v2 内容一致(cp 而非 mv)"
+else
+    fail "v1/v2 内容不一致"
+fi
+err=$(cat "$ERR")
+if printf '%s' "$err" | grep -qF "v1→v2 迁移"; then
+    pass "stderr 有迁移提示"
+else
+    fail "stderr 缺迁移提示: $err"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ===========================================================================
+# Test 6: ready 两态
+# ===========================================================================
+echo "=== Test 6: ready 已/未登录退码 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "jarvis"
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" bash "$A1ID" ready jarvis >/dev/null 2>&1
+rc=$?
+[ "$rc" = "0" ] && pass "ready jarvis(已登录)退 0" || fail "ready jarvis 应退 0, got=$rc"
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" bash "$A1ID" ready terraform-pd >/dev/null 2>&1
+rc=$?
+[ "$rc" != "0" ] && pass "ready terraform-pd(未登录)退非零" || fail "ready terraform-pd 应退非零, got=$rc"
+rm -rf "$ROOT" "$BIN"
+
+# ===========================================================================
+# Test 7: 别名 as pd == as terraform-pd
+# ===========================================================================
+echo "=== Test 7: 别名 pd → terraform-pd ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "terraform-pd"
+CAP=$(mktemp)
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" as pd -- z >/dev/null 2>&1
+rc=$?
+[ "$rc" = "0" ] && pass "as pd 退 0" || fail "as pd exit=$rc"
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-pd	" "$CAP"; then
+    pass "别名 pd 映射到 terraform-pd dir"
+else
+    fail "pd 别名未生效: $(cat "$CAP")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP"
+
+# ===========================================================================
+# Test 8: login 账号不匹配 → die + 清 auth.yaml
+# ===========================================================================
+echo "=== Test 8: login jarvis 但浏览器 BUC = guozai → die + 清盘 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+CAP=$(mktemp); ERR=$(mktemp)
+STUB_WHOAMI_ACCOUNT="guozai.gzl" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" login jarvis >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" != "0" ] && pass "不匹配 login 退非零" || fail "不匹配 login 应退非零 rc=$rc"
+if printf '%s' "$err" | grep -qF "身份不匹配"; then
+    pass "报错含 '身份不匹配'"
+else
+    fail "缺 '身份不匹配': $err"
+fi
+if [ ! -f "$ROOT/identities/jarvis/auth.yaml" ]; then
+    pass "不匹配后该身份 auth.yaml 已清(未污染)"
+else
+    fail "不匹配后 auth.yaml 未清: $(cat "$ROOT/identities/jarvis/auth.yaml")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ===========================================================================
+# Test 9: 并发冒烟 — pd/rd 并行 as,capture 各自正确,无串扰
+# ===========================================================================
+echo "=== Test 9: 并发冒烟(pd + rd 后台并行) ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "terraform-pd"
+seed_login "$ROOT" "terraform-rd"
+CAP_PD=$(mktemp); CAP_RD=$(mktemp)
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP_PD" \
+    bash "$A1ID" as terraform-pd -- concurrent-pd >/dev/null 2>&1 &
+pid_pd=$!
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP_RD" \
+    bash "$A1ID" as terraform-rd -- concurrent-rd >/dev/null 2>&1 &
+pid_rd=$!
+wait $pid_pd; rc_pd=$?
+wait $pid_rd; rc_rd=$?
+if [ "$rc_pd" = "0" ] && [ "$rc_rd" = "0" ]; then
+    pass "两并发进程都退 0"
+else
+    fail "并发退码错 pd=$rc_pd rd=$rc_rd"
+fi
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-pd	" "$CAP_PD" \
+    && grep -qF "concurrent-pd" "$CAP_PD"; then
+    pass "pd capture 正确"
+else
+    fail "pd capture 错: $(cat "$CAP_PD")"
+fi
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-rd	" "$CAP_RD" \
+    && grep -qF "concurrent-rd" "$CAP_RD"; then
+    pass "rd capture 正确"
+else
+    fail "rd capture 错: $(cat "$CAP_RD")"
+fi
+if ! grep -qF "concurrent-rd" "$CAP_PD" && ! grep -qF "concurrent-pd" "$CAP_RD"; then
+    pass "两并发进程 capture 无串扰"
+else
+    fail "并发串扰: pd=$(cat "$CAP_PD"); rd=$(cat "$CAP_RD")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP_PD" "$CAP_RD"
+
+# ===========================================================================
+# Test 10a: status 在无任何身份登录时仍退 0 且显示表格
+#           (回归护栏:resolve_default die 不得短路 status 的 || echo 兜底)
+# ===========================================================================
+echo "=== Test 10a: status 无登录退 0(die 不短路 || echo) ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+OUT=$(mktemp)
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" bash "$A1ID" status >"$OUT" 2>&1
+rc=$?
+out=$(cat "$OUT")
+[ "$rc" = "0" ] && pass "status(无登录)退 0" || fail "status 应退 0, got=$rc; out=$out"
+if printf '%s' "$out" | grep -qF "身份表" && printf '%s' "$out" | grep -qF "terraform-pd"; then
+    pass "status 输出七身份表(含 terraform-pd)"
+else
+    fail "status 输出缺表格: $out"
+fi
+rm -rf "$ROOT" "$BIN" "$OUT"
+
+# ===========================================================================
+# Test 10: JARVIS_A1_IDENTITY=guozai(个人身份,已登录)→ 警告但可执行
+# ===========================================================================
+echo "=== Test 10: JARVIS_A1_IDENTITY=guozai → 个人身份纪律告警 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "guozai"
+CAP=$(mktemp); ERR=$(mktemp)
+JARVIS_A1_IDENTITY=guozai A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" -- personal-run >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" = "0" ] && pass "个人身份可执行(退 0)" || fail "个人身份执行失败 rc=$rc"
+if printf '%s' "$err" | grep -qF "个人身份"; then
+    pass "stderr 有个人身份纪律告警"
+else
+    fail "stderr 缺个人身份告警: $err"
+fi
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/guozai	" "$CAP"; then
+    pass "确实以 guozai dir 跑"
+else
+    fail "capture 未走 guozai: $(cat "$CAP")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ===========================================================================
+# B2 移植:login 生命周期护栏(从被删的 a1id_login_guard_test.sh 搬到 v2 布局)
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Test 11: login happy path — whoami 匹配期望账号 → auth.yaml 落盘 + 退 0
+# ---------------------------------------------------------------------------
+echo "=== Test 11: login happy path(whoami == 期望账号)==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+CAP=$(mktemp); ERR=$(mktemp)
+STUB_WHOAMI_ACCOUNT="WORKER_1782379562571" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" login jarvis >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" = "0" ] && pass "login jarvis 匹配期望账号 → 退 0" || fail "login exit=$rc err=$err"
+if [ -s "$ROOT/identities/jarvis/auth.yaml" ]; then
+    pass "login 成功后 identities/jarvis/auth.yaml 已落盘"
+else
+    fail "login 成功但 auth.yaml 未落盘"
+fi
+if grep -qF "WORKER_1782379562571" "$ROOT/identities/jarvis/auth.yaml"; then
+    pass "auth.yaml 内容含期望账号"
+else
+    fail "auth.yaml 内容错: $(cat "$ROOT/identities/jarvis/auth.yaml")"
+fi
+# 成功路径必须清 trap(否则退出时会误删)——间接验证:紧跟一条 ready 应仍成立
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" bash "$A1ID" ready jarvis >/dev/null 2>&1
+[ $? -eq 0 ] && pass "登录成功后 ready jarvis 退 0(trap 已清 + 未误删)" \
+             || fail "登录成功后 ready jarvis 应 0"
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ---------------------------------------------------------------------------
+# Test 12: login mismatch 时既有凭据不被破坏(marker 内容原样保留)
+# ---------------------------------------------------------------------------
+echo "=== Test 12: mismatch 时既有 auth.yaml 被 EXIT trap 回滚(marker 保留)==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+mkdir -p "$ROOT/identities/jarvis"
+cat > "$ROOT/identities/jarvis/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: WORKER_1782379562571
+        marker: PRE_EXISTING_JARVIS_MARKER
+EOF
+CAP=$(mktemp); ERR=$(mktemp)
+# 浏览器 BUC 会话是 guozai(与请求 label 期望不符)—— login 触发 mismatch die + trap 回滚
+STUB_WHOAMI_ACCOUNT="guozai.gzl" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" login jarvis >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" != "0" ] && pass "mismatch login 退非零" || fail "mismatch login 应退非零 got=$rc"
+if printf '%s' "$err" | grep -qF "身份不匹配"; then
+    pass "stderr 报'身份不匹配'"
+else
+    fail "stderr 缺'身份不匹配': $err"
+fi
+# 核心不变量:预置的 marker 仍在(EXIT trap 从备份回滚)
+if grep -qF "PRE_EXISTING_JARVIS_MARKER" "$ROOT/identities/jarvis/auth.yaml"; then
+    pass "既有 auth.yaml 的 marker 已由 trap 回滚保留"
+else
+    fail "既有凭据被覆盖(trap 回滚失效): $(cat "$ROOT/identities/jarvis/auth.yaml" 2>/dev/null)"
+fi
+# 且不含污染的 guozai.gzl 账号(login 阶段 stub 写入的内容)
+if ! grep -qF "guozai.gzl" "$ROOT/identities/jarvis/auth.yaml"; then
+    pass "回滚后不含污染 guozai.gzl"
+else
+    fail "既有 auth.yaml 泄漏了 guozai.gzl: $(cat "$ROOT/identities/jarvis/auth.yaml")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ---------------------------------------------------------------------------
+# Test 13: a1 auth login 自身失败(退非零)→ trap 回滚 + 不落盘
+# ---------------------------------------------------------------------------
+echo "=== Test 13: a1 auth login 退非零 → trap 回滚 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+mkdir -p "$ROOT/identities/jarvis"
+cat > "$ROOT/identities/jarvis/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: WORKER_1782379562571
+        marker: PRE_TEST13_MARKER
+EOF
+CAP=$(mktemp); ERR=$(mktemp)
+# STUB_LOGIN_FAIL=1 让 a1 auth login 直接退 42;a1id 不再走到 whoami
+STUB_LOGIN_FAIL=1 STUB_WHOAMI_ACCOUNT="WORKER_1782379562571" A1ID_ROOT="$ROOT" \
+    A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" bash "$A1ID" login jarvis >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" != "0" ] && pass "a1 login 失败 → login 命令退非零" || fail "应退非零 got=$rc"
+# 核心不变量:预置 marker 仍在(trap 从备份回滚)
+if grep -qF "PRE_TEST13_MARKER" "$ROOT/identities/jarvis/auth.yaml"; then
+    pass "a1 login 失败后既有 marker 保留(trap 回滚)"
+else
+    fail "既有凭据被破坏: $(cat "$ROOT/identities/jarvis/auth.yaml" 2>/dev/null)"
+fi
+# 无备份场景:预置删除,再触发 login fail,断言 dir 空(未落盘)
+rm -rf "$ROOT/identities/jarvis"
+STUB_LOGIN_FAIL=1 STUB_WHOAMI_ACCOUNT="WORKER_1782379562571" A1ID_ROOT="$ROOT" \
+    A1_BIN="$BIN/a1" bash "$A1ID" login jarvis >/dev/null 2>&1
+if [ ! -f "$ROOT/identities/jarvis/auth.yaml" ]; then
+    pass "无备份时 a1 login 失败 → 不落盘(trap 清理)"
+else
+    fail "无备份时不应落盘: $(cat "$ROOT/identities/jarvis/auth.yaml")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ---------------------------------------------------------------------------
+# Test 14: whoami 返空视为不匹配 → 同样触发 trap 回滚
+# ---------------------------------------------------------------------------
+echo "=== Test 14: whoami 返空 → 判不匹配 + trap 回滚 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+mkdir -p "$ROOT/identities/jarvis"
+cat > "$ROOT/identities/jarvis/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: WORKER_1782379562571
+        marker: PRE_TEST14_MARKER
+EOF
+CAP=$(mktemp); ERR=$(mktemp)
+STUB_WHOAMI_EMPTY=1 STUB_WHOAMI_ACCOUNT="WORKER_1782379562571" A1ID_ROOT="$ROOT" \
+    A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" bash "$A1ID" login jarvis >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" != "0" ] && pass "whoami 返空 → login 退非零" || fail "应退非零 got=$rc"
+if printf '%s' "$err" | grep -qF "<空>"; then
+    pass "stderr 提到 <空>(视为不匹配)"
+else
+    fail "stderr 缺 <空>: $err"
+fi
+if grep -qF "PRE_TEST14_MARKER" "$ROOT/identities/jarvis/auth.yaml"; then
+    pass "whoami 返空 → 既有 marker 保留(trap 回滚)"
+else
+    fail "既有凭据被 whoami-empty 路径破坏: $(cat "$ROOT/identities/jarvis/auth.yaml" 2>/dev/null)"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ===========================================================================
+# B2 移植:live 首跑收编门四件套(A1ID_ROOT/auth.yaml 是 live)
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Test 15: live whoami == jarvis 期望账号 → 收编进 identities/jarvis/auth.yaml
+# ---------------------------------------------------------------------------
+echo "=== Test 15: live 收编 — whoami 匹配 jarvis 期望 → 收编 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+# 预置 live(=$A1ID_ROOT/auth.yaml)含带 marker 的 yaml
+cat > "$ROOT/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: open_jarvis
+        marker: LIVE_JARVIS_CONTENT
+EOF
+CAP=$(mktemp); ERR=$(mktemp)
+# stub whoami 声称是 jarvis 期望账号(BUC 视角 vs yaml account 字段的 alias 不对称)
+STUB_WHOAMI_ACCOUNT="WORKER_1782379562571" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" status >/dev/null 2>"$ERR"
+err=$(cat "$ERR")
+if [ -s "$ROOT/identities/jarvis/auth.yaml" ]; then
+    pass "收编成功:identities/jarvis/auth.yaml 已生成"
+else
+    fail "未收编: $err"
+fi
+if grep -qF "LIVE_JARVIS_CONTENT" "$ROOT/identities/jarvis/auth.yaml" 2>/dev/null; then
+    pass "收编内容 = live 原样(marker 保留)"
+else
+    fail "收编内容错: $(cat "$ROOT/identities/jarvis/auth.yaml" 2>/dev/null)"
+fi
+if printf '%s' "$err" | grep -qF "首跑收编"; then
+    pass "stderr 有收编提示"
+else
+    fail "stderr 缺收编提示: $err"
+fi
+if [ "$(cat "$ROOT/identities/.active" 2>/dev/null)" = "jarvis" ]; then
+    pass "收编后 .active = jarvis"
+else
+    fail ".active 未设 jarvis(got=$(cat "$ROOT/identities/.active" 2>/dev/null))"
+fi
+# S1 锚定验证:收编 whoami 时 stub 必须收到 A1_CONFIG_DIR=$A1ID_ROOT(与 live 同源)
+if grep -qF "A1_CONFIG_DIR=$ROOT	ARGS=auth whoami" "$CAP"; then
+    pass "收编 whoami 锚定 A1_CONFIG_DIR=\$A1ID_ROOT(S1 修复生效)"
+else
+    fail "收编 whoami 未锚定 A1ID_ROOT: $(cat "$CAP")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ---------------------------------------------------------------------------
+# Test 16: live whoami 是别人 → 跳过收编 + stderr 提示
+# ---------------------------------------------------------------------------
+echo "=== Test 16: live 收编 — whoami 非 jarvis 期望 → 跳过 + 提示 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+cat > "$ROOT/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: guozai.gzl
+EOF
+CAP=$(mktemp); ERR=$(mktemp)
+STUB_WHOAMI_ACCOUNT="guozai.gzl" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" status >/dev/null 2>"$ERR"
+err=$(cat "$ERR")
+if [ ! -f "$ROOT/identities/jarvis/auth.yaml" ]; then
+    pass "非 jarvis live → 不收编,identities/jarvis/auth.yaml 未生成"
+else
+    fail "错误收编了非 jarvis live: $(cat "$ROOT/identities/jarvis/auth.yaml")"
+fi
+if printf '%s' "$err" | grep -qF "跳过首跑迁移"; then
+    pass "stderr 有'跳过首跑迁移'提示"
+else
+    fail "stderr 缺'跳过首跑迁移': $err"
+fi
+if printf '%s' "$err" | grep -qF "guozai.gzl"; then
+    pass "stderr 显示 live 的实际账号 guozai.gzl"
+else
+    fail "stderr 缺 live 实际账号: $err"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ---------------------------------------------------------------------------
+# Test 17: jarvis dir 已存在 → 不触发收编(即便 live 存在)
+# ---------------------------------------------------------------------------
+echo "=== Test 17: live 收编 — jarvis dir 已存在 → 不触发 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+cat > "$ROOT/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: open_jarvis
+        marker: LIVE_UNUSED
+EOF
+seed_login "$ROOT" "jarvis"   # jarvis dir 里已经有 auth.yaml
+JARVIS_PRE=$(cat "$ROOT/identities/jarvis/auth.yaml")
+CAP=$(mktemp); ERR=$(mktemp)
+STUB_WHOAMI_ACCOUNT="WORKER_1782379562571" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" status >/dev/null 2>"$ERR"
+err=$(cat "$ERR")
+if ! printf '%s' "$err" | grep -qF "首跑收编"; then
+    pass "jarvis dir 已存在 → 不触发收编(stderr 无收编提示)"
+else
+    fail "不该触发收编却触发了: $err"
+fi
+# 且预置内容未被 live 覆盖
+if [ "$(cat "$ROOT/identities/jarvis/auth.yaml")" = "$JARVIS_PRE" ]; then
+    pass "已存在的 jarvis/auth.yaml 未被 live 覆盖"
+else
+    fail "预置 jarvis/auth.yaml 被覆盖了"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ---------------------------------------------------------------------------
+# Test 18: v1 jarvis.auth.yaml 文件存在 → 不触发收编(与 dir 同权)
+# ---------------------------------------------------------------------------
+echo "=== Test 18: live 收编 — v1 jarvis.auth.yaml 存在 → 不触发 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+cat > "$ROOT/auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: open_jarvis
+EOF
+mkdir -p "$ROOT/identities"
+cat > "$ROOT/identities/jarvis.auth.yaml" <<EOF
+version: 1
+current:
+    user:
+        account: v1_jarvis
+EOF
+CAP=$(mktemp); ERR=$(mktemp)
+STUB_WHOAMI_ACCOUNT="WORKER_1782379562571" A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" status >/dev/null 2>"$ERR"
+err=$(cat "$ERR")
+# 这里预期:v1→v2 迁移会把 jarvis.auth.yaml 复制到 jarvis/auth.yaml,但收编门要跳过。
+# 该门条件为「jarvis dir + v1 file 都不存在」——v1 存在故不触发收编;stderr 应看到迁移
+# 提示而非"首跑收编"提示。
+if ! printf '%s' "$err" | grep -qF "首跑收编"; then
+    pass "v1 jarvis.auth.yaml 存在 → 收编门跳过(未触发 v2 首跑收编)"
+else
+    fail "收编门错误触发: $err"
+fi
+if printf '%s' "$err" | grep -qF "v1→v2 迁移"; then
+    pass "但 v1→v2 迁移仍照常触发(v1 复制到 v2 布局)"
+else
+    fail "缺 v1→v2 迁移提示: $err"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== SUMMARY ==="
+echo "PASS: $PASS  FAIL: $FAIL"
+if [ "$FAIL" -gt 0 ]; then
+    echo "TESTS FAILED"
+    exit 1
+fi
+echo "All tests passed"
+exit 0

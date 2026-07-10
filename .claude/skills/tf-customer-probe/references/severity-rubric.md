@@ -72,7 +72,7 @@ OpenAPI 侧**机械三方 diff**(T0-mech,`probe.sh tier0` 元数据 diff 预筛)
 > 方向安全不报:TF 枚举 ⊊ API 枚举 / TF 范围更严 = TF 比 API 严,记 `coverage_notes[]` 而非 finding。
 > 抑制护栏:`config.tier0_mech.suppress_params`(ClientToken/RegionId 等)与 `type_tolerance`(API int↔TF string 建模惯例)命中记 `suppressed[]`(可审计),不报 finding。废弃双轨对沿用 deprecated 检测(参与双轨的参数 required/名称差异不报)。
 
-OpenAPI 侧**剩余非机械项**(机械层拿不准 → `judgment_queue` 带 reason,交 skill 层/verifier 双层查证)产出:
+OpenAPI 侧**剩余非机械项**(机械层拿不准 → `judgment_queue` 带 reason,交 skill 层/terraform-pd 双层查证)产出:
 
 | finding code | 默认 | 语义 |
 |--------------|------|------|

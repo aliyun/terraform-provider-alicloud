@@ -10,6 +10,10 @@ source "$script_dir/lib.sh"
 jarvis_root="$(jarvis_root)"
 pools_cfg="$jarvis_root/config/pools.json"
 
+# a1 一律走 bin/a1id --(CLAUDE.md 身份纪律 #6):默认 jarvis 身份,不吃环境 ambient 登录。
+# JARVIS_A1 覆盖(测试打桩用),与 wrap.sh / claim.sh 同款。
+A1="${JARVIS_A1:-$jarvis_root/bin/a1id --}"
+
 if [ ! -f "$pools_cfg" ]; then
     echo "pools.sh: config/pools.json not found at $pools_cfg" >&2
     exit 1
@@ -23,7 +27,7 @@ SIZE=200
 while IFS=$'\t' read -r line name project; do
     json="[]"; page=1
     while :; do
-        pg=$(a1 project workitem list --project "$project" --page "$page" --page-size "$SIZE" -f json 2>/dev/null)
+        pg=$($A1 project workitem list --project "$project" --page "$page" --page-size "$SIZE" -f json 2>/dev/null)
         n=$(jq 'length' <<<"$pg" 2>/dev/null); [ -z "$n" ] && { json=""; break; }
         json=$(jq -s 'add' <<<"$json"$'\n'"$pg" 2>/dev/null)
         [ "$n" -lt "$SIZE" ] && break

@@ -1,26 +1,90 @@
-# bin/a1id —— a1 多身份切换
+# bin/a1id v2 —— a1 多身份并发切换器
 
-a1 凭据固定在 `~/.config/a1/auth.yaml`,**只能持一个身份**(且 a1 写入用临时文件 rename,符号链接会被替换)。`a1id` 把各身份的 auth.yaml 各存一份真文件,切换=复制覆盖 live,串行切换(a1 本就不支持并发)。
+## v1 → v2 迁移
 
-## 四个身份
-- **jarvis**(默认,Aone 数字员工;BUC Account 字段 = `WORKER_1782379562571`):Jarvis 全程用它。
-- **chenyi**(陈汉璋,工号 320687,chenhanzhang.chz@alibaba-inc.com):Jarvis 不得擅用,仅当面授权时临时切。无代码硬门,纪律见 CLAUDE.md「身份纪律」。
-- **guozai**(郭子龙,工号 484483,guozai.gzl@alibaba-inc.com):同 chenyi,Jarvis 不得擅用,仅当面授权时临时切。
-- **linjun**(李超林,工号 429768,lichaolin.lcl@alibaba-inc.com):同 chenyi,Jarvis 不得擅用,仅当面授权时临时切。
+- **v1** 假设 a1 CLI 不支持多身份并发,给每个身份存一份 `identities/<label>.auth.yaml` 文件,切换=复制覆盖 live(`~/.config/a1/auth.yaml`)。依赖 live,操作**串行**。
+- **v2** 利用 a1 CLI 尊重 `A1_CONFIG_DIR` 环境变量的事实,给每个身份分配独立 config dir(`identities/<label>/`,内含完整 `auth.yaml`);`as`/`--` 只把 `A1_CONFIG_DIR` 指到目标身份 dir 再 exec a1——不改 live、不改 `.active`、无 trap 还原,**天然并发安全**。
+
+启动时自动做**幂等**迁移:发现 v1 文件 `identities/<label>.auth.yaml` 而 v2 目录 `identities/<label>/` 尚未建 → `mkdir + cp`,v1 文件**保留**(便于回退)。首跑 live 收编(仅 jarvis 且 v1/v2 全空时)沿用 v1 语义,落点改到 `identities/jarvis/auth.yaml`。
+
+## 目录布局对照
+
+| v1 | v2 |
+|----|-----|
+| `~/.config/a1/identities/jarvis.auth.yaml`(文件) | `~/.config/a1/identities/jarvis/`(目录,内含 `auth.yaml`) |
+| 切换=复制到 live `~/.config/a1/auth.yaml` | 无切换;子进程 a1 直接吃 `A1_CONFIG_DIR=identities/<label>` |
+| `.active` 记 live 身份,脚本链路依赖 | `.active` 仅 `a1id use` 更新;脚本链路不读 |
+
+## 七个身份
+
+| label | 期望 BUC 账号 | 别名 | 角色 |
+|-------|---------------|------|------|
+| `jarvis`       | `WORKER_1782379562571` | —  | 默认;Aone 数字员工;编排层(主会话)用 |
+| `terraform-pd` | `WORKER_1783582374386` | pd | 产品数字人:分诊/查证/回复,对应 agent `terraform-pd.md` |
+| `terraform-rd` | `WORKER_1783582458263` | rd | 研发数字人:开发/PR/CR 评审,对应 agent `terraform-rd.md` |
+| `terraform-qa` | `WORKER_1783582593461` | qa | 质量数字人:AccTest 验证/验收,对应 agent `terraform-qa.md` |
+| `chenyi` | `chenhanzhang.chz` | — | 陈汉璋(工号 320687);Jarvis 不得擅用,仅当面授权时 |
+| `guozai` | `guozai.gzl`       | — | 郭子龙(工号 484483);Jarvis 不得擅用,仅当面授权时 |
+| `linjun` | `lichaolin.lcl`    | — | 李超林(工号 429768);Jarvis 不得擅用,仅当面授权时 |
+
+## 命令面
+
+| 命令 | 作用 |
+|------|------|
+| `a1id login <id>`               | 交互 BUC SSO 登录,落盘 `identities/<id>/auth.yaml`;whoami 与期望账号不匹配则清盘并 die |
+| `a1id use <id>`                 | 拷贝 `identities/<id>/auth.yaml` 到 live(仅影响人工直接跑 a1 的 live 会话;脚本链路不需要) |
+| `a1id status`                   | 显示默认身份 / live active / A1ID_ROOT / 七身份登录表 |
+| `a1id who [id]`                 | `a1 auth whoami`;缺省=默认身份 dir,指定=该身份 dir |
+| `a1id ready <id>`               | 脚本探测:已登录退 0,否则退 1 |
+| `a1id as <id> -- <a1 args...>`  | 以指定身份跑一条(严格;未登录直接 die,不回退) |
+| `a1id -- <a1 args...>`          | 以默认身份跑(受 `JARVIS_A1_IDENTITY` 影响) |
+
+## 环境变量
+
+| 变量 | 作用 |
+|------|------|
+| `A1ID_ROOT`              | a1id 根目录(默认 `~/.config/a1`);测试用它隔离 |
+| `A1_BIN`                 | a1 二进制路径(默认 `a1`);测试打桩用 |
+| `JARVIS_A1_IDENTITY`     | 默认身份覆盖;canon+valid 校验;未登录时非 strict + jarvis 已登录 → 警告并回退 jarvis;个人身份 → stderr 打纪律告警(不阻断) |
+| `JARVIS_A1_STRICT`       | 严格模式(=1):默认身份未登录时直接 die,不回退 |
 
 ## 一次性设置
+
 ```bash
-bin/a1id login jarvis     # 至少登录 jarvis(默认身份;已有 auth.yaml 首跑自动收编)
-# 其他身份按需登录,例如:
-#   bin/a1id login chenyi   # 陈汉璋本人
-#   bin/a1id login guozai   # 郭子龙本人
-#   bin/a1id login linjun   # 李超林本人
+bin/a1id login jarvis         # 数字员工(编排层默认)
+bin/a1id login terraform-pd   # 产品数字人
+bin/a1id login terraform-rd   # 研发数字人
+bin/a1id login terraform-qa   # 质量数字人
+# 个人身份按需登录:
+# bin/a1id login chenyi
+# bin/a1id login guozai
+# bin/a1id login linjun
 ```
 
-## 用法
-- 默认身份(jarvis)跑:`a1id -- <a1 args>`
-- 临时以辰羿跑一条(用完自动还原):`a1id as chenyi -- <args>`
-- 临时以过载跑一条(用完自动还原):`a1id as guozai -- <args>`
-- 临时以李超林跑一条(用完自动还原):`a1id as linjun -- <args>`
-- 持久切:`a1id use <jarvis|chenyi|guozai|linjun>`
-- 看状态:`a1id status` / `a1id who`(a1 实际账号)
+登录时浏览器 BUC 会话必须是对应期望账号;否则 `a1id` 会清掉这次污染的 auth.yaml 并给出修复步骤
+(浏览器登出 / 无痕重登 / 重跑)。live 全程未动。
+
+## 数字人 ↔ Agent 对应
+
+| Aone 身份 | Claude Agent(`.claude/agents/`) | 主职 |
+|-----------|--------------------------------|------|
+| `terraform-pd` | `terraform-pd.md` | 产品:需求分析/工单分诊/三层查证 |
+| `terraform-rd` | `terraform-rd.md` | 研发:代码开发/PR 提交/CR 评审 |
+| `terraform-qa` | `terraform-qa.md` | 质量:AccTest 验证/验收确认 |
+
+Agent 内推荐用法:
+
+```bash
+# 单条:以角色身份跑一条 a1
+bin/a1id as terraform-pd -- project workitem comment create <id> -m "..."
+
+# 整链路由:让 wrap.sh / claim.sh 等自动走该身份
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh sync <id> "MR: ..."
+
+# 开工探测:未登录自动回退 jarvis,返回结果标 identity_fallback: jarvis
+bin/a1id ready terraform-qa || echo "未登录,已回退 jarvis(标 identity_fallback: jarvis)"
+```
+
+## 并发原理(重点)
+
+v2 每个身份一个独立 `A1_CONFIG_DIR`,`a1id as pd -- ...` 与 `a1id as rd -- ...` 并发跑各自 exec 独立 a1 子进程,读写各自 dir 内的 `auth.yaml`,互不干扰。live `~/.config/a1/auth.yaml` 只由 `a1id login`/`a1id use` 影响(人工态),脚本链路(`bootstrap/wrap.sh`、`bootstrap/claim.sh`、`bootstrap/scan.sh` 等)全部通过 `bin/a1id --` 或 `bin/a1id as ...` 走,不再动 live。

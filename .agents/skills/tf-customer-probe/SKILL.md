@@ -22,7 +22,7 @@ description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reporte
 - **tier-0 = 静态三方一致性扫描**(TF 文档 ↔ OpenAPI 文档 ↔ provider 源码),**以资源为单位**,不跑 terraform。
   机械部分做本地 文档↔源码 diff(五类 `doc_gap_*`)**+ OpenAPI 侧机械三方 diff**(T0-mech:`probe-meta.sh` 拉 amp
   元数据,六类 `api_gap_*` 预筛);机械层**拿不准的项才留 `judgment_queue`**(映射不上/纯 prose 约束/被抑制存疑/OSS 无 action),
-  verifier 只判疑点。**精度命门:拿不准一律 queue,绝不硬报。**
+  terraform-pd(原 verifier)只判疑点。**精度命门:拿不准一律 queue,绝不硬报。**
 - **tier-1 = 真实 apply 全生命周期探测**(默认开启),**以场景为单位**,region 默认 focus=eu-central-1(重点方向,可切)。
 
 ## 红线（先读）
@@ -59,9 +59,9 @@ bootstrap/probe.sh tier0 --no-mech              # 关机械层(纯 doc↔source 
    - OpenAPI 侧(T0-mech,`probe-meta.sh available` 时自动开;不可用则降级为纯 doc↔source + 全 queue):从源码抽
      (product,version,action) 三元组 + 解析 `StringInSlice`/`IntBetween`/`Default`,对 amp 元数据机械 diff → 六类
      `api_gap_*`(deprecated_action/enum_superset/required/type/range/default)。被抑制项入 `suppressed[]`、TF 更严项入 `coverage_notes[]`。
-2. **verifier 只判疑点**(收窄后的 `judgment_queue`,每条带 `reason`):`prose_review`(长度/字符集/基数等纯 prose 约束、
+2. **terraform-pd 只判疑点**(收窄后的 `judgment_queue`,每条带 `reason`):`prose_review`(长度/字符集/基数等纯 prose 约束、
    行为一致性)/`unmapped_params`(snake→Camel 映射不上,如 convert 改名)/`enum_unparsed`(枚举非字面 slice)/
-   `no_triple`(OSS SDK 风格抽不到 action)/`meta_unavailable`。对这些走 aone-triage/verifier 双层查证,不一致产 `doc_api_gap`。
+   `no_triple`(OSS SDK 风格抽不到 action)/`meta_unavailable`。对这些走 aone-triage/terraform-pd 双层查证,不一致产 `doc_api_gap`。
    **范围红线**:只核对已接入的 API/参数面,未接入 TF 的一律不报。
 3. findings 定级(见 `references/severity-rubric.md`,含 `api_gap_*` 表)→ 去重 → draft/建单。
 

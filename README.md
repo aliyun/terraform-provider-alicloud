@@ -7,7 +7,13 @@
 ```bash
 bash bootstrap/install.sh                       # 装依赖（a1/aliyun/cloudspec/gh）
 cp bootstrap/.env.example bootstrap/.env        # 填 GH_TOKEN + 阿里云 AK
-bin/a1id login jarvis                           # 至少登录 jarvis（默认身份）；其他身份按需 `bin/a1id login <chenyi|guozai|linjun>`
+bin/a1id login jarvis                           # 至少登录 jarvis（编排层默认身份 WORKER_1782379562571）
+# 三个数字人按职责登录（详见 bin/README.md 表格）：
+#   bin/a1id login terraform-pd  # 产品数字人（分诊/查证/回复）
+#   bin/a1id login terraform-rd  # 研发数字人（开发/PR/CR 评审）
+#   bin/a1id login terraform-qa  # 质量数字人（AccTest 验证/验收）
+# 个人身份仅在仓库主人本轮当面授权时切：
+#   bin/a1id login <chenyi|guozai|linjun>
 ```
 
 钉钉数字员工还需 `cp bridge/jarvis.env.example bridge/jarvis.env`，填钉钉 appKey/appSecret/卡片模板 id。

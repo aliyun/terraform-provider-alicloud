@@ -49,7 +49,7 @@ bootstrap/probe.sh tier0 --dry                  # 只列将扫资源 + mech 模�
 - **机械三方 diff 先行**:五类 `doc_gap_*`(doc↔source)**+ 六类 `api_gap_*`**(T0-mech,OpenAPI 元数据机械 diff:
   deprecated_action/enum_superset/required/type/range/default);被抑制记 `suppressed[]`、TF 更严记 `coverage_notes[]`。
   `probe-meta` 不可用 → 自动降级为纯 doc↔source + 全 queue(现行为)。
-- **verifier 只判疑点**:收窄后的 `judgment_queue`(每条带 `reason`:prose_review/unmapped_params/enum_unparsed/no_triple/
+- **terraform-pd 只判疑点**(产品数字人,承接原 verifier 查证职责):收窄后的 `judgment_queue`(每条带 `reason`:prose_review/unmapped_params/enum_unparsed/no_triple/
   meta_unavailable)走双层查证,产 `doc_api_gap`。**范围红线:只核对已接入 TF 的面,未接入的资源/参数不报 gap(需求非 bug)**。
 - 落盘 `runs/probe/<YYYYMMDD>-<HHMMSS>-tier0.json`(verdict `mech` 字段标 on/off/degraded) + 人读 md。退出码:0 无 findings / 1 有 findings / 2 runner 错误。
 
