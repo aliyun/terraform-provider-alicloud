@@ -21,6 +21,7 @@ Env:
   DINGTALK_ROBOT_CODE                      robot code for createAndDeliver (default: app key).
   JARVIS_TATA_STAFF                        comma staffId audience for Tata (empty = everyone).
   JARVIS_MASTER_STAFF                      staffId allowed to escalate to Jarvis (default 320687).
+  JARVIS_API_TOOL_STAFF                     comma staffId 追加进委派白名单(叠加 config/contacts.json + master).
   JARVIS_TATA_ROOT                         Tata cwd (default ~/.jarvis/tata-cwd, no jarvis bootstrap).
   JARVIS_TATA_RESIDENT                     1=use resident TataPool warm subprocesses (default 0 = one-shot).
   JARVIS_ROOT                              cwd for Jarvis claude (default repo root, two up).
@@ -182,6 +183,25 @@ def tata_audience():
 def master_staff():
     """唯一能让 Tata 升级到重型 Jarvis 的 staffId，默认辰羿 320687。"""
     return (os.environ.get("JARVIS_MASTER_STAFF") or "320687").strip()
+
+
+def api_tool_staff():
+    """API 工具团队联系人白名单（staffId 工号集合）：命中即可委派 Jarvis 升级重型处理。
+    来源 config/contacts.json 的 id 字段；master_staff() 恒包含（兜底，文件缺失也放行 master）；
+    JARVIS_API_TOOL_STAFF(逗号分隔工号) 追加叠加。文件缺失/解析失败 → 至少含 master。"""
+    ids = {master_staff()}
+    raw = os.environ.get("JARVIS_API_TOOL_STAFF", "")
+    ids |= {s.strip() for s in raw.split(",") if s.strip()}
+    try:
+        cfg = Path(REPO_ROOT) / "config" / "contacts.json"
+        data = json.loads(cfg.read_text())
+        for c in data.get("contacts", []):
+            cid = (c.get("id") or "").strip()
+            if cid:
+                ids.add(cid)
+    except Exception:  # noqa: BLE001
+        pass
+    return ids
 
 
 def tata_root():
@@ -2507,7 +2527,7 @@ class JarvisHandler(AsyncChatbotHandler):
         # "全部处理" → dispatch the pending item(s) as headless jarvis, one fresh session
         # per ticket (每单一实例). In auto mode pending is normally empty (items go
         # straight to the pool); this path stays as the JARVIS_AUTO_DISPATCH=0 fallback.
-        if self.scanner and staff == master_staff():
+        if self.scanner and staff in api_tool_staff():
             auth_m = AUTH_SINGLE.match(text)
             if auth_m:
                 item = self.scanner.authorize(auth_m.group(1))
@@ -2568,8 +2588,8 @@ class JarvisHandler(AsyncChatbotHandler):
                 tail_on_handoff="\n\n交给 Jarvis 处理…",
                 target_type=card_type)
             _, task = extract_jarvis_task(full)
-            # master 闸：仅辰羿且 Tata 发了哨兵任务，才升级第二层重型 Jarvis（异步）。
-            if task and staff == master_staff():
+            # 委派闸：staffId 在 API 工具团队联系人表内且 Tata 发了哨兵任务，才升级第二层重型 Jarvis（异步）。
+            if task and staff in api_tool_staff():
                 log.info("staff=%s handoff -> jarvis (async): %r", staff, task[:200])
                 # Handoff continues the master's conversational Jarvis session (reuse
                 # jsid/resume), unlike per-ticket dispatch which is一单一会话.
@@ -2579,7 +2599,12 @@ class JarvisHandler(AsyncChatbotHandler):
                 handoff_id = "handoff-%s" % int(time.time())
                 self._submit_card(handoff_id, card_target, card_type, task, jsid, jresume)
             elif task:
-                log.info("staff=%s sent sentinel but not master; ignored", staff)
+                log.info("staff=%s sent sentinel but not in api-tool contacts; rejected", staff)
+                self._quick_card(card_target,
+                    "🚫 委派未生效：发起人(工号 %s)不在 API 工具团队联系人表中，"
+                    "无法委派 Jarvis 后台处理。如需接入白名单请联系管理员 @辰羿(320687)。"
+                    % (staff or "?"),
+                    card_type)
             log.info("staff=%s done in %.1fs", staff, time.time() - t0)
         except Exception as e:  # noqa: BLE001 — never crash the loop
             log.exception("process error: %s", e)
