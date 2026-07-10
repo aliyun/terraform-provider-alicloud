@@ -1,13 +1,13 @@
 ---
 subcategory: "Cms"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_cms_alert_rule_v2s"
-sidebar_current: "docs-alicloud-datasource-cms-alert-rule-v2s"
+page_title: "Alicloud: alicloud_cms_alert_rules_v2"
+sidebar_current: "docs-alicloud-datasource-cms-alert-rules-v2"
 description: |-
   Provides a list of Cms Alert Rule V2 owned by an Alibaba Cloud account.
 ---
 
-# alicloud_cms_alert_rule_v2s
+# alicloud_cms_alert_rules_v2
 
 This data source provides Cms Alert Rule V2 available to the user.[What is Alert Rule V2](https://next.api.alibabacloud.com/document/Cms/2024-03-30/ManageAlertRules)
 
@@ -75,12 +75,12 @@ resource "alicloud_cms_alert_rule_v2" "default" {
   }
 }
 
-data "alicloud_cms_alert_rule_v2s" "default" {
+data "alicloud_cms_alert_rules_v2" "default" {
   ids = ["${alicloud_cms_alert_rule_v2.default.id}"]
 }
 
 output "alicloud_cms_alert_rule_v2_example_id" {
-  value = data.alicloud_cms_alert_rule_v2s.default.v2s.0.id
+  value = data.alicloud_cms_alert_rules_v2.default.rules.0.id
 }
 ```
 
@@ -114,7 +114,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Alert Rule V2 IDs.
-* `v2s` - A list of Alert Rule V2 Entries. Each element contains the following attributes:
+* `rules` - A list of Alert Rule V2 Entries. Each element contains the following attributes:
     * `action_integration_config` - Action integration configuration.
         * `actions` - List of actions.
         * `enabled` - Indicates whether action integration is enabled.

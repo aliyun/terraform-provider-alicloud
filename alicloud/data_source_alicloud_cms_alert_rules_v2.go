@@ -14,9 +14,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func dataSourceAliCloudCmsAlertRuleV2s() *schema.Resource {
+func dataSourceAliCloudCmsAlertRulesV2() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudCmsAlertRuleV2Read,
+		Read: dataSourceAliCloudCmsAlertRulesV2Read,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -100,7 +100,7 @@ func dataSourceAliCloudCmsAlertRuleV2s() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"v2s": {
+			"rules": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -729,7 +729,7 @@ func dataSourceAliCloudCmsAlertRuleV2s() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudCmsAlertRuleV2Read(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCmsAlertRulesV2Read(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var objects []map[string]interface{}
@@ -1341,7 +1341,7 @@ func dataSourceAliCloudCmsAlertRuleV2Read(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	if err := d.Set("v2s", s); err != nil {
+	if err := d.Set("rules", s); err != nil {
 		return WrapError(err)
 	}
 

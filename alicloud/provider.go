@@ -175,7 +175,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_router_tr_associations":     dataSourceAliCloudExpressConnectRouterTrAssociations(),
 			"alicloud_express_connect_router_vbr_child_instances": dataSourceAliCloudExpressConnectRouterVbrChildInstances(),
 			"alicloud_cr_artifact_lifecycle_rules":                dataSourceAliCloudCrArtifactLifecycleRules(),
-			"alicloud_cms_alert_rule_v2s":                         dataSourceAliCloudCmsAlertRuleV2s(),
+			"alicloud_cms_alert_rules_v2":                         dataSourceAliCloudCmsAlertRulesV2(),
 			"alicloud_oss_bucket_inventories":                     dataSourceAliCloudOssBucketInventories(),
 			"alicloud_wafv3_address_books":                        dataSourceAliCloudWafv3AddressBooks(),
 			"alicloud_wafv3_defense_rules":                        dataSourceAliCloudWafv3DefenseRules(),
