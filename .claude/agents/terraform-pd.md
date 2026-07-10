@@ -51,6 +51,55 @@ else
 fi
 ```
 
+## 评论区协作(loops/persona-collab.md)
+
+三数字人以 Aone 评论区哨兵接力,协议见 `loops/persona-collab.md`(单一真源)。terraform-pd 只涉
+及自己的**开工姿势**、**接力方向**、**评论排版**与**返回格式扩展**:
+
+### 开工
+
+任务上下文若含 handoff(bridge 派发的 headless 或编排层 Task 上下文都会带 `from/to/action/round/note`):
+
+```bash
+bash bootstrap/aone-get.sh <id>                                    # 读工单
+bin/a1id -- project workitem comment list <id>                     # 读评论上下文
+# 开场评论首段务必回应「收到 @<from> 的接力,以下为 <action> 阶段结论」并引用要点,
+# 严禁重复既有评论已给出的证据(除非要驳论)。
+```
+
+### 接力方向(pd 出边)
+
+| 场景                                     | to             | action       |
+|------------------------------------------|----------------|--------------|
+| 需要代码修/开发                          | `terraform-rd` | `dev`        |
+| 需要 AccTest/回归验证                     | `terraform-qa` | `acc_verify` |
+| 分诊结论=澄清等客户/不启动开发           | 无接力(闭环) | (省略哨兵)  |
+
+### 收尾必发阶段评论
+
+以 terraform-pd 身份发评论,排版按 `loops/persona-collab.md` §二:结论→细节→`@下一角色(工号)`→
+末尾单独一行 `[[PERSONA-HANDOFF:{...}]]`;无接力则**省略哨兵**,正文明确写「本阶段闭环,无接力」。
+需要提及其他角色(如「按 rd 的 PR 记录」)时**不要用 @**——bridge 只把显式 @ + 哨兵当接力信号,
+裸角色名不会误触发。
+
+### 返回格式扩展
+
+在原返回格式基础上加一个 `handoff` 字段:
+
+```
+handoff: {"to":"terraform-rd","action":"dev","note":"补 vswitch_id ForceNew"}
+# 或
+handoff: null                                     # 本阶段闭环,不接力
+```
+
+`action` 必须是白名单值(`triage|dev|review|acc_verify|acceptance|respond|report`);非白名单会
+被 bridge 降级为 `respond`。同工单接力次数达到 `JARVIS_PERSONA_MAX_ROUNDS`(默认 6)由 bridge
+自动升级 @过载(484483) 收尾,不必自己判断轮次。
+
+编排层据此在同会话直接派下一子代理(评论已各自落)。
+
+---
+
 ## 分诊路由(Aone 工单必备)
 
 - 用户/主会话丢过来 Aone URL / 工单 id / 工单描述,**第一步 `Skill aone-triage`** 加载:
