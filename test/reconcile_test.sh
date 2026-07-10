@@ -17,6 +17,20 @@ BOOTSTRAP_DIR="$(cd "$SCRIPT_DIR/../bootstrap" && pwd)"
 RECONCILE="$BOOTSTRAP_DIR/reconcile.sh"
 
 # ---------------------------------------------------------------------------
+# 超时护栏:任何回归/被测脚本卡住时,默认 10s 后 SIGKILL 自身,让测试快速显式 FAIL
+# 而非无声阻塞 CI/终端。用 KILL 而非 TERM,因为父测试装了 cleanup trap 会把 TERM
+# 吃掉——SIGKILL 无法被 trap,可保证真中止(tmp dir 略残留可容忍)。
+# TEST_TIMEOUT_SECS 可覆盖(bash 3.2 无 timeout(1))。
+# ---------------------------------------------------------------------------
+TEST_TIMEOUT_SECS="${TEST_TIMEOUT_SECS:-10}"
+(
+    sleep "$TEST_TIMEOUT_SECS"
+    echo "!!! reconcile_test: 超过 ${TEST_TIMEOUT_SECS}s 未完成,超时中止" >&2
+    kill -KILL $$ 2>/dev/null || true
+) &
+WATCHDOG_PID=$!
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 pass_count=0
@@ -54,6 +68,8 @@ ROOT3=""
 FAKE_BIN_DIR=""
 
 cleanup() {
+    # 先杀 watchdog,避免脚本已结束时它还倒计时或误杀父 shell
+    [ -n "${WATCHDOG_PID:-}" ] && kill "$WATCHDOG_PID" 2>/dev/null || true
     rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" 2>/dev/null || true
 }
 trap cleanup INT TERM EXIT
@@ -107,6 +123,7 @@ export STUB_LOG="$STUB_LOG1"
 # Create the run file so log.sh seen succeeds
 touch "$ROOT1/runs/${today}-${ITEM_ID}.md"
 
+# || true:让被测脚本任何非零退出都显式落到 output 断言,而不是父 `set -e` 静默中止测试
 output=$(env \
     JARVIS_ROOT="$ROOT1" \
     JARVIS_RUNS_DIR="$ROOT1/runs" \
@@ -114,7 +131,7 @@ output=$(env \
     STUB_LOG="$STUB_LOG1" \
     A1_LIST_JSON="$A1_LIST_JSON" \
     RECONCILE_CLAIM_CMD="$FAKE_BIN/claim.sh" \
-    bash "$RECONCILE" drift 2>/dev/null)
+    bash "$RECONCILE" drift 2>/dev/null || true)
 
 # Check output contains RECONCILED: WI-999
 if echo "$output" | grep -q "RECONCILED: $ITEM_ID"; then
@@ -147,7 +164,7 @@ output2=$(env \
     STUB_LOG="$STUB_LOG2" \
     A1_LIST_JSON="$A1_LIST_JSON" \
     RECONCILE_CLAIM_CMD="$FAKE_BIN/claim.sh" \
-    bash "$RECONCILE" drift 2>/dev/null)
+    bash "$RECONCILE" drift 2>/dev/null || true)
 
 if echo "$output2" | grep -q "RECONCILED: none"; then
     assert_pass "output contains RECONCILED: none when no run file"
@@ -175,7 +192,7 @@ output3=$(env \
     JARVIS_RUNS_DIR="$ROOT3/runs" \
     JARVIS_ESCALATION_DIR="$ROOT3/escalation" \
     A1_LIST_JSON="$A1_LIST_JSON" \
-    bash "$RECONCILE" drift 2>/dev/null)
+    bash "$RECONCILE" drift 2>/dev/null || true)
 
 if echo "$output3" | grep -q "RECONCILED: none"; then
     assert_pass "empty list → RECONCILED: none"
