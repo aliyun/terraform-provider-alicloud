@@ -96,6 +96,8 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 
 **Terraform-specific 领域**详细 branch(专属维护名单 / 类比 API 原生 vs Provider 适配 / 镇元覆盖度 / 生成器 vs 手写)全在 `references/tf-customer-request-routing.md`。tf_customer 域必读,其它域按需借鉴。
 
+5. **可视化截图取证**(查证完成后追加):调 `.claude/skills/screenshot-evidence` skill,用 Playwright 截取 OpenAPI 文档页、Provider 文档对比、GitHub PR diff 等关键页面,上传 OSS 生成签名 URL,组装 HTML 可视化报告并上传 pre-agent 预览。在回复草稿和工单详情中附上在线报告链接。**平台限制**:Aone 评论区不渲染 markdown 链接、img src query 参数被剥离——图片只能在 pre-agent 在线报告中展示。
+
 ### 4. 回复草稿(结构固定,先给用户过目)
 
 ```
