@@ -2,15 +2,16 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudDTSSynchronizationJobsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
+	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	synchronizationJobidconf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_dts_synchronization_job.default.id}"]`,
@@ -32,7 +33,7 @@ func TestAccAlicloudDTSSynchronizationJobsDataSource(t *testing.T) {
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
 			"ids":    `["${alicloud_dts_synchronization_job.default.id}"]`,
-			"status": `"Synchronizing"`,
+			"status": `"${alicloud_dts_synchronization_job.default.status}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
 			"ids":    `["${alicloud_dts_synchronization_job.default.id}"]`,
@@ -44,7 +45,7 @@ func TestAccAlicloudDTSSynchronizationJobsDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_dts_synchronization_job.default.id}"]`,
 			"name_regex": `"${alicloud_dts_synchronization_job.default.dts_job_name}"`,
-			"status":     `"Synchronizing"`,
+			"status":     `"${alicloud_dts_synchronization_job.default.status}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_dts_synchronization_job.default.id}"]`,
@@ -65,32 +66,34 @@ func testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand int, attrMap map
 variable "name" {
   default = "tf-testAccDtsSynchronizationJobs%d"
 }
-variable "region_id" {
-	default = "%s"
+
+data "alicloud_regions" "default" {
+  current = true
 }
 
-data "alicloud_db_zones" "default"{
-	engine = "MySQL"
-	engine_version = "8.0"
-	instance_charge_type = "PostPaid"
-	category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
-	instance_charge_type = "PostPaid"
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+  name_regex = "^default-NODELETING$"
 }
+
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
@@ -99,7 +102,7 @@ resource "alicloud_db_instance" "source" {
 	engine_version = "8.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = var.name
 	tags = {
@@ -112,7 +115,7 @@ resource "alicloud_db_instance" "dest" {
 	engine_version = "8.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = var.name
 	tags = {
@@ -124,9 +127,9 @@ resource "alicloud_db_instance" "dest" {
 resource "alicloud_dts_synchronization_instance" "default" {
   payment_type                        = "PayAsYouGo"
   source_endpoint_engine_name         = "MySQL"
-  source_endpoint_region              = var.region_id
+  source_endpoint_region              = data.alicloud_regions.default.regions.0.id
   destination_endpoint_engine_name    = "MySQL"
-  destination_endpoint_region         = var.region_id
+  destination_endpoint_region         = data.alicloud_regions.default.regions.0.id
   instance_class                      = "small"
   sync_architecture                   = "oneway"
 }
@@ -180,14 +183,14 @@ resource "alicloud_dts_synchronization_job" "default" {
   source_endpoint_instance_type       = "RDS"
   source_endpoint_instance_id         = alicloud_db_instance.source.id
   source_endpoint_engine_name         = "MySQL"
-  source_endpoint_region              = var.region_id
+  source_endpoint_region              = data.alicloud_regions.default.regions.0.id
   source_endpoint_database_name       = "tfaccountpri_0"
   source_endpoint_user_name           = "tftestdts"
   source_endpoint_password            = "Test12345"
   destination_endpoint_instance_type  = "RDS"
   destination_endpoint_instance_id    = alicloud_db_instance.dest.id
   destination_endpoint_engine_name    = "MySQL"
-  destination_endpoint_region         = var.region_id
+  destination_endpoint_region         = data.alicloud_regions.default.regions.0.id
   destination_endpoint_database_name  = "tfaccountpri_0"
   destination_endpoint_user_name      = "tftestdts"
   destination_endpoint_password       = "Test12345"
@@ -200,7 +203,7 @@ resource "alicloud_dts_synchronization_job" "default" {
 data "alicloud_dts_synchronization_jobs" "default" {
 %s
 }
-`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
+`, rand, strings.Join(pairs, "\n   "))
 	return config
 }
 

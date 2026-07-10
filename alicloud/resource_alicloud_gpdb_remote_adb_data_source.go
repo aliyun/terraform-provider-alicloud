@@ -180,7 +180,6 @@ func resourceAliCloudGpdbRemoteADBDataSourceRead(d *schema.ResourceData, meta in
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("local_db_instance_id", parts[0])
-	d.Set("remote_adb_data_source_id", parts[1])
 
 	return nil
 }

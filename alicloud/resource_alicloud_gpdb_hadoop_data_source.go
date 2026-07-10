@@ -227,7 +227,6 @@ func resourceAliCloudGpdbHadoopDataSourceRead(d *schema.ResourceData, meta inter
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_instance_id", parts[0])
-	d.Set("data_source_id", formatInt(parts[1]))
 
 	return nil
 }

@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -63,13 +62,16 @@ variable "name" {
 	default = "tf_testAcc%d"
 }
 
-variable "region_id" {
-	default = "%s"
+data "alicloud_regions" "default" {
+  current = true
 }
-data "alicloud_db_zones" "default"{
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_charge_type = "PostPaid"
+
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_vpcs" "default" {
@@ -77,22 +79,24 @@ data "alicloud_vpcs" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids[0]
+  vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_charge_type = "PostPaid"
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 resource "alicloud_db_instance" "instance" {
   engine           = "MySQL"
-  engine_version   = "5.6"
+  engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = var.name
 }
@@ -122,7 +126,7 @@ resource "alicloud_dts_subscription_job" "default" {
     dts_job_name                        = var.name
     payment_type                        = "PayAsYouGo"
     source_endpoint_engine_name         = "MySQL"
-    source_endpoint_region              = var.region_id
+    source_endpoint_region              = data.alicloud_regions.default.regions.0.id
     source_endpoint_instance_type       = "RDS"
     source_endpoint_instance_id         = alicloud_db_instance.instance.id
     source_endpoint_database_name       = "tfaccountpri_0"
@@ -148,6 +152,6 @@ data "alicloud_dts_consumer_channels" "default" {
   dts_instance_id = alicloud_dts_subscription_job.default.dts_instance_id
   %s
 }
-`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, " \n "))
+`, rand, strings.Join(pairs, " \n "))
 	return config
 }

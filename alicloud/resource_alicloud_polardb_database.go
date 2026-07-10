@@ -31,6 +31,7 @@ func resourceAliCloudPolarDbDatabase() *schema.Resource {
 			"account_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"character_set_name": {
 				Type:     schema.TypeString,

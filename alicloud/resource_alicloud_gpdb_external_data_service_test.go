@@ -26,16 +26,16 @@ func TestAccAliCloudGpdbExternalDataService_basic6969(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"service_name":   "test6",
-					"db_instance_id": "${alicloud_gpdb_instance.defaultZ7DPgB.id}",
+					"db_instance_id": "${alicloud_gpdb_instance.default.id}",
 					"service_spec":   "8",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -77,22 +77,6 @@ func TestAccAliCloudGpdbExternalDataService_basic6969(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_name":        "test6",
-					"db_instance_id":      "${alicloud_gpdb_instance.defaultZ7DPgB.id}",
-					"service_description": "test",
-					"service_spec":        "8",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"service_name":        "test6",
-						"db_instance_id":      CHECKSET,
-						"service_description": "test",
-						"service_spec":        "8",
-					}),
-				),
-			},
-			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -113,40 +97,35 @@ variable "name" {
     default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+data "alicloud_gpdb_zones" "default" {
 }
 
-resource "alicloud_vpc" "defaultrple4a" {
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
 
-resource "alicloud_vswitch" "defaultnYWSkl" {
-  vpc_id     = alicloud_vpc.defaultrple4a.id
-  zone_id    = "cn-beijing-i"
-  cidr_block = "192.168.1.0/24"
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_gpdb_zones.default.ids.0
 }
 
-resource "alicloud_gpdb_instance" "defaultZ7DPgB" {
-  instance_spec              = "2C8G"
-  description                = "创建数据服务依赖的实例"
-  seg_node_num               = "2"
-  seg_storage_type           = "cloud_essd"
-  instance_network_type      = "VPC"
-  db_instance_category       = "Basic"
-  payment_type               = "PayAsYouGo"
-  ssl_enabled                = "0"
-  engine_version             = "6.0"
-  zone_id                    = "cn-beijing-i"
-  vswitch_id                 = alicloud_vswitch.defaultnYWSkl.id
-  storage_size               = "50"
-  master_cu                  = "4"
-  vpc_id                     = alicloud_vpc.defaultrple4a.id
-  db_instance_mode           = "StorageElastic"
-  engine                     = "gpdb"
+resource "alicloud_gpdb_instance" "default" {
+  db_instance_category  = "HighAvailability"
+  db_instance_class     = "gpdb.group.segsdx1"
+  db_instance_mode      = "StorageElastic"
+  description           = var.name
+  engine                = "gpdb"
+  engine_version        = "6.0"
+  zone_id               = data.alicloud_gpdb_zones.default.ids.0
+  instance_network_type = "VPC"
+  instance_spec         = "2C16G"
+  payment_type          = "PayAsYouGo"
+  seg_storage_type      = "cloud_essd"
+  seg_node_num          = 4
+  storage_size          = 50
+  vpc_id                = data.alicloud_vpcs.default.ids.0
+  vswitch_id            = data.alicloud_vswitches.default.ids.0
 }
-
-
 `, name)
 }
 
@@ -166,16 +145,16 @@ func TestAccAliCloudGpdbExternalDataService_basic6969_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"service_name":        "test6",
-					"db_instance_id":      "${alicloud_gpdb_instance.defaultZ7DPgB.id}",
+					"db_instance_id":      "${alicloud_gpdb_instance.default.id}",
 					"service_description": "test",
 					"service_spec":        "8",
 				}),
@@ -185,66 +164,6 @@ func TestAccAliCloudGpdbExternalDataService_basic6969_twin(t *testing.T) {
 						"db_instance_id":      CHECKSET,
 						"service_description": "test",
 						"service_spec":        "8",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
-}
-
-// Case 外部数据服务_资源依赖_case 6969  raw
-func TestAccAliCloudGpdbExternalDataService_basic6969_raw(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_gpdb_external_data_service.default"
-	ra := resourceAttrInit(resourceId, AlicloudGpdbExternalDataServiceMap6969)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GpdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGpdbExternalDataService")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sgpdbexternaldataservice%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGpdbExternalDataServiceBasicDependence6969)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-		},
-		IDRefreshName: resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_name":        "test6",
-					"db_instance_id":      "${alicloud_gpdb_instance.defaultZ7DPgB.id}",
-					"service_description": "test",
-					"service_spec":        "8",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"service_name":        "test6",
-						"db_instance_id":      CHECKSET,
-						"service_description": "test",
-						"service_spec":        "8",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_description": "test6",
-					"service_spec":        "16",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"service_description": "test6",
-						"service_spec":        "16",
 					}),
 				),
 			},

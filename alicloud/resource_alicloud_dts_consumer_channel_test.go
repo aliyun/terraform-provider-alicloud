@@ -21,7 +21,6 @@ import (
 func TestAccAlicloudDTSConsumerChannel_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_consumer_channel.default"
-	checkoutSupportedRegions(t, true, connectivity.DTSSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudDTSConsumerChannelMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -34,10 +33,11 @@ func TestAccAlicloudDTSConsumerChannel_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -80,8 +80,8 @@ variable "name" {
   default = "%s"
 }
 
-variable "region_id" {
-	default = "%s"
+data "alicloud_regions" "default" {
+  current = true
 }
 
 data "alicloud_db_zones" "default" {
@@ -89,11 +89,11 @@ data "alicloud_db_zones" "default" {
   engine_version           = "8.0"
   instance_charge_type     = "PostPaid"
   category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
+  db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+  name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -106,7 +106,7 @@ data "alicloud_db_instance_classes" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
+  db_instance_storage_type = "cloud_essd"
   instance_charge_type     = "PostPaid"
 }
 
@@ -115,7 +115,7 @@ resource "alicloud_db_instance" "source" {
   engine           = "MySQL"
   engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-source"
 }
@@ -143,7 +143,7 @@ resource "alicloud_db_instance" "target" {
   engine           = "MySQL"
   engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-target"
 }
@@ -155,22 +155,22 @@ resource "alicloud_rds_account" "target_account" {
 }
 
 resource "alicloud_dts_subscription_job" "default" {
-  source_endpoint_user_name = "tftestprivilege"
-  payment_type = "Subscription"
-  source_endpoint_instance_id = "${alicloud_db_instance.source.id}"
-  source_endpoint_database_name = "tfaccountpri_0"
-  db_list = "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}"
-  payment_duration_unit = "Month"
-  source_endpoint_instance_type = "RDS"
-  source_endpoint_password = "Test12345"
-  dts_job_name = "tf-testAccCase"
-  payment_duration = "1"
-  source_endpoint_region = "cn-hangzhou"
-  subscription_instance_network_type = "classic"
-  source_endpoint_engine_name = "MySQL"
-  status = "Normal"
-} 
-`, name, os.Getenv("ALICLOUD_REGION"))
+    dts_job_name                        = var.name
+    payment_type                        = "PayAsYouGo"
+    source_endpoint_engine_name         = "MySQL"
+    source_endpoint_region              = data.alicloud_regions.default.regions.0.id
+    source_endpoint_instance_type       = "RDS"
+    source_endpoint_instance_id         = "${alicloud_db_instance.source.id}"
+    source_endpoint_database_name       = "${alicloud_rds_account.source_account.account_password}"
+    source_endpoint_user_name           = "${alicloud_rds_account.source_account.account_name}"
+    source_endpoint_password            = "${alicloud_rds_account.source_account.account_password}"
+    db_list = "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}"
+    subscription_instance_network_type  = "vpc"
+    subscription_instance_vpc_id        = data.alicloud_vpcs.default.ids[0]
+    subscription_instance_vswitch_id    = data.alicloud_vswitches.default.ids[0]
+    status                              = "Normal"
+}
+`, name)
 }
 
 // lintignore: R001

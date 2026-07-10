@@ -5,16 +5,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudGpdbLogbackupDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudGpdbLogbackupSourceConfig(rand, map[string]string{
-			"start_time":     `"2022-12-12T02:00Z"`,
-			"end_time":       `"2024-12-12T02:00Z"`,
+			"start_time":     `"2026-06-29T02:00Z"`,
+			"end_time":       `"2026-07-09T02:00Z"`,
 			"db_instance_id": `"${data.alicloud_gpdb_instances.default.ids.0}"`,
 			"ids":            `["${data.alicloud_gpdb_instances.default.ids.0}"]`,
 		}),
@@ -30,8 +32,8 @@ func TestAccAlicloudGpdbLogbackupDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudGpdbLogbackupSourceConfig(rand, map[string]string{
 			"page_number":    `"1"`,
 			"page_size":      `"50"`,
-			"start_time":     `"2022-12-12T02:00Z"`,
-			"end_time":       `"2024-12-12T02:00Z"`,
+			"start_time":     `"2026-06-29T02:00Z"`,
+			"end_time":       `"2026-07-09T02:00Z"`,
 			"db_instance_id": `"${data.alicloud_gpdb_instances.default.ids.0}"`,
 			"ids":            `["${data.alicloud_gpdb_instances.default.ids.0}"]`,
 		}),
@@ -47,8 +49,8 @@ func TestAccAlicloudGpdbLogbackupDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudGpdbLogbackupSourceConfig(rand, map[string]string{
-			"start_time":     `"2022-12-12T02:00Z"`,
-			"end_time":       `"2024-12-12T02:00Z"`,
+			"start_time":     `"2026-06-29T02:00Z"`,
+			"end_time":       `"2026-07-09T02:00Z"`,
 			"db_instance_id": `"${data.alicloud_gpdb_instances.default.ids.0}"`,
 			"ids":            `["${data.alicloud_gpdb_instances.default.ids.0}"]`,
 		}),

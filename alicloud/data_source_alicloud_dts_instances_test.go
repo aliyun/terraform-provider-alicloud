@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -103,8 +102,8 @@ variable "name" {
 	default = "tf-testAccDtsInstance%d"
 }
 
-variable "region" {
-	default = "%s"
+data "alicloud_regions" "default" {
+  current = true
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -117,9 +116,9 @@ resource "alicloud_dts_instance" "default" {
   payment_type                     = "PayAsYouGo"
   instance_class                   = "large"
   source_endpoint_engine_name      = "MySQL"
-  source_region                    = var.region
+  source_region                    = data.alicloud_regions.default.regions.0.id
   destination_endpoint_engine_name = "MySQL"
-  destination_region               = var.region
+  destination_region               = data.alicloud_regions.default.regions.0.id
   tags = {
 	  Create = "TF"
 	  For = "acceptance test",
@@ -129,6 +128,6 @@ resource "alicloud_dts_instance" "default" {
 data "alicloud_dts_instances" "default" {
 %s
 }
-`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
+`, rand, strings.Join(pairs, "\n   "))
 	return config
 }

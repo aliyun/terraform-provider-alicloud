@@ -34,9 +34,9 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -44,17 +44,17 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 					"auto_start":                       "false",
 					"payment_type":                     "PayAsYouGo",
 					"source_endpoint_engine_name":      "MySQL",
-					"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
+					"source_endpoint_region":           "${data.alicloud_regions.default.regions.0.id}",
 					"destination_endpoint_engine_name": "MySQL",
-					"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
+					"destination_endpoint_region":      "${data.alicloud_regions.default.regions.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":                     "PayAsYouGo",
 						"source_endpoint_engine_name":      "MySQL",
-						"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":           CHECKSET,
 						"destination_endpoint_engine_name": "MySQL",
-						"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
+						"destination_endpoint_region":      CHECKSET,
 					}),
 				),
 			},
@@ -83,6 +83,10 @@ func AlicloudDTSSynchronizationInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
+}
+
+data "alicloud_regions" "default" {
+  current = true
 }
 `, name)
 }
