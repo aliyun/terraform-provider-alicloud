@@ -270,7 +270,6 @@ func resourceAlicloudDtsMigrationJobCreate(d *schema.ResourceData, meta interfac
 		request["SourceEndpointRole"] = v
 	}
 
-	request["PayType"] = convertDtsMigrationJobPaymentTypeRequest(d.Get("payment_type"))
 	request["JobType"] = "MIGRATION"
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -332,7 +331,6 @@ func resourceAlicloudDtsMigrationJobRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("dts_instance_id", object["DtsInstanceID"])
 	d.Set("dts_job_name", object["DtsJobName"])
-	d.Set("payment_type", convertDtsMigrationJobPaymentTypeResponse(object["PayType"]))
 	if v, ok := object["SourceEndpoint"].(map[string]interface{}); ok {
 		d.Set("source_endpoint_database_name", v["DatabaseName"])
 		d.Set("source_endpoint_engine_name", v["EngineName"])

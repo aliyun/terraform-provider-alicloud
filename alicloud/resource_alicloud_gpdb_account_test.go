@@ -33,14 +33,15 @@ func TestAccAliCloudGPDBAccount_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_id":      "${alicloud_gpdb_elastic_instance.default.id}",
+					"db_instance_id":      "${alicloud_gpdb_instance.default.id}",
 					"account_name":        name,
 					"account_password":    "TFTest123",
 					"account_description": name,
@@ -78,30 +79,35 @@ func AlicloudGPDBAccountBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
-data "alicloud_gpdb_zones" "default" {}
+
+data "alicloud_gpdb_zones" "default" {
+}
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+  name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_gpdb_zones.default.zones.0.id
+  zone_id = data.alicloud_gpdb_zones.default.ids.0
 }
 
-
-resource "alicloud_gpdb_elastic_instance" "default" {
-  engine                   = "gpdb"
-  engine_version           = "6.0"
-  seg_storage_type         = "cloud_essd"
-  seg_node_num             = 4
-  storage_size             = 50
-  instance_spec            = "2C16G"
-  db_instance_category = "HighAvailability"
-  db_instance_description  = var.name
-  instance_network_type    = "VPC"
-  payment_type             = "PayAsYouGo"
-  vswitch_id               = data.alicloud_vswitches.default.ids.0
+resource "alicloud_gpdb_instance" "default" {
+  db_instance_category  = "HighAvailability"
+  db_instance_class     = "gpdb.group.segsdx1"
+  db_instance_mode      = "StorageElastic"
+  description           = var.name
+  engine                = "gpdb"
+  engine_version        = "6.0"
+  zone_id               = data.alicloud_gpdb_zones.default.ids.0
+  instance_network_type = "VPC"
+  instance_spec         = "2C16G"
+  payment_type          = "PayAsYouGo"
+  seg_storage_type      = "cloud_essd"
+  seg_node_num          = 4
+  storage_size          = 50
+  vpc_id                = data.alicloud_vpcs.default.ids.0
+  vswitch_id            = data.alicloud_vswitches.default.ids.0
 }
 `, name)
 }
@@ -121,14 +127,15 @@ func TestAccAliCloudGPDBAccount_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_id":      "${alicloud_gpdb_elastic_instance.default.id}",
+					"db_instance_id":      "${alicloud_gpdb_instance.default.id}",
 					"account_name":        name,
 					"account_password":    "TFTest123",
 					"account_description": name,

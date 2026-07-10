@@ -33,10 +33,11 @@ func TestAccAlicloudDTSJobMonitorRule_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -115,10 +116,6 @@ variable "name" {
   default = "%s"
 }
 
-variable "region" {
-  default = "%s"
-}
-
 variable "password" {
   default = "Test12345"
 }
@@ -127,29 +124,43 @@ variable "database_name" {
   default = "tftestdatabase"
 }
 
-data "alicloud_db_zones" "default" {}
+data "alicloud_regions" "default" {
+  current = true
+}
+
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
 
 data "alicloud_db_instance_classes" "default" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+  name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
-  zone_id = data.alicloud_db_zones.default.zones[0].id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 resource "alicloud_db_instance" "default" {
   count            = 2
   engine           = "MySQL"
-  engine_version   = "5.6"
-  instance_type    =  data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
-  instance_storage = "10"
-  vswitch_id       = data.alicloud_vswitches.default.ids[0]
+  engine_version   = "8.0"
+  instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
+  vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = join("", [var.name, count.index])
 }
 
@@ -177,9 +188,9 @@ resource "alicloud_db_account_privilege" "default" {
 resource "alicloud_dts_migration_instance" "default" {
   payment_type                     = "PayAsYouGo"
   source_endpoint_engine_name      = "MySQL"
-  source_endpoint_region           = var.region
+  source_endpoint_region           = data.alicloud_regions.default.regions.0.id
   destination_endpoint_engine_name = "MySQL"
-  destination_endpoint_region      = var.region
+  destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
   instance_class                   = "small"
   sync_architecture                = "oneway"
 }
@@ -190,13 +201,13 @@ resource "alicloud_dts_migration_job" "default" {
   source_endpoint_instance_type      = "RDS"
   source_endpoint_instance_id        = alicloud_db_instance.default.0.id
   source_endpoint_engine_name        = "MySQL"
-  source_endpoint_region             = var.region
+  source_endpoint_region             = data.alicloud_regions.default.regions.0.id
   source_endpoint_user_name          = alicloud_rds_account.default.0.name
   source_endpoint_password           = var.password
   destination_endpoint_instance_type = "RDS"
   destination_endpoint_instance_id   = alicloud_db_instance.default.1.id
   destination_endpoint_engine_name   = "MySQL"
-  destination_endpoint_region        = var.region
+  destination_endpoint_region        = data.alicloud_regions.default.regions.0.id
   destination_endpoint_user_name     = alicloud_rds_account.default.1.name
   destination_endpoint_password      = var.password
   db_list                            = "{\"tftestdatabase\":{\"name\":\"tftestdatabase\",\"all\":true}}"
@@ -207,7 +218,7 @@ resource "alicloud_dts_migration_job" "default" {
   depends_on                         = [alicloud_db_account_privilege.default]
 }
 
-`, name, os.Getenv("ALICLOUD_REGION"))
+`, name)
 }
 
 func TestAccAlicloudDTSJobMonitorRule_basic1(t *testing.T) {
@@ -225,10 +236,11 @@ func TestAccAlicloudDTSJobMonitorRule_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -302,8 +314,8 @@ variable "name" {
   default = "%s"
 }
 
-variable "region_id" {
-  default = "%s"
+data "alicloud_regions" "default" {
+  current = true
 }
 
 data "alicloud_db_zones" "default" {
@@ -311,7 +323,16 @@ data "alicloud_db_zones" "default" {
   engine_version           = "8.0"
   instance_charge_type     = "PostPaid"
   category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 data "alicloud_vpcs" "default" {
@@ -323,21 +344,12 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
-data "alicloud_db_instance_classes" "default" {
-  zone_id                  = data.alicloud_db_zones.default.zones.0.id
-  engine                   = "MySQL"
-  engine_version           = "8.0"
-  category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
-  instance_charge_type     = "PostPaid"
-}
-
 ## RDS MySQL Source
 resource "alicloud_db_instance" "source" {
   engine           = "MySQL"
   engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-source"
 }
@@ -365,7 +377,7 @@ resource "alicloud_db_instance" "target" {
   engine           = "MySQL"
   engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-target"
 }
@@ -380,9 +392,9 @@ resource "alicloud_rds_account" "target_account" {
 resource "alicloud_dts_synchronization_instance" "default" {
   payment_type                     = "PayAsYouGo"
   source_endpoint_engine_name      = "MySQL"
-  source_endpoint_region           = var.region_id
+  source_endpoint_region           = data.alicloud_regions.default.regions.0.id
   destination_endpoint_engine_name = "MySQL"
-  destination_endpoint_region      = var.region_id
+  destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
   instance_class                   = "small"
   sync_architecture                = "oneway"
 }
@@ -399,18 +411,18 @@ resource "alicloud_dts_synchronization_job" "default" {
   source_endpoint_instance_type = "RDS"
   source_endpoint_instance_id = "${alicloud_db_instance.source.id}"
   source_endpoint_engine_name = "MySQL"
-  source_endpoint_region = "${var.region_id}"
+  source_endpoint_region = data.alicloud_regions.default.regions.0.id
   source_endpoint_database_name = "test_database"
   dts_instance_id = "${alicloud_dts_synchronization_instance.default.id}"
   data_synchronization = "true"
-  destination_endpoint_region = "${var.region_id}"
+  destination_endpoint_region = data.alicloud_regions.default.regions.0.id
   destination_endpoint_user_name = "${alicloud_rds_account.target_account.account_name}"
   structure_initialization = "true"
   destination_endpoint_database_name = "test_database"
   db_list = "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}"
 }
 
-`, name, os.Getenv("ALICLOUD_REGION"))
+`, name)
 }
 
 func TestAccAlicloudDTSJobMonitorRule_basic2(t *testing.T) {
@@ -428,10 +440,11 @@ func TestAccAlicloudDTSJobMonitorRule_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -505,8 +518,8 @@ variable "name" {
   default = "%s"
 }
 
-variable "region_id" {
-  default = "%s"
+data "alicloud_regions" "default" {
+  current = true
 }
 
 data "alicloud_db_zones" "default" {
@@ -514,11 +527,11 @@ data "alicloud_db_zones" "default" {
   engine_version           = "8.0"
   instance_charge_type     = "PostPaid"
   category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
+  db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+  name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -531,7 +544,7 @@ data "alicloud_db_instance_classes" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
+  db_instance_storage_type = "cloud_essd"
   instance_charge_type     = "PostPaid"
 }
 
@@ -540,7 +553,7 @@ resource "alicloud_db_instance" "source" {
   engine           = "MySQL"
   engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-source"
 }
@@ -568,7 +581,7 @@ resource "alicloud_db_instance" "target" {
   engine           = "MySQL"
   engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-target"
 }
@@ -583,7 +596,7 @@ resource "alicloud_dts_subscription_job" "default" {
     dts_job_name                        = var.name
     payment_type                        = "PayAsYouGo"
     source_endpoint_engine_name         = "MySQL"
-    source_endpoint_region              = "${var.region_id}"
+    source_endpoint_region              = data.alicloud_regions.default.regions.0.id
     source_endpoint_instance_type       = "RDS"
     source_endpoint_instance_id         = "${alicloud_db_instance.source.id}"
     source_endpoint_database_name       = "${alicloud_rds_account.source_account.account_password}"
@@ -596,7 +609,7 @@ resource "alicloud_dts_subscription_job" "default" {
     status                              = "Normal"
 }
 
-`, name, os.Getenv("ALICLOUD_REGION"))
+`, name)
 }
 
 // lintignore: R001

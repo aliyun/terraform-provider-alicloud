@@ -887,6 +887,13 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
+		if d.HasChange("seg_node_num") {
+			stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("seg_node_num"))}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "SegNodeNum", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())

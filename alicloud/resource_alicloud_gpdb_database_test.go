@@ -25,27 +25,27 @@ func TestAccAliCloudGpdbDatabase_basic7868(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGpdbDatabaseBasicDependence7868)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"character_set_name": "UTF8",
-					"owner":              "adbpgadmin",
+					"owner":              "${alicloud_gpdb_account.default.account_name}",
 					"description":        "go-to-the-docks-for-french-fries",
 					"database_name":      "seagull",
 					"collate":            "en_US.utf8",
 					"ctype":              "en_US.utf8",
-					"db_instance_id":     "${alicloud_gpdb_instance.defaultTC08a9.id}",
+					"db_instance_id":     "${alicloud_gpdb_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"character_set_name": "UTF8",
-						"owner":              "adbpgadmin",
+						"owner":              CHECKSET,
 						"description":        "go-to-the-docks-for-french-fries",
 						"database_name":      "seagull",
 						"collate":            "en_US.utf8",
@@ -72,35 +72,43 @@ variable "name" {
     default = "%s"
 }
 
-resource "alicloud_vpc" "default35OkxY" {
-  cidr_block = "192.168.0.0/16"
+data "alicloud_gpdb_zones" "default" {
 }
 
-resource "alicloud_vswitch" "defaultl8haQ3" {
-  vpc_id     = alicloud_vpc.default35OkxY.id
-  zone_id    = "cn-beijing-h"
-  cidr_block = "192.168.1.0/24"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
 
-resource "alicloud_gpdb_instance" "defaultTC08a9" {
-  instance_spec         = "2C8G"
-  seg_node_num          = "2"
-  seg_storage_type      = "cloud_essd"
-  instance_network_type = "VPC"
-  db_instance_category  = "Basic"
-  payment_type          = "PayAsYouGo"
-  ssl_enabled           = "0"
-  engine_version        = "6.0"
-  engine                = "gpdb"
-  zone_id               = "cn-beijing-h"
-  vswitch_id            = alicloud_vswitch.defaultl8haQ3.id
-  storage_size          = "50"
-  master_cu             = "4"
-  vpc_id                = alicloud_vpc.default35OkxY.id
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_gpdb_zones.default.ids.0
+}
+
+resource "alicloud_gpdb_instance" "default" {
+  db_instance_category  = "HighAvailability"
+  db_instance_class     = "gpdb.group.segsdx1"
   db_instance_mode      = "StorageElastic"
+  description           = var.name
+  engine                = "gpdb"
+  engine_version        = "6.0"
+  zone_id               = data.alicloud_gpdb_zones.default.ids.0
+  instance_network_type = "VPC"
+  instance_spec         = "2C16G"
+  payment_type          = "PayAsYouGo"
+  seg_storage_type      = "cloud_essd"
+  seg_node_num          = 4
+  storage_size          = 50
+  vpc_id                = data.alicloud_vpcs.default.ids.0
+  vswitch_id            = data.alicloud_vswitches.default.ids.0
 }
 
-
+resource "alicloud_gpdb_account" "default" {
+  account_name        = "tfte123456"
+  db_instance_id      = alicloud_gpdb_instance.default.id
+  account_password    = "Example1234"
+  account_description = "tf_example"
+  account_type        = "Normal"
+}
 `, name)
 }
 

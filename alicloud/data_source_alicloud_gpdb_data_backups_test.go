@@ -5,11 +5,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudGpdbDatabackupDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudGpdbDatabackupSourceConfig(rand, map[string]string{
@@ -75,6 +77,7 @@ func testAccCheckAlicloudGpdbDatabackupSourceConfig(rand int, attrMap map[string
 variable "name" {
 	default = "tf-testAccGpdbDatabackup%d"
 }
+
 data "alicloud_gpdb_instances" "default" {
   name_regex = "^default-NODELETING$"
 }

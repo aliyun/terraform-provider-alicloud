@@ -77,11 +77,11 @@ func TestAccAliCloudSelectDBDbInstance_basic_info_upgrade_major_version(t *testi
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SelectDBSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -89,7 +89,7 @@ func TestAccAliCloudSelectDBDbInstance_basic_info_upgrade_major_version(t *testi
 					"db_instance_description": name,
 					"cache_size":              "200",
 					"payment_type":            "PayAsYouGo",
-					"engine_minor_version":    "3.0.12",
+					"engine_minor_version":    "4.0.3",
 					"zone_id":                 "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vpc_id":                  "${data.alicloud_vswitches.default.vswitches.0.vpc_id}",
 					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
@@ -105,7 +105,7 @@ func TestAccAliCloudSelectDBDbInstance_basic_info_upgrade_major_version(t *testi
 						"db_instance_class":           "selectdb.xlarge",
 						"cache_size":                  "200",
 						"payment_type":                "PayAsYouGo",
-						"engine_minor_version":        "3.0.12",
+						"engine_minor_version":        "4.0.3",
 						"zone_id":                     CHECKSET,
 						"vpc_id":                      CHECKSET,
 						"vswitch_id":                  CHECKSET,
@@ -188,11 +188,11 @@ func TestAccAliCloudSelectDBDbInstance_basic_info_upgrade_major_version(t *testi
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_minor_version": "4.0.4",
+					"engine_minor_version": "4.0.11",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_minor_version": "4.0.4",
+						"engine_minor_version": "4.0.11",
 					}),
 				),
 			},
@@ -255,11 +255,11 @@ func TestAccAliCloudSelectDBDbInstance_basic_payment_modify_upgrade_minor_versio
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SelectDBSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -300,11 +300,11 @@ func TestAccAliCloudSelectDBDbInstance_basic_payment_modify_upgrade_minor_versio
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_minor_version": "4.0.4",
+					"engine_minor_version": "4.0.11",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_minor_version": "4.0.4",
+						"engine_minor_version": "4.0.11",
 					}),
 				),
 			},
@@ -344,11 +344,11 @@ func TestAccAliCloudSelectDBDbInstance_deprecated_upgrade_minor_version(t *testi
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SelectDBSupportRegions)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -376,11 +376,11 @@ func TestAccAliCloudSelectDBDbInstance_deprecated_upgrade_minor_version(t *testi
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"upgraded_engine_minor_version": "4.0.4",
+					"upgraded_engine_minor_version": "4.0.11",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"upgraded_engine_minor_version": "4.0.4",
+						"upgraded_engine_minor_version": "4.0.11",
 					}),
 				),
 			},

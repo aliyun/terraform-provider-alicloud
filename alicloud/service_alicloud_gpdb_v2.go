@@ -965,6 +965,10 @@ func (s *GpdbServiceV2) DescribeGpdbSupabaseProject(id string) (object map[strin
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
+	if response["Status"] == "deleted" {
+		return object, WrapErrorf(NotFoundErr("SupabaseProject", id), NotFoundMsg, response)
+	}
+
 	return response, nil
 }
 

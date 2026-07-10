@@ -379,29 +379,16 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 			return WrapError(err)
 		}
 		upgradeTargetVersion := ""
-		isNewVersionWithMajorVersion := false
-		if newVersion.(string) == "3.0" || newVersion.(string) == "4.0" {
-			isNewVersionWithMajorVersion = true
-		}
 		canUpgradeVersion := instanceResp["CanUpgradeVersions"].([]interface{})
 		for _, version := range canUpgradeVersion {
-			if isNewVersionWithMajorVersion {
-				if strings.HasPrefix(version.(string), newVersion.(string)) {
-					upgradeTargetVersion = version.(string)
-					break
-				}
-			} else {
-				if newVersion.(string) == version.(string) {
-					upgradeTargetVersion = version.(string)
-					break
-				}
+			if strings.HasPrefix(version.(string), newVersion.(string)) {
+				upgradeTargetVersion = version.(string)
+				break
 			}
 		}
 
 		if upgradeTargetVersion == "" {
-			if !isNewVersionWithMajorVersion {
-				return WrapErrorf(err, "Invalid upgrade version for %s, cannot upgrade to %s", d.Id(), newVersion.(string), AlibabaCloudSdkGoERROR)
-			}
+			return WrapErrorf(err, "Invalid upgrade version for %s, cannot upgrade to %s", d.Id(), newVersion.(string), AlibabaCloudSdkGoERROR)
 		} else {
 			// todo maintaintime update
 			_, err = selectDBService.UpgradeSelectDBInstanceEngineVersion(d.Id(), upgradeTargetVersion, false)

@@ -35,17 +35,17 @@ func TestAccAlicloudDTSMigrationInstance_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":                     "PayAsYouGo",
 					"source_endpoint_engine_name":      "MySQL",
-					"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
+					"source_endpoint_region":           "${data.alicloud_regions.default.regions.0.id}",
 					"destination_endpoint_engine_name": "MySQL",
-					"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
+					"destination_endpoint_region":      "${data.alicloud_regions.default.regions.0.id}",
 					"instance_class":                   "small",
 					"sync_architecture":                "oneway",
 				}),
@@ -105,6 +105,10 @@ func AlicloudDTSMigrationInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
+}
+
+data "alicloud_regions" "default" {
+  current = true
 }
 `, name)
 }

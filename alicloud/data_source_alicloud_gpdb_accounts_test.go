@@ -10,6 +10,7 @@ import (
 )
 
 func TestAccAlicloudGPDBAccountsDataSource(t *testing.T) {
+	testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(1000, 9999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudGpdbAccountsDataSourceName(rand, map[string]string{
@@ -75,7 +76,7 @@ func TestAccAlicloudGPDBAccountsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithRegions(t, true, connectivity.GpdbElasticInstanceSupportRegions)
+		testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 	}
 	alicloudGpdbAccountsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
 }
@@ -90,7 +91,9 @@ func testAccCheckAlicloudGpdbAccountsDataSourceName(rand int, attrMap map[string
 variable "name" {
   default = "tftestacc%d"
 }
-data "alicloud_gpdb_zones" "default" {}
+
+data "alicloud_gpdb_zones" "default" {
+}
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
@@ -98,39 +101,36 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_gpdb_zones.default.zones.0.id
+  zone_id = data.alicloud_gpdb_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "default" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_gpdb_zones.default.zones.3.id
-  vswitch_name = var.name
-}
-
-resource "alicloud_gpdb_elastic_instance" "default" {
-  engine                   = "gpdb"
-  engine_version           = "6.0"
-  seg_storage_type         = "cloud_essd"
-  seg_node_num             = 4
-  storage_size             = 50
-  instance_spec            = "2C16G"
-  db_instance_description  = var.name
-  instance_network_type    = "VPC"
-  payment_type             = "PayAsYouGo"
-  vswitch_id               = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.default.*.id, [""])[0]
+resource "alicloud_gpdb_instance" "default" {
+  db_instance_category  = "HighAvailability"
+  db_instance_class     = "gpdb.group.segsdx1"
+  db_instance_mode      = "StorageElastic"
+  description           = var.name
+  engine                = "gpdb"
+  engine_version        = "6.0"
+  zone_id               = data.alicloud_gpdb_zones.default.ids.0
+  instance_network_type = "VPC"
+  instance_spec         = "2C16G"
+  payment_type          = "PayAsYouGo"
+  seg_storage_type      = "cloud_essd"
+  seg_node_num          = 4
+  storage_size          = 50
+  vpc_id                = data.alicloud_vpcs.default.ids.0
+  vswitch_id            = data.alicloud_vswitches.default.ids.0
 }
 
 resource "alicloud_gpdb_account" "default" {
   account_name        = var.name
-  db_instance_id      = alicloud_gpdb_elastic_instance.default.id
+  db_instance_id      = alicloud_gpdb_instance.default.id
   account_password    = "TFTest123"
   account_description = var.name
 }
 
 data "alicloud_gpdb_accounts" "default" {	
-	db_instance_id = alicloud_gpdb_elastic_instance.default.id
+	db_instance_id = alicloud_gpdb_account.default.db_instance_id
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))
