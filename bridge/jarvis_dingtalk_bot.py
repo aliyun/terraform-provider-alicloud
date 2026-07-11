@@ -435,10 +435,12 @@ PERSONA_HANDOFF_RE = re.compile(r"\[\[PERSONA-HANDOFF:(.*?)\]\]", re.DOTALL)
 PERSONA_NAME_RE = re.compile(r"terraform[-_ ]?(pd|rd|qa)\b", re.IGNORECASE)
 
 # @ mention 正则（B2）：@ 必须显式（防裸 role 名如 jarvis wrap 里提到 "terraform-rd" 误触发）。
-# 支持三种命中形态：@terraform-pd 类；@WORKER_1783582374386 类；@昵称（env 提供的显示名）。
-PERSONA_AT_ROLE_RE = re.compile(r"@\s*terraform[-_ ]?(pd|rd|qa)\b", re.IGNORECASE)
+# 支持三种命中形态：@terraform-pd 类；WORKER_1783582374386 类（括号内或 @ 后）；@昵称（env 提供的显示名）。
+# Fix: Python 3 \w 含 CJK，\b 在 ASCII→CJK 边界失效，改用 lookahead。
+PERSONA_AT_ROLE_RE = re.compile(r"@\s*terraform[-_ ]?(pd|rd|qa)(?=[^a-zA-Z0-9_]|$)", re.IGNORECASE)
+# Fix: Aone UI 格式 @Name(WORKER_xxx)，WORKER 不一定在 @ 后，允许括号/空格前缀。
 PERSONA_AT_WORKER_RES = {
-    label: re.compile(r"@\s*WORKER_%s\b" % wid.replace("WORKER_", ""))
+    label: re.compile(r"(?<!\w)WORKER_%s\b" % wid.replace("WORKER_", ""))
     for label, wid in PERSONA_ROLES.items()
 }
 
@@ -2705,8 +2707,8 @@ class PersonaScheduler:
                 return label
         nicks = _persona_nicks_map()
         if nicks:
-            # 简单扫 @<name> 形式
-            for m in re.finditer(r"@\s*([A-Za-z0-9_一-鿿]+)", text):
+            # 简单扫 @<name> 形式（含连字符 -，兼容 Terraform-PD数字人 类显示名）
+            for m in re.finditer(r"@\s*([A-Za-z0-9_一-鿿\-]+)", text):
                 cand = m.group(1).lower()
                 if cand in nicks:
                     return nicks[cand]
