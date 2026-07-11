@@ -205,6 +205,10 @@ upload_one() {
         curl_args+=(-H "Authorization: Bearer $JARVIS_HTML_REPORT_TOKEN")
     fi
 
+    # WAF classification gate requires X-Request-Context header (pre-agent rgv587 Anti-Bot)
+    local waf_header="${JARVIS_HTML_REPORT_WAF_HEADER:-rctx_a3f90b7e2d41c8f6}"
+    curl_args+=(-H "X-Request-Context: $waf_header")
+
     response="$("$CURL_BIN" "${curl_args[@]}" -F "file=@$file;type=text/html" "$endpoint")" \
         || die "upload failed for $label"
     if ! jq -e '.success == true and .data.viewUrl != null' >/dev/null <<<"$response"; then
@@ -298,7 +302,7 @@ comment_links() {
     for item in "${links[@]}"; do
         label="${item%%|*}"
         url="${item#*|}"
-        message="${message}"$'\n'"- ${label}: ${url}"
+        message="${message}"$'\n'"- [${label}](${url})"
     done
     a1_run project workitem comment create "$aone_id" -m "$message"
 }

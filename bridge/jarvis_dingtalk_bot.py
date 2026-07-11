@@ -21,6 +21,9 @@ Env:
   DINGTALK_ROBOT_CODE                      robot code for createAndDeliver (default: app key).
   JARVIS_TATA_STAFF                        comma staffId audience for Tata (empty = everyone).
   JARVIS_MASTER_STAFF                      staffId allowed to escalate to Jarvis (default 320687).
+  JARVIS_API_TOOL_STAFF                     comma staffId 追加进委派白名单(叠加 config/contacts.json + master).
+  JARVIS_HANDOFF_MODE                       Tata 委派处理模式: ticket(默认,建单驱动)/exec(旧,直接执行).
+  JARVIS_HANDOFF_POOL                       委派建单默认落的池 key(见 config/pools.json,默认 api_toolkit).
   JARVIS_TATA_ROOT                         Tata cwd (default ~/.jarvis/tata-cwd, no jarvis bootstrap).
   JARVIS_TATA_RESIDENT                     1=use resident TataPool warm subprocesses (default 0 = one-shot).
   JARVIS_ROOT                              cwd for Jarvis claude (default repo root, two up).
@@ -198,6 +201,50 @@ def tata_audience():
 def master_staff():
     """唯一能让 Tata 升级到重型 Jarvis 的 staffId，默认辰羿 320687。"""
     return (os.environ.get("JARVIS_MASTER_STAFF") or "320687").strip()
+
+
+def api_tool_staff():
+    """API 工具团队联系人白名单（staffId 工号集合）：命中即可委派 Jarvis 升级重型处理。
+    来源 config/contacts.json 的 id 字段；master_staff() 恒包含（兜底，文件缺失也放行 master）；
+    JARVIS_API_TOOL_STAFF(逗号分隔工号) 追加叠加。文件缺失/解析失败 → 至少含 master。"""
+    ids = {master_staff()}
+    raw = os.environ.get("JARVIS_API_TOOL_STAFF", "")
+    ids |= {s.strip() for s in raw.split(",") if s.strip()}
+    try:
+        cfg = Path(REPO_ROOT) / "config" / "contacts.json"
+        data = json.loads(cfg.read_text())
+        for c in data.get("contacts", []):
+            cid = (c.get("id") or "").strip()
+            if cid:
+                ids.add(cid)
+    except Exception:  # noqa: BLE001
+        pass
+    return ids
+
+
+def handoff_mode():
+    """Tata 委派命中后的处理模式：
+    - "ticket"(默认): 以 jarvis 身份建 Aone 工单承载任务 + 回执，即结束（进度可追踪）。
+    - "exec": 旧行为，直接 _submit_card 起 headless 重型 Jarvis 异步执行（回退用）。"""
+    return (os.environ.get("JARVIS_HANDOFF_MODE") or "ticket").strip().lower()
+
+
+def handoff_pool():
+    """委派建单默认落哪个池。返回 (pool_key, project, product_cfs|None)。
+    默认 api_toolkit(2100304, API 工具团队需求池——jarvis 自己团队的池)；
+    JARVIS_HANDOFF_POOL(池 key, 见 config/pools.json)可覆盖。池 key 不存在则回退 api_toolkit。"""
+    key = (os.environ.get("JARVIS_HANDOFF_POOL") or "api_toolkit").strip()
+    fallback = ("api_toolkit", "2100304", "107239=906688")
+    try:
+        cfg = json.loads((Path(REPO_ROOT) / "config" / "pools.json").read_text())
+        pools = cfg.get("pools", {})
+        p = pools.get(key) or pools.get("api_toolkit")
+        if not p:
+            return fallback
+        return (key if key in pools else "api_toolkit",
+                str(p.get("project", "")), p.get("product_cfs"))
+    except Exception:  # noqa: BLE001
+        return fallback
 
 
 def tata_root():
@@ -3264,6 +3311,69 @@ class JarvisHandler(AsyncChatbotHandler):
             self._quick_card(target, "🟠 工单 #%s 未派发（%s）。" % (item_id, reason), target_type)
         return ok, reason
 
+    def _handoff_to_ticket(self, task, staff, card_target, card_type):
+        """Tata 委派 → 以 jarvis 身份建 Aone 工单承载任务 + 回执委派人，即结束。
+        新工单进入既有 scan→dispatch→claim→bookend 闭环，进度全程回填 Aone。
+        建单失败 → 明确回执失败并记日志，不静默、不回退直接执行。"""
+        pool_key, proj, product_cfs = handoff_pool()
+        # 标题 = 任务摘要单行（剥换行、截断）；正文 = 委派上下文 + 来源人。
+        summary = " ".join(task.split())
+        title = "[Tata委派] " + (summary[:48] + "…" if len(summary) > 48 else summary)
+        body = (
+            "## 背景\n"
+            "本工单由 Tata 委派流程自动创建：委派人通过 Tata 发起即时任务，"
+            "Jarvis 以自身身份建单承载，交由既有 scan→dispatch 闭环处理，全程进度回填本单。\n\n"
+            "## 委派任务\n%s\n\n"
+            "## 来源\n- 委派人 staffId: %s\n- 承接身份: jarvis 数字员工 (WORKER_1782379562571)\n"
+            % (task.strip(), staff or "?"))
+        tmp = None
+        try:
+            import tempfile
+            with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False,
+                                             encoding="utf-8") as f:
+                f.write(body)
+                tmp = f.name
+            args = [str(REPO_ROOT / "bin" / "a1id"), "--",
+                    "project", "workitem", "create",
+                    "--project", proj, "--category", "req",
+                    "--assignee", "WORKER_1782379562571",
+                    "--title", title, "--body-file", tmp]
+            if product_cfs:
+                args += ["--cfs", product_cfs]
+            args += ["--quiet"]
+            r = subprocess.run(args, capture_output=True, text=True,
+                               timeout=60, cwd=str(REPO_ROOT))
+            new_id = ""
+            if r.returncode == 0 and r.stdout.strip():
+                # --quiet 输出空格分隔: "<id> <title> <status> <assignee>"，取第一列
+                new_id = r.stdout.strip().split()[0]
+            if not new_id:
+                log.error("handoff create failed rc=%s out=%r err=%r",
+                          r.returncode, r.stdout[:300], r.stderr[:300])
+                self._quick_card(card_target,
+                    "⚠️ 委派已收到，但自动建单失败（可稍后重试或人工建单）。任务：%s" % title,
+                    card_type)
+                return None
+            url = ("https://project.aone.alibaba-inc.com/v2/project/%s/req/%s"
+                   % (proj, new_id))
+            log.info("staff=%s handoff -> ticket #%s (pool=%s)", staff, new_id, pool_key)
+            self._quick_card(card_target,
+                "✅ 已为委派任务建工单 **#%s**（池:%s），将自动进入处理队列、进度全程可追踪：\n%s"
+                % (new_id, pool_key, url),
+                card_type)
+            return new_id
+        except Exception as e:  # noqa: BLE001 — never crash the loop
+            log.exception("handoff_to_ticket error: %s", e)
+            self._quick_card(card_target,
+                "⚠️ 委派建单异常，已记录。任务：%s" % title, card_type)
+            return None
+        finally:
+            if tmp:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+
     def _wake(self, aone_id, task, new_comments):
         """Called by WaitWatcher when a suspended task gets a reply."""
         reply_text = "\n".join(
@@ -3326,7 +3436,7 @@ class JarvisHandler(AsyncChatbotHandler):
         # "全部处理" → dispatch the pending item(s) as headless jarvis, one fresh session
         # per ticket (每单一实例). In auto mode pending is normally empty (items go
         # straight to the pool); this path stays as the JARVIS_AUTO_DISPATCH=0 fallback.
-        if self.scanner and staff == master_staff():
+        if self.scanner and staff in api_tool_staff():
             auth_m = AUTH_SINGLE.match(text)
             if auth_m:
                 item = self.scanner.authorize(auth_m.group(1))
@@ -3387,18 +3497,28 @@ class JarvisHandler(AsyncChatbotHandler):
                 tail_on_handoff="\n\n交给 Jarvis 处理…",
                 target_type=card_type)
             _, task = extract_jarvis_task(full)
-            # master 闸：仅辰羿且 Tata 发了哨兵任务，才升级第二层重型 Jarvis（异步）。
-            if task and staff == master_staff():
-                log.info("staff=%s handoff -> jarvis (async): %r", staff, task[:200])
-                # Handoff continues the master's conversational Jarvis session (reuse
-                # jsid/resume), unlike per-ticket dispatch which is一单一会话.
-                jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
-                jresume = staff in self.jarvis_started
-                self.jarvis_started.add(staff)
-                handoff_id = "handoff-%s" % int(time.time())
-                self._submit_card(handoff_id, card_target, card_type, task, jsid, jresume)
+            # 委派闸：staffId 在 API 工具团队联系人表内且 Tata 发了哨兵任务，才升级第二层重型 Jarvis。
+            if task and staff in api_tool_staff():
+                if handoff_mode() == "exec":
+                    # 回退模式(JARVIS_HANDOFF_MODE=exec): 直接起 headless 重型 Jarvis 异步执行(旧行为)。
+                    log.info("staff=%s handoff -> jarvis (async exec): %r", staff, task[:200])
+                    # Handoff continues the master's conversational Jarvis session (reuse
+                    # jsid/resume), unlike per-ticket dispatch which is一单一会话.
+                    jsid = self.jarvis_sessions.setdefault(staff, str(uuid.uuid4()))
+                    jresume = staff in self.jarvis_started
+                    self.jarvis_started.add(staff)
+                    handoff_id = "handoff-%s" % int(time.time())
+                    self._submit_card(handoff_id, card_target, card_type, task, jsid, jresume)
+                else:
+                    # 默认: 以 jarvis 身份建 Aone 工单承载委派任务 + 回执，即结束(进度可追踪)。
+                    self._handoff_to_ticket(task, staff, card_target, card_type)
             elif task:
-                log.info("staff=%s sent sentinel but not master; ignored", staff)
+                log.info("staff=%s sent sentinel but not in api-tool contacts; rejected", staff)
+                self._quick_card(card_target,
+                    "🚫 委派未生效：发起人(工号 %s)不在 API 工具团队联系人表中，"
+                    "无法委派 Jarvis 后台处理。如需接入白名单请联系管理员 @辰羿(320687)。"
+                    % (staff or "?"),
+                    card_type)
             log.info("staff=%s done in %.1fs", staff, time.time() - t0)
         except Exception as e:  # noqa: BLE001 — never crash the loop
             log.exception("process error: %s", e)

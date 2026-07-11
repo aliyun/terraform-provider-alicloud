@@ -61,6 +61,14 @@
       "ops": {"test":"composer test", "lint":"composer lint"},
       "desc": "Terraform generator v4; Acube Terraform 代码生成器问题定位/转单/修复"
     },
+    "terraformer": {
+      "repo": "terraformer",
+      "git_url": "git@gitlab.alibaba-inc.com:opensource-tools/terraformer.git",
+      "default_branch": "master",
+      "pools": ["tf_customer"],
+      "ops": {},
+      "desc": "Terraformer; Terraform 资源反向导入工具问题定位/转单/修复"
+    },
     "jarvis": {
       "repo": "jarvis",
       "git_url": "git@gitlab.alibaba-inc.com:terraflow/jarvis.git",

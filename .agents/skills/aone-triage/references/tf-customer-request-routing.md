@@ -19,9 +19,18 @@
 └─ NO ↓                                                              │
                                                                      │
 诉求仅涉及文档改造(website/docs 变更,无 provider 代码改动)?           │
-├─ YES → 仍走镇元查证(确保文档与 schema/API 一致),路由固定            │
-│        关联单指派 过载(484483),jarvis claim 跟进 [end]               │
-│        镇元查证发现 metadata 问题 → 额外建镇元 agent 侧单(2165097)   │
+├─ YES → 仍走镇元查证(确保文档与 schema/API 一致):                    │
+│        1. Provider 侧紧急兜底: 关联单指派 过载(484483) 落 528766,   │
+│           jarvis claim 跟进 PR 合入(仅兜底,下次发版会被镇元覆盖)     │
+│        2. 镇元查证发现 metadata 问题——按性质分流(**别一律转 agent**):│
+│         ├─ 镇元资源文档需修改(描述/枚举值说明/字段解释类) →         │
+│         │   建关联单 → 念依(373108),落 CloudSpec 文档质量问题       │
+│         │   (2169561) 池 [分支 I,镇元文档源头修复]                  │
+│         │   ——TF 文档从镇元资源文档自动生成,不修镇元源头,下次       │
+│         │     发版会覆盖 provider 侧紧急兜底                        │
+│         └─ 镇元资源本身需变更(新增字段/新增枚举/结构调整) →         │
+│             关联单 → 镇元 agent(WORKER_1783326253279),落 2165097   │
+│             池 [分支 E,body 必带机读 JSON]                          │
 └─ NO ↓                                                              │
                                                                      │
 诉求是"现有资源缺 X 属性/值/行为"(有 analog 产品/资源可类比)?         │
@@ -76,12 +85,15 @@
 
 **手写资源不豁免镇元 OK 三条件**(2026-07-08 84021197 事后补规):即使主资源是手写代码(非生成器产出),镇元 spec 仍是团队合同——面向长期"手写→生成器迁移"与文档一致性,条件②③(schema 属性覆盖 / acube 覆盖度)照样评估。**反模式**:以"手写不走生成链路,镇元 spec 缺字段非阻塞"为由把手写资源的镇元缺字段判为"与镇元不相关",直接转分支 D-过载/新山。**正确做法**:镇元 NOT OK 一律走分支 E 转镇元 agent (WORKER_1783326253279) 落 2165097 池主责镇元 spec 补齐;若同时 provider 手写代码也需补透传,分支 E 的紧急双单机制不适用于"不紧急"情形——不紧急时只 agent 一张,provider 手写补齐作为镇元 spec 落地后的自然跟进,或视场景再挂一张 tf_provider 关联单跟研发(不重复"紧急"标签)。
 
-关联单默认建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。**四类例外**(不走 `a1 workitem create` 手动建 tf_provider 关联单):
+**镇元资源文档修改分支 = 分支 I**(2026-07-10 新增 · 84121816 事后补规):Terraform provider website/docs 是从**镇元资源文档自动生成**的,provider 侧仓库里改 markdown 只是紧急兜底——下次镇元触发发版,provider 文档会被镇元资源文档**再次覆盖**回旧值(错误值/过时描述/枚举旧名等)。因此**只涉及镇元文档层的问题**(资源描述/字段解释/枚举值说明,不涉资源本身新增字段/结构)必须**同时**在客户主单加一张关联单到 **CloudSpec 文档质量问题池(2169561)** 指派 **念依(373108)** 修镇元源头,单一分支不足以闭环(与"文档层 vs 资源结构层"的分流边界见分支 E/I 的反模式区)。
+
+关联单默认建在 **terraform-alicloud** 项目(528766, `pools.tf_provider`),类型 = 缺陷/需求(视诉求),双向关联到源客户单。**五类例外**(不走 `a1 workitem create` 手动建 tf_provider 关联单):
 
 1. **专属维护名单产品(分支 A)不建关联单**——ACK/SLS/OSS/RDS 等专人维护的云产品,provider 代码就是该负责人自己的活,源单直接 `--assignee <工号>` + `--status 问题解决中` + `@负责人`,追踪走源客户单本身;jarvis 无 tf_provider 关联单参与研发闭环。**若前次已按分支 A 转对(源单 assignee 已是名单人),不要"补建关联单"**——分支 A 本身就没关联单,不存在"缺"。
-2. **分支 E 关联单落 Terraform镇元对接(2165097, `pools.upstream.cloudspec_gap`) 指派镇元 agent (`WORKER_1783326253279`)**——镇元侧根因由 agent 自动接手在自己池内跟进(谜拟做人类兜底 owner,不再自己解单),tf_provider(528766) 池只放 provider 侧修复(如分支 E 紧急双单里的新山单)。**分支 E 双单时两池并存**:agent 单 → 2165097,新山单 → 528766。**agent 接单硬契约**:关联单 body 必须按 [templates.md 的 Cloudspec 关联单 · 镇元 agent 接单硬契约](./templates.md) 骨架写足 7 字段机读 JSON,缺字段/marker/JSON 语法错 = agent 无法接单 = 单沉底。
-3. **临钧路由(生成器产出)不由 jarvis `a1 workitem create` 手动建单**——走 acube `createBuildTaskV2` 接口,acube 内部自动建单+指派临钧+触发生成/PR 工作流,jarvis 只查回 aoneId 做关联,详见 Step 3。
-4. **分支 F(上游 API 缺口)不建关联单**——只 @提单人 + status=待上游排期,详见 Step 3。
+2. **分支 E 关联单落 Terraform镇元对接(2165097, `pools.upstream.cloudspec_gap`) 指派镇元 agent (`WORKER_1783326253279`)**——镇元侧根因由 agent 自动接手在自己池内跟进(谜拟做人类兜底 owner,不再自己解单),tf_provider(528766) 池只放 provider 侧修复(如分支 E 紧急双单里的新山单)。**分支 E 双单时两池并存**:agent 单 → 2165097,新山单 → 528766。**agent 接单硬契约**:关联单 body 必须按 [templates.md 的 Cloudspec 关联单 · 镇元 agent 接单硬契约](./templates.md) 骨架写足 7 字段机读 JSON,缺字段/marker/JSON 语法错 = agent 无法接单 = 单沉底。**注意分支 E 只接"资源本身需变更"**(新增字段/枚举/结构),纯文档描述修改走分支 I,不走 agent。
+3. **分支 I 镇元文档修改关联单落 CloudSpec 文档质量问题(2169561) 指派念依(373108)**——纯镇元文档修改(资源描述/字段解释/枚举值文案)由念依直接改镇元资源文档源头,不走 agent 机读 JSON;文档改造分支 YES 且 metadata 问题落在文档层时**必与 528766 过载单双建**(过载单紧急兜底 provider docs / PR,念依单修镇元源头防覆盖)。body 自然语言写清 provider 侧 PR 链接 + 镇元资源文档 URL + 具体错误描述/正确值即可。
+4. **临钧路由(生成器产出)不由 jarvis `a1 workitem create` 手动建单**——走 acube `createBuildTaskV2` 接口,acube 内部自动建单+指派临钧+触发生成/PR 工作流,jarvis 只查回 aoneId 做关联,详见 Step 3。
+5. **分支 F(上游 API 缺口)不建关联单**——只 @提单人 + status=待上游排期,详见 Step 3。
 
 
 ## 团队分工速查
@@ -245,7 +257,7 @@ Aone 评论 + @花名(工号) 仍是**主通知渠道**;钉钉私信是**补充*
 
 | 动作 | 私信对象 |
 |---|---|
-| **转单**(分支 A/B/C/D-新山/D-过载/D-临钧/G/H) | 承接方(新指派人) |
+| **转单**(分支 A/B/C/D-新山/D-过载/D-临钧/G/H/I) | 承接方(新指派人;分支 I=念依 373108) |
 | **转单**(分支 E 镇元 agent 关联单) | **谜拟(479782)——agent 归谜拟维护,`WORKER_` 前缀无 IM 通道,`notify-dingtalk.sh` 传 agent id 会 400/静默,一律改私信谜拟**;紧急双单场景另加私信新山(521957) |
 | **分支 F 上游 API 缺口** | 提单人(阿里前线/PD) |
 | **补建关联单**(前次漏建) | 承接方(前次没关联单不知道);**分支 E 私信谜拟**(同上,不发 agent) |
@@ -346,7 +358,7 @@ bash bootstrap/notify-dingtalk.sh <工号> \
 
 **为什么不建关联单**:专属维护名单本身表示"该产品 provider 由这个人独立维护、不走 tf_provider 共享池",研发在其自己团队/仓库内闭环,建 tf_provider 关联单是重复档案。若该产品出现"专人已推 PR / 已修复"的短路情形,按 Step 3 前置 Gate 短路即可,一样不建单。
 
-### 分支 D-新山 / D-过载 / E(jarvis 手动建关联单+指派)
+### 分支 D-新山 / D-过载 / E / I(jarvis 手动建关联单+指派)
 
 ```bash
 # 0. 从原单读优先级 + DDL,关联单继承
@@ -387,6 +399,10 @@ print(d.isoformat())")
 #        · **body 硬契约**:必须严格按 templates.md 的 "Cloudspec 关联单 · 镇元 agent 接单硬契约"
 #          骨架写(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全)
 #          缺 marker / 缺字段 / JSON 语法错 = agent 无法接单 = 单沉底
+#      - 分支 I 镇元文档修改 → --project 2169561 (CloudSpec 文档质量问题) --assignee 373108
+#        · 念依(陈旖旎)人工处理,无机读契约要求,body 用自然语言写清:
+#          provider 侧紧急修复 PR 链接 + 镇元资源文档 URL + 具体错误位置/正确值/影响面
+#        · 该池非 528766,同样跳过 528766 的 cfs 三件套;若日后 400 按报错补
 #      - 其它路由(过载/新山/夏节/文档改造/G/H) → --project 528766 (terraform-alicloud)
 #        必带下方三件套 cfs;bug 类还必带 --cfs "Terraform需求类型=..."
 bin/a1id -- project workitem create \
@@ -465,13 +481,29 @@ bash bootstrap/notify-dingtalk.sh <工号> \
 
 分支 G **不走镇元查证**(镇元管资源 schema,不管 provider 基础),Step 2 分支 D/E 的 acube 覆盖度检查可跳过,直接进入 Step 3 建单流程。
 
-**文档改造分支 · 仅 website/docs 变更(→ 过载 484483)**:适用于"诉求仅涉及文档改造(website/docs 变更,无 provider 代码改动)"的场景。**落地脚本与分支 A/D-过载/E 完全一致**,只需以下微调:
-- `--assignee` 填 `484483`(过载)
+**文档改造分支 · 仅 website/docs 变更(→ 双单:过载 484483 + 念依 373108)**:适用于"诉求仅涉及文档改造(website/docs 变更,无 provider 代码改动)"的场景。**默认双单**(过载单紧急兜底 + 念依单修镇元源头),不再是单张过载单。落地:
+
+**过载单**(528766 tf_provider 池) **落地脚本与分支 A/D-过载/E 完全一致**,微调:
+- `--project 528766` `--assignee 484483`(过载)
 - `--category` 视原单类型(需求/缺陷)
 - `--title` 注明"文档改造"字样
 - **仍走镇元查证**(Step 2 不跳过):probe tier-0 的 `doc_gap_*` 发现依赖 TF 文档 ↔ OpenAPI 文档 ↔ provider 源码三方比对,文档改造同样需要确认镇元 schema 定义准确
 - 路由固定过载,**不受镇元 OK/NOT OK 影响**(不像分支 D/E 会因镇元结果分到不同人);jarvis claim 关联单跟进(见"过载 = jarvis 自动接手"段)
-- **镇元 metadata 问题 → 额外建镇元 agent 侧单**(2026-07-09 新增):若镇元查证发现 Cloudspec/镇元侧 metadata 也存在同类问题(如枚举值描述过时、属性定义与实际不符),**在主路由关联单之外**,额外建一张镇元 agent 关联单(`--project 2165097 --assignee WORKER_1783326253279`,body 按 templates.md 硬契约)。两张单各管各的:过载单修 TF 文档,jarvis 跟进;镇元 agent 单修 Cloudspec metadata,agent 自动接。**不冲突、不替代**。钉钉私信发谜拟(479782,agent 兜底 owner)
+- **紧急兜底**:jarvis 提 provider PR,PR 合入让客户当下就用上正确文档
+
+**同时建念依单**(2169561 CloudSpec 文档质量问题池 · 2026-07-10 分支 I 补规):
+- `--project 2169561` `--assignee 373108`(念依/陈旖旎)
+- `--category bug` `--priority`(按原单继承,不做缺陷紧急覆写——文档修复非紧急路径)
+- `--title` 类似 `[Cloudspec 文档] <ResourceCode> <属性> 描述 <旧值→新值>`
+- body **自然语言**写清:provider 侧紧急兜底 PR 链接 + 镇元资源 code(如 `Cloudfw::NatFirewallControlPolicy`)+ 具体错误位置(属性名 + NOTE 段)+ 正确描述值 + OpenAPI 官方定义引用 + 影响面。**不需要机读 JSON**(念依人工处理,不是镇元 agent 自动接单)
+- **为什么必须同时建**:TF provider website/docs 从**镇元资源文档自动生成**,过载单的 PR 只是紧急兜底——不修镇元源头下次发版会覆盖回旧值(错误值再次出现,客户第二次踩坑);念依单修镇元源头才是长期闭环
+- 钉钉私信念依(373108,真人有 IM 通道)
+
+**镇元 metadata 问题按"文档层 vs 资源结构层"分流**(2026-07-10 补规,替代原"额外建镇元 agent 侧单"逻辑):
+- **文档层问题**(枚举值描述过时、属性描述文案错误、字段解释与实际不符等 —— 只是 metadata 描述文本):**走念依单**(2169561),**不走 agent 单**(2165097 agent 只接资源本身变更,纯文档修改会被 agent/临钧判定后取消 → 84123415 是取消先例)
+- **资源结构层问题**(资源缺字段、缺枚举值、缺 API 定义等 —— 涉及镇元资源本身变更):走**分支 E** 额外建镇元 agent 关联单(`--project 2165097 --assignee WORKER_1783326253279`,body 按 templates.md 硬契约)
+
+**判定关键**:改的是"文本描述"(不影响 schema 结构)还是"资源结构"(增/改/删字段/枚举/子资源)。前者念依,后者 agent
 
 **分支 H · NPE 兜底(→ 夏节 401498 + 标签 `jarvis-npe`)**:适用于"以上所有分支均未命中"的兜底场景。典型触发:
 - 需求跨多个云产品无法拆解到单一负责人(如 EMR SparkServerless / StarRocksServerless / DLF 三块独立产品线,本团队无路径拆分)
@@ -557,9 +589,13 @@ bash bootstrap/notify-dingtalk.sh <提单人工号> \
 - **不要**在关单提示阶段把 assignee 从原承接方(如许章/齐澄)改到过载(484483) —— 这样承接方后续收不到客户回帖 notification,jarvis 反而背了不属于自己的追踪责任
 - 例外:若承接方本身就是**过载**(纯文档改造分支的路径就是 jarvis 接手,assignee 从建关联单时就是过载),关单时 assignee 保持过载即可,是**结果**不是"转向"
 
-**如果诉求是纯文档问题应该做什么**:
-- 按分支 G 前的"文档改造分支"路由:**先建 tf_provider 关联单指派过载(484483)** + 源单 assignee 改过载 → jarvis 直接 claim 关联单干活(worktree/PR/合入) → 关联单 done + 主单关单提示
+**如果诉求是纯文档问题应该做什么**(2026-07-10 补规 · 分支 I 双单化):
+- **双单并行**——文档改造分支的正确路径是**同时**建两张关联单,一张也不能少:
+  1. **过载单**(528766 tf_provider): 源单 assignee 改过载(484483) → jarvis 直接 claim 关联单干活(worktree/PR/合入)——**紧急兜底**,让客户当下就用上正确文档
+  2. **念依单**(2169561 CloudSpec 文档质量问题): assignee=念依(373108),自然语言 body 写清 provider 侧 PR 链接 + 镇元资源 code + 错误位置/正确值——**修镇元源头**,防下次发版覆盖(TF provider docs 从镇元资源文档自动生成,只改 provider 侧不改镇元 = 紧急兜底 PR 下次会被覆盖回旧值)
+- 收尾:两张单各自 done + release/finish;主单关单提示时说明"provider 侧 PR 已合(过载单),镇元源头修复跟进中(念依单)"
 - **不要跳过"建关联单"直接开 provider worktree 提 PR**——虽然 jarvis 就是过载能干活,但没建关联单就丢了研发档案,主单也难留下"研发详情 vs 关键节点"的分层;2026-07-06 78504233/78523353/78554774 三单就走了这个隐式捷径(见反模式)
+- **不要只建过载单不建念依单**——只做 provider 侧兜底,下次镇元发版会把 provider 文档覆盖回旧值(错误值再次出现);2026-07-10 84121816 前半段就走了这个隐式捷径(先转到镇元 agent(2165097)被临钧取消),回头必须补建 2169561 念依单才闭环
 
 **辅助判定原则**:
 - 「实质进展」= 承接方(不是提单人也不是 jarvis 自己)在评论里给出**技术信息、排期时间、决策结论**其中一样;单纯 "@某人跟进"、"辛苦看下" 不算实质进展
@@ -822,7 +858,8 @@ bash bootstrap/notify-dingtalk.sh <承接人工号> \
 - ❌ Provider 源码查证跳过 Step 2 前置的 upstream PR 前扫,只 grep 本地 workspace 磁盘 —— workspace 的本地 branch 可能滞后 upstream 数十小时,或 sync-provider.sh 未 hardened 时只 fetch 不 reset;必先跑 `gh pr list --search` + `gh api contents?ref=master`,同题 recently-merged PR 直接引用避免重复建单
 - ❌ Step 3 执行路由前不扫评论区/状态 —— 查证+决策期间有时间窗口,原指派人(常被前线随机指派)可能已回帖修复/贴 PR/接手;不扫就转单会重复建关联单、让接手方收多余通知
 - ❌ 分支 E 紧急单只建镇元 agent 一张关联单 —— 紧急(优先级=紧急/距 DDL<14 天/缺陷覆写)时必须镇元 agent+新山**两张**关联单并行(agent 修镇元侧根因、新山紧急兜底 provider 侧),漏建新山单=紧急件失去快速通道;评论 @谜拟+@新山(agent 不接 IM 不用 @)并注明分工
-- ❌ 纯文档诉求跳过"文档改造分支"转单直接开 provider worktree 提 PR —— 隐式捷径:jarvis 觉得"改一行 markdown 何必建关联单",直接就干了 + 主单发关单提示。**问题**:(1) 丢了 tf_provider(528766) 关联单的研发档案,(2) 主单研发详情与关键节点混在一起没分层,(3) 与其他分支的动作模式不一致——文档改造分支设计的正确路径是"建关联单指派过载 → 主单 assignee 改过载 → jarvis 直接 claim 关联单干活 → 关联单和主单各自 done + release"(见"文档改造分支 · 仅 website/docs 变更"段落)
+- ❌ 纯文档诉求跳过"文档改造分支"转单直接开 provider worktree 提 PR —— 隐式捷径:jarvis 觉得"改一行 markdown 何必建关联单",直接就干了 + 主单发关单提示。**问题**:(1) 丢了 tf_provider(528766) 关联单的研发档案,(2) 主单研发详情与关键节点混在一起没分层,(3) 与其他分支的动作模式不一致——文档改造分支设计的正确路径是**双单**:「过载单(528766)紧急兜底 + 念依单(2169561)修镇元源头 → jarvis 直接 claim 过载单干活 → 两张关联单各自 done + release」(见"文档改造分支 · 仅 website/docs 变更"段落 + line 88 分支 I 补规)
+- ❌ 纯文档改造只建过载单,不同时建念依(373108,2169561) 关联单 —— TF provider docs 从镇元资源文档自动生成,过载单的 PR 只是紧急兜底,下次镇元触发发版会把 provider 文档覆盖回旧值(错误值再次出现,客户第二次踩坑)。**正确姿势**:文档改造分支两张关联单**同时建**,过载单 jarvis 直接 claim 发 PR 紧急兜底 + 念依单 assignee=念依(373108) 修镇元源头。case:2026-07-10 84121816 前半段只建过载单和错路的 agent(2165097) 单,回头才补建 2169561 念依单
 
 ### C. assignee / status 转向
 
