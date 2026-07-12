@@ -104,7 +104,7 @@ The description must be 1 to 256 characters in length, and cannot start with `ht
 The name must be 1 to 128 characters in length and cannot start with `http://` or `https://`.
 * `system_route_table_route_propagation_enable` - (Optional, Computed, Available since v1.248.0) Whether the system route table receives propagation routes.
 * `tags` - (Optional, Map, Available since v1.55.3) The tags of Vpc.
-* `user_cidrs` - (Optional, ForceNew, Computed, List, Available since v1.119.0) A list of user CIDRs.
+* `user_cidrs` - (Optional, ForceNew, Computed, List, Available since v1.119.0) A list of user CIDRs. Up to `3` CIDR blocks can be specified.
 * `vpc_name` - (Optional, Computed, Available since v1.119.0) The new name of the VPC.
 The name must be 1 to 128 characters in length and cannot start with `http://` or `https://`.
 
