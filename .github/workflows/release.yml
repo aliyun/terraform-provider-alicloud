@@ -9,6 +9,7 @@ on:
 jobs:
   goreleaser:
     runs-on: terraform-releaser
+    environment: v2-release
     permissions:
       contents: write
     steps:
@@ -24,8 +25,23 @@ jobs:
       - name: Validate prerelease tag
         shell: bash
         run: |
-          if [[ ! "${GITHUB_REF_NAME}" =~ ^v2\.[0-9]+\.[0-9]+-(beta|rc)\.[0-9]+$ ]]; then
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v2\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-(beta|rc)\.(0|[1-9][0-9]*)$ ]]; then
             echo "Invalid v2 prerelease tag: ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+      - name: Validate release branch ancestry
+        shell: bash
+        env:
+          V2_RELEASE_BRANCH: ${{ vars.V2_RELEASE_BRANCH || 'release/v2' }}
+        run: |
+          if [[ ! "$V2_RELEASE_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || ! git check-ref-format --branch "$V2_RELEASE_BRANCH" >/dev/null; then
+            echo "Invalid V2 release branch name" >&2
+            exit 1
+          fi
+          git fetch --no-tags origin \
+            "+refs/heads/${V2_RELEASE_BRANCH}:refs/remotes/origin/${V2_RELEASE_BRANCH}"
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "refs/remotes/origin/${V2_RELEASE_BRANCH}"; then
+            echo "Tag commit $GITHUB_SHA is not part of $V2_RELEASE_BRANCH" >&2
             exit 1
           fi
       - name: Import GPG key
@@ -37,6 +53,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
         with:
+          version: v2.17.0
           args: release --clean --timeout 500m --parallelism 1
         env:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
