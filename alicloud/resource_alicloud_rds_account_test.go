@@ -109,15 +109,6 @@ data "alicloud_db_zones" "default"{
  	db_instance_storage_type = "local_ssd"
 }
 
-data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
-	instance_charge_type = "PostPaid"
-}
-
 data "alicloud_vpcs" "default" {
     name_regex = "^default-NODELETING$"
 }
@@ -150,8 +141,8 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
- 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+ 	instance_type = "rds.mysql.s3.large"
+	instance_storage = 50
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	instance_charge_type = "Postpaid"
@@ -300,15 +291,6 @@ data "alicloud_db_zones" "default"{
  	db_instance_storage_type = "local_ssd"
 }
 
-data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
-	instance_charge_type = "PostPaid"
-}
-
 data "alicloud_vpcs" "default" {
     name_regex = "^default-NODELETING$"
 }
@@ -342,8 +324,8 @@ resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
  	db_instance_storage_type = "local_ssd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_type = "rds.mysql.s3.large"
+	instance_storage = 50
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	instance_charge_type = "Postpaid"
@@ -646,7 +628,7 @@ resource "alicloud_db_instance" "default" {
   engine_version = "2012_std_ha"
   vswitch_id     = local.vswitch_id
   instance_type  = "mssql.x4.medium.s2"
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
   db_instance_storage_type = "cloud_essd"
   instance_charge_type =  "Postpaid"
   monitoring_period = "60"
@@ -798,10 +780,10 @@ locals {
 resource "alicloud_db_instance" "default" {
   engine         	= "PostgreSQL"
   engine_version 	= "12.0"
-  instance_type 	=  data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage	=  data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_type 	=  data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+  instance_storage	=  data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
   db_instance_storage_type =  "cloud_essd"
-  zone_id			=      data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id
+  zone_id			=      data.alicloud_db_instance_classes.default.instance_classes[0].zone_ids[0].id
   instance_charge_type  =  "Postpaid"
   instance_name			=  var.name
   vswitch_id			=  local.vswitch_id
