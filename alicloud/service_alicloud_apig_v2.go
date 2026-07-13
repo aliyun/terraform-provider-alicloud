@@ -25,10 +25,10 @@ func (s *ApigServiceV2) DescribeApigHttpApi(id string) (object map[string]interf
 	var response map[string]interface{}
 	var query map[string]*string
 	httpApiId := id
-	action := fmt.Sprintf("/v1/http-apis/%s", httpApiId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["httpApiId"] = id
+
+	action := fmt.Sprintf("/v1/http-apis/%s", httpApiId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -50,6 +50,10 @@ func (s *ApigServiceV2) DescribeApigHttpApi(id string) (object map[string]interf
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	code, _ := jsonpath.Get("$.code", response)
+	if InArray(fmt.Sprint(code), []string{"DatabaseError.RecordNotFound"}) {
+		return object, WrapErrorf(NotFoundErr("HttpApi", id), NotFoundMsg, response)
+	}
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
@@ -60,15 +64,18 @@ func (s *ApigServiceV2) DescribeApigHttpApi(id string) (object map[string]interf
 }
 
 func (s *ApigServiceV2) ApigHttpApiStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ApigHttpApiStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigHttpApi)
+}
+
+func (s *ApigServiceV2) ApigHttpApiStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeApigHttpApi(id)
+		object, err := call(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
