@@ -207,7 +207,7 @@ The fc_service_config mapping supports the following:
  * `DEFAULT`: Use the default value provided by API Gateway.
  * `CUSTOM`: Use a custom value.
  * `CLIENT`: Use the Content-Type header from the client request.
-* `content_type_value` - (Optional, Computed, Available since v1.281.0) The value of the Content-Type header when `content_type_category` is `DEFAULT` or `CUSTOM`.
+* `content_type_value` - (Optional, Computed, Available since v1.281.0) The value of the Content-Type header when `content_type_category` is `DEFAULT` or `CUSTOM`. This field is ignored when `content_type_category` is set to `CLIENT`.
 
 ### `mock_service_config`
 
