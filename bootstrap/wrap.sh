@@ -163,21 +163,42 @@ case "$cmd" in
         bash "$script_dir/cache.sh" bust "wi-$id"  # 评论后详情已变，丢缓存
         ;;
     done)
-        if [ "${3:-}" = "--summary-file" ]; then
-            summary="$(summary_from_file "${4:-}")"
-            status="${5:-}"
-        elif [ "${3:-}" = "--summary-stdin" ]; then
-            summary="$(cat)"
-            status="${4:-}"
+        done_usage="Usage: wrap.sh done <id> \"<summary>\"|--summary-file <path>|--summary-stdin [<status>|--status <status>|--no-status]"
+        # status 可用 flag 或位置参数给：--status <值>/--status=<值>/--no-status 从任意位置抽出
+        # （对齐 a1 update --status 与直觉，见 cap-wrap-status-alias），其余 token 按原位置语义
+        # 决定 summary 来源。flag 与位置状态互斥；误放的其它 --flag 仍由 reject_flag_as_text 拦。
+        status=""; status_set=0; rest=(); args=("${@:3}"); i=0
+        while [ "$i" -lt "${#args[@]}" ]; do
+            case "${args[$i]}" in
+                --status)
+                    i=$((i+1))
+                    [ "$i" -lt "${#args[@]}" ] || { echo "wrap.sh: --status 需要一个状态值" >&2; echo "$done_usage" >&2; exit 2; }
+                    status="${args[$i]}"; status_set=1 ;;
+                --status=*) status="${args[$i]#--status=}"; status_set=1 ;;
+                --no-status) status="--no-status"; status_set=1 ;;
+                *) rest+=("${args[$i]}") ;;
+            esac
+            i=$((i+1))
+        done
+        # 从 rest[] 定 summary 来源；pos_status = 正文之后的位置状态参数（若有）
+        if [ "${rest[0]:-}" = "--summary-file" ]; then
+            summary="$(summary_from_file "${rest[1]:-}")"; pos_status="${rest[2]:-}"; consumed=2
+        elif [ "${rest[0]:-}" = "--summary-stdin" ]; then
+            summary="$(cat)"; pos_status="${rest[1]:-}"; consumed=1
         else
-            summary="${3:-}"
-            status="${4:-}"
-            reject_flag_as_text "$summary" "summary" "Usage: wrap.sh done <id> \"<summary>\"|--summary-file <path>|--summary-stdin <status|--no-status>"
+            summary="${rest[0]:-}"
+            reject_flag_as_text "$summary" "summary" "$done_usage"
+            pos_status="${rest[1]:-}"; consumed=1
         fi
-        # 状态槽（任一分支）：仅 --no-status 是合法 `--` 值；其余 --flag = 参数错位（如
-        # `done <id> --summary-stdin --status`），响亮报错而非拿去 a1 update --status 空跑。
-        reject_flag_as_text "$status" "status" "Usage: wrap.sh done <id> \"<summary>\"|--summary-file <path>|--summary-stdin <status|--no-status>" "--no-status"
-        [ -n "$id" ] && [ -n "$summary" ] && [ -n "$status" ] || { echo "Usage: wrap.sh done <id> \"<summary>\"|--summary-file <path>|--summary-stdin <status|--no-status>" >&2; exit 1; }
+        if [ "$status_set" -eq 1 ]; then
+            # flag 已给状态：正文之后不应再有多余位置参数（防重复指定/参数错位）
+            [ "${#rest[@]}" -le "$consumed" ] || { echo "wrap.sh: 状态既用 --status/--no-status 指定又出现多余位置参数：'$pos_status'" >&2; echo "$done_usage" >&2; exit 2; }
+        else
+            status="$pos_status"
+        fi
+        # 状态槽兜底：仅 --no-status 是合法 `--` 值；其余 --flag = 参数错位，响亮报错。
+        reject_flag_as_text "$status" "status" "$done_usage" "--no-status"
+        [ -n "$id" ] && [ -n "$summary" ] && [ -n "$status" ] || { echo "$done_usage" >&2; exit 1; }
         if [ "$status" = "--no-status" ]; then
             write_done "$id" "$summary" "" 0
         else
