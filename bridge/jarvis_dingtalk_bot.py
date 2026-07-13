@@ -609,22 +609,27 @@ def _ticket_prompt_terraform(item_id, title, pool_key, proj):
         "   · to=terraform-qa(acc_verify) → 跳过 RD 直接起 terraform-qa 跑远程 AccTest；\n"
         "   · handoff=null(分诊即闭环：澄清等客户/无缺口) → 不再接力，直接进收尾。\n"
         "   读 RD 返回的 handoff：to=terraform-qa(acc_verify) → Task 起 terraform-qa 跑远程 AccTest；\n"
-        "   RD status=build_fail/test_fail(handoff=null) → 不接 QA，wrap.sh sync 记状态后按人工门/escalation。\n"
+        "   RD status=build_fail/test_fail(handoff=null) → 不接 QA；失败原因由 RD 以自身身份评论，"
+        "编排层只 log.sh run_done 记状态 + 走人工门/escalation（编排层不落评论）。\n"
         "   **PR CI 门**：RD 交 QA 前须确认远程 PR CI 全绿(gh pr checks)；CI 红/pending → RD 留守修 CI、"
         "handoff=null，**不交 QA**(CI 失败 owner 是 RD 不是 QA，QA 只验不改)。\n"
         "   读 QA 返回：pass 且 to=terraform-pd(acceptance) → 可起 terraform-pd 通知客户；"
         "fail 且 to=terraform-rd(dev) → 回 RD 修（轮次尊重 JARVIS_PERSONA_MAX_ROUNDS，PD→RD→QA 仅 3 跳）。\n"
         "   身份纪律：每个子代理先 bin/a1id ready <role> 探测，未登录按 persona-collab §6.2 "
         "以 jarvis 代发并首行标 identity_fallback；**编排层绝不代言角色发评论**。\n"
-        "5) 收尾 bookend：开 MR/CR 立刻 bootstrap/wrap.sh sync 贴链回工单；"
-        "全部接力完成后 bootstrap/wrap.sh done（status 必填）+ bootstrap/claim.sh release。"
-        "**PR/CR 未合并禁 claim.sh finish**(aone-triage SKILL 硬闸门)→ 改用 "
-        "bootstrap/wrap.sh done <id> --no-status + bootstrap/claim.sh release(→ jarvis-idle)，"
-        "等 RevisitScheduler 合并后复验。\n"
+        "5) 收尾 bookend（terraform 线：**编排层不发评论**，Aone 真源=各 persona 自己的阶段评论）：\n"
+        "   · 进展/结论/PR 链接都由对应 persona 以自身身份评论了，编排层**不再落任何总结评论**"
+        "(**严禁 wrap.sh done/sync**——它们会以 open-jarvis 身份刷一条评论，造成重复)。\n"
+        "   · 编排层只做「记 runs + 打标签」：\n"
+        "     bootstrap/log.sh run_done %s \"<链路一句话摘要，如 pd 分诊→qa AccTest PASS，PR#… 待合并>\"（写 runs 审计，不评论）；\n"
+        "     PR/CR 已合并且真闭环 → bootstrap/claim.sh finish %s %s（打 jarvis-done + 改状态）；\n"
+        "     未合并(评审中/待 merge) → bootstrap/claim.sh release %s %s（打 jarvis-idle，等 RevisitScheduler 合并后复验）。\n"
         "遇必须人类确认/决策的点：在工单评论 @对应人，末尾单起一行输出 "
         "[[SUSPEND:{\"aone_id\":\"%s\",\"wait_for\":\"<staffId>\"}]] 后退出，由 bridge 挂起等回复唤醒。"
         % (item_id, title, pool_key or "?", proj or "?", item_id, item_id, proj,
-           item_id, pool_key or "?", proj or "?", item_id)
+           item_id, pool_key or "?", proj,
+           item_id, item_id, proj, item_id, proj,
+           item_id)
     )
 
 

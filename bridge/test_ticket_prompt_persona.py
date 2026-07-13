@@ -70,17 +70,31 @@ class TicketPromptTest(unittest.TestCase):
         self.assertIn("PR CI", p)
         self.assertIn("gh pr checks", p)
 
+    def test_terraform_bookend_is_silent(self):
+        # terraform 线:编排层收尾只记 runs + 打标签,不发评论
+        # (prompt 里"wrap.sh done"只出现在"严禁…"禁令里,故断言意图而非裸子串缺失)
+        p = bot._ticket_prompt("84215653", "[TF] alicloud_x", "tf_provider", "528766")
+        self.assertIn("log.sh run_done", p)
+        self.assertIn("claim.sh finish", p)
+        self.assertIn("claim.sh release", p)
+        self.assertIn("编排层不发评论", p)
+        self.assertIn("不再落任何总结评论", p)
+        # wrap.sh done/sync 只应作为禁令出现,不应作为收尾指令
+        self.assertIn("严禁 wrap.sh done/sync", p)
+
     def test_non_terraform_prompt_stays_inline(self):
         p = bot._ticket_prompt("999", "agent 门户 bug", "mcp_server", "2124589")
         self.assertNotIn("terraform-pd", p)
         self.assertIn("aone-triage", p)
+        # 非 terraform 单:编排层就是执行者,仍走 wrap.sh done 发评论收尾
+        self.assertIn("wrap.sh done", p)
 
-    def test_both_branches_preserve_bookend_and_suspend(self):
-        # 回归护栏:去重/认领/收尾/挂起语义两分支都不能丢
+    def test_both_branches_preserve_dedup_claim_suspend(self):
+        # 回归护栏:去重/认领/挂起语义两分支都不能丢
         for pool, proj, title in (("tf_customer", "1086837", "[TF] x"),
                                    ("mcp_server", "2124589", "agent bug")):
             p = bot._ticket_prompt("42", title, pool, proj)
-            for tok in ("log.sh seen", "claim.sh claim", "wrap.sh done", "[[SUSPEND:"):
+            for tok in ("log.sh seen", "claim.sh claim", "[[SUSPEND:"):
                 self.assertIn(tok, p, "%s 分支缺 %r" % (pool, tok))
 
 
