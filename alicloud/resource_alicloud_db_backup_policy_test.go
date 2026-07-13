@@ -40,7 +40,7 @@ func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 					"backup_time":                       "02:00Z-03:00Z",
 					"retention_period":                  "900",
 					"backup_retention_period":           "900",
-					"backup_period":                     []string{"Wednesday"},
+					"backup_period":                     []string{"Wednesday", "Tuesday"},
 					"log_retention_period":              "7",
 					"log_backup_local_retention_number": "20",
 				}),
@@ -243,15 +243,6 @@ data "alicloud_db_zones" "default"{
  	db_instance_storage_type = "local_ssd"
 }
 
-data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "local_ssd"
-	instance_charge_type = "PostPaid"
-}
-
 data "alicloud_vpcs" "default" {
     name_regex = "^default-NODELETING$"
 }
@@ -285,8 +276,8 @@ resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
  	db_instance_storage_type = "local_ssd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_type = "rds.mysql.s3.large"
+	instance_storage = 50
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_group_ids = alicloud_security_group.default.*.id
@@ -471,19 +462,10 @@ variable "name" {
 }
 data "alicloud_db_zones" "default"{
 	engine = "PostgreSQL"
-	engine_version = "14.0"
+	engine_version = "18.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
-}
-
-data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.1.id
-	engine = "PostgreSQL"
-	engine_version = "14.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
-	instance_charge_type = "PostPaid"
 }
 
 data "alicloud_vpcs" "default" {
@@ -517,10 +499,10 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_db_instance" "default" {
 	engine = "PostgreSQL"
-	engine_version = "14.0"
+	engine_version = "18.0"
  	db_instance_storage_type = "cloud_essd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_type = "pg.n2.2c.2m"
+	instance_storage = 50
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_group_ids = alicloud_security_group.default.*.id
