@@ -171,6 +171,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_apig_gateways":                              dataSourceAliCloudApigGateways(),
 			"alicloud_express_connect_router_vpc_associations":    dataSourceAliCloudExpressConnectRouterVpcAssociations(),
 			"alicloud_express_connect_router_tr_associations":     dataSourceAliCloudExpressConnectRouterTrAssociations(),
 			"alicloud_express_connect_router_vbr_child_instances": dataSourceAliCloudExpressConnectRouterVbrChildInstances(),
