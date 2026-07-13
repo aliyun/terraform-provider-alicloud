@@ -401,9 +401,10 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				Computed: true,
 			},
 			"http_put_response_hop_limit": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntBetween(1, 64),
 			},
 			"image_options": {
 				Type:     schema.TypeList,
@@ -773,7 +774,7 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 		request["HttpTokens"] = v
 	}
 
-	if v, ok := d.GetOkExists("http_put_response_hop_limit"); ok {
+	if v, ok := d.GetOkExists("http_put_response_hop_limit"); ok && v.(int) > 0 {
 		request["HttpPutResponseHopLimit"] = v
 	}
 
@@ -1351,7 +1352,7 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 	if d.HasChange("http_put_response_hop_limit") {
 		update = true
 	}
-	if v, ok := d.GetOkExists("http_put_response_hop_limit"); ok {
+	if v, ok := d.GetOkExists("http_put_response_hop_limit"); ok && v.(int) > 0 {
 		request["HttpPutResponseHopLimit"] = v
 	}
 
