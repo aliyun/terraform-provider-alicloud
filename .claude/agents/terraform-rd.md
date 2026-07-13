@@ -148,10 +148,19 @@ cd <workspace_path> && go test ./...
 # 6. 进展同步(以 terraform-rd 身份贴 Aone)
 JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh sync <aone_id> "开发进展:<摘要>"
 
-# 7. 收尾必发阶段评论(status=done 时强制) —— 交 QA 验收
+# 7. PR CI 门(交 QA 前必卡) —— 本地 build 绿 ≠ 可交 QA
+#    push PR 后必须确认**远程 PR CI 全绿**才交 QA;红/pending 则 RD 留守修 CI,不惊动 QA
+#    (CI 失败的 owner 是 RD,不是 QA——QA 只验不改,红 CI 交过去只会空跑 AccTest 再弹回)。
+gh pr checks <pr_url_or_number>    # 或 gh pr view <pr> --json statusCheckRollup
+#   · 全绿(SUCCESS)           → 走第 8 步交 QA
+#   · 有 FAIL/PENDING/无 PR   → 不交 QA:继续在 worktree 修 CI(systematic-debugging),
+#                               修完重跑 build/vet/test + push,再回本步复检;
+#                               本轮若交编排层收尾,handoff=null、正文写「CI 未过,RD 继续修」
+
+# 8. 收尾必发阶段评论(status=done 且 PR CI 全绿时强制) —— 交 QA 验收
 #    dev 完成交 QA **不是闭环**,必发哨兵(只有「评审模式只读出报告、无代码改动」才闭环省略哨兵)。
 #    排版按「评论区协作 §收尾必发阶段评论」(单一真源):结论→细节(PR/CR 链接+diff 摘要)→
-#    @质量数字人 TerraformQA(WORKER_1783582593461)→末尾单行哨兵。build 绿即刻交 QA,不等 PR 合并
+#    @质量数字人 TerraformQA(WORKER_1783582593461)→末尾单行哨兵。PR CI 绿即刻交 QA,不等 PR 合并
 #    (QA 用 invoke-terraform-acc-test-remote 在分支/PR 上远程跑 AccTest;PR 合并是编排层另一道人工门)。
 if bin/a1id ready terraform-rd; then
   bin/a1id as terraform-rd -- project workitem comment create <aone_id> --body-file /tmp/rd-done.md
@@ -171,8 +180,9 @@ fi
 - `diff_summary`: 改动摘要(文件列表 + 关键变化)
 - `build_result`: build/vet/test 输出摘要
 - `handoff`: 接力意图(编排层同会话据此派下一角色,评论侧同步落哨兵):
-  - `status=done`(build/vet/test 绿、PR/分支已 push) → `{"to":"terraform-qa","action":"acc_verify","note":"PR:<url> 请跑 AccTest"}`
+  - `status=done`(本地 build/vet/test 绿、PR 已 push、**且远程 PR CI 全绿**) → `{"to":"terraform-qa","action":"acc_verify","note":"PR:<url> CI 绿,请跑 AccTest"}`
   - `status=build_fail | test_fail | missing_capability` → `null`(未闭合,交编排层/escalation,**不**接 QA——绝不把红 build 交给 QA)
+  - `status=done` 但 **PR CI 红/pending** → `null`(RD 留守修 CI,不交 QA;note 写「CI 未过,RD 继续修」)——CI 失败 owner 是 RD 不是 QA
 
 ## 限制(开发模式)
 

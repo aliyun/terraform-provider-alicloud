@@ -64,6 +64,12 @@ class TicketPromptTest(unittest.TestCase):
         # 编排语义:不自己写码/验收
         self.assertIn("只做编排", p)
 
+    def test_terraform_prompt_has_pr_ci_gate(self):
+        # RD 交 QA 前须 PR CI 全绿(红 CI 的 PR 不该丢给 QA 空跑)
+        p = bot._ticket_prompt("84215653", "[TF] alicloud_x", "tf_provider", "528766")
+        self.assertIn("PR CI", p)
+        self.assertIn("gh pr checks", p)
+
     def test_non_terraform_prompt_stays_inline(self):
         p = bot._ticket_prompt("999", "agent 门户 bug", "mcp_server", "2124589")
         self.assertNotIn("terraform-pd", p)

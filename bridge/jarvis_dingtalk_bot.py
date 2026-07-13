@@ -610,6 +610,8 @@ def _ticket_prompt_terraform(item_id, title, pool_key, proj):
         "   · handoff=null(分诊即闭环：澄清等客户/无缺口) → 不再接力，直接进收尾。\n"
         "   读 RD 返回的 handoff：to=terraform-qa(acc_verify) → Task 起 terraform-qa 跑远程 AccTest；\n"
         "   RD status=build_fail/test_fail(handoff=null) → 不接 QA，wrap.sh sync 记状态后按人工门/escalation。\n"
+        "   **PR CI 门**：RD 交 QA 前须确认远程 PR CI 全绿(gh pr checks)；CI 红/pending → RD 留守修 CI、"
+        "handoff=null，**不交 QA**(CI 失败 owner 是 RD 不是 QA，QA 只验不改)。\n"
         "   读 QA 返回：pass 且 to=terraform-pd(acceptance) → 可起 terraform-pd 通知客户；"
         "fail 且 to=terraform-rd(dev) → 回 RD 修（轮次尊重 JARVIS_PERSONA_MAX_ROUNDS，PD→RD→QA 仅 3 跳）。\n"
         "   身份纪律：每个子代理先 bin/a1id ready <role> 探测，未登录按 persona-collab §6.2 "
