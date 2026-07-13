@@ -124,6 +124,20 @@ write_done() {
     bash "$script_dir/cache.sh" bust "wi-$tid"  # 收尾改动后详情已变，丢缓存
 }
 
+# 位置正文 / 状态槽收到 `--flag` 形态的 token = 调用方把命令行参数放错了位置
+# （如 `done <id> --status X --summary-stdin`：--status 落入 else 分支被当 summary 静默贴出，
+# 真 summary 从 stdin 丢弃——见 escalation/cap-wrap-reject-flag-as-text.md / 工单 83843879）。
+# 静默吞下会污染工单 + 丢真内容 + 静默改错状态；这里响亮报错而非当正文。
+# allow（可选）= 该槽合法的 `--` 值白名单（仅状态槽的 --no-status）。
+reject_flag_as_text() {  # args: value slot usage [allow]
+    local val="$1" slot="$2" usage="$3" allow="${4:-}"
+    [ -n "$allow" ] && [ "$val" = "$allow" ] && return 0
+    case "$val" in
+        --*) printf 'wrap.sh: %s 位置收到疑似命令行参数 "%s"（wrap 无此 flag）——请检查参数顺序。\n%s\n' \
+                    "$slot" "$val" "$usage" >&2; exit 2 ;;
+    esac
+}
+
 cmd="${1:-}"
 id="${2:-}"
 
@@ -135,6 +149,7 @@ case "$cmd" in
             text="$(cat)"
         else
             text="${3:-}"
+            reject_flag_as_text "$text" "进展正文" "Usage: wrap.sh sync <id> \"<progress>\" | --summary-file <path> | --summary-stdin"
         fi
         [ -n "$id" ] && [ -n "$text" ] || { echo "Usage: wrap.sh sync <id> \"<progress>\" | --summary-file <path> | --summary-stdin" >&2; exit 1; }
         reject_literal_newline "$text"
@@ -157,7 +172,11 @@ case "$cmd" in
         else
             summary="${3:-}"
             status="${4:-}"
+            reject_flag_as_text "$summary" "summary" "Usage: wrap.sh done <id> \"<summary>\"|--summary-file <path>|--summary-stdin <status|--no-status>"
         fi
+        # 状态槽（任一分支）：仅 --no-status 是合法 `--` 值；其余 --flag = 参数错位（如
+        # `done <id> --summary-stdin --status`），响亮报错而非拿去 a1 update --status 空跑。
+        reject_flag_as_text "$status" "status" "Usage: wrap.sh done <id> \"<summary>\"|--summary-file <path>|--summary-stdin <status|--no-status>" "--no-status"
         [ -n "$id" ] && [ -n "$summary" ] && [ -n "$status" ] || { echo "Usage: wrap.sh done <id> \"<summary>\"|--summary-file <path>|--summary-stdin <status|--no-status>" >&2; exit 1; }
         if [ "$status" = "--no-status" ]; then
             write_done "$id" "$summary" "" 0
@@ -172,6 +191,7 @@ case "$cmd" in
             summary="$(cat)"
         else
             summary="${3:-}"
+            reject_flag_as_text "$summary" "summary" "Usage: wrap.sh done-no-status <id> \"<summary>\" | --summary-file <path> | --summary-stdin"
         fi
         [ -n "$id" ] && [ -n "$summary" ] || { echo "Usage: wrap.sh done-no-status <id> \"<summary>\" | --summary-file <path> | --summary-stdin" >&2; exit 1; }
         write_done "$id" "$summary" "" 0
