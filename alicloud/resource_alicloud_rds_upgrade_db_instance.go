@@ -555,7 +555,7 @@ func resourceAlicloudRdsUpgradeDbInstanceRead(d *schema.ResourceData, meta inter
 		if v == "on" {
 			sslEnabled = 1
 		}
-		d.Set("ssl_enabled'", sslEnabled)
+		d.Set("ssl_enabled", sslEnabled)
 	}
 	res, err := rdsService.DescribeHADiagnoseConfig(d.Id())
 	if err != nil {
