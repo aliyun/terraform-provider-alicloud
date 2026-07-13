@@ -700,7 +700,7 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 		if v == "on" {
 			sslEnabled = 1
 		}
-		d.Set("ssl_enabled'", sslEnabled)
+		d.Set("ssl_enabled", sslEnabled)
 	}
 	res, err := rdsService.DescribeHADiagnoseConfig(d.Id())
 	if err != nil {

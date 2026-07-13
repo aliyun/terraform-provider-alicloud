@@ -578,7 +578,7 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_Cluster(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
+					"db_instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min + data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].step}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -702,8 +702,8 @@ data "alicloud_vswitches" "default" {
 resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
   zone_id                  = data.alicloud_db_zones.default.ids.1
@@ -762,7 +762,7 @@ resource "alicloud_db_instance" "default" {
   engine_version           = "8.0"
   db_instance_storage_type = "cloud_essd"
   instance_type            = "mysql.n2e.small.xc"
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
   vswitch_id               = data.alicloud_vswitches.default.ids.0
   instance_name            = var.name
   zone_id 				   = data.alicloud_db_zones.default.ids.0
@@ -915,8 +915,8 @@ data "alicloud_vswitches" "vswitche2" {
 resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
   zone_id                  = data.alicloud_db_zones.default.ids.0
@@ -1063,8 +1063,8 @@ data "alicloud_vswitches" "default" {
 resource "alicloud_db_instance" "default" {
   engine                   = "PostgreSQL"
   engine_version           = "14.0"
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
   zone_id                  = data.alicloud_db_zones.default.ids.1
@@ -1172,8 +1172,8 @@ resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   db_instance_storage_type = "cloud_essd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
   vswitch_id               = data.alicloud_vswitches.default.ids.0
   instance_name            = var.name
   zone_id 				   = data.alicloud_db_zones.default.ids.0
@@ -1314,8 +1314,8 @@ data "alicloud_vswitches" "vswitche2" {
 resource "alicloud_db_instance" "default" {
   engine                   = "SQLServer"
   engine_version           = "2019_std_sl"
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
   zone_id                  = data.alicloud_db_zones.default.ids.1
