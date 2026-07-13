@@ -97,7 +97,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 
 **Terraform-specific 领域**详细 branch(专属维护名单 / 类比 API 原生 vs Provider 适配 / 镇元覆盖度 / 生成器 vs 手写)全在 `references/tf-customer-request-routing.md`。tf_customer 域必读,其它域按需借鉴。
 
-5. **可视化截图取证**(查证完成后追加):调 `.claude/skills/screenshot-evidence` skill,用 Playwright 截取 OpenAPI 文档页、Provider 文档对比、GitHub PR diff 等关键页面,上传 OSS 生成签名 URL,组装 HTML 可视化报告并上传 pre-agent 预览。在回复草稿和工单详情中附上在线报告链接。**平台限制**:Aone 评论区不渲染 markdown 链接、img src query 参数被剥离——图片只能在 pre-agent 在线报告中展示。
+5. **可视化截图取证**(查证完成后追加):调 `.claude/skills/screenshot-evidence` skill,用 Playwright 截取 OpenAPI 文档页、Provider 文档对比、GitHub PR diff 等关键页面,上传 OSS 生成签名 URL,组装 HTML 可视化报告并上传 pre-agent 预览。在回复草稿和工单详情中附上在线报告链接。**评论内 URL/图片渲染规则见下方 §4「Aone 评论渲染 quirk」**;签名图片受 img src query 剥离影响所以只能在 pre-agent 在线报告里展示,评论区没法内嵌。
 
 ### 4. 回复草稿(结构固定,先给用户过目)
 
@@ -109,6 +109,15 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 
 **@ 语法** = `@花名(工号)`。团队常用工号见 memory `team-roster-tf-alicloud`(涵盖专属维护名单 11 人 + 通用路由 4 人)。**同名歧义陷阱**:`a1 comment create -m "@花名"` 的自动解析对**目录里同名的人会挑错工号**(实例:工单 84043785 负责人「刘源」是 `WB01269865`,只写 `@刘源` 被解析成同名同事 `WB01437449`,通知发错人)。**凡要 @ 的人可能同名(尤其外包 WB 工号、常见姓名),一律显式写全 `@花名(工号)`**——a1 对已带工号的形式原样保留、不再重解析;工号从工单 `assignedTo`/评论作者/roster 取,别靠裸名字赌解析。
 **不带 AI 署名**(CLAUDE.md 工作纪律 #7):对外产物剥掉「🤖 Generated with Claude Code」等。
+
+**Aone 评论渲染 quirk(所有评论 URL 都受此规则约束,不只截图链接)**:
+
+- Aone 评论区**不渲染** `[text](url)` markdown 链接——原样显示为 `[text](url)` 字面文本;
+- Aone 评论区**不识别** `<url>` 尖括号包裹的 URL——渲染器把 `<...>` 当作 HTML tag **剥掉**,URL 直接消失;
+- Aone 评论区自动 linkify(转成可点击超链接)的**唯一可靠格式** = **URL 独占一行 + 前后有空行分隔的纯文本**。前后紧贴中文标点(`：` `、` `（` 等)、中英文字或反引号都会阻止 linkify;
+- 走 `wrap.sh done` 时不用手动担心——`bootstrap/aone-comment-format.sh` 会把每个列表项前后强制加空行,URL 只要出现在列表项/独立段落里就自然被空行包围;
+- 手工 `a1 comment create -m "..."` 时**必须自己保证 URL 独占一行**,不要写 `在线报告：https://...` 这种紧贴文本形式;
+- 想在 Aone **详情**(description)里放可点击链接是可以用 markdown `[text](url)` 的——详情区渲染 markdown,只有**评论区**是这套 quirk。
 
 ### 5. 写操作(全部先授权 — supervised 默认模式)
 
@@ -216,3 +225,4 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 - ❌ 对外产物带 AI 署名 —— CLAUDE.md 工作纪律 #7,发出前剥掉
 - ❌ 使用非默认 a1 身份(chenyi/guozai/linjun)未经仓库主人当面授权 —— 红线
 - ❌ 推翻性结论只发评论、不改我方工单的 description —— 研发单详情停留在已否决的根因/方案,后续接手者被第一屏误导;重审/方案演进必须同步重写详情(写操作表「更新详情」行,`--body-file`;客户主单原声禁改)。案例:83998772 方案 A→E→R 两次演进,详情滞后在 A
+- ❌ Aone 评论里贴 URL 用 markdown `[text](url)` / 尖括号 `<url>` / 或紧贴中文冒号 `在线报告：https://...` —— 都不 linkify(前两种被渲染器丢弃 或原样显示,后者被 linkifier 当文本片段一部分);唯一可靠格式 = URL 独占一行 + 前后空行分隔的纯文本(§4「Aone 评论渲染 quirk」)。走 `wrap.sh done` 天然满足;手工 `a1 comment create` 时自己排版
