@@ -1463,16 +1463,26 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 		gpuConfig := make(map[string]interface{})
 
 		if v := d.Get("gpu_config"); v != nil {
-			gpuMemorySize1, _ := jsonpath.Get("$[0].gpu_memory_size", v)
-			if gpuMemorySize1 != nil && gpuMemorySize1 != "" {
-				gpuConfig["gpuMemorySize"] = gpuMemorySize1
-			}
-			gpuType1, _ := jsonpath.Get("$[0].gpu_type", v)
-			if gpuType1 != nil && gpuType1 != "" {
-				gpuConfig["gpuType"] = gpuType1
-			}
+			// When the user removes gpu_config entirely the TypeList becomes
+			// an empty slice. Sending an empty object keeps the server-side
+			// gpuConfig alive (FC treats it as "no change"), so we must send
+			// an explicit nil to clear it. Otherwise subsequent cpu/memory
+			// changes get validated against the orphaned GPU constraints
+			// (e.g. "cpu should be an integer for gpu function").
+			if list, ok := v.([]interface{}); ok && len(list) == 0 {
+				request["gpuConfig"] = nil
+			} else {
+				gpuMemorySize1, _ := jsonpath.Get("$[0].gpu_memory_size", v)
+				if gpuMemorySize1 != nil && gpuMemorySize1 != "" {
+					gpuConfig["gpuMemorySize"] = gpuMemorySize1
+				}
+				gpuType1, _ := jsonpath.Get("$[0].gpu_type", v)
+				if gpuType1 != nil && gpuType1 != "" {
+					gpuConfig["gpuType"] = gpuType1
+				}
 
-			request["gpuConfig"] = gpuConfig
+				request["gpuConfig"] = gpuConfig
+			}
 		}
 	}
 

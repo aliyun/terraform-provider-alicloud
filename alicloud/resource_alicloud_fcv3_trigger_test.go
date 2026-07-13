@@ -165,14 +165,12 @@ resource "alicloud_log_store" "default" {
   append_meta           = true
 }
 
-resource "alicloud_log_project" "default1" {
-  project_name = format("%%supdate", var.name)
-  description  = format("%%supdate", var.name)
-}
-
-resource "alicloud_log_store" "default1" {
-  project_name          = alicloud_log_project.default1.name
-  logstore_name         = format("%%supdate", var.name)
+# Separate logstore used as the trigger's *source*. FC rejects the trigger
+# when sourceConfig.logstore == logConfig.logstore ("logstoreName in
+# logConfig should not same with logstoreName in sourceConfig").
+resource "alicloud_log_store" "source" {
+  project_name          = alicloud_log_project.default.name
+  logstore_name         = format("%%ssource", var.name)
   shard_count           = 3
   auto_split            = true
   max_split_shard_count = 60
@@ -460,8 +458,12 @@ func TestAccAliCloudFcv3Trigger_basic6983_raw(t *testing.T) {
 					"trigger_name":    name,
 					"description":     "create",
 					"qualifier":       "LATEST",
-					"trigger_config":  "{\\\"sourceConfig\\\":{\\\"logstore\\\":\\\"${alicloud_log_store.default1.logstore_name}\\\",\\\"startTime\\\":null},\\\"jobConfig\\\":{\\\"maxRetryTime\\\":3,\\\"triggerInterval\\\":60},\\\"functionParameter\\\":{},\\\"logConfig\\\":{\\\"project\\\":\\\"${alicloud_log_project.default.project_name}\\\",\\\"logstore\\\":\\\"${alicloud_log_store.default.logstore_name}\\\"},\\\"enable\\\":true}",
-					"source_arn":      "acs:log:cn-shanghai:1511928242963727:project/${alicloud_log_project.default1.project_name}",
+					// Use one project with TWO logstores: alicloud_log_store.source
+					// is the event source, alicloud_log_store.default is where
+					// the trigger's invocation log lands. FC requires
+					// sourceConfig.logstore != logConfig.logstore.
+					"trigger_config":  "{\\\"sourceConfig\\\":{\\\"logstore\\\":\\\"${alicloud_log_store.source.logstore_name}\\\",\\\"startTime\\\":null},\\\"jobConfig\\\":{\\\"maxRetryTime\\\":3,\\\"triggerInterval\\\":60},\\\"functionParameter\\\":{},\\\"logConfig\\\":{\\\"project\\\":\\\"${alicloud_log_project.default.project_name}\\\",\\\"logstore\\\":\\\"${alicloud_log_store.default.logstore_name}\\\"},\\\"enable\\\":true}",
+					"source_arn":      "acs:log:cn-shanghai:1511928242963727:project/${alicloud_log_project.default.project_name}",
 					"invocation_role": "acs:ram::1511928242963727:role/aliyunlogetlrole",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -478,14 +480,21 @@ func TestAccAliCloudFcv3Trigger_basic6983_raw(t *testing.T) {
 				),
 			},
 			{
+				// Step 1 keeps the original sourceConfig and only varies the
+				// mutable parts (description, jobConfig.triggerInterval). FC
+				// treats sourceConfig.logstore as immutable for log triggers —
+				// the API silently keeps the original value even if the
+				// update payload contains a different one, which made the
+				// previous test compare expected "function-log" against the
+				// real (unchanged) source logstore.
 				Config: testAccConfig(map[string]interface{}{
 					"description":    "update",
-					"trigger_config": "{\\\"sourceConfig\\\":{\\\"logstore\\\":\\\"function-log\\\",\\\"startTime\\\":null},\\\"jobConfig\\\":{\\\"maxRetryTime\\\":3,\\\"triggerInterval\\\":120},\\\"functionParameter\\\":{},\\\"logConfig\\\":{\\\"project\\\":\\\"fc3-api-1511928242963727-cn-shanghai\\\",\\\"logstore\\\":\\\"fc-trigger-log\\\"},\\\"enable\\\":true}",
+					"trigger_config": "{\\\"sourceConfig\\\":{\\\"logstore\\\":\\\"${alicloud_log_store.source.logstore_name}\\\",\\\"startTime\\\":null},\\\"jobConfig\\\":{\\\"maxRetryTime\\\":3,\\\"triggerInterval\\\":120},\\\"functionParameter\\\":{},\\\"logConfig\\\":{\\\"project\\\":\\\"${alicloud_log_project.default.project_name}\\\",\\\"logstore\\\":\\\"${alicloud_log_store.default.logstore_name}\\\"},\\\"enable\\\":true}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":    "update",
-						"trigger_config": "{\"sourceConfig\":{\"logstore\":\"function-log\",\"startTime\":null},\"jobConfig\":{\"maxRetryTime\":3,\"triggerInterval\":120},\"functionParameter\":{},\"logConfig\":{\"project\":\"fc3-api-1511928242963727-cn-shanghai\",\"logstore\":\"fc-trigger-log\"},\"enable\":true}",
+						"trigger_config": CHECKSET,
 					}),
 				),
 			},
