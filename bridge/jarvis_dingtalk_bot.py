@@ -247,6 +247,34 @@ def handoff_pool():
         return fallback
 
 
+# terraform 线判定：命中则自动派发走 PD→RD→QA 三数字人接力（见 _ticket_prompt）。
+# 标题关键词是「落错池」的兜底——_ticket_prompt 只拿得到 title 没有 description。
+TERRAFORM_TITLE_KEYWORDS = (
+    "alicloud_", "terraform-provider", "terraform_provider",
+    "provider-alicloud", "tf-provider",
+)
+
+
+def _pool_line(pool_key):
+    """返回某池在 config/pools.json 里的归属线(line);读不到或异常返回 ""。
+    terraform 线两池(tf_customer/tf_provider)均 line=terraform_provider。"""
+    try:
+        cfg = json.loads((Path(REPO_ROOT) / "config" / "pools.json").read_text())
+        p = (cfg.get("pools", {}) or {}).get(str(pool_key) or "")
+        return str((p or {}).get("line") or "")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _is_terraform_ticket(pool_key, title):
+    """工单是否属 terraform 线：池归属线=terraform_provider(主信号)，
+    或标题命中 alicloud_/terraform-provider 等关键词(落错池兜底)。"""
+    if _pool_line(pool_key) == "terraform_provider":
+        return True
+    t = (title or "").lower()
+    return any(kw in t for kw in TERRAFORM_TITLE_KEYWORDS)
+
+
 def tata_root():
     """Tata 的 cwd：空目录，不加载 jarvis bootstrap。建好返回路径。"""
     p = os.environ.get("JARVIS_TATA_ROOT") or str(Path.home() / ".jarvis" / "tata-cwd")
@@ -537,8 +565,14 @@ def _priority_rank(priority):
 
 def _ticket_prompt(item_id, title, pool_key, pool_project):
     """Prompt for a headless auto-dispatched Aone ticket: run the aone-triage loop with
-    the claim→bookend discipline, and suspend (not block) on a human gate."""
+    the claim→bookend discipline, and suspend (not block) on a human gate.
+
+    terraform 线工单(pool line=terraform_provider 或标题命中关键词)改走 persona 编排 prompt：
+    headless jarvis 只编排，依次 Task 起 terraform-pd→rd→qa 三数字人接力
+    (loops/persona-collab.md §四/§七)，让 PD/RD/QA 在工单上可见地各司其职。"""
     proj = str(pool_project or "")
+    if _is_terraform_ticket(pool_key, title):
+        return _ticket_prompt_terraform(item_id, title, pool_key, proj)
     return (
         "【headless 自动派发】你是一个 Jarvis headless 实例，本轮只处理这一条 Aone 工单，"
         "全程默认 jarvis 身份、按 autonomy.md headless 模式(auto 列表免授权)。\n"
@@ -552,6 +586,43 @@ def _ticket_prompt(item_id, title, pool_key, pool_project):
         "遇必须人类确认/决策的点：在工单评论 @对应人，末尾单起一行输出 "
         "[[SUSPEND:{\"aone_id\":\"%s\",\"wait_for\":\"<staffId>\"}]] 后退出，由 bridge 挂起等回复唤醒。"
         % (item_id, title, pool_key or "?", proj or "?", item_id, item_id, proj, item_id)
+    )
+
+
+def _ticket_prompt_terraform(item_id, title, pool_key, proj):
+    """terraform 线自动派发单：headless jarvis 作为编排层，从 PD 阶段起同会话接力
+    (persona-collab §4.1)。去重/认领/挂起语义与通用 prompt 保持一致。"""
+    return (
+        "【headless 自动派发·terraform 线】你是一个 Jarvis headless 编排层实例，本轮只处理"
+        "这一条 Aone 工单，全程默认 jarvis 身份、按 autonomy.md headless 模式(auto 列表免授权)。\n"
+        "工单 #%s（%s）  池:%s  project:%s\n\n"
+        "这是 terraform 线工单：**你只做编排，不自己分诊/查证/写代码/验收**"
+        "(CLAUDE.md 工作纪律 #2)；三段专业活分别委派 terraform-pd/rd/qa 子代理，"
+        "按 loops/persona-collab.md §四/§七 同会话接力，评论由各角色自己以自身身份落。\n\n"
+        "1) bootstrap/log.sh seen %s 去重；已处理则直接退出。\n"
+        "2) bootstrap/claim.sh claim %s %s 认领；退码 1(被别的实例抢先)即退出，勿硬闯。\n"
+        "3) 【PD 分诊】Task 起 terraform-pd 子代理，上下文带 ticket=%s、pool=%s、project=%s、"
+        "action=triage：令其调 aone-triage 技能分诊+三层查证，以自身身份落带哨兵阶段评论，"
+        "并在返回值给出 handoff。\n"
+        "4) 【按 handoff 接力】读 PD 返回的 handoff：\n"
+        "   · to=terraform-rd(dev) → Task 起 terraform-rd 子代理(worktree 隔离、不碰 master)开发；\n"
+        "   · to=terraform-qa(acc_verify) → 跳过 RD 直接起 terraform-qa 跑远程 AccTest；\n"
+        "   · handoff=null(分诊即闭环：澄清等客户/无缺口) → 不再接力，直接进收尾。\n"
+        "   读 RD 返回的 handoff：to=terraform-qa(acc_verify) → Task 起 terraform-qa 跑远程 AccTest；\n"
+        "   RD status=build_fail/test_fail(handoff=null) → 不接 QA，wrap.sh sync 记状态后按人工门/escalation。\n"
+        "   读 QA 返回：pass 且 to=terraform-pd(acceptance) → 可起 terraform-pd 通知客户；"
+        "fail 且 to=terraform-rd(dev) → 回 RD 修（轮次尊重 JARVIS_PERSONA_MAX_ROUNDS，PD→RD→QA 仅 3 跳）。\n"
+        "   身份纪律：每个子代理先 bin/a1id ready <role> 探测，未登录按 persona-collab §6.2 "
+        "以 jarvis 代发并首行标 identity_fallback；**编排层绝不代言角色发评论**。\n"
+        "5) 收尾 bookend：开 MR/CR 立刻 bootstrap/wrap.sh sync 贴链回工单；"
+        "全部接力完成后 bootstrap/wrap.sh done（status 必填）+ bootstrap/claim.sh release。"
+        "**PR/CR 未合并禁 claim.sh finish**(aone-triage SKILL 硬闸门)→ 改用 "
+        "bootstrap/wrap.sh done <id> --no-status + bootstrap/claim.sh release(→ jarvis-idle)，"
+        "等 RevisitScheduler 合并后复验。\n"
+        "遇必须人类确认/决策的点：在工单评论 @对应人，末尾单起一行输出 "
+        "[[SUSPEND:{\"aone_id\":\"%s\",\"wait_for\":\"<staffId>\"}]] 后退出，由 bridge 挂起等回复唤醒。"
+        % (item_id, title, pool_key or "?", proj or "?", item_id, item_id, proj,
+           item_id, pool_key or "?", proj or "?", item_id)
     )
 
 

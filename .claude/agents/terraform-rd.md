@@ -147,6 +147,20 @@ cd <workspace_path> && go test ./...
 
 # 6. 进展同步(以 terraform-rd 身份贴 Aone)
 JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh sync <aone_id> "开发进展:<摘要>"
+
+# 7. 收尾必发阶段评论(status=done 时强制) —— 交 QA 验收
+#    dev 完成交 QA **不是闭环**,必发哨兵(只有「评审模式只读出报告、无代码改动」才闭环省略哨兵)。
+#    排版按「评论区协作 §收尾必发阶段评论」(单一真源):结论→细节(PR/CR 链接+diff 摘要)→
+#    @质量数字人 TerraformQA(WORKER_1783582593461)→末尾单行哨兵。build 绿即刻交 QA,不等 PR 合并
+#    (QA 用 invoke-terraform-acc-test-remote 在分支/PR 上远程跑 AccTest;PR 合并是编排层另一道人工门)。
+if bin/a1id ready terraform-rd; then
+  bin/a1id as terraform-rd -- project workitem comment create <aone_id> --body-file /tmp/rd-done.md
+else
+  # 未登录:按 persona-collab §6.2 以 jarvis 代发,body 首行标 identity_fallback,末尾哨兵照留
+  bin/a1id -- project workitem comment create <aone_id> --body-file /tmp/rd-done-fallback.md
+fi
+# 阶段评论末尾单起一行:
+# [[PERSONA-HANDOFF:{"from":"terraform-rd","to":"terraform-qa","ticket":<id>,"action":"acc_verify","round":<n>,"note":"PR:<url>"}]]
 ```
 
 ## 返回格式(开发模式)
@@ -156,6 +170,9 @@ JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh sync <aone_id> "开发进
 - `branch`: worktree 分支名
 - `diff_summary`: 改动摘要(文件列表 + 关键变化)
 - `build_result`: build/vet/test 输出摘要
+- `handoff`: 接力意图(编排层同会话据此派下一角色,评论侧同步落哨兵):
+  - `status=done`(build/vet/test 绿、PR/分支已 push) → `{"to":"terraform-qa","action":"acc_verify","note":"PR:<url> 请跑 AccTest"}`
+  - `status=build_fail | test_fail | missing_capability` → `null`(未闭合,交编排层/escalation,**不**接 QA——绝不把红 build 交给 QA)
 
 ## 限制(开发模式)
 
