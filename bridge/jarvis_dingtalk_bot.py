@@ -1376,6 +1376,11 @@ class ScanScheduler:
             return False
         if "open-jarvis" in author_norm or "worker_1782379562571" in author_norm:
             return False
+        # 数字人角色(terraform-pd/rd/qa)是 jarvis 自己驱动的协作实例,不是人工介入——
+        # 复用 _author_role 三层匹配(WORKER id / role 名正则 / env 昵称)识别。否则每条
+        # persona 阶段评论都会把 idle 单误判成"有人插话"→force 重派,冗余 headless 刷屏。
+        if _author_role(author):
+            return False
         if author_norm in {"kelude", "云知道平台公共账号"}:
             return False
         content_norm = (content or "").strip().lower()
