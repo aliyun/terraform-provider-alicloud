@@ -158,8 +158,21 @@ EOF
 
 # 3. release / finish 二选一
 bash bootstrap/claim.sh release <id> <pool-project>   # 本轮释放,等对方接手 → jarvis-idle
-bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-done + status=已发布待需求排期
+bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-done + status = pools.json 里该池 × workitemType 的 done_status
 ```
+
+**finish 时的 status 由 pools.json per-池 × per-workitemType 决定**,不是全局默认。看 `config/pools.json` 里 `pools.<pool>.done_status` 是**对象**(按 workitemType displayValue 分派),例:
+- tf_customer(1086837) · 需求问题 → `已发布待需求方验收`
+- tf_provider(528766) · **产品类需求** → `待发布`(**不是** `已发布`——workflow 不允许从 `已选择` 直跳 `已发布`,发版是人工门,jarvis 到 `待发布` 停手)
+- tf_provider · 功能缺陷/线上问题 → `Fixed`
+- tf_provider · 任务 → `已完成`
+- **`.claim.done_status` 是全局兜底**(`已发布待需求排期`),只用于池未映射该 workitemType 的边缘情况;主流 workitem 都走 per-池 per-category。
+
+**遇到 `status 'X' was rejected` 的处理路径**:
+1. 先查该池该 type 的合法 status enum:`bin/a1id -- project workitem field options status --project <id> --type <workitemType>`
+2. 判定被拒是 **enum 不存在** 还是 **workflow 转换不合法**(状态转移图不允许从当前态直跳目标态)
+3. 更新 `config/pools.json` 里的 `done_status[<workitemType>]` 到合法且**能从 claim 后进行中态到达**的终态
+4. 已 tag `jarvis-done` 但 status 卡在中间态时,手动一步:`bin/a1id -- project workitem update <id> --status "<正确终态>"`
 
 **wrap.sh 参数陷阱**(memory `wrap-done-single-comment`):
 - 单行可继续用位置参数: `bash bootstrap/wrap.sh done <id> "<完整回复>" <status|--no-status>`

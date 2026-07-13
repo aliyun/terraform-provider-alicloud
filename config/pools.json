@@ -37,7 +37,7 @@
       "desc": "内部发布单 + Terraform 生产流程优化",
       "assignee": "WORKER_1782379562571",
       "dev": false,
-      "done_status": {"产品类需求": "已发布", "功能缺陷": "Fixed", "线上问题": "Fixed", "性能瓶颈": "Fixed", "任务": "已完成"},
+      "done_status": {"产品类需求": "待发布", "功能缺陷": "Fixed", "线上问题": "Fixed", "性能瓶颈": "Fixed", "任务": "已完成"},
       "progress_status": {"产品类需求": "开发中", "功能缺陷": "Open"},
       "exclude_status": [
         "已发布",

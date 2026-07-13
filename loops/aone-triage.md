@@ -153,7 +153,7 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/log.sh escalate` | 记录上报 |
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项（输赢竞争锁）；退码 1 = 输了跳过。认领成功还会把 Aone status 从起始态（待处理/新建…）推进到该池的进行中状态（.progress_status，如 处理中/开发中/问题解决中/Open），best-effort 非阻断，`JARVIS_CLAIM_PROGRESS=0` 可关 |
 | `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-idle 标签：本轮处理完，等待人或下一个 jarvis 接手；不动 Aone status） |
-| `bootstrap/claim.sh finish <id> <project>` | jarvis 判断真完成（打 jarvis-done 标签 + status 改为 .claim.done_status，默认"已发布待需求排期"） |
+| `bootstrap/claim.sh finish <id> <project>` | jarvis 判断真完成（打 jarvis-done 标签 + status 改为 `pools.json` 里该池 × workitemType 的 `done_status`；`.claim.done_status` = `已发布待需求排期` 只是**全局兜底**，主流走 per-池 per-category。tf_provider(528766) 产品类需求 → **`待发布`**，不是 `已发布`——workflow 不允许 `已选择` 直跳 `已发布`。被拒时先 `bin/a1id -- project workitem field options status --project <id> --type <workitemType>` 查合法枚举再改 pools.json） |
 | `bootstrap/triage-one.sh <id>` | 单条工单 bookend 编排：claim→子代理→wrap done（**status 必填**）→release |
 | `bootstrap/wrap-check.sh` | Stop 闸门：会话结束时校验未完工工单是否已回填，失败则阻断 |
 | `bootstrap/reconcile.sh [stale\|orphan\|drift\|all]` | 收敛族入口(P1.c 合并 sweep+watchdog+原 reconcile):stale=超时 claim→escalate;orphan=owner dead→escalate;drift=台账 vs Aone 对账;all=顺跑三者(默认) |
