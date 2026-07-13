@@ -949,8 +949,12 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			"CompressType":          compressType,
 			"BackupPolicyMode":      "DataBackupPolicy",
 			"SourceIp":              s.client.SourceIp,
-			"ReleasedKeepPolicy":    releasedKeepPolicy,
-			"Category":              category,
+			}
+		if d.HasChange("released_keep_policy") {
+			request["ReleasedKeepPolicy"] = releasedKeepPolicy
+		}
+		if d.HasChange("category") {
+			request["Category"] = category
 		}
 		if instance["Engine"] == "SQLServer" && instance["Category"] == "AlwaysOn" {
 			if v, ok := d.GetOk("backup_priority"); ok {
@@ -966,12 +970,20 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			request["LogBackupFrequency"] = logBackupFrequency
 		}
 		if instance["Engine"] == "MySQL" && instance["DBInstanceStorageType"] == "local_ssd" {
-			request["ArchiveBackupRetentionPeriod"] = archiveBackupRetentionPeriod
-			request["ArchiveBackupKeepCount"] = archiveBackupKeepCount
-			request["ArchiveBackupKeepPolicy"] = archiveBackupKeepPolicy
+			if d.HasChange("archive_backup_retention_period") {
+				request["ArchiveBackupRetentionPeriod"] = archiveBackupRetentionPeriod
+			}
+			if d.HasChange("archive_backup_keep_count") {
+				request["ArchiveBackupKeepCount"] = archiveBackupKeepCount
+			}
+			if d.HasChange("archive_backup_keep_policy") {
+				request["ArchiveBackupKeepPolicy"] = archiveBackupKeepPolicy
+			}
 		}
 		if (instance["Engine"] == "MySQL" || instance["Engine"] == "PostgreSQL") && instance["DBInstanceStorageType"] != "local_ssd" {
-			request["BackupInterval"] = backupInterval
+			if v, ok := d.GetOk("backup_interval"); ok && v.(string) != "" {
+				request["BackupInterval"] = v.(string)
+			}
 		}
 
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
@@ -996,9 +1008,11 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			"LocalLogRetentionSpace":        localLogRetentionSpace,
 			"HighSpaceUsageProtection":      highSpaceUsageProtection,
 			"BackupPolicyMode":              "LogBackupPolicy",
-			"LogBackupRetentionPeriod":      logBackupRetentionPeriod,
 			"LogBackupLocalRetentionNumber": logBackupLocalRetentionNumber,
 			"SourceIp":                      s.client.SourceIp,
+		}
+		if d.HasChange("log_backup_retention_period") {
+			request["LogBackupRetentionPeriod"] = logBackupRetentionPeriod
 		}
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
