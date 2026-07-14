@@ -4684,3 +4684,63 @@ var instanceBasicMap9 = map[string]string{
 	"status":               CHECKSET,
 	"create_time":          CHECKSET,
 }
+
+// TestUnitParseDBInstanceParamGroupId is a regression test for the provider
+// panic reported when creating alicloud_db_instance.
+//
+// resourceAliCloudDBInstanceRead used to run, without a comma-ok guard:
+//
+//	dbParamGroupInfo := response["ParamGroupInfo"].(map[string]interface{})
+//	...
+//	d.Set("db_param_group_id", dbParamGroupInfo["ParamGroupId"].(string))
+//
+// A freshly created instance whose DescribeParameters response does not yet
+// contain "ParamGroupInfo" therefore crashed the plugin with:
+//
+//	interface conversion: interface {} is nil, not map[string]interface {}
+//
+// The parsing is now isolated in parseDBInstanceParamGroupId, which must never
+// panic and must report presence via its second return value. The first two
+// cases below are the crash inputs (they panic against the old inline code).
+func TestUnitParseDBInstanceParamGroupId(t *testing.T) {
+	cases := []struct {
+		name      string
+		response  map[string]interface{}
+		wantID    string
+		wantFound bool
+	}{
+		{
+			name:     "ParamGroupInfo absent (freshly created instance)",
+			response: map[string]interface{}{},
+		},
+		{
+			name:     "ParamGroupInfo present but nil",
+			response: map[string]interface{}{"ParamGroupInfo": nil},
+		},
+		{
+			name:     "ParamGroupInfo present but ParamGroupId missing",
+			response: map[string]interface{}{"ParamGroupInfo": map[string]interface{}{}},
+		},
+		{
+			name:     "ParamGroupId present but not a string",
+			response: map[string]interface{}{"ParamGroupInfo": map[string]interface{}{"ParamGroupId": 123}},
+		},
+		{
+			name:      "ParamGroupInfo and ParamGroupId both present",
+			response:  map[string]interface{}{"ParamGroupInfo": map[string]interface{}{"ParamGroupId": "rpg-test123"}},
+			wantID:    "rpg-test123",
+			wantFound: true,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			id, ok := parseDBInstanceParamGroupId(c.response)
+			if ok != c.wantFound {
+				t.Fatalf("parseDBInstanceParamGroupId(%v) found = %v, want %v", c.response, ok, c.wantFound)
+			}
+			if id != c.wantID {
+				t.Fatalf("parseDBInstanceParamGroupId(%v) id = %q, want %q", c.response, id, c.wantID)
+			}
+		})
+	}
+}
