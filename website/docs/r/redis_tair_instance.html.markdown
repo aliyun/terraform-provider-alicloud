@@ -118,6 +118,8 @@ The following arguments are supported:
 * `instance_class` - (Required) The instance type of the instance. For more information, see [Instance types](https://www.alibabacloud.com/help/en/apsaradb-for-redis/latest/instance-types).
 * `instance_type` - (Required, ForceNew) The storage medium of the instance. Valid values: tair_rdb, tair_scm, tair_essd.
 * `intranet_bandwidth` - (Optional, Computed, Int, Available since v1.233.1) Instance intranet bandwidth
+* `maintain_end_time` - (Optional, Available since v1.286.0) The end time of the maintenance window of the Tair instance. The time is in the `HH:mmZ` format (UTC). The interval between the start time and the end time must be at least 1 hour. Example: `06:00Z`.
+* `maintain_start_time` - (Optional, Available since v1.286.0) The start time of the maintenance window of the Tair instance. The time is in the `HH:mmZ` format (UTC). Example: `02:00Z`.
 * `modify_mode` - (Optional, Available since v1.233.1) The modification method when modifying the IP whitelist. The value includes Cover (default): overwrite the original whitelist; Append: Append the whitelist; Delete: Delete the whitelist.
 * `node_type` - (Optional, Computed) The node type. For cloud-native instances, input MASTER_SLAVE (master-replica) or STAND_ALONE (standalone). For classic instances, input double (master-replica) or single (standalone).
 * `param_no_loose_sentinel_enabled` - (Optional, Computed, Available since v1.233.1) sentinel compatibility mode, applicable to non-cluster instances. For more information about parameters, see yes or no in the https://www.alibabacloud.com/help/en/redis/user-guide/use-the-sentinel-compatible-mode-to-connect-to-an-apsaradb-for-redis-instance, valid values: yes, no. The default value is no. 
