@@ -59,5 +59,47 @@ class PersonaNotHumanTest(unittest.TestCase):
         self.assertFalse(_ishuman(None))
 
 
+class HumanOperatorWhitelistTest(unittest.TestCase):
+    """_load_human_operators 与评论路径同一不变量:jarvis 自身 + 三数字人不入
+    「人工介入门」白名单,即使日后被补录进 contacts.json;外部 agent(镇元agent)
+    与真人保留。"""
+
+    def _load_with_contacts(self, contacts):
+        import json as _json
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            cfg_dir = Path(td) / "config"
+            cfg_dir.mkdir()
+            (cfg_dir / "contacts.json").write_text(
+                _json.dumps({"contacts": contacts}, ensure_ascii=False))
+            orig = bot.REPO_ROOT
+            bot.REPO_ROOT = Path(td)
+            try:
+                return bot.ScanScheduler._load_human_operators(None)
+            finally:
+                bot.REPO_ROOT = orig
+
+    def test_personas_excluded_even_if_registered(self):
+        ops = self._load_with_contacts([
+            {"name": "open-jarvis", "flower": None, "id": "WORKER_1782379562571"},
+            {"name": "terraform-pd", "flower": "Terraform-PD数字人",
+             "id": "WORKER_1783582374386"},
+            {"name": "terraform-rd", "flower": "Terraform-研发数字人",
+             "id": "WORKER_1783582458263"},
+            {"name": "terraform-qa", "flower": "Terraform-质量保障数字人",
+             "id": "WORKER_1783582593461"},
+            {"name": "镇元agent", "flower": None, "id": "WORKER_1783326253279"},
+            {"name": "过载", "flower": "过载", "id": "484483"},
+        ])
+        for banned in ("open-jarvis", "WORKER_1782379562571",
+                       "terraform-pd", "WORKER_1783582374386",
+                       "Terraform-PD数字人", "terraform-rd",
+                       "WORKER_1783582458263", "terraform-qa",
+                       "WORKER_1783582593461"):
+            self.assertNotIn(banned, ops, "%s 不应入人工门白名单" % banned)
+        for kept in ("镇元agent", "WORKER_1783326253279", "过载", "484483"):
+            self.assertIn(kept, ops, "%s 应保留在人工门白名单" % kept)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
