@@ -22,6 +22,18 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib.sh"
 jarvis_root="$(jarvis_root)"
 
+# 凭据自装载:DINGTALK_* 只配在 bridge/jarvis.env,装载点原本只有 bridge/run.sh
+# (bridge/headless 链路继承);交互会话不经过 run.sh 会落在盲区 → 缺任一变量时
+# 按 run.sh _source_env 同款姿势补 source(存在才 source,行为与 bridge 链路一致)。
+if [ -z "${DINGTALK_APP_KEY:-}" ] || [ -z "${DINGTALK_APP_SECRET:-}" ] || [ -z "${DINGTALK_TEMPLATE_ID:-}" ]; then
+  set -a; set +u
+  # shellcheck disable=SC1090
+  [ -f "$jarvis_root/bootstrap/.env" ] && . "$jarvis_root/bootstrap/.env"
+  # shellcheck disable=SC1090
+  [ -f "$jarvis_root/bridge/jarvis.env" ] && . "$jarvis_root/bridge/jarvis.env"
+  set -u; set +a
+fi
+
 dry_run=0
 if [ "${1:-}" = "--dry-run" ]; then
   dry_run=1
