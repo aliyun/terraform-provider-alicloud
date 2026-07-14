@@ -205,7 +205,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
+    zone_id = data.alicloud_db_zones.default.zones[0].id
 	engine = "PostgreSQL"
 	engine_version = "13.0"
     category = "HighAvailability"
@@ -217,19 +217,19 @@ data "alicloud_vpcs" "default" {
     name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.0.id
+  vpc_id = data.alicloud_vpcs.default.ids[0]
+  zone_id = data.alicloud_db_zones.default.zones[0].id
 }
 
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
  vswitch_name = var.name
- vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.ids.0
- cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+ vpc_id = data.alicloud_vpcs.default.ids[0]
+ zone_id = data.alicloud_db_zones.default.ids[0]
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 4)
 }
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
 }
 
@@ -241,8 +241,8 @@ resource "alicloud_db_instance" "default" {
     engine = "PostgreSQL"
 	engine_version = "13.0"
  	db_instance_storage_type = "cloud_essd"
-	instance_type = "pg.n2.2c.2m"
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_type = "pg.x4.large.4c"
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_ips = ["10.168.1.12", "100.69.7.112"]
