@@ -837,6 +837,10 @@ def _persona_prompt(item_id, role, action, note, round_n, snippet, project=None,
         "3) 子代理返回 handoff 非 null → 同会话继续派下一角色（round+1），直至 handoff=null 或"
         "达到 JARVIS_PERSONA_MAX_ROUNDS 上限。\n"
         "4) 收尾 bookend：bootstrap/wrap.sh sync 记摘要；接力全部完成后 wrap.sh done + release。\n"
+        "⚠️ 单发纪律（严禁空头支票）：本 headless run 是一次性执行，退出后没有后台进程替你续跑。"
+        "严禁只回复「稍后跟进 / 结论稍后给出 / 稍后同步」这类承诺就结束——那等于开一张永远不会兑现的空头支票。"
+        "二选一：要么在本 run 内把 action 真正查完、把结论+证据直接贴进评论再收尾；要么当你确实需要等外部输入（人工确认 / 上游依赖）时，"
+        "用 [[SUSPEND:{...}]] 哨兵进入正式挂起（bridge WaitWatcher 会在被 @ 回复后 --resume 唤醒你续跑）。二者之外没有第三种合法退出。\n"
         "%s\n%s"
         % (item_id, role, action, round_n, item_id, proj, role, item_id, action,
            round_n, fenced_note, fenced_snippet)
