@@ -83,7 +83,7 @@
 
 **镇元 agent 接单机制**(2026-07-08 谜拟本人切换 · 关键变更):分支 E 的 Terraform镇元对接(2165097) 关联单不再指派谜拟本人,而是指派 **镇元 agent (`WORKER_1783326253279`)** 自动接单——谜拟自己不解单,由 agent 从关联单 description 里的机读 JSON 解析后驱动 spec 补齐 / 映射建立 / 生成器触发。**契约硬要求**:关联单 body 必须严格按 [templates.md 的 "Requirement skeleton (Cloudspec 关联单 · 镇元 agent 接单硬契约)"](./templates.md#requirement-skeleton-cloudspec-关联单--镇元-agent-接单硬契约) 骨架写(`## 背景` / `## 需求` / `## 机读信息` + `\`\`\`json` 代码块 + 7 字段全);少任何一项 agent 都无法接,单会沉底。谜拟(479782) **保留在源客户主单的 assignee + 参与者/@ 里** 做**人类兜底 owner**(客户可见),但**关联单 assignee 不再是她**;钉钉私信也只发谜拟/新山,不发 agent 工号(`WORKER_` 前缀无 IM 通道)。
 
-**镇元 agent 完工/受阻回帖主单 · 接力判定**(2026-07-14 agent 权责扩展 · 82952290 链路补规):镇元 agent 的权责范围已扩展——**完成 spec 变更**或**无法完成**(如依赖上游云产品 API 变更)时,会把进度**同步评论到源客户主单**(此前契约主单只读,2165097 池不在 jarvis 扫描范围,agent 完工无法叫醒 jarvis)。镇元agent 在 contacts.json 白名单内、算人工介入,其主单评论会触发 bridge idle 门 force 重派,jarvis/数字人重访后按进度接力:
+**镇元 agent 完工/受阻回帖主单 · 接力判定**(2026-07-14):镇元 agent **完成 spec 变更**或**无法完成**(如依赖上游云产品 API 变更)时会评论源客户主单;该评论算人工介入,触发 bridge idle 门 force 重派,jarvis/数字人重访后按进度接力:
 - **agent 报完成** → **不轻信自述,先复核硬信号**:acube `getTerraformResourceSpec` 能查到新属性(映射已刷新)+ 镇元正式版本已发布(agent 可能只到 pre/预发,`amp publish pre` ≠ 正式)。复核通过=镇元 OK,进「与镇元不相关分流」:生成器产出资源 → 走 acube `createBuildTaskV2` 触发临钧管道(分支 D-临钧,禁手动建单);手写资源 → 过载路线(jarvis 挂 tf_provider 单自己 claim 干 provider 改造)。复核不过 → agent 单未真闭环,评论追问/私信谜拟。
 - **agent 报受阻·依赖上游 API** → 先用 `aliyun <product> <Action> --help` 复核缺口属实,属实则按**分支 F**处理源主单:@提单人 + status=待上游排期,不建关联单;agent 的 2165097 单保持挂起等上游,上游 API 落地后经主单更新自然唤起重判。
 
