@@ -1212,6 +1212,16 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version": "2016_std_ha",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "2016_std_ha",
+					}),
+				),
+			},
 		},
 	})
 }
