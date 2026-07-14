@@ -51,6 +51,14 @@
 **闭环收尾**(不再接力):最后一条评论**必须省略哨兵行**,并在正文明确写「本阶段闭环,无接力」——
 编排层据此在 `wrap.sh done` 里收尾;PersonaScheduler 也据此不再重派。
 
+**关单请求收尾**(触发评论明确要求关闭/关单):关单是**人工门**,persona 核验「可关闭」后**不代关**
+(不 finish)。收尾改为把关单授权请求交回能关单的真人——(a) 角色身份发评论 @提单人;(b)
+`notify-dingtalk.sh` 私信提单人;(c) `wrap.sh sync` + `claim.sh release`,**不 finish**。
+**提单人是数字人**(jarvis / terraform-pd/rd/qa / 其它 WORKER_ agent,无法授权关单)时,(a)(b)
+一律改指向真人 @辰羿(320687) @过载(484483)。bridge 侧:`PersonaScheduler._detect_close_request`
+命中关单关键词 → `_decide_persona` 给 handoff 注入 `close_request`/`requester`/`requester_is_digital`
+→ `_persona_prompt` 走关单授权 handoff 分支(见 `bridge/jarvis_dingtalk_bot.py`)。
+
 ---
 
 ## 三、角色接力方向
