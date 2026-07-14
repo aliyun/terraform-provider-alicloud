@@ -17,11 +17,13 @@
 
 ```bash
 # 0. 拿 jarvis 工号(acube 侧 workId/workName 用当前 a1 身份,便于事后追溯)
+#    jarvis 默认身份的 Emp ID 是 WORKER_ 前缀长 id(非 5-11 位数字),同样合法——
+#    acube workId 接受任意字符串(2026-07-14 实测 workId=WORKER_1782379562571 建任务成功)
 jarvis_empid=$(bin/a1id -- auth whoami 2>/dev/null | python3 -c '
-import sys,re,json
+import sys,re
 raw=sys.stdin.read()
-# 兼容 whoami 输出的多种格式,取第一个 5-11 位数字/WB 前缀作为工号
-m=re.search(r"\b(WB\d+|\d{5,11})\b", raw)
+# 兼容 whoami 输出的多种格式:WB 外包工号 / WORKER_ agent 身份 / 5-11 位数字工号
+m=re.search(r"\b(WB\d+|WORKER_\d+|\d{5,11})\b", raw)
 print(m.group(1) if m else "")')
 [ -z "$jarvis_empid" ] && echo "jarvis 未登录 a1(bin/a1id login jarvis),阻断" && exit 1
 
