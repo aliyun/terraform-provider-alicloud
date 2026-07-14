@@ -126,7 +126,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | 回复评论 | 走 wrap.sh done(见 bookend;多行用 `--summary-stdin`/`--summary-file`),别单独 `a1 comment create`(会与 wrap 里的重复,a1 无 delete) |
 | 转需求(Cloudspec 缺口) | `bin/a1id -- project workitem create --project 2165097 --category req --assignee WORKER_1783326253279 --body-file <path>`;body **必须严格按** `references/templates.md` 的「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全);缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底(不指派谜拟 479782;她做人类兜底 owner 挂在源客户主单上) |
 | 建关联单(自家团队接手) | tf_customer 域走 `references/tf-customer-request-routing.md` 分工表 |
-| 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **调两次**(A→B, B→A) |
+| 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **单次即自动双向**(2026-07-14 实测两侧均可见;重复调第二次返回 400 已存在) |
 | 状态更新 | `bin/a1id -- project workitem update <id> --status "<value>"` |
 | 更新详情(description) | `bin/a1id -- project workitem update <id> --body-file <path>`(单行小改可 `--body "<text>"`)。**何时必须**:重审/复核推翻了 description 里的根因或方案、方案实施与描述已相左、验收证伪原描述——评论只是过程审计追加在尾部,新读者第一眼看的是详情,详情停在已否决结论=持续误导接手者。重写时开头加一行 `> ⚠️ 本 description 于 <date> 重写:<被否决的旧结论一句话>,演进见评论区`,保住审计链。**边界**:仅限我方创建/维护的工单(tf_provider 关联单/研发单/probe 单);客户主单 description 是客户原声,禁改 |
 | 字段必填缺失 | `bin/a1id -- project workitem field options <field> --project <id>` 查枚举补 `--cfs` |
@@ -233,7 +233,7 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 - ❌ 写操作跳过用户授权(supervised 模式) —— 每一步 comment/create/relation/status 都先给草稿等 yes
 - ❌ 用 wrap.sh done 之前先手动 `a1 comment create` —— 重复评论且 a1 无 delete
 - ❌ 多行 wrap 评论写成 `"第一行\n第二行"` —— 字面量 `\n` 会被拦截;用 heredoc 的 `--summary-stdin` 或 `--summary-file`
-- ❌ 关联单不双向 —— `relation add` 必须调两次
+- ❌ 给已关联的两单重复 `relation add` —— 单次已自动双向,第二次 400 已存在
 - ❌ jarvis 自行 push master / merge PR / release_prod —— 永久停止项(autonomy.md `stop`)
 - ❌ 对外产物带 AI 署名 —— AGENTS.md 工作纪律 #7,发出前剥掉
 - ❌ 使用非默认 a1 身份(chenyi/guozai/linjun)未经仓库主人当面授权 —— 红线
