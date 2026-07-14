@@ -1941,7 +1941,7 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 					"db_version":             "8.0",
 					"pay_type":               "PostPaid",
 					"db_node_count":          "2",
-					"db_node_class":          "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":          "polar.mysql.x4.large",
 					"vswitch_id":             "${local.vswitch_id}",
 					"zone_id":                "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
 					"creation_category":      "Normal",
@@ -2067,6 +2067,9 @@ func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_type":         "PostgreSQL",
 					"db_version":      "14",
+					"pay_type":        "PostPaid",
+					"db_node_count":   "2",
+					"db_node_class":   "polar.pg.x4.medium",
 					"enable_dynamodb": false,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2079,6 +2082,9 @@ func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_type":         "PostgreSQL",
 					"db_version":      "14",
+					"pay_type":        "PostPaid",
+					"db_node_count":   "2",
+					"db_node_class":   "polar.pg.x4.medium",
 					"enable_dynamodb": true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2179,7 +2185,7 @@ func TestAccAliCloudPolarDBCluster_Xengine(t *testing.T) {
 					"db_type":                      "MySQL",
 					"db_version":                   "8.0",
 					"pay_type":                     "PostPaid",
-					"db_node_class":                "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":                "polar.mysql.x4.large",
 					"vswitch_id":                   "${local.vswitch_id}",
 					"description":                  "${var.name}",
 					"creation_category":            "Normal",
@@ -2245,7 +2251,7 @@ func TestAccAliCloudPolarDBCluster_3AZ(t *testing.T) {
 					"db_type":             "MySQL",
 					"db_version":          "8.0",
 					"pay_type":            "PostPaid",
-					"db_node_class":       "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":       "polar.mysql.x4.large",
 					"vswitch_id":          "${local.vswitch_id}",
 					"description":         "${var.name}",
 					"creation_category":   "Normal",
