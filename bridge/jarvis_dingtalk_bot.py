@@ -192,6 +192,80 @@ def jarvis_root():
     return os.environ.get("JARVIS_ROOT") or str(REPO_ROOT)
 
 
+# ── in-flight worker registry (restart-orphan cure, 方案B) ─────────────────────
+# Every headless ticket worker records itself here the instant it starts and clears
+# the record on any terminal outcome. A bridge restart reads what is left over and
+# `claude --resume`s each survivor (see JarvisHandler._resume_inflight). Persistence
+# mirrors DispatchPool._load_ledger/_persist_ledger: atomic tmp+os.replace, wrapped in
+# best-effort try/except so the registry can never crash a worker. INFLIGHT_PATH is a
+# module global looked up on every call (never captured at def time) so tests can
+# monkeypatch ``b.INFLIGHT_PATH`` onto a tmp file.
+INFLIGHT_PATH = Path(REPO_ROOT) / ".my-day/bridge/inflight.json"
+_inflight_lock = threading.Lock()
+
+
+def _inflight_load():
+    """Load the registry (id -> record). Best-effort: any failure → {} + warning."""
+    try:
+        if INFLIGHT_PATH.exists():
+            raw = json.loads(INFLIGHT_PATH.read_text())
+            if isinstance(raw, dict):
+                return {str(k): v for k, v in raw.items()}
+    except Exception as e:  # noqa: BLE001
+        log.warning("inflight: could not load %s: %s", INFLIGHT_PATH, e)
+    return {}
+
+
+def _inflight_write(recs):
+    """Persist the registry atomically (tmp write + os.replace). Caller holds
+    ``_inflight_lock`` (mirrors DispatchPool._persist_ledger's caller-locked pattern);
+    best-effort — I/O failures only warn, never raise."""
+    try:
+        INFLIGHT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = INFLIGHT_PATH.parent / (INFLIGHT_PATH.name + ".tmp")
+        tmp.write_text(json.dumps(recs, default=str))
+        os.replace(str(tmp), str(INFLIGHT_PATH))
+    except Exception as e:  # noqa: BLE001
+        log.warning("inflight: could not persist %s: %s", INFLIGHT_PATH, e)
+
+
+def _inflight_add(item_id, sid, project, kind, prompt):
+    """Register a worker as in-flight before it spawns claude. Atomic load→set→write
+    under the lock so concurrent workers never clobber each other's records."""
+    with _inflight_lock:
+        recs = _inflight_load()
+        recs[str(item_id)] = {"sid": sid, "project": project, "kind": kind,
+                              "prompt": prompt, "started_at": time.time()}
+        _inflight_write(recs)
+
+
+def _inflight_remove(item_id):
+    """Drop a worker's record on any terminal outcome (no-op if already absent)."""
+    with _inflight_lock:
+        recs = _inflight_load()
+        recs.pop(str(item_id), None)
+        _inflight_write(recs)
+
+
+def _inflight_has(item_id):
+    return str(item_id) in _inflight_load()
+
+
+def _session_file_exists(sid):
+    """Does the Claude session transcript for ``sid`` exist on disk?
+
+    Path = ~/.claude/projects/<slug>/<sid>.jsonl where slug is the resume run's cwd —
+    os.path.realpath(jarvis_root()) — with every non-alphanumeric char turned into '-'.
+    MUST use realpath: the resume run's cwd is jarvis_root(), NOT the REPO_ROOT string
+    nor a -preview- worktree path; a mismatched slug makes --resume silently start
+    fresh. Best-effort — any failure → False."""
+    try:
+        slug = re.sub(r"[^a-zA-Z0-9]", "-", os.path.realpath(jarvis_root()))
+        return (Path.home() / ".claude" / "projects" / slug / ("%s.jsonl" % sid)).exists()
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def tata_audience():
     """Tata 受众名单（staffId 集合）。空/未设 → 空集 = 全员放行。"""
     raw = os.environ.get("JARVIS_TATA_STAFF", "")
@@ -1521,7 +1595,8 @@ class ScanScheduler:
         notify = self.handler._broadcast if self.handler else (lambda t: None)
         work = (lambda: self.handler.dispatch_item(
             iid, prompt, sid, False, notify, tgt, ttype,
-            on_spawn=lambda p: self.pool.set_proc(iid, p), project=pool_project))
+            on_spawn=lambda p: self.pool.set_proc(iid, p), project=pool_project,
+            kind="ticket"))
         return self.pool.submit(iid, work, notify=notify, kind="ticket",
                                 project=pool_project, force=force)
 
@@ -2212,6 +2287,10 @@ class DispatchPool:
         to_release = {}
         for iid, proc, project, kind in list(snap1) + list(snap2):
             if proc is not None and kind == "ticket" and project:
+                # 方案B: 若该单已在在飞登记表 → 保住 claim(不释放), 交给桥重启后的
+                # _resume_inflight 用 --resume 接管续跑; 无登记则照旧释放(安全兜底)。
+                if _inflight_has(iid):
+                    continue
                 to_release[iid] = project
         if release_fn:
             for iid, project in to_release.items():
@@ -2355,7 +2434,8 @@ class ProbeScheduler(_DailyScheduler):
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = self.handler._broadcast
         sid = str(uuid.uuid4())
-        work = (lambda: self.handler.dispatch_item(rid, prompt, sid, False, notify, tgt, ttype))
+        work = (lambda: self.handler.dispatch_item(rid, prompt, sid, False, notify, tgt, ttype,
+                                                   kind="probe"))
         ok, reason = self.pool.submit(rid, work, notify=notify, kind="probe")
         if ok:
             notify("🔎 已启动每日探测轮 %s（tf-probe tier0 + tier1 轮换，纯探测无单）" % rid)
@@ -2467,7 +2547,8 @@ class RevisitScheduler(_DailyScheduler):
             prompt = _revisit_prompt(iid, it.get("title", ""), it.get("pool_project", ""))
             sid = str(uuid.uuid4())
             work = (lambda p=prompt, i=iid, s=sid:
-                    self.handler.dispatch_item(i, p, s, False, notify, tgt, ttype))
+                    self.handler.dispatch_item(i, p, s, False, notify, tgt, ttype,
+                                               kind="revisit"))
             ok, reason = self.pool.submit(iid, work, notify=notify, kind="revisit")
             if ok:
                 submitted.append(iid)
@@ -2946,7 +3027,7 @@ class PersonaScheduler:
         work = (lambda: self.handler.dispatch_item(
             iid, prompt, sid, False, notify, tgt, ttype,
             on_spawn=lambda p: self.pool.set_proc(dispatch_key, p),
-            project=project)) if self.handler else (lambda: "done")
+            project=project, kind="persona")) if self.handler else (lambda: "done")
         return self.pool.submit(dispatch_key, work, notify=notify,
                                 kind="persona", project=project, force=True)
 
@@ -3223,6 +3304,77 @@ class JarvisHandler(AsyncChatbotHandler):
                  self.personawatch.enabled, self.personawatch.interval,
                  self.personawatch.max_rounds)
 
+    def start_schedulers(self):
+        """Start every background scheduler, then resume any workers a prior bridge
+        process left in-flight. Shared by main() and _run_no_dingtalk() so both entry
+        points run the identical startup block. _resume_inflight() is the LAST step —
+        after scanner.start — so resumed tickets are already in the pool's active-set and
+        still jarvis-claimed before the next scan tick, letting ScanScheduler._decide skip
+        them ('active'/'claimed') instead of double-dispatching."""
+        self.scanner.start()
+        self.reconciler.start()
+        self.board.start()
+        self.prober.start()
+        self.reviser.start()
+        self.watcher.start()
+        self.personawatch.start()
+        self._resume_inflight()
+
+    def _resume_inflight(self):
+        """Restart recovery (方案B): pick up ticket workers the previous bridge process was
+        running when it died. For each surviving in-flight record:
+          · kind != 'ticket' or non-numeric id → drop (never resume probe/revisit/persona/wake);
+          · age >= JARVIS_DISPATCH_TIMEOUT (stale) → judge failed: post death cause + release
+            claim (if project) + drop the record, do NOT resume;
+          · session transcript on disk → --resume the ORIGINAL sid from the breakpoint
+            (prompt = 续跑 hint);
+          · transcript missing → fresh run reusing the SAME sid (jarvis_cmd pins the gateway
+            by md5(sid), so the sid must never change), replaying the stored prompt.
+        Re-dispatch goes through the pool with force=True so the 24h dedup ledger cannot
+        veto the recovery. Whole body is best-effort per record."""
+        recs = _inflight_load()
+        if not recs:
+            return
+        timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
+        for iid, rec in list(recs.items()):
+            try:
+                kind = (rec or {}).get("kind")
+                if kind != "ticket" or not str(iid).isdigit():
+                    _inflight_remove(iid)   # probe/revisit/persona/wake/junk: never resume
+                    continue
+                sid = rec.get("sid")
+                project = rec.get("project") or ""
+                age = time.time() - float(rec.get("started_at") or 0)
+                if age >= timeout:
+                    cause = ("headless 派发在桥重启时仍在飞且已超过派发超时(%ds)，判失败，"
+                             "未从断点续跑。" % timeout)
+                    self._post_death_cause(iid, cause)
+                    if project:
+                        _release_claim(iid, project)
+                    _inflight_remove(iid)
+                    log.warning("_resume_inflight: #%s stale (age=%ds) → failed, not resumed",
+                                iid, int(age))
+                    continue
+                tgt, ttype = broadcast_target(), broadcast_type()
+                notify = self._broadcast
+                if _session_file_exists(sid):
+                    resume = True
+                    rprompt = "上次被中断,请从断点继续完成本工单 SOP"
+                else:
+                    resume = False
+                    rprompt = rec.get("prompt") or ""
+                work = (lambda i=iid, p=rprompt, s=sid, r=resume, pj=project:
+                        self.dispatch_item(
+                            i, p, s, r, notify, tgt, ttype,
+                            on_spawn=lambda pr: self.dispatch_pool.set_proc(i, pr),
+                            project=pj, kind="ticket"))
+                ok, reason = self.dispatch_pool.submit(
+                    iid, work, notify=notify, force=True, kind="ticket", project=project)
+                log.info("_resume_inflight: #%s resume=%s submit=%s(%s)",
+                         iid, resume, ok, reason)
+            except Exception as e:  # noqa: BLE001
+                log.warning("_resume_inflight: #%s could not be resumed: %s", iid, e)
+
     def _tata_session(self, staff):
         """返回该 staff 的 Tata (session_id, resume)。
 
@@ -3373,7 +3525,7 @@ class JarvisHandler(AsyncChatbotHandler):
         return prefix + "\n" + line
 
     def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type,
-                      on_spawn=None, project=None):
+                      on_spawn=None, project=None, kind="ticket"):
         """Headless path (auto-dispatch / probe / revisit): run one Jarvis instance to
         completion WITHOUT a live card (no "回复某人" binding); broadcast the result via
         ``notify``. Shares the SUSPEND + WaitWatcher core with the card path.
@@ -3395,6 +3547,8 @@ class JarvisHandler(AsyncChatbotHandler):
         backoff = int(os.environ.get("JARVIS_DISPATCH_RETRY_BACKOFF", "30"))
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
         try:
+            # 在飞登记(方案B): worker 一启动就落记录, 桥重启后 _resume_inflight 据此续跑。
+            _inflight_add(item_id, sid, project, kind, prompt)
             log.info("dispatch_item #%s start (timeout=%ds, retry_max=%d)",
                      item_id, timeout, max_retries)
             attempt = 0
@@ -3421,6 +3575,12 @@ class JarvisHandler(AsyncChatbotHandler):
                             item_id, res.subtype, attempt, max_retries)
                 time.sleep(min(backoff * attempt, 300))
             final = res.text
+            # 关机短路(方案B): 必须紧跟 final= — 桥停机杀 worker 时若快速走到
+            # _maybe_suspend/_dispatch_failed 会误释放 claim + 删在飞记录。停机中一律
+            # 保住 claim + 保留记录(finally 也据此不删), 交给重启后的 _resume_inflight。
+            pool = getattr(self, "dispatch_pool", None)
+            if pool is not None and getattr(pool, "_closed", False):
+                return "error"
             info = self._maybe_suspend(final, sid, target, target_type)
             if info:
                 wl = self._workitem_line(info["aone_id"])
@@ -3444,6 +3604,12 @@ class JarvisHandler(AsyncChatbotHandler):
             log.exception("dispatch_item #%s failed: %s", item_id, e)
             notify("⚠️ 工单 #%s 后台处理异常: %s" % (item_id, e))
             return "error"
+        finally:
+            # 非关机时删记录(覆盖 done/suspended/failed/outer-except 全部终态)。关机中
+            # (_closed) 保留记录, 交给重启 resume——与上面的关机短路对齐。
+            pool = getattr(self, "dispatch_pool", None)
+            if not (pool is not None and getattr(pool, "_closed", False)):
+                _inflight_remove(item_id)
 
     @staticmethod
     def _write_probe_summary(round_id, final_text):
@@ -3592,7 +3758,7 @@ class JarvisHandler(AsyncChatbotHandler):
             notify = self._broadcast
             work = (lambda: self.dispatch_item(
                 aone_id, prompt, task["session_id"], True,
-                notify, task["target"], task["target_type"]))
+                notify, task["target"], task["target_type"], kind="wake"))
             self.dispatch_pool.submit(aone_id, work, notify=notify, force=True, kind="wake")
             return
         # force=True: a resumed ticket may still sit inside the 24h dedup ledger window.
@@ -3866,13 +4032,8 @@ def _run_no_dingtalk():
                 "自动派发 + Scan/Reconcile/Board/Probe/Revisit/Wait 调度器照常; "
                 "卡片/播报 → [BROADCAST] 日志行; 入站 Tata 门面停用。")
     handler = JarvisHandler(no_dingtalk=True)
-    handler.scanner.start()
-    handler.reconciler.start()   # claim 纪律安全网(always-on 主机唯一触发点), 无钉钉依赖
-    handler.board.start()        # board.sh → AutomationAgent, 依赖 HTML_REPORT_TOKEN 非钉钉
-    handler.prober.start()
-    handler.reviser.start()
-    handler.watcher.start()
-    handler.personawatch.start()  # 数字人评论区自主协作跨会话补位
+    # 起全部调度器 + 重启后 _resume_inflight() 续跑上一进程遗留的在飞工单(方案B)。
+    handler.start_schedulers()
     log.info("[NO-DINGTALK] scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
              handler.scanner.interval, handler.scanner.auto,
              handler.scanner.notify_target, broadcast_target())
@@ -3932,13 +4093,8 @@ def main():
     client.register_callback_handler(ChatbotMessage.TOPIC, handler)
     if handler.pool is not None:
         handler.pool.prewarm()  # 预热 N 个 generic 常驻进程, 首批消息免冷启
-    handler.scanner.start()
-    handler.reconciler.start()
-    handler.board.start()
-    handler.prober.start()
-    handler.reviser.start()
-    handler.watcher.start()
-    handler.personawatch.start()  # 数字人评论区自主协作跨会话补位
+    # 起全部调度器 + 重启后 _resume_inflight() 续跑上一进程遗留的在飞工单(方案B)。
+    handler.start_schedulers()
     log.info("scan scheduler started (interval=%ss auto_dispatch=%s target=%s broadcast=%s)",
              handler.scanner.interval, handler.scanner.auto,
              handler.scanner.notify_target, broadcast_target())

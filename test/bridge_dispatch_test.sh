@@ -41,6 +41,11 @@ for k in ("JARVIS_AUTO_DISPATCH", "JARVIS_DISPATCH_MAX", "JARVIS_DISPATCH_QUEUE_
 
 import jarvis_dingtalk_bot as b
 
+# Keep the in-flight registry hermetic: default every test's INFLIGHT_PATH to a tmp file
+# so exercising dispatch_item never writes the real repo .my-day/bridge/inflight.json.
+# Tests that assert on the registry override this in setUp and restore it in tearDown.
+b.INFLIGHT_PATH = Path(tempfile.mkdtemp()) / "inflight.json"
+
 
 def _ledger(tmp):
     return os.path.join(tmp, "dispatched.json")
@@ -1825,6 +1830,366 @@ class DispatchFailedTest(unittest.TestCase):
         self._fail("probe-2026-07-08", "528766")
         self.assertEqual(len(self.run_calls), 0, "pseudo-id has no workitem → no wrap.sh")
         self.assertEqual(self.release_calls, [], "non-numeric id → no release")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 重启孤儿根治(方案B): 在飞登记表 + 重启 --resume 续跑
+# ══════════════════════════════════════════════════════════════════════════════
+
+class _InflightBase(unittest.TestCase):
+    """Isolate b.INFLIGHT_PATH onto a per-test tmp file; restore on teardown."""
+
+    def setUp(self):
+        self._orig_path = b.INFLIGHT_PATH
+        self._tmp = tempfile.mkdtemp()
+        b.INFLIGHT_PATH = Path(self._tmp) / "inflight.json"
+
+    def tearDown(self):
+        b.INFLIGHT_PATH = self._orig_path
+
+
+class InflightRegistryTest(_InflightBase):
+    """add / has / remove / load(重启读) / remove-noop —— 登记表原语。"""
+
+    def test_add_has_load(self):
+        b._inflight_add("123", "sid-a", "528766", "ticket", "do the thing")
+        self.assertTrue(b._inflight_has("123"))
+        self.assertTrue(b._inflight_has(123), "id lookup is str-normalized")
+        recs = b._inflight_load()
+        self.assertIn("123", recs)
+        rec = recs["123"]
+        self.assertEqual(rec["sid"], "sid-a")
+        self.assertEqual(rec["project"], "528766")
+        self.assertEqual(rec["kind"], "ticket")
+        self.assertEqual(rec["prompt"], "do the thing")
+        self.assertIsInstance(rec["started_at"], (int, float))
+
+    def test_remove(self):
+        b._inflight_add("55", "s", "p", "ticket", "x")
+        self.assertTrue(b._inflight_has("55"))
+        b._inflight_remove("55")
+        self.assertFalse(b._inflight_has("55"))
+
+    def test_remove_noop_when_absent(self):
+        b._inflight_remove("does-not-exist")   # must not raise
+        self.assertEqual(b._inflight_load(), {})
+
+    def test_load_survives_restart(self):
+        b._inflight_add("1", "s1", "p1", "ticket", "a")
+        b._inflight_add("2", "s2", None, "probe", "b")
+        # A fresh process would just call _inflight_load() again → same file.
+        recs = b._inflight_load()
+        self.assertEqual(set(recs), {"1", "2"})
+        self.assertEqual(recs["2"]["kind"], "probe")
+
+    def test_load_missing_file_is_empty(self):
+        self.assertEqual(b._inflight_load(), {})
+
+    def test_multiple_adds_do_not_clobber(self):
+        b._inflight_add("10", "s10", "p", "ticket", "a")
+        b._inflight_add("11", "s11", "p", "ticket", "b")
+        self.assertEqual(set(b._inflight_load()), {"10", "11"})
+
+
+class _FakeProc:
+    def __init__(self, pid=4242):
+        self.pid = pid
+
+
+class TerminateAllOptionBTest(_InflightBase):
+    """方案B: terminate_all 对有在飞登记的 ticket 保 claim(不释放); 无登记则释放(兜底);
+    非 ticket(probe) 从不释放。os.killpg/getpgid stub 掉不碰真进程, grace=0 免 sleep。"""
+
+    def setUp(self):
+        super().setUp()
+        self._orig_killpg, self._orig_getpgid = b.os.killpg, b.os.getpgid
+        b.os.getpgid = lambda pid: pid
+        b.os.killpg = lambda pgid, sig: None
+
+    def tearDown(self):
+        b.os.killpg, b.os.getpgid = self._orig_killpg, self._orig_getpgid
+        super().tearDown()
+
+    def _pool_with_active(self, active):
+        pool = b.DispatchPool(max_workers=2, queue_max=3,
+                              ledger_path=os.path.join(self._tmp, "dispatched.json"))
+        pool._active = active
+        return pool
+
+    def test_inflight_ticket_kept_others_released(self):
+        active = {
+            "100": {"proc": _FakeProc(), "project": "528766", "kind": "ticket"},
+            "200": {"proc": _FakeProc(), "project": "528766", "kind": "ticket"},
+            "300": {"proc": _FakeProc(), "project": "528766", "kind": "probe"},
+        }
+        pool = self._pool_with_active(active)
+        b._inflight_add("100", "s", "528766", "ticket", "p")   # 100 在飞 → 保 claim
+        released = []
+        pool.terminate_all(release_fn=lambda i, p: released.append(i), grace=0)
+        self.assertNotIn("100", released, "在飞登记的 ticket 必须留 claim(方案B)")
+        self.assertIn("200", released, "无在飞登记的 ticket 照旧释放(安全兜底)")
+        self.assertNotIn("300", released, "probe kind 从不释放")
+
+    def test_no_inflight_all_tickets_released(self):
+        active = {"100": {"proc": _FakeProc(), "project": "528766", "kind": "ticket"}}
+        pool = self._pool_with_active(active)
+        released = []
+        pool.terminate_all(release_fn=lambda i, p: released.append(i), grace=0)
+        self.assertEqual(released, ["100"], "无登记表 → 兜底释放, 不留僵尸 claim")
+
+
+class DispatchItemWriteThenDeleteTest(_InflightBase):
+    """dispatch_item 启动即写在飞记录(在 run_claude_buffered 内断言 _inflight_has=True),
+    终态(done / timeout)经 finally 删记录。非关机路径。"""
+
+    def setUp(self):
+        super().setUp()
+        self._orig_rcb = b.run_claude_buffered
+        self._orig_sleep = b.time.sleep
+        b.time.sleep = lambda *a, **k: None
+
+    def tearDown(self):
+        b.run_claude_buffered = self._orig_rcb
+        b.time.sleep = self._orig_sleep
+        super().tearDown()
+
+    def test_written_at_start_removed_on_done(self):
+        seen = {}
+
+        def fake(text, session_id, resume, timeout=None, on_spawn=None):
+            seen["mid_flight"] = b._inflight_has("777")
+            return b.ClaudeResult("done text", False, "success")
+
+        b.run_claude_buffered = fake
+        outcome = b.JarvisHandler.dispatch_item(
+            _RetrySelf(), "777", "orig prompt", "sid-7", False,
+            (lambda t: None), "grp", "group", project="528766")
+        self.assertEqual(outcome, "done")
+        self.assertTrue(seen["mid_flight"], "记录必须在 worker 启动时(claude 运行前)已写入")
+        self.assertFalse(b._inflight_has("777"), "done 终态经 finally 删记录")
+
+    def test_removed_on_terminal_timeout(self):
+        def fake(text, session_id, resume, timeout=None, on_spawn=None):
+            self.assertTrue(b._inflight_has("778"))
+            return b.ClaudeResult("", True, "timeout")
+
+        b.run_claude_buffered = fake
+        outcome = b.JarvisHandler.dispatch_item(
+            _RetrySelf(), "778", "orig prompt", "sid-8", False,
+            (lambda t: None), "grp", "group", project="528766")
+        self.assertEqual(outcome, "error")
+        self.assertFalse(b._inflight_has("778"), "timeout 终态也删记录")
+
+
+class _ClosingSelf:
+    """Fake self whose dispatch_pool is closing (bridge stopping)."""
+
+    class _Pool:
+        _closed = True
+
+    def __init__(self):
+        self.dispatch_pool = self._Pool()
+        self.failed_calls = []
+
+    def _maybe_suspend(self, final, sid, target, target_type):
+        return None
+
+    def _completion_broadcast(self, item_id):
+        return "✅ done"
+
+    def _workitem_line(self, aone_id):
+        return "#%s" % aone_id
+
+    def _dispatch_failed(self, item_id, res, notify, project):
+        self.failed_calls.append(item_id)
+
+
+class DispatchItemClosingGuardTest(_InflightBase):
+    """关机短路(方案B): dispatch_pool._closed=True → 返回 error、_dispatch_failed 未调、
+    在飞记录保留(不删), 交给重启 resume。"""
+
+    def setUp(self):
+        super().setUp()
+        self._orig_rcb = b.run_claude_buffered
+        self._orig_sleep = b.time.sleep
+        b.time.sleep = lambda *a, **k: None
+
+    def tearDown(self):
+        b.run_claude_buffered = self._orig_rcb
+        b.time.sleep = self._orig_sleep
+        super().tearDown()
+
+    def test_closed_pool_keeps_claim_and_record(self):
+        b.run_claude_buffered = (
+            lambda *a, **k: b.ClaudeResult("done text", False, "success"))
+        fs = _ClosingSelf()
+        outcome = b.JarvisHandler.dispatch_item(
+            fs, "888", "orig prompt", "sid-9", False,
+            (lambda t: None), "grp", "group", project="528766")
+        self.assertEqual(outcome, "error", "停机中短路返回 error")
+        self.assertEqual(fs.failed_calls, [], "_dispatch_failed 不得被调(不能误释放 claim)")
+        self.assertTrue(b._inflight_has("888"),
+                        "停机中保留在飞记录, 交给重启 resume")
+
+    def test_closed_pool_even_on_error_result_keeps_record(self):
+        b.run_claude_buffered = (
+            lambda *a, **k: b.ClaudeResult("boom", True, "error"))
+        fs = _ClosingSelf()
+        outcome = b.JarvisHandler.dispatch_item(
+            fs, "889", "orig prompt", "sid-9b", False,
+            (lambda t: None), "grp", "group", project="528766")
+        self.assertEqual(outcome, "error")
+        self.assertEqual(fs.failed_calls, [], "短路在 _dispatch_failed 之前, 记录保留")
+        self.assertTrue(b._inflight_has("889"))
+
+
+class ResumeInflightTest(_InflightBase):
+    """_resume_inflight: 重启后据在飞登记续跑。session 在→resume 原 sid; 缺→全新沿用 sid;
+    stale(age>=timeout)→判失败不派; 非 ticket/非数字→丢弃; 空表→无操作。"""
+
+    def setUp(self):
+        super().setUp()
+        for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
+            os.environ.pop(k, None)
+        self._orig_sess = b._session_file_exists
+        self._orig_release = b._release_claim
+        self.released = []
+        b._release_claim = lambda iid, project: self.released.append((str(iid), project))
+
+    def tearDown(self):
+        b._session_file_exists = self._orig_sess
+        b._release_claim = self._orig_release
+        super().tearDown()
+
+    def _handler(self):
+        h = b.JarvisHandler(no_dingtalk=True)
+        self.captured = []
+
+        def fake_dispatch(*a, **k):
+            self.captured.append((a, k))
+            return "done"
+
+        def fake_submit(iid, work, **k):
+            work()   # run the closure so dispatch_item(recorder) captures resume/sid/prompt
+            return True, "dispatched"
+
+        h.dispatch_item = fake_dispatch
+        h.dispatch_pool.submit = fake_submit
+        return h
+
+    def test_session_present_resumes_original_sid(self):
+        b._session_file_exists = lambda sid: True
+        b._inflight_add("500", "sid-orig", "528766", "ticket", "stored prompt")
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(len(self.captured), 1)
+        args = self.captured[0][0]
+        # dispatch_item(i, p, s, r, notify, tgt, ttype)
+        self.assertEqual(args[0], "500")
+        self.assertTrue(args[3], "session 在 → resume=True")
+        self.assertEqual(args[2], "sid-orig", "resume 必用原 sid, 不 regenerate")
+        self.assertIn("断点", args[1], "resume 用续跑 prompt")
+        self.assertEqual(self.captured[0][1].get("kind"), "ticket")
+
+    def test_session_missing_fresh_with_stored_prompt(self):
+        b._session_file_exists = lambda sid: False
+        b._inflight_add("501", "sid-keep", "528766", "ticket", "the stored prompt")
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(len(self.captured), 1)
+        args = self.captured[0][0]
+        self.assertFalse(args[3], "session 缺 → resume=False")
+        self.assertEqual(args[2], "sid-keep", "全新但沿用 sid 保持粘档")
+        self.assertEqual(args[1], "the stored prompt", "全新 → 沿用存的 prompt")
+
+    def test_stale_marks_failed_no_resume(self):
+        b._session_file_exists = lambda sid: True
+        b._inflight_add("502", "sid-x", "528766", "ticket", "p")
+        # backdate started_at well past the 12h default timeout.
+        recs = b._inflight_load()
+        recs["502"]["started_at"] = time.time() - 100000
+        with b._inflight_lock:
+            b._inflight_write(recs)
+        h = self._handler()
+        posted = []
+        h._post_death_cause = lambda iid, cause: posted.append((str(iid), cause))
+        h._resume_inflight()
+        self.assertEqual(self.captured, [], "stale → 不 resume(不派)")
+        self.assertEqual([i for i, _ in posted], ["502"], "stale → post_death_cause")
+        self.assertEqual(self.released, [("502", "528766")], "stale → release_claim")
+        self.assertFalse(b._inflight_has("502"), "stale → remove 记录")
+
+    def test_non_ticket_and_non_numeric_dropped(self):
+        b._session_file_exists = lambda sid: True
+        b._inflight_add("600", "s", None, "probe", "p")           # kind != ticket
+        b._inflight_add("probe-x", "s", None, "ticket", "p")      # non-numeric id
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(self.captured, [], "非 ticket / 非数字 → 丢弃不派")
+        self.assertFalse(b._inflight_has("600"))
+        self.assertFalse(b._inflight_has("probe-x"))
+
+    def test_empty_registry_noop(self):
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(self.captured, [], "空表 → 无操作")
+        self.assertEqual(self.released, [])
+
+
+class StartSchedulersResumeOnceTest(unittest.TestCase):
+    """start_schedulers(): 7 个 scheduler.start 各一次 + _resume_inflight 恰一次,
+    且 resume 在所有 .start 之后(共享 event log 断序)。"""
+
+    def setUp(self):
+        for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
+            os.environ.pop(k, None)
+
+    def test_each_start_once_and_resume_last(self):
+        h = b.JarvisHandler(no_dingtalk=True)
+        log_events = []
+        for name in ("scanner", "reconciler", "board", "prober",
+                     "reviser", "watcher", "personawatch"):
+            sched = getattr(h, name)
+            sched.start = (lambda n=name: log_events.append("start:%s" % n))
+        h._resume_inflight = lambda: log_events.append("resume")
+        h.start_schedulers()
+        starts = [e for e in log_events if e.startswith("start:")]
+        self.assertEqual(len(starts), 7, "seven schedulers started")
+        self.assertEqual(len(set(starts)), 7, "each scheduler started exactly once")
+        self.assertEqual(log_events.count("resume"), 1, "_resume_inflight called once")
+        self.assertEqual(log_events[-1], "resume", "resume is the LAST step")
+        self.assertEqual(log_events.index("resume"), len(log_events) - 1)
+
+
+class SourceWiringTest(unittest.TestCase):
+    """静态接线校验(inspect): kind 是 dispatch_item 参数; main/_run_no_dingtalk 源码含
+    start_schedulers( 且不再含裸 .scanner.start(); terminate_all 源码含 _inflight_has。"""
+
+    def test_dispatch_item_has_kind_param(self):
+        import inspect
+        params = inspect.signature(b.JarvisHandler.dispatch_item).parameters
+        self.assertIn("kind", params)
+        self.assertEqual(params["kind"].default, "ticket")
+
+    def test_entrypoints_use_start_schedulers(self):
+        import inspect
+        for fn in (b.main, b._run_no_dingtalk):
+            src = inspect.getsource(fn)
+            self.assertIn("start_schedulers(", src,
+                          "%s must delegate to start_schedulers()" % fn.__name__)
+            self.assertNotIn(".scanner.start()", src,
+                             "%s must no longer inline the bare .scanner.start()" % fn.__name__)
+
+    def test_terminate_all_gates_on_inflight(self):
+        import inspect
+        src = inspect.getsource(b.DispatchPool.terminate_all)
+        self.assertIn("_inflight_has", src,
+                      "terminate_all must gate claim release on the in-flight registry")
+
+    def test_start_schedulers_calls_resume_inflight(self):
+        import inspect
+        src = inspect.getsource(b.JarvisHandler.start_schedulers)
+        self.assertIn("_resume_inflight", src)
 
 
 def _run():
