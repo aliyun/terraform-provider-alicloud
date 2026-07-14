@@ -483,6 +483,15 @@ PERSONA_CLOSE_REQUEST_RE = re.compile(
 # 关单人工授权升级对象：提单人是数字人（无法授权）时，改私信这两位真人来关单。(花名, staffId)
 PERSONA_CLOSE_ESCALATION = (("辰羿", "320687"), ("过载", "484483"))
 
+# jarvis 编排层 worker id（与 JARVIS_SELF_IDS 保持一致）。
+JARVIS_ORCH_WORKER = "WORKER_1782379562571"
+# @jarvis(编排层)识别：@jarvis / @open-jarvis / @WORKER_1782379562571（Aone UI 括号形态亦可）。
+# **仅用于关单请求提醒**——scope 决策：jarvis 一般 @ 不触发 persona 协作，只有明确关单请求才走
+# 人工授权 handoff（由 terraform-pd 代为核验 + 催真人关单）。CJK 边界用 lookahead（同 persona 正则）。
+JARVIS_AT_RE = re.compile(
+    r"@\s*(?:open[-_ ]?)?jarvis(?=[^a-zA-Z0-9_]|$)|(?<!\w)WORKER_1782379562571\b",
+    re.IGNORECASE)
+
 
 def _persona_nicks_map():
     """解析 env JARVIS_PERSONA_NICKS="terraform-pd=名A,terraform-rd=名B,..." 显式配置。
@@ -2705,6 +2714,20 @@ class PersonaScheduler:
                 continue
             role = self._detect_mention(content)
             if role is None:
+                # @jarvis(编排层) + 明确关单请求 → 复用关单 handoff，由 terraform-pd 代为核验 +
+                # 催真人关单。scope：jarvis 一般 @ 不触发协作，仅关单请求提醒（见 loops/persona-collab.md）。
+                if self._detect_jarvis_mention(content) and self._detect_close_request(content):
+                    decisions.append({
+                        "comment_id": cid, "action": "dispatch", "reason": "human_mention",
+                        "role": "terraform-pd",
+                        "handoff": {"from": author, "to": "terraform-pd", "ticket": iid,
+                                    "action": "respond", "round": 1,
+                                    "note": content[:200],
+                                    "close_request": True,
+                                    "requester": author,
+                                    "requester_is_digital": False},
+                    })
+                    continue
                 decisions.append({
                     "comment_id": cid, "action": "skip",
                     "reason": hf_reason or "no_handoff",
@@ -2862,6 +2885,12 @@ class PersonaScheduler:
         而非静默 release。关单本身仍是人工门（persona 不代关）。"""
         return bool(PERSONA_CLOSE_REQUEST_RE.search(content or ""))
 
+    @staticmethod
+    def _detect_jarvis_mention(content):
+        """文本是否显式 @ jarvis 编排层（@jarvis / @open-jarvis / @WORKER_1782379562571）。
+        仅在关单请求场景消费（见 _decide_persona jarvis-close 分支）。"""
+        return bool(JARVIS_AT_RE.search(content or ""))
+
     # -- dispatch ------------------------------------------------------------
 
     def _iid_in_flight(self, iid):
@@ -2976,7 +3005,9 @@ class PersonaScheduler:
             log.warning("PersonaScheduler: cannot read pools.json: %s", e)
             return []
         tracker_scan = os.environ.get("JARVIS_PERSONA_TRACKER_SCAN", "1") == "1"
-        tracker_filter = "workitem.tracker=" + ",".join(sorted(PERSONA_WORKER_IDS))
+        # 含 jarvis 编排层 worker：让「只 @jarvis」的单也被扫到（关单请求提醒覆盖 @jarvis）。
+        watch_ids = sorted(PERSONA_WORKER_IDS | {JARVIS_ORCH_WORKER})
+        tracker_filter = "workitem.tracker=" + ",".join(watch_ids)
         cands = []
         for key, p in pools.items():
             project = p.get("project")

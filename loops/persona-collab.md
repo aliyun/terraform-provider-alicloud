@@ -59,6 +59,12 @@
 命中关单关键词 → `_decide_persona` 给 handoff 注入 `close_request`/`requester`/`requester_is_digital`
 → `_persona_prompt` 走关单授权 handoff 分支(见 `bridge/jarvis_dingtalk_bot.py`)。
 
+**被 @ 对象覆盖 @jarvis**:关单提醒不仅认 `@terraform-pd/rd/qa`,也认 `@jarvis`(编排层,
+`_detect_jarvis_mention`:@jarvis / @open-jarvis / @WORKER_1782379562571)。`@jarvis + 关单请求`
+→ 交 `terraform-pd` 代为核验 + 催人工关单(jarvis 编排层无子代理)。**注意 scope**:`@jarvis` 的
+**一般** @(非关单)仍不触发 persona 协作——只有关单请求这一条路。tracker 扫描过滤(`_query_candidates`)
+相应含 jarvis worker,让「只 @jarvis」的单也能被扫到。
+
 ---
 
 ## 三、角色接力方向

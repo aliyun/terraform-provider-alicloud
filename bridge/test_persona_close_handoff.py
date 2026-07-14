@@ -73,6 +73,40 @@ class DecideInjectsCloseContextTest(unittest.TestCase):
         self.assertFalse(d["handoff"]["close_request"])
 
 
+class DetectJarvisMentionTest(unittest.TestCase):
+    def test_positive(self):
+        for s in ("@jarvis 关闭", "@open-jarvis 关单", "@open_jarvis 结单",
+                  "@Name(WORKER_1782379562571) 关单"):
+            self.assertTrue(P._detect_jarvis_mention(s), s)
+
+    def test_negative(self):
+        for s in ("@terraform-pd 关闭", "这个jarvisxx", "关单吧", ""):
+            self.assertFalse(P._detect_jarvis_mention(s), s)
+
+
+class JarvisCloseMentionTest(unittest.TestCase):
+    """@jarvis + 关单请求 → 复用关单 handoff，由 terraform-pd 代为核验+催人工关单。"""
+    def _decide_one(self, content):
+        item = {"id": "84240297", "tag": ""}
+        comments = [{"id": 999, "author": "原根", "content": content, "createdAt": ""}]
+        return _sched()._decide_persona(item, comments, state=_state())
+
+    def test_jarvis_close_dispatches_via_pd(self):
+        ds = self._decide_one("@jarvis 关闭这个aone")
+        d = next(x for x in ds if x["action"] == "dispatch")
+        self.assertEqual(d["role"], "terraform-pd")   # jarvis 无子代理 → 交 pd 代办
+        self.assertTrue(d["handoff"]["close_request"])
+        self.assertEqual(d["handoff"]["requester"], "原根")
+
+    def test_jarvis_mention_without_close_is_ignored(self):
+        ds = self._decide_one("@jarvis 看下这个")
+        self.assertFalse([x for x in ds if x["action"] == "dispatch"])  # 一般 @jarvis 不触发
+
+    def test_tracker_watch_includes_jarvis_worker(self):
+        watch = bot.PERSONA_WORKER_IDS | {bot.JARVIS_ORCH_WORKER}
+        self.assertIn("WORKER_1782379562571", watch)
+
+
 class PromptCloseHandoffTest(unittest.TestCase):
     def test_human_requester_pings_requester_not_finish(self):
         p = bot._persona_prompt("84240297", "terraform-pd", "respond", "", 1, "snip",
