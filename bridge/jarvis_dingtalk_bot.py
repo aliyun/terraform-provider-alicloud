@@ -779,8 +779,9 @@ def _persona_prompt(item_id, role, action, note, round_n, snippet, project=None,
             "1) bootstrap/claim.sh claim %s %s 认领；退码 1（被抢先）即退出。\n"
             "2) 让 %s 数字人子代理以自身身份评论 @过载(484483)，说明已达 max_rounds、请人工"
             "澄清接下来动作，并**省略哨兵**（本轮闭环）。\n"
-            "3) 收尾 bootstrap/wrap.sh sync 记「persona 接力升级 @过载」+ "
-            "bootstrap/claim.sh release，不 finish。\n"
+            "3) 收尾 bootstrap/wrap.sh sync **只写一行指针**（如「persona 接力升级已 @过载，"
+            "详见上条角色评论」），**严禁重述升级理由正文**——实质内容已在上一步角色评论里，"
+            "台账评论只留指针 + claim 痕迹，避免与角色评论重复；+ bootstrap/claim.sh release，不 finish。\n"
             "%s"
             % (item_id, role, round_n, item_id, proj, role, fenced_snippet)
         )
@@ -794,8 +795,9 @@ def _persona_prompt(item_id, role, action, note, round_n, snippet, project=None,
                 "   a) 以角色身份发评论 %s，说明「已核验可关闭（引证据），关单需人工授权，请确认关闭」；\n"
                 "   b) 逐个 bootstrap/notify-dingtalk.sh <staffId> \"工单#%s 待人工关单\" \"<摘要+工单链接>\" "
                 "私信 %s；\n"
-                "   c) bootstrap/wrap.sh sync 记「已核验可关闭，关单请求已升级人工授权」+ "
-                "bootstrap/claim.sh release，**不 finish**（关单由人工执行）。\n"
+                "   c) bootstrap/wrap.sh sync **只写一行指针**（如「已核验可关闭，关单请求已升级人工授权，"
+                "详见上条角色评论」），**严禁重述核验正文**（结论+证据已在 a) 的角色评论里，台账只留指针 + "
+                "claim 痕迹）+ bootstrap/claim.sh release，**不 finish**（关单由人工执行）。\n"
                 % (requester or "未知", esc, item_id, esc)
             )
         else:
@@ -807,8 +809,9 @@ def _persona_prompt(item_id, role, action, note, round_n, snippet, project=None,
                 "   b) bootstrap/notify-dingtalk.sh <提单人staffId> \"工单#%s 待你确认关单\" "
                 "\"<摘要+工单链接>\" 私信提单人；staffId 从 config/contacts.json 花名解析，"
                 "解析不到则退回私信 %s；\n"
-                "   c) bootstrap/wrap.sh sync 记「已核验可关闭，已请提单人确认关单」+ "
-                "bootstrap/claim.sh release，**不 finish**（关单由人工执行）。\n"
+                "   c) bootstrap/wrap.sh sync **只写一行指针**（如「已核验可关闭，已请提单人确认关单，"
+                "详见上条角色评论」），**严禁重述核验正文**（结论+证据已在 a) 的角色评论里，台账只留指针 + "
+                "claim 痕迹）+ bootstrap/claim.sh release，**不 finish**（关单由人工执行）。\n"
                 % (requester or "提单人", requester or "提单人", item_id, esc)
             )
         return (
@@ -836,7 +839,9 @@ def _persona_prompt(item_id, role, action, note, round_n, snippet, project=None,
         "末尾 [[PERSONA-HANDOFF:{...}]]，round+1；无接力则省略哨兵）。\n"
         "3) 子代理返回 handoff 非 null → 同会话继续派下一角色（round+1），直至 handoff=null 或"
         "达到 JARVIS_PERSONA_MAX_ROUNDS 上限。\n"
-        "4) 收尾 bookend：bootstrap/wrap.sh sync 记摘要；接力全部完成后 wrap.sh done + release。\n"
+        "4) 收尾 bookend：bootstrap/wrap.sh sync **只写一行指针**（如「已回复接力，详见本轮各角色阶段评论」），"
+        "**严禁重述结论正文**——实质内容已在各 persona 自身评论里，台账评论只留指针 + claim 痕迹，避免与角色回复重复；"
+        "接力全部完成后 wrap.sh done + release。\n"
         "⚠️ 单发纪律（严禁空头支票）：本 headless run 是一次性执行，退出后没有后台进程替你续跑。"
         "严禁只回复「稍后跟进 / 结论稍后给出 / 稍后同步」这类承诺就结束——那等于开一张永远不会兑现的空头支票。"
         "二选一：要么在本 run 内把 action 真正查完、把结论+证据直接贴进评论再收尾；要么当你确实需要等外部输入（人工确认 / 上游依赖）时，"
