@@ -2122,6 +2122,20 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	return resourceAliCloudDBInstanceRead(d, meta)
 }
 
+// parseDBInstanceParamGroupId extracts the parameter group id from a
+// DescribeParameters response. The "ParamGroupInfo" object (and its
+// "ParamGroupId") is not always present - e.g. right after an instance is
+// created, before its parameter group is populated - so both lookups are
+// guarded to avoid a nil interface conversion panic in Read.
+func parseDBInstanceParamGroupId(response map[string]interface{}) (string, bool) {
+	dbParamGroupInfo, ok := response["ParamGroupInfo"].(map[string]interface{})
+	if !ok {
+		return "", false
+	}
+	paramGroupId, ok := dbParamGroupInfo["ParamGroupId"].(string)
+	return paramGroupId, ok
+}
+
 func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
@@ -2437,11 +2451,12 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("tcp_connection_type", res["TcpConnectionType"])
 
 	response, err := rdsService.DescribeParameters(d.Id())
-	dbParamGroupInfo := response["ParamGroupInfo"].(map[string]interface{})
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("db_param_group_id", dbParamGroupInfo["ParamGroupId"].(string))
+	if paramGroupId, ok := parseDBInstanceParamGroupId(response); ok {
+		d.Set("db_param_group_id", paramGroupId)
+	}
 
 	WhitelistTemplate, err := rdsService.DescribeInstanceLinkedWhitelistTemplate(d.Id())
 	if err != nil {
