@@ -62,7 +62,7 @@ The following arguments are supported:
 
   - You can specify one of the following CIDR blocks or their subsets as the primary IPv4 CIDR block of the VPC: 192.168.0.0/16, 172.16.0.0/12, and 10.0.0.0/8. These CIDR blocks are standard private CIDR blocks as defined by Request for Comments (RFC) documents. The subnet mask must be 8 to 28 bits in length.
   - You can also use a custom CIDR block other than 100.64.0.0/10, 224.0.0.0/4, 127.0.0.0/8, 169.254.0.0/16, and their subnets as the primary IPv4 CIDR block of the VPC.
-* `classic_link_enabled` - (Optional) The status of ClassicLink function.
+* `classic_link_enabled` - (Optional, Deprecated since v1.286.0) The status of ClassicLink function. Field 'classic_link_enabled' has been deprecated from provider version 1.286.0. The underlying ClassicLink feature has been deprecated by Alibaba Cloud and this field will be removed in a future version. For more information, see the deprecated API references [EnableVpcClassicLink](https://www.alibabacloud.com/help/en/vpc/developer-reference/api-vpc-2016-04-28-enablevpcclassiclink) and [DisableVpcClassicLink](https://www.alibabacloud.com/help/en/vpc/developer-reference/api-vpc-2016-04-28-disablevpcclassiclink).
 * `description` - (Optional) The new description of the VPC.
 The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`.
 * `dns_hostname_status` - (Optional, Computed, Available since v1.240.0) The status of VPC DNS Hostname. Valid values: `ENABLED`, `DISABLED`.
