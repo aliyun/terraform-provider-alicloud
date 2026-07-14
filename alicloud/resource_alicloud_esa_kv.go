@@ -179,7 +179,7 @@ func resourceAliCloudEsaKvRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("value", objectRaw["Value"])
 
-	parts := strings.Split(d.Id(), ":")
+	parts := strings.SplitN(d.Id(), ":", 2)
 	d.Set("namespace", parts[0])
 	d.Set("key", parts[1])
 
@@ -200,7 +200,7 @@ func resourceAliCloudEsaKvUpdate(d *schema.ResourceData, meta interface{}) error
 	if !(checkValue00 == "") {
 		enablePutKv = true
 	}
-	parts := strings.Split(d.Id(), ":")
+	parts := strings.SplitN(d.Id(), ":", 2)
 	action := "PutKv"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -244,7 +244,7 @@ func resourceAliCloudEsaKvUpdate(d *schema.ResourceData, meta interface{}) error
 	if !(checkValue00 == "") {
 		enablePutKvWithHighCapacity = true
 	}
-	parts = strings.Split(d.Id(), ":")
+	parts = strings.SplitN(d.Id(), ":", 2)
 	action = "PutKvWithHighCapacity"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -278,7 +278,7 @@ func resourceAliCloudEsaKvUpdate(d *schema.ResourceData, meta interface{}) error
 func resourceAliCloudEsaKvDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	parts := strings.Split(d.Id(), ":")
+	parts := strings.SplitN(d.Id(), ":", 2)
 	action := "DeleteKv"
 	var request map[string]interface{}
 	var response map[string]interface{}
