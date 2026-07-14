@@ -1214,10 +1214,12 @@ class ScanScheduler:
     def _load_human_operators(self):
         """从 config/contacts.json 动态加载人类操作者白名单(name+flower+id)。
         文件不存在/解析失败 → 返回空集(保守:无白名单=所有人都不算人工介入,不误派)。
-        **仅排除 jarvis 自身身份**(JARVIS_SELF_IDS)——否则 jarvis 收尾打 idle 标签这条
-        自己的 activity 会被判「人工介入」→ idle 单自我无限重派。其它 agent(如 镇元agent)
-        仍算人工介入:其评论会正常触发重派。"""
-        self_ids = JARVIS_SELF_IDS
+        **排除 jarvis 自身身份**(JARVIS_SELF_IDS)**与三个数字人**(PERSONA_ROLES/
+        PERSONA_WORKER_IDS)——两者都是 jarvis 驱动的实例,其收尾/接力 activity 若被判
+        「人工介入」会造成 idle 单自我无限重派(与 _is_human_comment 评论路径同一不变量;
+        数字人当前不在 contacts.json,显式排除是防日后补录名单时 churn 静默复发)。
+        外部 agent(如 镇元agent)仍算人工介入:其主单动作会正常触发重派。"""
+        self_ids = JARVIS_SELF_IDS | PERSONA_WORKER_IDS | set(PERSONA_ROLES)
         try:
             cfg = Path(REPO_ROOT) / "config" / "contacts.json"
             data = json.loads(cfg.read_text())
@@ -1226,7 +1228,7 @@ class ScanScheduler:
                 fields = {(c.get(f) or "").strip() for f in ("name", "flower", "id")}
                 fields.discard("")
                 if fields & self_ids:
-                    continue  # 命中 jarvis 自身 → 整条排除出人工门
+                    continue  # 命中 jarvis 自身/数字人 → 整条排除出人工门
                 ops |= fields
             return ops
         except Exception:  # noqa: BLE001

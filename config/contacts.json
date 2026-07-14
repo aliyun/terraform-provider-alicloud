@@ -1,5 +1,5 @@
 {
-  "_desc": "API 工具团队联系人花名表：姓名/花名/工号。建单时解析指派(assignee)/抄送(tracker)/参与者(participant)。花名为 null 表示该成员无花名(外包/工号 WB 前缀)。id 为 WORKER_ 前缀=agent/机器人身份。注意：bridge _load_human_operators 仅将 jarvis 自身(open-jarvis)排除出「人工介入门」白名单(否则其收尾动作触发 idle 单自我重派)；其它 agent(如 镇元agent)仍算人工介入。",
+  "_desc": "API 工具团队联系人花名表：姓名/花名/工号。建单时解析指派(assignee)/抄送(tracker)/参与者(participant)。花名为 null 表示该成员无花名(外包/工号 WB 前缀)。id 为 WORKER_ 前缀=agent/机器人身份。注意：bridge _load_human_operators 将 jarvis 自身(open-jarvis)与三个数字人(terraform-pd/rd/qa)排除出「人工介入门」白名单(均为 jarvis 驱动实例,否则其收尾/接力动作触发 idle 单自我重派)；外部 agent(如 镇元agent)仍算人工介入。",
   "contacts": [
     {"name": "逄磊",   "flower": "马裘",   "id": "404709"},
     {"name": "徐文平", "flower": null,     "id": "WB01146046"},
