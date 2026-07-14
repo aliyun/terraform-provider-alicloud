@@ -1277,11 +1277,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus"}) || NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
 					addDebug(action, response, request)
+					return resource.NonRetryableError(err)
 				}
 				return nil
 			})
