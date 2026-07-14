@@ -79,12 +79,6 @@ bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 
 - 正式走 `acube.aliyun-inc.com`,预发把域名换成 `pre-acube.aliyun-inc.com`(路径/参数/返回结构一致)
 - `/api/v1/**` 免鉴权,内网 DNS(需办公网/VPN)
-- **预发不是无副作用沙箱**(2026-07-14 实测,taskId=8006 → 84266904):pre-acube 的
-  createBuildTaskV2 同样在**真 Aone** 528766 池建自动审核单并指派临钧、触发流水线。
-  链路连通性测试只允许打**只读的** queryAoneByTaskId(随便传 taskId,未知 id 返回
-  aoneId=null 不报错);若确需测 create,建完必须**立即**评论说明 + status 置「已取消」
-  + 通知临钧,否则测试产物污染其队列
-- aoneId 回写可能**即时**(实测首轮轮询即有值),60s×6 轮询窗口保持不变作为上界
 
 ## 关键纪律
 
