@@ -1067,6 +1067,44 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("engine_version") && d.Get("engine").(string) == string(SQLServer) {
+		action := "ModifyDBInstanceSpec"
+		request := map[string]interface{}{
+			"RegionId":                 client.RegionId,
+			"DBInstanceId":             d.Id(),
+			"PayType":                  d.Get("instance_charge_type"),
+			"EngineVersion":            d.Get("engine_version"),
+			"DBInstanceClass":          d.Get("instance_type"),
+			"AllowMajorVersionUpgrade": true,
+			"ClientToken":              buildClientToken(action),
+			"SourceIp":                 client.SourceIp,
+		}
+		if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+			request["EffectiveTime"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	if d.Get("engine").(string) == string(PostgreSQL) && !d.IsNewResource() && d.HasChange("engine_version") {
 		action := "UpgradeDBInstanceMajorVersionPrecheck"
 		request := map[string]interface{}{
