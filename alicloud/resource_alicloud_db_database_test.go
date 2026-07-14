@@ -562,8 +562,8 @@ resource "alicloud_db_instance" "default" {
     engine = "PostgreSQL"
 	engine_version = "14.0"
  	db_instance_storage_type = "cloud_essd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	instance_charge_type = "Postpaid"
@@ -616,8 +616,8 @@ resource "alicloud_db_instance" "default" {
     engine = "SQLServer"
 	engine_version = "2019_ent"
  	db_instance_storage_type = "cloud_essd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	category = "AlwaysOn"
