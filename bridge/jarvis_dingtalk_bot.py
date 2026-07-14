@@ -2895,7 +2895,11 @@ class PersonaScheduler:
     # -- scan target list（复用 RevisitScheduler 的 pool query 姿势）--------
 
     def _query_candidates(self):
-        """B4：只扫带 ``jarvis-idle`` 标签的池内工单（claimed = 同会话接力正在进行，不补位）。
+        """扫两类池内工单，合并去重：
+        · ``jarvis-idle`` 标签单（B4：jarvis 上轮处理完释放、等接力补位；claimed 单同会话自处理，不补位）
+        · ``workitem.tracker`` 抄送里挂了任一 persona 数字人的单——人 @ 数字人时 Aone 自动把该数字人
+          加入抄送，故这批 = 评论区被 @ 过的单，即便工单不属于 jarvis（无 jarvis 标签、指派给别人）也能
+          被扫到并进 _decide_persona 的 @mention 触发分支。可 ``JARVIS_PERSONA_TRACKER_SCAN=0`` 关闭。
         S9：TERMINAL_STATUSES 过滤终态单。best-effort per pool。"""
         cfg = Path(REPO_ROOT) / "config" / "pools.json"
         try:
@@ -2903,14 +2907,18 @@ class PersonaScheduler:
         except Exception as e:  # noqa: BLE001
             log.warning("PersonaScheduler: cannot read pools.json: %s", e)
             return []
+        tracker_scan = os.environ.get("JARVIS_PERSONA_TRACKER_SCAN", "1") == "1"
+        tracker_filter = "workitem.tracker=" + ",".join(sorted(PERSONA_WORKER_IDS))
         cands = []
         for key, p in pools.items():
             project = p.get("project")
             if not project:
                 continue
-            # B4: 只扫 jarvis-idle（claimed 单同会话接力自处理，无需补位）
-            items = self._query_pool_tag(key, str(project), "jarvis-idle")
-            for it in (items or []):
+            # jarvis-idle（既有行为，向后兼容）+ tracker 抄送命中 persona（新增，被 @ 触发）
+            items = list(self._query_pool_tag(key, str(project), "jarvis-idle") or [])
+            if tracker_scan:
+                items += (self._query_pool_filter(key, str(project), tracker_filter) or [])
+            for it in items:
                 # S9: 终态单跳过
                 if str(it.get("status") or "").strip() in TERMINAL_STATUSES:
                     continue
@@ -2929,16 +2937,18 @@ class PersonaScheduler:
         return uniq
 
     @staticmethod
-    def _query_pool_tag(key, project, tag):
+    def _query_pool_filter(key, project, filter_expr):
+        """按任意 a1 --filter 表达式查一个池，回列表 [{id,title,tag,status}]。best-effort。
+        filter_expr 例：``tag=jarvis-idle`` / ``workitem.tracker=WORKER_a,WORKER_b``（逗号多值 OR）。"""
         try:
             r = subprocess.run(
                 [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem", "list",
-                 "--project", project, "--filter", "tag=%s" % tag,
+                 "--project", project, "--filter", filter_expr,
                  "--columns", "id,title,status,tag", "-f", "json"],
                 capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT))
             if r.returncode != 0:
-                log.warning("PersonaScheduler: %s query failed pool=%s (rc=%d): %s",
-                            tag, key, r.returncode, (r.stderr or "").strip()[:200])
+                log.warning("PersonaScheduler: [%s] query failed pool=%s (rc=%d): %s",
+                            filter_expr, key, r.returncode, (r.stderr or "").strip()[:200])
                 return []
             data = json.loads(r.stdout)
             if not isinstance(data, list):
@@ -2949,8 +2959,13 @@ class PersonaScheduler:
                      "status": it.get("status") or ""}
                     for it in data]
         except Exception as e:  # noqa: BLE001
-            log.warning("PersonaScheduler: %s query error pool=%s: %s", tag, key, e)
+            log.warning("PersonaScheduler: [%s] query error pool=%s: %s", filter_expr, key, e)
             return []
+
+    @classmethod
+    def _query_pool_tag(cls, key, project, tag):
+        """薄封装：按单个 tag 过滤（保留既有调用点语义）。"""
+        return cls._query_pool_filter(key, project, "tag=%s" % tag)
 
     # -- loop / tick ---------------------------------------------------------
 
