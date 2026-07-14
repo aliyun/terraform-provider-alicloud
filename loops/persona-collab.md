@@ -119,6 +119,32 @@ headless jarvis(编排层继续接力)。
 - `dispatch_count`:累积成功派发次数(**服务端计数**,用于硬护栏)。
 - `escalated`:是否已升级(bool)。
 
+### 4.3 单发纪律(严禁空头支票)
+
+**headless persona run 是一次性执行,退出后没有任何后台进程替它续跑。** 被派发的数字人
+**严禁**只回复「稍后跟进 / 结论稍后给出 / 稍后同步」这类承诺就结束——那是一张永远不会
+兑现的空头支票(实测某客户单:数字人贴「结论稍后跟进」后 run 即以 `no_result` 结束,
+再遇 graceful stop,沉默 73 分钟直到人工再评论)。合法退出**只有两种**:
+
+1. **当场闭环**:在本 run 内把 action 真正查完,把结论+证据直接贴进评论后收尾;
+2. **正式挂起**:确需等外部输入(人工确认 / 上游依赖)时,以 `[[SUSPEND:{...}]]` 哨兵挂起,
+   bridge `WaitWatcher` 会在被 @ 回复后 `--resume` 唤醒续跑。
+
+二者之外没有第三种合法退出。约束由 `_persona_prompt` 注入到每条 persona 派发的 prompt,
+并写入三个数字人 agent(`.claude/agents/terraform-{pd,rd,qa}.md`)。
+
+### 4.4 crash-resume(被停机打断的派发自动重放)
+
+已在 `e6ffd98` (feat/bridge-restart-resume) 落地:
+- `inflight.json` 登记表(worker start 写 / 终态 finally 删,镜像 `dispatched.json` 持久化);
+- `dispatch_item` 加 `kind` 参数 + 关机短路(`_closed` 时保 claim / 保记录);
+- `terminate_all` 方案B:对有 inflight 记录的 ticket 不释放 claim;
+- `_resume_inflight()`:重启后 session 在则 `--resume` 原 sid 续跑,缺则全新沿用 sid,
+  age≥12h 判失败落 Aone;非 ticket / stale 丢弃。
+
+这补上了「retry 排在 backoff 却被停机杀掉、重启后 `processed` 已标死无人接手」的缺口
+(详见 `escalation/cap-persona-dispatch-crash-resume.md`)。
+
 ---
 
 ## 五、安全阀
