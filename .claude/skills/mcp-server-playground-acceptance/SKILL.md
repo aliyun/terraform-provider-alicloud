@@ -1,9 +1,11 @@
 ---
 name: mcp-server-playground-acceptance
 description: >-
-  Use when Alibaba Cloud MCP Server, AutomationAgent, IaCService, cloudspec/OpenAPI MCP Server,
+  Use when Alibaba Cloud MCP Server, AutomationAgent/AgentAutomation, IaCService, cloudspec/OpenAPI MCP Server,
   RunIaC, API query tools, or related service changes need end-to-end testing, realistic user-flow
-  simulation, or manual experience validation through pre-agent or agent Playground.
+  simulation, or manual experience validation through pre-agent or agent Playground. Also use the
+  TerraformAgent Playground when validating MCP Server Core with a managed MCP token, token-level
+  safety policy, RunIaC HITL, InitializeApiMcpServerConnection, or GetLatestMcpToken.
 ---
 
 # MCP Server Playground 验收
@@ -17,26 +19,33 @@ description: >-
 - 需要上传 HTML 验收报告时,先用仓库内已有的 `html-report-preview` skill;报告包含截图时必须遵循其 Image Handling 约束。
 - 涉及 cloudspec / OpenAPI MCP Server / RunIaC / API 查询工具时,默认参考 `aone-triage/references/delivery-cloudspec.md` 的 app 与流水线坐标。
 - 涉及 AutomationAgent 时,默认参考 `aone-triage/references/delivery-aliyun-automation-agent.md` 的 app 与流水线坐标。
+- 涉及托管 MCP token、Token 级安全策略、RunIaC HITL、`InitializeApiMcpServerConnection` 或 `GetLatestMcpToken` 时,必须读取并执行 [TerraformAgent Playground 验收](references/terraform-agent-playground.md)。
 
 ## 目标环境
 
 | 环境 | URL | 使用条件 |
 |---|---|---|
-| 预发 | `https://pre-agent.aliyun-inc.com/playground` | 默认目标;所有预发验收先测这里 |
-| 线上 | `https://agent.aliyun-inc.com/playground` | 仅用户明确要求线上验证时使用 |
+| 通用预发 | `https://pre-agent.aliyun-inc.com/playground` | 不依赖托管 token 或 Token 级策略的常规 MCP 验收 |
+| TerraformAgent 预发 | `https://pre-agent.aliyun-inc.com/terraform-agent/playground` | 托管 MCP token、Token 级策略、RunIaC HITL、`InitializeApiMcpServerConnection`、`GetLatestMcpToken` |
+| 通用线上 | `https://agent.aliyun-inc.com/playground` | 仅用户明确要求线上验证时使用 |
 
-线上验证不能顺手做;必须有用户明确指令。RunIaC 按本次验收的实际测试场景选择 action。
+线上验证不能顺手做;必须有用户明确指令。不要用通用 Playground 的 settings 页面代替 TerraformAgent 链路;它不提供同一条托管 MCP token 初始化和 Token 级策略链路。RunIaC 按本次验收的实际测试场景选择 action。
 
 ## 预发门禁
 
 1. 先读 Aone/CR 评论,确认本轮要验证的 CR、环境和需求口径。
-2. cloudspec 默认坐标:app `260634`,预发 pipeline `420`。
-3. 查最新预发实例:
+2. 按变更面选择门禁:
+   - AgentAutomation / TerraformAgent 页面、托管 token 或策略初始化变更:app `283346`,预发 pipeline `66`。
+   - Cloudspec / MCP Server Core / RunIaC / HITL 执行变更:app `260634`,预发 pipeline `420`。
+   - 同时跨 AgentAutomation 与 Cloudspec:两边都查,任一侧未就绪都不能开始验收。
+3. 分别查所需应用的最新预发实例:
    ```bash
+   bin/a1id -- app pipeline status --app 283346 --pipeline-id 66 --format json
    bin/a1id -- app pipeline status --app 260634 --pipeline-id 420 --format json
    ```
 4. 如果最新实例仍是 `RUNNING` / `SCHEDULING` / `PENDING` / `CREATED`,继续等:
    ```bash
+   bin/a1id -- app pipeline status --app 283346 --pipeline-id 66 --wait-until-settled --format json
    bin/a1id -- app pipeline status --app 260634 --pipeline-id 420 --wait-until-settled --format json
    ```
 5. 只有“预发部署”阶段为 `SUCCESS` 才能开始 Playground 验收。后续人工验证阶段处于 `WAITING` 不阻塞;如果最新实例失败或出现更新的未完成实例,不要验收,先报告阻塞。
@@ -53,6 +62,7 @@ description: >-
 ## RunIaC 专项规则
 
 - Prompt 中明确本次要使用的 action,以实际测试场景为准。
+- 验收 Token 级 HITL 时,只走 TerraformAgent Playground,并执行 [TerraformAgent Playground 验收](references/terraform-agent-playground.md) 的最小矩阵。
 - 涉及真实资源创建、修改或删除时,先确认用户授权、影响范围和清理方式。
 - `RunIaC` 返回 `processID` 后,继续调用 `GetTask` 直到终态。
 - 收集 `status`、`nextAction`、`summary`、`message` 原文或关键片段。
@@ -67,8 +77,11 @@ description: >-
 | 环境 | 预发或线上 URL |
 | 部署门禁 | app、pipeline、instance、预发部署阶段状态 |
 | Playground | session id、新会话说明 |
-| 工具调用 | 实际工具列表,至少包含被验收 MCP 工具 |
-| RunIaC | action、processID、GetTask 终态 |
+| Token 策略 | TerraformAgent 路径、三态选择、切换不同显式策略值时是否使用 fresh token;不得记录 token、AK、UID 或 ARN |
+| 初始化 API | 单独列出 `InitializeApiMcpServerConnection`、`GetCallerIdentity`;不要计入 MCP 工具列表 |
+| 初始化错误 | 记录 `code`、`initializationConsumed`、`canRetry` 和据此选择的复用或刷新动作 |
+| 工具调用 | 实际 MCP 工具列表;RunIaC HITL 验收至少包含 `RunIaC`、`GetTask` |
+| RunIaC | action、processID、审批状态迁移、GetTask 终态 |
 | 结果 | status、nextAction、summary、message 关键片段 |
 | 结论 | PASS / FAIL / BLOCKED,并说明原因 |
 | Aone | 已回填的工作项或待回填草稿 |
@@ -95,7 +108,8 @@ description: >-
 Playground 证据:
 - URL: <url>
 - session: <sessionId>
-- 实际调用工具: <tool names>
+- 初始化 API: <InitializeApiMcpServerConnection/GetCallerIdentity 或不适用>
+- 实际 MCP 工具: <tool names>
 
 验收项:
 | 用例 | processID | GetTask 终态 | summary/message 观察 | 结论 |
@@ -112,6 +126,12 @@ Playground 证据:
 - 在最新预发实例还在跑时打开旧环境验证。
 - Playground 会话里 Agent 只解释 Terraform,没有实际调用 MCP。
 - RunIaC 拿到 processID 后不调用 GetTask。
+- 把 MCP endpoint path id 当成 bearer token;两者不是同一个值。
+- 用通用 Playground/settings 替代 TerraformAgent Playground 验证托管 token 或 Token 级 HITL。
+- 在同一个 token 上切换“开启/关闭”,忽略 `UpdateBearerTokenSafetyPolicy` 的 create-only 语义。
+- 遇到 `TOKEN_FETCH_RETRYABLE/false/true` 仍刷新重做,或遇到 `TOKEN_POLICY_FAILED/true/false` 仍在原 initialization 重试。
+- 把初始化 API `InitializeApiMcpServerConnection`、`GetCallerIdentity` 混入实际 MCP 工具清单。
+- 将 token、AK、UID、RAM userArn 或完整审批链接写入日志、截图、HTML 或 Aone。
 - 只测单一路径,漏测 direct / for / for_each / 异步查询等需求相关路径。
 - 把线上 URL 当默认目标。
 - Aone 回填没有 session id / processID / summary / message。
