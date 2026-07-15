@@ -3002,11 +3002,19 @@ class PersonaScheduler:
                 return True
         return False
 
-    def _dispatch_persona(self, item, decision, comments):
+    def _dispatch_persona(self, item, decision, comments, on_start=None):
         """按 decision 派一个 headless jarvis 编排层实例（persona 补位）。返回 (accepted, reason).
 
         B4 in-flight guard：派发前查 DispatchPool 是否已有同工单 active，若有则 skip
-        in_flight_active（不占坑，让在跑实例自己完成）。"""
+        in_flight_active（不占坑，让在跑实例自己完成）。
+
+        on_start：worker **真正开始执行**（拿到 DispatchPool 槽位）时触发的回调，用来把
+        ledger 的 last_seen/processed/计数落盘。**绝不能在 submit 返回处同步落盘**——submit
+        只表示"入队接受"，槽满时 future 仅排队；此时若 bridge 换 token 重启，terminate_all
+        的 shutdown(cancel_futures=True) 会丢弃未启动的排队 future，而 ledger 若已标 processed
+        就会永久压死重试（先例：工单 84297352 被 @ 两次、两次都在排队时遇重启被丢、再没人理）。
+        延后到 on_start 落盘后：排队被取消 → 回调不触发 → ledger 干净 → 下一 tick 自然重派；
+        正常运行期间 _iid_in_flight 会挡住重复派发。"""
         if self.pool is None:
             return False, "no_pool"
         iid = str(item.get("id", ""))
@@ -3033,11 +3041,22 @@ class PersonaScheduler:
         sid = str(uuid.uuid4())
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = self.handler._broadcast if self.handler else (lambda t: None)
-        work = (lambda: self.handler.dispatch_item(
-            iid, prompt, sid, False, notify, tgt, ttype,
-            on_spawn=lambda p: self.pool.set_proc(dispatch_key, p),
-            project=project, kind="persona")) if self.handler else (lambda: "done")
-        return self.pool.submit(dispatch_key, work, notify=notify,
+
+        def _work():
+            # 首行落 ledger：仅当 worker 真正拿到槽位开始跑才触发（排队被取消则不触发）。
+            if on_start is not None:
+                try:
+                    on_start()
+                except Exception:  # noqa: BLE001 — 落盘失败不阻断实际派发
+                    log.exception("persona on_start ledger commit failed #%s", iid)
+            if self.handler is None:
+                return "done"
+            return self.handler.dispatch_item(
+                iid, prompt, sid, False, notify, tgt, ttype,
+                on_spawn=lambda p: self.pool.set_proc(dispatch_key, p),
+                project=project, kind="persona")
+
+        return self.pool.submit(dispatch_key, _work, notify=notify,
                                 kind="persona", project=project, force=True)
 
     @staticmethod
@@ -3225,37 +3244,40 @@ class PersonaScheduler:
                     self._persist_ledger()
                 log.info("persona: skip #%s comment=%s (%s)", iid, cid, d["reason"])
                 continue
-            ok, reason = self._dispatch_persona(item, d, comments)
-            with self._lock:
-                st = self._get_ticket_state(iid)
-                if ok:
-                    # S5：只有成功派发才推 last_seen + processed + 计数
-                    st["last_seen"] = max(int(st.get("last_seen") or 0), cid)
-                    if cid:
-                        st["processed"].add(cid)
+            # S5：ledger 落盘延后到 worker 真正开始执行（on_start），**不在 submit 返回处同步写**。
+            # submit 只是入队接受，槽满时 future 仅排队；此刻若换 token 重启会丢弃排队 future，
+            # 而 ledger 若已标 processed 就永久压死重试（先例 84297352）。绑定当前 cid/d。
+            def _commit_ledger(_cid=cid, _d=d):
+                with self._lock:
+                    st = self._get_ticket_state(iid)
+                    st["last_seen"] = max(int(st.get("last_seen") or 0), _cid)
+                    if _cid:
+                        st["processed"].add(_cid)
                     # B3：服务端计数
-                    if d["reason"] == "human_mention":
+                    if _d["reason"] == "human_mention":
                         # 人类显式 @ 触发 → 重置计数 + escalated 预算，恢复 max_rounds 额度
                         st["dispatch_count"] = 1
                         st["escalated"] = False
                     else:
                         st["dispatch_count"] = int(st.get("dispatch_count") or 0) + 1
-                        if d["action"] == "escalate":
+                        if _d["action"] == "escalate":
                             st["escalated"] = True
-                else:
-                    # S5 pool 拒收：不推 last_seen、不写 processed；下一 tick 自然重试。
-                    # 反复拒收由 B3 服务端计数 max_rounds*2 兜底（escalated_dropped skip）。
-                    pass
-                self._persist_ledger()
+                    count = st.get("dispatch_count", 0)
+                    self._persist_ledger()
+                log.info("persona: ledger commit #%s comment=%s (worker started, count=%d)",
+                         iid, _cid, count)
+
+            ok, reason = self._dispatch_persona(item, d, comments, on_start=_commit_ledger)
             if ok:
+                # 接受入队（ledger 待 worker 启动时由 on_start 落盘）。pool 拒收则不落盘，
+                # 下一 tick 自然重试；反复拒收由 B3 服务端计数 max_rounds*2 兜底。
                 if d["action"] == "escalate":
                     escalated_list.append((iid, d.get("role")))
                 else:
                     dispatched.append((iid, d.get("role")))
-                log.info("persona: dispatch #%s → %s (%s, round=%s, count=%d)",
+                log.info("persona: dispatch #%s → %s (%s, round=%s) [queued; ledger on worker start]",
                          iid, d.get("role"), d.get("reason"),
-                         (d.get("handoff") or {}).get("round"),
-                         st.get("dispatch_count", 0))
+                         (d.get("handoff") or {}).get("round"))
             else:
                 log.info("persona: pool rejected #%s → %s (%s)",
                          iid, d.get("role"), reason)
