@@ -71,7 +71,7 @@
     },
     "jarvis": {
       "repo": "jarvis",
-      "git_url": "git@gitlab.alibaba-inc.com:terraflow/jarvis.git",
+      "git_url": "git@gitlab.alibaba-inc.com:terraflow/jarvis-preview.git",
       "default_branch": "master",
       "pools": ["api_toolkit"],
       "ops": {"test":"bash test/aone_comment_format_test.sh && bash test/wrap_done_test.sh"},
