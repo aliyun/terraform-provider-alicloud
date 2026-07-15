@@ -229,13 +229,17 @@ def _inflight_write(recs):
         log.warning("inflight: could not persist %s: %s", INFLIGHT_PATH, e)
 
 
-def _inflight_add(item_id, sid, project, kind, prompt):
+def _inflight_add(item_id, sid, project, kind, prompt, terraform=False):
     """Register a worker as in-flight before it spawns claude. Atomic load→set→write
-    under the lock so concurrent workers never clobber each other's records."""
+    under the lock so concurrent workers never clobber each other's records.
+
+    ``terraform`` persists the model 车道 so _resume_inflight re-selects the SAME lane
+    after a bridge restart — a --resume on the wrong lane lands on a different gateway."""
     with _inflight_lock:
         recs = _inflight_load()
         recs[str(item_id)] = {"sid": sid, "project": project, "kind": kind,
-                              "prompt": prompt, "started_at": time.time()}
+                              "prompt": prompt, "started_at": time.time(),
+                              "terraform": bool(terraform)}
         _inflight_write(recs)
 
 
@@ -414,10 +418,17 @@ def tata_resident_enabled():
     return os.environ.get("JARVIS_TATA_RESIDENT", "0").strip().lower() in ("1", "true", "yes", "on")
 
 
-def jarvis_cmd(session_id=None):
+def jarvis_cmd(session_id=None, terraform=False):
     """Jarvis 基命令 = claude --settings idea_settings.json（走 idealab 网关）。JARVIS_CC 可覆盖完整命令。
 
-    JARVIS_SETTINGS 支持两级组合、正交：
+    **模型分层（车道）**：``terraform=True`` 走 ``JARVIS_SETTINGS_TF``（Terraform 线主力档链，
+    如 ideamo→ideamore→glm5.2 兜底）；否则走 ``JARVIS_SETTINGS``（其他工作，如 glm5.2）。
+    ``JARVIS_SETTINGS_TF`` 未设时**自动回退** ``JARVIS_SETTINGS``——分层是 opt-in，只配一条
+    ``JARVIS_SETTINGS`` 时两条车道等价于旧版单链行为。车道由派发点按 ``_is_terraform_ticket``
+    判定并**随会话持久化**（in-flight / suspend 记录带 terraform 字段），resume 时据此复原，
+    否则 --resume 会串到另一条车道的网关。``JARVIS_CC`` 全覆盖时不分车道（显式整链接管）。
+
+    选中车道后 ``JARVIS_SETTINGS[_TF]`` 支持两级组合、正交：
     - **冒号 `:` = 摊额度池**：多档时按 session_id 做**确定性**取档（sticky-random）——
       不同工单落不同档天然摊负载，但同一工单建会话轮与 --resume 轮必落同一档，否则
       resume 会串到别的网关/token，claude --resume 直接失败。
@@ -426,8 +437,13 @@ def jarvis_cmd(session_id=None):
     cc = os.environ.get("JARVIS_CC")
     if cc:
         return [cc]
-    raw = os.environ.get("JARVIS_SETTINGS") or str(
-        Path.home() / ".claude" / "idea_settings.json")
+    default_settings = str(Path.home() / ".claude" / "idea_settings.json")
+    if terraform:
+        raw = (os.environ.get("JARVIS_SETTINGS_TF")
+               or os.environ.get("JARVIS_SETTINGS")
+               or default_settings)
+    else:
+        raw = os.environ.get("JARVIS_SETTINGS") or default_settings
     pool = [s.strip() for s in raw.split(":") if s.strip()]
     if len(pool) > 1 and session_id:
         idx = int(hashlib.md5(session_id.encode()).hexdigest(), 16) % len(pool)
@@ -891,14 +907,15 @@ def parse_stream_lines(lines):
             yield acc
 
 
-def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None):
+def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, terraform=False):
     """Spawn claude streaming round; yield accumulated answer text as it grows.
 
     On timeout the process is killed and a notice yielded; stderr is captured
-    for a fallback error message. First turn --session-id, later turns --resume."""
+    for a fallback error message. First turn --session-id, later turns --resume.
+    ``terraform`` selects the model 车道 (see jarvis_cmd)."""
     if timeout is None:
         timeout = int(os.environ.get("CLAUDE_TIMEOUT", "300"))
-    cmd = jarvis_cmd(session_id) + ["-p", text, "--output-format", "stream-json",
+    cmd = jarvis_cmd(session_id, terraform=terraform) + ["-p", text, "--output-format", "stream-json",
            "--include-partial-messages", "--verbose"]
     cmd += ["--resume", session_id] if resume else ["--session-id", session_id]
     deadline = time.time() + timeout
@@ -980,7 +997,7 @@ def _classify_result(out, err, rc):
     return ClaudeResult("", False, "no_result")
 
 
-def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None):
+def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None, terraform=False):
     """Buffered (non-streaming) claude round for the headless dispatch path.
 
     Unlike run_claude_stream this uses ``--output-format json`` (NOT stream-json,
@@ -988,7 +1005,9 @@ def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None):
     object — is_error / subtype / result — is actually parsed. It MUST reuse the
     SAME ``session_id`` across retries: jarvis_cmd picks the settings file
     (gateway/token) by md5(session_id) % pool, so a --resume that mints a new sid
-    would land on a different gateway and fail outright.
+    would land on a different gateway and fail outright. ``terraform`` selects the
+    model 车道 and MUST match across the retry loop (same reason — a lane switch
+    changes the gateway set).
 
     Because a buffered stdout never drives a stream loop, the soft deadline used by
     run_claude_stream cannot apply here — so we enforce a hard timeout via
@@ -999,7 +1018,7 @@ def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None):
     effect)."""
     if timeout is None:
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
-    argv = jarvis_cmd(session_id) + ["-p", text, "--output-format", "json"]
+    argv = jarvis_cmd(session_id, terraform=terraform) + ["-p", text, "--output-format", "json"]
     argv += ["--resume", session_id] if resume else ["--session-id", session_id]
     p = subprocess.Popen(argv, cwd=jarvis_root(), text=True,
                          stdin=subprocess.DEVNULL,
@@ -1600,12 +1619,13 @@ class ScanScheduler:
         pool_project = item.get("pool_project") or ""
         sid = str(uuid.uuid4())
         prompt = _ticket_prompt(iid, title, pool_key, pool_project)
+        terraform = _is_terraform_ticket(pool_key, title)
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = self.handler._broadcast if self.handler else (lambda t: None)
         work = (lambda: self.handler.dispatch_item(
             iid, prompt, sid, False, notify, tgt, ttype,
             on_spawn=lambda p: self.pool.set_proc(iid, p), project=pool_project,
-            kind="ticket"))
+            kind="ticket", terraform=terraform))
         return self.pool.submit(iid, work, notify=notify, kind="ticket",
                                 project=pool_project, force=force)
 
@@ -2024,11 +2044,13 @@ class WaitWatcher:
         self._thread = threading.Thread(target=self._loop, daemon=True, name="WaitWatcher")
         self._thread.start()
 
-    def suspend(self, aone_id, session_id, wait_for, last_comment_id, target, target_type):
+    def suspend(self, aone_id, session_id, wait_for, last_comment_id, target, target_type,
+                terraform=False):
         now = time.time()
         entry = {"session_id": session_id, "wait_for": wait_for,
                  "last_comment_id": last_comment_id, "target": target,
-                 "target_type": target_type, "suspended_at": now, "last_poll": 0}
+                 "target_type": target_type, "suspended_at": now, "last_poll": 0,
+                 "terraform": bool(terraform)}
         with self._lock:
             self.suspended[str(aone_id)] = entry
         self._persist(aone_id, entry)
@@ -2443,8 +2465,9 @@ class ProbeScheduler(_DailyScheduler):
         tgt, ttype = broadcast_target(), broadcast_type()
         notify = self.handler._broadcast
         sid = str(uuid.uuid4())
+        # tf-probe 是 Terraform 线探测 → 走 terraform 车道（ideamo/ideamore）。
         work = (lambda: self.handler.dispatch_item(rid, prompt, sid, False, notify, tgt, ttype,
-                                                   kind="probe"))
+                                                   kind="probe", terraform=True))
         ok, reason = self.pool.submit(rid, work, notify=notify, kind="probe")
         if ok:
             notify("🔎 已启动每日探测轮 %s（tf-probe tier0 + tier1 轮换，纯探测无单）" % rid)
@@ -2554,10 +2577,11 @@ class RevisitScheduler(_DailyScheduler):
         for it in cands:
             iid = str(it["id"])
             prompt = _revisit_prompt(iid, it.get("title", ""), it.get("pool_project", ""))
+            tf = _is_terraform_ticket(it.get("pool", ""), it.get("title", ""))
             sid = str(uuid.uuid4())
-            work = (lambda p=prompt, i=iid, s=sid:
+            work = (lambda p=prompt, i=iid, s=sid, t=tf:
                     self.handler.dispatch_item(i, p, s, False, notify, tgt, ttype,
-                                               kind="revisit"))
+                                               kind="revisit", terraform=t))
             ok, reason = self.pool.submit(iid, work, notify=notify, kind="revisit")
             if ok:
                 submitted.append(iid)
@@ -3022,6 +3046,8 @@ class PersonaScheduler:
         if self._iid_in_flight(iid):
             return False, "in_flight_active"
         project = item.get("pool_project") or ""
+        # 车道与 _dispatch 同口径：persona 扫全池（不止 terraform），按 pool/title 判定。
+        terraform = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
         role = decision["role"]
         handoff = decision.get("handoff") or {}
         snippet = self._comment_snippet(comments, decision.get("comment_id"))
@@ -3054,7 +3080,7 @@ class PersonaScheduler:
             return self.handler.dispatch_item(
                 iid, prompt, sid, False, notify, tgt, ttype,
                 on_spawn=lambda p: self.pool.set_proc(dispatch_key, p),
-                project=project, kind="persona")
+                project=project, kind="persona", terraform=terraform)
 
         return self.pool.submit(dispatch_key, _work, notify=notify,
                                 kind="persona", project=project, force=True)
@@ -3394,11 +3420,12 @@ class JarvisHandler(AsyncChatbotHandler):
                 else:
                     resume = False
                     rprompt = rec.get("prompt") or ""
-                work = (lambda i=iid, p=rprompt, s=sid, r=resume, pj=project:
+                tf = bool(rec.get("terraform"))  # 复原原派发车道，避免 --resume 串到别的网关
+                work = (lambda i=iid, p=rprompt, s=sid, r=resume, pj=project, t=tf:
                         self.dispatch_item(
                             i, p, s, r, notify, tgt, ttype,
                             on_spawn=lambda pr: self.dispatch_pool.set_proc(i, pr),
-                            project=pj, kind="ticket"))
+                            project=pj, kind="ticket", terraform=t))
                 ok, reason = self.dispatch_pool.submit(
                     iid, work, notify=notify, force=True, kind="ticket", project=project)
                 log.info("_resume_inflight: #%s resume=%s submit=%s(%s)",
@@ -3455,30 +3482,32 @@ class JarvisHandler(AsyncChatbotHandler):
         except Exception:  # noqa: BLE001
             log.exception("broadcast failed")
 
-    def _maybe_suspend(self, final_text, sid, target, target_type):
+    def _maybe_suspend(self, final_text, sid, target, target_type, terraform=False):
         """Shared core: if the round emitted a [[SUSPEND:{...}]] sentinel, register it
         with the WaitWatcher (which wakes on the next Aone reply) and return the info;
-        else None. Used by both the card path (_dispatch_bg) and headless (dispatch_item)."""
+        else None. Used by both the card path (_dispatch_bg) and headless (dispatch_item).
+        ``terraform`` persists the model 车道 so _wake resumes on the SAME lane/gateway."""
         _, info = extract_suspend(final_text or "")
         if not info:
             return None
         last_cid = self._last_comment_id(info["aone_id"])
         self.watcher.suspend(info["aone_id"], sid, info.get("wait_for", ""),
-                             last_cid, target, target_type)
+                             last_cid, target, target_type, terraform=terraform)
         return info
 
-    def _dispatch_bg(self, target, target_type, prompt, item_id, sid, resume):
+    def _dispatch_bg(self, target, target_type, prompt, item_id, sid, resume, terraform=False):
         """Card path (interactive authorize / handoff / wake): stream Jarvis into a live
         card, detect the suspend sentinel. Returns an outcome string. Active-set cleanup
-        is owned by DispatchPool, not here."""
+        is owned by DispatchPool, not here. ``terraform`` selects the model 车道."""
         dispatch_timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
         try:
             log.info("dispatch_bg #%s start (timeout=%ds)", item_id, dispatch_timeout)
             result = self._stream_round(
                 target, prompt, sid, resume,
-                lambda t, s, r: run_claude_stream(t, s, r, timeout=dispatch_timeout),
+                lambda t, s, r: run_claude_stream(t, s, r, timeout=dispatch_timeout,
+                                                  terraform=terraform),
                 target_type=target_type)
-            info = self._maybe_suspend(result, sid, target, target_type)
+            info = self._maybe_suspend(result, sid, target, target_type, terraform=terraform)
             if info:
                 wl = self._workitem_line(info["aone_id"])
                 line = wl[0] if isinstance(wl, tuple) else wl
@@ -3556,7 +3585,7 @@ class JarvisHandler(AsyncChatbotHandler):
         return prefix + "\n" + line
 
     def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type,
-                      on_spawn=None, project=None, kind="ticket"):
+                      on_spawn=None, project=None, kind="ticket", terraform=False):
         """Headless path (auto-dispatch / probe / revisit): run one Jarvis instance to
         completion WITHOUT a live card (no "回复某人" binding); broadcast the result via
         ``notify``. Shares the SUSPEND + WaitWatcher core with the card path.
@@ -3579,14 +3608,16 @@ class JarvisHandler(AsyncChatbotHandler):
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
         try:
             # 在飞登记(方案B): worker 一启动就落记录, 桥重启后 _resume_inflight 据此续跑。
-            _inflight_add(item_id, sid, project, kind, prompt)
+            # terraform 车道随记录持久化, resume 时复原同一网关车道。
+            _inflight_add(item_id, sid, project, kind, prompt, terraform=terraform)
             log.info("dispatch_item #%s start (timeout=%ds, retry_max=%d)",
                      item_id, timeout, max_retries)
             attempt = 0
             cur_prompt, cur_resume = prompt, resume
             while True:
                 res = run_claude_buffered(cur_prompt, sid, cur_resume,
-                                          timeout=timeout, on_spawn=on_spawn)
+                                          timeout=timeout, on_spawn=on_spawn,
+                                          terraform=terraform)
                 if not res.is_error:
                     break  # clean completion or SUSPEND (both is_error=False)
                 if res.subtype in ("timeout", "error_max_turns"):
@@ -3612,7 +3643,7 @@ class JarvisHandler(AsyncChatbotHandler):
             pool = getattr(self, "dispatch_pool", None)
             if pool is not None and getattr(pool, "_closed", False):
                 return "error"
-            info = self._maybe_suspend(final, sid, target, target_type)
+            info = self._maybe_suspend(final, sid, target, target_type, terraform=terraform)
             if info:
                 wl = self._workitem_line(info["aone_id"])
                 line = wl[0] if isinstance(wl, tuple) else wl
@@ -3697,11 +3728,14 @@ class JarvisHandler(AsyncChatbotHandler):
         except Exception as e:  # noqa: BLE001
             log.warning("_dispatch_failed #%s notify failed: %s", item_id, e)
 
-    def _submit_card(self, item_id, target, target_type, prompt, sid, resume, force=True):
+    def _submit_card(self, item_id, target, target_type, prompt, sid, resume, force=True,
+                     terraform=False):
         """Submit a card-path dispatch through the shared pool. Human/wake/handoff paths
         pass force=True (override the 24h ledger, but never a live active worker). If the
-        pool rejects (active / queue_full), tell the requester on the same card target."""
-        work = (lambda: self._dispatch_bg(target, target_type, prompt, item_id, sid, resume))
+        pool rejects (active / queue_full), tell the requester on the same card target.
+        ``terraform`` selects the model 车道 (see jarvis_cmd)."""
+        work = (lambda: self._dispatch_bg(target, target_type, prompt, item_id, sid, resume,
+                                          terraform=terraform))
         ok, reason = self.dispatch_pool.submit(
             item_id, work, force=force, kind="card",
             notify=lambda t: self._quick_card(target, t, target_type))
@@ -3783,18 +3817,19 @@ class JarvisHandler(AsyncChatbotHandler):
             task["target"],
             "🔔 工单收到回复，正在唤醒 Jarvis…\n%s" % line,
             task["target_type"])
+        tf = bool(task.get("terraform"))  # 复原挂起前的车道，唤醒续跑必落同一网关
         if self.no_dingtalk:
             # 降级模式无 live 卡片可流 → 走 headless dispatch_item 续跑, 结果播报落日志;
             # force=True: resumed ticket 可能仍在 24h 去重窗内。挂起/唤醒本身照常(轮询走 a1)。
             notify = self._broadcast
             work = (lambda: self.dispatch_item(
                 aone_id, prompt, task["session_id"], True,
-                notify, task["target"], task["target_type"], kind="wake"))
+                notify, task["target"], task["target_type"], kind="wake", terraform=tf))
             self.dispatch_pool.submit(aone_id, work, notify=notify, force=True, kind="wake")
             return
         # force=True: a resumed ticket may still sit inside the 24h dedup ledger window.
         self._submit_card(aone_id, task["target"], task["target_type"],
-                          prompt, task["session_id"], True, force=True)
+                          prompt, task["session_id"], True, force=True, terraform=tf)
 
     @staticmethod
     def _last_comment_id(aone_id):
@@ -3841,10 +3876,11 @@ class JarvisHandler(AsyncChatbotHandler):
                 if item:
                     prompt = _ticket_prompt(item["id"], item.get("title", ""),
                                             item.get("pool", ""), item.get("pool_project", ""))
+                    tf = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
                     self._quick_card(card_target,
                                      "⚙️ 已接收工单 #%s，后台处理中…" % item["id"], card_type)
                     self._submit_card(item["id"], card_target, card_type,
-                                      prompt, str(uuid.uuid4()), False)
+                                      prompt, str(uuid.uuid4()), False, terraform=tf)
                     return AckMessage.STATUS_OK, "dispatched"
                 else:
                     self._quick_card(card_target, "工单 #%s 不在待处理列表中。" % auth_m.group(1), card_type)
@@ -3856,8 +3892,9 @@ class JarvisHandler(AsyncChatbotHandler):
                     for item in items:
                         prompt = _ticket_prompt(item["id"], item.get("title", ""),
                                                 item.get("pool", ""), item.get("pool_project", ""))
+                        tf = _is_terraform_ticket(item.get("pool", ""), item.get("title", ""))
                         self._submit_card(item["id"], card_target, card_type,
-                                          prompt, str(uuid.uuid4()), False)
+                                          prompt, str(uuid.uuid4()), False, terraform=tf)
                         ids.append(str(item["id"]))
                     self._quick_card(card_target,
                                      "⚙️ 已提交 %d 条工单后台处理: %s" % (
