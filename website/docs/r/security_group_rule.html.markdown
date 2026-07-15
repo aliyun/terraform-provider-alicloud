@@ -66,7 +66,7 @@ The following arguments are supported:
 * `cidr_ip` - (Optional, ForceNew) The target IP address range. The default value is 0.0.0.0/0 (which means no restriction will be applied). Other supported formats include 10.159.6.18/12. Only IPv4 is supported.
 * `ipv6_cidr_ip`- (Optional, ForceNew, Available since v1.174.0) Source IPv6 CIDR address block that requires access. Supports IP address ranges in CIDR format and IPv6 format. **NOTE:** This parameter cannot be set at the same time as the `cidr_ip` parameter.
 * `source_security_group_id` - (Optional, ForceNew) The target security group ID within the same region. If this field is specified, the `nic_type` can only select `intranet`.
-* `source_group_owner_account` - (Optional, ForceNew) The Alibaba Cloud user account Id of the target security group when security groups are authorized across accounts.  This parameter is invalid if `cidr_ip` has already been set.
+* `source_group_owner_account` - (Optional, ForceNew) The Alibaba Cloud user account of the target security group when security groups are authorized across accounts.  This parameter is invalid if `cidr_ip` has already been set.
 * `prefix_list_id`- (Optional, ForceNew) The ID of the source/destination prefix list to which you want to control access. **NOTE:** If you specify `cidr_ip`,`source_security_group_id`,`ipv6_cidr_ip` parameter, this parameter is ignored.
 * `port_range` - (Optional, ForceNew) The range of port numbers relevant to the IP protocol. Default to "-1/-1". When the protocol is tcp or udp, each side port number range from 1 to 65535 and '-1/-1' will be invalid.
   For example, `1/200` means that the range of the port numbers is 1-200. Other protocols' 'port_range' can only be "-1/-1", and other values will be invalid.

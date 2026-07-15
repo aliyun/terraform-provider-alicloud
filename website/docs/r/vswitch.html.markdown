@@ -117,8 +117,8 @@ resource "alicloud_vswitch" "foo" {
 
 The following arguments are supported:
 
-* `cidr_block` - (Optional, ForceNew) The IPv4 CIDR block of the VSwitch. **NOTE:** From version 1.233.0, if you do not set `is_default`, or set `is_default` to `false`, `cidr_block` is required.
-* `description` - (Optional) The description of VSwitch.
+* `cidr_block` - (Optional, ForceNew) The IPv4 CIDR block of the VSwitch. The subnet mask must be `16` to `29` bits in length. **NOTE:** From version 1.233.0, if you do not set `is_default`, or set `is_default` to `false`, `cidr_block` is required.
+* `description` - (Optional) The description of VSwitch. The description must be `1` to `256` characters in length, and cannot start with `http://` or `https://`.
 * `zone_id` - (Optional, ForceNew, Available since v1.119.0) The AZ for the VSwitch. **Note:** Required for a VPC VSwitch.
 * `enable_ipv6` - (Optional, Computed, Available since v1.201.0) Whether the IPv6 function is enabled in the switch. Value:
   - `true`: enables IPv6.
@@ -159,7 +159,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Vswitch.
-* `delete` - (Defaults to 5 mins) Used when delete the Vswitch.
+* `delete` - (Defaults to 10 mins) Used when delete the Vswitch.
 * `update` - (Defaults to 5 mins) Used when update the Vswitch.
 
 ## Import
