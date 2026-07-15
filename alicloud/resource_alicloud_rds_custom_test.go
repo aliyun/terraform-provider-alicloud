@@ -57,7 +57,7 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 					"instance_charge_type":          "Prepaid",
 					"internet_charge_type":          "PayByTraffic",
 					"internet_max_bandwidth_out":    "0",
-					"image_id":                      "aliyun_2_1903_x64_20G_alibase_20240628.vhd",
+					"image_id":                      "aliyun_3_x64_20G_alibase_20260625.vhd",
 					"security_enhancement_strategy": "Active",
 					"period_unit":                   "Month",
 					"password":                      "jingyiTEST@123",
@@ -72,6 +72,11 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 					"create_mode":        "0",
 					"create_extra_param": "{}",
 					"spot_strategy":      "NoSpot",
+					"timeouts": []map[string]interface{}{
+						{
+							"create": "20m",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -91,7 +96,7 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 						"instance_charge_type":          "Prepaid",
 						"internet_charge_type":          "PayByTraffic",
 						"internet_max_bandwidth_out":    "0",
-						"image_id":                      "aliyun_2_1903_x64_20G_alibase_20240628.vhd",
+						"image_id":                      "aliyun_3_x64_20G_alibase_20260625.vhd",
 						"security_enhancement_strategy": "Active",
 						"period_unit":                   "Month",
 						"password":                      "jingyiTEST@123",
@@ -297,6 +302,11 @@ func TestAccAliCloudRdsCustom_basic12788(t *testing.T) {
 					"host_name":     "testhostNameran",
 					"period_unit":   "Month",
 					"password":      "@MY7yxqc9YXQC",
+					"timeouts": []map[string]interface{}{
+						{
+							"create": "20m",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -462,7 +472,7 @@ func TestAccAliCloudRdsCustom_basic12772(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrds%d", rand)
-	privateIpAddress := fmt.Sprintf("172.16.1.%d", acctest.RandIntRange(10, 240))
+	privateIpAddress := fmt.Sprintf("172.16.3.%d", acctest.RandIntRange(10, 240))
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsCustomBasicDependence12772)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -503,6 +513,11 @@ func TestAccAliCloudRdsCustom_basic12772(t *testing.T) {
 					"host_name":     "testhostNameran",
 					"period_unit":   "Month",
 					"password":      "@MY7yxqc9YXQC",
+					"timeouts": []map[string]interface{}{
+						{
+							"create": "20m",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -629,9 +644,8 @@ data "alicloud_vpcs" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-  cidr_block = "172.16.0.0/23"
-  status     = "Available"
-  zone_id    = "cn-beijing-i"
+  status  = "Available"
+  zone_id = "cn-beijing-i"
 }
 
 data "alicloud_security_groups" "default" {
