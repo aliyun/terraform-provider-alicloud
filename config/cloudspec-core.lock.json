@@ -1,0 +1,23 @@
+{
+  "plugin": "cloudspec-core",
+  "version": "1.3.0",
+  "distribution": "vendored-skill-snapshot",
+  "source": {
+    "repository": "git@code.alibaba-inc.com:cloudspec-open/cloudspec-plugin.git",
+    "commit": "3b64ce4ad81b3d28eb563997eaa8e29241ba8b77",
+    "pluginTree": "c03aba68e2524cc4f5cc11e0e4bd411d912eb7f2",
+    "skillsTree": "f35fdf99abbd7d80136cee8a0d43760f806c8a06"
+  },
+  "skills": [
+    "cloudspec-amp-workflow",
+    "cloudspec-idl-guide",
+    "cloudspec-resource-edit",
+    "cloudspec-operation-edit",
+    "cloudspec-flag-mode-edit",
+    "cloudspec-build-fix",
+    "cloudspec-norm-check-fix",
+    "cloudspec-shared-knowledge"
+  ],
+  "hooksIncluded": false,
+  "notes": "Only the CloudSpec IDL definition and repair skills are vendored for headless robots. Marketplace hooks, MCP config, telemetry, and unrelated skills are excluded."
+}

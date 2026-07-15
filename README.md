@@ -5,7 +5,7 @@
 ## 配置（一次性）
 
 ```bash
-bash bootstrap/install.sh                       # 装依赖（a1/aliyun/cloudspec/gh）
+bash bootstrap/install.sh                       # 装依赖（a1/aliyun/cloudspec/amp/gh）
 cp bootstrap/.env.example bootstrap/.env        # 填 GH_TOKEN + 阿里云 AK
 bin/a1id login jarvis                           # 至少登录 jarvis（编排层默认身份 WORKER_1782379562571）
 # 三个数字人按职责登录（详见 bin/README.md 表格）：
@@ -15,6 +15,9 @@ bin/a1id login jarvis                           # 至少登录 jarvis（编排�
 # 个人身份仅在仓库主人本轮当面授权时切：
 #   bin/a1id login <chenyi|guozai|linjun|shanye>
 ```
+
+CloudSpec IDL 机器人能力由仓库内锁定快照提供；首次执行 Terraform release 的 CloudSpec
+闭环前，运行 `bash bootstrap/cloudspec-core.sh doctor`，确认 amp 与 `aliyun cspec` 就绪。
 
 钉钉数字员工还需 `cp bridge/jarvis.env.example bridge/jarvis.env`，填钉钉 appKey/appSecret/卡片模板 id。
 
