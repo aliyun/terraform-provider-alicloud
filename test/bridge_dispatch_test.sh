@@ -572,7 +572,7 @@ class ProbeSummaryWriteTest(unittest.TestCase):
     def _fake_buffered(self, final_text):
         # dispatch_item 迁到 run_claude_buffered 后必须 stub 它;返回 clean 完成态
         # (is_error=False)让主路径进入 completion_broadcast + probe summary 落盘分支。
-        def _one(text, sid, resume, timeout=None, on_spawn=None):
+        def _one(text, sid, resume, timeout=None, on_spawn=None, terraform=False):
             return b.ClaudeResult(final_text, False, "ok")
         return _one
 
@@ -1521,7 +1521,8 @@ class _RetrySelf:
         self._completion = completion
         self.failed_calls = []
 
-    def _maybe_suspend(self, final, sid, target, target_type):
+    def _maybe_suspend(self, final, sid, target, target_type, terraform=False):
+        self.suspend_terraform = terraform
         return self._suspend
 
     def _completion_broadcast(self, item_id):
@@ -1540,8 +1541,9 @@ def _scripted_runner(results):
     calls = []
     it = iter(results)
 
-    def fake(text, session_id, resume, timeout=None, on_spawn=None):
-        calls.append({"text": text, "sid": session_id, "resume": resume})
+    def fake(text, session_id, resume, timeout=None, on_spawn=None, terraform=False):
+        calls.append({"text": text, "sid": session_id, "resume": resume,
+                      "terraform": terraform})
         return next(it)
 
     return fake, calls
@@ -1599,7 +1601,12 @@ class BufferedRunnerCmdTest(unittest.TestCase):
     def setUp(self):
         self._orig_popen = b.subprocess.Popen
         self._orig_cmd = b.jarvis_cmd
-        b.jarvis_cmd = lambda sid=None: ["claude", "--settings", "/fake/idea.json"]
+        self._cmd_terraform = []
+        # Record the terraform 车道 arg so tests can assert run_claude_buffered forwards it.
+        def _fake_cmd(sid=None, terraform=False):
+            self._cmd_terraform.append(terraform)
+            return ["claude", "--settings", "/fake/idea.json"]
+        b.jarvis_cmd = _fake_cmd
 
     def tearDown(self):
         b.subprocess.Popen = self._orig_popen
@@ -1642,6 +1649,16 @@ class BufferedRunnerCmdTest(unittest.TestCase):
         self.assertEqual(argv[argv.index("--resume") + 1], "sid-2")
         self.assertNotIn("--session-id", argv)
 
+    def test_terraform_lane_forwarded_to_jarvis_cmd(self):
+        # run_claude_buffered must pass its terraform 车道 straight to jarvis_cmd.
+        captured = {}
+        out = json.dumps({"type": "result", "is_error": False,
+                          "subtype": "success", "result": "ok"})
+        b.subprocess.Popen = self._fake_popen(captured, out)
+        b.run_claude_buffered("hi", "sid-tf", False, timeout=10, terraform=True)
+        b.run_claude_buffered("hi", "sid-def", False, timeout=10)
+        self.assertEqual(self._cmd_terraform, [True, False])
+
     def test_timeout_kills_group(self):
         killed = {}
 
@@ -1662,6 +1679,100 @@ class BufferedRunnerCmdTest(unittest.TestCase):
         self.assertTrue(res.is_error)
         self.assertEqual(res.subtype, "timeout")
         self.assertEqual(killed.get("pgid"), 9999, "must attempt killpg on the group")
+
+
+class SettingsLaneTest(unittest.TestCase):
+    """jarvis_cmd 模型分层车道：terraform→JARVIS_SETTINGS_TF, 其他→JARVIS_SETTINGS,
+    TF 未设回退默认链, JARVIS_CC 全覆盖不分车道, `:` 摊额度池按 session_id 粘档。
+    _resolve_settings/claude_bin 打桩成恒等/固定值 → 不探活、不碰网络。"""
+
+    def setUp(self):
+        self._orig_resolve = b._resolve_settings
+        self._orig_bin = b.claude_bin
+        b._resolve_settings = lambda chain: chain   # 恒等：直接看选中的档串
+        b.claude_bin = lambda: "claude"
+        for k in ("JARVIS_SETTINGS", "JARVIS_SETTINGS_TF", "JARVIS_CC"):
+            os.environ.pop(k, None)
+
+    def tearDown(self):
+        b._resolve_settings = self._orig_resolve
+        b.claude_bin = self._orig_bin
+        for k in ("JARVIS_SETTINGS", "JARVIS_SETTINGS_TF", "JARVIS_CC"):
+            os.environ.pop(k, None)
+
+    def _picked(self, cmd):
+        return cmd[cmd.index("--settings") + 1]
+
+    def test_default_lane_uses_jarvis_settings(self):
+        os.environ["JARVIS_SETTINGS"] = "/c/glm5.2.json"
+        os.environ["JARVIS_SETTINGS_TF"] = "/c/ideamo.json"
+        self.assertEqual(self._picked(b.jarvis_cmd("sid", terraform=False)),
+                         "/c/glm5.2.json")
+
+    def test_terraform_lane_uses_jarvis_settings_tf(self):
+        os.environ["JARVIS_SETTINGS"] = "/c/glm5.2.json"
+        os.environ["JARVIS_SETTINGS_TF"] = "/c/ideamo.json"
+        self.assertEqual(self._picked(b.jarvis_cmd("sid", terraform=True)),
+                         "/c/ideamo.json")
+
+    def test_terraform_falls_back_to_default_when_tf_unset(self):
+        # 分层 opt-in：只配 JARVIS_SETTINGS 时 terraform 也用它（向后兼容单链）。
+        os.environ["JARVIS_SETTINGS"] = "/c/glm5.2.json"
+        self.assertEqual(self._picked(b.jarvis_cmd("sid", terraform=True)),
+                         "/c/glm5.2.json")
+
+    def test_default_lane_ignores_tf_var(self):
+        # 其他工作车道永远只看 JARVIS_SETTINGS，即使 TF 变量存在。
+        os.environ["JARVIS_SETTINGS"] = "/c/glm5.2.json"
+        os.environ["JARVIS_SETTINGS_TF"] = "/c/ideamo.json,/c/ideamore.json"
+        self.assertEqual(self._picked(b.jarvis_cmd("sid", terraform=False)),
+                         "/c/glm5.2.json")
+
+    def test_jarvis_cc_overrides_both_lanes(self):
+        os.environ["JARVIS_CC"] = "/opt/claude-start.sh"
+        os.environ["JARVIS_SETTINGS"] = "/c/glm5.2.json"
+        os.environ["JARVIS_SETTINGS_TF"] = "/c/ideamo.json"
+        self.assertEqual(b.jarvis_cmd("sid", terraform=True), ["/opt/claude-start.sh"])
+        self.assertEqual(b.jarvis_cmd("sid", terraform=False), ["/opt/claude-start.sh"])
+
+    def test_sticky_pool_within_terraform_lane(self):
+        # `:` 摊额度池在选中车道内按 session_id 确定性粘档；同 sid 恒落同一档。
+        os.environ["JARVIS_SETTINGS_TF"] = "/c/a.json:/c/b.json:/c/c.json"
+        picks = {self._picked(b.jarvis_cmd("sid-X", terraform=True)) for _ in range(5)}
+        self.assertEqual(len(picks), 1, "same sid must stick to one 档")
+        self.assertIn(picks.pop(), {"/c/a.json", "/c/b.json", "/c/c.json"})
+
+
+class DispatchLanePersistTest(unittest.TestCase):
+    """车道随会话持久化：dispatch_item 把 terraform 传进 run_claude_buffered，并写进
+    in-flight 记录，供桥重启后的 _resume_inflight 复原同一车道。"""
+
+    def setUp(self):
+        self._orig_rcb = b.run_claude_buffered
+        self._orig_inflight = b.INFLIGHT_PATH
+        b.INFLIGHT_PATH = Path(tempfile.mkdtemp()) / "inflight.json"
+
+    def tearDown(self):
+        b.run_claude_buffered = self._orig_rcb
+        b.INFLIGHT_PATH = self._orig_inflight
+
+    def test_terraform_flag_reaches_runner_and_inflight_record(self):
+        seen = {}
+
+        def fake_rcb(text, sid, resume, timeout=None, on_spawn=None, terraform=False):
+            seen["terraform"] = terraform
+            # 断言在飞记录此刻带 terraform 字段（dispatch_item 已先落记录）。
+            seen["record"] = b._inflight_load().get("777", {})
+            return b.ClaudeResult("done", False, "success")
+        b.run_claude_buffered = fake_rcb
+        fs = _RetrySelf()
+        outcome = b.JarvisHandler.dispatch_item(
+            fs, "777", "p", "sid-777", False,
+            (lambda t: None), "grp", "group", project=None, terraform=True)
+        self.assertEqual(outcome, "done")
+        self.assertTrue(seen.get("terraform"), "terraform 车道未传到 run_claude_buffered")
+        self.assertTrue(seen.get("record", {}).get("terraform"),
+                        "in-flight 记录未持久化 terraform 车道")
 
 
 class DispatchRetryTest(unittest.TestCase):
@@ -1956,7 +2067,7 @@ class DispatchItemWriteThenDeleteTest(_InflightBase):
     def test_written_at_start_removed_on_done(self):
         seen = {}
 
-        def fake(text, session_id, resume, timeout=None, on_spawn=None):
+        def fake(text, session_id, resume, timeout=None, on_spawn=None, terraform=False):
             seen["mid_flight"] = b._inflight_has("777")
             return b.ClaudeResult("done text", False, "success")
 
@@ -1969,7 +2080,7 @@ class DispatchItemWriteThenDeleteTest(_InflightBase):
         self.assertFalse(b._inflight_has("777"), "done 终态经 finally 删记录")
 
     def test_removed_on_terminal_timeout(self):
-        def fake(text, session_id, resume, timeout=None, on_spawn=None):
+        def fake(text, session_id, resume, timeout=None, on_spawn=None, terraform=False):
             self.assertTrue(b._inflight_has("778"))
             return b.ClaudeResult("", True, "timeout")
 
@@ -1991,7 +2102,7 @@ class _ClosingSelf:
         self.dispatch_pool = self._Pool()
         self.failed_calls = []
 
-    def _maybe_suspend(self, final, sid, target, target_type):
+    def _maybe_suspend(self, final, sid, target, target_type, terraform=False):
         return None
 
     def _completion_broadcast(self, item_id):
