@@ -13,7 +13,7 @@ bin/a1id login jarvis                           # 至少登录 jarvis（编排�
 #   bin/a1id login terraform-rd  # 研发数字人（开发/PR/CR 评审）
 #   bin/a1id login terraform-qa  # 质量数字人（AccTest 验证/验收）
 # 个人身份仅在仓库主人本轮当面授权时切：
-#   bin/a1id login <chenyi|guozai|linjun>
+#   bin/a1id login <chenyi|guozai|linjun|shanye>
 ```
 
 钉钉数字员工还需 `cp bridge/jarvis.env.example bridge/jarvis.env`，填钉钉 appKey/appSecret/卡片模板 id。

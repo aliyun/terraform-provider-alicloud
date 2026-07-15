@@ -33,7 +33,7 @@ model: opus
   `JARVIS_A1_IDENTITY=terraform-pd`;非零表示未登录,**由本 agent 主动**改走默认 jarvis 路由(即不设
   `JARVIS_A1_IDENTITY` 也不用 `as terraform-pd --`,统一裸调 `bin/a1id -- ...`),并在返回结果里标注
   `identity_fallback=jarvis`,提示仓库主人跑 `bin/a1id login terraform-pd` 补登。
-- **禁擅切个人身份**:chenyi/guozai/linjun 只在仓库主人本轮当面授权时才用(`a1id as <id> -- <args>`)。
+- **禁擅切个人身份**:chenyi/guozai/linjun/shanye 只在仓库主人本轮当面授权时才用(`a1id as <id> -- <args>`)。
 - 只读查证与本地脚本不需要 a1 写权,可直接跑,不涉及身份切换。
 
 ### 典型调用

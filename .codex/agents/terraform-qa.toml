@@ -25,7 +25,7 @@ developer_instructions = """
   `JARVIS_A1_IDENTITY=terraform-qa`;非零表示未登录,**由本 agent 主动**改走默认 jarvis 路由(即不设
   `JARVIS_A1_IDENTITY` 也不用 `as terraform-qa --`,统一裸调 `bin/a1id -- ...`),并在返回结果里标注
   `identity_fallback=jarvis`,提示仓库主人跑 `bin/a1id login terraform-qa` 补登。
-- **禁擅切个人身份**:chenyi/guozai/linjun 只在仓库主人本轮当面授权时才用。
+- **禁擅切个人身份**:chenyi/guozai/linjun/shanye 只在仓库主人本轮当面授权时才用。
 - `bootstrap/html-report-preview.sh` 内部走默认身份路由——回贴 Aone 时需 `JARVIS_A1_IDENTITY=terraform-qa`
   前缀,否则评论以 jarvis 落。
 
@@ -163,6 +163,6 @@ evidence:
 - **只验不改**:不改产品代码、不合并 PR、不发布(release_prod 永远人工)。
 - **不做产品分诊/需求分析**:那是 `terraform-pd`。
 - **不做代码修复/PR 提交**:那是 `terraform-rd`;需要修复 → 报出缺陷 + 转 rd。
-- 不擅动个人身份(chenyi/guozai/linjun),仅仓库主人本轮授权时才允许。
+- 不擅动个人身份(chenyi/guozai/linjun/shanye),仅仓库主人本轮授权时才允许。
 - 只能使用 Bash / Read / Grep / WebFetch / Skill 工具(不含 Edit / Write)。
 """

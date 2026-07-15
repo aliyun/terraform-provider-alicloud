@@ -6,7 +6,7 @@
 
 启动时自动做**幂等**收编:发现旧单文件布局 `identities/<label>.auth.yaml` 而目录 `identities/<label>/` 尚未建 → `mkdir + cp`,旧文件**保留**(便于回退)。首跑 live 收编(仅 jarvis 且新旧布局全空时)落到 `identities/jarvis/auth.yaml`。
 
-## 七个身份
+## 八个身份
 
 | label | 期望 BUC 账号 | 别名 | 角色 |
 |-------|---------------|------|------|
@@ -17,6 +17,7 @@
 | `chenyi` | `chenhanzhang.chz` | — | 陈汉璋(工号 320687);Jarvis 不得擅用,仅当面授权时 |
 | `guozai` | `guozai.gzl`       | — | 郭子龙(工号 484483);Jarvis 不得擅用,仅当面授权时 |
 | `linjun` | `lichaolin.lcl`    | — | 李超林(工号 429768);Jarvis 不得擅用,仅当面授权时 |
+| `shanye` | `shanye.xzq`       | — | 杉也/徐茈琦(工号 414322);Jarvis 不得擅用,仅当面授权时 |
 
 ## 命令面
 
@@ -24,7 +25,7 @@
 |------|------|
 | `a1id login <id>`               | 交互 BUC SSO 登录,落盘 `identities/<id>/auth.yaml`;whoami 与期望账号不匹配则清盘并 die |
 | `a1id use <id>`                 | 拷贝 `identities/<id>/auth.yaml` 到 live(仅影响人工直接跑 a1 的 live 会话;脚本链路不需要) |
-| `a1id status`                   | 显示默认身份 / live active / A1ID_ROOT / 七身份登录表 |
+| `a1id status`                   | 显示默认身份 / live active / A1ID_ROOT / 八身份登录表 |
 | `a1id who [id]`                 | `a1 auth whoami`;缺省=默认身份 dir,指定=该身份 dir |
 | `a1id ready <id>`               | 脚本探测:已登录退 0,否则退 1 |
 | `a1id as <id> -- <a1 args...>`  | 以指定身份跑一条(严格;未登录直接 die,不回退) |
@@ -50,6 +51,7 @@ bin/a1id login terraform-qa   # 质量数字人
 # bin/a1id login chenyi
 # bin/a1id login guozai
 # bin/a1id login linjun
+# bin/a1id login shanye
 ```
 
 登录时浏览器 BUC 会话必须是对应期望账号;否则 `a1id` 会清掉这次污染的 auth.yaml 并给出修复步骤

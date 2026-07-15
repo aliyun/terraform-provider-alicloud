@@ -14,7 +14,7 @@
 # CLI 自己的环境变量;v2 会按身份覆盖 A1_CONFIG_DIR 传给子进程 a1,不再从
 # A1_CONFIG_DIR 读取 a1id 自己的根路径(测试可用 A1ID_ROOT 隔离)。
 #
-# 七个身份(数字员工 + 数字人 + 个人):
+# 八个身份(数字员工 + 数字人 + 个人):
 #   jarvis        —— 默认(Aone 数字员工,BUC Account = WORKER_1782379562571),编排层用
 #   terraform-pd  —— 产品数字人(WORKER_1783582374386),别名 pd,分诊+查证+回复
 #   terraform-rd  —— 研发数字人(WORKER_1783582458263),别名 rd,开发+PR+CR 评审
@@ -22,6 +22,7 @@
 #   chenyi        —— 陈汉璋(chenhanzhang.chz);Jarvis 不得擅用,仅当面授权时切
 #   guozai        —— 郭子龙(guozai.gzl);Jarvis 不得擅用,仅当面授权时切
 #   linjun        —— 李超林(lichaolin.lcl);Jarvis 不得擅用,仅当面授权时切
+#   shanye        —— 徐茈琦/杉也(shanye.xzq);Jarvis 不得擅用,仅当面授权时切
 #
 # 环境变量:
 #   A1ID_ROOT              a1id 根目录(默认 ~/.config/a1);测试隔离用
@@ -36,7 +37,7 @@
 #                                (whoami 与期望账号不匹配则清盘并 die)
 #   a1id use <id>                拷贝 identities/<id>/auth.yaml 到 live
 #                                (仅影响人工直接跑 a1 的 live 会话,脚本链路不需要)
-#   a1id status                  显示默认身份 / live active / A1ID_ROOT / 七身份登录表
+#   a1id status                  显示默认身份 / live active / A1ID_ROOT / 八身份登录表
 #   a1id who [id]                whoami:缺省=默认身份,指定=该身份 dir
 #   a1id ready <id>              脚本探测:已登录退 0,否则退 1
 #   a1id as <id> -- <a1 args>    以指定身份跑一条(严格;未登录直接 die,不回退)
@@ -67,10 +68,10 @@ canon(){
   esac
 }
 
-# 七身份注册表(增删同步 expected_account_for、迁移循环、status 表)。
+# 八身份注册表(增删同步 expected_account_for、迁移循环、status 表)。
 valid(){
   case "$1" in
-    jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun) return 0 ;;
+    jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun|shanye) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -78,7 +79,7 @@ valid(){
 # 个人身份集合(供纪律告警;非编排层默认可用)。
 is_personal(){
   case "$1" in
-    chenyi|guozai|linjun) return 0 ;;
+    chenyi|guozai|linjun|shanye) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -95,6 +96,7 @@ expected_account_for(){
     chenyi) echo "chenhanzhang.chz" ;;
     guozai) echo "guozai.gzl" ;;
     linjun) echo "lichaolin.lcl" ;;
+    shanye) echo "shanye.xzq" ;;
     *) return 1 ;;
   esac
 }
@@ -117,7 +119,7 @@ is_logged_in(){ [ -s "$(id_auth "$1")" ]; }
 # ---- v1 → v2 自动迁移(幂等、非破坏)-------------------------------------
 # 对每个注册 label,若 v1 文件 identities/<label>.auth.yaml 存在且 v2
 # identities/<label>/auth.yaml 不存在 → mkdir + cp(v1 保留不删,便于回退)。
-for _label in jarvis terraform-pd terraform-rd terraform-qa chenyi guozai linjun; do
+for _label in jarvis terraform-pd terraform-rd terraform-qa chenyi guozai linjun shanye; do
   _v1="$STORE/$_label.auth.yaml"
   _v2="$(id_auth "$_label")"
   if [ -f "$_v1" ] && [ ! -f "$_v2" ]; then
@@ -154,7 +156,7 @@ resolve_default(){
   local id
   id="$(canon "$raw")"
   if ! valid "$id"; then
-    die "未知 JARVIS_A1_IDENTITY '$raw'(合法:jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun,别名 pd/rd/qa)"
+    die "未知 JARVIS_A1_IDENTITY '$raw'(合法:jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun|shanye,别名 pd/rd/qa)"
   fi
   # 个人身份纪律告警(仅在 env 显式设置时提;不阻断,对齐 CLAUDE.md 身份纪律)
   if [ -n "${JARVIS_A1_IDENTITY:-}" ] && is_personal "$id"; then
@@ -189,9 +191,9 @@ legacy_use(){
 cmd="${1:-status}"; shift || true
 case "$cmd" in
   login)
-    id_raw="${1:-}"; [ -n "$id_raw" ] || die "用法: a1id login <jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun>(别名 pd/rd/qa)"
+    id_raw="${1:-}"; [ -n "$id_raw" ] || die "用法: a1id login <jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun|shanye>(别名 pd/rd/qa)"
     id="$(canon "$id_raw")"
-    valid "$id" || die "用法: a1id login <jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun>(别名 pd/rd/qa)"
+    valid "$id" || die "用法: a1id login <jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun|shanye>(别名 pd/rd/qa)"
     expected="$(expected_account_for "$id")" || die "内部错误:label '$id' 无期望账号映射"
     dir="$(id_dir "$id")"
     mkdir -p "$dir"
@@ -264,7 +266,7 @@ case "$cmd" in
     printf 'A1ID_ROOT        : %s\n' "$A1ID_ROOT"
     printf '\n身份表:\n'
     printf '  %-14s %-24s %s\n' "label" "expected account" "logged-in"
-    for label in jarvis terraform-pd terraform-rd terraform-qa chenyi guozai linjun; do
+    for label in jarvis terraform-pd terraform-rd terraform-qa chenyi guozai linjun shanye; do
       acct=$(expected_account_for "$label")
       if is_logged_in "$label"; then flag="yes"; else flag="no"; fi
       printf '  %-14s %-24s %s\n' "$label" "$acct" "$flag"
@@ -291,7 +293,7 @@ case "$cmd" in
     id_raw="${1:-}"; shift || true; [ "${1:-}" = "--" ] && shift
     [ -n "$id_raw" ] || die "用法: a1id as <id> -- <a1 args...>"
     id="$(canon "$id_raw")"
-    valid "$id" || die "未知身份 '$id_raw'(合法 jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun,别名 pd/rd/qa)"
+    valid "$id" || die "未知身份 '$id_raw'(合法 jarvis|terraform-pd|terraform-rd|terraform-qa|chenyi|guozai|linjun|shanye,别名 pd/rd/qa)"
     is_logged_in "$id" || die "身份 '$id' 未登录,先 'bin/a1id login $id'"
     # v2:纯 env 方式跑,不动 live,不 trap,天然并发安全。
     A1_CONFIG_DIR="$(id_dir "$id")" exec "$A1" "$@"

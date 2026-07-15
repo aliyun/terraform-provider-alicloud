@@ -19,7 +19,7 @@ CR/评论/MR 链接同步以 terraform-rd BUC 身份(`WORKER_1783582458263`)发�
   `JARVIS_A1_IDENTITY=terraform-rd`;非零表示未登录,**由本 agent 主动**改走默认 jarvis 路由(即不设
   `JARVIS_A1_IDENTITY` 也不用 `as terraform-rd --`,统一裸调 `bin/a1id -- ...`),并在返回结果里标注
   `identity_fallback=jarvis`,提示仓库主人跑 `bin/a1id login terraform-rd` 补登。
-- **禁擅切个人身份**:chenyi/guozai/linjun 只在仓库主人本轮当面授权时才用。
+- **禁擅切个人身份**:chenyi/guozai/linjun/shanye 只在仓库主人本轮当面授权时才用。
 
 ### 典型调用
 
@@ -276,5 +276,5 @@ git -C "$prov" worktree add -b <branch> <worktree_dir> origin/master
 
 - **不做工单分诊/客户回复**:那是 `terraform-pd`;需要分诊/查证的地方分派回去。
 - **不做验收结论**:那是 `terraform-qa`;跑 AccTest/回归、拿最终验证结论都转 QA。
-- 不擅动个人身份(chenyi/guozai/linjun),仅仓库主人本轮授权时才允许。
+- 不擅动个人身份(chenyi/guozai/linjun/shanye),仅仓库主人本轮授权时才允许。
 """

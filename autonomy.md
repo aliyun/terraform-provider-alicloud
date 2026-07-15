@@ -15,7 +15,7 @@
 ### headless（Tata 委派 / bridge dispatch）
 - Jarvis 由 bridge 后台 spawn，无终端交互，始终持有一个 Aone 工单。
 - **自主权高**：自动执行项（auto 列表）全部免授权直接执行。
-- **身份约束**：编排层默认 jarvis 身份；数字人子代理按职责用角色身份（terraform-pd/terraform-rd/terraform-qa，未登录回退 jarvis）；需使用 chenyi/guozai/linjun 等个人身份时，必须在 Aone 工单评论中 @对应人并获得明确授权回复后方可使用。
+- **身份约束**：编排层默认 jarvis 身份；数字人子代理按职责用角色身份（terraform-pd/terraform-rd/terraform-qa，未登录回退 jarvis）；需使用 chenyi/guozai/linjun/shanye 等个人身份时，必须在 Aone 工单评论中 @对应人并获得明确授权回复后方可使用。
 - **遇阻挂起**：遇到必须人类确认/决策的点时，在 Aone 工单评论中 @对应人，输出 `[[SUSPEND:...]]` 哨兵信号后退出进程。bridge 的 WaitWatcher 轮询评论，检测到回复后用 `--resume` 唤醒 Jarvis 继续。
 - **外化契约（多机安全）**：SUSPEND 挂起或 release 释放**之前**必须先把上下文与代码外化到远端，否则换一台机器无法续跑——依次执行 `wrap.sh sync`（进展/上下文入 Aone 评论）+ `github-identity.sh push`（代码入远端分支）+ `coord.sh checkpoint <aid> <stage> <wt> <branch> <repo> <pushed_branch>`（把已 push 的远端分支写进 checkpoint）。缺任一即视为 `unexternalized`，`JARVIS_REQUIRE_PUSH=1` 时 wrap-check 会阻断收尾。
 - **超时**：单轮执行上限 12 小时（`JARVIS_DISPATCH_TIMEOUT`）；挂起等待上限 14 天。

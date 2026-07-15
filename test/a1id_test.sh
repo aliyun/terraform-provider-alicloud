@@ -15,7 +15,7 @@
 #   7  别名:as pd 等价 as terraform-pd
 #   8  login 账号不匹配 → die 且清 auth.yaml
 #   9  并发冒烟:两 as 不同身份后台并跑无串扰
-#   10 JARVIS_A1_IDENTITY=guozai(个人身份)→ 警告但可执行
+#   10 JARVIS_A1_IDENTITY=guozai/shanye(个人身份)→ 警告但可执行
 
 set -uo pipefail
 
@@ -333,7 +333,7 @@ rc=$?
 out=$(cat "$OUT")
 [ "$rc" = "0" ] && pass "status(无登录)退 0" || fail "status 应退 0, got=$rc; out=$out"
 if printf '%s' "$out" | grep -qF "身份表" && printf '%s' "$out" | grep -qF "terraform-pd"; then
-    pass "status 输出七身份表(含 terraform-pd)"
+    pass "status 输出八身份表(含 terraform-pd)"
 else
     fail "status 输出缺表格: $out"
 fi
@@ -362,6 +362,37 @@ else
     fail "capture 未走 guozai: $(cat "$CAP")"
 fi
 rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ===========================================================================
+# Test 10b: shanye 完整登记 — env 个人身份告警 + 独立目录 + status 注册表
+# ===========================================================================
+echo "=== Test 10b: JARVIS_A1_IDENTITY=shanye → 个人身份纪律告警 + 独立目录 ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "shanye"
+CAP=$(mktemp); ERR=$(mktemp); OUT=$(mktemp)
+JARVIS_A1_IDENTITY=shanye A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
+    STUB_CAPTURE="$CAP" bash "$A1ID" -- personal-run >/dev/null 2>"$ERR"
+rc=$?
+err=$(cat "$ERR")
+[ "$rc" = "0" ] && pass "shanye 个人身份可执行(退 0)" || fail "shanye 个人身份执行失败 rc=$rc"
+if printf '%s' "$err" | grep -qF "个人身份"; then
+    pass "shanye stderr 有个人身份纪律告警"
+else
+    fail "shanye stderr 缺个人身份告警: $err"
+fi
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/shanye	" "$CAP"; then
+    pass "shanye 使用独立 identities/shanye 目录"
+else
+    fail "capture 未走 shanye 独立目录: $(cat "$CAP")"
+fi
+A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" bash "$A1ID" status >"$OUT" 2>&1
+out=$(cat "$OUT")
+if printf '%s' "$out" | grep -Eq '^  shanye +shanye\.xzq +yes$'; then
+    pass "status 身份表包含 shanye 及期望 BUC 账号"
+else
+    fail "status 身份表缺 shanye 登记: $out"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR" "$OUT"
 
 # ===========================================================================
 # B2 移植:login 生命周期护栏(从被删的 a1id_login_guard_test.sh 搬到 v2 布局)
