@@ -2,14 +2,16 @@
 # bootstrap/reconcile.sh — 收敛族统一入口(P1.c 合并了 sweep + watchdog + 原 reconcile)
 #
 # 子命令:
-#   stale   — 清扫 jarvis-claimed 超 TTL 的工单 → escalate(原 sweep.sh)
-#   orphan  — owner_instance 已死的 task → escalate(原 watchdog.sh)
-#   drift   — 台账 vs Aone 对账,claim+seen 但缺 release → 补 release(原 reconcile.sh)
-#   all     — 顺跑 stale → orphan → drift(默认)
+#   stale     — 清扫 jarvis-claimed 超 TTL 的工单 → escalate(原 sweep.sh)
+#   orphan    — owner_instance 已死的 task → escalate(原 watchdog.sh)
+#   drift     — 台账 vs Aone 对账,claim+seen 但缺 release → 补 release(原 reconcile.sh)
+#   donecheck — jarvis-done 标签 vs Aone 状态一致性对账:标签 done 但状态落在合法完成态集合
+#               外(finish 状态被拒 / 人工打回返工后标签滞留)→ escalate 告警(纯只读,不动标签/状态)
+#   all       — 顺跑 stale → orphan → drift → donecheck(默认)
 #
 # 用法:
 #   reconcile.sh                  # 默认 all
-#   reconcile.sh {stale|orphan|drift|all}
+#   reconcile.sh {stale|orphan|drift|donecheck|all}
 #
 # 环境变量:
 #   JARVIS_ROOT           — repo root(默认 git rev-parse --show-toplevel)
@@ -243,16 +245,76 @@ _cmd_drift() {
     fi
 }
 
+# ==== donecheck (jarvis-done vs Aone status 一致性对账) ====
+
+# 合法完成态全集 = .claim.done_statuses ∪ 各池 .done_status 叶子值(string 或 object 的 value)。
+# 后者含 tf_provider 的「待发布」等非终态但合法的 jarvis-done 停靠态 —— 只在此集合外才算漂移。
+_legit_done_statuses() {
+    # LC_ALL=C 关键：默认/CJK locale 下 `sort -u` 会把 collation 相等的中文状态(如 已完成/已拒绝)
+    # 误判为重复并丢行,导致合法完成态漏进集合 → 误报漂移。字节序去重才安全。
+    jq -r '
+      ((.claim.done_statuses // [])[]),
+      (.pools[]?.done_status | if type=="object" then .[] elif type=="string" then . else empty end)
+    ' "$POOLS_JSON" 2>/dev/null | awk 'NF' | LC_ALL=C sort -u
+}
+
+# 点读单个工单当前 status displayValue（镜像 claim.sh _get_status，读不到回空 → 调用方跳过不误报）。
+_workitem_status() {
+    local id="$1" json
+    json="$($A1 project workitem get "$id" -f json 2>/dev/null)" || return 0
+    printf '%s' "$json" | jq -r '
+        (.fields // [])[] | select(.identifier=="status") | .displayValue // empty
+    ' 2>/dev/null || return 0
+}
+
+_done_tagged_items() {
+    local project="$1"
+    $A1 project workitem list \
+        --project "$project" \
+        --tag "$DONE_TAG" \
+        -f json 2>/dev/null || echo "[]"
+}
+
+_cmd_donecheck() {
+    _read_claim_tags
+    local legit; legit="$(_legit_done_statuses)"
+    local flagged=0
+    while IFS= read -r project; do
+        [ -z "$project" ] && continue
+        local json ids
+        json="$(_done_tagged_items "$project")"
+        ids="$(printf '%s' "$json" | _extract_ids)"
+        while IFS= read -r item_id; do
+            [ -z "$item_id" ] && continue
+            _is_active_dispatch "$item_id" && { echo "SKIP(active): $item_id"; continue; }
+            local st; st="$(_workitem_status "$item_id")"
+            # 读不到状态 → 无法判定,跳过不误报(与 claim.sh 的 graceful-degrade 一致)。
+            [ -z "$st" ] && continue
+            if printf '%s\n' "$legit" | grep -qxF "$st"; then
+                continue   # 合法完成态,标签与真源一致
+            fi
+            echo "DRIFT(done_status): $item_id status='$st' not in legit-done set (project=$project)"
+            local title; title="$(_extract_title "$item_id" "$json")"
+            escalate "$item_id" \
+                "done_status_drift: 标签 jarvis-done 但 Aone 状态='$st' 不在合法完成态集合(finish 状态被拒 或 人工打回返工后标签滞留)——请人工核对状态或摘掉 jarvis-done 标签" \
+                "$title"
+            flagged=$((flagged + 1))
+        done <<< "$ids"
+    done <<< "$(_projects)"
+    if [ "$flagged" -eq 0 ]; then echo "DONECHECK: none"; else echo "DONECHECK: flagged $flagged"; fi
+}
+
 # ==== CLI dispatch ====
 
 _help() { sed -n '2,21p' "$0"; }
 
 cmd="${1:-all}"
 case "$cmd" in
-    stale)  _cmd_stale ;;
-    orphan) _cmd_orphan ;;
-    drift)  _cmd_drift ;;
-    all)    _cmd_stale; _cmd_orphan; _cmd_drift ;;
+    stale)     _cmd_stale ;;
+    orphan)    _cmd_orphan ;;
+    drift)     _cmd_drift ;;
+    donecheck) _cmd_donecheck ;;
+    all)       _cmd_stale; _cmd_orphan; _cmd_drift; _cmd_donecheck ;;
     -h|--help) _help ;;
     *)
         echo "reconcile: unknown command '$cmd'" >&2

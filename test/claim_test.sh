@@ -462,18 +462,49 @@ echo "rc=$rc status_set='$cap'"
 if [ "$cap" = "已发布待需求排期" ]; then assert_pass "global fallback: status set to 已发布待需求排期"; else assert_fail "global fallback wrong, got '$cap'"; fi
 
 # ---------------------------------------------------------------------------
-# Test 16: rejected status is non-fatal — finish still tags done + exits 0 + warns
+# Test 16: rejected status → finish DOWNGRADES jarvis-done → jarvis-idle + escalates.
+# 一致性闸门:done_status 落不到合法完成态时,继续挂 jarvis-done 会造成「标签 done、真源没完」
+# 的黑洞(_decide 永久 skip)。故降级为 jarvis-idle(交 idle 门/Revisit 兜底) + 写 escalation,
+# 仍 exit 0 + warns(不 fatal,bookend 流程正常收尾)。
 # ---------------------------------------------------------------------------
-echo "=== Test 16: finish resilient to a rejected status ==="
+echo "=== Test 16: rejected status → downgrade jarvis-done→jarvis-idle + escalate ==="
 printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
-export A1_REJECT_STATUS="已发布待需求排期"
+rm -f "$tmpconfig/escalation/$WORKITEM_ID.md"
+export A1_REJECT_STATUS="已发布待需求排期" A1_STATUS="处理中"
 out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 2>&1); rc=$?
 state=$(cat "$tmpstate" 2>/dev/null)
-unset A1_REJECT_STATUS
-echo "rc=$rc tags='$state'"
+unset A1_REJECT_STATUS A1_STATUS
+echo "rc=$rc tags='$state'"; echo "out: $out"
 if [ "$rc" = "0" ]; then assert_pass "rejected status: finish still exits 0"; else assert_fail "rejected status: exit $rc"; fi
-if printf '%s' "$state" | grep -q "jarvis-done"; then assert_pass "rejected status: still tagged jarvis-done (not stuck idle)"; else assert_fail "rejected status: done tag lost, got '$state'"; fi
+if printf '%s' "$state" | grep -q "jarvis-idle" && ! printf '%s' "$state" | grep -q "jarvis-done"; then
+    assert_pass "rejected status: downgraded jarvis-done→jarvis-idle (no black hole), got '$state'"
+else
+    assert_fail "rejected status: should downgrade to jarvis-idle without jarvis-done, got '$state'"
+fi
 if printf '%s' "$out" | grep -qi "warning"; then assert_pass "rejected status: emits warning"; else assert_fail "rejected status: no warning emitted"; fi
+if [ -f "$tmpconfig/escalation/$WORKITEM_ID.md" ] && grep -q "finish_status_unresolved" "$tmpconfig/escalation/$WORKITEM_ID.md"; then
+    assert_pass "rejected status: escalation file written with finish_status_unresolved"
+else
+    assert_fail "rejected status: expected escalation/$WORKITEM_ID.md with finish_status_unresolved"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 16b: successful status write KEEPS jarvis-done (no spurious downgrade).
+# ---------------------------------------------------------------------------
+echo "=== Test 16b: finish with accepted status keeps jarvis-done ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+export A1_STATUS="处理中"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 2>&1); rc=$?
+state=$(cat "$tmpstate" 2>/dev/null)
+unset A1_STATUS
+echo "rc=$rc tags='$state'"
+if [ "$rc" = "0" ]; then assert_pass "accepted status: finish exits 0"; else assert_fail "accepted status: exit $rc"; fi
+if printf '%s' "$state" | grep -q "jarvis-done" && ! printf '%s' "$state" | grep -q "jarvis-idle"; then
+    assert_pass "accepted status: keeps jarvis-done, no downgrade ($state)"
+else
+    assert_fail "accepted status: should keep jarvis-done without idle, got '$state'"
+fi
 
 # ---------------------------------------------------------------------------
 # Test 17: per-category done_status — bug (功能缺陷) → Fixed
