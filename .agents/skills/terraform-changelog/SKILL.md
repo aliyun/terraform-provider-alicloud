@@ -27,7 +27,7 @@ PROVIDER_DIR="$(bootstrap/workspace.sh dir terraform_provider)"
 
 Then work inside `$PROVIDER_DIR`. If `bootstrap/workspace.sh` reports the workspace is missing, stop and escalate (`missing_capability`) -- do not guess paths.
 
-This skill only reads GitHub via `gh pr list` (no write operations), so `gh` can be used directly without `bootstrap/github-identity.sh`.
+Steps 1-8 only **read** GitHub (`gh pr list` 等)——只读可直用 `gh`;Step 9/10 的 commit/push/PR 创建是**写操作**,必须走 `bootstrap/github-identity.sh`(commit/check/push/gh,详见 `references/release-workflow.md` 10.3)。
 
 ## When to Use
 

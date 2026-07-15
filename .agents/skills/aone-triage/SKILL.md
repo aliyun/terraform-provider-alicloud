@@ -73,7 +73,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | 标题子类型 | 正确处理 |
 |---|---|
 | **[Terraform 资源发布自动审核流程]** | **调 `terraform-provider-release` skill 跑完整 SOP**——需求差距分析(AMP 元数据 vs provider 代码)+ 远程 ACC 实测 + 出 PR。平台流水线的「源码生成/打包上传容器」只是构建产物,**不等于代码已进 provider 仓、更不等于 ACC 验证过**;jarvis 仍须按 SOP 补 ACC + PR(PR merge 是人工门)。**禁止只复核告警就 release**——那是漏跑发布流程,不算处理达标。 |
-| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 SOP):用镇元 `GetResourceType` 核验文档告警落在 provider 公开 schema 还是镇元元数据侧——落 provider 侧 → `provider-fix-documentation` 补文档+PR;落镇元侧 → **建关联单到 CloudSpec 文档质量问题(2169561) 池指派念依(373108) 修镇元资源文档源头**(见 `references/tf-customer-request-routing.md` 分支 I),provider 侧另建过载(484483) 关联单紧急合 PR 双单并行,防 provider PR 下次发版被镇元覆盖。无资源开发,不跑 ACC。 |
+| **[Terraform 文档发布自动审核流程]** | **复核确认闸门**(不跑资源 SOP):用镇元 `GetResourceType` 核验文档告警落在 provider 公开 schema 还是镇元元数据侧——落 provider 侧 → 建 528766 过载(484483) 关联单走 worktree 补文档+PR;落镇元侧 → **建关联单到 CloudSpec 文档质量问题(2169561) 池指派念依(373108) 修镇元资源文档源头**(见 `references/tf-customer-request-routing.md` 分支 I),provider 侧另建过载(484483) 关联单紧急合 PR 双单并行,防 provider PR 下次发版被镇元覆盖。无资源开发,不跑 ACC。 |
 
 ### 2. 按类型分诊(通用)
 
@@ -107,8 +107,8 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 └─ 建议行动(转谁 / 谁 @ / 状态怎么改 / 用户侧要做什么)
 ```
 
-**@ 语法** = `@花名(工号)`。团队常用工号见 memory `team-roster-tf-alicloud`(涵盖专属维护名单 11 人 + 通用路由 4 人)。**同名歧义陷阱**:`a1 comment create -m "@花名"` 的自动解析对**目录里同名的人会挑错工号**(实例:工单 84043785 负责人「刘源」是 `WB01269865`,只写 `@刘源` 被解析成同名同事 `WB01437449`,通知发错人)。**凡要 @ 的人可能同名(尤其外包 WB 工号、常见姓名),一律显式写全 `@花名(工号)`**——a1 对已带工号的形式原样保留、不再重解析;工号从工单 `assignedTo`/评论作者/roster 取,别靠裸名字赌解析。
-**不带 AI 署名**(AGENTS.md 工作纪律 #7):对外产物剥掉「🤖 Generated with Codex」等。
+**@ 语法** = `@花名(工号)`。团队常用工号见 `references/team-roster.md`(专属维护名单 + 通用路由)。**同名歧义陷阱**:`a1 comment create -m "@花名"` 的自动解析对**目录里同名的人会挑错工号**(实例:工单 84043785 负责人「刘源」是 `WB01269865`,只写 `@刘源` 被解析成同名同事 `WB01437449`,通知发错人)。**凡要 @ 的人可能同名(尤其外包 WB 工号、常见姓名),一律显式写全 `@花名(工号)`**——a1 对已带工号的形式原样保留、不再重解析;工号从工单 `assignedTo`/评论作者/roster 取,别靠裸名字赌解析。
+**不带 AI 署名**(AGENTS.md 工作纪律 #5):对外产物剥掉「🤖 Generated with Codex」等。
 
 **Aone 评论渲染 quirk(所有评论 URL 都受此规则约束,不只截图链接)**:
 
@@ -126,7 +126,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | 回复评论 | 走 wrap.sh done(见 bookend;多行用 `--summary-stdin`/`--summary-file`),别单独 `a1 comment create`(会与 wrap 里的重复,a1 无 delete) |
 | 转需求(Cloudspec 缺口) | `bin/a1id -- project workitem create --project 2165097 --category req --assignee WORKER_1783326253279 --body-file <path>`;body **必须严格按** `references/templates.md` 的「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全);缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底(不指派谜拟 479782;她做人类兜底 owner 挂在源客户主单上) |
 | 建关联单(自家团队接手) | tf_customer 域走 `references/tf-customer-request-routing.md` 分工表 |
-| 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **单次即自动双向**(2026-07-14 实测两侧均可见;重复调第二次返回 400 已存在) |
+| 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **单次即自动双向**(重复调第二次返回 400 已存在) |
 | 状态更新 | `bin/a1id -- project workitem update <id> --status "<value>"` |
 | 更新详情(description) | `bin/a1id -- project workitem update <id> --body-file <path>`(单行小改可 `--body "<text>"`)。**何时必须**:重审/复核推翻了 description 里的根因或方案、方案实施与描述已相左、验收证伪原描述——评论只是过程审计追加在尾部,新读者第一眼看的是详情,详情停在已否决结论=持续误导接手者。重写时开头加一行 `> ⚠️ 本 description 于 <date> 重写:<被否决的旧结论一句话>,演进见评论区`,保住审计链。**边界**:仅限我方创建/维护的工单(tf_provider 关联单/研发单/probe 单);客户主单 description 是客户原声,禁改 |
 | 字段必填缺失 | `bin/a1id -- project workitem field options <field> --project <id>` 查枚举补 `--cfs` |
@@ -145,7 +145,7 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 
 ## Bookend(动工必走)
 
-任何"要写工单"的场景都必须走完整 bookend(AGENTS.md 工作纪律 #5)。纯只读查证可免 claim。
+任何"要写工单"的场景都必须走完整 bookend(AGENTS.md 工作纪律 #3)。纯只读查证可免 claim。
 
 ```bash
 # 1. claim(打 jarvis-claimed 标签,冻结 prefix 到 .my-day/claim-prefix-<id>.txt)
@@ -174,10 +174,10 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 3. 更新 `config/pools.json` 里的 `done_status[<workitemType>]` 到合法且**能从 claim 后进行中态到达**的终态
 4. 已 tag `jarvis-done` 但 status 卡在中间态时,手动一步:`bin/a1id -- project workitem update <id> --status "<正确终态>"`
 
-**wrap.sh 参数陷阱**(memory `wrap-done-single-comment`):
+**wrap.sh 参数陷阱**:
 - 单行可继续用位置参数: `bash bootstrap/wrap.sh done <id> "<完整回复>" <status|--no-status>`
 - 多行正文用 `--summary-stdin` heredoc 或先写文件再 `--summary-file <path>`;不要把换行写成字面量 `\n`
-- 不支持 `--status` 命名参数;status 仍放在最后一个位置参数
+- status 可用位置参数(最后一个),也可用 `--status <值>` / `--status=<值>` / `--no-status` 命名参数(任意位置);flag 与位置 status 互斥,二给其一
 - 用之前**先起草完整评论内容**,一次发完(先手动 `a1 comment create` 再 wrap.sh done 会重复,a1 无 comment delete)
 
 **release vs finish**:默认 release(路由 ≠ 真闭环,需下游响应);仅当查证发现"其实已支持 + 只是客户版本旧"这类无缺口场景走 finish。
@@ -185,7 +185,7 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 **收尾蒸馏钩子(涉及 terraform 云产品的工单必挂)**:工单涉及某个 terraform 产品(客户单/内部研发单/probe 单皆算),在 `wrap.sh done` 之后、`claim.sh release/finish` 之前,按 `.Codex/skills/tf-customer-probe/references/knowledge-distillation.md` 契约把本单学到的产品级事实蒸馏进 `<playground>/<product>/KNOWLEDGE.md`(触发点②aone-triage bookend 收尾——这是评审阻断项,客户单场合的蒸馏钩子必须挂在主流程,不能只挂 probe 侧)。收录判据:可执行 / 跨场景复用 / 非文档已明示;条目格式 `- [YYYY-MM-DD][来源: 工单URL/verdict路径/PR URL] <可执行的产品级事实>`。playground 路径解析走 `bootstrap/workspace.sh dir tf_playground` 或 env `JARVIS_TF_PLAYGROUND`。
 
 **MR/CR 未合并禁 finish**:当 MR/CR 已提交但未合并(PR state ≠ merged / CR 未合入 master)时,**禁止调 `claim.sh finish`**。正确路径:
-- `wrap.sh done <id> --no-status` —— 发评论记录进展,不改 Aone 状态
+- `wrap.sh done <id> "<summary>" --no-status`(多行用 `--summary-stdin --no-status`)—— 发评论记录进展,不改 Aone 状态
 - `claim.sh release <id> <project>` —— 释放为 jarvis-idle,等人工合并验收
 - Aone 评论说明「MR 已提交待合并验收,链接: <PR_URL>」
 - `claim.sh finish` 内置了硬闸门(退码 2),即使遗漏也会拦截
@@ -223,10 +223,10 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 
 ## 反模式
 
-- ❌ 读单只看标题不读 description 末段"限制/差异/仍需" —— 常藏真实诉求(memory `read-description-last-paragraph`)
+- ❌ 读单只看标题不读 description 末段"限制/差异/仍需" —— 常藏真实诉求
 - ❌ Terraform 相关工单不加载 `references/tf-customer-request-routing.md` —— 会漏专属维护名单直接被路由到过载/新山/镇元 agent
 - ❌ 建 2165097 池 Cloudspec 关联单 body 缺 `## 机读信息` + JSON 段 —— 镇元 agent 靠机读契约驱动 spec/映射/覆盖度动作,marker/字段/JSON 缺任何一项都接不了单,单沉底(2165097 池又不在 jarvis 视检范围,会长期烂在里面);正确姿势严格按 `references/templates.md` 「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架
-- ❌ 分支 E 关联单 assignee 写谜拟 479782 —— 谜拟已不解单(2026-07-08 切换到镇元 agent),关联单硬指派 `WORKER_1783326253279`;写 479782 = 落回人手不再走 agent 自动化(谜拟保留在**源客户主单** assignee 上做人类兜底 owner)
+- ❌ 分支 E 关联单 assignee 写谜拟 479782 —— 谜拟不解单(镇元 agent 自动接单),关联单硬指派 `WORKER_1783326253279`;写 479782 = 落回人手不再走 agent 自动化(谜拟保留在**源客户主单** assignee 上做人类兜底 owner)
 - ❌ 纯镇元文档修改问题(资源描述/字段解释/枚举值文案)转到镇元 agent(2165097) —— agent 只接"资源本身需变更"类,纯文档修改会被临钧/agent 判定后取消(84123415 就是取消先例);正确路径 → 分支 I:CloudSpec 文档质量问题(2169561) 池指派念依(373108) 修镇元源头(见 `references/tf-customer-request-routing.md` 分支 I)
 - ❌ 只在 provider 侧仓库改 markdown 就当"文档已修复" —— TF provider docs 从镇元资源文档自动生成,provider PR 只是紧急兜底,不修镇元源头下次发版会覆盖回旧值;文档改造分支必与 528766 过载单 + 2169561 念依单**双建**
 - ❌ 用 next.api 网页 curl 拿 API meta —— SPA 拿不到 JSON,用 `aliyun <product> <Action> --help` 或 MCP `ListApis/GetApiDefinition`
@@ -235,7 +235,7 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 - ❌ 多行 wrap 评论写成 `"第一行\n第二行"` —— 字面量 `\n` 会被拦截;用 heredoc 的 `--summary-stdin` 或 `--summary-file`
 - ❌ 给已关联的两单重复 `relation add` —— 单次已自动双向,第二次 400 已存在
 - ❌ jarvis 自行 push master / merge PR / release_prod —— 永久停止项(autonomy.md `stop`)
-- ❌ 对外产物带 AI 署名 —— AGENTS.md 工作纪律 #7,发出前剥掉
+- ❌ 对外产物带 AI 署名 —— AGENTS.md 工作纪律 #5,发出前剥掉
 - ❌ 使用非默认 a1 身份(chenyi/guozai/linjun)未经仓库主人当面授权 —— 红线
 - ❌ 推翻性结论只发评论、不改我方工单的 description —— 研发单详情停留在已否决的根因/方案,后续接手者被第一屏误导;重审/方案演进必须同步重写详情(写操作表「更新详情」行,`--body-file`;客户主单原声禁改)。案例:83998772 方案 A→E→R 两次演进,详情滞后在 A
 - ❌ Aone 评论里贴 URL 用 markdown `[text](url)` / 尖括号 `<url>` / 或紧贴中文冒号 `在线报告：https://...` —— 都不 linkify(前两种被渲染器丢弃 或原样显示,后者被 linkifier 当文本片段一部分);唯一可靠格式 = URL 独占一行 + 前后空行分隔的纯文本(§4「Aone 评论渲染 quirk」)。走 `wrap.sh done` 天然满足;手工 `a1 comment create` 时自己排版

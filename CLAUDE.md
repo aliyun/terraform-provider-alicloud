@@ -10,7 +10,7 @@
 
 1) 跑 `bootstrap/preflight.sh`（24h 闸门，`--force` 强制重跑），全绿才干活；
 2) 等任务：有单 → [loops/aone-triage.md](loops/aone-triage.md)，无单 → [loops/adhoc-intake.md](loops/adhoc-intake.md)，低置信/验收不过 → 起草不发出入 `escalation/`；
-3) bridge 定时扫池并自动派发 headless 并发处理（授权前置可配回退 `JARVIS_AUTO_DISPATCH=0`；另含 probe/人工门重访每日轮；见 `bridge/jarvis_dingtalk_bot.py` ScanScheduler），Jarvis 不再主动扫；入口统一 `bridge/run.sh start`（自动 source env + 判定钉钉/降级模式，不需额外点火）。
+3) bridge 定时扫池并自动派发 headless 并发处理（授权前置可配回退 `JARVIS_AUTO_DISPATCH=0`；另含 probe/人工门重访每日轮；见 `bridge/jarvis_dingtalk_bot.py` ScanScheduler），扫描/派发由 bridge 全权负责，Jarvis 只被动接单；入口统一 `bridge/run.sh start`（自动 source env + 判定钉钉/降级模式，不需额外点火）。
 
 ## 工作纪律
 
@@ -18,7 +18,7 @@
 
 2. **专职工作交数字人子代理，主会话（jarvis）只分发编排**：优先 `.claude/agents/` 三个数字人（terraform-pd 分诊查证 / terraform-rd 编码与 PR·CR 评审 / terraform-qa 验收测试，各绑独立 Aone 身份）；也可自由委派 general-purpose / Explore / Plan / claude-code-guide 等，按任务挑最合适的。单工单执行由 `bootstrap/triage-one.sh` bookend，主会话调度即可。
 
-3. **Aone 唯一真源 + 凡动工单必 bookend**：任何 jarvis 工作必须有 Aone 工作项（无则按 [loops/adhoc-intake.md](loops/adhoc-intake.md) 建/补单），拿到 id 就 `claim.sh claim` 开局，收尾走 bookend（`triage-one.sh` 或 `wrap.sh done` + `claim.sh release`）；开 MR/CR 立刻 `wrap.sh sync` 贴链回工单。**漏 claim → 标签/状态/对账全失灵**；流程细节见 [loops/aone-triage.md](loops/aone-triage.md) §4。纯只读不动任何工单可免。
+3. **Aone 唯一真源 + 凡动工单必 bookend**：任何 jarvis 工作必须有 Aone 工作项（无则按 [loops/adhoc-intake.md](loops/adhoc-intake.md) 建/补单），拿到 id 就 `claim.sh claim` 开局，收尾走 bookend（`triage-one.sh` 或 `wrap.sh done` + `claim.sh release`）；开 MR/CR 立刻 `wrap.sh sync` 贴链回工单。**漏 claim → 标签/状态/对账全失灵**；流程细节见 [loops/aone-triage.md](loops/aone-triage.md) §二（认领与 bookend）与 §六（工具链速查）。纯只读不动任何工单可免。
 
 4. **工作区按登记走**：repo/池/构建命令以 `config/workspaces.json` 为准，本地路径用 `bootstrap/workspace.sh dir <key>` 拿（base 不存绝对路径，本机覆盖走 gitignored `workspaces.local.json`，多数机只需设 `JARVIS_WORKSPACE_ROOT`）；缺登记 → escalate（`missing_capability`），勿臆造。
 
@@ -29,7 +29,7 @@
    - **诊断细节**：客户实例 ID（`r-xxx` / `lb-xxx` / `i-xxx` / `s-xxx` 等）、RequestId、错误 detail 里的机器名/RAM 用户名
    - **内部人员引用**：花名+工号（`@辰羿(320687)`）、内部聊天/OKR/项目名
    
-   **完整禁品清单 + PR body 骨架** 见 [terraform-provider-release SKILL Step 11.1](.claude/skills/terraform-provider-release/SKILL.md)。**push 前自查**（provider worktree 里跑）：`git log -p origin/master..HEAD` 通读全部 diff + commit message，看有无 `aone`、内部客户名（本轮工单里出现过的）、`r-[0-9a-f]{8,}` / `i-[0-9a-f]{8,}` 类实例 ID、`RequestId`、`@<花名>(<工号>)` 引用——命中任一即卡住修，不允许 push。
+   **完整禁品清单 + PR body 骨架** 见 [terraform-provider-release SKILL Step 11.1](.claude/skills/terraform-provider-release/SKILL.md)。**push 前自查**（provider worktree 里跑，两步）：① `bash <jarvis仓>/bootstrap/pre-push-sanitize.sh`（正则真源：Aone/实例 ID/RequestId/AI 署名/花名工号，客户名可经 `JARVIS_CUSTOMER_BLOCKLIST` 外挂）；② `git log -p origin/master..HEAD` 通读全部 diff + commit message，人工兜底脚本无法穷举的内部客户名与业务上下文——命中任一即卡住修，不允许 push。
 
 6. **身份纪律**：a1 一律走 `bin/a1id`，默认 jarvis（`a1id -- <args>`）；数字人角色身份 terraform-pd / terraform-rd / terraform-qa 由对应子代理按职责使用，两种入口语义**不同**——`a1id as <role> --` 显式指定身份（未登录直接报错，**不回退**），`JARVIS_A1_IDENTITY=<role>` 整链路由（未登录自动回退 jarvis 并 stderr 提示）；个人身份（chenyi/guozai/linjun）禁擅用，仅仓库主人本轮当面授权时才 `a1id as <id> -- <args>` 临时切，用完即回。GitHub PR/评论/推分支必须先 `bootstrap/github-identity.sh check`（token 账号必须 `api-tool-agent`，PR head `api-tool-agent:<branch>`），缺 token/账号不匹配一律阻断升级，禁回退 ambient `gh auth`。terraform-pr-review skill 有完整清单。
 

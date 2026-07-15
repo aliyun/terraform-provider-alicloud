@@ -45,7 +45,7 @@ if bin/a1id ready terraform-qa; then
   bin/a1id as terraform-qa -- project workitem comment create <id> -m "验收结论:PASS(证据…)"
   JARVIS_A1_IDENTITY=terraform-qa bash bootstrap/wrap.sh sync <id> "AccTest 已提交:<链接>"
   # html 报告回贴同理需 env 前缀,不然 jarvis 落评论
-  JARVIS_A1_IDENTITY=terraform-qa bash bootstrap/html-report-preview.sh upload report.html --comment <id>
+  JARVIS_A1_IDENTITY=terraform-qa bash bootstrap/html-report-preview.sh upload <id> report.html --comment
 else
   # 未登录:agent 主动回退 jarvis(默认路由),结果里标 identity_fallback=jarvis
   bin/a1id -- project workitem comment create <id> -m "验收结论:PASS(证据…)"
@@ -129,7 +129,7 @@ Skill invoke-terraform-acc-test-remote
   拿在线预览链接,再贴回 Aone 评论。
 
 ```bash
-bootstrap/html-report-preview.sh upload <html_file_or_zip> --comment <aone_id>
+bootstrap/html-report-preview.sh upload <aone_id> <html_file_or_zip> --comment
 ```
 
 ### 3. 回归测试

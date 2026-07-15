@@ -29,7 +29,7 @@ done
 
 | 方式 | 说明 |
 |------|------|
-| bridge 定时扫池（自动派发） | bridge ScanScheduler 周期跑 `bootstrap/scan.sh --force`，diff 出**新单 + 外部更新单**(gmtModified 变化)一并投**并发 DispatchPool 起 headless jarvis**（每单一实例、并发上限 `JARVIS_DISPATCH_MAX`、软去重台账 `.my-day/bridge/dispatched.json`；`claim.sh` 仍是竞争互斥真源）。**派发判定**(`_decide`)逐单：终态 / `jarvis-done` / `jarvis-claimed` → skip；`jarvis-npe`（路由不明，人工标记）→ skip（**优先于 idle 门**：idle+npe 就算有人评论也不重派，直到人工澄清路由、摘掉标签，经 gmtModified 更新路径自然恢复派发）；`jarvis-idle` 过**人工介入门**（activity 作者判据 `_human_touched`——人工在 jarvis 上轮动作**之后**介入过才 force 重派，否则 skip 等每日 Revisit）；其余（含新单/外部更新）→ 派发。**灰度安全阀**（`_in_scope`，默认全放；`JARVIS_DISPATCH_POOLS` 池白名单 + `JARVIS_DISPATCH_CREATED_BEFORE` 创建上限可收窄）+ **运行时暂停**（`touch .my-day/bridge/pause` 停扫+派、`rm` 恢复，在跑实例不受影响）。钉钉卡片语义从「求授权」改为「播报：已自动派发 #id」。**授权前置=`JARVIS_AUTO_DISPATCH=0` 的回退模式**（新单入 pending 待钉钉「处理 #id / 全部处理」，更新单仅作「有更新」感知卡片段落）。另有 ProbeScheduler（每日 `JARVIS_PROBE_HOUR` 探测轮，跑 `loops/tf-probe.md`）与 RevisitScheduler（每日 `JARVIS_REVISIT_HOUR` 重访 `jarvis-idle` 人工门工单，**排除 `jarvis-npe`**——路由不明单不投复查）。见 `bridge/jarvis_dingtalk_bot.py`；启动入口统一 **`bridge/run.sh start`**（自动 source `bootstrap/.env`+`bridge/jarvis.env`、判定钉钉/降级模式、缺钉钉凭证干净降级不阻断扫描/派发/调度、pidfile 守护；`bridge/run.sh dry-run` 透传 `--dry-run-once` 离线看派发/跳过决策）。**Jarvis 不再主动扫**（CLAUDE.md 开局动作 #3） |
+| bridge 定时扫池（自动派发） | bridge ScanScheduler 周期跑 `bootstrap/scan.sh --force`，diff 出**新单 + 外部更新单**(gmtModified 变化)一并投**并发 DispatchPool 起 headless jarvis**（每单一实例、并发上限 `JARVIS_DISPATCH_MAX`、软去重台账 `.my-day/bridge/dispatched.json`；`claim.sh` 仍是竞争互斥真源）。**派发判定**(`_decide`)逐单：终态 / `jarvis-done` / `jarvis-claimed` → skip；`jarvis-npe`（路由不明标记，aone-triage 分支 H jarvis 打或人工打）→ skip（**优先于 idle 门**：idle+npe 就算有人评论也不重派，直到人工澄清路由、摘掉标签，经 gmtModified 更新路径自然恢复派发）；`jarvis-idle` 过**人工介入门**（activity 作者判据 `_human_touched`——人工在 jarvis 上轮动作**之后**介入过才 force 重派，否则 skip 等每日 Revisit）；其余（含新单/外部更新）→ 派发。**灰度安全阀**（`_in_scope`，默认全放；`JARVIS_DISPATCH_POOLS` 池白名单 + `JARVIS_DISPATCH_CREATED_BEFORE` 创建上限可收窄）+ **运行时暂停**（`touch .my-day/bridge/pause` 停扫+派、`rm` 恢复，在跑实例不受影响）。钉钉卡片语义=播报（「已自动派发 #id」）。**授权前置=`JARVIS_AUTO_DISPATCH=0` 的回退模式**（新单入 pending 待钉钉「处理 #id / 全部处理」，更新单仅作「有更新」感知卡片段落）。另有 ProbeScheduler（每日 `JARVIS_PROBE_HOUR` 探测轮，跑 `loops/tf-probe.md`）与 RevisitScheduler（每日 `JARVIS_REVISIT_HOUR` 重访 `jarvis-idle` 人工门工单，**排除 `jarvis-npe`**——路由不明单不投复查）。见 `bridge/jarvis_dingtalk_bot.py`；启动入口统一 **`bridge/run.sh start`**（自动 source `bootstrap/.env`+`bridge/jarvis.env`、判定钉钉/降级模式、缺钉钉凭证干净降级不阻断扫描/派发/调度、pidfile 守护；`bridge/run.sh dry-run` 透传 `--dry-run-once` 离线看派发/跳过决策）。**扫描/派发由 bridge 全权负责，Jarvis 只被动接单**（CLAUDE.md 开局动作 #3） |
 | bridge dispatch | Tata 委派单工单，headless 执行（autonomy.md headless 模式：auto 列表免授权、遇阻 `[[SUSPEND:...]]` 挂起） |
 | 用户指令 | 会话里给 Aone URL / 工单 id → 直接进「二、逐项执行」单条流程 |
 | 手动兜底 | `/aone-triage` 或手动跑 `bootstrap/scan.sh`（排查/对账用；`plan.sh` 供 bridge/serve 流程出计划） |
@@ -101,11 +101,11 @@ bootstrap/claim.sh release <id> <pool-project>
 
 ## 三、定期维护（僵尸清扫）
 
-定期（建议每次 loop 结束后，或按 cron 独立触发）运行：
+bridge 主机由 ReconcileScheduler 周期自动跑（`JARVIS_RECONCILE_INTERVAL`，默认 1200s）；非 bridge 机按 `bootstrap/cron.example` 独立触发，或每次 loop 结束后手动运行：
 
 ```bash
 bootstrap/reconcile.sh all      # stale + orphan + drift 三路并跑
-bootstrap/reconcile.sh stale    # 只跑僵尸 claim(原 sweep.sh)
+bootstrap/reconcile.sh stale    # 只跑僵尸 claim
 ```
 
 `reconcile.sh stale` 查找所有 `jarvis-claimed` 超过 `claim.ttl_min`（默认 45 分钟）的工作项，将其写入 `escalation/` 目录，防止僵尸认领长期占用工单。`orphan` 处理 owner_instance 已死的 task；`drift` 补漏 release。
@@ -154,8 +154,8 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项（输赢竞争锁）；退码 1 = 输了跳过。认领成功还会把 Aone status 从起始态（待处理/新建…）推进到该池的进行中状态（.progress_status，如 处理中/开发中/问题解决中/Open），best-effort 非阻断，`JARVIS_CLAIM_PROGRESS=0` 可关 |
 | `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-idle 标签：本轮处理完，等待人或下一个 jarvis 接手；不动 Aone status） |
 | `bootstrap/claim.sh finish <id> <project>` | jarvis 判断真完成（打 jarvis-done 标签 + status 改为 `pools.json` 里该池 × workitemType 的 `done_status`；`.claim.done_status` = `已发布待需求排期` 只是**全局兜底**，主流走 per-池 per-category。tf_provider(528766) 产品类需求 → **`待发布`**，不是 `已发布`——workflow 不允许 `已选择` 直跳 `已发布`。被拒时先 `bin/a1id -- project workitem field options status --project <id> --type <workitemType>` 查合法枚举再改 pools.json） |
-| `bootstrap/triage-one.sh <id>` | 单条工单 bookend 编排：claim→子代理→wrap done（**status 必填**）→release |
+| `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>` | 单条工单收尾 bookend（**5 参必填**，子代理完工后调用）：claim→wrap done→release；claim 输竞争则 SKIP 退 0 |
 | `bootstrap/wrap-check.sh` | Stop 闸门：会话结束时校验未完工工单是否已回填，失败则阻断 |
-| `bootstrap/reconcile.sh [stale\|orphan\|drift\|all]` | 收敛族入口(P1.c 合并 sweep+watchdog+原 reconcile):stale=超时 claim→escalate;orphan=owner dead→escalate;drift=台账 vs Aone 对账;all=顺跑三者(默认) |
+| `bootstrap/reconcile.sh [stale\|orphan\|drift\|all]` | 收敛族入口:stale=超时 claim→escalate;orphan=owner dead→escalate;drift=台账 vs Aone 对账;all=顺跑三者(默认) |
 | `.claude/skills/aone-triage` | 单条工单全流程技能 |
 | `autonomy.md` | 模式/置信度/停止项策略 |

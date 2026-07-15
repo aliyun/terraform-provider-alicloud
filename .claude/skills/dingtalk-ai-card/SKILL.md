@@ -42,7 +42,7 @@ x-source: aone-open
 ### 发送流式消息（打字机效果）
 
 ```bash
-python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
+python3 .claude/skills/dingtalk-ai-card/scripts/streaming.py \
   --to <staffId> \
   --template-id <templateId> \
   -m $'消息内容\n支持换行和**Markdown**'
@@ -51,7 +51,7 @@ python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
 ### 一次性发送（无打字机效果）
 
 ```bash
-python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
+python3 .claude/skills/dingtalk-ai-card/scripts/streaming.py \
   --to <staffId> \
   --template-id <templateId> \
   --no-stream \
@@ -61,7 +61,7 @@ python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
 ### 从 stdin 读取
 
 ```bash
-echo "内容" | python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
+echo "内容" | python3 .claude/skills/dingtalk-ai-card/scripts/streaming.py \
   --to <staffId> \
   --template-id <templateId> \
   --stdin
@@ -70,7 +70,7 @@ echo "内容" | python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
 ### 发送到群聊
 
 ```bash
-python3 ~/.claude/skills/dingtalk-ai-card/scripts/streaming.py \
+python3 .claude/skills/dingtalk-ai-card/scripts/streaming.py \
   --to-group <openConversationId> \
   --template-id <templateId> \
   -m "群消息"

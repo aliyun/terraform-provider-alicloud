@@ -46,7 +46,7 @@ def create_client(endpoint: str = DEFAULT_ENDPOINT) -> OpenApiClient:
         AMP_ACCESS_KEY_SECRET / ALIBABA_CLOUD_ACCESS_KEY_SECRET
 
     Args:
-        endpoint: The service endpoint (default: apispecdata.cn-hangzhou.aliyuncs.com)
+        endpoint: The service endpoint (default: apispecdata-share.cn-zhangjiakou.aliyuncs.com)
 
     Returns:
         An initialised OpenApiClient instance.

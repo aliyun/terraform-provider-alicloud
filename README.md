@@ -20,7 +20,7 @@ bin/a1id login jarvis                           # 至少登录 jarvis（编排�
 
 ## 启动
 
-**当面用** —— 进目录起会话，CLAUDE.md 接管 scan→plan→triage：
+**当面用** —— 进目录起会话，CLAUDE.md 接管（preflight → 等任务，单条工单/即时任务按 loops 处理）：
 
 ```bash
 claude
@@ -34,11 +34,11 @@ bridge/run.sh start
 
 ## triage loop
 
-人确认凭证后，Claude 自动执行以下流程：`bootstrap/scan.sh` 拉取当前 Aone 入箱清单 → `bootstrap/plan.sh` 生成执行计划（含动作、置信度、auto/stop、不可逆点）→ supervised 模式下等你逐条授权 → 按 `loops/aone-triage.md` 处理授权项，全链跑到预发/CR。**正式发布永停**，须人工介入。
+批量扫派由 bridge 负责：`bridge/run.sh start` 起 ScanScheduler 定时扫池，对新单/外部更新单自动派发 headless jarvis 并发处理（`JARVIS_AUTO_DISPATCH=0` 可回退为钉钉授权前置模式），按 `loops/aone-triage.md` 全链跑到预发/CR。当面会话只处理用户直接给的单条工单或即时任务（`loops/adhoc-intake.md`）；`bootstrap/scan.sh` / `bootstrap/plan.sh` 保留作手动兜底与 bridge 内部计划步骤。**正式发布永停**，须人工介入。
 
 ## 任务看板
 
-5 列卡片看板（escalated / merged / done / inflight / 任务池），真源=Aone 标签与状态。
+5 列卡片看板（任务池 / 待开始 / 进行中 / 审核中 / 已完成），真源=Aone 标签与状态。
 
 ```bash
 bootstrap/serve.sh        # 起服务并打开 http://localhost:8787（未生成会自动 build）

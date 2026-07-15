@@ -52,13 +52,15 @@ Prereqs: `uv`/`uvx` installed; each profile's identity has `ram:GenerateAccessTo
 
 **The empty-string AK is load-bearing.** The Credentials SDK default chain is: env AK/SK → OIDC → **CLI profile (`~/.aliyun/config.json`)** → credentials.ini → ECS role. If a global `ALIBABA_CLOUD_ACCESS_KEY_ID` is exported in the shell, it is inherited by the child process and **wins over your profile.** Setting it to `""` makes the env provider raise "cannot be empty"; the chain catches that and falls through to the profile named by `ALIBABA_CLOUD_PROFILE`. Extra flags: `--site-type INTL` (default CN), `--safety-policy` / `--allow-tools` to gate a prod server, `--scope` / `--client-id` / `--server-url` overrides.
 
-## Verify (both approaches)
+## Verify
 
-Run the smoke test — it drives a real MCP `initialize` + `tools/list` and reports tool count or the exact error:
+**Approach B (profile)** — run the smoke test: it sets `ALIBABA_CLOUD_PROFILE=<profile>`, spawns the uvx proxy, and drives a real MCP `initialize` + `tools/list`:
 
 ```bash
-python3 scripts/smoke-test.py <profile-or-serverurl>   # see scripts/smoke-test.py header
+python3 scripts/smoke-test.py <profile>   # profile only — it cannot verify a server URL
 ```
+
+**Approach A (server URL)** — verify with the raw curl below, or connect it in Claude and run `/mcp`.
 
 A raw check for a known token/URL: `curl -sS -X POST <url> -H "Authorization: Bearer <tok>" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"c","version":"0"}}}'` → HTTP 200 = good.
 

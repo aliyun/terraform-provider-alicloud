@@ -1,12 +1,12 @@
 # 镇元查证与路由分支
 
-> 本 reference 是「镇元/Cloudspec 覆盖度查证 + provider 代码路由」的单点维护(P3.a 从 aone-triage 抽出)。跨 skill 复用:aone-triage tf-customer 路由 + provider-resource-dev 资源开发都读它。
+> 本 reference 是「镇元/Cloudspec 覆盖度查证 + provider 代码路由」的单点维护。跨 skill 复用:aone-triage tf-customer 路由 + provider-resource-dev 资源开发都读它。
 
 ## Step 2 — 定位缺口(按决策树)
 
 ### 前置 · upstream PR / commit 前扫(涉及 provider 源码的分支必跑)
 
-Provider 源码查证**不能只 grep 本地 workspace**——workspace 可能停在旧 HEAD、本地磁盘可能滞后 upstream 数十小时。`sync-provider.sh` 已 hardened 为 `fetch + reset --hard FETCH_HEAD` 强对齐 upstream master,但即便如此仍要额外扫 upstream PR,防止漏掉刚 merged / 正在 review 的同题改动。
+Provider 源码查证**不能只 grep 本地 workspace**——workspace 可能停在旧 HEAD、本地磁盘可能滞后 upstream 数十小时。`sync-provider.sh` 会 `fetch + reset --hard FETCH_HEAD` 强对齐 upstream master,但即便对齐仍要额外扫 upstream PR,防止漏掉刚 merged / 正在 review 的同题改动。
 
 ```bash
 # 1) 强制同步 workspace 到 upstream master 最新
@@ -34,7 +34,7 @@ bash bootstrap/github-identity.sh gh api \
 - **OPEN PR**:贴 PR 链接 + 状态到源单评论,让客户/提单人可跟进;是否建关联单看 PR 进度(已 review 中可先等)
 - **无命中**:才走下方决策树的分支 A/B/C/D/E/F/G 查证 + 建单流程
 
-**为什么放前置**:避免"以为 provider 没支持,建了关联单指派团队做,结果同题 PR 昨天刚 merged"。参见工单 83718139 教训——PR 9909 merged 21 小时后 jarvis 才处理仍未命中,是本 skill 的历史缺口。
+**为什么放前置**:避免"以为 provider 没支持,建了关联单指派团队做,结果同题 PR 昨天刚 merged"。先例:工单 83718139(同题 PR 9909 merged 21h 后处理仍未命中)。
 
 ### 分支 A:产品在专属维护名单
 
@@ -116,15 +116,15 @@ print("  Property/Operation/PrimaryOperation:",
 
 1. **API 在镇元有对应资源**:`get` 返回 data 且 `released` list 命中(资源已定义并发布)
 2. **当前资源属性满足客户诉求**:比对 Step 1 抽取的真实诉求字段,镇元资源 schema 的 properties **全覆盖** —— 缺字段即视为 NOT OK(即便覆盖度分再高也不算 OK,因为覆盖度只测已建 schema 的属性,客户想要新字段时属性不覆盖=缺口在镇元)
-3. **测试覆盖度 100%**:`CoverageDetail.CoverageScore == 1.0`(V2 已不返回 PASS/FAIL 用例计数,仅以覆盖度综合分判定)
+3. **测试覆盖度 100%**:`CoverageDetail.CoverageScore == 1.0`(V2 仅以覆盖度综合分判定,无 PASS/FAIL 用例计数)
 
-**判定**(按「与镇元相关性」口径,2026-07-06 路由重整):
+**判定**(按「与镇元相关性」口径):
 - 三条件全满足 → **镇元 OK** = 镇元侧无问题、缺口在 provider 侧 = **与镇元不相关**,走分支 D 分流
 - 任一不满足(资源未定义 / 属性缺客户要的字段 / 覆盖度 < 1.0) → **镇元 NOT OK** = **与镇元相关**,走分支 E
 
 **前置短路 · 纯 datasource 问题不查镇元**:诉求只涉 `data.alicloud_xxx`(查询/过滤/输出字段)、不涉资源 schema/生命周期的,直接判**与镇元不相关**、进分支 D 分流(非临钧子分支)——datasource 是 provider 侧对 List/Describe 查询 API 的只读封装,镇元只管资源 schema,本节的 get/覆盖度查证全部跳过。resource+datasource 混合诉求不算"纯",仍按资源主线走本节查证。
 
-**环境说明**:V2 已发布到 acube 正式(`acube.aliyun-inc.com`),默认走线上;需要预发数据把域名换成 `pre-acube.aliyun-inc.com` 即可(路径 / 参数 / 返回结构一致)。服务端实现见邻仓 `a-cube-aliyun-com` 里 `acube-auto-generator/.../ProductMetaUtil.java#getResourceQualityDetailCoverageScoreV2ByCommon`。
+**环境说明**:V2 走 acube 正式(`acube.aliyun-inc.com`),默认线上;需要预发数据把域名换成 `pre-acube.aliyun-inc.com` 即可(路径 / 参数 / 返回结构一致)。服务端实现见邻仓 `a-cube-aliyun-com` 里 `acube-auto-generator/.../ProductMetaUtil.java#getResourceQualityDetailCoverageScoreV2ByCommon`。
 
 **sanity check(必跑)**:拿同产品已发布的其他资源(如查 ① released list 里另一项)以相同接口复查,能拿到 `CoverageDetail` 说明内网/接口正常;否则先排查内网访问(`pre-acube.aliyun-inc.com` 需办公网/VPN;`/api/v1/**` 免鉴权,但走内网 DNS)。
 
@@ -170,7 +170,7 @@ else:
 echo "days_left=$days_left"
 ```
 
-- 关联单指派 **镇元 agent (`WORKER_1783326253279`)** 自动接单——镇元侧根因主责,**无论紧急与否都建**(2026-07-08 谜拟本人切换:她不再自己解单,由 agent 从关联单 body 里的机读 JSON 驱动)
+- 关联单指派 **镇元 agent (`WORKER_1783326253279`)** 自动接单——镇元侧根因主责,**无论紧急与否都建**(谜拟不解单,由 agent 从关联单 body 里的机读 JSON 驱动)
 - **body 硬契约**:关联单 body 必须严格按 `.Codex/skills/aone-triage/references/templates.md` 「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架写(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全),缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底
 - `priority == '紧急'` 或 `days_left < 14`(或缺陷类型覆写为紧急)→ **同时再建一张**关联单指派 新山(521957),双单并行(agent 修镇元侧根因,新山紧急兜底 provider 侧);原单指派谜拟(479782,人类兜底 owner),评论 @谜拟+@新山(agent 不接 IM 不 @;详见 `.Codex/skills/aone-triage/references/tf-customer-request-routing.md` Step 3 · 分支 E 紧急双关联单)
 - 否则 → 仅镇元 agent 一张

@@ -18,7 +18,7 @@
 |------|------|
 | 手动触发 | 用户在会话中执行 `/tf-probe` 或直接发指令「跑一轮场景探测 / 三方一致性扫描」 |
 | provider 新版 | 新版本发布后应尽快全量跑一轮(版本升级易引入 state 不兼容 / 新永久 diff / 文档漂移) |
-| cron / bridge | P2 才接入,本轮**不接** |
+| cron / bridge | bridge ProbeScheduler 每日 `JARVIS_PROBE_HOUR`(默认 10) 自动投递探测轮(headless;`JARVIS_PROBE_SCHED=0` 关) |
 
 ---
 
@@ -42,14 +42,14 @@ bootstrap/probe.sh doctor
 bootstrap/probe.sh tier0                        # 无参 = 全部场景 resources 并集(去重)
 bootstrap/probe.sh tier0 alicloud_vpc           # 指定资源
 bootstrap/probe.sh tier0 --all --rotate 20      # website/docs/r 全量,取 20 个最久未扫轮换巡检(状态落 .my-day/probe/t0mech-scanned.json)
-bootstrap/probe.sh tier0 --no-mech              # 关机械层(纯 doc↔source + 全 queue,= T0-mech 前现行为)
+bootstrap/probe.sh tier0 --no-mech              # 关机械层(纯 doc↔source + 全 queue,api_gap 检测关闭)
 bootstrap/probe.sh tier0 --dry                  # 只列将扫资源 + mech 模式 + 文档/源码存在性
 ```
 
 - **机械三方 diff 先行**:五类 `doc_gap_*`(doc↔source)**+ 六类 `api_gap_*`**(T0-mech,OpenAPI 元数据机械 diff:
   deprecated_action/enum_superset/required/type/range/default);被抑制记 `suppressed[]`、TF 更严记 `coverage_notes[]`。
-  `probe-meta` 不可用 → 自动降级为纯 doc↔source + 全 queue(现行为)。
-- **terraform-pd 只判疑点**(产品数字人,承接原 verifier 查证职责):收窄后的 `judgment_queue`(每条带 `reason`:prose_review/unmapped_params/enum_unparsed/no_triple/
+  `probe-meta` 不可用 → 自动降级为纯 doc↔source + 全 queue。
+- **terraform-pd 只判疑点**(产品数字人):收窄后的 `judgment_queue`(每条带 `reason`:prose_review/unmapped_params/enum_unparsed/no_triple/
   meta_unavailable)走双层查证,产 `doc_api_gap`。**范围红线:只核对已接入 TF 的面,未接入的资源/参数不报 gap(需求非 bug)**。
 - 落盘 `runs/probe/<YYYYMMDD>-<HHMMSS>-tier0.json`(verdict `mech` 字段标 on/off/degraded) + 人读 md。退出码:0 无 findings / 1 有 findings / 2 runner 错误。
 
@@ -67,7 +67,7 @@ bootstrap/probe.sh list
 - persona 分类(scenario.yaml `persona:` 键,详细定义见 `.claude/skills/tf-customer-probe/references/scenario-authoring.md`):
   `beginner` / `composer` / `updater` / `importer` / `migrator`(配置形态迁移)/`upgrader`(provider 版本 A→B)/
   `refactorer`(moved block/资源改名)/`drifter`(带外改动检测)/`ds-checker`(数据源读回一致性,纯 HCL 零 runner 改动)/
-  `ci-runner`(taxonomy 立骨架,本轮不写场景)。负路径断言 = `expect_fail` 键语义(不是 persona)。
+  `ci-runner`(占位 taxonomy,暂无场景)。负路径断言 = `expect_fail` 键语义(不是 persona)。
 
 ### 4.2 执行
 ```bash

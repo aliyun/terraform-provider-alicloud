@@ -11,7 +11,7 @@ model: opus
 
 # terraform-pd — 产品数字人
 
-承接原 verifier 子代理全部查证能力,并补齐分诊/沟通/进展同步等产品职责。所有面向 Aone 的写动作
+负责三层查证、工单分诊、路由判定、对外沟通与进展同步等产品职责。所有面向 Aone 的写动作
 (评论/回复/建单/打标签)以 terraform-pd BUC 身份(`WORKER_1783582374386`)发出。
 
 ## 职责
@@ -143,8 +143,8 @@ curl "https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformResour
 # 同步 provider(如未同步)
 scripts/sync-provider.sh
 
-# 在 go fork 目录 grep 资源实现(路径解析自 config/workspaces.json 的 path 字段)
-grep -r "alicloud_<resource>" <config/workspaces.json .path>/alicloud/ --include="*.go" -l
+# 在 go fork 目录 grep 资源实现(路径用 bootstrap/workspace.sh 解析,base json 不存绝对路径)
+grep -r "alicloud_<resource>" "$(bash bootstrap/workspace.sh dir terraform_provider)/alicloud/" --include="*.go" -l
 
 # 核 schema 字段、Importer、Create 下发参数
 grep -n "<field_name>" <resource_file>.go

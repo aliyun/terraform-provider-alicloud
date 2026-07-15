@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # bootstrap/probe.sh — tf-customer-probe 分层探测 runner
 #
-# 分层(2026-07-03 重定义):
+# 分层:
 #   tier-0 = 静态三方一致性扫描(TF 文档 ↔ OpenAPI 文档 ↔ provider 源码),不跑 terraform。
-#            机械部分只做本地 文档↔源码 diff;OpenAPI 一侧留 judgment_queue 交给 skill 层查证。
+#            机械层 = 本地 文档↔源码 diff(五类 doc_gap_*) + T0-mech OpenAPI 机械三方 diff(probe-meta.sh,
+#            六类 api_gap_*);拿不准的项才留 judgment_queue 交 skill 层查证(probe-meta 不可用自动降级为
+#            纯 doc↔source + 全 queue)。
 #            范围红线:只测 provider 已接入(TF 已支持)的面,云产品未接入 TF 的资源/参数一律不报 gap。
-#   tier-1 = 真实 apply 全生命周期探测(默认开启)。撤销免费白名单成本门,换 PrePaid/Subscription 销毁性守门。
+#   tier-1 = 真实 apply 全生命周期探测(默认开启)。成本门 = PrePaid/Subscription 销毁性守门(值敏感)。
 #
 # 子命令:
-#   doctor                          — 环境预检(terraform/jq/凭证/config/本地 provider 仓/场景根)
+#   doctor                          — 环境预检(terraform/jq/凭证/config/本地 provider 仓/场景根/probe-meta/aliyun CLI)
 #   list                            — 扫 <playground>/<product>/<id>/scenario.yaml 输出表格(含 PRODUCT 列)
 #   tier0 [--no-mech] [--all] [--limit N] [--rotate N] [alicloud_xxx ...] [--dry]
 #                                   — 静态三方一致性扫描(OpenAPI 机械三方 diff 预筛 + judgment_queue;
@@ -25,12 +27,13 @@
 # 分流纪律(建单准确率命门):findings=provider 疑似 bug;env_issues=环境问题(凭证/网络/prepaid/plan-only)。
 #   鉴权/网络类错误永远归 env_issues,绝不进 findings。凭证值绝不落日志/verdict。测试账号边界:只用环境注入的测试 AK/SK。
 #
-# 场景根(playground):场景语料库外置在 jarvis 仓外,按云产品维度两级归档
+# 场景根(playground):独立 git 数据仓 tf_playground,按云产品维度两级归档
 #   <root>/<product>/<id>/scenario.yaml (product = 一级目录名, e.g. vpc/oss/ram)。
-#   解析优先级(env > config > 默认约定):
+#   解析优先级(env > config > workspace 登记 > 默认约定):
 #     1. $JARVIS_TF_PLAYGROUND 非空且目录存在
 #     2. config/probe.json 的 .paths.playground_dir 非 null 且目录存在(应为绝对路径)
-#     3. 默认 <jarvis 根目录的父目录>/terraform_playground
+#     3. bootstrap/workspace.sh dir tf_playground(工作区登记)
+#     4. 默认 <jarvis 根目录的父目录>/terraform_playground
 #
 # 环境变量(多数仅测试用):
 #   JARVIS_ROOT              — repo root(见 lib.sh)
@@ -316,7 +319,7 @@ _cmd_doctor() {
     if bash "$_probe_dir/probe-meta.sh" available >/dev/null 2>&1; then
         echo "OK   probe-meta: OpenAPI 元数据获取层可用(tier-0 机械三方 diff 开启)"
     else
-        echo "WARN probe-meta: OpenAPI 元数据获取层不可用(缺 venv/凭证)→ tier-0 自动降级为纯 doc↔source + 全 judgment_queue(现行为)"
+        echo "WARN probe-meta: OpenAPI 元数据获取层不可用(缺 venv/凭证)→ tier-0 自动降级为纯 doc↔source + 全 judgment_queue"
         echo "       启用: bash .claude/skills/amp-resource-metadata/scripts/setup.sh + 配 AMP_/ALIBABA_CLOUD_ 凭证(白名单见 skill SKILL.md)"
     fi
     # B2/doctor:aliyun CLI 存在性(drifter 场景 drift_cli 直执 aliyun 需要);WARN 级不阻断——drift 场景默认关。

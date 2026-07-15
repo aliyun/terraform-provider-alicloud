@@ -1,19 +1,10 @@
 # bin/a1id v2 —— a1 多身份并发切换器
 
-## v1 → v2 迁移
+## 布局
 
-- **v1** 假设 a1 CLI 不支持多身份并发,给每个身份存一份 `identities/<label>.auth.yaml` 文件,切换=复制覆盖 live(`~/.config/a1/auth.yaml`)。依赖 live,操作**串行**。
-- **v2** 利用 a1 CLI 尊重 `A1_CONFIG_DIR` 环境变量的事实,给每个身份分配独立 config dir(`identities/<label>/`,内含完整 `auth.yaml`);`as`/`--` 只把 `A1_CONFIG_DIR` 指到目标身份 dir 再 exec a1——不改 live、不改 `.active`、无 trap 还原,**天然并发安全**。
+每个身份独立 config dir（`identities/<label>/`，内含完整 `auth.yaml`）；`as`/`--` 只把 `A1_CONFIG_DIR` 指到目标身份 dir 再 exec a1——不改 live（`~/.config/a1/auth.yaml`）、不改 `.active`（仅 `a1id use` 更新，脚本链路不读），**天然并发安全**。
 
-启动时自动做**幂等**迁移:发现 v1 文件 `identities/<label>.auth.yaml` 而 v2 目录 `identities/<label>/` 尚未建 → `mkdir + cp`,v1 文件**保留**(便于回退)。首跑 live 收编(仅 jarvis 且 v1/v2 全空时)沿用 v1 语义,落点改到 `identities/jarvis/auth.yaml`。
-
-## 目录布局对照
-
-| v1 | v2 |
-|----|-----|
-| `~/.config/a1/identities/jarvis.auth.yaml`(文件) | `~/.config/a1/identities/jarvis/`(目录,内含 `auth.yaml`) |
-| 切换=复制到 live `~/.config/a1/auth.yaml` | 无切换;子进程 a1 直接吃 `A1_CONFIG_DIR=identities/<label>` |
-| `.active` 记 live 身份,脚本链路依赖 | `.active` 仅 `a1id use` 更新;脚本链路不读 |
+启动时自动做**幂等**收编:发现旧单文件布局 `identities/<label>.auth.yaml` 而目录 `identities/<label>/` 尚未建 → `mkdir + cp`,旧文件**保留**(便于回退)。首跑 live 收编(仅 jarvis 且新旧布局全空时)落到 `identities/jarvis/auth.yaml`。
 
 ## 七个身份
 
@@ -87,4 +78,4 @@ bin/a1id ready terraform-qa || echo "未登录,已回退 jarvis(标 identity_fal
 
 ## 并发原理(重点)
 
-v2 每个身份一个独立 `A1_CONFIG_DIR`,`a1id as pd -- ...` 与 `a1id as rd -- ...` 并发跑各自 exec 独立 a1 子进程,读写各自 dir 内的 `auth.yaml`,互不干扰。live `~/.config/a1/auth.yaml` 只由 `a1id login`/`a1id use` 影响(人工态),脚本链路(`bootstrap/wrap.sh`、`bootstrap/claim.sh`、`bootstrap/scan.sh` 等)全部通过 `bin/a1id --` 或 `bin/a1id as ...` 走,不再动 live。
+v2 每个身份一个独立 `A1_CONFIG_DIR`,`a1id as pd -- ...` 与 `a1id as rd -- ...` 并发跑各自 exec 独立 a1 子进程,读写各自 dir 内的 `auth.yaml`,互不干扰。live `~/.config/a1/auth.yaml` 只由 `a1id login`/`a1id use` 影响(人工态),脚本链路(`bootstrap/wrap.sh`、`bootstrap/claim.sh`、`bootstrap/scan.sh` 等)全部通过 `bin/a1id --` 或 `bin/a1id as ...` 走,不动 live。

@@ -29,7 +29,7 @@ gh pr view <url> --json files -q '.files[].path'   # 改了哪些文件
 取改了哪些资源 .go、新增/改了哪些 schema 字段。
 
 ## 2. 进 workspace(给查证上下文)
-读 `config/workspaces.json` 取 `workspaces.terraform_provider`:`path`(go fork,查证/开发同一仓)+ `ops.build`/`ops.vet`。cd 到 path 取上下文;不在则 `scripts/sync-provider.sh`(从 workspaces.json 读 path,fetch-only)同步/clone。
+读 `config/workspaces.json` 取 `workspaces.terraform_provider`(`ops.build`/`ops.vet` 等);本地路径用 `bootstrap/workspace.sh dir terraform_provider` 解析(base 不存绝对路径)。cd 进去取上下文;仓不在则 `scripts/sync-provider.sh` 同步/clone(**有库 fetch + `reset --hard` 强对齐 upstream——主目录是只读查证镜像,改动一律走 worktree**)。
 
 ## 3. 双层查证(顺序固定,不凭记忆)
 1. **OpenAPI 全集**:解析 product+action → `AlibabaCloud ListApis`/`GetApiDefinition` 核字段名/类型/枚举/action 是否存在。JMESPath 用单引号,反引号会失败:`parameters[?name=='X'].schema.properties|[0]|keys(@)`。
@@ -58,7 +58,8 @@ gh pr view <url> --json files -q '.files[].path'   # 改了哪些文件
 ## 开发路径(独立、需另行授权)
 评审命中需改代码 → 切 worktree 分支开发,绝不在主目录/master 改;推送和 PR 创建必须走 `api-tool-agent` 身份:
 ```
-git -C <workspaces.terraform_provider.path> checkout -b <branch> origin/master
+prov="$(bootstrap/workspace.sh dir terraform_provider)"
+git -C "$prov" worktree add -b <branch> <worktree_dir> origin/master
 # 提交走 identity 助手,确保 commit 作者 = api-tool-agent(CLA 硬门,见下)
 bootstrap/github-identity.sh commit -m "resource/...: ..."
 bootstrap/github-identity.sh check
@@ -71,7 +72,7 @@ bootstrap/github-identity.sh gh pr create --repo aliyun/terraform-provider-alicl
 - GitHub 写操作若在 provider worktree shell 里缺 `JARVIS_GITHUB_TOKEN`,不要回退个人账号;回到 Jarvis 已认证 shell 调 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>`。
 - 上游 master 前进后,CI 若报 `jitterbit/get-changed-files` / `head commit ... is not ahead of the base commit`,先 `fetch` upstream,确认 PR commit 后 rebase 到最新 `origin/master`/`alicloud/master`,保持单提交再 force update `api-tool-agent:<branch>`。
 - 推送前先做单提交门禁: `git rev-list --count <base>..HEAD` 必须是 `1`;若 GitHub CI `Pull Request Max Commits` 报 `commitNum>1`,不要叠加修复提交,应 squash 成一个提交后再 force-with-lease 更新 `api-tool-agent:<branch>`。
-- **commit 作者硬门(CLA)**:`license/cla` 报 "Contributor License Agreement is not signed yet" 多因 **commit 作者邮箱**不是 CLA-signed 的 `cloudspec_bot@alibaba-inc.com`(裸 `git commit` 会落本地伪身份如 `jarvis@jarvis.local`)。提交走 `bootstrap/github-identity.sh commit`;已错则 `bootstrap/github-identity.sh commit --amend --no-edit` 重署名后 force-push。CLA 校验的是作者,不是 push token / PR opener。参见 `escalation/cap-github-commit-identity.md`。
+- **commit 作者硬门(CLA)**:`license/cla` 报 "Contributor License Agreement is not signed yet" 多因 **commit 作者邮箱**不是 CLA-signed 的 `cloudspec_bot@alibaba-inc.com`(裸 `git commit` 会落本地伪身份如 `jarvis@jarvis.local`)。提交走 `bootstrap/github-identity.sh commit`;已错则 `bootstrap/github-identity.sh commit --amend --no-edit` 重署名后 force-push。CLA 校验的是作者,不是 push token / PR opener。参见 `escalation/archived/cap-github-commit-identity.md`。
 - PR 评论要求“可用 Example”时,先在本地用 PR provider 包/override 验证 `terraform init/validate`。示例必须含 `required_providers`,跨账号资源用 aliased providers;AK/SK 只通过 `sensitive` 变量或环境变量传入,禁止写真实值。
 - 跨账号 AccTest 不只看 `TF_ACC`:先隔离 ambient `ALICLOUD_ACCESS_KEY`/`ALICLOUD_SECRET_KEY`,再显式检查 `ALICLOUD_ACCESS_KEY_1/2` 解析到的账号是否符合预期。测试前置清理只用于清历史脏关系,不能替代 provider Delete;若 CLI/API 能清理关系,资源 Delete 也应实现同等删除并校验幂等。
 - CI 失败诊断必须按失败 check 的 job id 拉日志:先 `gh pr checks --json name,link,state,bucket,workflow`,从失败项 URL 拿 run/job,再用 `gh run view <run_id> --job <job_id> --log`;同一个 workflow 里的其它 job 日志不能替代失败 job。

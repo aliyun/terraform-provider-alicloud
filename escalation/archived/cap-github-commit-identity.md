@@ -1,5 +1,7 @@
 # cap: github-identity 管 push 身份但不管 commit 作者 → CLA 失败
 
+> **[归档]** 两项补丁均已落地:`github-identity.sh` 增 `commit` 子命令(作者 `api-tool-agent <cloudspec_bot@alibaba-inc.com>`,`JARVIS_GIT_AUTHOR_NAME/EMAIL` 可覆盖)+ `push` 前 tip 作者 WARN 兜底;CLA commit 作者硬门已写入 provider-resource-dev / terraform-pr-review skill。归档保留正文作历史缺口记录。
+
 - **缺口类型**: 能力/流程缺陷（missing_capability，工具覆盖不全）
 - **阻塞任务**: jarvis 开发的 terraform-provider PR（工单 83884678 → PR 9924）CI `license/cla` 失败
 - **置信度**: high_conf（已实测复现 + 修复验证）

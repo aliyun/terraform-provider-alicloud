@@ -6,7 +6,7 @@
 
 ### supervised（默认）
 - 每轮先输出行动计划，**逐项等待用户授权**后才执行 Aone 写操作。
-- 适合日常使用；切换方式：显式指令 `--mode unattended`。
+- 适合日常使用。切换 unattended 分两层：会话层=仓库主人显式指令；脚本链路（bridge/serve 的 `plan.sh` 机械闸门）读本文末机读块的 `mode` 字段，需一并改 JSON 才放行。
 
 ### unattended
 - 在置信度高且操作可逆的前提下全自动执行；**仅 escalate 触发时才通知人**。
@@ -27,7 +27,7 @@
 | 操作 | 说明 |
 |------|------|
 | `reply` | 回复工单 / 工作项评论 |
-| `create_req` | 建需求（Cloudspec 需求池） |
+| `create_req` | 建需求（按 `config/pools.json` 路由落池） |
 | `tag` | 打标签 / 更新标签 |
 | `create_cr` | 建变更 / CR |
 | `worktree` | worktree 开发（本地分支） |
@@ -65,6 +65,7 @@
 | `verify_fail` | 验证步骤失败（查证返回矛盾结果） |
 | `redline` | 红线操作：推送 master / 零差异 CR / 正式发布 |
 | `missing_capability` | 缺工作区/工具/池映射（config/workspaces.json 未登记） |
+| `unexternalized` | headless 收尾前外化契约未完成（wrap sync + push + checkpoint，见 headless 节；`JARVIS_REQUIRE_PUSH=1` 时 wrap-check 阻断） |
 
 Escalate 行为：暂停执行，输出摘要，通知用户决策。
 
@@ -73,5 +74,5 @@ Escalate 行为：暂停执行，输出摘要，通知用户决策。
 ## 机读策略块
 
 ```json
-{"mode":"supervised","modes":{"supervised":"逐项授权","unattended":"高置信自动","headless":"bridge委派,高自主+挂起唤醒"},"auto":["reply","create_req","tag","create_cr","worktree","prestage","adhoc_aone","pr_review","wrap"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability","unexternalized"],"headless":{"dispatch_timeout":43200,"suspend_expire":1209600,"suspend_signal":"[[SUSPEND:{...}]]"}}
+{"mode":"supervised","modes":{"supervised":"逐项授权","unattended":"高置信自动","headless":"bridge委派,高自主+挂起唤醒"},"auto":["reply","create_req","tag","create_cr","worktree","prestage","adhoc_aone","pr_review","wrap_sync","wrap_done"],"stop":["release_prod"],"escalate_if":["low_conf","verify_fail","redline","missing_capability","unexternalized"],"headless":{"dispatch_timeout":43200,"suspend_expire":1209600,"suspend_signal":"[[SUSPEND:{...}]]"}}
 ```

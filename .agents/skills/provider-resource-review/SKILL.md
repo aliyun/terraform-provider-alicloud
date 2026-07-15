@@ -1,6 +1,6 @@
 ---
 name: provider-resource-review
-description: Code review SOP for Terraform Provider resource changes. Covers delete implementation, code-doc consistency, conditional logic documentation, doc quality, test quality, and common bug patterns. Used standalone or referenced by provider-resource-acceptance.
+description: Code review SOP for Terraform Provider resource changes. Covers delete implementation, code-doc consistency, conditional logic documentation, doc quality, test quality, and common bug patterns. Used standalone or referenced by terraform-pr-review / terraform-provider-release.
 metadata:
   version: "3.2.0"
   domain: terraform-provider

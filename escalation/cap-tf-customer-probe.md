@@ -28,9 +28,9 @@ probe 发现(tier-0 doc gap / tier-1 生命周期 bug) → 建单(tf_provider 52
 | 层 | 防线 | 状态 |
 |----|------|------|
 | ① | 上游 GitHub issue 挖掘（从社区已报问题反查） | 未建（未来） |
-| **②** | **合成客户探测 = 本能力** | **P0 本轮** |
-| ③ | 真实工单回灌回归（regression-<aone-id> 场景） | 规则已立（scenario-authoring.md），直落外置 playground + 工单报备 |
-| ④ | 发布前 RC 门禁（发版前全场景过一遍） | P2 |
+| **②** | **合成客户探测 = 本能力** | **已落地**（tier-0/tier-1 运转中,bridge 每日探测轮） |
+| ③ | 真实工单回灌回归（regression-<aone-id> 场景） | 规则已立（scenario-authoring.md），直落 git 数据仓 tf_playground + 工单报备 |
+| ④ | 发布前 RC 门禁（发版前全场景过一遍） | 已落地（`bootstrap/rc-gate.sh`） |
 | ⑤ | cloudspec/OpenAPI 覆盖矩阵驱动生成（探从未被示例覆盖的属性） | P3 |
 
 本能力是②，并为③④⑤留接口（场景语料库结构、verdict schema、tier 分层、config 开关都可复用）。
@@ -88,12 +88,13 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
   **源码 schema 嵌套深层解析**(当前只顶层,深挖 Elem 内层字段);terraform 二进制入 `bootstrap/install.sh` 依赖;
   工单回灌机制落地;`sweep` 接 aliyun CLI 按标签扫真实孤儿资源;自动建单**已毕业**(2026-07-05 主人拍板,采纳率
   7/8=87.5% 提前毕业,`ticket.mode=file`;draft 保留为可回退开关);a1 建单命令与优先级枚举固化。
-- **P2**：cron/bridge 定时接入(**调度与修复闭环统一由 `cap-probe-fix-flywheel` F2 承接**);场景库批量扩容
-  (website docs 全量 tier-0 覆盖);发布前 RC 门禁(接 terraform-changelog 发版流程,发版前全资源 tier-0 + 全场景
-  tier-1 过一遍);~~upgrader persona~~ **已落地(2026-07-08)——`provider_version_from` 键 + upgrader dance**;
-  `probe-corpus.sh` 生成 persona 变体(migrator/refactorer/ds-checker,同资源不同角度)。
+- **P2**：~~cron/bridge 定时接入~~ **已落地**(ProbeScheduler 每日轮,由 `cap-probe-fix-flywheel` F2 承接);
+  ~~场景库批量扩容~~ **已落地**(`probe-corpus.sh` 从 website docs 机械造场景);~~发布前 RC 门禁~~ **已落地**
+  (`bootstrap/rc-gate.sh`,接 terraform-changelog 发版流程);~~upgrader persona~~ **已落地(2026-07-08)——
+  `provider_version_from` 键 + upgrader dance**;`probe-corpus.sh` 生成 persona 变体(~~ds-checker~~ 已内建
+  `_corpus_gen_ds` 只读变体;**migrator/refactorer 仍缺**)。
 - **P3**：cloudspec/OpenAPI 覆盖矩阵驱动属性组合生成(优先探从未被示例覆盖的属性);真实架构级组合场景;
-  度量看板(发现数/采纳率/发现→修复周期,接 board.sh);**scale/throttling persona**(API 限流/大规模并发);
+  ~~度量看板~~ **已落地**(`board.sh` probe 飞轮健康度);**scale/throttling persona**(API 限流/大规模并发);
   **provider 新版本三件套**(发布检测 + config/playground pin 批量 bump + 触发全量轮);**`_quarantine` 自动出队**
   (再校验 + 修好归位);**acc-test / pr-review / release 场合蒸馏钩子**(把 KNOWLEDGE 契约挂到 provider-resource-review
   / terraform-pr-review / terraform-provider-release 的收尾流程);**KNOWLEDGE → 产品级 skill 毕业**
@@ -198,8 +199,8 @@ S1 紧急 / S2 高 / S3 中 / S4 低（详见 skill `references/severity-rubric.
 
 - **修复侧闭环设计**：见 `escalation/cap-probe-fix-flywheel.md`(探测→建单→修复→验证→发布→回灌 六段飞轮 + F0–F4 阶段计划)。
 - probe 发现的 provider 问题单：落 tf_provider 池 528766，指派 WORKER_1782379562571，标签 jarvis-probe。
-- 相关文件：`config/probe.json`、`bootstrap/probe.sh`、外置 `terraform_playground/`(场景库)、
+- 相关文件：`config/probe.json`、`bootstrap/probe.sh`、git 数据仓 `tf_playground`(场景库)、
   `.claude/skills/tf-customer-probe/`、`loops/tf-probe.md`、`test/probe_test.sh`。
 - 相关技能：aone-triage（接单修复）、provider-resource-dev（资源开发）、terraform-pr-review（PR 评审）、
-  invoke-terraform-acc-test-remote（远程 AccTest）、terraform-changelog（发版，未来接 RC 门禁）。
+  invoke-terraform-acc-test-remote（远程 AccTest）、terraform-changelog（发版，RC 门禁已接 `bootstrap/rc-gate.sh`）。
 - 工作纪律：CLAUDE.md #4 工作区登记、#6 身份纪律；autonomy.md（probe 产出的建单/CR 受策略约束）。

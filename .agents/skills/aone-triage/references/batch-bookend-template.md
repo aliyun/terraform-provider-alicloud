@@ -10,7 +10,7 @@
 ## 骨架 A · 走 bookend(改状态 / 建关联单场景)
 
 ```bash
-cd /Users/gzzz/workspace/jarvis
+cd "$(git rev-parse --show-toplevel)"   # jarvis 仓根(勿硬编码单机路径)
 # 分批 4-5 单一 Bash 调用(<60s),防止 2min timeout 截断中间态残留
 IDS=(78504233 78523353 78554774 78186809 78470497)
 POOL=1086837
@@ -44,7 +44,7 @@ done
 可完全避开 `claim.sh` lost race 阻断,且不受批 4-5 单限制(单条评论 ~1s):
 
 ```bash
-cd /Users/gzzz/workspace/jarvis
+cd "$(git rev-parse --show-toplevel)"   # jarvis 仓根(勿硬编码单机路径)
 IDS=(78552705 78525865 78452193 78312012 78264187 78299240)
 for id in "${IDS[@]}"; do
   if [ ! -f "/tmp/wrap-${id}.txt" ]; then
@@ -60,7 +60,7 @@ done
 ## 骨架 C · 建关联单 + wrap 主单(转单场景)
 
 ```bash
-cd /Users/gzzz/workspace/jarvis
+cd "$(git rev-parse --show-toplevel)"   # jarvis 仓根(勿硬编码单机路径)
 SRC=78056841                            # 客户主单 id
 POOL=1086837                            # 主单所在池
 NEW_PROJECT=528766                      # tf_provider 池
