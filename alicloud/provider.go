@@ -173,6 +173,7 @@ func Provider() terraform.ResourceProvider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"alicloud_apig_gateways":                              dataSourceAliCloudApigGateways(),
 			"alicloud_apig_plugins":                               dataSourceAliCloudApigPlugins(),
+			"alicloud_apig_domains":                               dataSourceAliCloudApigDomains(),
 			"alicloud_express_connect_router_vpc_associations":    dataSourceAliCloudExpressConnectRouterVpcAssociations(),
 			"alicloud_express_connect_router_tr_associations":     dataSourceAliCloudExpressConnectRouterTrAssociations(),
 			"alicloud_express_connect_router_vbr_child_instances": dataSourceAliCloudExpressConnectRouterVbrChildInstances(),
@@ -940,6 +941,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_apig_plugin":                                          resourceAliCloudApigPlugin(),
 			"alicloud_apig_plugin_class":                                    resourceAliCloudApigPluginClass(),
+			"alicloud_apig_domain":                                          resourceAliCloudApigDomain(),
 			"alicloud_cr_artifact_lifecycle_rule":                           resourceAliCloudCrArtifactLifecycleRule(),
 			"alicloud_das_sql_log_config":                                   resourceAliCloudDasSqlLogConfig(),
 			"alicloud_cms_alert_rule_v2":                                    resourceAliCloudCmsAlertRuleV2(),
