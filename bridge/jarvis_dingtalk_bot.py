@@ -2079,6 +2079,9 @@ class PrWatchScheduler:
       · open + CI 绿/pending / 查询失败 → 保留，下轮再看
     轮询周期 #3 双档：本轮有 active entry（CI 失败或 pending）→ 下一轮走快档
     JARVIS_PRWATCH_ACTIVE_INTERVAL（默认 600s）；纯等合并 → 慢档 JARVIS_PRWATCH_INTERVAL（默认 3600s）。
+    #6 兜底发现（_maybe_autoregister_open_prs，节流 ≥ interval，JARVIS_PRWATCH_AUTOREG=1 默认开）：
+    扫 api-tool-agent 名下 upstream open PR，分支编码工单号且 aone-get 校验通过的漏登 PR 自动补
+    pr-watch.sh add，防 PR 脱管（漏 add → CI/评论/合并全无人跟）。
     finish 前重读工单（JARVIS_CACHE_TTL=0 强制新取）：命中 jarvis-npe（人工介入）或状态已终态 →
     不自动 finish，留人工（人工重开保护）。
 
@@ -2095,6 +2098,10 @@ class PrWatchScheduler:
         self._active_interval = int(os.environ.get("JARVIS_PRWATCH_ACTIVE_INTERVAL", "600"))
         self._next_interval = self.interval  # 首轮长睡（冷启动不打爆 gh）
         self.enabled = os.environ.get("JARVIS_PRWATCH_ENABLE", "1") == "1"
+        # #6 兜底发现：漏登记的 open PR 自动补登记。节流到 ≥ self.interval 扫一次。
+        self._autoreg = os.environ.get("JARVIS_PRWATCH_AUTOREG", "1") == "1"
+        self._last_autoreg_at = 0.0
+        self._autoreg_warned = set()  # 已提示过「无法解析工单号」的 PR url，避免刷屏
         self._thread = None
 
     def start(self):
@@ -2121,6 +2128,10 @@ class PrWatchScheduler:
         # 运行时暂停闸：与 ScanScheduler/PersonaScheduler 复用同一个 pause 标记。
         if (Path(REPO_ROOT) / ".my-day" / "bridge" / "pause").exists():
             return False
+        try:
+            self._maybe_autoregister_open_prs()  # #6 兜底发现（内部节流），失败不殃及看守
+        except Exception:  # noqa: BLE001
+            log.exception("PrWatchScheduler: auto-register sweep failed")
         any_active = False
         for tid, entry in list(_prwatch_list().items()):
             try:
@@ -2367,6 +2378,89 @@ class PrWatchScheduler:
             self.handler._broadcast("[PR-watch] #%s PR 有新评审评论（@%s），已自动派发回应" % (tid, author))
         else:
             log.info("PrWatchScheduler: #%s comment reply not submitted (%s)", tid, reason)
+
+    # -- #6 兜底发现：漏登记的 open PR 自动补登记 --------------------------------------
+
+    def _gh_open_prs(self):
+        """List open PRs authored by api-tool-agent on upstream via github-identity.sh gh
+        pr list. Returns [{number,url,headRefName}] or None on failure. best-effort。"""
+        gh_id = str(Path(REPO_ROOT) / "bootstrap" / "github-identity.sh")
+        try:
+            proc = subprocess.run(
+                [gh_id, "gh", "pr", "list", "--repo", "aliyun/terraform-provider-alicloud",
+                 "--author", "api-tool-agent", "--state", "open", "--limit", "50",
+                 "--json", "number,url,headRefName"],
+                capture_output=True, text=True, env=os.environ.copy(), timeout=60)
+        except Exception as e:  # noqa: BLE001
+            log.warning("PrWatchScheduler: gh pr list raised: %s", e)
+            return None
+        if proc.returncode != 0:
+            log.warning("PrWatchScheduler: gh pr list rc=%d: %s",
+                        proc.returncode, (proc.stderr or "").strip()[:200])
+            return None
+        try:
+            data = json.loads(proc.stdout)
+            return data if isinstance(data, list) else None
+        except Exception as e:  # noqa: BLE001
+            log.warning("PrWatchScheduler: gh pr list non-JSON: %s", e)
+            return None
+
+    def _ticket_project(self, tid):
+        """工单归属 project（pools.json 池 id，如 528766）via aone-get fields[].space.value。
+        读失败 / 无此单 / 非数字 → None（→ caller 跳过，不冒然登记错单）。"""
+        env = os.environ.copy()
+        env["JARVIS_CACHE_TTL"] = "0"
+        try:
+            proc = subprocess.run(
+                [str(Path(REPO_ROOT) / "bootstrap" / "aone-get.sh"), str(tid)],
+                capture_output=True, text=True, env=env, timeout=90)
+        except Exception:  # noqa: BLE001
+            return None
+        if proc.returncode != 0:
+            return None
+        try:
+            d = json.loads(proc.stdout)
+        except Exception:  # noqa: BLE001
+            return None
+        for f in (d.get("fields") or []):
+            if isinstance(f, dict) and f.get("identifier") == "space":
+                v = str(f.get("value") or "")
+                return v if v.isdigit() else None
+        return None
+
+    def _maybe_autoregister_open_prs(self):
+        """周期(≥ self.interval 节流)扫 api-tool-agent 名下 upstream open PR，对未登记的：branch
+        明确编码工单号(≥8 位数字)且 aone-get 校验工单存在 → _prwatch_add 自动补登记（漏登防脱管，
+        补缺口 S5）；分支无法解析 / 工单校验失败 → log 一次(去重)提示人工登记，绝不瞎登。"""
+        if not self._autoreg:
+            return
+        now = time.time()
+        if now - self._last_autoreg_at < self.interval:
+            return
+        self._last_autoreg_at = now
+        prs = self._gh_open_prs()
+        if prs is None:
+            return
+        watched = {str(e.get("pr_url")) for e in _prwatch_list().values()}
+        for pr in prs:
+            url = str(pr.get("url") or "")
+            if not url or url in watched:
+                continue
+            branch = str(pr.get("headRefName") or "")
+            m = re.search(r"(\d{8,})", branch)  # jarvis 分支多编码工单号 e.g. feat/84291978-...
+            tid = m.group(1) if m else ""
+            project = self._ticket_project(tid) if tid else None
+            if not project:
+                if url not in self._autoreg_warned:
+                    self._autoreg_warned.add(url)
+                    log.info("PrWatchScheduler: 未登记 open PR %s (branch %s) — 工单号无法从分支解析/"
+                             "校验，跳过自动登记，请人工 pr-watch.sh add", url, branch)
+                continue
+            _prwatch_add(tid, url, project)
+            log.info("PrWatchScheduler: 自动补登记漏登 open PR %s → #%s (project %s)", url, tid, project)
+            if self.handler:
+                self.handler._broadcast(
+                    "[PR-watch] 自动补登记未跟踪的 open PR #%s → 工单 #%s" % (pr.get("number"), tid))
 
     @staticmethod
     def _parse_ticket_meta(d):

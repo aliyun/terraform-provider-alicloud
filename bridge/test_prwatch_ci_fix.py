@@ -283,5 +283,65 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
         self.assertIsNone(self._entry().get("last_seen_comment"))
 
 
+class AutoRegisterTest(_DispatchBase):
+    """#6 兜底发现：漏登记的 open PR 自动补登记（分支解析工单号 + aone-get 校验）。"""
+
+    def setUp(self):
+        super().setUp()
+        bot._prwatch_write({})  # 清空 base 的 TID entry，从零测漏登发现
+        self._prs = []
+        self._proj = "528766"
+        self.sched._gh_open_prs = lambda: self._prs
+        self.sched._ticket_project = lambda tid: self._proj
+
+    @staticmethod
+    def _pr(n, branch):
+        return {"number": n, "headRefName": branch,
+                "url": "https://github.com/aliyun/terraform-provider-alicloud/pull/%d" % n}
+
+    def test_branch_encoded_ticket_autoregisters(self):
+        self._prs = [self._pr(9972, "feat/84291978-tair")]
+        self.sched._maybe_autoregister_open_prs()
+        reg = bot._prwatch_list()
+        self.assertIn("84291978", reg)
+        self.assertEqual(reg["84291978"]["project"], "528766")
+        self.assertEqual(reg["84291978"]["pr_url"], self._prs[0]["url"])
+
+    def test_already_watched_skipped(self):
+        pr = self._pr(9972, "feat/84291978-tair")
+        bot._prwatch_add("84291978", pr["url"], "528766")
+        self._prs = [pr]
+        called = []
+        self.sched._ticket_project = lambda tid: called.append(tid) or "528766"
+        self.sched._maybe_autoregister_open_prs()
+        self.assertEqual(called, [], "已登记 PR 不应再查 project/重登")
+
+    def test_unparseable_branch_not_registered(self):
+        self._prs = [self._pr(100, "feat/gpdb-api-key")]  # 无工单号
+        self.sched._maybe_autoregister_open_prs()
+        self.assertEqual(bot._prwatch_list(), {}, "分支无工单号 → 不瞎登")
+
+    def test_project_lookup_fail_not_registered(self):
+        self._proj = None
+        self._prs = [self._pr(101, "feat/12345678-x")]  # 有号但校验失败
+        self.sched._maybe_autoregister_open_prs()
+        self.assertEqual(bot._prwatch_list(), {}, "工单校验失败 → 不登记")
+
+    def test_throttle_blocks_second_call(self):
+        self._prs = [self._pr(9972, "feat/84291978-x")]
+        self.sched._maybe_autoregister_open_prs()
+        self._prs = [self._pr(5, "feat/55555555-y")]
+        self.sched._maybe_autoregister_open_prs()  # 同 interval 内 → 节流
+        reg = bot._prwatch_list()
+        self.assertIn("84291978", reg)
+        self.assertNotIn("55555555", reg, "同 interval 内第二次应被节流")
+
+    def test_disabled_noop(self):
+        self.sched._autoreg = False
+        self._prs = [self._pr(9972, "feat/84291978-x")]
+        self.sched._maybe_autoregister_open_prs()
+        self.assertEqual(bot._prwatch_list(), {})
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
