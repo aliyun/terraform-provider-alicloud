@@ -49,6 +49,10 @@ func resourceAlicloudResourceManagerPolicyAttachment() *schema.Resource {
 				ForceNew: true,
 			},
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 	}
 }
 
@@ -63,11 +67,11 @@ func resourceAlicloudResourceManagerPolicyAttachmentCreate(d *schema.ResourceDat
 	request["PrincipalName"] = d.Get("principal_name")
 	request["PrincipalType"] = d.Get("principal_type")
 	request["ResourceGroupId"] = d.Get("resource_group_id")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(30*time.Second, 30*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

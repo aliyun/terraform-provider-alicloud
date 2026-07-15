@@ -28,7 +28,7 @@ func TestAccAliCloudPolarDBApplication_Create(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
 
@@ -45,7 +45,7 @@ func TestAccAliCloudPolarDBApplication_Create(t *testing.T) {
 					"application_type": "polarclaw",
 					"architecture":     "x86",
 					"pay_type":         "PostPaid",
-					"region_id":        "cn-shanghai",
+					"region_id":        "cn-beijing",
 					"vswitch_id":       "${local.vswitch_id}",
 					"vpc_id":           "${local.vpc_id}",
 					"zone_id":          "${data.alicloud_polardb_node_classes.this.classes.1.zone_id}",
@@ -140,7 +140,7 @@ func TestAccAliCloudPolarDBApplication_CreateFull(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
 
@@ -157,7 +157,7 @@ func TestAccAliCloudPolarDBApplication_CreateFull(t *testing.T) {
 					"application_type": "polarclaw",
 					"architecture":     "x86",
 					"pay_type":         "PostPaid",
-					"region_id":        "cn-shanghai",
+					"region_id":        "cn-beijing",
 					"vswitch_id":       "${local.vswitch_id}",
 					"vpc_id":           "${local.vpc_id}",
 					"zone_id":          "${data.alicloud_polardb_node_classes.this.classes.1.zone_id}",

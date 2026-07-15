@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -109,6 +110,8 @@ func resourceAlicloudPolarDBAccountPrivilegeRead(d *schema.ResourceData, meta in
 			names = append(names, pri.DBName)
 		}
 	}
+	// Sort the db_names to ensure consistent ordering and avoid plan drift
+	sort.Strings(names)
 	d.Set("db_names", names)
 
 	return nil

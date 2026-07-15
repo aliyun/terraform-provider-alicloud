@@ -39,7 +39,7 @@ func TestAccAliCloudPolarDBAccountPrivilege_update(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -106,7 +106,7 @@ func resourcePolarDBAccountPrivilegeConfigDependence(name string) string {
 		db_type = "MySQL"
 		db_version = "8.0"
 		pay_type = "PostPaid"
-        db_node_class = data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class
+        db_node_class = "polar.mysql.x4.medium"
 		vswitch_id = local.vswitch_id
 		description = "${var.name}"
 	}

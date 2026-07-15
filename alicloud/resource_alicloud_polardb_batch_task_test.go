@@ -26,11 +26,11 @@ func TestAccAliCloudPolarDBBatchTask_Create(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
-		return resourcePolarDBBatchTaskConfigDependence(name, "cn-shanghai")
+		return resourcePolarDBBatchTaskConfigDependence(name, "cn-beijing")
 	})
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
 
@@ -43,7 +43,7 @@ func TestAccAliCloudPolarDBBatchTask_Create(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"region_id":    "cn-shanghai",
+					"region_id":    "cn-beijing",
 					"task_name":    "batch_task_install",
 					"task_type":    "polarclaw_install_skills",
 					"instance_ids": []string{"${alicloud_polardb_application.default.id}"},
@@ -62,7 +62,7 @@ func TestAccAliCloudPolarDBBatchTask_Create(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"region_id":    "cn-shanghai",
+					"region_id":    "cn-beijing",
 					"task_name":    "batch_task_uninstall",
 					"task_type":    "polarclaw_uninstall_skills",
 					"instance_ids": []string{"${alicloud_polardb_application.default.id}"},
@@ -80,7 +80,7 @@ func TestAccAliCloudPolarDBBatchTask_Create(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"region_id":    "cn-shanghai",
+					"region_id":    "cn-beijing",
 					"task_name":    "batch_task_install",
 					"task_type":    "polarclaw_install_skills",
 					"instance_ids": []string{"${alicloud_polardb_application.default.id}"},
