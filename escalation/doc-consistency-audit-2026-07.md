@@ -113,3 +113,5 @@
 > 3 个红套件 + 全量 mirror drift 均为**先存缺陷**,涉及 `provider-resource-dev` / `invoke-terraform-acc-test-remote` /
 > `sync-provider.sh` / 顶层 `AGENTS.md`——**均非本次改动文件**,base commit 4416364 上同样红。本次改动**零新增失败**,
 > 所改文件 mirror 全绿。先存缺陷建议另开单修(共享工具/mirror bug 走 fix+CR,不并入本 doc-consistency commit 以免混淆)。
+
+> **后记（2026-07-14）**：上表 3 个 baseline 红套件与全量 mirror drift 已由 `21cc3f6` + `a3cccae`（2026-07-06）修复,现全部 PASS/CLEAN,无遗留动作。

@@ -2,8 +2,8 @@
 # bootstrap/probe-corpus.sh — F3 Corpus-gen: 场景语料库批量生成器
 #
 # 从 provider 仓 website/docs/r/<name>.html.markdown 的 Example Usage 抽 HCL,机械改造成一个
-# probe 场景三件套(scenario.yaml/main.tf/checks.md),直落外置 playground <product>/<id>/。
-# 目标:把手写 6 个场景扩成批量语料库,喂给 bootstrap/probe.sh run 做 tier-1 生命周期探测。
+# probe 场景三件套(scenario.yaml/main.tf/checks.md),直落 playground git 数据仓 <product>/<id>/。
+# 目标:从 website docs 批量生成场景语料,喂给 bootstrap/probe.sh run 做 tier-1 生命周期探测。
 #
 # 子命令:
 #   gen <alicloud_resource> [--force]    单资源生成(--force 覆盖已存在)

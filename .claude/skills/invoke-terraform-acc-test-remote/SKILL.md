@@ -11,7 +11,7 @@ description: Use when a Jarvis Terraform workflow needs to run terraform-provide
 
 ## 边界
 
-- 只支持本地代码上传；旧的 GitLab 分支提交路径不要再用。
+- 只支持本地代码上传，不走 GitLab 分支提交。
 - 远程执行环境负责注入 AK/SK 和测试变量；命令、示例、PR 评论、Aone 评论和日志摘要里都不要写真实 AK/SK。
 - 跨账号资源只描述需要哪些环境变量，例如 `ALICLOUD_ACCESS_KEY_1` / `ALICLOUD_SECRET_KEY_1` / `ALICLOUD_ACCESS_KEY_2` / `ALICLOUD_SECRET_KEY_2`，不要展示值。
 - `cancel` 会停止远程 FC 异步任务；只有用户明确同意取消时才能调用。
@@ -26,21 +26,21 @@ description: Use when a Jarvis Terraform workflow needs to run terraform-provide
 
 ```
 1. Did the user explicitly give a path?
-   ├─ YES  → use that path, jump to Step 1 (CLI will hard-fail if invalid)
+   ├─ YES  → use that path, jump to §2 提交并执行 (CLI will hard-fail if invalid)
    └─ NO   → continue to step 2
 
 2. Auto-detect by inspecting the current working directory:
        test -f go.mod \
          && grep -q "terraform-provider-alicloud" go.mod \
          && test -d alicloud
-   ├─ PASS → silently use "." as --dir, jump to Step 1
+   ├─ PASS → silently use "." as --dir, jump to §2 提交并执行
    └─ FAIL → continue to step 3
 
-3. Walk a couple of common parents (only if the agent has obvious hints from
-   the conversation, e.g., user mentioned a sibling repo). Examples worth trying:
+3. Resolve from the workspace registry, then common parents:
+     - "$(bash <jarvis仓>/bootstrap/workspace.sh dir terraform_provider)"   # 登记真源(CLAUDE.md 工作纪律 #4)
      - ./terraform-provider-alicloud
      - ../terraform-provider-alicloud
-   ├─ PASS → silently use the resolved path, jump to Step 1
+   ├─ PASS → silently use the resolved path, jump to §2 提交并执行
    └─ FAIL → continue to step 4
 
 4. Ask the user — only now is asking justified:
@@ -239,10 +239,10 @@ grep -n "^func TestAcc" alicloud/resource_alicloud_<name>_test.go
 
 | Symptom | Likely Cause | Action |
 |---------|-------------|--------|
-| 0 tests run | Name mismatch (see Step 4) | Fix test function names or pass exact `--test-case` |
-| FC 解压后找不到 `terraform-provider-alicloud` | 本地打包根目录错误或旧版脚本使用了 worktree 目录名 | 更新/使用本 skill 的 `acctest.py`; zip root 必须固定为 `terraform-provider-alicloud` |
+| 0 tests run | Name mismatch (see §6 没有跑到用例) | Fix test function names or pass exact `--test-case` |
+| FC 解压后找不到 `terraform-provider-alicloud` | 本地打包根目录错误(zip root 未固定为 `terraform-provider-alicloud`) | 使用本 skill 的 `acctest.py`; zip root 必须固定为 `terraform-provider-alicloud` |
 | `指定的测试用例 X 在 alicloud/ 中未找到` | `--test-case` value misspelled | grep local test file for actual names |
-| 需要跑多个具体用例 | 旧写法把 `A,B` 当作一个函数名 | 用逗号分隔多个用例；脚本经 `testCaseNames` 重复参数提交，服务端锚定各自精确函数名;或不传 `--test-case` 跑该资源全部用例 |
+| 需要跑多个具体用例 | 把 `A,B` 当作单个函数名传入 | 用逗号分隔多个用例；脚本经 `testCaseNames` 重复参数提交，服务端锚定各自精确函数名;或不传 `--test-case` 跑该资源全部用例 |
 | `CERTIFICATE_VERIFY_FAILED` | 本机 Python 证书链不信任内网 ACube 证书 | 在 `acctest.py` 后、子命令前加 `--insecure` |
 | `Unsupported argument "X"` | Test HCL references a deleted field | Update test config to use the replacement field |
 | `daring resource` / destroy timeout | Subscription resource can't be destroyed | Treat as PASS if all Apply/Read steps succeeded |

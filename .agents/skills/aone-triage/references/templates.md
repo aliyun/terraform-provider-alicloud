@@ -1,10 +1,10 @@
 # Templates & verified facts
 
 ## 同步 provider 源码(查证前)
-`bash .Codex/skills/aone-triage/scripts/sync-provider.sh` —— 无库 clone,有库只 fetch 不重置(保护本地开发);repo 路径取 config/workspaces.json 的 terraform_provider.path（改这里即可换路径）。
+`bash .Codex/skills/aone-triage/scripts/sync-provider.sh` —— 无库 clone,有库 fetch + `reset --hard` 强制对齐 upstream(**主目录会被重置,开发一律走 worktree**);repo 路径走 `bootstrap/workspace.sh dir terraform_provider`(本机覆盖 `workspaces.local.json` / `JARVIS_WORKSPACE_ROOT`)。
 
 ## 缺陷骨架
-复现要点 → `~/go/src/github.com/chenhanzhang/terraform-provider-alicloud` 源码定位(资源.go + 行号)→ 根因 → 修复/绕过 → **补/改一个会因该 bug 失败的用例锁定回归(无可测则在 CR 说明为何)** → 仅 spec 缺口才转需求。
+复现要点 → `$(bash bootstrap/workspace.sh dir terraform_provider)` 源码定位(资源.go + 行号)→ 根因 → 修复/绕过 → **补/改一个会因该 bug 失败的用例锁定回归(无可测则在 CR 说明为何)** → 仅 spec 缺口才转需求。
 
 ## 任务骨架
 拆解步骤 → 直接执行 → 产出+回执;无需查证/转需求。
@@ -99,7 +99,7 @@ source: <源 Aone/PR/CR url>
 ```
 ```
 
-## Verified ROS facts (本次确认, provider 1.281.0)
+## Verified ROS facts (查证基准 provider 1.281.0)
 - `alicloud_ros_stack_group` → `ROS::StackGroup`;无 `rd_folder_ids`,变更部署支持。
 - `alicloud_ros_stack_instance` → `ROS::StackInstance`;支持 import `<group>:<account>:<region>`;Create 仅发 AccountIds/RegionIds,无 DeploymentTargets。
 - `alicloud_ros_stack_instances`(复数)= 数据源,不可 import。

@@ -12,3 +12,5 @@
   1. （本 PR 已含）SKILL.md 增「Image Handling (WAF constraint)」节，记约束 + OSS 外链解法 + 蜜罐提醒。
   2. （后续可选）`bootstrap/html-report-preview.sh` 增强：检测 HTML 内 `data:image` base64，自动上传 OSS 并改写 `src`，对使用者透明；或上传失败识别 punish 页时给出明确提示而非静默返回拦截页 HTML。
 - **置信度**：high（多组对照实测 + 在线报告已按解法成功生成）。
+
+> **现状注（2026-07-14）**：helper 现默认在每次上传携带 `X-Request-Context` 头（`JARVIS_HTML_REPORT_WAF_HEADER`，36ac446）过 WAF 分类闸——上文「照做无效、已拒绝」是当时 punish 页语境下的判断；该头**不豁免** base64 图片拦截，图片外链方案不变，且已硬化为 **private OSS + 签名 GET URL**（skill 禁 public-read）。补丁 2（data:image 自动 OSS 化 / punish 页识别）仍未实现，本 cap 保持 open。

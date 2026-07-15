@@ -18,7 +18,7 @@
 ```bash
 # 0. 拿 jarvis 工号(acube 侧 workId/workName 用当前 a1 身份,便于事后追溯)
 #    jarvis 默认身份的 Emp ID 是 WORKER_ 前缀长 id(非 5-11 位数字),同样合法——
-#    acube workId 接受任意字符串(2026-07-14 实测 workId=WORKER_1782379562571 建任务成功)
+#    acube workId 接受任意字符串
 jarvis_empid=$(bin/a1id -- auth whoami 2>/dev/null | python3 -c '
 import sys,re
 raw=sys.stdin.read()
@@ -78,6 +78,7 @@ bin/a1id -- project workitem update <源工单ID> --status 问题解决中
 ## 环境
 
 - 正式走 `acube.aliyun-inc.com`,预发把域名换成 `pre-acube.aliyun-inc.com`(路径/参数/返回结构一致)
+- **pre-acube 不是无副作用沙箱**:`createBuildTaskV2` 在预发同样写真 Aone(528766 建单并指派临钧);连通性测试只打只读 `queryAoneByTaskId`
 - `/api/v1/**` 免鉴权,内网 DNS(需办公网/VPN)
 
 ## 关键纪律

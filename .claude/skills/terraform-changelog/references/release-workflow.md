@@ -1,6 +1,6 @@
 # Release Cutting + PR Submission
 
-> 本 reference 是 terraform-changelog skill 的「切版本 + 提 PR」详细流程(P3.b 从 SKILL.md 抽出),主文件 point-to 到此以控主长度。默认在 Step 8 report 之后进入。
+> 本 reference 是 terraform-changelog skill Step 9/10「切版本 + 提 PR」的详细流程,主文件引用至此。默认在 Step 8 report 之后进入。
 
 ## Step 9: Cut the Release (default)
 
@@ -63,6 +63,8 @@ After all edits (CHANGELOG entries + release cut) are verified, submit a PR to t
 Squash all changes into a **single commit**. The repo has a `Pull Request Max Commits` CI check that fails if the PR contains more than one commit.
 
 ```bash
+# 注意:并发 triage 的 sync-provider.sh 会对主目录 reset --hard——本分支切出后尽快 commit+push,
+# 不留未推工作;要彻底隔离可改在 worktree 做(git worktree add -b changelog/<ver> ../changelog-<ver> origin/master)
 git checkout -b changelog/<release_version>
 git add CHANGELOG.md alicloud/connectivity/client.go
 git commit -m "CHANGELOG"

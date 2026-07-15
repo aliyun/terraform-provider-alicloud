@@ -1,6 +1,6 @@
 ---
 name: writing-weekly-report
-description: 写周报/月报/工作汇报技能。覆盖触发：用户说"写周报/做周报/总结这周/近 X 周的工作/做个工作汇报/月报"，或要求把工作汇总更新到钉钉文档（且内容是周报性质）。本技能负责跨仓数据采集（jarvis git+runs/+week.sh+a1 events user）、按"对外价值方向"归纳（不是按仓库分块）、生成接近辰羿本人风格的简洁周报；钉钉文档落地时配合 dingtalk-doc-rw 写入并回读校验。
+description: 写周报/月报/工作汇报技能。覆盖触发：用户说"写周报/做周报/总结这周/近 X 周的工作/做个工作汇报/月报"，或要求把工作汇总更新到钉钉文档（且内容是周报性质）。本技能负责跨仓数据采集（jarvis git+runs/+week.sh+a1 events user）、按"对外价值方向"归纳（不是按仓库分块）、生成接近辰羿本人风格的简洁周报；钉钉文档读写能力（dingtalk-doc-rw）当前未落地，涉及写钉钉文档时按 missing_capability escalate，草稿留对话内。
 ---
 
 # 写周报
@@ -74,7 +74,7 @@ bin/a1id -- events user <工号> --since YYYY-MM-DD --until YYYY-MM-DD --per-pag
 - 整篇用 `:::` 包钉钉容器块
 - 表格慎用（钉钉 `[...]`/`{...}` 会被吞）
 
-### 范本（gold standard，2026-06-26 终稿同款）
+### 范本（gold standard）
 
 ```
 :::
@@ -100,8 +100,8 @@ bin/a1id -- events user <工号> --since YYYY-MM-DD --until YYYY-MM-DD --per-pag
 
 1. 采集 → 归纳价值方向
 2. 草稿先在对话内呈现，**不直接写文档**
-3. 用户确认/调整后，如指定钉钉文档 URL：用 `dingtalk-doc-rw` 的 `update_doc`（覆盖式）
-4. 写入后 `read_doc` 回读校验渲染
+3. 用户确认/调整后，如指定钉钉文档 URL：钉钉文档读写能力（`dingtalk-doc-rw`）**当前未落地**——按 `missing_capability` escalate（loops/self-improve.md），草稿留对话内交用户手动粘贴
+4. 该能力落地后：`update_doc` 覆盖式写入，写入后必须 `read_doc` 回读校验渲染
 
 ## 对照表：AI 草稿易写错 vs 终稿保留
 
@@ -121,6 +121,6 @@ bin/a1id -- events user <工号> --since YYYY-MM-DD --until YYYY-MM-DD --per-pag
 
 ## 红线
 
-1. **不带 AI 署名**：周报对外，禁出现「🤖 Generated with Claude Code」「Co-Authored-By: Claude」等任何 AI 水印（CLAUDE.md 纪律 7）；commit / PR / 钉钉文档正文都不带
+1. **不带 AI 署名**：周报对外，禁出现「🤖 Generated with Claude Code」「Co-Authored-By: Claude」等任何 AI 水印（CLAUDE.md 工作纪律 #5）；commit / PR / 钉钉文档正文都不带
 2. **回读校验**：钉钉文档写入后必须 `read_doc` 回读，确认渲染正常
 3. **草稿先于写入**：除非用户当面授权直接写文档，否则草稿先在对话内呈现

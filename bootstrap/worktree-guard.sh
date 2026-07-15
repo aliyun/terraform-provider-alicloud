@@ -86,9 +86,9 @@ CLAUDE.md 工作纪律 #1: 改文件先开 worktree,严禁直接合入主干。
 
 解锁方式(择一):
   1) 开 worktree 后重跑本次修改:
-       git worktree add ../jarvis-<slug> -b feat/<slug> $branch
-       cd ../jarvis-<slug> && <重跑改动> && git push -u origin feat/<slug>
-     由主 Agent 通过 gh pr create / a1 CR 走人工评审合入。
+       git worktree add -b worktree-<slug> ../jarvis-<slug> $branch
+       cd ../jarvis-<slug> && <重跑改动>
+     分支只走 PR/MR 待仓库主人评审合入(CLAUDE.md 工作纪律 #1),主 Agent 不自 merge/push master。
 
   2) 仓库主人当面授权本轮直改 master(必须 "go on master" / "直接改" 明说,
      任务级"帮我改 X"不含此授权):

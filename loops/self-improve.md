@@ -14,7 +14,7 @@
 | 缺上下文 | 找不到 schema/池/源码映射 |
 | 路由未命中 | pools.json/workspaces.json 无匹配 |
 
-对应 `autonomy.md` 新增 `missing_capability` escalate trigger。
+对应 `autonomy.md` 的 `missing_capability` escalate trigger。
 
 ---
 

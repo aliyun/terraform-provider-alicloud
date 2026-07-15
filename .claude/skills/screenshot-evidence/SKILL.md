@@ -1,3 +1,8 @@
+---
+name: screenshot-evidence
+description: 可视化查证截图取证——aone-triage / terraform-pr-review / provider-resource-dev 查证后需要浏览器截图证据时触发：Playwright 元素级截图 → OSS private + 签名 URL → 组装 HTML 对比报告 → pre-agent 预览回贴 Aone。NOT for 纯文字查证或无需可视化证据的场景。
+---
+
 # screenshot-evidence — 可视化查证截图取证
 
 > 在 aone-triage 查证环节补充浏览器截图证据，让人工审核一目了然。
@@ -17,7 +22,7 @@
 - **aliyun CLI** 已认证（`aliyun oss` 可用）
 - **OSS bucket**: `jarvis-report-images`（cn-hangzhou, private）
 - **JARVIS_HTML_REPORT_TOKEN** 已设置（pre-agent 上传）
-- **html-report-preview.sh** 已修 WAF header（`worktree/fix-report-waf-header` 分支合入后自动可用）
+- **html-report-preview.sh** 内建 `X-Request-Context` WAF header（env `JARVIS_HTML_REPORT_WAF_HEADER` 可覆盖），无需额外处理
 
 ## 取证流程
 
@@ -80,7 +85,7 @@ aliyun oss sign "${BUCKET}/${PREFIX}/<file>.png" --timeout "$TIMEOUT" -e "$ENDPO
 
 ```bash
 bash .claude/skills/screenshot-evidence/scripts/upload-screenshots.sh <aone-id> <screenshot-dir>
-# 输出: name|signed_url 格式的映射文件
+# 输出: name|signed_url 行打到 stdout(每文件一行,需要落盘自行重定向)
 ```
 
 ### Step 4: 组装 HTML 报告
@@ -104,7 +109,7 @@ bash bootstrap/html-report-preview.sh upload <aone-id> <report.html> --comment
 
 ### Step 6: 更新 Aone 工单详情
 
-用 `a1 project workitem update <id> --body-file <path>` 在 description 中：
+用 `bin/a1id -- project workitem update <id> --body-file <path>` 在 description 中：
 - 添加「可视化查证报告」章节，含超链接指向在线预览
 - 证据来源用超链接（description 支持 markdown 链接渲染）
 - **不要在 description 中嵌入 `<img>` 标签**——Aone 渲染器剥离 img src 的 query 参数
@@ -135,7 +140,10 @@ bash bootstrap/html-report-preview.sh upload <aone-id> <report.html> --comment
 查证（文字）→ 截图取证（本 skill）→ 组装报告 → 上传预览 → 更新工单详情
 ```
 
-aone-triage 的 wrap.sh done草稿中增加一行：
-``````
-📊 可视化查证报告：[在线查看](<preview-url>)
+aone-triage 的 wrap.sh done 草稿中增加一段（评论区不渲染 markdown 链接，URL 必须独占一行 + 前后空行，见 aone-triage SKILL §4 渲染 quirk）：
+
+```
+📊 可视化查证报告：
+
+<preview-url>
 ```

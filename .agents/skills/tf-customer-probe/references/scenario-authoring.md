@@ -49,7 +49,7 @@
 | `refactorer` | 用 `moved` block / 资源改名重构 | 语义等价重构不触发替换重建——`steps: step2` + `step2_expect: no_changes`；delete+create = S1 |
 | `drifter` | 带外改动后期望 provider 检出 drift | terraform apply 后走 `drift_cli` 做带外改动，再 plan——无 diff = `drift_undetected` |
 | `ds-checker` | 资源 ↔ 数据源读回一致性 | 纯 HCL data source + postcondition，零 runner 改动；读回值 ≠ 声明 → assertion 挂 |
-| `ci-runner` | CI 中批量跑 provider 场景 | 分类骨架（本轮先立不写场景），未来接场景池并发/回归度量 |
+| `ci-runner` | CI 中批量跑 provider 场景 | 占位 taxonomy（暂无场景），后续接场景池并发/回归度量 |
 
 ## 批量生成(probe-corpus.sh)—— 从 website docs 机械造场景
 
@@ -114,7 +114,7 @@ bootstrap/probe-corpus.sh validate --all          # 或 validate <id>...
 
 ## 资源选择:prepaid 守门(不是成本白名单)
 
-- 本机是**测试账号**,付费不设限(成本白名单成本门已撤销)。
+- 本机是**测试账号**,付费不设限(无成本白名单门)。
 - **真正的门是「可销毁性」**:包年包月/订阅(PrePaid/Subscription)资源多数无法 API 销毁,会破坏「零残留」纪律。
   runner apply 前扫 plan 的 `*charge_type`/`*payment_type` 字段,命中 PrePaid/Subscription 默认阻断。
 - **写场景时**:优先按量付费(PostPaid)或本身不计费的资源;若资源默认包年包月,显式在 HCL 里设按量付费字段
@@ -175,7 +175,7 @@ bootstrap/probe-corpus.sh validate --all          # 或 validate <id>...
 |------|------|
 | 在声明阶段失败,且 `expect_error_contains` 匹配(或未声明) | `expected` — 不算 finding(env_issue `expected_failure`) |
 | 在声明阶段失败,但错误信息未含 `expect_error_contains` | finding **`expected_but_error_mismatch`** S3(错因不符合) |
-| **早于**声明阶段失败 | 走**常规**分流(现行为，不当 expect 处理),用 `validate_fail`/`plan_fail`/`apply_fail` 标准码 |
+| **早于**声明阶段失败 | 走**常规**分流(不当 expect 处理),用 `validate_fail`/`plan_fail`/`apply_fail` 标准码 |
 | **晚于**声明阶段才失败 | finding **`late_validation`** S3(声明期望早失败但实际前置校验太宽) |
 | 全程未失败 | finding **`expected_fail_missed`** S2(预期错误未触发) |
 

@@ -12,7 +12,7 @@
 → 需求建到 https://project.aone.alibaba-inc.com/v2/project/2124589/req,基于 app https://cd.aone.alibaba-inc.com/unite/micro/cr/app/283346/list 开发,自指派工号 **320687**(辰羿)。
 别的应用 / 别处的需求池 → 不走本文件。
 
-固定坐标(本应用,权威值见 config/pools.json agent_portal 节):
+固定坐标(本应用,权威值见 config/pools.json mcp_server.apps,app 283346):
 - 项目空间(建需求):**2124589**
 - 应用:**283346**(repo opensource-tools/aliyun-automation-agent)
 - 发布流水线:**65 日常 / 66 预发 / 67 正式**

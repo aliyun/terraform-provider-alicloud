@@ -22,7 +22,7 @@ description: Use when Jarvis should PROACTIVELY hunt for latent, not-yet-reporte
 - **tier-0 = 静态三方一致性扫描**(TF 文档 ↔ OpenAPI 文档 ↔ provider 源码),**以资源为单位**,不跑 terraform。
   机械部分做本地 文档↔源码 diff(五类 `doc_gap_*`)**+ OpenAPI 侧机械三方 diff**(T0-mech:`probe-meta.sh` 拉 amp
   元数据,六类 `api_gap_*` 预筛);机械层**拿不准的项才留 `judgment_queue`**(映射不上/纯 prose 约束/被抑制存疑/OSS 无 action),
-  terraform-pd(原 verifier)只判疑点。**精度命门:拿不准一律 queue,绝不硬报。**
+  terraform-pd 只判疑点。**精度命门:拿不准一律 queue,绝不硬报。**
 - **tier-1 = 真实 apply 全生命周期探测**(默认开启),**以场景为单位**,region 默认 focus=eu-central-1(重点方向,可切)。
 
 ## 红线（先读）
@@ -52,7 +52,7 @@ terraform/jq/凭证/config/**本地 provider 仓**(tier-0 依赖)/**probe-meta**
 bootstrap/probe.sh tier0                        # 无参 = 全部场景 resources 并集
 bootstrap/probe.sh tier0 alicloud_vpc           # 指定资源
 bootstrap/probe.sh tier0 --all --rotate 20      # website/docs/r 全量,取 20 个最久未扫轮换巡检
-bootstrap/probe.sh tier0 --no-mech              # 关机械层(纯 doc↔source + 全 queue,= T0-mech 前现行为)
+bootstrap/probe.sh tier0 --no-mech              # 关机械层(纯 doc↔source + 全 queue,api_gap 检测关闭)
 ```
 1. **机械三方 diff 先行**(runner 全机械,确定性强):
    - 本地 文档↔源码:五类 `doc_gap_*`(phantom/undocumented/flag_mismatch/forcenew/deprecated)。

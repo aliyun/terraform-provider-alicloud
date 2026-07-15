@@ -1,5 +1,7 @@
 # cap-a1id-identity-guard
 
+> **[归档]** 本 cap 针对的 v1 `bin/a1id`(复制覆盖 live 的单文件布局)已被 v2 整体重写(每身份独立 `A1_CONFIG_DIR`,commit dd3d2f5):P0 账号映射 + login whoami 校验已内置;P1 verify 诉求由 `a1id ready/status` + `verify.sh` 日检等价覆盖;P2/P3 随架构变更失效(无 store→live 拷贝链路)。归档保留正文作历史缺口记录。
+
 ## 缺口类型
 
 `bin/a1id` 缺身份一致性护栏,SSO 时静默把任意 BUC 会话存进任意身份槽位,导致 jarvis 公用身份被个人身份凭据污染。

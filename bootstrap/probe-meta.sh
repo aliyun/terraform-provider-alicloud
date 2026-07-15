@@ -9,7 +9,7 @@
 #   available                                  — 探能力(python/脚本/凭证或自定义 fetcher);可用退 0,否则退非零+原因
 #
 # 设计:精度与降级并重。任一环节(无 venv python / 无脚本 / 无凭证 / 网络失败 / 空响应)→ 干净退非零,
-#   调用方(probe.sh tier0)据此自动降级为纯 doc↔source + 全 judgment_queue(即 T0-mech 前的现行为)。
+#   调用方(probe.sh tier0)据此自动降级为纯 doc↔source + 全 judgment_queue。
 #
 # 环境变量:
 #   AMP_SKILL_DIR       — amp-resource-metadata skill 目录(默认 <jarvis_root>/.claude/skills/amp-resource-metadata)

@@ -79,6 +79,6 @@ claim 留痕里的 `U-4L600YWP-2032` 是 `scutil --get ComputerName`(**整机一
 
 ## 四、状态
 
-- Phase 1 + Phase 1.5(A/B/C/D)已实现并全测通过 → 追加提交进 MR 28375517,待人工评审合入。
+- Phase 1 + Phase 1.5(A/B/C/D)已实现并全测通过,已合入 master(77de7c8 / eef1e35,MR 28375517)。Phase 2(stale/orphan 自动 release)仍待后续单。
 - 关联内部研发单 83901802(池 2100304)。
 - 红线:**绝不自动合 master**(self-improve.md)。
