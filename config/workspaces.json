@@ -30,9 +30,54 @@
       "repo": "aliyun-automation-platform",
       "git_url": "git@gitlab.alibaba-inc.com:aliyun-automation-platform/aliyun-automation-platform.git",
       "app": 172823,
+      "project": 1091779,
+      "repo_id": 2156624,
+      "pipelines": { "prestage": 66, "prod": 67 },
       "default_branch": "master",
-      "ops": {},
-      "desc": "IaCService / 自动化服务台"
+      "pools": ["automation_platform"],
+      "delivery": "delivery-aliyun-automation-platform.md",
+      "ops": {"build":"./mvnw -q -DskipTests package","test":"./mvnw -q test"},
+      "desc": "自动化服务台后端；IaCService 主应用与交付入口"
+    },
+    "automation_platform_frontend": {
+      "repo": "iac-service",
+      "git_url": "git@gitlab.alibaba-inc.com:aliyun-api/iac-service.git",
+      "default_branch": "master",
+      "pools": ["automation_platform"],
+      "ops": {"build":"npm run build","test":"npm test -- --runInBand","lint":"npm run lint"},
+      "desc": "自动化服务台前端"
+    },
+    "automation_platform_runtime": {
+      "repo": "iac-service-runtime",
+      "git_url": "git@gitlab.alibaba-inc.com:opensource-tools/iac-service-runtime.git",
+      "default_branch": "master",
+      "pools": ["automation_platform"],
+      "ops": {"build":"go build ./...","test":"go test ./..."},
+      "desc": "自动化服务台 IaC 执行运行时"
+    },
+    "automation_platform_function_test": {
+      "repo": "automation-function-test",
+      "git_url": "git@gitlab.alibaba-inc.com:aliyun-automation-platform/automation-function-test.git",
+      "default_branch": "master",
+      "pools": ["automation_platform"],
+      "ops": {"test":"mvn -q test"},
+      "desc": "自动化服务台端到端与集成测试"
+    },
+    "automation_platform_api": {
+      "repo": "IaCService_pop_IaCService_2021-08-06",
+      "git_url": "git@gitlab.alibaba-inc.com:cloudspec-model/IaCService_pop_IaCService_2021-08-06.git",
+      "default_branch": "master",
+      "pools": ["automation_platform"],
+      "ops": {"build":"cloudspec build"},
+      "desc": "自动化服务台公开 IaCService POP API 契约"
+    },
+    "automation_platform_api_inner": {
+      "repo": "IaCService-inner_pop_IaCService-inner_2021-09-01",
+      "git_url": "git@gitlab.alibaba-inc.com:cloudspec-model/IaCService-inner_pop_IaCService-inner_2021-09-01.git",
+      "default_branch": "master",
+      "pools": ["automation_platform"],
+      "ops": {"build":"cloudspec build"},
+      "desc": "自动化服务台内部 IaCService API 契约"
     },
     "agent_toolkit": {
       "repo": "alibabacloud-agent-toolkit",

@@ -1,22 +1,11 @@
 ---
 name: aone-triage
 description: >-
-  Master triage skill for ANY Aone work item. Trigger on any project.aone.alibaba-inc.com URL,
-  工单ID, 「看下/处理/回复这个工作项」, or a standalone "does X 支持 Y" question (bare
-  next.api.aliyun.com / product / resource / attribute question — no ticket needed). Universal
-  core flow: read (aone-get) → classify (工单类型 + 所属池 + 领域) → 查证 → draft reply →
-  user auth → write (a1) + bookend (claim/wrap/release/finish)。Domain-specific routing 通过
-  references 加载 on-demand:
-  · references/tf-customer-request-routing.md  — Terraform tf_customer 池(1086837)客户单:接入
-    alicloud_xxx 新资源 / 缺属性/值/行为 / 进度催办 / 类比 PolarDB 之类 / bug
-  · references/delivery-aliyun-automation-agent.md — 自家应用 Agent门户/AgentRuntime/
-    aliyun-automation-agent/PlayGround 交付(app 283346)
-  · references/delivery-cloudspec.md — 自家应用 cloudspec / OpenAPI MCP Server 交付(app 260634)
-  · references/aliyun-error-code-lookup.md — 阿里云错误码官方定义查证(跨 skill 复用,给定 product+code 出 HTTP/message/retry 建议)
-  · references/templates.md — 回复/需求骨架、机读 JSON
-  · references/probe-ticket-routing.md — jarvis-probe 探测工单(标签 jarvis-probe/标题 [probe],528766 池):四分类路由/复验关单/场景回灌
-  NOT for: terraform-provider-alicloud GitHub PR 评审(用 terraform-pr-review)/ 资源从零开发
-  (用 provider-resource-dev)/ 特定客户单接入进度催办不属 tf_customer(视场景自定)。
+  Use when handling any Aone work item, project.aone.alibaba-inc.com URL, workitem ID,
+  「看下/处理/回复这个工作项」 request, or an Alibaba Cloud support question involving
+  next.api.aliyun.com, a product, resource, API, attribute, Terraform, Cloudspec, MCP Server,
+  自动化服务台, IaCService, or project 1091779. Not for terraform-provider-alicloud GitHub
+  PR review or zero-to-one provider resource development.
 ---
 
 # Aone 工单主诊断与处理
@@ -61,12 +50,15 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 | **1086837** tf_customer | Terraform 客户需求(接入/属性/催办等) | `references/tf-customer-request-routing.md` |
 | **528766** tf_provider | Terraform Provider 内部研发(通常由客户主单派生的关联单) | 无独立 reference;跟 tf_customer 主单同域 |
 | **2124589** mcp_server | 自家应用交付(Agent门户/AgentRuntime/aliyun-automation-agent/PlayGround) | `references/delivery-aliyun-automation-agent.md` |
+| **1091779** automation_platform | 自动化服务台 / IaCService 产品研发与交付(不含 Agent 链路) | `references/delivery-aliyun-automation-platform.md` |
 | cwd 在 cloudspec repo 或诉求涉 cloudspec / OpenAPI MCP Server | 自家应用交付(cloudspec) | `references/delivery-cloudspec.md` |
 | **2165097** upstream.cloudspec_gap | 镇元 agent 池:上游 Cloudspec 需求 + tf_customer 分支 E agent 关联单(谜拟做人类兜底 owner) | submit_only(建单 assignee=`WORKER_1783326253279` + body 必带 `## 机读信息` JSON,agent 自动接单,不 claim;详见 `references/templates.md` 硬契约) |
 | **2169561** cloudspec_docs_quality | CloudSpec 文档质量问题池:tf_customer 分支 I 关联单(镇元资源文档源头修复,防 provider PR 被下次发版覆盖) | submit_only(建单 assignee=`373108` 念依,body 自然语言写清 provider 侧 PR 链接 + 镇元资源文档 URL + 具体错误位置/正确值,不 claim;详见 `references/tf-customer-request-routing.md` 分支 I) |
 | 其它 | 无 domain reference → 走本文件通用流程 | — |
 
 **判断规则**:先看 `space` 命中 池,再看 `涉及云产品` / 标题 / cwd 辅助定位。有 domain reference 就**加载并跟随**它的决策树;无 reference 走本文件下方通用查证。
+
+`automation_platform` 的定时扫描仅消费 `assignedTo=WORKER_1782379562571`；用户直接给 Aone URL/ID 时按 `space=1091779` 路由，不以当前负责人作为拒绝处理条件。
 
 **528766 特例 —— Terraform 自动审核流程单**(平台发布流水线自动建单,标题形如 `[Terraform X发布自动审核流程] 产品 [P] 资源 [R]`,评论区是流水线各闸门的自动结果),**按标题子类型分流,勿一律当复核**:
 
@@ -196,6 +188,7 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 自家应用交付走对应 reference 的完整链路(需求→CR→worktree→预发→**等用户验证反馈**→正式→关单→清 worktree)。app IDs / 预发正式流水线 ID / 常见坑见:
 
 - `references/delivery-aliyun-automation-agent.md`(app 283346,预发 66/正式 67)
+- `references/delivery-aliyun-automation-platform.md`(project 1091779,app 172823,预发 66/正式 67)
 - `references/delivery-cloudspec.md`(app 260634,预发 420/正式 67)
 
 **红线**:worktree 上开发,分支只走 CR/PR/MR;master 只接已评审合入;正式发布(release_prod)永远人工确认后触发。

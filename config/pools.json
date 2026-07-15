@@ -1,7 +1,8 @@
 {
   "lines": {
     "terraform_provider": "Terraform Provider",
-    "agentic_tools": "Agentic Tools"
+    "agentic_tools": "Agentic Tools",
+    "automation_platform": "Automation Platform"
   },
   "pools": {
     "tf_customer": {
@@ -96,6 +97,40 @@
         "已完成"
       ],
       "exclude_title": []
+    },
+    "automation_platform": {
+      "project": 1091779,
+      "name": "自动化服务台",
+      "line": "automation_platform",
+      "desc": "自动化服务台 / IaCService 产品研发与交付；不含 Agent 链路",
+      "apps": [
+        {
+          "app": 172823,
+          "repo_id": 2156624,
+          "name": "aliyun-automation-platform",
+          "repo": "aliyun-automation-platform",
+          "pipelines": { "prestage": 66, "prod": 67 },
+          "delivery": "delivery-aliyun-automation-platform.md"
+        }
+      ],
+      "assignee": "WORKER_1782379562571",
+      "dev": true,
+      "done_status": {"产品类需求": "已发布", "功能缺陷": "Fixed", "线上问题": "Fixed", "任务": "已完成"},
+      "progress_status": {"产品类需求": "开发中", "功能缺陷": "Open", "线上问题": "Open", "任务": "处理中"},
+      "exclude_status": [
+        "已发布",
+        "已取消",
+        "已完成",
+        "Fixed",
+        "Closed",
+        "Won'tfix",
+        "Worksforme",
+        "Duplicate",
+        "Invalid",
+        "External",
+        "ByDesign"
+      ],
+      "exclude_title": []
     }
   },
   "routing": [
@@ -124,6 +159,14 @@
         "aliyun-automation-agent"
       ],
       "pool": "mcp_server"
+    },
+    {
+      "match": [
+        "自动化服务台",
+        "aliyun-automation-platform",
+        "IaCService"
+      ],
+      "pool": "automation_platform"
     },
     {
       "match": [

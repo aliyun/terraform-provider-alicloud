@@ -222,9 +222,56 @@ if [ -f "$HTMLF" ]; then
     grep -q '采纳率' "$HTMLF" && ok "html 含'采纳率' tile" || bad "html 缺'采纳率' tile"
     grep -q 'tier0 覆盖' "$HTMLF" && ok "html 含'tier0 覆盖' tile" || bad "html 缺'tier0 覆盖' tile"
     grep -q 'class="pv">4<' "$HTMLF" && ok "html tile 数值渲染(findings.total=4 可见)" || bad "html tile 数值未渲染"
+    grep -q 'data-pf="automation_platform"' "$HTMLF" && ok "html 含 automation_platform 池筛选项" || bad "html 缺 automation_platform 池筛选项"
+    grep -q '<span class="nm">自动化服务台</span>' "$HTMLF" && ok "html 含自动化服务台池名" || bad "html 缺自动化服务台池名"
 else
     bad "board.html 未生成"
 fi
+
+echo "Test 11b: board-html.sh 合并配置池与看板数据池,HTML 属性安全转义"
+SYNTH_ROOT="$(mktemp -d)"
+mkdir -p "$SYNTH_ROOT/config" "$SYNTH_ROOT/.my-day" "$SYNTH_ROOT/docs" \
+    "$SYNTH_ROOT/runs/probe" "$SYNTH_ROOT/escalation/probe-drafts" "$SYNTH_ROOT/bin"
+cp "$REAL_PROBE_CONFIG" "$SYNTH_ROOT/config/probe.json"
+cat > "$SYNTH_ROOT/config/pools.json" <<'JSON'
+{
+  "lines": {},
+  "pools": {
+    "configured_first": {"name": "Configured First", "project": 1},
+    "synthetic\"<&": {"name": "Synthetic & Pool", "project": 2}
+  }
+}
+JSON
+cat > "$SYNTH_ROOT/.my-day/scan.json" <<'JSON'
+[
+  {"id":"s1","title":"special","status":"Open","priority":"中","tag":"","pool":"synthetic\"<&","project":2,"category":"req"},
+  {"id":"u1","title":"unknown","status":"Open","priority":"中","tag":"","pool":"unknown_pool","project":999,"category":"task"}
+]
+JSON
+SYNTH_A1="$SYNTH_ROOT/bin/a1-fail"
+cp "$A1_FAIL" "$SYNTH_A1"
+JARVIS_ROOT="$SYNTH_ROOT" JARVIS_TF_PLAYGROUND="$SYNTH_ROOT/no-playground" JARVIS_A1="$SYNTH_A1" \
+    bash "$BOARD_HTML" >/dev/null 2>&1
+SYNTH_HTML="$SYNTH_ROOT/docs/board.html"
+grep -q 'data-pf="synthetic&quot;&lt;&amp;"' "$SYNTH_HTML" \
+    && ok "特殊池 key 在 data-pf 属性中 HTML 转义" \
+    || bad "特殊池 key 在 data-pf 属性中未安全转义"
+grep -q 'data-pf="unknown_pool"' "$SYNTH_HTML" \
+    && ok "配置外 unknown_pool 也生成筛选行" \
+    || bad "配置外 unknown_pool 未生成筛选行"
+grep -q 'data-pf="unknown_pool" checked><span class="sw" style="background:#98a2b3"' "$SYNTH_HTML" \
+    && ok "unknown_pool 使用中性色 fallback" \
+    || bad "unknown_pool 未使用中性色 fallback"
+ORDER_OK="$(python3 - "$SYNTH_HTML" <<'PY'
+import sys
+s=open(sys.argv[1], encoding="utf-8").read()
+print(str(s.index('data-pf="configured_first"') < s.index('data-pf="synthetic') < s.index('data-pf="unknown_pool"')).lower())
+PY
+)"
+[ "$ORDER_OK" = "true" ] \
+    && ok "配置池顺序优先,数据 fallback 池追加在后" \
+    || bad "池筛选行未保持配置优先顺序"
+rm -rf "$SYNTH_ROOT"
 
 echo "Test 12a: A4 — findings 周窗口按 (code,resource,attribute) 去重(同日多轮 tier0 并存不重复计数)"
 DEDUP_ROOT="$(mktemp -d)"
