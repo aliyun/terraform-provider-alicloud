@@ -104,11 +104,11 @@ bootstrap/claim.sh release <id> <pool-project>
 bridge 主机由 ReconcileScheduler 周期自动跑（`JARVIS_RECONCILE_INTERVAL`，默认 1200s）；非 bridge 机按 `bootstrap/cron.example` 独立触发，或每次 loop 结束后手动运行：
 
 ```bash
-bootstrap/reconcile.sh all      # stale + orphan + drift 三路并跑
+bootstrap/reconcile.sh all      # stale + orphan + drift + donecheck 四路顺跑
 bootstrap/reconcile.sh stale    # 只跑僵尸 claim
 ```
 
-`reconcile.sh stale` 查找所有 `jarvis-claimed` 超过 `claim.ttl_min`（默认 45 分钟）的工作项，将其写入 `escalation/` 目录，防止僵尸认领长期占用工单。`orphan` 处理 owner_instance 已死的 task；`drift` 补漏 release。
+`reconcile.sh stale` 查找所有 `jarvis-claimed` 超过 `claim.ttl_min`（默认 45 分钟）的工作项，将其写入 `escalation/` 目录，防止僵尸认领长期占用工单。`orphan` 处理 owner_instance 已死的 task；`drift` 补漏 release；`donecheck` 对账 `jarvis-done` 标签与 Aone 状态——标签 done 但状态落在合法完成态集合（`.claim.done_statuses` ∪ 各池 `.done_status`，含 tf_provider `待发布`）外的，判为漂移（finish 状态被拒 / 人工打回返工后标签滞留）写 `escalation/` 告警。**与之配套**：`claim.sh finish` 若 done_status 未能落地，会主动降级 `jarvis-done`→`jarvis-idle` + escalate，避免制造「标签 done、真源未结束」黑洞被 `_decide` 永久 skip。
 
 ---
 
@@ -153,9 +153,9 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/log.sh escalate` | 记录上报 |
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项（输赢竞争锁）；退码 1 = 输了跳过。认领成功还会把 Aone status 从起始态（待处理/新建…）推进到该池的进行中状态（.progress_status，如 处理中/开发中/问题解决中/Open），best-effort 非阻断，`JARVIS_CLAIM_PROGRESS=0` 可关 |
 | `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-idle 标签：本轮处理完，等待人或下一个 jarvis 接手；不动 Aone status） |
-| `bootstrap/claim.sh finish <id> <project>` | jarvis 判断真完成（打 jarvis-done 标签 + status 改为 `pools.json` 里该池 × workitemType 的 `done_status`；`.claim.done_status` = `已发布待需求排期` 只是**全局兜底**，主流走 per-池 per-category。tf_provider(528766) 产品类需求 → **`待发布`**，不是 `已发布`——workflow 不允许 `已选择` 直跳 `已发布`。被拒时先 `bin/a1id -- project workitem field options status --project <id> --type <workitemType>` 查合法枚举再改 pools.json） |
+| `bootstrap/claim.sh finish <id> <project>` | jarvis 判断真完成（打 jarvis-done 标签 + status 改为 `pools.json` 里该池 × workitemType 的 `done_status`；`.claim.done_status` = `已发布待需求排期` 只是**全局兜底**，主流走 per-池 per-category。tf_provider(528766) 产品类需求 → **`待发布`**，不是 `已发布`——workflow 不允许 `已选择` 直跳 `已发布`。被拒时先 `bin/a1id -- project workitem field options status --project <id> --type <workitemType>` 查合法枚举再改 pools.json。**若 done_status 终究落不到合法完成态**，finish 会降级 `jarvis-done`→`jarvis-idle` + escalate，不留「标签 done、真源未结束」黑洞） |
 | `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>` | 单条工单收尾 bookend（**5 参必填**，子代理完工后调用）：claim→wrap done→release；claim 输竞争则 SKIP 退 0 |
 | `bootstrap/wrap-check.sh` | Stop 闸门：会话结束时校验未完工工单是否已回填，失败则阻断 |
-| `bootstrap/reconcile.sh [stale\|orphan\|drift\|all]` | 收敛族入口:stale=超时 claim→escalate;orphan=owner dead→escalate;drift=台账 vs Aone 对账;all=顺跑三者(默认) |
+| `bootstrap/reconcile.sh [stale\|orphan\|drift\|donecheck\|all]` | 收敛族入口:stale=超时 claim→escalate;orphan=owner dead→escalate;drift=台账 vs Aone 对账;donecheck=jarvis-done 标签 vs Aone 状态一致性对账(漂移→escalate);all=顺跑四者(默认) |
 | `.claude/skills/aone-triage` | 单条工单全流程技能 |
 | `autonomy.md` | 模式/置信度/停止项策略 |

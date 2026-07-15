@@ -498,26 +498,43 @@ if cands:
         # Tag as done, preserving other tags: existing − {claimed, idle} ∪ {done}.
         # Tag FIRST and status SEPARATELY: previously tag+status went in one a1 update, so
         # an unsupported status (project enum mismatch) failed the whole call and left the
-        # workitem stuck as idle with no done tag. Now the done tag always lands; a rejected
-        # status is a WARN, not fatal.
+        # workitem stuck as idle with no done tag. Tag lands first; then we try to move status.
+        #
+        # 一致性闸门(jarvis-done vs Aone 状态)：jarvis-done 标签是 jarvis 侧「干完了」的标记，
+        # 但只有当 Aone status 真落到合法完成态(已终态 或 本池 done_status 写成功)时，标签才
+        # 与真源一致。若状态没能落地(done_status 被 workflow 拒 / 无 done_status 配置且当前非终态)，
+        # 继续挂 jarvis-done 会造成「标签说 done、真源说没完」的黑洞——_decide 从此永久 skip 这单，
+        # 人工催办/reopen 都不再触发重派。故此处降级：撤 jarvis-done、改打 jarvis-idle(交 idle 门 +
+        # RevisitScheduler 兜底重访/重派) + escalate 提示人工设正确状态或摘标签。
         wtype="$(_get_wtype "$workitem_id")"
         eff_status="$(_pool_done_status "$project_id" "$wtype")"
         _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG"
         rm -f "$(_claim_prefix_path "$workitem_id")"
         cur_status="$(_get_status "$workitem_id")"
+        status_ok=0   # 1 = Aone status 已落到合法完成态，jarvis-done 与真源一致
         if [ -n "$cur_status" ] && _in_done_statuses "$cur_status"; then
             # Already at a terminal status (已发布/已完成/已拒绝…) — leave it. Writing done_status
             # here would either no-op-WARN or drag a 已完成/已拒绝 ticket back to 已发布.
             echo "claim.sh: finished workitem $workitem_id in project $project_id (already terminal: $cur_status)"
+            status_ok=1
         elif [ -n "$eff_status" ]; then
             if $A1 project workitem update "$workitem_id" --status "$eff_status" >/dev/null 2>&1; then
                 echo "claim.sh: finished workitem $workitem_id in project $project_id (status=$eff_status)"
+                status_ok=1
             else
-                echo "claim.sh: warning: finished (tagged $DONE_TAG) but status '$eff_status' was rejected for $workitem_id — set a valid status manually or add a per-pool done_status in pools.json" >&2
-                echo "claim.sh: finished workitem $workitem_id in project $project_id (status unchanged)"
+                echo "claim.sh: warning: status '$eff_status' was rejected for $workitem_id (project enum mismatch / workflow disallows transition)" >&2
             fi
         else
-            echo "claim.sh: finished workitem $workitem_id in project $project_id (no done_status configured)"
+            echo "claim.sh: warning: no done_status configured for $workitem_id (project $project_id, type '${wtype:-?}'); current status '${cur_status:-?}' is not terminal" >&2
+        fi
+
+        if [ "$status_ok" != "1" ]; then
+            # 状态未落到合法完成态 → 不留 jarvis-done 黑洞：降级为 jarvis-idle + escalate。
+            _update_tags_merged "$workitem_id" "$IDLE_TAG" "$DONE_TAG"
+            bash "$script_dir/log.sh" escalate "$workitem_id" \
+                "finish_status_unresolved: done_status='${eff_status:-<none>}' 未落地(当前='${cur_status:-<unknown>}',workitemType='${wtype:-?}')；已降级 jarvis-done→jarvis-idle，请人工设正确完成态或摘标签" \
+                "" >/dev/null 2>&1 || true
+            echo "claim.sh: finish $workitem_id — 状态未落合法完成态，已降级 jarvis-done→jarvis-idle 并 escalate（交 Revisit 兜底）" >&2
         fi
         _ledger_upsert "$workitem_id" true
         exit 0

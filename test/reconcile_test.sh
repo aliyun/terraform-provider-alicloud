@@ -86,6 +86,15 @@ cat > "$FAKE_BIN_DIR/a1" <<'STUB'
 #!/usr/bin/env bash
 # Record every invocation
 echo "a1 $*" >> "${STUB_LOG:-/dev/null}"
+# Point-read status for donecheck: return a fields[].status from A1_GET_STATUS (empty → {} → skip).
+if [[ "$*" == *"workitem get"* && "$*" == *"-f json"* ]]; then
+    if [ -n "${A1_GET_STATUS:-}" ]; then
+        printf '{"fields":[{"identifier":"status","displayValue":"%s"}]}\n' "$A1_GET_STATUS"
+    else
+        echo '{}'
+    fi
+    exit 0
+fi
 # Only respond to "project workitem list ... -f json"
 if [[ "$*" == *"workitem list"* && "$*" == *"-f json"* ]]; then
     echo "${A1_LIST_JSON:-[]}"
@@ -199,6 +208,66 @@ if echo "$output3" | grep -q "RECONCILED: none"; then
 else
     assert_fail "empty list should produce RECONCILED: none" "got: $output3"
 fi
+
+# ---------------------------------------------------------------------------
+# Test 4: donecheck — jarvis-done tag + status NOT in legit-done set → DRIFT + escalate
+# ---------------------------------------------------------------------------
+echo "Test 4: donecheck flags jarvis-done with non-legit status → DRIFT + escalate"
+ROOT4="$(make_jarvis_root)"
+STUB_LOG4="$ROOT4/stub-calls.log"
+DONE_ID="WI-DONE-1"
+
+output4=$(env \
+    JARVIS_ROOT="$ROOT4" \
+    JARVIS_RUNS_DIR="$ROOT4/runs" \
+    JARVIS_ESCALATION_DIR="$ROOT4/escalation" \
+    STUB_LOG="$STUB_LOG4" \
+    A1_LIST_JSON="[{\"identifier\":\"$DONE_ID\"}]" \
+    A1_GET_STATUS="开发中" \
+    bash "$RECONCILE" donecheck 2>/dev/null || true)
+
+if echo "$output4" | grep -q "DRIFT(done_status): $DONE_ID"; then
+    assert_pass "donecheck flags DRIFT for jarvis-done + status '开发中' (not legit-done)"
+else
+    assert_fail "donecheck should flag DRIFT for $DONE_ID" "got: $output4"
+fi
+if [ -f "$ROOT4/escalation/$DONE_ID.md" ] && grep -q "done_status_drift" "$ROOT4/escalation/$DONE_ID.md"; then
+    assert_pass "donecheck wrote escalation with done_status_drift"
+else
+    assert_fail "donecheck should write escalation/$DONE_ID.md with done_status_drift"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 5: donecheck — jarvis-done + legit-done status (待发布) → no DRIFT
+# 待发布 是 tf_provider 产品类需求的合法完成态(per-pool done_status),不应误报。
+# ---------------------------------------------------------------------------
+echo "Test 5: donecheck ignores jarvis-done with legit status (待发布) → no DRIFT"
+ROOT5="$(make_jarvis_root)"
+STUB_LOG5="$ROOT5/stub-calls.log"
+DONE_ID2="WI-DONE-2"
+
+output5=$(env \
+    JARVIS_ROOT="$ROOT5" \
+    JARVIS_RUNS_DIR="$ROOT5/runs" \
+    JARVIS_ESCALATION_DIR="$ROOT5/escalation" \
+    STUB_LOG="$STUB_LOG5" \
+    A1_LIST_JSON="[{\"identifier\":\"$DONE_ID2\"}]" \
+    A1_GET_STATUS="待发布" \
+    bash "$RECONCILE" donecheck 2>/dev/null || true)
+
+if echo "$output5" | grep -q "DRIFT(done_status)"; then
+    assert_fail "donecheck should NOT flag legit status 待发布" "got: $output5"
+else
+    assert_pass "donecheck ignores legit-done status 待发布 (no false positive)"
+fi
+if echo "$output5" | grep -q "DONECHECK: none"; then
+    assert_pass "donecheck prints DONECHECK: none when all legit"
+else
+    assert_fail "donecheck should print DONECHECK: none" "got: $output5"
+fi
+
+# Cleanup extra roots
+rm -rf "$ROOT4" "$ROOT5" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # Summary
