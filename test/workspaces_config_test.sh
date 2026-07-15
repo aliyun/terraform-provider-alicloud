@@ -10,7 +10,7 @@ jq -e '.workspaces.terraform_generator_v4.git_url=="git@gitlab.alibaba-inc.com:o
   "$repo_root/config/workspaces.json" >/dev/null
 jq -e '.workspaces.terraform_generator_v4.default_branch=="main"' \
   "$repo_root/config/workspaces.json" >/dev/null
-jq -e '.workspaces.jarvis.git_url=="git@gitlab.alibaba-inc.com:terraflow/jarvis.git"' \
+jq -e '.workspaces.jarvis.git_url=="git@gitlab.alibaba-inc.com:terraflow/jarvis-preview.git"' \
   "$repo_root/config/workspaces.json" >/dev/null
 jq -e '.workspaces.jarvis.default_branch=="master"' \
   "$repo_root/config/workspaces.json" >/dev/null
