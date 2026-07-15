@@ -736,6 +736,34 @@ echo "rc=$rc status_set='$cap'"
 if [ "$cap" = "处理中" ]; then assert_pass "global fallback: status advanced to 处理中"; else assert_fail "global fallback status should be 处理中, got '$cap'"; fi
 
 # ---------------------------------------------------------------------------
+# Test 26: finish status_override (4th arg) — PrWatch passes 已完成; overrides the
+# resolved per-pool/global done_status. Backward compat: 3-arg finish unchanged (Test 14/15).
+# ---------------------------------------------------------------------------
+echo "=== Test 26: finish status_override (4th arg) wins over resolved done_status ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_STATUS COORD_ID
+# project 1086837 (no per-pool override) would normally resolve to global 已发布待需求排期;
+# the 4th arg 已完成 must take precedence.
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 已完成 2>&1); rc=$?
+cap=$(cat "$tmpstatuscap" 2>/dev/null); state=$(cat "$tmpstate" 2>/dev/null)
+echo "rc=$rc status_set='$cap' tags='$state'"
+if [ "$rc" = "0" ]; then assert_pass "status_override: finish exits 0"; else assert_fail "status_override: exit $rc"; fi
+if [ "$cap" = "已完成" ]; then assert_pass "status_override: status set to 已完成 (override wins)"; else assert_fail "status_override: expected 已完成, got '$cap'"; fi
+if printf '%s' "$state" | grep -q "jarvis-done"; then assert_pass "status_override: tagged jarvis-done"; else assert_fail "status_override: expected jarvis-done, got '$state'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 27: backward compat — 3-arg finish (no override) still resolves to done_status.
+# Empty/absent 4th arg must NOT hijack the resolved status.
+# ---------------------------------------------------------------------------
+echo "=== Test 27: 3-arg finish unchanged when no override passed ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS A1_STATUS COORD_ID
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 1086837 2>&1); rc=$?
+cap=$(cat "$tmpstatuscap" 2>/dev/null)
+echo "rc=$rc status_set='$cap'"
+if [ "$cap" = "已发布待需求排期" ]; then assert_pass "no-override: still resolves to global done_status (backward compatible)"; else assert_fail "no-override: expected 已发布待需求排期, got '$cap'"; fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""
