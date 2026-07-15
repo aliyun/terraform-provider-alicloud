@@ -65,26 +65,13 @@ curl -s "https://acube.aliyun-inc.com/api/v1/terraform/generator/getTerraformRes
 读取 `data.terraformResourceSpecModel.namespace` / `data.terraformResourceSpecModel.resourceTypeCode` 作为 product/resourceCode。接口查不到时,再把 `alicloud_【产品名下划线】_【资源名下划线】` → product/resourceCode 各自转 PascalCase 作为候选,并进入下方 resourceTypeCode get/list 查证;边界不确定时结合客户描述/Next API/OpenAPI product 先确定 product,不要凭命名猜死。
 
 ## acube resourceTypeCode 查证
-```bash
-product=ResourceManager
-resourceCode=HandshakeAcceptance
 
-# 预发单资源定义;SUCCESS 但无 data = 未命中
-curl -s "https://pre-acube.aliyun-inc.com/api/v1/terraform/generator/cloudspec/resourceTypeCode/get?env=pre&isShowChangeLog=false&product=${product}&resourceCode=${resourceCode}" \
-  -H "accept: */*"
+完整配方(schema get/list、released 复核、覆盖度 V2、sanity check)**单点维护在
+[references/zhenyuan-verification.md](references/zhenyuan-verification.md) 的镇元 schema 查证节**,照它执行。本节只留守则:
 
-# 线上域名也查一遍;必要时分别试 env=pre/prod,以是否有 data 为准
-curl -s "https://acube.aliyun-inc.com/api/v1/terraform/generator/cloudspec/resourceTypeCode/get?env=pre&isShowChangeLog=false&product=${product}&resourceCode=${resourceCode}" \
-  -H "accept: */*"
-
-# get 无 data 时降级查产品资源列表;列表里没有 resourceCode 才判定未发布/未同步
-curl -s "https://pre-acube.aliyun-inc.com/api/v1/terraform/generator/cloudspec/resourceTypeCode/list?product=${product}&released=false" \
-  -H "accept: */*"
-curl -s "https://acube.aliyun-inc.com/api/v1/terraform/generator/cloudspec/resourceTypeCode/list?product=${product}&released=false" \
-  -H "accept: */*"
-```
-
-sanity check: 用同产品已存在资源(如 `Handshake`) 反查一次;若它有 data,说明接口链路正常,目标 resourceCode 无 data 就是真缺失。
+- get 返回 `SUCCESS` 但无 `data` = 未命中;降级查 `resourceTypeCode/list`(released=false),列表也没有才判定未发布/未同步。
+- **env 合法枚举只有 `pre` / `online`**——`env=prod` 接口不报错但**静默返回空 data**(实测),会误判「镇元无此资源」,勿用。
+- sanity check:用同产品已存在资源(如 `Handshake`)反查一次;它有 data 说明接口链路正常,目标 resourceCode 无 data 才是真缺失。
 
 ## 接口示例(可复制)
 ```bash

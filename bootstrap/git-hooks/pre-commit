@@ -13,7 +13,7 @@ set -uo pipefail
 staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 
 # 过滤 mirror 相关路径
-mirror_staged=$(echo "$staged" | grep -E '^\.claude/skills/|^\.agents/skills/|^CLAUDE\.md$|^AGENTS\.md$' || true)
+mirror_staged=$(echo "$staged" | grep -E '^\.claude/skills/|^\.agents/skills/|^\.claude/agents/|^\.codex/agents/|^CLAUDE\.md$|^AGENTS\.md$' || true)
 [ -z "$mirror_staged" ] && exit 0
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
@@ -34,5 +34,17 @@ if printf '%s\n' "${files[@]}" | grep -qxF 'CLAUDE.md'; then
     bash "$repo_root/bootstrap/mirror.sh" to-codex "$repo_root/CLAUDE.md" >/dev/null 2>&1 || true
     git -C "$repo_root" add -- "$repo_root/AGENTS.md" 2>/dev/null || true
 fi
+
+# .claude/agents/*.md staged 时自动重生成对应 .codex/agents/*.toml 并 git add(md 为唯一真源,
+# 与 CLAUDE.md→AGENTS.md 同款兜底;生成规则见 bootstrap/agents-mirror-lib.sh)
+for f in "${files[@]}"; do
+    case "$f" in
+        .claude/agents/*.md)
+            bash "$repo_root/bootstrap/mirror.sh" to-codex "$repo_root/$f" >/dev/null 2>&1 || true
+            b="${f#.claude/agents/}"
+            git -C "$repo_root" add -- "$repo_root/.codex/agents/${b%.md}.toml" 2>/dev/null || true
+            ;;
+    esac
+done
 
 exec bash "$repo_root/bootstrap/mirror.sh" check "${files[@]}"

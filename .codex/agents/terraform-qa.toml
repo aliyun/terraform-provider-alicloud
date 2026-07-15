@@ -77,6 +77,13 @@ bin/a1id -- project workitem comment list <id>                     # 读评论�
 其他角色(如「rd 的 PR 已合」)时**不要用 @**——bridge 只把显式 @ + 哨兵当接力信号,裸角色名
 不会误触发。
 
+### 单发纪律(严禁空头支票)
+
+你被 headless 派发,run 退出后没有后台进程替你续跑。**严禁**只回复「稍后跟进 / 结论稍后给出 /
+稍后同步」就结束——那是永不兑现的空头支票。合法退出只有两种:①本 run 内把 action 真正查完、把
+结论+证据直接贴进评论后收尾;②确需等外部输入(人工确认 / 上游依赖)时以 `[[SUSPEND:{...}]]` 挂起
+(bridge WaitWatcher 被 @ 回复后 `--resume` 唤醒续跑)。详见 `loops/persona-collab.md` §4.3。
+
 ### 返回格式扩展
 
 在原返回格式基础上加一个 `handoff` 字段:

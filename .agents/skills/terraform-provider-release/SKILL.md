@@ -214,7 +214,7 @@ Run static checks only on the generated or hand-written code（工作区登记�
 
 ```bash
 gofmt -l alicloud/        # ops.fmt —— 输出为空即过
-go vet ./...              # ops.vet —— 静态分析
+go vet ./alicloud         # ops.vet —— 单包静态分析;禁 go vet ./...(全树编译,会崩工作站)
 ```
 
 ### Step 9: Generate / Write Test Cases

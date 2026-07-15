@@ -6,7 +6,9 @@
 #   sync-to-claude.sh      → mirror.sh to-claude [--all | <file>...]
 #   skills-mirror-check.sh → mirror.sh check     [<file>...]
 #
-# sed 规则仍在 bootstrap/skills-mirror-lib.sh(source-only)。
+# sed 规则仍在 bootstrap/skills-mirror-lib.sh(source-only);
+# agents 生成规则在 bootstrap/agents-mirror-lib.sh(.claude/agents/*.md → .codex/agents/*.toml,
+# md 单向真源,to-claude 不支持 agents 反向)。
 #
 # 注:AGENTS.md 已入库跟踪(内容 = mirror_sed_claude_to_codex(CLAUDE.md)),pre-commit
 # 钩子在 CLAUDE.md staged 时自动重生成+git add,PostToolUse 实时 sync + preflight 兜底;
@@ -32,6 +34,8 @@ jarvis_root="${JARVIS_ROOT:-$(cd "$script_dir/.." && pwd)}"
 
 # shellcheck source=bootstrap/skills-mirror-lib.sh
 source "$script_dir/skills-mirror-lib.sh"
+# shellcheck source=bootstrap/agents-mirror-lib.sh
+source "$script_dir/agents-mirror-lib.sh"
 
 # ============ sync core(to-codex + to-claude 共用) ============
 
@@ -43,8 +47,9 @@ _map_target() {
     case "$direction" in
         claude_to_codex)
             case "$rel" in
-                .claude/skills/*) echo "$jarvis_root/.agents/skills/${rel#.claude/skills/}" ;;
-                CLAUDE.md)        echo "$jarvis_root/AGENTS.md" ;;
+                .claude/skills/*)    echo "$jarvis_root/.agents/skills/${rel#.claude/skills/}" ;;
+                .claude/agents/*.md) local b="${rel#.claude/agents/}"; echo "$jarvis_root/.codex/agents/${b%.md}.toml" ;;
+                CLAUDE.md)           echo "$jarvis_root/AGENTS.md" ;;
                 *) echo "" ;;
             esac ;;
         codex_to_claude)
@@ -59,9 +64,15 @@ _map_target() {
 _transform_file() {
     local src="$1" dst="$2" direction="$3"
     mkdir -p "$(dirname "$dst")"
-    case "$direction" in
-        claude_to_codex) mirror_sed_claude_to_codex < "$src" > "$dst" ;;
-        codex_to_claude) mirror_sed_codex_to_claude < "$src" > "$dst" ;;
+    case "$src" in
+        */.claude/agents/*.md)
+            # agents 对是结构化生成(md frontmatter+正文 → toml),不走 sed
+            agents_md_to_toml "$src" > "$dst" ;;
+        *)
+            case "$direction" in
+                claude_to_codex) mirror_sed_claude_to_codex < "$src" > "$dst" ;;
+                codex_to_claude) mirror_sed_codex_to_claude < "$src" > "$dst" ;;
+            esac ;;
     esac
     echo "sync: $src → $dst"
 }
@@ -88,6 +99,12 @@ _sync_all() {
             _sync_one "$f" "$direction"
         done < <(find "$src_root" -type f)
     fi
+    # agents 对只有 claude→codex 方向(md 真源生成 toml)
+    if [ "$direction" = "claude_to_codex" ] && [ -d "$jarvis_root/.claude/agents" ]; then
+        while IFS= read -r f; do
+            _sync_one "$f" claude_to_codex
+        done < <(find "$jarvis_root/.claude/agents" -type f -name '*.md')
+    fi
     [ -f "$top_md" ] && _sync_one "$top_md" "$direction"
 }
 
@@ -99,10 +116,12 @@ _map_pair() {
     [[ "$src" != /* ]] && src="$jarvis_root/$src"
     local rel="${src#$jarvis_root/}"
     case "$rel" in
-        .claude/skills/*) echo "$jarvis_root/.agents/skills/${rel#.claude/skills/} claude_to_codex" ;;
-        CLAUDE.md)        echo "$jarvis_root/AGENTS.md claude_to_codex" ;;
-        .agents/skills/*) echo "$jarvis_root/.claude/skills/${rel#.agents/skills/} codex_to_claude" ;;
-        AGENTS.md)        echo "$jarvis_root/CLAUDE.md codex_to_claude" ;;
+        .claude/skills/*)    echo "$jarvis_root/.agents/skills/${rel#.claude/skills/} claude_to_codex" ;;
+        .claude/agents/*.md) local b="${rel#.claude/agents/}"; echo "$jarvis_root/.codex/agents/${b%.md}.toml agents_md" ;;
+        CLAUDE.md)           echo "$jarvis_root/AGENTS.md claude_to_codex" ;;
+        .agents/skills/*)    echo "$jarvis_root/.claude/skills/${rel#.agents/skills/} codex_to_claude" ;;
+        .codex/agents/*.toml) local b="${rel#.codex/agents/}"; echo "$jarvis_root/.claude/agents/${b%.toml}.md agents_toml" ;;
+        AGENTS.md)           echo "$jarvis_root/CLAUDE.md codex_to_claude" ;;
         *) return 1 ;;
     esac
 }
@@ -133,10 +152,12 @@ _check_pair() {
 
     local expected actual
     case "$direction" in
-        claude_to_codex) expected="$(mirror_sed_claude_to_codex < "$src")" ;;
-        codex_to_claude) expected="$(mirror_sed_codex_to_claude < "$src")" ;;
+        claude_to_codex) expected="$(mirror_sed_claude_to_codex < "$src")"; actual="$(cat "$dst")" ;;
+        codex_to_claude) expected="$(mirror_sed_codex_to_claude < "$src")"; actual="$(cat "$dst")" ;;
+        # agents 对:恒以 md 生成物为期望(md 真源);从 toml 侧发起 check 时反查其 md
+        agents_md)       expected="$(agents_md_to_toml "$src")";            actual="$(cat "$dst")" ;;
+        agents_toml)     expected="$(agents_md_to_toml "$dst")";            actual="$(cat "$src")" ;;
     esac
-    actual="$(cat "$dst")"
 
     if [ "$expected" != "$actual" ]; then
         echo "mirror-drift: $dst" >&2
@@ -158,6 +179,8 @@ _cmd_check() {
         done < <(
             [ -d "$jarvis_root/.claude/skills" ] && find "$jarvis_root/.claude/skills" -type f
             [ -d "$jarvis_root/.agents/skills" ] && find "$jarvis_root/.agents/skills" -type f
+            [ -d "$jarvis_root/.claude/agents" ] && find "$jarvis_root/.claude/agents" -type f -name '*.md'
+            [ -d "$jarvis_root/.codex/agents" ] && find "$jarvis_root/.codex/agents" -type f -name '*.toml'
             [ -f "$jarvis_root/CLAUDE.md" ] && echo "$jarvis_root/CLAUDE.md"
             [ -f "$jarvis_root/AGENTS.md" ] && echo "$jarvis_root/AGENTS.md"
         )
@@ -172,15 +195,15 @@ _cmd_check() {
     if [ "$drift" -eq 1 ]; then
         {
             echo ""
-            echo "skills mirror drift detected between .claude and .agents."
+            echo "mirror drift detected(.claude↔.agents skills / CLAUDE↔AGENTS / .claude/agents→.codex/agents)。"
             echo "主线机制是 PostToolUse hook(.claude/settings.json + .codex/hooks.json)"
             echo "在 Edit/Write/MultiEdit 后跑 mirror.sh to-{codex,claude} 实时双向同步 +"
             echo "token 替换。本次 drift 通常是 Bash cp/sed/echo>、外部编辑器、其它 agent、"
             echo "或 hook 静默失败造成。"
             echo ""
             echo "修复:"
-            echo "  bash bootstrap/mirror.sh to-codex --all      # 以 .claude 为准 → .agents"
-            echo "  bash bootstrap/mirror.sh to-claude --all     # 以 .agents 为准 → .claude"
+            echo "  bash bootstrap/mirror.sh to-codex --all      # 以 .claude 为准 → .agents(含 agents md→toml 重生成)"
+            echo "  bash bootstrap/mirror.sh to-claude --all     # 以 .agents 为准 → .claude(agents 对无反向,改 md)"
             echo "然后 git add 变更并重跑 commit。"
         } >&2
         return 1

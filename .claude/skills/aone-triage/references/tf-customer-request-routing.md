@@ -305,7 +305,7 @@ bash bootstrap/notify-dingtalk.sh --dry-run <staffId> "<title>" "<body>"
 - staffId ∈ `config/dingtalk-optout.txt` → 个人 opt-out,退 0
 - 网络/API 失败 → 落 `escalation/notify-fail-<ts>-<staffId>.md`,退 0
 
-**staffId 假设**:阿里 empId(Aone 工号)= 钉钉 staffId,直接用 team-roster 里的工号即可。首次全量启用前先跑 dry-run 三人小样(仓库主人 + 过载 + 新山)确认能收到。
+**staffId 假设**:阿里 empId(Aone 工号)= 钉钉 staffId,直接用 team-roster 里的工号即可。排障时可先 `notify-dingtalk.sh --dry-run <staffId> <title> <body>` 验证收件人与文案(打印不实发)。
 
 ### 前置 Gate — 评论区/状态变化扫描
 
