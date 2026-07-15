@@ -708,6 +708,22 @@ else
 fi
 rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
 
+# ===========================================================================
+# Test 19: 两份活跃 aone-triage Skill 的个人身份纪律枚举保持一致
+# ===========================================================================
+echo "=== Test 19: aone-triage Skill 个人身份枚举包含 shanye ==="
+for skill in \
+    "$proj_root/.agents/skills/aone-triage/SKILL.md" \
+    "$proj_root/.claude/skills/aone-triage/SKILL.md"; do
+    rel="${skill#"$proj_root/"}"
+    count=$(grep -cF "chenyi/guozai/linjun/shanye" "$skill" || true)
+    if [ "$count" = "2" ]; then
+        pass "$rel 两处个人身份枚举一致"
+    else
+        fail "$rel 应有 2 处完整枚举,实际 $count 处"
+    fi
+done
+
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== SUMMARY ==="

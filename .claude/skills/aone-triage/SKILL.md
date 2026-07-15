@@ -25,7 +25,7 @@ description: >-
 
 ## 前置 · a1 CLI
 
-全流程走 `a1`(封装 `bin/a1id -- <args>`,默认 jarvis 身份;数字人身份 `terraform-pd/terraform-rd/terraform-qa` 由对应子代理按职责用 `a1id as <role> --` 或 `JARVIS_A1_IDENTITY=<role>`;个人身份 `chenyi/guozai/linjun` 仅当仓库主人当面授权本轮才可 `a1id as <id> -- ...`)。
+全流程走 `a1`(封装 `bin/a1id -- <args>`,默认 jarvis 身份;数字人身份 `terraform-pd/terraform-rd/terraform-qa` 由对应子代理按职责用 `a1id as <role> --` 或 `JARVIS_A1_IDENTITY=<role>`;个人身份 `chenyi/guozai/linjun/shanye` 仅当仓库主人当面授权本轮才可 `a1id as <id> -- ...`)。
 先 `bin/a1id -- auth whoami` 验登录;`command not found` 或认证错误 → **征得用户同意后**装:
 ```
 curl -fsSL https://git.cn-hangzhou.oss-cdn.aliyun-inc.com/aone-cli/install.sh | sh
@@ -235,6 +235,6 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 - ❌ 给已关联的两单重复 `relation add` —— 单次已自动双向,第二次 400 已存在
 - ❌ jarvis 自行 push master / merge PR / release_prod —— 永久停止项(autonomy.md `stop`)
 - ❌ 对外产物带 AI 署名 —— CLAUDE.md 工作纪律 #5,发出前剥掉
-- ❌ 使用非默认 a1 身份(chenyi/guozai/linjun)未经仓库主人当面授权 —— 红线
+- ❌ 使用非默认 a1 身份(chenyi/guozai/linjun/shanye)未经仓库主人当面授权 —— 红线
 - ❌ 推翻性结论只发评论、不改我方工单的 description —— 研发单详情停留在已否决的根因/方案,后续接手者被第一屏误导;重审/方案演进必须同步重写详情(写操作表「更新详情」行,`--body-file`;客户主单原声禁改)。案例:83998772 方案 A→E→R 两次演进,详情滞后在 A
 - ❌ Aone 评论里贴裸 URL(独行或行内)、`<url>` 尖括号、`<a href>` 锚标签 —— 都不渲染为可点击链接(评论区不 autolink 纯文本,HTML tag 被剥);**唯一可点 = markdown `[text](url)`**(§4「Aone 评论渲染 quirk」,先例:84307546 评论 124870464 四格式对照)。`wrap.sh done` 与手工 `a1 comment create` 的正文都要用 markdown 链接格式
