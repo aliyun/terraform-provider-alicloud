@@ -82,7 +82,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "master" {
-    zone_id                  = data.alicloud_db_zones.default.zones.0.id
+    zone_id                  = data.alicloud_db_zones.default.zones[0].id
 	engine                   = "SQLServer"
 	engine_version           = "2017_ent"
  	db_instance_storage_type = "cloud_essd"
@@ -91,7 +91,7 @@ data "alicloud_db_instance_classes" "master" {
 }
 
 data "alicloud_vswitches" "default" {
-  zone_id = data.alicloud_db_zones.default.zones.0.id
+  zone_id = data.alicloud_db_zones.default.zones[0].id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -100,16 +100,16 @@ data "alicloud_resource_manager_resource_groups" "default" {
 
 resource "alicloud_security_group" "default" {
 	name   = var.name
-	vpc_id = data.alicloud_vswitches.default.vswitches.0.vpc_id
+	vpc_id = data.alicloud_vswitches.default.vswitches[0].vpc_id
 }
 
 resource "alicloud_db_instance" "default" {
     engine                   = "SQLServer"
 	engine_version           = "2017_ent"
  	db_instance_storage_type = "cloud_essd"
-	instance_type            = data.alicloud_db_instance_classes.master.instance_classes.0.instance_class
-	instance_storage         = data.alicloud_db_instance_classes.master.instance_classes.0.storage_range.min
-	vswitch_id               = data.alicloud_vswitches.default.vswitches.0.vswitch_id
+	instance_type            = "mssql.x4.large.e2"
+	instance_storage         = 20
+	vswitch_id               = data.alicloud_vswitches.default.vswitches[0].vswitch_id
 	instance_name            = var.name
 }
 
@@ -120,7 +120,7 @@ resource "alicloud_db_readonly_instance" "default" {
 	instance_storage      = alicloud_db_instance.default.instance_storage
 	instance_type         = "rds.mssql.s2.large"
 	instance_name         = "${var.name}_ro"
-	vswitch_id            = data.alicloud_vswitches.default.vswitches.0.vswitch_id
+	vswitch_id            = data.alicloud_vswitches.default.vswitches[0].vswitch_id
 }
 
 `, name)
