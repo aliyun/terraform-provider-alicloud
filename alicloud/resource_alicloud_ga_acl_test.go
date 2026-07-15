@@ -509,3 +509,45 @@ func AliCloudGaAclBasicDependence0(name string) string {
 	}
 `)
 }
+
+// TestUnitAliCloudGaAclNameValidation guards that the acl_name ValidateFunc
+// mirrors the Ga CreateAcl API contract: length 1-128, starts with a letter or
+// a Chinese character, and may contain letters, Chinese characters, digits,
+// periods (.), underscores (_) and hyphens (-). Chinese names must pass because
+// the underlying API accepts them.
+func TestUnitAliCloudGaAclNameValidation(t *testing.T) {
+	validateFunc := resourceAliCloudGaAcl().Schema["acl_name"].ValidateFunc
+	if validateFunc == nil {
+		t.Fatal("acl_name ValidateFunc is nil")
+	}
+
+	cases := []struct {
+		name        string
+		value       string
+		expectError bool
+	}{
+		{"chinese_only", "测试策略组", false},
+		{"chinese_mixed", "测试-acl_1", false},
+		{"chinese_leading", "中文acl", false},
+		{"ascii_normal", "test-acl", false},
+		{"single_letter", "a", false},
+		{"single_chinese", "组", false},
+		{"max_length_ascii", strings.Repeat("a", 128), false},
+		{"leading_digit", "1abc", true},
+		{"leading_hyphen", "-abc", true},
+		{"too_long", strings.Repeat("a", 129), true},
+		{"illegal_char", "test@acl", true},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, errs := validateFunc(c.value, "acl_name")
+			if c.expectError && len(errs) == 0 {
+				t.Errorf("value %q: expected validation error, got none", c.value)
+			}
+			if !c.expectError && len(errs) != 0 {
+				t.Errorf("value %q: expected no error, got %v", c.value, errs)
+			}
+		})
+	}
+}
