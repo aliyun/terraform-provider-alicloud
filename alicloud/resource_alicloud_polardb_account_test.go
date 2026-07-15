@@ -146,9 +146,29 @@ data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
 }
 
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+
+locals {
+  vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids.0 : alicloud_vpc.default.id
+}
+
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
+  vpc_id  = local.vpc_id
   zone_id = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = local.vpc_id
+  zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+  cidr_block   = "172.16.0.0/24"
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : alicloud_vswitch.default.id
 }
 
 resource "alicloud_polardb_cluster" "default" {
@@ -156,7 +176,7 @@ resource "alicloud_polardb_cluster" "default" {
   db_version    = "8.0"
   db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
   pay_type      = "PostPaid"
-  vswitch_id    = data.alicloud_vswitches.default.ids.0
+  vswitch_id    = local.vswitch_id
 }
 `, name)
 }
@@ -340,9 +360,29 @@ data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
 }
 
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+
+locals {
+  vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids.0 : alicloud_vpc.default.id
+}
+
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
+  vpc_id  = local.vpc_id
   zone_id = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = local.vpc_id
+  zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+  cidr_block   = "172.16.0.0/24"
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : alicloud_vswitch.default.id
 }
 
 resource "alicloud_polardb_cluster" "default" {
@@ -350,7 +390,7 @@ resource "alicloud_polardb_cluster" "default" {
   pay_type      = "PostPaid"
   db_node_class = "polar.pg.x4.medium"
   db_type       = "PostgreSQL"
-  vswitch_id    = data.alicloud_vswitches.default.ids.0
+  vswitch_id    = local.vswitch_id
 }
 
 	resource "alicloud_kms_key" "default" {

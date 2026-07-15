@@ -23,6 +23,7 @@ func TestAccAliCloudPolarDBBackupPolicy(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBBackupPolicyConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -168,7 +169,7 @@ func TestAccAliCloudPolarDBNewBackupPolicy(t *testing.T) {
 					"data_level1_backup_frequency":                       "Normal",
 					"data_level2_backup_retention_period":                "30",
 					"data_level2_backup_period":                          []string{"Tuesday", "Wednesday"},
-					"data_level2_backup_another_region_region":           "cn-beijing",
+					"data_level2_backup_another_region_region":           "cn-hangzhou",
 					"data_level2_backup_another_region_retention_period": "30",
 					"backup_retention_policy_on_cluster_deletion":        "NONE",
 				}),
@@ -180,7 +181,7 @@ func TestAccAliCloudPolarDBNewBackupPolicy(t *testing.T) {
 						"data_level1_backup_frequency":                       "Normal",
 						"data_level2_backup_retention_period":                "30",
 						"data_level2_backup_period.#":                        "2",
-						"data_level2_backup_another_region_region":           "cn-beijing",
+						"data_level2_backup_another_region_region":           "cn-hangzhou",
 						"data_level2_backup_another_region_retention_period": "30",
 						"backup_retention_policy_on_cluster_deletion":        "NONE",
 					}),
@@ -276,7 +277,7 @@ func resourcePolarDBBackupPolicyConfigDependence(name string) string {
 		db_type       = "MySQL"
 		db_version    = "8.0"
 		pay_type      = "PostPaid"
-		db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.2.db_node_class
+		db_node_class = "polar.mysql.x4.large"
 		vswitch_id    = alicloud_vswitch.default.id
 		description   = "${var.name}"
 	}

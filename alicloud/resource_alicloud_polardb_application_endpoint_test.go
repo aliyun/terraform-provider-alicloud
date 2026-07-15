@@ -28,11 +28,11 @@ func TestAccAliCloudPolarDBApplicationEndpoint_Create(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
-		return resourcePolarDBApplicationEndpointConfigDependence(name, "cn-shanghai")
+		return resourcePolarDBApplicationEndpointConfigDependence(name, "cn-beijing")
 	})
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
 
