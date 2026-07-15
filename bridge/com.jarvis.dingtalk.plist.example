@@ -1,26 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- launchd template (mac). Copy to ~/Library/LaunchAgents/com.jarvis.dingtalk.plist,
-     replace PLACEHOLDERS, then: launchctl load ~/Library/LaunchAgents/com.jarvis.dingtalk.plist -->
+<!--
+  bridge/install-launchd.sh renders every placeholder token to an absolute path and installs
+  this file under ~/Library/LaunchAgents. Do not run this template directly.
+-->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>com.jarvis.dingtalk</string>
+  <key>Label</key>
+  <string>__LABEL__</string>
+
   <key>ProgramArguments</key>
   <array>
-    <string>__PYTHON_PATH__</string>          <!-- e.g. /usr/bin/python3 -->
-    <string>__SCRIPT_PATH__</string>          <!-- .../bridge/jarvis_dingtalk_bot.py -->
+    <string>__RUN_SH_PATH__</string>
+    <string>daemon</string>
   </array>
+
+  <key>WorkingDirectory</key>
+  <string>__REPO_ROOT__</string>
+
   <key>EnvironmentVariables</key>
   <dict>
-    <key>JARVIS_ENV_FILE</key><string>__ENV_FILE__</string>  <!-- .../bridge/jarvis.env -->
-    <key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:__HOME__/.local/bin</string>
+    <key>JARVIS_BRIDGE_SUPERVISOR</key>
+    <string>launchd</string>
+    <key>JARVIS_BRIDGE_ENV</key>
+    <string>__ENV_FILE__</string>
+    <key>JARVIS_BRIDGE_STATE_DIR</key>
+    <string>__STATE_DIR__</string>
+    <key>JARVIS_BRIDGE_LAUNCHD_LABEL</key>
+    <string>__LABEL__</string>
+    <key>JARVIS_BRIDGE_LAUNCHD_PLIST</key>
+    <string>__PLIST_PATH__</string>
+    <key>PATH</key>
+    <string>__LAUNCHD_PATH__</string>
   </dict>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>StandardOutPath</key><string>__HOME__/.jarvis/dingtalk.log</string>
-  <key>StandardErrorPath</key><string>__HOME__/.jarvis/dingtalk.log</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <!-- 0077: tokens, logs and local task context must remain user-private. -->
+  <key>Umask</key>
+  <integer>63</integer>
+
+  <key>StandardOutPath</key>
+  <string>__LOG_PATH__</string>
+  <key>StandardErrorPath</key>
+  <string>__LOG_PATH__</string>
 </dict>
 </plist>
-<!-- systemd alt: create ~/.config/systemd/user/jarvis-dingtalk.service with
-     ExecStart=__PYTHON_PATH__ __SCRIPT_PATH__ and EnvironmentFile=__ENV_FILE__, then
-     systemctl --user enable --now jarvis-dingtalk -->

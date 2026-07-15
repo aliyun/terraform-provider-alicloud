@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+"""Hermetic tests for bridge/jarvis_task_client.py."""
+
+import io
+import json
+import socket
+import sys
+import unittest
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from jarvis_task_client import (  # noqa: E402
+    AutomationAgentTaskClient,
+    ControlPlaneConflict,
+    ControlPlaneUnavailable,
+    InvalidResponse,
+    StaleFence,
+    TaskEnvelope,
+)
+
+
+class FakeResponse:
+    def __init__(self, payload=None, status=200, raw=None):
+        self.status = status
+        self._raw = raw if raw is not None else json.dumps(payload or {}).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def getcode(self):
+        return self.status
+
+    def read(self):
+        return self._raw
+
+
+class RecordingOpener:
+    def __init__(self, responses=None, error=None):
+        self.responses = list(responses or [FakeResponse({"accepted": True})])
+        self.error = error
+        self.calls = []
+
+    def __call__(self, req, timeout=None):
+        self.calls.append((req, timeout))
+        if self.error:
+            raise self.error
+        return self.responses.pop(0)
+
+
+def envelope():
+    return TaskEnvelope(
+        task_key="aone:2100304:84345050",
+        source_type="AONE",
+        source_ref={"project_id": "2100304", "workitem_id": "84345050"},
+        task_type="ticket",
+        desired_revision="modified:2026-07-15T01:02:03Z",
+        trigger_mask=["SCAN"],
+        payload={"item_id": "84345050", "prompt": "do work"},
+        recovery_policy="RESUME_ONLY",
+        priority="high",
+    )
+
+
+def headers(req):
+    return {k.lower(): v for k, v in req.header_items()}
+
+
+def body(req):
+    return json.loads(req.data.decode())
+
+
+class TaskEnvelopeTest(unittest.TestCase):
+    def test_serializes_and_omits_empty_optional_fields(self):
+        env = envelope()
+        data = env.to_dict(execution_mode="MANAGED")
+        self.assertEqual(data["taskKey"], "aone:2100304:84345050")
+        self.assertEqual(data["executionMode"], "MANAGED")
+        self.assertEqual(data["sourceRef"]["projectId"], "2100304")
+        self.assertEqual(data["payload"]["itemId"], "84345050")
+        self.assertEqual(data["priority"], "high")
+        self.assertNotIn("persona", data)
+
+    def test_request_id_is_stable_and_mode_sensitive(self):
+        env = envelope()
+        first = env.request_id("upsert", execution_mode="MANAGED")
+        self.assertEqual(first, env.request_id("upsert", execution_mode="MANAGED"))
+        self.assertNotEqual(first, env.request_id("upsert", execution_mode="SHADOW"))
+        self.assertTrue(first.startswith("jarvis-upsert-"))
+
+    def test_rejects_missing_identity_or_non_mapping_payload(self):
+        with self.assertRaises(ValueError):
+            TaskEnvelope("", "AONE", {}, "ticket", "r1", {})
+        with self.assertRaises(TypeError):
+            TaskEnvelope("k", "AONE", {}, "ticket", "r1", [])
+
+
+class ClientContractTest(unittest.TestCase):
+    def make(self, opener):
+        return AutomationAgentTaskClient(
+            "https://pre-agent.example/", "super-secret", timeout=4.5, opener=opener)
+
+    def test_authorization_idempotency_and_upsert_body(self):
+        opener = RecordingOpener()
+        client = self.make(opener)
+        client.upsert_desired_task(envelope(), execution_mode="managed", request_id="req-123")
+        req, timeout = opener.calls[0]
+        self.assertEqual(req.full_url,
+                         "https://pre-agent.example/api/jarvis/v1/tasks/upsert")
+        self.assertEqual(timeout, 4.5)
+        hs = headers(req)
+        self.assertEqual(hs["authorization"], "Bearer super-secret")
+        self.assertEqual(hs["idempotency-key"], "req-123")
+        self.assertNotIn("x-request-id", hs)
+        self.assertEqual(body(req)["executionMode"], "MANAGED")
+        self.assertEqual(body(req)["desiredRevision"],
+                         "modified:2026-07-15T01:02:03Z")
+
+    def test_all_worker_and_session_endpoints(self):
+        opener = RecordingOpener(responses=[FakeResponse({}) for _ in range(8)])
+        c = self.make(opener)
+        c.register_worker({"worker_key": "mac:boot:pid"}, request_id="r1")
+        c.heartbeat_worker("w1", {"status": "ACTIVE"}, request_id="r2")
+        c.lease_task("w1", lease_seconds=45,
+                     capabilities={"kinds": ["probe"]}, request_id="r3")
+        c.start_session("s1", "w1", 7, {"pid": 99}, request_id="r4")
+        c.heartbeat_session("s1", "w1", 7, {"progress": "running"}, request_id="r5")
+        c.suspend_session("s1", "w1", 7, {"wait_for": "320687"}, request_id="r6")
+        c.complete_session("s1", "w1", 7, {"result": "done"}, request_id="r7")
+        c.fail_session("s1", "w1", 7, {"error": "boom"}, request_id="r8")
+
+        paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
+                 for call in opener.calls]
+        self.assertEqual(paths, [
+            "workers/register", "workers/w1/heartbeat", "tasks/lease",
+            "sessions/s1/start", "sessions/s1/heartbeat", "sessions/s1/suspend",
+            "sessions/s1/complete", "sessions/s1/fail",
+        ])
+        self.assertEqual(body(opener.calls[0][0])["workerKey"], "mac:boot:pid")
+        lease = body(opener.calls[2][0])
+        self.assertEqual(lease["workerKey"], "w1")
+        self.assertEqual(lease["leaseSeconds"], 45)
+        for req, _timeout in opener.calls[3:]:
+            payload = body(req)
+            self.assertNotIn("sessionId", payload)
+            self.assertEqual(payload["workerKey"], "w1")
+            self.assertEqual(payload["fenceToken"], 7)
+
+    def test_operations_and_queries_use_contract_paths(self):
+        opener = RecordingOpener(responses=[
+            FakeResponse({"ok": True}), FakeResponse({"ok": True}),
+            FakeResponse({"ok": True}), FakeResponse({"ok": True}),
+            FakeResponse({"taskId": "t1"}),
+            FakeResponse([{"eventType": "LEASED"}]),
+        ])
+        c = self.make(opener)
+        operation = {"operation_id": "op1", "fence_token": 7}
+        c.begin_operation(operation, request_id="o1")
+        c.ack_operation(operation, request_id="o2")
+        c.fail_operation(operation, request_id="o3")
+        c.reconcile_operation(operation, request_id="o4")
+        task = c.get_task_by_aone("84345050")
+        timeline = c.get_task_timeline("task/1")
+
+        paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
+                 for call in opener.calls]
+        self.assertEqual(paths, [
+            "operations/begin", "operations/ack", "operations/fail",
+            "operations/reconcile", "tasks/by-aone/84345050",
+            "tasks/task%2F1/timeline",
+        ])
+        self.assertEqual(body(opener.calls[0][0]),
+                         {"operationId": "op1", "fenceToken": 7})
+        self.assertEqual(task["taskId"], "t1")
+        self.assertEqual(timeline[0]["eventType"], "LEASED")
+        for req, _timeout in opener.calls[-2:]:
+            self.assertEqual(req.get_method(), "GET")
+            self.assertIsNone(req.data)
+            self.assertNotIn("idempotency-key", headers(req))
+
+    def test_bearer_token_is_optional(self):
+        opener = RecordingOpener()
+        c = AutomationAgentTaskClient("https://pre-agent.example", opener=opener)
+        c.register_worker({"workerKey": "w1"}, request_id="r1")
+        self.assertNotIn("authorization", headers(opener.calls[0][0]))
+
+    def test_409_maps_conflict(self):
+        err = HTTPError("https://x", 409, "Conflict", {},
+                        io.BytesIO(b'{"code":"ACTIVE_SESSION","message":"busy"}'))
+        with self.assertRaises(ControlPlaneConflict) as got:
+            self.make(RecordingOpener(error=err)).lease_task("w1", request_id="r")
+        self.assertEqual(got.exception.status, 409)
+        self.assertEqual(got.exception.code, "ACTIVE_SESSION")
+
+    def test_412_and_stale_fence_code_map_stale_fence(self):
+        for status in (409, 412):
+            err = HTTPError("https://x", status, "Precondition", {},
+                            io.BytesIO(b'{"code":"STALE_FENCE","message":"old"}'))
+            with self.assertRaises(StaleFence):
+                self.make(RecordingOpener(error=err)).heartbeat_session(
+                    "s", "w", 1, request_id="r")
+
+    def test_network_and_5xx_are_unavailable_without_token_leak(self):
+        with self.assertRaises(ControlPlaneUnavailable) as got:
+            self.make(RecordingOpener(error=URLError(socket.timeout()))).lease_task(
+                "w1", request_id="r")
+        self.assertNotIn("super-secret", str(got.exception))
+
+        err = HTTPError("https://x", 503, "Unavailable", {},
+                        io.BytesIO(b'{"message":"down"}'))
+        with self.assertRaises(ControlPlaneUnavailable):
+            self.make(RecordingOpener(error=err)).register_worker(
+                {"worker_key": "w"}, request_id="r")
+
+    def test_invalid_success_json_is_rejected(self):
+        opener = RecordingOpener(responses=[FakeResponse(raw=b"not-json")])
+        with self.assertRaises(InvalidResponse):
+            self.make(opener).register_worker({"worker_key": "w"}, request_id="r")
+
+    def test_session_requires_fence_and_lease_rejects_nonpositive_ttl(self):
+        c = self.make(RecordingOpener())
+        with self.assertRaises(ValueError):
+            c.start_session("s", "w", None)
+        with self.assertRaises(ValueError):
+            c.lease_task("w", lease_seconds=0)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
