@@ -92,6 +92,34 @@ if [ "${JARVIS_REQUIRE_PUSH:-0}" = "1" ]; then
     fi
 fi
 
+# --- Aone backfill gate（治「干完活不回帖」silent completion，JARVIS_REQUIRE_BACKFILL=1 默认开）--
+# 一个 coord task(.my-day/tasks/<id>.json)本会话所有、未 done、已外化(pushed_branch 非空)，
+# 却从未经 wrap.sh sync/done 回填 Aone(不在 touched 台账)= 推完码却没往工单发一个字。与外化契约
+# (autonomy.md: SUSPEND/release 前必 wrap.sh sync)一致；把成功搞成看着像卡死。设 =0 可关。
+backfill_missing=()
+if [ "${JARVIS_REQUIRE_BACKFILL:-1}" = "1" ]; then
+    tasks_dir="$myday_dir/tasks"
+    if [ -d "$tasks_dir" ]; then
+        touched_ids="$(mktemp)"
+        for tf in ${touched_files[@]+"${touched_files[@]}"}; do
+            jq -r '.[]' "$tf" 2>/dev/null
+        done | sort -u > "$touched_ids"
+        for tf in "$tasks_dir"/*.json; do
+            [ -e "$tf" ] || continue
+            _stage="$(jq -r '.stage // ""' "$tf" 2>/dev/null)"
+            _owner="$(jq -r '.owner_instance // ""' "$tf" 2>/dev/null)"
+            _pushed="$(jq -r '.pushed_branch // ""' "$tf" 2>/dev/null)"
+            _aid="$(jq -r '.aone_id // ""' "$tf" 2>/dev/null)"
+            [ "$_stage" = "done" ] && continue      # 已 done → 豁免
+            [ "$_owner" = "$self" ] || continue     # 只管本实例的
+            [ -n "$_pushed" ] || continue           # 只管已外化(推过码)的
+            [ -n "$_aid" ] || continue
+            grep -qxF "$_aid" "$touched_ids" || backfill_missing+=("$_aid")
+        done
+        rm -f "$touched_ids"
+    fi
+fi
+
 # No claim/touched ledgers → skip the run_done sweep, but still honor the push gate.
 if [ "${#ledger_files[@]}" -eq 0 ] && [ "${#touched_files[@]}" -eq 0 ]; then
     open_ids=()
@@ -144,7 +172,8 @@ if [ "${#open_ids[@]}" -gt 0 ]; then
     done
 fi
 
-if [ "${#missing[@]}" -eq 0 ] && [ "${#push_missing[@]}" -eq 0 ]; then
+if [ "${#missing[@]}" -eq 0 ] && [ "${#push_missing[@]}" -eq 0 ] \
+        && [ "${#backfill_missing[@]}" -eq 0 ]; then
     exit 0
 fi
 
@@ -159,6 +188,13 @@ if [ "${#push_missing[@]}" -gt 0 ]; then
     echo "wrap-check: coord tasks with code NOT pushed 外化 (branch 有但 pushed_branch 空):" >&2
     for id in "${push_missing[@]}"; do
         echo "  $id (代码未 push 外化)" >&2
+    done
+fi
+
+if [ "${#backfill_missing[@]}" -gt 0 ]; then
+    echo "wrap-check: 推过码却没回填 Aone (干完活不回帖 — 请对以下工单跑 wrap.sh sync/done 补进展):" >&2
+    for id in "${backfill_missing[@]}"; do
+        echo "  $id (已 push 外化但无 wrap.sh sync/done 回帖)" >&2
     done
 fi
 exit 2

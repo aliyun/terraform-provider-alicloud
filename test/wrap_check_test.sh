@@ -81,7 +81,11 @@ ROOT13=""
 ROOT14=""
 ROOT15=""
 ROOT16=""
-trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" "$ROOT6" "$ROOT7" "$ROOT8" "$ROOT9" "$ROOT10" "$ROOT11" "$ROOT12" "$ROOT13" "$ROOT14" "$ROOT15" "$ROOT16" 2>/dev/null; exit' INT TERM EXIT
+ROOT17=""
+ROOT18=""
+ROOT19=""
+ROOT20=""
+trap 'rm -rf "$FAKE_BIN_DIR" "$ROOT1" "$ROOT2" "$ROOT3" "$ROOT4" "$ROOT5" "$ROOT6" "$ROOT7" "$ROOT8" "$ROOT9" "$ROOT10" "$ROOT11" "$ROOT12" "$ROOT13" "$ROOT14" "$ROOT15" "$ROOT16" "$ROOT17" "$ROOT18" "$ROOT19" "$ROOT20" 2>/dev/null; exit' INT TERM EXIT
 
 # ---------------------------------------------------------------------------
 # Test 1: done:false id, no runs/ file → exit 2
@@ -312,8 +316,46 @@ make_task "$ROOT16" "WI-T16b" "$PSELF" "done"   "feat-y" ""                # don
 make_task "$ROOT16" "WI-T16c" "$PSELF" "coding" ""       ""                # no branch → exempt
 make_task "$ROOT16" "WI-T16d" "inst-other" "coding" "feat-z" ""            # foreign owner → not ours
 touch "$ROOT16/runs/${today}-WI-T16a.md"
+# WI-T16a is pushed → the backfill gate (default on) also requires an Aone backfill; seed one
+# so this test stays focused on the push gate (backfill gate itself is Tests 17-20).
+printf '["WI-T16a"]\n' > "$ROOT16/.my-day/touched-${today}.json"
 assert_exit_code "externalized/done/no-branch/foreign → exit 0" 0 \
     env JARVIS_REQUIRE_PUSH=1 COORD_ID="$PSELF" JARVIS_ROOT="$ROOT16" JARVIS_RUNS_DIR="$ROOT16/runs" bash "$WRAP_CHECK"
+
+# ===========================================================================
+# JARVIS_REQUIRE_BACKFILL gate（治「干完活不回帖」silent completion，默认开）
+# 一个 coord task 本会话所有、stage!=done、pushed_branch 非空，却没经 wrap.sh sync/done 回帖
+# Aone(不在 touched 台账) → block。设 =0 关。
+# ===========================================================================
+BSELF="inst-backfill-self"
+
+echo "Test 17: pushed 但无 Aone 回帖 → exit 2 (干完活不回帖)"
+ROOT17="$(make_jarvis_root)"
+make_task "$ROOT17" "WI-T17" "$BSELF" "acc" "feat-x" "origin/feat-x"
+assert_exit_code "pushed 未回帖 → exit 2" 2 \
+    env COORD_ID="$BSELF" JARVIS_ROOT="$ROOT17" JARVIS_RUNS_DIR="$ROOT17/runs" bash "$WRAP_CHECK"
+assert_stderr_contains "报告工单 id" "WI-T17" \
+    env COORD_ID="$BSELF" JARVIS_ROOT="$ROOT17" JARVIS_RUNS_DIR="$ROOT17/runs" bash "$WRAP_CHECK"
+
+echo "Test 18: pushed + 已回帖(touched) → exit 0"
+ROOT18="$(make_jarvis_root)"
+make_task "$ROOT18" "WI-T18" "$BSELF" "acc" "feat-x" "origin/feat-x"
+touch "$ROOT18/runs/${today}-WI-T18.md"   # touched id → 既有 missing 闸也需 run_done
+printf '["WI-T18"]\n' > "$ROOT18/.my-day/touched-${today}.json"
+assert_exit_code "pushed + 回帖 → exit 0" 0 \
+    env COORD_ID="$BSELF" JARVIS_ROOT="$ROOT18" JARVIS_RUNS_DIR="$ROOT18/runs" bash "$WRAP_CHECK"
+
+echo "Test 19: pushed 但 stage=done → 豁免 exit 0"
+ROOT19="$(make_jarvis_root)"
+make_task "$ROOT19" "WI-T19" "$BSELF" "done" "feat-x" "origin/feat-x"
+assert_exit_code "done 豁免 → exit 0" 0 \
+    env COORD_ID="$BSELF" JARVIS_ROOT="$ROOT19" JARVIS_RUNS_DIR="$ROOT19/runs" bash "$WRAP_CHECK"
+
+echo "Test 20: JARVIS_REQUIRE_BACKFILL=0 + pushed 未回帖 → exit 0 (闸关)"
+ROOT20="$(make_jarvis_root)"
+make_task "$ROOT20" "WI-T20" "$BSELF" "acc" "feat-x" "origin/feat-x"
+assert_exit_code "kill-switch 关闸 → exit 0" 0 \
+    env JARVIS_REQUIRE_BACKFILL=0 COORD_ID="$BSELF" JARVIS_ROOT="$ROOT20" JARVIS_RUNS_DIR="$ROOT20/runs" bash "$WRAP_CHECK"
 
 # ---------------------------------------------------------------------------
 # Summary
