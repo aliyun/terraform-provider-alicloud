@@ -82,6 +82,9 @@ The following arguments are supported:
 * `cluster_name` - (Optional, ForceNew) The name of the created cluster. This parameter is required, if you set `cluster_type` to `remote-write`, `ecs` or `global-view`.
 * `sub_clusters_json` - (Optional) The child instance json string of the globalView instance.
 * `resource_group_id` - (Optional) The ID of the resource group.
+* `duration` - (Optional, Computed, Available since v1.286.0) The data storage duration, in days.
+* `archive_duration` - (Optional, Computed, Available since v1.286.0) The number of days for which data is automatically archived after the storage duration expires. Valid values: `60`, `90`, `180`, `365`. `0` indicates that data is not archived.
+* `payment_type` - (Optional, Computed, Available since v1.286.0) The billing method. Valid values: `POSTPAY` (pay-as-you-go based on the amount of reported metrics), `POSTPAY_GB` (pay-as-you-go based on the amount of written metrics).
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference

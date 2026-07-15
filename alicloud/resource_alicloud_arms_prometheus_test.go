@@ -35,6 +35,9 @@ func TestAccAliCloudArmsPrometheus_basic0(t *testing.T) {
 					"grafana_instance_id": "free",
 					"cluster_name":        name,
 					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"payment_type":        "POSTPAY",
+					"duration":            "90",
+					"archive_duration":    "60",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Prometheus",
@@ -46,9 +49,26 @@ func TestAccAliCloudArmsPrometheus_basic0(t *testing.T) {
 						"grafana_instance_id": "free",
 						"cluster_name":        name,
 						"resource_group_id":   CHECKSET,
+						"payment_type":        "POSTPAY",
+						"duration":            "90",
+						"archive_duration":    "60",
 						"tags.%":              "2",
 						"tags.Created":        "TF",
 						"tags.For":            "Prometheus",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"duration":         "180",
+					"archive_duration": "90",
+					"payment_type":     "POSTPAY_GB",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"duration":         "180",
+						"archive_duration": "90",
+						"payment_type":     "POSTPAY_GB",
 					}),
 				),
 			},
