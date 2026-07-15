@@ -251,6 +251,85 @@ def _inflight_has(item_id):
     return str(item_id) in _inflight_load()
 
 
+# ── PR-watch registry (方案A) ─────────────────────────────────────────────────
+# skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle；RevisitScheduler 的选择器只捞
+# 标题/描述含特定词的 idle 单，terraform 发布单都不含 → 工单永久停在 jarvis-idle、永不推到
+# 「已完成」。此登记表 + PrWatchScheduler 补缺口：PR 合并后自动 claim.sh finish 收尾。持久化
+# 姿势与 inflight 一致（atomic tmp+os.replace，best-effort try/except，绝不 crash worker）；
+# PRWATCH_PATH 是模块全局，每次调用现查（never captured at def time）便于测试 monkeypatch
+# ``b.PRWATCH_PATH``。条目**无 TTL 修剪**——只在合并收尾/关闭/终态时显式删。
+PRWATCH_PATH = Path(REPO_ROOT) / ".my-day/bridge/pr-watch.json"
+_prwatch_lock = threading.Lock()
+
+
+def _prwatch_load():
+    """Load the registry (ticket -> {pr_url, project, submitted_at}). Best-effort: any
+    failure → {} + warning."""
+    try:
+        if PRWATCH_PATH.exists():
+            raw = json.loads(PRWATCH_PATH.read_text())
+            if isinstance(raw, dict):
+                return {str(k): v for k, v in raw.items()}
+    except Exception as e:  # noqa: BLE001
+        log.warning("prwatch: could not load %s: %s", PRWATCH_PATH, e)
+    return {}
+
+
+def _prwatch_write(recs):
+    """Persist the registry atomically (tmp write + os.replace). Caller holds
+    ``_prwatch_lock``; best-effort — I/O failures only warn, never raise."""
+    try:
+        PRWATCH_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = PRWATCH_PATH.parent / (PRWATCH_PATH.name + ".tmp")
+        tmp.write_text(json.dumps(recs, default=str))
+        os.replace(str(tmp), str(PRWATCH_PATH))
+    except Exception as e:  # noqa: BLE001
+        log.warning("prwatch: could not persist %s: %s", PRWATCH_PATH, e)
+
+
+def _prwatch_add(ticket, pr_url, project):
+    """Register a PR to observe. Atomic load→set→write under the lock so concurrent writers
+    never clobber each other's records."""
+    with _prwatch_lock:
+        recs = _prwatch_load()
+        recs[str(ticket)] = {"pr_url": pr_url, "project": project,
+                             "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        _prwatch_write(recs)
+
+
+def _prwatch_remove(ticket):
+    """Drop a ticket's watch record on收尾/关闭/终态 (no-op if already absent)."""
+    with _prwatch_lock:
+        recs = _prwatch_load()
+        recs.pop(str(ticket), None)
+        _prwatch_write(recs)
+
+
+def _prwatch_list():
+    return _prwatch_load()
+
+
+def _prwatch_has(ticket):
+    return str(ticket) in _prwatch_load()
+
+
+def _load_done_statuses():
+    """Terminal-status set from config/pools.json .claim.done_statuses (top-level .claim,
+    NOT per-pool). Best-effort: any read/parse failure → a built-in fallback list. Used by
+    PrWatchScheduler._ticket_guard to detect a ticket humans已推到终态 (skip auto-finish)."""
+    fallback = ["已发布", "已发布待需求方验收", "验收通过", "已完成", "已拒绝", "已取消",
+                "方案功能已存在", "需求撤回", "Fixed", "Closed", "Won'tfix", "Worksforme",
+                "Duplicate", "Invalid", "External", "ByDesign"]
+    try:
+        cfg = json.loads((Path(REPO_ROOT) / "config" / "pools.json").read_text())
+        ds = cfg.get("claim", {}).get("done_statuses")
+        if isinstance(ds, list) and ds:
+            return [str(s) for s in ds]
+    except Exception as e:  # noqa: BLE001
+        log.warning("prwatch: could not read done_statuses from pools.json: %s", e)
+    return fallback
+
+
 def _session_file_exists(sid):
     """Does the Claude session transcript for ``sid`` exist on disk?
 
@@ -712,13 +791,14 @@ def _ticket_prompt_terraform(item_id, title, pool_key, proj):
         "(**严禁 wrap.sh done/sync**——它们会以 open-jarvis 身份刷一条评论，造成重复)。\n"
         "   · 编排层只做「记 runs + 打标签」：\n"
         "     bootstrap/log.sh run_done %s \"<链路一句话摘要，如 pd 分诊→qa AccTest PASS，PR#… 待合并>\"（写 runs 审计，不评论）；\n"
+        "     若本轮 RD 开了 PR（PR 链接从 RD 阶段评论/handoff 取），收尾前跑 bootstrap/pr-watch.sh add %s <pr_url> %s 登记 PR 观察，交后台 PrWatchScheduler 在合并后自动 finish 收尾（与 RevisitScheduler 互为兜底）。\n"
         "     PR/CR 已合并且真闭环 → bootstrap/claim.sh finish %s %s（打 jarvis-done + 改状态）；\n"
         "     未合并(评审中/待 merge) → bootstrap/claim.sh release %s %s（打 jarvis-idle，等 RevisitScheduler 合并后复验）。\n"
         "遇必须人类确认/决策的点：在工单评论 @对应人，末尾单起一行输出 "
         "[[SUSPEND:{\"aone_id\":\"%s\",\"wait_for\":\"<staffId>\"}]] 后退出，由 bridge 挂起等回复唤醒。"
         % (item_id, title, pool_key or "?", proj or "?", item_id, item_id, proj,
            item_id, pool_key or "?", proj,
-           item_id, item_id, proj, item_id, proj,
+           item_id, item_id, proj, item_id, proj, item_id, proj,
            item_id)
     )
 
@@ -1888,6 +1968,231 @@ class ReconcileScheduler:
                         (result.stderr or "").strip()[:300])
         else:
             log.info("reconcile.sh all: %s", summary or "(no output)")
+
+
+class PrWatchScheduler:
+    """PR-watch (方案A): 周期轮询 PR 观察登记表 (.my-day/bridge/pr-watch.json)，PR 合并后自动
+    claim.sh finish 收尾本工单，与 RevisitScheduler 互为兜底。
+
+    背景缺口：skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，注释「等合并后复验」；
+    但 RevisitScheduler 的选择器只捞标题/描述含特定词的 idle 单，terraform 发布单都不含 →
+    合并后工单永久停在 jarvis-idle、永不推到「已完成」。本调度器读登记表逐条查 PR 状态：
+      · merged        → claim.sh finish <ticket> <project> 已完成（过 npe/终态 guard）→ 评论+播报+摘除
+      · closed 未合并 → 评论 + escalate 交人工，不 finish → 摘除
+      · open / 查询失败 → 保留，下轮再看
+    finish 前重读工单（JARVIS_CACHE_TTL=0 强制新取）：命中 jarvis-npe（人工介入）或状态已终态 →
+    不自动 finish，留人工（人工重开保护）。
+
+    Runs as a daemon thread；每 tick、每条 entry 都包 try/except，单条坏 entry 或网络抖动绝不
+    crash the bridge。sleep-first 避免 bridge 重启冷启动对所有登记 PR 打爆 gh。默认开启
+    （JARVIS_PRWATCH_ENABLE=1）；间隔 JARVIS_PRWATCH_INTERVAL 秒（默认 3600）。
+    """
+
+    def __init__(self, handler, pool=None):
+        self.handler = handler
+        self.pool = pool
+        self.interval = int(os.environ.get("JARVIS_PRWATCH_INTERVAL", "3600"))
+        self.enabled = os.environ.get("JARVIS_PRWATCH_ENABLE", "1") == "1"
+        self._thread = None
+
+    def start(self):
+        if not self.enabled:
+            log.info("PrWatchScheduler disabled (set JARVIS_PRWATCH_ENABLE=1 to enable)")
+            return
+        self._thread = threading.Thread(target=self._loop, daemon=True, name="PrWatchScheduler")
+        self._thread.start()
+
+    def _loop(self):
+        while True:
+            # Sleep first: 避免 bridge 重启冷启动时立刻对所有登记 PR 打 gh 造成风暴。
+            time.sleep(self.interval)
+            try:
+                self._tick()
+            except Exception:  # noqa: BLE001 — never crash
+                log.exception("PrWatchScheduler tick failed; will retry next interval")
+
+    def _tick(self):
+        # 运行时暂停闸：与 ScanScheduler/PersonaScheduler 复用同一个 pause 标记。
+        if (Path(REPO_ROOT) / ".my-day" / "bridge" / "pause").exists():
+            return
+        for tid, entry in list(_prwatch_list().items()):
+            try:
+                self._check_one(tid, entry)
+            except Exception as e:  # noqa: BLE001 — 单条异常绝不殃及后续
+                log.warning("PrWatchScheduler: check #%s failed: %s", tid, e)
+
+    def _check_one(self, tid, entry):
+        pr_url = entry.get("pr_url")
+        project = entry.get("project")
+        state, merged_at = self._gh_pr_state(pr_url)
+        if state is None:
+            # query 失败 / 非 JSON → 保留条目，下轮重试。
+            log.warning("PrWatchScheduler: gh pr view #%s returned no state (%s); keep watching",
+                        tid, pr_url)
+            return
+        merged = bool(merged_at) or state == "MERGED"
+        if merged:
+            g = self._ticket_guard(tid)
+            if g == "terminal":
+                log.info("PrWatchScheduler: #%s already terminal; silently unwatching", tid)
+                _prwatch_remove(tid)
+                return
+            if g == "npe":
+                self._comment(tid, project,
+                              "检测到工单已带 jarvis-npe（人工介入），PR 虽已合并但不自动收尾，留人工处理。")
+                self._escalate(tid, "PR 已合并但工单带 jarvis-npe（人工介入），不自动收尾")
+                _prwatch_remove(tid)
+                return
+            if g == "unknown":
+                # 重读工单失败 → 不在读失败时冒然 finish；保留条目，下轮重试。
+                log.warning("PrWatchScheduler: #%s guard read failed; keep watching (no finish)", tid)
+                return
+            # g == "ok" → 收尾
+            rc = self._finish(tid, project, "已完成")
+            if rc == 2:
+                # MR 门未过 / 索引延迟 → 保留条目，下轮重试。
+                log.warning("PrWatchScheduler: finish #%s gated (rc=2), will retry", tid)
+                return
+            self._comment(tid, project,
+                          "PR 已合并，PrWatchScheduler 自动收尾本工单（→ 已完成）。")
+            self.handler._broadcast("[PR-watch] #%s PR 已合并，已自动收尾工单" % tid)
+            _prwatch_remove(tid)
+            return
+        if state == "CLOSED" and not merged_at:
+            self._comment(tid, project,
+                          "关联 PR 未合并即被关闭，已升级人工确认工单去向，PrWatchScheduler 停止观察。")
+            self._escalate(tid, "PR 未合并即关闭，请人工确认工单去向")
+            _prwatch_remove(tid)
+            return
+        # open / 其余 → 保留
+        return
+
+    # -- helpers（全部 capture_output，绝不真连网/gh/claim/wrap）----------------------
+
+    def _gh_pr_state(self, pr_url):
+        """(state, mergedAt) via github-identity.sh gh pr view <full_url>. **完整 pr_url 原样传
+        给 gh**（绝不传 bare number → 会解析到 jarvis worktree 的错仓）。rc!=0 / 非 JSON / 异常
+        → (None, None)（caller 保留条目重试）。"""
+        gh_id = str(Path(REPO_ROOT) / "bootstrap" / "github-identity.sh")
+        try:
+            proc = subprocess.run(
+                [gh_id, "gh", "pr", "view", pr_url, "--json", "state,mergedAt"],
+                capture_output=True, text=True, env=os.environ.copy(), timeout=60)
+        except Exception as e:  # noqa: BLE001 — timeout/spawn failure → 视作查询失败
+            log.warning("PrWatchScheduler: gh pr view raised for %s: %s", pr_url, e)
+            return (None, None)
+        if proc.returncode != 0:
+            log.warning("PrWatchScheduler: gh pr view rc=%d for %s: %s",
+                        proc.returncode, pr_url, (proc.stderr or "").strip()[:200])
+            return (None, None)
+        try:
+            d = json.loads(proc.stdout)
+            return (d.get("state"), d.get("mergedAt"))
+        except Exception as e:  # noqa: BLE001
+            log.warning("PrWatchScheduler: gh pr view non-JSON for %s: %s", pr_url, e)
+            return (None, None)
+
+    @staticmethod
+    def _parse_ticket_meta(d):
+        """From an a1 ``workitem get -f json`` object (real shape: fields[] with
+        identifier/displayValue, tag = comma-joined names) OR a flat {status, labels/tags}
+        object, return (status_str, [tag_names]). Handles both so the guard works in
+        production (fields[]) AND under the flat-shape unit tests."""
+        status = ""
+        names = []
+        fields = d.get("fields")
+        if isinstance(fields, list) and fields:
+            fmap = {f.get("identifier"): f for f in fields if isinstance(f, dict)}
+
+            def _disp(key):
+                f = fmap.get(key) or {}
+                return f.get("displayValue") or f.get("value") or ""
+            status = _disp("status")
+            tagblob = _disp("tag")
+            if tagblob:
+                names = [t.strip() for t in tagblob.replace("，", ",").split(",") if t.strip()]
+        if not status:
+            st = d.get("status") or d.get("statusName") or ""
+            if isinstance(st, dict):
+                st = st.get("name") or st.get("displayValue") or st.get("value") or ""
+            status = str(st or "")
+        if not names:
+            raw = d.get("labels")
+            if raw is None:
+                raw = d.get("tags")
+            if isinstance(raw, str):
+                names = [t.strip() for t in raw.replace("，", ",").split(",") if t.strip()]
+            elif isinstance(raw, list):
+                for t in raw:
+                    if isinstance(t, dict):
+                        names.append(str(t.get("name") or t.get("displayValue") or t.get("value") or ""))
+                    else:
+                        names.append(str(t))
+        return (status, [n for n in names if n])
+
+    def _ticket_guard(self, tid):
+        """重读工单判 npe/终态：返回 'terminal' | 'npe' | 'ok' | 'unknown'。JARVIS_CACHE_TTL=0
+        强制新取；终态集从 pools.json .claim.done_statuses（_load_done_statuses）。判定顺序：
+        status ∈ done_statuses → terminal；tags 含 jarvis-npe → npe；正常 → ok。**任何读取/
+        解析失败 → unknown**（让 _check_one 保留条目重试，不冒然 finish）。"""
+        env = os.environ.copy()
+        env["JARVIS_CACHE_TTL"] = "0"
+        try:
+            proc = subprocess.run(
+                [str(Path(REPO_ROOT) / "bootstrap" / "aone-get.sh"), str(tid)],
+                capture_output=True, text=True, env=env, timeout=90)
+        except Exception as e:  # noqa: BLE001
+            log.warning("PrWatchScheduler: aone-get #%s raised: %s", tid, e)
+            return "unknown"
+        if proc.returncode != 0:
+            log.warning("PrWatchScheduler: aone-get #%s rc=%d: %s",
+                        tid, proc.returncode, (proc.stderr or "").strip()[:200])
+            return "unknown"
+        try:
+            d = json.loads(proc.stdout)
+            status, names = self._parse_ticket_meta(d)
+        except Exception as e:  # noqa: BLE001
+            log.warning("PrWatchScheduler: aone-get #%s parse failed: %s", tid, e)
+            return "unknown"
+        if status and status in _load_done_statuses():
+            return "terminal"
+        if "jarvis-npe" in names:
+            return "npe"
+        return "ok"
+
+    def _finish(self, tid, project, status):
+        """claim.sh finish <tid> <project> <status>. Returns proc.returncode (2 = MR 门未过/
+        索引延迟 → caller 保留重试)。日志记 stdout/stderr。subprocess 抛异常不吞——交 _tick 的
+        per-entry try/except 兜底（条目保留），绝不在 finish 失败时误判成功收尾。"""
+        proc = subprocess.run(
+            [str(Path(REPO_ROOT) / "bootstrap" / "claim.sh"), "finish", str(tid), str(project), status],
+            capture_output=True, text=True, env=os.environ.copy(), timeout=120)
+        log.info("PrWatchScheduler: claim.sh finish #%s rc=%d out=%s err=%s", tid,
+                 proc.returncode, (proc.stdout or "").strip()[:300], (proc.stderr or "").strip()[:300])
+        return proc.returncode
+
+    def _comment(self, tid, project, text):
+        """Post a progress comment via wrap.sh sync <tid> --summary-stdin (text on stdin).
+        wrap.sh sync 的真实签名是 ``sync <id> --summary-stdin``（无 project 位参，见 bootstrap/
+        wrap.sh usage）——project 保留在签名里做接口一致，实际命令不传。Best-effort。"""
+        try:
+            proc = subprocess.run(
+                [str(Path(REPO_ROOT) / "bootstrap" / "wrap.sh"), "sync", str(tid), "--summary-stdin"],
+                input=text, capture_output=True, text=True, env=os.environ.copy(), timeout=90)
+            if proc.returncode != 0:
+                log.warning("PrWatchScheduler: wrap.sh sync #%s rc=%d: %s",
+                            tid, proc.returncode, (proc.stderr or "").strip()[:200])
+        except Exception as e:  # noqa: BLE001
+            log.warning("PrWatchScheduler: wrap.sh sync #%s failed: %s", tid, e)
+
+    def _escalate(self, tid, reason):
+        """log.sh escalate <tid> <reason>. Best-effort（善后不 crash worker）。"""
+        try:
+            subprocess.run(
+                [str(Path(REPO_ROOT) / "bootstrap" / "log.sh"), "escalate", str(tid), reason],
+                capture_output=True, text=True, env=os.environ.copy(), timeout=60)
+        except Exception as e:  # noqa: BLE001
+            log.warning("PrWatchScheduler: log.sh escalate #%s failed: %s", tid, e)
 
 
 class BoardScheduler:
@@ -3325,6 +3630,8 @@ class JarvisHandler(AsyncChatbotHandler):
         self.watcher = WaitWatcher(self)
         # 数字人评论区自主协作跨会话补位轮询（loops/persona-collab.md）
         self.personawatch = PersonaScheduler(self, self.dispatch_pool)
+        # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 RevisitScheduler 互为兜底
+        self.prwatch = PrWatchScheduler(self, self.dispatch_pool)
         log.info("audience=%s master=%s root=%s tata_cwd=%s claude=%s skill=%s "
                  "tata_resident=%s auto_dispatch=%s dispatch_max=%s probe=%s@%s revisit=%s@%s "
                  "persona_watch=%s@%ss max_rounds=%s",
@@ -3349,6 +3656,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.reviser.start()
         self.watcher.start()
         self.personawatch.start()
+        self.prwatch.start()
         self._resume_inflight()
 
     def _resume_inflight(self):

@@ -309,6 +309,18 @@ After the PR is submitted, monitor all CI tasks:
 
 Once the PR CI is fully green, **write the current progress back into the Aone work item** (PR link, test results, status, etc.).
 
+#### 11.4 登记 PR 观察（PR-watch，方案A）
+
+PR 提交成功且进展已回填 Aone 后，登记一条 PR 观察，交后台 `PrWatchScheduler` 在 PR **合并后自动** `claim.sh finish` 收尾本工单（推到「已完成」）：
+
+```bash
+bootstrap/pr-watch.sh add <ticket> <pr_url> <project>
+```
+
+- `<pr_url>` 必须是**完整 GitHub PR URL**（`https://github.com/<owner>/<repo>/pull/<n>`）——脚本会校验，bare number 会被拒（防止 gh 解析到错仓）。
+- 登记后本 skill 的 **Step 12 轮询仍可继续**；PrWatchScheduler 与 Step 12 轮询、RevisitScheduler **互为兜底**——无论哪条路径先侦测到合并都会收尾，重复收尾无害（终态 guard 会静默跳过）。
+- PrWatchScheduler 合并前的分诊：PR 未合并即被关闭 → 评论 + escalate 交人工，不 finish；工单已带 `jarvis-npe`（人工介入）或已是终态 → 不自动 finish，留人工。
+
 ### Step 12: Poll PR Comments Until Merge
 
 After the PR is submitted, **continuously poll PR comments** until the PR is **merged**. Only then is the release task complete.

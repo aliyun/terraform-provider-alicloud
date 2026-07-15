@@ -3,7 +3,7 @@
 # Usage:
 #   claim.sh claim   <workitem_id> <project_id>
 #   claim.sh release <workitem_id> <project_id>
-#   claim.sh finish  <workitem_id> <project_id>
+#   claim.sh finish  <workitem_id> <project_id> [status_override]
 #
 # claim:   tags the workitem jarvis-claimed, freezes a `jarvis-claim <host> <utc>` prefix
 #          into .my-day/claim-prefix-<id>.txt (consumed by wrap.sh sync/done into the
@@ -210,6 +210,9 @@ _has_unmerged_mr() {
 cmd="${1:-}"
 workitem_id="${2:-}"
 project_id="${3:-}"
+# finish only: optional 4th arg overrides the resolved per-pool done_status (e.g. PrWatch
+# passes 已完成). Empty/absent → behavior unchanged (full backward compatibility).
+STATUS_OVERRIDE="${4:-}"
 
 if [ -z "$cmd" ] || [ -z "$workitem_id" ] || [ -z "$project_id" ]; then
     echo "Usage: claim.sh <claim|release|finish> <workitem_id> <project_id>" >&2
@@ -508,6 +511,9 @@ if cands:
         # RevisitScheduler 兜底重访/重派) + escalate 提示人工设正确状态或摘标签。
         wtype="$(_get_wtype "$workitem_id")"
         eff_status="$(_pool_done_status "$project_id" "$wtype")"
+        # Optional caller override (4th arg): PrWatchScheduler passes 已完成 on PR merge.
+        # already-terminal short-circuit + downgrade black-hole guard below stay intact.
+        [ -n "$STATUS_OVERRIDE" ] && eff_status="$STATUS_OVERRIDE"
         _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG"
         rm -f "$(_claim_prefix_path "$workitem_id")"
         cur_status="$(_get_status "$workitem_id")"

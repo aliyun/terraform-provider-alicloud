@@ -2137,7 +2137,7 @@ class ResumeInflightTest(_InflightBase):
 
 
 class StartSchedulersResumeOnceTest(unittest.TestCase):
-    """start_schedulers(): 7 个 scheduler.start 各一次 + _resume_inflight 恰一次,
+    """start_schedulers(): 8 个 scheduler.start 各一次 + _resume_inflight 恰一次,
     且 resume 在所有 .start 之后(共享 event log 断序)。"""
 
     def setUp(self):
@@ -2148,14 +2148,14 @@ class StartSchedulersResumeOnceTest(unittest.TestCase):
         h = b.JarvisHandler(no_dingtalk=True)
         log_events = []
         for name in ("scanner", "reconciler", "board", "prober",
-                     "reviser", "watcher", "personawatch"):
+                     "reviser", "watcher", "personawatch", "prwatch"):
             sched = getattr(h, name)
             sched.start = (lambda n=name: log_events.append("start:%s" % n))
         h._resume_inflight = lambda: log_events.append("resume")
         h.start_schedulers()
         starts = [e for e in log_events if e.startswith("start:")]
-        self.assertEqual(len(starts), 7, "seven schedulers started")
-        self.assertEqual(len(set(starts)), 7, "each scheduler started exactly once")
+        self.assertEqual(len(starts), 8, "eight schedulers started")
+        self.assertEqual(len(set(starts)), 8, "each scheduler started exactly once")
         self.assertEqual(log_events.count("resume"), 1, "_resume_inflight called once")
         self.assertEqual(log_events[-1], "resume", "resume is the LAST step")
         self.assertEqual(log_events.index("resume"), len(log_events) - 1)
@@ -2190,6 +2190,315 @@ class SourceWiringTest(unittest.TestCase):
         import inspect
         src = inspect.getsource(b.JarvisHandler.start_schedulers)
         self.assertIn("_resume_inflight", src)
+
+
+# ── PR-watch (方案A) ──────────────────────────────────────────────────────────
+class _Proc:
+    def __init__(self, returncode=0, stdout="", stderr=""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+class _FakeHandler:
+    def __init__(self):
+        self.broadcasts = []
+
+    def _broadcast(self, text):
+        self.broadcasts.append(text)
+
+
+class _FakeRunner:
+    """按 argv 头部脚本名分派假 subprocess.run。绝不真连网/gh/claim/wrap/aone。
+    记录每次调用的 (kind, argv) 供断言。"""
+
+    def __init__(self, gh=None, gh_raw=None, gh_raise=None, guard=None,
+                 finish_rc=0, finish_raise=False):
+        self.gh = gh                # dict → gh 返回 JSON; None → rc!=0
+        self.gh_raw = gh_raw        # 原样 stdout（模拟非 JSON）
+        self.gh_raise = gh_raise    # 异常实例 → gh 调用抛（模拟 timeout）
+        self.guard = guard          # dict(flat shape) → aone-get JSON; None → rc!=0
+        self.finish_rc = finish_rc
+        self.finish_raise = finish_raise
+        self.calls = []
+
+    def __call__(self, cmd, *a, **k):
+        argv = [str(x) for x in cmd]
+        head = argv[0]
+        if "github-identity.sh" in head:
+            self.calls.append(("gh", argv))
+            if self.gh_raise is not None:
+                raise self.gh_raise
+            if self.gh_raw is not None:
+                return _Proc(0, self.gh_raw, "")
+            if self.gh is None:
+                return _Proc(1, "", "boom")
+            return _Proc(0, json.dumps(self.gh), "")
+        if "aone-get.sh" in head:
+            self.calls.append(("guard", argv))
+            if self.guard is None:
+                return _Proc(1, "", "boom")
+            return _Proc(0, json.dumps(self.guard), "")
+        if "claim.sh" in head:
+            self.calls.append(("finish", argv))
+            if self.finish_raise:
+                raise RuntimeError("finish boom")
+            return _Proc(self.finish_rc, "finished", "")
+        if "wrap.sh" in head:
+            self.calls.append(("comment", argv))
+            return _Proc(0, "", "")
+        if "log.sh" in head:
+            self.calls.append(("escalate", argv))
+            return _Proc(0, "", "")
+        return _Proc(0, "", "")
+
+    def kinds(self):
+        return [c[0] for c in self.calls]
+
+    def argv(self, kind):
+        for k, a in self.calls:
+            if k == kind:
+                return a
+        return None
+
+
+class _PrWatchBase(unittest.TestCase):
+    """Isolate b.PRWATCH_PATH onto a per-test tmp file + save/restore subprocess.run."""
+
+    def setUp(self):
+        self._orig_path = b.PRWATCH_PATH
+        self._tmp = tempfile.mkdtemp()
+        b.PRWATCH_PATH = Path(self._tmp) / "pr-watch.json"
+        self._orig_run = b.subprocess.run
+
+    def tearDown(self):
+        b.PRWATCH_PATH = self._orig_path
+        b.subprocess.run = self._orig_run
+
+    def _sched(self):
+        return b.PrWatchScheduler(_FakeHandler())
+
+    _PR = "https://github.com/aliyun/terraform-provider-alicloud/pull/9"
+
+
+class PrWatchRegistryTest(_PrWatchBase):
+    """add / load / has(int+str) / remove / 缺文件 / 损坏 json / 原子写不留 .tmp。"""
+
+    def test_add_has_load(self):
+        b._prwatch_add("123", self._PR, "528766")
+        self.assertTrue(b._prwatch_has("123"))
+        self.assertTrue(b._prwatch_has(123), "id lookup str-normalized")
+        recs = b._prwatch_load()
+        self.assertIn("123", recs)
+        self.assertEqual(recs["123"]["pr_url"], self._PR)
+        self.assertEqual(recs["123"]["project"], "528766")
+        self.assertIn("submitted_at", recs["123"])
+
+    def test_remove(self):
+        b._prwatch_add("55", self._PR, "p")
+        self.assertTrue(b._prwatch_has("55"))
+        b._prwatch_remove("55")
+        self.assertFalse(b._prwatch_has("55"))
+        self.assertEqual(b._prwatch_load(), {})
+
+    def test_missing_file_is_empty(self):
+        self.assertEqual(b._prwatch_load(), {})
+
+    def test_corrupt_json_is_empty(self):
+        b.PRWATCH_PATH.parent.mkdir(parents=True, exist_ok=True)
+        b.PRWATCH_PATH.write_text("{ this is not json")
+        self.assertEqual(b._prwatch_load(), {})   # best-effort → {} + warning, no raise
+
+    def test_atomic_write_leaves_no_tmp(self):
+        b._prwatch_add("7", self._PR, "p")
+        leftovers = [p.name for p in Path(self._tmp).iterdir() if p.name.endswith(".tmp")]
+        self.assertEqual(leftovers, [], "atomic write must not leave a .tmp sibling")
+
+
+class PrWatchCheckOneTest(_PrWatchBase):
+    """_check_one 分派：merged/open/closed × guard(ok/npe/terminal/unknown) × finish rc。
+    全 driven through _tick() so registry add/remove 也一并断言。"""
+
+    def _run_tick(self, runner, tid="123", project="528766"):
+        b._prwatch_add(tid, self._PR, project)
+        b.subprocess.run = runner
+        self._sched()._tick()
+
+    def test_a_merged_ok_finishes(self):
+        r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
+                        guard={"status": "开发中"}, finish_rc=0)
+        h = _FakeHandler()
+        b._prwatch_add("123", self._PR, "528766")
+        b.subprocess.run = r
+        sch = b.PrWatchScheduler(h)
+        sch._tick()
+        self.assertIn("finish", r.kinds())
+        fa = r.argv("finish")
+        self.assertEqual(fa[1], "finish")
+        self.assertEqual(fa[2], "123")
+        self.assertEqual(fa[3], "528766")
+        self.assertEqual(fa[-1], "已完成")
+        self.assertIn("comment", r.kinds())
+        self.assertTrue(h.broadcasts, "merge 收尾必须播报")
+        self.assertFalse(b._prwatch_has("123"), "merged+ok → 摘除条目")
+
+    def test_b_open_keeps(self):
+        r = _FakeRunner(gh={"state": "OPEN", "mergedAt": None})
+        self._run_tick(r)
+        self.assertNotIn("finish", r.kinds())
+        self.assertTrue(b._prwatch_has("123"), "open → 保留条目")
+
+    def test_c_closed_unmerged_escalates(self):
+        r = _FakeRunner(gh={"state": "CLOSED", "mergedAt": None})
+        self._run_tick(r)
+        self.assertNotIn("finish", r.kinds())
+        self.assertIn("comment", r.kinds())
+        self.assertIn("escalate", r.kinds())
+        self.assertFalse(b._prwatch_has("123"), "closed 未合并 → 评论+escalate+摘除")
+
+    def test_d_gh_rc_nonzero_keeps(self):
+        r = _FakeRunner(gh=None)   # rc!=0
+        self._run_tick(r)
+        self.assertNotIn("finish", r.kinds())
+        self.assertTrue(b._prwatch_has("123"), "gh 查询失败 → 保留重试")
+
+    def test_e_gh_non_json_keeps(self):
+        r = _FakeRunner(gh_raw="not json at all")
+        self._run_tick(r)
+        self.assertNotIn("finish", r.kinds())
+        self.assertTrue(b._prwatch_has("123"), "gh 非 JSON → 保留重试")
+
+    def test_f_guard_npe_no_finish(self):
+        r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
+                        guard={"status": "开发中", "labels": [{"name": "jarvis-npe"}]})
+        self._run_tick(r)
+        self.assertNotIn("finish", r.kinds())
+        self.assertIn("comment", r.kinds())
+        self.assertIn("escalate", r.kinds())
+        self.assertFalse(b._prwatch_has("123"), "npe → 评论+escalate+摘除，不 finish")
+
+    def test_g_guard_terminal_silent_remove(self):
+        r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
+                        guard={"status": "已完成"})
+        self._run_tick(r)
+        self.assertNotIn("finish", r.kinds())
+        self.assertNotIn("comment", r.kinds())
+        self.assertNotIn("escalate", r.kinds())
+        self.assertFalse(b._prwatch_has("123"), "terminal → 静默摘除，不 finish")
+
+    # test_f/test_g 用扁平形态驱动 guard；生产 guard 走 aone-get.sh = a1 workitem get -f json
+    # 的 **fields[] 形态**（identifier/displayValue，tag=逗号拼接名）。f2/g2 用真实 fields[]
+    # 形态守护 _parse_ticket_meta 的生产分支——即「人工重开保护」的生产路径。
+    def test_f2_guard_npe_fields_shape(self):
+        r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
+                        guard={"fields": [{"identifier": "status", "displayValue": "开发中"},
+                                          {"identifier": "tag", "displayValue": "jarvis-idle,jarvis-npe"}]})
+        self._run_tick(r)
+        self.assertNotIn("finish", r.kinds())
+        self.assertIn("comment", r.kinds())
+        self.assertIn("escalate", r.kinds())
+        self.assertFalse(b._prwatch_has("123"),
+                         "fields[] 形态 npe → 评论+escalate+摘除，不 finish（生产路径）")
+
+    def test_g2_guard_terminal_fields_shape(self):
+        r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
+                        guard={"fields": [{"identifier": "status", "displayValue": "已完成"},
+                                          {"identifier": "tag", "displayValue": ""}]})
+        self._run_tick(r)
+        self.assertNotIn("finish", r.kinds())
+        self.assertNotIn("comment", r.kinds())
+        self.assertNotIn("escalate", r.kinds())
+        self.assertFalse(b._prwatch_has("123"),
+                         "fields[] 形态 terminal → 静默摘除，不 finish（生产路径）")
+
+    def test_h_guard_unknown_keeps(self):
+        r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
+                        guard=None)   # aone-get rc!=0 → unknown
+        self._run_tick(r)
+        self.assertNotIn("finish", r.kinds())
+        self.assertTrue(b._prwatch_has("123"), "guard unknown → 保留重试，不冒然 finish")
+
+    def test_i_finish_gated_rc2_keeps(self):
+        r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
+                        guard={"status": "开发中"}, finish_rc=2)
+        self._run_tick(r)
+        self.assertIn("finish", r.kinds())
+        self.assertNotIn("comment", r.kinds(), "rc=2 门未过 → 不评论、不摘除")
+        self.assertTrue(b._prwatch_has("123"), "finish rc=2 → 保留重试")
+
+
+class PrWatchNeverCrashTest(_PrWatchBase):
+    """never-crash：finish 抛异常别的条目仍处理；gh TimeoutExpired tick 继续；pause 闸 early-return。"""
+
+    def test_finish_exception_other_entries_processed(self):
+        r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
+                        guard={"status": "开发中"}, finish_raise=True)
+        b._prwatch_add("100", self._PR, "528766")
+        b._prwatch_add("200", self._PR, "528766")
+        b.subprocess.run = r
+        self._sched()._tick()   # must NOT raise
+        self.assertEqual(r.kinds().count("finish"), 2,
+                         "两条都到达 finish → 单条异常未殃及后续")
+        self.assertTrue(b._prwatch_has("100") and b._prwatch_has("200"),
+                        "finish 抛异常 → 条目保留（不误判收尾）")
+
+    def test_gh_timeout_tick_continues(self):
+        r = _FakeRunner(gh_raise=b.subprocess.TimeoutExpired(cmd=["gh"], timeout=60))
+        b._prwatch_add("100", self._PR, "528766")
+        b._prwatch_add("200", self._PR, "528766")
+        b.subprocess.run = r
+        self._sched()._tick()   # must NOT raise
+        self.assertEqual(r.kinds().count("gh"), 2, "两条都被处理（timeout 不中断 tick）")
+        self.assertTrue(b._prwatch_has("100") and b._prwatch_has("200"), "timeout → 保留")
+
+    def test_pause_gate_early_return(self):
+        orig_root = b.REPO_ROOT
+        try:
+            b.REPO_ROOT = Path(self._tmp)
+            (Path(self._tmp) / ".my-day" / "bridge").mkdir(parents=True, exist_ok=True)
+            (Path(self._tmp) / ".my-day" / "bridge" / "pause").touch()
+            r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "x"}, guard={"status": "开发中"})
+            b._prwatch_add("123", self._PR, "528766")
+            b.subprocess.run = r
+            self._sched()._tick()
+            self.assertEqual(r.calls, [], "pause 闸存在 → _tick 直接 early-return，不查任何 PR")
+            self.assertTrue(b._prwatch_has("123"), "pause 期间条目原样保留")
+        finally:
+            b.REPO_ROOT = orig_root
+
+
+class PrWatchWiringTest(unittest.TestCase):
+    """接线冒烟：Handler 有 prwatch；start_schedulers 在 _resume_inflight 之前调 prwatch.start。"""
+
+    def setUp(self):
+        for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
+            os.environ.pop(k, None)
+
+    def test_handler_has_prwatch(self):
+        h = b.JarvisHandler(no_dingtalk=True)
+        self.assertTrue(hasattr(h, "prwatch"))
+        self.assertIsInstance(h.prwatch, b.PrWatchScheduler)
+
+    def test_prwatch_start_before_resume(self):
+        h = b.JarvisHandler(no_dingtalk=True)
+        events = []
+        for name in ("scanner", "reconciler", "board", "prober",
+                     "reviser", "watcher", "personawatch", "prwatch"):
+            getattr(h, name).start = (lambda n=name: events.append("start:%s" % n))
+        h._resume_inflight = lambda: events.append("resume")
+        h.start_schedulers()
+        self.assertIn("start:prwatch", events)
+        self.assertLess(events.index("start:prwatch"), events.index("resume"),
+                        "prwatch.start 必须在 _resume_inflight 之前")
+
+
+class PrWatchPersonaPromptTest(unittest.TestCase):
+    """persona 路径钩子：_ticket_prompt_terraform %-格式化对齐 + 含 pr-watch.sh add。"""
+
+    def test_terraform_prompt_formats_and_has_prwatch(self):
+        p = b._ticket_prompt_terraform("123", "t", "tf_customer", "1086837")  # 不得抛 ValueError/TypeError
+        self.assertIn("pr-watch.sh add", p)
+        self.assertIn("pr-watch.sh add 123 <pr_url> 1086837", p)
 
 
 def _run():
