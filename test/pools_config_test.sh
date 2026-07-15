@@ -49,6 +49,15 @@ done
 [ "$(jq -r '.claim.done_tag' "$POOLS_JSON")" = "jarvis-done" ] \
   && ok "claim.done_tag jarvis-done" || bad "claim.done_tag wrong"
 
+# S7b: bridge/claim/reconcile 共用的终态单真源必须覆盖历史闭环态 + ByDesign；
+# tf_provider 在查询层也提前排除 ByDesign，避免闭环老单进入 bridge 再二次过滤。
+for status in 已发布 已完成 已关闭 已解决 Fixed ByDesign; do
+  jq -e --arg s "$status" '.claim.done_statuses | index($s) != null' "$POOLS_JSON" >/dev/null \
+    && ok "claim.done_statuses contains $status" || bad "claim.done_statuses missing $status"
+done
+jq -e '.pools.tf_provider.exclude_status | index("ByDesign") != null' "$POOLS_JSON" >/dev/null \
+  && ok "tf_provider.exclude_status contains ByDesign" || bad "tf_provider.exclude_status missing ByDesign"
+
 # S8: claim.ttl_min
 [ "$(jq '.claim.ttl_min' "$POOLS_JSON")" = "45" ] \
   && ok "claim.ttl_min 45" || bad "claim.ttl_min wrong"

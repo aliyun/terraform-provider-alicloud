@@ -6,6 +6,8 @@
 #   2. Missing status arg (only 4 args) → exit 1
 #   3. wrap done fails → escalate called, release NOT called, exit 1
 #   4. Claim lost race (exit 1) → prints SKIP, exits 0 (no escalate, no release, no done)
+#   6. Claim missing required field (exit 3) → candidates + escalate, no wrap/release
+#   7. Other claim failure → escalate + non-zero, not SKIP
 #
 # Run: bash test/triage_one_test.sh
 # Prints PASS and exits 0 on success; prints FAIL and exits 1 on any failure.
@@ -84,6 +86,16 @@ STUB
 chmod +x "$STUB_DIR/log.sh"
 
 # ---------------------------------------------------------------------------
+# Build stub aone-fields.sh — returns legal synthetic options for exit-3 handling
+# ---------------------------------------------------------------------------
+cat > "$STUB_DIR/aone-fields.sh" <<'STUB'
+#!/usr/bin/env bash
+echo "fields $*" >> "${STUB_LOG:?STUB_LOG not set}"
+printf '[{"id":"140282","name":"需求分类","options":[{"value":"bug","displayValue":"缺陷"}]}]\n'
+STUB
+chmod +x "$STUB_DIR/aone-fields.sh"
+
+# ---------------------------------------------------------------------------
 # Helper: run triage-one.sh with given env overrides + args
 # ---------------------------------------------------------------------------
 run_triage_one() {
@@ -96,6 +108,7 @@ run_triage_one() {
         TRIAGE_CLAIM_CMD="$STUB_DIR/claim.sh" \
         TRIAGE_WRAP_CMD="$STUB_DIR/wrap.sh" \
         TRIAGE_LOG_CMD="$STUB_DIR/log.sh" \
+        TRIAGE_FIELDS_CMD="$STUB_DIR/aone-fields.sh" \
         STUB_LOG="$log_file" \
         "$@"
 }
@@ -292,6 +305,46 @@ fi
 
 rm -f "$LOG5"
 rm -rf "$COORD_ROOT"
+
+# ===========================================================================
+# Test 6: claim exit 3 → query legal candidates + escalate; do not wrap/release.
+# ===========================================================================
+echo "Test 6: missing required field → candidates + escalate"
+LOG6="$(mktemp)"
+output6=$(run_triage_one "$LOG6" STUB_CLAIM_EXIT=3 STUB_WRAP_EXIT=0 \
+    bash "$TRIAGE_ONE" WI-006 pool-a proj-1 "summary" closed 2>&1)
+exit6=$?
+[ "$exit6" -eq 1 ] && assert_pass "missing field → exit 1" || assert_fail "missing field exit" "got $exit6"
+grep -q '^fields missing WI-006' "$LOG6" \
+    && assert_pass "missing field candidates queried" || assert_fail "fields helper not called" "$(cat "$LOG6")"
+grep -q '^log escalate WI-006 missing_required_field:' "$LOG6" \
+    && assert_pass "missing field escalated" || assert_fail "missing field not escalated" "$(cat "$LOG6")"
+echo "$output6" | grep -q 'MISSING_REQUIRED_FIELDS: WI-006.*"value":"bug"' \
+    && assert_pass "legal candidate surfaced" || assert_fail "candidate missing" "$output6"
+if grep -Eq '^(wrap|claim release)' "$LOG6"; then
+    assert_fail "missing field must not wrap/release" "$(cat "$LOG6")"
+else
+    assert_pass "missing field does not wrap/release"
+fi
+rm -f "$LOG6"
+
+# ===========================================================================
+# Test 7: non-race claim error → escalate and fail; never print SKIP.
+# ===========================================================================
+echo "Test 7: generic claim failure → error escalation"
+LOG7="$(mktemp)"
+output7=$(run_triage_one "$LOG7" STUB_CLAIM_EXIT=7 STUB_WRAP_EXIT=0 \
+    bash "$TRIAGE_ONE" WI-007 pool-a proj-1 "summary" closed 2>&1)
+exit7=$?
+[ "$exit7" -eq 1 ] && assert_pass "generic claim failure → exit 1" || assert_fail "generic claim failure exit" "got $exit7"
+grep -q '^log escalate WI-007 claim_failed: rc=7' "$LOG7" \
+    && assert_pass "generic claim failure escalated" || assert_fail "generic failure not escalated" "$(cat "$LOG7")"
+if echo "$output7" | grep -q 'SKIP'; then
+    assert_fail "generic claim failure must not look like lost race" "$output7"
+else
+    assert_pass "generic claim failure is not SKIP"
+fi
+rm -f "$LOG7"
 
 # ===========================================================================
 # Summary

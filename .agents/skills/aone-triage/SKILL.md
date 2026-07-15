@@ -160,6 +160,12 @@ bash bootstrap/claim.sh release <id> <pool-project>   # 本轮释放,等对方�
 bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-done + status = pools.json 里该池 × workitemType 的 done_status
 ```
 
+**claim 退码 3 = 工单缺必填字段，不是 lost race**：Aone 对存量老单执行任意 update 时可能返回
+`【<字段>】(<fieldId>)不能为空`。先运行 `bash bootstrap/aone-fields.sh missing <id>`；若字段定义的
+options 为空，脚本会继续查询 field options API，并返回合法候选。由 agent 根据工单语义明确选值后，
+运行 `bash bootstrap/aone-fields.sh fill <id> <fieldId>=<value>`，再重试 claim。禁止自动选择或盲填分类。
+`triage-one.sh` 收到退码 3 只输出候选并 escalate，不会 wrap/release。
+
 **finish 时的 status 由 pools.json per-池 × per-workitemType 决定**,不是全局默认。看 `config/pools.json` 里 `pools.<pool>.done_status` 是**对象**(按 workitemType displayValue 分派),例:
 - tf_customer(1086837) · 需求问题 → `已发布待需求方验收`
 - tf_provider(528766) · **产品类需求** → `待发布`(**不是** `已发布`——workflow 不允许从 `已选择` 直跳 `已发布`,发版是人工门,jarvis 到 `待发布` 停手)

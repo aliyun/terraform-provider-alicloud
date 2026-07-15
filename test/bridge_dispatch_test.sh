@@ -51,6 +51,27 @@ def _ledger(tmp):
     return os.path.join(tmp, "dispatched.json")
 
 
+class TerminalStatusConfigTest(unittest.TestCase):
+    def setUp(self):
+        self.repo_root = b.REPO_ROOT
+
+    def tearDown(self):
+        b.REPO_ROOT = self.repo_root
+
+    def test_runtime_terminal_set_matches_config(self):
+        configured = set(json.loads(
+            (Path(self.repo_root) / "config" / "pools.json").read_text()
+        )["claim"]["done_statuses"])
+        self.assertEqual(set(b.TERMINAL_STATUSES), configured)
+        self.assertIn("ByDesign", b.TERMINAL_STATUSES)
+
+    def test_loader_fallback_is_safe(self):
+        b.REPO_ROOT = tempfile.mkdtemp()  # no config/pools.json
+        fallback = set(b._load_done_statuses())
+        self.assertIn("ByDesign", fallback)
+        self.assertIn("已关闭", fallback)
+
+
 class DispatchPoolConcurrencyTest(unittest.TestCase):
     def test_cap_and_queue(self):
         tmp = tempfile.mkdtemp()
@@ -244,9 +265,9 @@ class ScanDecideTest(unittest.TestCase):
         self.assertEqual((d["action"], d["reason"]), ("skip", "claimed"))
 
     def test_terminal_status_skipped(self):
-        # 终态工单(如「已发布」) → 直接 skip terminal，不派实例
+        # ByDesign 是缺陷流的闭环态 → 直接 skip terminal，不派实例
         sc = self._scanner()
-        items = [{"id": "t1", "title": "released", "tag": [], "status": "已发布"}]
+        items = [{"id": "t1", "title": "by design", "tag": [], "status": "ByDesign"}]
         d = sc._decide(items)[0]
         self.assertEqual((d["action"], d["reason"]), ("skip", "terminal"))
 
@@ -1385,7 +1406,7 @@ class BacklogDrainTest(unittest.TestCase):
         self.assertFalse(sc._is_backlog({"id": "2", "tag": ["jarvis-claimed"]}), "claimed ≠ backlog")
         self.assertFalse(sc._is_backlog({"id": "3", "tag": ["jarvis-idle"]}), "idle ≠ backlog")
         self.assertFalse(sc._is_backlog({"id": "4", "tag": ["jarvis-done"]}), "done ≠ backlog")
-        self.assertFalse(sc._is_backlog({"id": "5", "tag": [], "status": "已发布"}), "terminal ≠ backlog")
+        self.assertFalse(sc._is_backlog({"id": "5", "tag": [], "status": "ByDesign"}), "ByDesign terminal ≠ backlog")
         sc.dispatch_pools = {"tf_provider"}   # 收窄灰度范围
         self.assertTrue(sc._is_backlog({"id": "6", "tag": [], "pool": "tf_provider"}))
         self.assertFalse(sc._is_backlog({"id": "7", "tag": [], "pool": "tf_customer"}), "out of scope ≠ backlog")
