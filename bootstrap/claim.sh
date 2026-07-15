@@ -9,7 +9,9 @@
 #          into .my-day/claim-prefix-<id>.txt (consumed by wrap.sh sync/done into the
 #          first business comment to avoid an independent claim-only comment), then
 #          point-reads the workitem to verify our claimed tag landed. Exits 0 on success,
-#          1 if the claimed tag is not visible in the readback (lost race; prefix cleaned).
+#          1 if the claimed tag is not visible in the readback (lost race; prefix cleaned),
+#          3 if Aone rejects the tag update because a required field is empty. Other tag
+#          update failures are returned immediately and never enter the lost-race readback.
 #          On a successful claim it ALSO advances the Aone status to the pool's in-progress
 #          status (.progress_status, e.g. 处理中/开发中/问题解决中/Open) — but ONLY when the
 #          ticket's CURRENT status is a starting state (.claim.start_statuses), so a
@@ -339,6 +341,34 @@ _get_tag_pairs() {
     ' 2>/dev/null || return 1
 }
 
+# Run an a1 tag update while preserving its output/exit code. Aone rejects updates to some
+# legacy tickets with an error shaped exactly like `【<name>】(<numeric-id>)不能为空`; classify
+# only that structured validation error as rc=3 so orchestration can query legal options and
+# repair the missing field. Looser messages containing merely `不能为空` are not enough: they
+# may describe unrelated validation and must retain the original failure code.
+_run_tag_update() {
+    local out rc parsed field_id field_name
+    if out="$("$@" 2>&1)"; then
+        return 0
+    else
+        rc=$?
+    fi
+
+    parsed="$(printf '%s\n' "$out" | sed -n \
+        's/.*【\([^】][^】]*\)】[[:space:]]*[(（]\([0-9][0-9]*\)[)）][[:space:]]*不能为空.*/\2\t\1/p' \
+        | head -n 1)"
+    if [ -n "$parsed" ]; then
+        field_id="${parsed%%$'\t'*}"
+        field_name="${parsed#*$'\t'}"
+        printf '%s\n' "$out" >&2
+        printf 'claim.sh: blocked missing_required_field %s %s\n' "$field_id" "$field_name" >&2
+        return 3
+    fi
+
+    printf '%s\n' "$out" >&2
+    return "$rc"
+}
+
 # Write the full expected tag set in one update, preserving pre-existing tags by ID
 # (so cross-project / whitelist-external tags survive) and adding new tags by name.
 # Args: <id> <add_csv> <remove_csv> [extra a1 update flags...].
@@ -350,7 +380,7 @@ _update_tags_merged() {
     local pairs kept_ids to_write
     if ! pairs="$(_get_tag_pairs "$id")"; then
         echo "claim.sh: warning: could not read existing tags for $id; writing only '$add' (pre-existing tags may be lost)" >&2
-        $A1 project workitem update "$id" --tag "$add" "$@"
+        _run_tag_update $A1 project workitem update "$id" --tag "$add" "$@"
         return
     fi
     # existing (name,id) pairs whose name NOT in (remove ∪ add) → keep by numeric ID
@@ -367,13 +397,25 @@ _update_tags_merged() {
         # nothing to write — clearing all tags is not what callers expect
         return 0
     fi
-    $A1 project workitem update "$id" --tag "$to_write" "$@"
+    _run_tag_update $A1 project workitem update "$id" --tag "$to_write" "$@"
 }
 
 case "$cmd" in
     claim)
         # 1. Tag as claimed, preserving any pre-existing tags: existing ∪ {claimed} − {idle}
         _update_tags_merged "$workitem_id" "$CLAIM_TAG" "$IDLE_TAG"
+        tag_rc=$?
+        if [ "$tag_rc" -eq 3 ]; then
+            # The tag never landed, so no prefix/ledger cleanup is needed. The caller must
+            # inspect aone-fields.sh missing, choose a legal value, fill it, and retry claim.
+            exit 3
+        elif [ "$tag_rc" -ne 0 ]; then
+            # Transport/auth/other validation failures are not races. Preserve the original
+            # rc and stop before readback, which could otherwise mistake a stale tag for ours.
+            # rc=1 is reserved by claim for an actual lost race, so remap an a1 rc=1 to rc=2.
+            [ "$tag_rc" -eq 1 ] && tag_rc=2
+            exit "$tag_rc"
+        fi
 
         # 2. 冻结 hostname + utc 到 prefix 文件；wrap.sh sync/done 第一次发业务评论时自动 prefix
         # 到顶部并消费，避免 claim 时刻额外刷一条独立留痕评论。

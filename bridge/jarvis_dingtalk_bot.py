@@ -314,19 +314,25 @@ def _prwatch_has(ticket):
 
 
 def _load_done_statuses():
-    """Terminal-status set from config/pools.json .claim.done_statuses (top-level .claim,
-    NOT per-pool). Best-effort: any read/parse failure → a built-in fallback list. Used by
-    PrWatchScheduler._ticket_guard to detect a ticket humans已推到终态 (skip auto-finish)."""
-    fallback = ["已发布", "已发布待需求方验收", "验收通过", "已完成", "已拒绝", "已取消",
+    """Load the shared terminal-status set from ``config/pools.json``.
+
+    ``.claim.done_statuses`` is the single source used by dispatch, backlog, persona scan,
+    and PR-watch guards. Best-effort: a missing/invalid config falls back to the complete
+    built-in set so a bridge startup never re-dispatches closed tickets merely because its
+    config cannot be read.
+    """
+    fallback = ["已发布", "已发布待需求方验收", "验收通过", "已完成", "已关闭", "已解决", "已拒绝", "已取消",
                 "方案功能已存在", "需求撤回", "Fixed", "Closed", "Won'tfix", "Worksforme",
                 "Duplicate", "Invalid", "External", "ByDesign"]
     try:
         cfg = json.loads((Path(REPO_ROOT) / "config" / "pools.json").read_text())
         ds = cfg.get("claim", {}).get("done_statuses")
-        if isinstance(ds, list) and ds:
-            return [str(s) for s in ds]
+        if isinstance(ds, list):
+            normalized = [str(s).strip() for s in ds if str(s).strip()]
+            if normalized:
+                return normalized
     except Exception as e:  # noqa: BLE001
-        log.warning("prwatch: could not read done_statuses from pools.json: %s", e)
+        log.warning("bridge: could not read done_statuses from pools.json: %s", e)
     return fallback
 
 
@@ -587,8 +593,9 @@ def broadcast_type():
     return os.environ.get("JARVIS_BROADCAST_TYPE", "group")
 
 
-# Aone 终态状态集合：处于这些状态的工单已闭环，扫描到也不再派实例。
-TERMINAL_STATUSES = {"已发布", "已取消", "已完成", "已关闭", "已解决", "Fixed", "已发布待需求方验收"}
+# Aone 终态状态集合：唯一真源是 config/pools.json .claim.done_statuses；模块加载时冻结，
+# 避免 dispatch/backlog/persona 各维护一份硬编码集合而随状态枚举演进漂移。
+TERMINAL_STATUSES = frozenset(_load_done_statuses())
 
 # jarvis 自身身份标识(activity operator 可能显示为 worker id / 域账号 / 花名)。用于把**自身**
 # 排除出「人工介入门」白名单——jarvis 收尾打 idle 标签是它自己的 activity，若算人工介入会导致

@@ -17,6 +17,8 @@
 # Sequence:
 #   1. claim.sh claim <id> <project>
 #      → exit 1 (lost race): print SKIP and exit 0
+#      → exit 3 (missing required field): print legal candidates, escalate, exit 1
+#      → other non-zero: escalate as claim failure, exit 1
 #   2. wrap.sh done <id> <summary> <status>
 #      → failure: log.sh escalate <id> "done failed"; do NOT release; exit 1
 #   3. claim.sh release <id> <project>
@@ -26,6 +28,7 @@
 #   TRIAGE_CLAIM_CMD   — defaults to co-located claim.sh
 #   TRIAGE_WRAP_CMD    — defaults to co-located wrap.sh
 #   TRIAGE_LOG_CMD     — defaults to co-located log.sh
+#   TRIAGE_FIELDS_CMD  — defaults to co-located aone-fields.sh
 #
 # Respects JARVIS_ROOT env override.
 
@@ -54,6 +57,7 @@ CLAIM_CMD="${TRIAGE_CLAIM_CMD:-$script_dir/claim.sh}"
 WRAP_CMD="${TRIAGE_WRAP_CMD:-$script_dir/wrap.sh}"
 LOG_CMD="${TRIAGE_LOG_CMD:-$script_dir/log.sh}"
 COORD_CMD="${TRIAGE_COORD_CMD:-$script_dir/coord.sh}"
+FIELDS_CMD="${TRIAGE_FIELDS_CMD:-$script_dir/aone-fields.sh}"
 
 # ---------------------------------------------------------------------------
 # Register this triage instance for coordination tracking so checkpoints
@@ -66,11 +70,24 @@ COORD_ID=$(bash "$COORD_CMD" register triage "$$" 2>/dev/null || true)
 export COORD_ID
 
 # ---------------------------------------------------------------------------
-# Step 1: Claim — lost race → SKIP (not an error)
+# Step 1: Claim — lost race → SKIP; missing required fields → candidates + escalation
 # ---------------------------------------------------------------------------
-if ! "$CLAIM_CMD" claim "$id" "$project"; then
+"$CLAIM_CMD" claim "$id" "$project"
+claim_rc=$?
+if [ "$claim_rc" -eq 3 ]; then
+    if ! missing_json="$(bash "$FIELDS_CMD" missing "$id")"; then
+        missing_json='[]'
+    fi
+    echo "MISSING_REQUIRED_FIELDS: $id $missing_json" >&2
+    "$LOG_CMD" escalate "$id" "missing_required_field: $missing_json"
+    exit 1
+elif [ "$claim_rc" -eq 1 ]; then
     echo "SKIP: $id"
     exit 0
+elif [ "$claim_rc" -ne 0 ]; then
+    "$LOG_CMD" escalate "$id" "claim_failed: rc=$claim_rc"
+    echo "ERROR: claim failed for $id (rc=$claim_rc)" >&2
+    exit 1
 fi
 
 # Coord: mark instance as having claimed this item, with worktree/branch/repo

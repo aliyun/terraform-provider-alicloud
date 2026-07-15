@@ -56,6 +56,9 @@ JSON
 #   A1_GETCNT     – counter file for GET_FAIL=first
 #   A1_GET_FAIL   – "all" | "first" | unset
 #   A1_UPDATE_NOOP – "1" → update captures but does NOT persist (lost-race sim)
+#   A1_MISSING_FIELD – "1" → tag update fails with structured required-field validation
+#   A1_UPDATE_ERROR_RC – non-empty → tag update fails with this rc and a generic error
+#   A1_LOOSE_EMPTY_RC – non-empty → tag update fails with an unstructured 不能为空 error
 #   A1_STATUS_CAPTURE – file to record the --status value of an update (optional)
 #   A1_REJECT_STATUS  – if set and equals the update's --status value, exit 1 (enum mismatch sim)
 #   A1_COMMENTS       – shared comments JSON file (array of {"content":...}); comment
@@ -114,6 +117,18 @@ if [ "$1 $2 $3" = "project workitem update" ]; then
         if [ "${args[$i]}" = "--status" ]; then j=$((i + 1)); statusval="${args[$j]}"; has_status=1; fi
         i=$((i + 1))
     done
+    if [ -n "$has_tag" ] && [ "${A1_MISSING_FIELD:-}" = "1" ]; then
+        echo "更新工作项失败:【需求分类】(140282)不能为空" >&2
+        exit 1
+    fi
+    if [ -n "$has_tag" ] && [ -n "${A1_LOOSE_EMPTY_RC:-}" ]; then
+        echo "更新工作项失败: description 不能为空" >&2
+        exit "$A1_LOOSE_EMPTY_RC"
+    fi
+    if [ -n "$has_tag" ] && [ -n "${A1_UPDATE_ERROR_RC:-}" ]; then
+        echo "更新工作项失败: temporary transport failure" >&2
+        exit "$A1_UPDATE_ERROR_RC"
+    fi
     if [ -n "$has_status" ]; then
         [ -n "${A1_STATUS_CAPTURE:-}" ] && printf '%s' "$statusval" > "$A1_STATUS_CAPTURE"
         if [ -n "${A1_REJECT_STATUS:-}" ] && [ "$statusval" = "$A1_REJECT_STATUS" ]; then
@@ -762,6 +777,69 @@ out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/c
 cap=$(cat "$tmpstatuscap" 2>/dev/null)
 echo "rc=$rc status_set='$cap'"
 if [ "$cap" = "已发布待需求排期" ]; then assert_pass "no-override: still resolves to global done_status (backward compatible)"; else assert_fail "no-override: expected 已发布待需求排期, got '$cap'"; fi
+
+# ---------------------------------------------------------------------------
+# Test 28: structured required-field validation → exit 3 before readback.
+# ---------------------------------------------------------------------------
+echo "=== Test 28: structured missing required field → exit 3, no lost-race readback ==="
+printf '' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_UPDATE_ERROR_RC A1_LOOSE_EMPTY_RC
+export A1_MISSING_FIELD=1
+run_claim claim
+unset A1_MISSING_FIELD
+get_count=$(grep -c "project workitem get $WORKITEM_ID" "$tmplog" || true)
+if [ "$rc" -eq 3 ]; then assert_pass "missing field: claim exits 3"; else assert_fail "missing field: expected rc 3, got $rc"; fi
+if printf '%s' "$out" | grep -q "missing_required_field 140282 需求分类"; then
+    assert_pass "missing field: emits field id and name"
+else
+    assert_fail "missing field: machine-readable detail absent: $out"
+fi
+if [ "$get_count" -eq 1 ] && ! printf '%s' "$out" | grep -q "lost race"; then
+    assert_pass "missing field: stops after update failure without readback"
+else
+    assert_fail "missing field: should have one pre-update get and no lost race (gets=$get_count, out=$out)"
+fi
+
+# ---------------------------------------------------------------------------
+# Test 29: generic/unstructured failures retain their rc and do not become missing/race.
+# ---------------------------------------------------------------------------
+echo "=== Test 29: other tag update errors bubble without readback ==="
+printf '' > "$tmpstate"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_MISSING_FIELD A1_LOOSE_EMPTY_RC
+export A1_UPDATE_ERROR_RC=7
+run_claim claim
+unset A1_UPDATE_ERROR_RC
+get_count=$(grep -c "project workitem get $WORKITEM_ID" "$tmplog" || true)
+if [ "$rc" -eq 7 ] && [ "$get_count" -eq 1 ]; then
+    assert_pass "generic update error: preserves rc 7 and skips readback"
+else
+    assert_fail "generic update error: expected rc=7/gets=1, got rc=$rc/gets=$get_count"
+fi
+if printf '%s' "$out" | grep -Eq "missing_required_field|lost race"; then
+    assert_fail "generic update error must not be reclassified: $out"
+else
+    assert_pass "generic update error is not reclassified"
+fi
+
+printf '' > "$tmpstate"
+export A1_UPDATE_ERROR_RC=1
+run_claim claim
+unset A1_UPDATE_ERROR_RC
+if [ "$rc" -eq 2 ] && ! printf '%s' "$out" | grep -q "lost race"; then
+    assert_pass "a1 rc 1 is remapped to rc 2 so lost-race remains unambiguous"
+else
+    assert_fail "a1 rc 1 must not look like lost race: rc=$rc out=$out"
+fi
+
+printf '' > "$tmpstate"
+export A1_LOOSE_EMPTY_RC=6
+run_claim claim
+unset A1_LOOSE_EMPTY_RC
+if [ "$rc" -eq 6 ] && ! printf '%s' "$out" | grep -q "missing_required_field"; then
+    assert_pass "unstructured 不能为空 retains rc 6 (strict matcher)"
+else
+    assert_fail "unstructured 不能为空 should not map to rc 3: rc=$rc out=$out"
+fi
 
 # ---------------------------------------------------------------------------
 # Summary

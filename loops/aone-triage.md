@@ -66,6 +66,10 @@ bootstrap/claim.sh claim <id> <pool-project>
 
 - 退出码 0 → 认领成功，继续 triage。
 - 退出码 1 → 其他实例已抢先认领，**跳过本条**，继续下一条。
+- 退出码 3 → 工单缺必填字段（结构化 `【name】(fieldId)不能为空`，非 lost race）：运行
+  `bootstrap/aone-fields.sh missing <id>` 获取合法候选，agent 结合工单语义明确选值后执行
+  `bootstrap/aone-fields.sh fill <id> <fieldId>=<value>`，再重试 claim；禁止盲填分类。
+- 其它非零 → claim 真失败，直接 escalate，不进入 readback 或 SKIP。
 
 ### 2.3 单条 triage（技能调用）
 
@@ -151,10 +155,12 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/wrap.sh sync/done` | 进展回填 Aone（唯一真源）+收尾审计；多行正文用 `--summary-stdin`/`--summary-file` |
 | `bootstrap/html-report-preview.sh upload/from-aone` | 将 HTML/zip/Aone 附件报告上传到 AutomationAgent，返回在线预览链接；`--comment` 可直接回贴 Aone |
 | `bootstrap/log.sh escalate` | 记录上报 |
-| `bootstrap/claim.sh claim <id> <project>` | 认领工作项（输赢竞争锁）；退码 1 = 输了跳过。认领成功还会把 Aone status 从起始态（待处理/新建…）推进到该池的进行中状态（.progress_status，如 处理中/开发中/问题解决中/Open），best-effort 非阻断，`JARVIS_CLAIM_PROGRESS=0` 可关 |
+| `bootstrap/claim.sh claim <id> <project>` | 认领工作项；退码 1 = 输了跳过，退码 3 = 缺必填字段，需经 `aone-fields.sh` 挑合法值回填后重试；其它 update 失败直接上抛，不误报 lost race。认领成功还会把 Aone status 从起始态推进到该池进行中状态，best-effort 非阻断 |
+| `bootstrap/aone-fields.sh missing <id>` | 列出当前为空的必填自定义字段；field-list options 为空时补查 field options API，输出合法候选，不自动选值 |
+| `bootstrap/aone-fields.sh fill <id> <fieldId>=<value> …` | 回填 agent 已明确选择的字段值（重复 `--cfs`）；拒绝空值/非法参数 |
 | `bootstrap/claim.sh release <id> <project>` | 释放认领（打 jarvis-idle 标签：本轮处理完，等待人或下一个 jarvis 接手；不动 Aone status） |
 | `bootstrap/claim.sh finish <id> <project>` | jarvis 判断真完成（打 jarvis-done 标签 + status 改为 `pools.json` 里该池 × workitemType 的 `done_status`；`.claim.done_status` = `已发布待需求排期` 只是**全局兜底**，主流走 per-池 per-category。tf_provider(528766) 产品类需求 → **`待发布`**，不是 `已发布`——workflow 不允许 `已选择` 直跳 `已发布`。被拒时先 `bin/a1id -- project workitem field options status --project <id> --type <workitemType>` 查合法枚举再改 pools.json。**若 done_status 终究落不到合法完成态**，finish 会降级 `jarvis-done`→`jarvis-idle` + escalate，不留「标签 done、真源未结束」黑洞） |
-| `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>` | 单条工单收尾 bookend（**5 参必填**，子代理完工后调用）：claim→wrap done→release；claim 输竞争则 SKIP 退 0 |
+| `bootstrap/triage-one.sh <id> <pool> <project> "<summary>" <status>` | 单条工单收尾 bookend：claim→wrap done→release；claim 输竞争则 SKIP，退码 3 则输出合法字段候选并 escalate（不 wrap/release） |
 | `bootstrap/wrap-check.sh` | Stop 闸门：会话结束时校验未完工工单是否已回填，失败则阻断 |
 | `bootstrap/reconcile.sh [stale\|orphan\|drift\|donecheck\|all]` | 收敛族入口:stale=超时 claim→escalate;orphan=owner dead→escalate;drift=台账 vs Aone 对账;donecheck=jarvis-done 标签 vs Aone 状态一致性对账(漂移→escalate);all=顺跑四者(默认) |
 | `.claude/skills/aone-triage` | 单条工单全流程技能 |

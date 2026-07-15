@@ -27,7 +27,7 @@ sys.modules["jarvis_dingtalk_bot"] = bot
 spec.loader.exec_module(bot)
 
 PERSONA_WID = sorted(bot.PERSONA_WORKER_IDS)[0]  # 任一 persona worker id
-TERMINAL = next(iter(bot.TERMINAL_STATUSES))     # 任一终态值
+TERMINAL = "ByDesign"                            # 缺陷流闭环态，来自 pools.json 单真源
 
 
 def _make_scheduler():

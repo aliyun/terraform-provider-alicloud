@@ -45,7 +45,8 @@
         "已完成",
         "已拒绝",
         "Won'tfix",
-        "Fixed"
+        "Fixed",
+        "ByDesign"
       ],
       "exclude_title": []
     },
@@ -157,7 +158,7 @@
     "idle_tag": "jarvis-idle",
     "done_tag": "jarvis-done",
     "done_status": "已发布待需求排期",
-    "done_statuses": ["已发布", "已发布待需求方验收", "验收通过", "已完成", "已拒绝", "已取消", "方案功能已存在", "需求撤回", "Fixed", "Closed", "Won'tfix", "Worksforme", "Duplicate", "Invalid", "External", "ByDesign"],
+    "done_statuses": ["已发布", "已发布待需求方验收", "验收通过", "已完成", "已关闭", "已解决", "已拒绝", "已取消", "方案功能已存在", "需求撤回", "Fixed", "Closed", "Won'tfix", "Worksforme", "Duplicate", "Invalid", "External", "ByDesign"],
     "progress_status": "处理中",
     "start_statuses": ["待处理", "新建", "New", "待认领", "Reopen", "已排期"],
     "ttl_min": 45
