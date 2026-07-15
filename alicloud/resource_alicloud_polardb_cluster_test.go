@@ -157,7 +157,7 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
 					"db_node_count":     "2",
-					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":     "polar.mysql.x4.large",
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -225,7 +225,7 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_count": "2",
-					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
+					"db_node_class": "polar.mysql.x4.large",
 					"sub_category":  "Exclusive",
 					"modify_type":   "Upgrade",
 				}),
@@ -455,7 +455,7 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 					"creation_category": "Normal",
 					"db_node_count":     "2",
 					"period":            "1",
-					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":     "polar.mysql.x4.large",
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -571,7 +571,7 @@ func TestAccAliCloudPolarDBCluster_Multi(t *testing.T) {
 					"db_type":       "MySQL",
 					"db_version":    "8.0",
 					"pay_type":      "PostPaid",
-					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class": "polar.mysql.x4.large",
 					"vswitch_id":    "${local.vswitch_id}",
 					"description":   "${var.name}",
 				}),
@@ -690,7 +690,7 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 					"db_version":          "8.0",
 					"pay_type":            "PostPaid",
 					"db_node_count":       "2",
-					"db_node_class":       "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":       "polar.mysql.x4.large",
 					"vswitch_id":          "${local.vswitch_id}",
 					"zone_id":             "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
 					"creation_category":   "Normal",
@@ -885,7 +885,7 @@ func TestAccAliCloudPolarDBCluster_GlobalSecurityGroupOnCreate(t *testing.T) {
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
 					"db_node_count":     "2",
-					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":     "polar.mysql.x4.large",
 					"vswitch_id":        "${local.vswitch_id}",
 					"zone_id":           "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
 					"creation_category": "Normal",
@@ -970,7 +970,7 @@ func TestAccAliCloudPolarDBCluster_CreateCloneFromPolarDB(t *testing.T) {
 					"db_version":         "8.0",
 					"pay_type":           "PostPaid",
 					"db_node_count":      "2",
-					"db_node_class":      "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":      "polar.mysql.x4.large",
 					"vswitch_id":         "${local.vswitch_id}",
 					"creation_category":  "Normal",
 					"clone_data_point":   "LATEST",
@@ -1049,7 +1049,7 @@ func TestAccAliCloudPolarDBCluster_CreateCloneFromRDS(t *testing.T) {
 					"db_version":         "8.0",
 					"pay_type":           "PostPaid",
 					"db_node_count":      "2",
-					"db_node_class":      "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":      "polar.mysql.x4.large",
 					"vswitch_id":         "${local.vswitch_id}",
 					"description":        "${var.name}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -1125,7 +1125,7 @@ func TestAccAliCloudPolarDBCluster_CreateMigrationFromRDS(t *testing.T) {
 					"db_version":         "8.0",
 					"pay_type":           "PostPaid",
 					"db_node_count":      "2",
-					"db_node_class":      "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":      "polar.mysql.x4.large",
 					"vswitch_id":         "${local.vswitch_id}",
 					"description":        "${var.name}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -1202,7 +1202,7 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
 					"db_node_count":     "2",
-					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"db_node_class":     "polar.mysql.x4.large",
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -1430,7 +1430,7 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreateWithStandbyAz(t *testing.T)
 					"db_type":             "MySQL",
 					"db_version":          "8.0",
 					"pay_type":            "PostPaid",
-					"db_node_class":       "polar.mysql.x2.large.c",
+					"db_node_class":       "polar.mysql.x4.large",
 					"vswitch_id":          "${local.vswitch_id}",
 					"description":         "${var.name}",
 					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -1501,7 +1501,7 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreate(t *testing.T) {
 					"db_type":             "MySQL",
 					"db_version":          "8.0",
 					"pay_type":            "PostPaid",
-					"db_node_class":       "polar.mysql.x2.large.c",
+					"db_node_class":       "polar.mysql.x4.large",
 					"vswitch_id":          "${local.vswitch_id}",
 					"description":         "${var.name}",
 					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -2488,7 +2488,7 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
     resource "alicloud_resource_manager_policy_attachment" "default" {
 	    policy_name       = "AliyunRDSInstanceEncryptionRolePolicy"
 	    policy_type       = "System"
-	    principal_name    = "${alicloud_ram_role.default.name}@role.${data.alicloud_account.current.id}.onaliyunservice.com"
+	    principal_name    = "${alicloud_ram_role.default.name}@role.tfexample.onaliyunservice.com"
 	    principal_type    = "ServiceRole"
 	    resource_group_id = "${data.alicloud_account.current.id}"
 		depends_on = [alicloud_ram_role.default]
