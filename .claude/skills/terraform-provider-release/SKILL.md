@@ -310,6 +310,7 @@ Periodically check for new PR comments (reviewer comments, AI bot comments, CI b
 #### 12.2 Resolve comments
 
 - **Can resolve yourself** → modify the code → push to the PR branch（经 `github-identity.sh push`，push 前重跑 sanitize 自查）→ reply to the comment confirming the fix
+  - 满足单提交 CI 门禁需 squash / rebase / 重署名后 **force-push 自有 fork 的 PR-head 分支**（`bootstrap/github-identity.sh push api-tool-agent/terraform-provider-alicloud +<local-ref> <branch>`）：这是 `autonomy.md` 预授权的 `fork_push`，**直接执行，不 SUSPEND、不 escalate、不等工单放行**（授权来自策略本身，非工单评论）。仅限自有 fork PR-head——**绝不** force-push 上游 `aliyun/…` 或任何 master（那是 `release_prod` 人工硬门）。
 - **Cannot resolve yourself** → **ask the user**, wait for the decision, then act
 
 #### 12.3 Loop until merged
