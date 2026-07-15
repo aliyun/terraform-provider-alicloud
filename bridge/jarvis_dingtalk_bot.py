@@ -265,6 +265,10 @@ def _inflight_has(item_id):
 PRWATCH_PATH = Path(REPO_ROOT) / ".my-day/bridge/pr-watch.json"
 _prwatch_lock = threading.Lock()
 
+# CI check conclusions that count as a definitive failure worth auto-fixing (vs.
+# pending/queued/success). Module-level so PrWatchScheduler._gh_pr_ci stays testable.
+_CI_FAIL_CONCLUSIONS = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "CANCELLED"}
+
 
 def _prwatch_load():
     """Load the registry (ticket -> {pr_url, project, submitted_at}). Best-effort: any
@@ -306,6 +310,21 @@ def _prwatch_remove(ticket):
     with _prwatch_lock:
         recs = _prwatch_load()
         recs.pop(str(ticket), None)
+        _prwatch_write(recs)
+
+
+def _prwatch_update(ticket, **fields):
+    """Merge bookkeeping fields into an existing watch entry (no-op if absent). Atomic
+    load→set→write under the lock. Used by PrWatchScheduler to record CI-fix dedup state
+    (ci_fix_sha / ci_fix_attempts / ci_fix_escalated / last_ci_fix_at) without disturbing
+    pr_url/project/submitted_at."""
+    with _prwatch_lock:
+        recs = _prwatch_load()
+        ent = recs.get(str(ticket))
+        if not isinstance(ent, dict):
+            return
+        ent.update(fields)
+        recs[str(ticket)] = ent
         _prwatch_write(recs)
 
 
@@ -858,6 +877,29 @@ def _revisit_prompt(item_id, title, pool_project):
         "仍未解锁：wrap.sh sync 记一句「门仍未开」后 release，快速退出，不空耗。\n"
         "全程 headless auto 免授权；遇必须人类决策点输出 [[SUSPEND:{...}]] 挂起。"
         % (item_id, title, str(pool_project or ""), item_id, str(pool_project or ""))
+    )
+
+
+def _pr_ci_fix_prompt(item_id, pr_url, pool_project, failing):
+    """Prompt for an open-PR CI-failure re-dispatch: fix the failing CI on an already-
+    submitted PR (do NOT re-run passed dev/ACC). fork_push 已预授权（autonomy.md fork_push）；
+    merge 仍是人工硬门。"""
+    fails = ", ".join(list(failing)[:8]) if failing else "（见 gh pr checks）"
+    return (
+        "【headless PR-CI 修复】工单 #%s 的关联 PR 有 CI 任务失败，需按 SOP 修复后 force-push 更新 PR。\n"
+        "PR: %s\n失败检查: %s\n"
+        "步骤：\n"
+        "1) bootstrap/claim.sh claim %s %s 认领（退码 1 = 别人正在处理，立即退出）。\n"
+        "2) 用 bootstrap/github-identity.sh gh pr checks 定位失败项，拉失败 job 日志判因"
+        "（terraform-pr-review / provider-resource-dev skill 的 CI 修复 SOP）。\n"
+        "3) high_conf 能修：在该 PR 分支的 worktree 改码 → 单提交门禁"
+        "（git rev-list --count <base>..HEAD 必须为 1，必要时 squash / rebase 到最新 alicloud/master）"
+        "→ push 前跑 bootstrap/pre-push-sanitize.sh → force-push 更新 api-tool-agent:<PR分支>"
+        "（这是 autonomy.md 预授权的 fork_push，直接执行、不 SUSPEND、不等工单放行；绝不推上游/任何 master）。\n"
+        "4) low_conf / 需人类决策：起草说明入 escalation/，wrap.sh sync 记一句后 release，快速退出，不空耗。\n"
+        "5) 只修 CI 失败，不重跑已过的开发/ACC。收尾 wrap.sh sync 回工单进展；"
+        "PR 仍由后台 PrWatch 继续看守，合并是唯一人工硬门（release_prod），你不合并。\n"
+        % (item_id, pr_url, fails, item_id, str(pool_project or ""))
     )
 
 
@@ -1998,15 +2040,19 @@ class ReconcileScheduler:
 
 
 class PrWatchScheduler:
-    """PR-watch (方案A): 周期轮询 PR 观察登记表 (.my-day/bridge/pr-watch.json)，PR 合并后自动
-    claim.sh finish 收尾本工单，与 RevisitScheduler 互为兜底。
+    """PR-watch: 周期轮询 PR 观察登记表 (.my-day/bridge/pr-watch.json)，跨会话看守已提交 PR
+    的**全生命周期**——open 窗口内 CI 失败自动派修复，合并后自动 claim.sh finish 收尾本工单，
+    与 RevisitScheduler 互为兜底。
 
-    背景缺口：skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，注释「等合并后复验」；
-    但 RevisitScheduler 的选择器只捞标题/描述含特定词的 idle 单，terraform 发布单都不含 →
-    合并后工单永久停在 jarvis-idle、永不推到「已完成」。本调度器读登记表逐条查 PR 状态：
+    背景缺口：skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，单次 headless 会话
+    撑不住 PR 从提交到合并的几小时/几天，`gh pr checks` 只在那次会话里跑一次；RevisitScheduler
+    的选择器只捞标题/描述含特定词的 idle 单，terraform 发布单都不含 → open 窗口 CI 转红无人修、
+    合并后工单永久停在 jarvis-idle。本调度器读登记表逐条查 PR 状态：
       · merged        → claim.sh finish <ticket> <project> 已完成（过 npe/终态 guard）→ 评论+播报+摘除
       · closed 未合并 → 评论 + escalate 交人工，不 finish → 摘除
-      · open / 查询失败 → 保留，下轮再看
+      · open + CI 有失败 → force 重派 headless jarvis 修 CI（_maybe_dispatch_ci_fix，走 fork_push
+        预授权 SOP；per-head 去重 + 累计超 JARVIS_PRWATCH_CI_FIX_MAX 次 escalate）；保留观察
+      · open + CI 绿/pending / 查询失败 → 保留，下轮再看
     finish 前重读工单（JARVIS_CACHE_TTL=0 强制新取）：命中 jarvis-npe（人工介入）或状态已终态 →
     不自动 finish，留人工（人工重开保护）。
 
@@ -2091,7 +2137,9 @@ class PrWatchScheduler:
             self._escalate(tid, "PR 未合并即关闭，请人工确认工单去向")
             _prwatch_remove(tid)
             return
-        # open / 其余 → 保留
+        # open PR → open 窗口推进：CI 失败则自动派 headless 修复（方案A 本只管合并后收尾，
+        # 本段补上 open 窗口内的 CI 监控 + 失败重派缺口）。CI 绿/pending/查询失败 → 保留观察。
+        self._maybe_dispatch_ci_fix(tid, entry)
         return
 
     # -- helpers（全部 capture_output，绝不真连网/gh/claim/wrap）----------------------
@@ -2118,6 +2166,88 @@ class PrWatchScheduler:
         except Exception as e:  # noqa: BLE001
             log.warning("PrWatchScheduler: gh pr view non-JSON for %s: %s", pr_url, e)
             return (None, None)
+
+    def _gh_pr_ci(self, pr_url):
+        """(head_sha, [failing_check_names]) via github-identity.sh gh pr view <url> --json
+        headRefOid,statusCheckRollup. A check counts as failing when CheckRun.conclusion ∈
+        _CI_FAIL_CONCLUSIONS OR StatusContext.state ∈ {FAILURE, ERROR}; pending / queued /
+        in-progress / success are NOT failing. Any query/parse failure → (None, None) so the
+        caller keeps watching and NEVER dispatches a fix on an unknown state."""
+        gh_id = str(Path(REPO_ROOT) / "bootstrap" / "github-identity.sh")
+        try:
+            proc = subprocess.run(
+                [gh_id, "gh", "pr", "view", pr_url, "--json", "headRefOid,statusCheckRollup"],
+                capture_output=True, text=True, env=os.environ.copy(), timeout=60)
+        except Exception as e:  # noqa: BLE001
+            log.warning("PrWatchScheduler: gh pr ci raised for %s: %s", pr_url, e)
+            return (None, None)
+        if proc.returncode != 0:
+            log.warning("PrWatchScheduler: gh pr ci rc=%d for %s: %s",
+                        proc.returncode, pr_url, (proc.stderr or "").strip()[:200])
+            return (None, None)
+        try:
+            d = json.loads(proc.stdout)
+        except Exception as e:  # noqa: BLE001
+            log.warning("PrWatchScheduler: gh pr ci non-JSON for %s: %s", pr_url, e)
+            return (None, None)
+        head = str(d.get("headRefOid") or "")
+        failing = []
+        for c in (d.get("statusCheckRollup") or []):
+            if not isinstance(c, dict):
+                continue
+            concl = str(c.get("conclusion") or "").upper()
+            state = str(c.get("state") or "").upper()
+            if concl in _CI_FAIL_CONCLUSIONS or state in ("FAILURE", "ERROR"):
+                failing.append(str(c.get("name") or c.get("context") or "?"))
+        return (head, failing)
+
+    def _maybe_dispatch_ci_fix(self, tid, entry):
+        """open PR：CI 有失败项且尚未针对当前 head 派过修复 → force 重派一个 headless jarvis 去修
+        （走 pr-review / resource-dev SOP + 预授权 fork_push）。防抖三层：
+          · per-head 去重（ci_fix_sha == 当前 head → 本轮不重复派，等修复推新 commit 换 head）；
+          · 累计不同失败 head 超上限（JARVIS_PRWATCH_CI_FIX_MAX，默认 3）→ escalate 一次后置
+            ci_fix_escalated 停自动修（仍看守合并）；
+          · DispatchPool 的 active-set（并发互斥）+ claim.sh（真锁）。
+        pool 为空 / 查询失败 / CI 非失败（绿或 pending）→ 不动，保留观察。绝不在 unknown 上派。"""
+        if entry.get("ci_fix_escalated"):
+            return
+        if self.pool is None:
+            return
+        head, failing = self._gh_pr_ci(entry.get("pr_url"))
+        if head is None or not failing:
+            return  # 查询失败 或 CI 无失败(绿/pending) → 保留观察
+        if entry.get("ci_fix_sha") == head:
+            return  # 本 head 已派过修复 → 不刷屏（修复会推新 commit 换 head，届时自然再派）
+        attempts = int(entry.get("ci_fix_attempts") or 0)
+        max_attempts = int(os.environ.get("JARVIS_PRWATCH_CI_FIX_MAX", "3"))
+        project = entry.get("project")
+        if attempts >= max_attempts:
+            self._comment(tid, project,
+                          "关联 PR CI 反复失败已达 %d 次自动修复上限，转人工处理（PrWatch 继续看守合并）。"
+                          "失败项：%s" % (max_attempts, ", ".join(failing[:8])))
+            self._escalate(tid, "PR CI 反复失败超过自动修复上限(%d)，请人工介入" % max_attempts)
+            _prwatch_update(tid, ci_fix_escalated=True)
+            return
+        prompt = _pr_ci_fix_prompt(tid, entry.get("pr_url"), project, failing)
+        notify = self.handler._broadcast if self.handler else (lambda t: None)
+        tgt, ttype = broadcast_target(), broadcast_type()
+        sid = str(uuid.uuid4())
+        work = (lambda: self.handler.dispatch_item(
+            tid, prompt, sid, False, notify, tgt, ttype,
+            kind="pr_ci_fix", project=project, terraform=True))
+        # force=True 越过 24h 去重台账（发布单近期本就被派过）；active-set 仍防并发重入。
+        ok, reason = self.pool.submit(tid, work, notify=notify, force=True,
+                                      kind="pr_ci_fix", project=project)
+        if ok:
+            _prwatch_update(tid, ci_fix_sha=head, ci_fix_attempts=attempts + 1,
+                            last_ci_fix_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+            log.info("PrWatchScheduler: #%s CI failing (%s) → dispatched pr_ci_fix "
+                     "(attempt %d/%d, head %s)", tid, ",".join(failing[:5]),
+                     attempts + 1, max_attempts, head[:12])
+            self.handler._broadcast("[PR-watch] #%s CI 失败，已自动派发修复（%s）"
+                                    % (tid, ",".join(failing[:5])))
+        else:
+            log.info("PrWatchScheduler: #%s CI fix not submitted (%s)", tid, reason)
 
     @staticmethod
     def _parse_ticket_meta(d):
