@@ -111,6 +111,11 @@ subagent 不会自动注入 SessionStart,**技能须主动通过 Skill 工具调
   未安装时按内建 TDD 纪律执行(先写失败测试→实现→绿灯),并在返回结果标注 `skill_missing`。
 - **遇到 bug/测试失败/非预期行为**:同上优先 `superpowers/systematic-debugging`;缺失则按
   「先复现→定位根因→再动代码」纪律执行。
+- **Terraform release / ACC 暴露 CloudSpec 定义错误**:调用 `terraform-provider-release`，并按其
+  `references/cloudspec-pre-resource-loop.md` 显式加载仓库 vendored 的 `cloudspec-amp-workflow`、
+  `cloudspec-idl-guide`、`cloudspec-resource-edit`、`cloudspec-build-fix`、`cloudspec-norm-check-fix`。
+  先跑 `bash bootstrap/cloudspec-core.sh doctor`；修复只发布 pre，生成器必须从 pre 重新生成，
+  CloudSpec prod/online 仍是人工硬门。
 - 不得跳过纪律直接改文件;Skill 调用记录(或 skill_missing 标注 + 纪律执行痕迹)即执行证明。
 
 ## 隔离原则(严格执行)
@@ -187,7 +192,8 @@ fi
 
 ## 限制(开发模式)
 
-- 只修改 `config/workspaces.json` 已登记的 repo 内文件
+- 只修改 `config/workspaces.json` 已登记的 repo 内文件；CloudSpec 修复是唯一例外，cspec 模型目录必须
+  由 `cloudspec-amp-workflow` 通过 AMP 返回的 SSH URL clone，且只能在 task 专属 feature 分支编辑
 - 不做 Aone 分诊/客户回复(那是 terraform-pd);进展通知通过 `bootstrap/wrap.sh sync` 走
 - build 或 test 失败时不返回 done,保持 `build_fail`/`test_fail` 状态等编排层决策
 - 遇到 `missing_capability`(工作区未登记)立即返回,不臆造路径

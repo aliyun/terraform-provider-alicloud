@@ -1,8 +1,8 @@
 ---
 name: terraform-provider-release
-description: Release a Terraform Provider resource together with its data source for Alibaba Cloud. Covers both new-resource publishing (via generator) and updates to existing resources (auto-generated or hand-written). Anchored on an Aone work item end to end, runs in an isolated worktree, forbids local compilation, derives the concrete release scope by comparing AMP metadata against the local provider code (requirement gap analysis), verifies the underlying APIs are all OpenAPI before generation, and verifies via remote ACC tests before PR submission. The task is only complete after the PR is merged. NOT for 镇元/acube 生成器诊断链路（生成为空/损坏、resourceTypeCode 未命中、cspec 分支验证）— use provider-resource-dev. NOT for reviewing an existing PR — use terraform-pr-review.
+description: Release a Terraform Provider resource together with its data source for Alibaba Cloud. Covers new-resource publishing and updates to existing resources, with an initial CloudSpec pre-environment requirement-alignment gate and a test-time CloudSpec IDL repair/publish/regenerate loop. Anchored on an Aone work item, runs in an isolated worktree, forbids local compilation, verifies orchestration APIs and remote ACC tests, and governs the PR through merge. NOT for generator implementation defects or resourceTypeCode mapping corruption — use provider-resource-dev. NOT for reviewing an existing PR — use terraform-pr-review.
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
   domain: terraform-provider
   triggers: 资源发布, provider 发布, terraform 发布, resource release, terraform provider release, publish resource, new resource, update resource, datasource release, data source release, 需求澄清, requirement clarification
 ---
@@ -15,8 +15,8 @@ Release a Terraform Provider resource together with its corresponding data sourc
 
 在 jarvis 无人值守语境下，本 skill 的自治边界如下（对应 `autonomy.md` 的 `stop: ["release_prod"]`）：
 
-- **可自治**：全部开发/测试/开 PR/跑 ACC/回填 Aone 步骤，含轮询处理评审评论、按建议改码推分支。
-- **必须 escalate**：最终 **PR merge** —— aliyun/terraform-provider-alicloud 是公共上游仓，merge 视同 `release_prod`，jarvis 不得自动合入。评审通过、CI 全绿、评论全清后停手，写 `escalation/` 并推送通知，等仓库主人人工合并。
+- **可自治**：全部开发/测试/开 PR/跑 ACC/回填 Aone 步骤，含 CloudSpec feature 分支上的 IDL 修复、`amp publish pre` 预发发布、从 pre 元数据重新生成，以及轮询处理评审评论。
+- **必须 escalate**：CloudSpec `prod`/`online` 正式发布与最终 **PR merge**。两者都属于 `release_prod`，jarvis 不得自动执行。
 - 因此原文"task is only complete after the PR is merged"是**对人跑者**的验收口径；对 jarvis，"PR 就绪（CI 绿+评论清）+ escalation 提交"即本轮收尾。
 
 ## 无人值守决策规则（替代"询问用户"）
@@ -26,14 +26,14 @@ jarvis 语境下，本 skill 所有"ask the user"节点按以下规则改走三�
 | 原询问点 | 无人值守行为 |
 |---|---|
 | 未提供工单号 | triage 场景工单天然存在；缺则按 `loops/adhoc-intake.md` 建单，不问人 |
-| 镇元预发版 vs 线上版歧义 | AMP 两环境都查：线上存在用线上，否则用预发；判定理由评论回工单；两边元数据冲突 → low_conf escalate |
-| 工单缺需求描述 | 在 Aone 评论 @提单人 补充描述，打 jarvis-idle 释放本单，本轮退出；下轮扫到更新自动续跑 |
+| 镇元预发版 vs 线上版歧义 | 本 SOP 的接单闸门与修复后生成都固定以 **pre** 为真源；线上只可作为只读对照，禁止替代 pre。pre 不存在且需求明确 → 进入 CloudSpec 定义闭环；需求不明确 → 四人会审 |
+| 工单缺需求描述或无法判断 pre 定义是否满足需求 | 同时通知 @辰羿(320687)、@临钧(429768)、@过载(484483)、@原根(265607)，打 jarvis-idle 并挂起；禁止继续生成或 provider 开发 |
 | 修复方案需确认 | high_conf（OpenAPI+源码两层一致）→ 自动改+重跑 ACC，重试上限 3 次；low_conf → escalation |
 | PR 评论无法自行解决 | 起草回复入 `escalation/`，不自动发出 |
 | 等待 PR merge | 见"Jarvis 自治边界"——CI 绿+评论清即收尾，merge 是人工硬门 |
 | Step 2 provider 仓本地路径 | 规则内置：`bootstrap/workspace.sh dir terraform_provider` 解析（CLAUDE.md #4），缺登记 → escalate(`missing_capability`)，不问人 |
 | Step 9 镇元用例 vs 手写 | 工单已给镇元用例 ID 清单 → 走镇元生成；否则默认**手写 + 100% 属性覆盖**；拿不准 → 异步问工单 |
-| Step 10.2 IDL source path / 请求 release IDL / generator 修复确认 | 异步问工单（@提单人/镇元侧），本轮 jarvis-idle 释放；generator 根因分析入 `escalation/`，不自动改生成器 |
+| Step 10.2 IDL source path / release IDL | 通过仓库内 vendored `cloudspec-core` 技能自动定位/clone CloudSpec 模型、修复并发布 pre；generator 实现缺陷仍转 `provider-resource-dev`，不在本 SOP 内改生成器 |
 
 **Applicable scenarios**
 - **New resource release**: produce a new resource + data source + documentation via the generator
@@ -44,6 +44,8 @@ jarvis 语境下，本 skill 所有"ask the user"节点按以下规则改走三�
 - All development, testing, and fixes happen inside an **isolated worktree** so concurrent tasks never pollute each other
 - **Local compilation is strictly forbidden** — compiling the alicloud provider locally crashes the workstation. Run static checks only.
 - For any generator-based path, **derive the concrete release scope by diffing AMP metadata against the local provider code** (requirement gap analysis) and **verify all orchestration APIs are OpenAPI** before generation; write both findings back to Aone
+- Before provider work starts, compare the Aone requirement with the **CloudSpec pre** resource definition; ambiguity is a hard stop requiring the four-person human review
+- When an ACC failure proves the CloudSpec definition is wrong, fix and publish the IDL to **pre**, wait for pre metadata convergence, then force the Terraform generator to consume that pre definition
 - Remote ACC acceptance tests must **all pass** before the PR is submitted
 - **The task is only complete after the PR is merged** (CI passing + all comments closed)
 
@@ -71,6 +73,16 @@ Every provider resource release MUST be linked to an Aone work item.
   - writing back progress at key milestones (Step 5 requirement-gap analysis, Step 5 non-OpenAPI log, Step 11, Step 12)
 
 读工单：`bootstrap/aone-get.sh <id>`（或有 coop MCP 时用 `mcp__coop__query_workitem_detail`）读字段；回填进展/更新状态：`bootstrap/wrap.sh sync <id> "<进展>"`（或 coop MCP `add_comment`）。**a1/bootstrap 路径为主**（数字机器人无 coop MCP），MCP 为备。
+
+### Step 1.5: CloudSpec Pre-Resource Alignment Gate
+
+在创建 provider worktree 或运行生成器前，必须读取 **pre 环境**的 CloudSpec 资源定义，并与工单需求逐项对齐：属性、类型、约束、CRUD/List 映射和生命周期语义。
+
+- **一致**：把 `PRE_CLOUDSPEC_ALIGNED` 结论和证据回填 Aone，继续 Step 2。
+- **明确不一致且需求清楚**：记录 `PRE_CLOUDSPEC_GAP`，先走 [CloudSpec pre 资源闭环](references/cloudspec-pre-resource-loop.md)，待 pre 收敛后再继续 provider 流程。
+- **需求缺失、相互矛盾或无法判定**：同时通知 @辰羿(320687)、@临钧(429768)、@过载(484483)、@原根(265607)，释放并挂起工单；禁止生成、编码或根据经验猜需求。
+
+完整取数、判定、人工通知和留痕格式见 [CloudSpec pre 资源闭环](references/cloudspec-pre-resource-loop.md)。
 
 ### Step 2: Prepare the Provider Repo Worktree
 
@@ -124,7 +136,7 @@ This step uses the `amp-resource-metadata` skill. A single AMP Meta fetch fuels 
 
 #### 5.1 Determine the target Zhenyuan version
 
-From the Aone work item, identify whether the resource to release is the **Zhenyuan staging (pre)** version or the **Zhenyuan production (online)** version. If the work item is ambiguous, ask the user.
+Generator-based release work in this SOP uses the **Zhenyuan staging (`pre`)** definition already verified by Step 1.5. Production metadata may be read only for comparison; it must not replace pre as the generation source.
 
 #### 5.2 Fetch the resource Meta
 
@@ -134,7 +146,7 @@ Use `amp-resource-metadata` to fetch the resource schema (which contains attribu
 python3 {AMP_SKILL_DIR}/scripts/get_resource_type.py \
   --service-code <product_code> \
   --resource-code <resource_code> \
-  [--env pre]   # add --env pre for the staging version; omit for production
+  --env pre
 ```
 
 From the returned Meta, extract:
@@ -189,7 +201,7 @@ For every API classified as non-OpenAPI in 5.4, record a separate comment on the
 
 > **Applies to**: new resource release **and** auto-generated existing-resource update (path decided in Step 4).
 
-Run the generator using the version identified in Step 5.1 (Zhenyuan staging or production). The generator produces in a single pass:
+Run the generator against the **pre CloudSpec resource definition** verified in Step 1.5/Step 5. The selected generator command must expose and record its pre-environment selector; if that cannot be proven, stop with `missing_capability` instead of falling back to online. The generator produces in a single pass:
 - resource code
 - **data source code**
 - documentation (resource + data source)
@@ -244,18 +256,18 @@ Locate the provider bug → fix the provider code → re-run the tests → PASS.
 
 #### Step 10.2: Fixing failures for auto-generated cases
 
-First determine the failure category — is it a **resource definition** problem or a **generator** problem? Report the conclusion and supporting analysis to the user.
+First determine the failure category — is it a **CloudSpec resource definition** problem or a **generator implementation** problem? Record the conclusion and evidence in Aone.
 
 - **Resource definition problem**
-  - Ask the user for the **IDL source path** of the resource definition
-  - Attempt to fix the IDL resource definition yourself
-  - Push the fix to the remote
-  - Ask the user to **release the IDL**
+  - Run the repository-vendored `cloudspec-core` workflow; do not depend on a personal Marketplace installation
+  - Fix the CloudSpec IDL on a feature branch, run `aliyun cspec build` and the resource-scoped norm check
+  - Run pre dry-run, publish to pre, and poll until pre metadata matches the repaired definition
+  - Re-run the Terraform generator with **pre explicitly selected**, inspect the generated diff, then re-run every remote ACC case
+  - Follow the exact hard gates in [CloudSpec pre 资源闭环](references/cloudspec-pre-resource-loop.md)
 
 - **Generator problem**
   - Provide a detailed analysis of the root cause
-  - Recommend a fix
-  - Wait for the user to confirm and apply the fix
+  - Route implementation repair to `provider-resource-dev`; do not disguise a generator bug as an IDL change
 
 ### Step 11: Submit the PR and Update Progress
 
@@ -338,16 +350,21 @@ Once the PR is merged:
 9. **Submitting the PR is not the finish line** — comments MUST be polled and resolved until the PR is merged.
 10. **Do not touch CHANGELOG.md** — the release engineer writes it later.
 11. **Sanitize all GitHub-facing content (CRITICAL)** — the alicloud provider repo is **public on GitHub**. Never expose internal information in PR title, PR body, commit messages, or code comments. Forbidden: Aone references, Claude/AI attribution, internal personnel names, customer information. See Step 11.1 for full rules. This applies to **every** push, including iteration commits during the Step 12 comment loop.
+12. **Pre is a hard source-of-truth gate** — initial requirement alignment, repaired-resource convergence, and post-repair Terraform generation all use CloudSpec `pre`. 禁止回退 online、缓存 Meta 或修复前的生成产物。
+13. **Robots use the vendored snapshot** — run `bootstrap/cloudspec-core.sh doctor` and load the repository skills. Do not require a human's personal Marketplace installation.
 
 ## Acceptance Criteria
 
 - [ ] Aone work item is linked and updated to the merged/completed state
+- [ ] CloudSpec pre resource definition was compared with the work item requirement and the alignment result was logged
+- [ ] Any ambiguous requirement stopped before generation and notified 辰羿(320687)、临钧(429768)、过载(484483)、原根(265607)
 - [ ] Worktree is created and based on the latest upstream master（`origin/master`，登记布局 origin=上游 aliyun）
 - [ ] For generator-based paths: requirement-gap analysis (Step 5.3) and OpenAPI check (Step 5.4) executed; both findings logged to Aone as separate comments
 - [ ] Resource + data source code and documentation are all produced
 - [ ] Test cases are complete (generated or hand-written), with 100% attribute coverage
 - [ ] Data source test cases are in place
 - [ ] **All** remote ACC acceptance cases PASS
+- [ ] If CloudSpec was repaired: build/check passed, pre dry-run and publish succeeded, pre metadata converged, and the generator proved it consumed pre before ACC reran
 - [ ] PR is submitted; the body contains the passing test list in the required format
 - [ ] All CI tasks on the PR pass
 - [ ] All PR comments are resolved

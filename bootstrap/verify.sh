@@ -137,6 +137,24 @@ fi
 
 # Check vendored skills
 chk_skill aone-triage
+for skill in \
+    cloudspec-amp-workflow \
+    cloudspec-idl-guide \
+    cloudspec-resource-edit \
+    cloudspec-operation-edit \
+    cloudspec-flag-mode-edit \
+    cloudspec-build-fix \
+    cloudspec-norm-check-fix \
+    cloudspec-shared-knowledge; do
+    chk_skill "$skill"
+done
+
+if bash "$(git rev-parse --show-toplevel)/bootstrap/cloudspec-core.sh" check >/dev/null 2>&1; then
+    echo "PASS cloudspec-core-snapshot"
+else
+    echo "FAIL cloudspec-core-snapshot"
+    ((fail_count++))
+fi
 
 # Check pools config parses and has >=3 pools
 pools_cfg="$(git rev-parse --show-toplevel)/config/pools.json"
