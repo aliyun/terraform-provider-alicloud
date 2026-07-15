@@ -282,14 +282,17 @@ func resourceAlicloudRdsDBProxyRead(d *schema.ResourceData, meta interface{}) er
 	}
 	proxySsl, proxySslError := rdsService.GetDbProxyInstanceSsl(d.Id())
 	if proxySslError != nil {
-		if NotFoundError(endpointError) {
+		if NotFoundError(proxySslError) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(endpointError)
+		return WrapError(proxySslError)
 	}
 	if proxySsl != nil {
 		d.Set("ssl_expired_time", proxySsl["SslExpiredTime"])
+		if v, ok := proxySsl["DbProxySslEnabled"]; ok {
+			d.Set("db_proxy_ssl_enabled", v)
+		}
 	}
 	return nil
 }
