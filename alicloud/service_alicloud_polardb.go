@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -14,6 +15,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -294,8 +296,23 @@ func (s *PolarDBService) DescribeParameters(id string) (ds *polardb.DescribeDBCl
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = id
 
-	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-		return polarDBClient.DescribeDBClusterParameters(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.RetryContext(context.Background(), 5*time.Minute, func() *retry.RetryError {
+		raw, err = s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.DescribeDBClusterParameters(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+				return retry.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+			}
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
