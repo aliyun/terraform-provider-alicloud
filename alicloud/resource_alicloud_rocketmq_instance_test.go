@@ -44,8 +44,9 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 					"instance_name": name,
 					"product_info": []map[string]interface{}{
 						{
-							"msg_process_spec":       "rmq.p2.4xlarge",
-							"send_receive_ratio":     "0.03", // This should be out of range [0.05, 0.5] to test validation
+							"msg_process_spec": "rmq.p2.4xlarge",
+							// send_receive_ratio 0.03 is intentionally out of range [0.05, 0.5] to trigger the expected validation error
+							"send_receive_ratio":     "0.03",
 							"message_retention_time": "70",
 						},
 					},
