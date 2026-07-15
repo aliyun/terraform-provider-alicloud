@@ -5,8 +5,8 @@
       "git_url": "https://github.com/aliyun/terraform-provider-alicloud.git",
       "upstream_remote": "origin", "fork_remote": "fork", "jarvis_github_login": "api-tool-agent", "default_branch": "master",
       "pools": ["tf_provider","tf_customer"],
-      "ops": {"build":"go build ./...","test":"go test ./alicloud -run <Name>","vet":"go vet ./...","fmt":"gofmt -l alicloud/"},
-      "desc": "alicloud provider 开发/评审; 远端布局(实机): origin=上游 aliyun(github.com/aliyun/terraform-provider-alicloud, 只读查证/基线 origin/master), fork=api-tool-agent fork(推送目标); 评审看 origin(=upstream aliyun) PR; Jarvis 写 GitHub PR/评论/推分支必须用 JARVIS_GITHUB_TOKEN(api-tool-agent) 经 bootstrap/github-identity.sh push, head=api-tool-agent:<branch>"
+      "ops": {"test":"go test ./alicloud -run <Name>","vet":"go vet ./alicloud","fmt":"gofmt -l alicloud/"},
+      "desc": "alicloud provider 开发/评审; 本地禁全量 build/vet(go build ./... 与 go vet ./... 全树编译会崩工作站,故 ops 不含 build、vet 限单包)——验证=ops.fmt+ops.vet+远程 ACC(invoke-terraform-acc-test-remote); 远端布局(实机): origin=上游 aliyun(github.com/aliyun/terraform-provider-alicloud, 只读查证/基线 origin/master), fork=api-tool-agent fork(推送目标); 评审看 origin(=upstream aliyun) PR; Jarvis 写 GitHub PR/评论/推分支必须用 JARVIS_GITHUB_TOKEN(api-tool-agent) 经 bootstrap/github-identity.sh push, head=api-tool-agent:<branch>"
     },
     "automation_agent": {
       "repo": "aliyun-automation-agent",

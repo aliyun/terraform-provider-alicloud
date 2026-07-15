@@ -296,13 +296,15 @@ comment_links() {
     local aone_id="$1"
     [ "${#links[@]}" -gt 0 ] || return 0
 
+    # Aone 评论区不渲染 [text](url) markdown 链接(原样显示字面文本);URL 必须独占一行
+    # 且前后空行分隔才会被 linkify——见 aone-triage SKILL §4「Aone 评论渲染 quirk」。
     local message
     message="已上传 HTML 报告，可在线评阅："
     local item label url
     for item in "${links[@]}"; do
         label="${item%%|*}"
         url="${item#*|}"
-        message="${message}"$'\n'"- [${label}](${url})"
+        message="${message}"$'\n\n'"${label}:"$'\n\n'"${url}"
     done
     a1_run project workitem comment create "$aone_id" -m "$message"
 }

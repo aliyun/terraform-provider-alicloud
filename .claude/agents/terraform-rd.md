@@ -107,9 +107,9 @@ handoff: null                                     # 本阶段闭环,不接力
 ## 职责
 
 负责具体代码修改、调试、构建与测试工作:
-1. 从 `config/workspaces.json` 读取目标 repo 的 path / build / test 命令
+1. 从 `config/workspaces.json` 读取目标 repo 的 ops 命令(build/test/vet/fmt;本地路径用 workspace.sh 解析)
 2. 在已存在的 worktree 分支(或由编排层指定的分支)上开发
-3. 运行构建(`ops.build`)与验证(`ops.vet`)直到全绿
+3. 运行工作区登记的构建/验证 ops 直到全绿(**terraform_provider 仓禁本地全量 build**,见开发流程第 4 步)
 4. 返回修改摘要 + diff 路径 + build/test 结论给编排层
 
 ## 技能使用(必须显式调用)
@@ -145,12 +145,15 @@ workspace_path="$(bash bootstrap/workspace.sh dir <repo>)"
 
 # 3. 在 worktree 分支上修改文件(使用 Edit/Write 工具)
 
-# 4. 构建验证
-cd <workspace_path> && <ops.build>
+# 4. 构建/静态验证(只跑 workspaces.json 登记的 ops,该仓没登记的命令不要自造)
+#    ⚠ terraform_provider 仓**禁本地全量 build/vet**——go build ./... / go vet ./... 全树编译会崩工作站,
+#      该仓 ops 已不含 build:验证 = ops.fmt(gofmt -l alicloud/) + ops.vet(go vet ./alicloud 单包)
+#      + 远程 ACC(invoke-terraform-acc-test-remote,交 QA)
+cd <workspace_path> && <ops.build>   # 仓 ops 无 build 则跳过本行
 cd <workspace_path> && <ops.vet>
 
-# 5. 测试(如有)
-cd <workspace_path> && go test ./...
+# 5. 测试(如有;只跑登记的 ops.test——provider 仓为定向 -run 单测,禁全量 go test ./...)
+cd <workspace_path> && <ops.test>
 
 # 6. 进展同步(以 terraform-rd 身份贴 Aone)
 JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh sync <aone_id> "开发进展:<摘要>"

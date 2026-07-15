@@ -1,24 +1,46 @@
 #!/usr/bin/env bash
-# test/sync_provider_dedup_test.sh — 校验 aone-triage 与 terraform-pr-review 两 skill 内
-# scripts/sync-provider.sh 内容 byte-identical(P3.c 收敛后应始终一致)。
-#
-# 未来若再需要真单点维护(避免拷贝),把该脚本迁到 bootstrap/sync-provider.sh 并统一引用。
+# test/sync_provider_dedup_test.sh — sync-provider 单点约定:
+#   真源 = bootstrap/sync-provider.sh(唯一含同步逻辑之处);
+#   两个 skill 的 scripts/sync-provider.sh 是 byte-identical 薄 wrapper,只 exec 真源。
+# 违反任一条 = 单点约定破坏(历史上双拷贝曾真实分叉过,勿回退)。
 
 set -euo pipefail
 
 test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$test_dir/.." && pwd)"
 
+CANON="$repo_root/bootstrap/sync-provider.sh"
 AONE="$repo_root/.claude/skills/aone-triage/scripts/sync-provider.sh"
 PRR="$repo_root/.claude/skills/terraform-pr-review/scripts/sync-provider.sh"
 
-if diff -u "$AONE" "$PRR"; then
-    echo "sync_provider_dedup_test: PASS(两 skill 版 byte-identical)"
-    exit 0
-else
-    echo "sync_provider_dedup_test: FAIL"
-    echo ""
-    echo "aone-triage 与 terraform-pr-review 的 sync-provider.sh 出现差异,违反 P3.c 单点约定。"
-    echo "修复:选一份为准,cp 覆盖另一份;或迁到 bootstrap/sync-provider.sh 做真单点维护。"
-    exit 1
+fail=0
+
+if [ ! -f "$CANON" ]; then
+    echo "sync_provider_dedup_test: 缺真源 bootstrap/sync-provider.sh" >&2
+    fail=1
+elif ! grep -q "reset --hard FETCH_HEAD" "$CANON"; then
+    echo "sync_provider_dedup_test: 真源缺同步逻辑(fetch + reset --hard FETCH_HEAD)" >&2
+    fail=1
 fi
+
+if ! diff -u "$AONE" "$PRR"; then
+    echo "sync_provider_dedup_test: 两 skill wrapper 出现差异,违反单点约定;以任一份为准 cp 覆盖另一份" >&2
+    fail=1
+fi
+
+for w in "$AONE" "$PRR"; do
+    if ! grep -q "bootstrap/sync-provider.sh" "$w"; then
+        echo "sync_provider_dedup_test: $w 未指向真源 bootstrap/sync-provider.sh" >&2
+        fail=1
+    fi
+    if grep -q "reset --hard" "$w"; then
+        echo "sync_provider_dedup_test: $w 含真实同步逻辑,应为薄 wrapper(逻辑只进 bootstrap/)" >&2
+        fail=1
+    fi
+done
+
+if [ "$fail" -eq 0 ]; then
+    echo "sync_provider_dedup_test: PASS(bootstrap 真源 + 双薄 wrapper 一致)"
+    exit 0
+fi
+exit 1
