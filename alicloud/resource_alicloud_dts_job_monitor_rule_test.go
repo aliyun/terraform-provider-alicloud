@@ -214,7 +214,7 @@ resource "alicloud_dts_migration_job" "default" {
   structure_initialization           = true
   data_initialization                = true
   data_synchronization               = true
-  status                             = "Migrating"
+//   status                             = "Migrating"
   depends_on                         = [alicloud_db_account_privilege.default]
 }
 
