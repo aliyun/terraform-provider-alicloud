@@ -112,12 +112,11 @@ bin/a1id -- project workitem activity <id>         # 可选,看流转
 
 **Aone 评论渲染 quirk(所有评论 URL 都受此规则约束,不只截图链接)**:
 
-- Aone 评论区**不渲染** `[text](url)` markdown 链接——原样显示为 `[text](url)` 字面文本;
-- Aone 评论区**不识别** `<url>` 尖括号包裹的 URL——渲染器把 `<...>` 当作 HTML tag **剥掉**,URL 直接消失;
-- Aone 评论区自动 linkify(转成可点击超链接)的**唯一可靠格式** = **URL 独占一行 + 前后有空行分隔的纯文本**。前后紧贴中文标点(`：` `、` `（` 等)、中英文字或反引号都会阻止 linkify;
-- 走 `wrap.sh done` 时不用手动担心——`bootstrap/aone-comment-format.sh` 会把每个列表项前后强制加空行,URL 只要出现在列表项/独立段落里就自然被空行包围;
-- 手工 `a1 comment create -m "..."` 时**必须自己保证 URL 独占一行**,不要写 `在线报告：https://...` 这种紧贴文本形式;
-- 想在 Aone **详情**(description)里放可点击链接是可以用 markdown `[text](url)` 的——详情区渲染 markdown,只有**评论区**是这套 quirk。
+- **可点击链接的唯一可靠格式 = markdown `[text](url)`**——评论区按 markdown 渲染(先例:84307546 评论 124870464 四格式对照实测,仅 markdown 链接可点);
+- 裸 URL **不 autolink**——独占一行+前后空行、或行内紧贴文字,统统渲染为不可点的死文本;
+- `<a href>` 锚标签与 `<url>` 尖括号包 URL 也不行——`<...>` 被当 HTML tag 剥掉/转义,不渲染为链接;
+- 走 `wrap.sh done` 的评论正文**同样要写 markdown 链接**——`bootstrap/aone-comment-format.sh` 只管列表项排版空行,不会帮你把裸 URL 转成链接;
+- 详情区(description)同为 markdown 渲染,`[text](url)` 同样适用(评论与详情口径一致)。
 
 ### 5. 写操作(全部先授权 — supervised 默认模式)
 
@@ -238,4 +237,4 @@ bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-don
 - ❌ 对外产物带 AI 署名 —— CLAUDE.md 工作纪律 #5,发出前剥掉
 - ❌ 使用非默认 a1 身份(chenyi/guozai/linjun)未经仓库主人当面授权 —— 红线
 - ❌ 推翻性结论只发评论、不改我方工单的 description —— 研发单详情停留在已否决的根因/方案,后续接手者被第一屏误导;重审/方案演进必须同步重写详情(写操作表「更新详情」行,`--body-file`;客户主单原声禁改)。案例:83998772 方案 A→E→R 两次演进,详情滞后在 A
-- ❌ Aone 评论里贴 URL 用 markdown `[text](url)` / 尖括号 `<url>` / 或紧贴中文冒号 `在线报告：https://...` —— 都不 linkify(前两种被渲染器丢弃 或原样显示,后者被 linkifier 当文本片段一部分);唯一可靠格式 = URL 独占一行 + 前后空行分隔的纯文本(§4「Aone 评论渲染 quirk」)。走 `wrap.sh done` 天然满足;手工 `a1 comment create` 时自己排版
+- ❌ Aone 评论里贴裸 URL(独行或行内)、`<url>` 尖括号、`<a href>` 锚标签 —— 都不渲染为可点击链接(评论区不 autolink 纯文本,HTML tag 被剥);**唯一可点 = markdown `[text](url)`**(§4「Aone 评论渲染 quirk」,先例:84307546 评论 124870464 四格式对照)。`wrap.sh done` 与手工 `a1 comment create` 的正文都要用 markdown 链接格式

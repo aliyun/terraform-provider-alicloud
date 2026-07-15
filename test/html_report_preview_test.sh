@@ -167,16 +167,12 @@ assert_file_contains "$a1_log" "project workitem attachment list 83843879 -f jso
 assert_file_contains "$a1_log" "project workitem attachment download 83843879 222" "from-aone downloads latest attachment"
 assert_file_contains "$a1_log" "project workitem comment create 83843879 -m" "from-aone comments when requested"
 assert_contains "$output" "https://pre.example/reports/aone/83843879/rid-123/view" "from-aone prints absolute preview URL"
-# Aone 评论渲染 quirk 契约:评论正文禁 markdown 链接,URL 必须独占一行(前后空行)才 linkify
-if grep -Fq -- "](http" "$a1_log"; then
-    assert_fail "comment must not use markdown links (Aone 评论区不渲染 [text](url))"
+# Aone 评论渲染 quirk 契约:评论区按 markdown 渲染,可点击链接唯一格式 = [text](url)
+# (84307546 评论 124870464 四格式对照实测:裸 URL/HTML 锚均为死文本)
+if grep -Fq -- "](https://" "$a1_log"; then
+    assert_pass "comment uses markdown [text](url) links (the only clickable form)"
 else
-    assert_pass "comment uses no markdown links"
-fi
-if grep -Eq '^https?://[^ ]+$' "$a1_log"; then
-    assert_pass "comment URL sits on its own line (linkify-able)"
-else
-    assert_fail "comment URL must be on its own line (a1 log: $(cat "$a1_log" 2>/dev/null))"
+    assert_fail "comment must use markdown [text](url) links (a1 log: $(cat "$a1_log" 2>/dev/null))"
 fi
 
 echo ""

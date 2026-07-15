@@ -296,15 +296,16 @@ comment_links() {
     local aone_id="$1"
     [ "${#links[@]}" -gt 0 ] || return 0
 
-    # Aone 评论区不渲染 [text](url) markdown 链接(原样显示字面文本);URL 必须独占一行
-    # 且前后空行分隔才会被 linkify——见 aone-triage SKILL §4「Aone 评论渲染 quirk」。
+    # Aone 评论区按 markdown 渲染:可点击链接唯一可靠格式 = [text](url);
+    # 裸 URL(独行/行内)不 autolink,<a href>/<url> 被当 HTML tag 剥掉——
+    # 先例:84307546 评论 124870464 四格式对照实测(aone-triage SKILL §4 quirk)。
     local message
     message="已上传 HTML 报告，可在线评阅："
     local item label url
     for item in "${links[@]}"; do
         label="${item%%|*}"
         url="${item#*|}"
-        message="${message}"$'\n\n'"${label}:"$'\n\n'"${url}"
+        message="${message}"$'\n'"- [${label}](${url})"
     done
     a1_run project workitem comment create "$aone_id" -m "$message"
 }

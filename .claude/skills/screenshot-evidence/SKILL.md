@@ -118,7 +118,7 @@ bash bootstrap/html-report-preview.sh upload <aone-id> <report.html> --comment
 
 | 限制 | 影响 | 应对 |
 |------|------|------|
-| Aone 评论区不渲染 `[text](url)` markdown 链接 | 评论中链接显示为原始文本 | 评论区贴纯 URL；详情区用 markdown 链接 |
+| Aone 评论区不 autolink 裸 URL、不渲染 `<a href>` | 裸 URL/HTML 锚都是不可点的死文本 | 评论与详情一律用 markdown `[text](url)`（唯一可点格式，84307546 评论 124870464 实测） |
 | Aone 渲染器剥离 `<img src>` 的 query 参数 | OSS 签名 URL 失效 → 403 | 图片只在 pre-agent 在线报告中展示 |
 | 账号级 Block Public Access | OSS 对象无法 public-read | 必须用签名 URL |
 | pre-agent WAF 拦截 base64 data URI | HTML 中不能内嵌图片 | 图片走 OSS 签名 URL |
@@ -140,10 +140,8 @@ bash bootstrap/html-report-preview.sh upload <aone-id> <report.html> --comment
 查证（文字）→ 截图取证（本 skill）→ 组装报告 → 上传预览 → 更新工单详情
 ```
 
-aone-triage 的 wrap.sh done 草稿中增加一段（评论区不渲染 markdown 链接，URL 必须独占一行 + 前后空行，见 aone-triage SKILL §4 渲染 quirk）：
+aone-triage 的 wrap.sh done 草稿中增加一行（评论区仅 markdown `[text](url)` 可点，裸 URL 不 autolink，见 aone-triage SKILL §4 渲染 quirk）：
 
 ```
-📊 可视化查证报告：
-
-<preview-url>
+📊 可视化查证报告：[在线查看](<preview-url>)
 ```
