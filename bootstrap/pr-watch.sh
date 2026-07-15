@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# bootstrap/pr-watch.sh — PR 观察登记表 (方案A)。
+# bootstrap/pr-watch.sh — PR 观察登记表（跨会话看守 PR 全生命周期）。
 #
-# skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，工单永久停在 idle 永不推到
-# 「已完成」——RevisitScheduler 只捞标题/描述含特定词的 idle 单，terraform 发布单不含。
-# 本登记表 + 后台 PrWatchScheduler(bridge/jarvis_dingtalk_bot.py) 补这个缺口：PR 合并后
+# skill/persona 提交 PR 后按自治边界 release 成 jarvis-idle，单次 headless 会话撑不住 PR 从
+# 提交到合并的几小时/几天。本登记表 + 后台 PrWatchScheduler(bridge/jarvis_dingtalk_bot.py)
+# 跨会话补这个缺口：open 窗口内 CI 失败自动派 headless 修复（走 fork_push 预授权 SOP）；PR 合并后
 # 自动 claim.sh finish 收尾；PR 未合并即关闭则评论 + escalate 交人工。
 #
 # Usage:
@@ -13,6 +13,9 @@
 #
 # 登记表落 .my-day/bridge/pr-watch.json，**对象键**结构（非数组）：
 #   {"<ticket>": {"pr_url": "...", "project": "...", "submitted_at": "..."}}
+# 桥侧 PrWatchScheduler 会往 entry 里补 CI-fix 去重字段（ci_fix_sha / ci_fix_attempts /
+# ci_fix_escalated / last_ci_fix_at，见 _prwatch_update）——本脚本的 add/remove/list 对多余
+# 字段无感（jq 只增/删/读基础字段），无需同步维护。
 # add/remove 是 read-modify-write：套 mkdir-lock（macOS 无 flock，克隆 claim.sh 的锁范式）；
 # 写用同目录 mktemp 兄弟文件 + mv 原子替换；文件不存在时先 jq -n '{}' 播种（对象，不是 []）。
 set -uo pipefail
