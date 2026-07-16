@@ -1,5 +1,15 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "repo=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { echo \"worker-hook: cannot resolve repo root from cwd=$PWD\" >&2; exit 0; }; bash \"$repo/bootstrap/run-interactive-worker-hook.sh\" codex"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

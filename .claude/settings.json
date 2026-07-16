@@ -1,5 +1,11 @@
 {
   "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "repo=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}\"; [ -n \"$repo\" ] || { echo \"worker-hook: cannot resolve repo root from cwd=$PWD\" >&2; exit 0; }; bash \"$repo/bootstrap/run-interactive-worker-hook.sh\" claude" } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "repo=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}\"; [ -n \"$repo\" ] || exit 0; bash \"$repo/bootstrap/run-interactive-worker-hook.sh\" claude" } ] }
+    ],
     "Stop": [
       { "hooks": [ { "type": "command", "command": "repo=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}\" || { echo \"stop-hook: cannot resolve repo root from cwd=$PWD\" >&2; exit 127; }; bash \"$repo/bootstrap/run-stop-hook.sh\"" } ] }
     ],

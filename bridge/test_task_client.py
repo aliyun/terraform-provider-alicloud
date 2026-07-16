@@ -157,6 +157,8 @@ class ClientContractTest(unittest.TestCase):
             FakeResponse({"ok": True}), FakeResponse({"ok": True}),
             FakeResponse({"taskId": "t1"}),
             FakeResponse([{"eventType": "LEASED"}]),
+            FakeResponse([{"workerKey": "w1"}]),
+            FakeResponse({"worker": {"workerKey": "host/one"}}),
         ])
         c = self.make(opener)
         operation = {"operation_id": "op1", "fence_token": 7}
@@ -166,22 +168,46 @@ class ClientContractTest(unittest.TestCase):
         c.reconcile_operation(operation, request_id="o4")
         task = c.get_task_by_aone("84345050")
         timeline = c.get_task_timeline("task/1")
+        workers = c.list_workers()
+        worker_state = c.get_worker_state("host/one")
 
         paths = [call[0].full_url.rsplit("/api/jarvis/v1/", 1)[1]
                  for call in opener.calls]
         self.assertEqual(paths, [
             "operations/begin", "operations/ack", "operations/fail",
             "operations/reconcile", "tasks/by-aone/84345050",
-            "tasks/task%2F1/timeline",
+            "tasks/task%2F1/timeline", "workers", "workers/host%2Fone/state",
         ])
         self.assertEqual(body(opener.calls[0][0]),
                          {"operationId": "op1", "fenceToken": 7})
         self.assertEqual(task["taskId"], "t1")
         self.assertEqual(timeline[0]["eventType"], "LEASED")
-        for req, _timeout in opener.calls[-2:]:
+        self.assertEqual(workers[0]["workerKey"], "w1")
+        self.assertEqual(worker_state["worker"]["workerKey"], "host/one")
+        for req, _timeout in opener.calls[-4:]:
             self.assertEqual(req.get_method(), "GET")
             self.assertIsNone(req.data)
             self.assertNotIn("idempotency-key", headers(req))
+
+    def test_direct_claim_is_targeted_shadow_and_allows_zero_free_slots(self):
+        opener = RecordingOpener()
+        c = self.make(opener)
+        c.claim_task("worker:interactive", envelope(),
+                     runtime_session_id="interactive:codex:s:aone:p:i:cycle:1",
+                     lease_seconds=120, free_slots=0, request_id="claim-1")
+        req, _timeout = opener.calls[0]
+        self.assertTrue(req.full_url.endswith("/api/jarvis/v1/tasks/claim"))
+        payload = body(req)
+        self.assertEqual(payload["workerKey"], "worker:interactive")
+        self.assertEqual(payload["runtimeSessionId"],
+                         "interactive:codex:s:aone:p:i:cycle:1")
+        self.assertEqual(payload["freeSlots"], 0)
+        self.assertEqual(payload["task"]["executionMode"], "SHADOW")
+        self.assertTrue(payload["task"]["shadow"])
+        self.assertEqual(headers(req)["idempotency-key"], "claim-1")
+
+        with self.assertRaises(ValueError):
+            c.claim_task("w", envelope(), runtime_session_id="r", free_slots=-1)
 
     def test_bearer_token_is_optional(self):
         opener = RecordingOpener()

@@ -40,7 +40,11 @@ lib_escalation_dir() {
 #                           is stable across all Bash tool subprocesses of one session,
 #                           so two different sessions get distinct owners and no longer
 #                           block each other in wrap-check.
-#   3. ""                 — no stable source → ownerless (legacy behavior: wrap-check
+#   3. codex-<thread-id>   — interactive Codex thread; CODEX_THREAD_ID has the same
+#                           cross-tool stability as Claude's native session id.
+#   4. persisted hook id   — Claude's CLAUDE_ENV_FILE fallback when the native id is
+#                           absent from a later tool subprocess.
+#   5. ""                 — no stable source → ownerless (legacy behavior: wrap-check
 #                           still holds you to account, no regression).
 # claim.sh (writes owner) and wrap-check.sh (computes self) MUST both use this so the
 # values match within a session.
@@ -49,6 +53,14 @@ coord_self() {
         echo "$COORD_ID"
     elif [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
         echo "cc-$CLAUDE_CODE_SESSION_ID"
+    elif [ -n "${CODEX_THREAD_ID:-}" ]; then
+        echo "codex-$CODEX_THREAD_ID"
+    elif [ "${JARVIS_INTERACTIVE_CLIENT:-}" = "claude" ] \
+            && [ -n "${JARVIS_INTERACTIVE_SESSION_ID:-}" ]; then
+        echo "cc-$JARVIS_INTERACTIVE_SESSION_ID"
+    elif [ "${JARVIS_INTERACTIVE_CLIENT:-}" = "codex" ] \
+            && [ -n "${JARVIS_INTERACTIVE_SESSION_ID:-}" ]; then
+        echo "codex-$JARVIS_INTERACTIVE_SESSION_ID"
     else
         echo ""
     fi

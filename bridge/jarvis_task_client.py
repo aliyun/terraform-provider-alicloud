@@ -164,6 +164,7 @@ class AutomationAgentTaskClient:
     PATHS = {
         "task_upsert": "tasks/upsert",
         "task_lease": "tasks/lease",
+        "task_claim": "tasks/claim",
         "worker_register": "workers/register",
         "operation_begin": "operations/begin",
         "operation_ack": "operations/ack",
@@ -171,6 +172,8 @@ class AutomationAgentTaskClient:
         "operation_reconcile": "operations/reconcile",
     }
     WORKER_HEARTBEAT_PATH = "workers/{worker_key}/heartbeat"
+    WORKERS_PATH = "workers"
+    WORKER_STATE_PATH = "workers/{worker_key}/state"
     SESSION_ACTION_PATH = "sessions/{session_id}/{action}"
     TASK_BY_AONE_PATH = "tasks/by-aone/{aone_id}"
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
@@ -334,6 +337,35 @@ class AutomationAgentTaskClient:
             payload["capabilities"] = capabilities
         return self._post(self.PATHS["task_lease"], payload, request_id=request_id)
 
+    def claim_task(self, worker_key: str, envelope: TaskEnvelope, *,
+                   runtime_session_id: str, lease_seconds: int = 90,
+                   free_slots: int = 1, request_id: Optional[str] = None) -> Dict[str, Any]:
+        """Atomically attach ``worker_key`` to one explicitly named SHADOW task.
+
+        Interactive workers use this endpoint instead of :meth:`lease_task`: the
+        latter pulls from the shared MANAGED queue, while this request carries the
+        complete canonical task envelope and can only claim that exact task.  Keeping
+        the nested task in SHADOW mode lets the bridge continue observing later Aone
+        revisions without silently converting the ticket into an auto-pulled task.
+        """
+        if not isinstance(envelope, TaskEnvelope):
+            raise TypeError("envelope must be a TaskEnvelope")
+        ttl = int(lease_seconds)
+        if ttl <= 0:
+            raise ValueError("lease_seconds must be positive")
+        slots = int(free_slots)
+        if slots < 0:
+            raise ValueError("free_slots must not be negative")
+        payload = {
+            "workerKey": _nonblank(worker_key, "worker_key"),
+            "runtimeSessionId": _nonblank(runtime_session_id, "runtime_session_id"),
+            "leaseSeconds": ttl,
+            "freeSlots": slots,
+            "task": envelope.to_dict(execution_mode="SHADOW"),
+        }
+        rid = request_id or envelope.request_id("direct-claim", execution_mode="SHADOW")
+        return self._post(self.PATHS["task_claim"], payload, request_id=rid)
+
     @staticmethod
     def _session_payload(worker_key: str, fence_token: Any,
                          detail: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
@@ -409,6 +441,16 @@ class AutomationAgentTaskClient:
     def get_task_by_aone(self, aone_id: str) -> Any:
         path = self.TASK_BY_AONE_PATH.format(
             aone_id=self._path_segment(aone_id, "aone_id"))
+        return self._get(path)
+
+    def list_workers(self) -> Any:
+        """Return every registered worker and its persisted heartbeat state."""
+        return self._get(self.WORKERS_PATH)
+
+    def get_worker_state(self, worker_key: str) -> Any:
+        """Return one worker plus its current task/session assignments."""
+        path = self.WORKER_STATE_PATH.format(
+            worker_key=self._path_segment(worker_key, "worker_key"))
         return self._get(path)
 
     def get_task_timeline(self, task_id: str) -> Any:

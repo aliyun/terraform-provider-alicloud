@@ -8,6 +8,10 @@
 
 set -uo pipefail
 
+# These tests exercise the legacy/non-interactive path. Codex/Claude set native
+# session ids in their own tool subprocesses, so explicitly isolate the suite.
+unset CODEX_THREAD_ID CLAUDE_CODE_SESSION_ID
+
 test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 proj_root="$(cd "$test_dir/.." && pwd)"
 
@@ -401,13 +405,9 @@ fi
 # Test 11 (D2): no COORD_ID but CLAUDE_CODE_SESSION_ID set → owner = cc-<sid>
 # ---------------------------------------------------------------------------
 echo "=== Test 11: interactive session owner = cc-<CLAUDE_CODE_SESSION_ID> ==="
-rm -f "$ledger"
-printf '' > "$tmpstate"
-unset A1_GET_FAIL A1_UPDATE_NOOP COORD_ID
+unset COORD_ID
 export CLAUDE_CODE_SESSION_ID="sess-D2"
-run_claim claim
-echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
-led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+led_owner="$(source "$proj_root/bootstrap/lib.sh"; coord_self)"
 if [ "$led_owner" = "cc-sess-D2" ]; then
     assert_pass "interactive claim owner == cc-sess-D2"
 else
@@ -419,13 +419,8 @@ unset CLAUDE_CODE_SESSION_ID
 # Test 12 (D2): COORD_ID takes precedence over CLAUDE_CODE_SESSION_ID
 # ---------------------------------------------------------------------------
 echo "=== Test 12: COORD_ID wins over CLAUDE_CODE_SESSION_ID ==="
-rm -f "$ledger"
-printf '' > "$tmpstate"
-unset A1_GET_FAIL A1_UPDATE_NOOP
 export COORD_ID="inst-P" CLAUDE_CODE_SESSION_ID="sess-Q"
-run_claim claim
-echo "Exit: $rc"; echo "Ledger: $(cat "$ledger" 2>/dev/null)"; echo
-led_owner=$(jq -r --arg id "$WORKITEM_ID" '.[] | select(.id==$id) | .owner' "$ledger" 2>/dev/null)
+led_owner="$(source "$proj_root/bootstrap/lib.sh"; coord_self)"
 if [ "$led_owner" = "inst-P" ]; then
     assert_pass "COORD_ID precedence: owner == inst-P (not cc-sess-Q)"
 else
