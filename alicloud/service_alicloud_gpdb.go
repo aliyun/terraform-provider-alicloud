@@ -772,6 +772,33 @@ func (s *GpdbService) GpdbDbInstanceStateRefreshFunc(id string, field string, fa
 	}
 }
 
+// GpdbDbInstanceScaleStateRefreshFunc waits until a DescribeDBInstanceAttribute scalar field
+// reaches the expected value while the instance is back to Running. UpgradeDBInstance scaling
+// is asynchronous: the instance keeps reporting Running for a short window before it transitions
+// into the scaling state, so waiting only for Running can return before the new value is applied
+// and leave Read observing the stale value.
+func (s *GpdbService) GpdbDbInstanceScaleStateRefreshFunc(id, field, target string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGpdbDbInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		status := fmt.Sprint(object["DBInstanceStatus"])
+		current := fmt.Sprint(object[field])
+		if _, ok := object[field].(float64); ok {
+			current = fmt.Sprint(formatInt(object[field]))
+		}
+		if status == "Running" && current == target {
+			return object, target, nil
+		}
+		// Not settled yet: report a non-target state so the waiter keeps polling.
+		return object, fmt.Sprintf("%s/%s", status, current), nil
+	}
+}
+
 func (s *GpdbService) DescribeGpdbDbInstancePlan(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBInstancePlans"
