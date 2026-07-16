@@ -40,6 +40,13 @@ for skill in \
   for term in \
     "description: Use when developing, diagnosing, or fixing an Alibaba Cloud resource in Terraformer" \
     "bootstrap/workspace.sh dir terraformer" \
+    "stop and escalate missing_capability" \
+    "aone-triage" \
+    "loops/adhoc-intake.md" \
+    "bootstrap/claim.sh claim" \
+    "bootstrap/wrap.sh sync <id>" \
+    "bootstrap/wrap.sh done" \
+    "bootstrap/claim.sh release" \
     "references/alicloud-resource-development.md" \
     "terraform-rd" \
     "terraform-qa" \
@@ -56,8 +63,8 @@ for reference in \
   "$repo_root/.claude/skills/terraformer-resource-dev/references/alicloud-resource-development.md" \
   "$repo_root/.agents/skills/terraformer-resource-dev/references/alicloud-resource-development.md"; do
   for term in \
-    "A. Direct full List" \
-    "B. One List returns every composite-ID segment" \
+    "A. Direct full List with a single-field Import ID" \
+    "B. One List returns every multipart-ID segment" \
     "C. Parent-child traversal" \
     "D. Complete enumeration is unavailable" \
     'd.SetId(...)' \
@@ -65,7 +72,10 @@ for reference in \
     "A multipart Import ID does not by itself require parent traversal" \
     "A Data Source may require the parent ID" \
     "Reset pagination for every parent" \
+    "For token pagination, stop when the returned next token is empty regardless of page length" \
+    "For page-number pagination" \
     "Do not produce or infer connections" \
+    "does not block core discovery and Import ID support" \
     "go test ./providers/alicloud" \
     "go test ./..." \
     "/tmp/terraformer"; do
@@ -74,6 +84,18 @@ for reference in \
       exit 1
     fi
   done
+done
+
+evaluation_report="$repo_root/docs/superpowers/reports/2026-07-16-terraformer-resource-dev-forward-evaluation.md"
+test -f "$evaluation_report"
+for term in \
+  "Scenario A — PASS" \
+  "Scenario B — PASS" \
+  "Scenario C — PASS"; do
+  if ! grep -Fq -- "$term" "$evaluation_report"; then
+    echo "terraformer_resource_dev_skill_rules_test: missing '$term' in $evaluation_report" >&2
+    exit 1
+  fi
 done
 
 echo "terraformer_resource_dev_skill_rules_test: PASS"

@@ -12,7 +12,8 @@ Treat a Terraformer resource as a discovery adapter, not a second Terraform Prov
 ```text
 InitResources
   -> enumerate remote objects and emit Provider-compatible Import IDs
-  -> ProviderWrapper.Refresh uses the installed Alicloud Provider Import/Read
+  -> ProviderWrapper.Refresh seeds prior state and calls Provider ReadResource
+     (the implementation also contains an ImportResourceState fallback path)
   -> ConvertTFstate produces Terraform state and HCL
 ```
 
@@ -20,11 +21,13 @@ Diagnose failures at the correct layer: discovery, Import ID, Provider Read, or 
 
 ## Start every task
 
-1. Resolve the repository with `bash bootstrap/workspace.sh dir terraformer`; resolve Provider evidence with `bash bootstrap/workspace.sh dir terraform_provider`.
-2. Preserve dirty files in the Terraformer checkout and create an isolated worktree before modifying tracked files.
-3. Use the existing Aone claim/bookend flow. Assign implementation to `terraform-rd` and acceptance verification to `terraform-qa`.
-4. Read [references/alicloud-resource-development.md](references/alicloud-resource-development.md) before choosing an API or writing code.
-5. Classify the request as a new resource or a repair. For a repair, change only files required by the demonstrated root cause and add a regression test.
+1. Resolve the repository with `bash bootstrap/workspace.sh dir terraformer`; resolve Provider evidence with `bash bootstrap/workspace.sh dir terraform_provider`. If either resolver fails or returns a path that is not an existing directory, stop and escalate missing_capability; do not invent or use a path. Read `bash bootstrap/workspace.sh config <key>` for the registered repository, remote, and default branch before cloning or synchronizing.
+2. Preserve dirty files in the Terraformer checkout. Pull the registered default branch, then create an isolated worktree before modifying tracked files.
+3. For an Aone URL or ID, invoke [aone-triage](../aone-triage/SKILL.md) before repository inspection. If tracked files will change and no work item exists, follow [loops/adhoc-intake.md](../../../loops/adhoc-intake.md) to create or reuse one before development; pure read-only inspection may use the repository's documented exemption.
+4. Start work with `bash bootstrap/claim.sh claim <id> <pool-project>`. After opening a CR/MR, post its Markdown link with `bash bootstrap/wrap.sh sync <id> "<progress with [CR](url)>"`. Finish unmerged work with `bash bootstrap/wrap.sh done <id> "<summary>" --no-status` and `bash bootstrap/claim.sh release <id> <pool-project>`.
+5. Assign implementation to `terraform-rd` and acceptance verification to `terraform-qa`.
+6. Read [references/alicloud-resource-development.md](references/alicloud-resource-development.md) before choosing an API or writing code.
+7. Classify the request as a new resource or a repair. For a repair, change only files required by the demonstrated root cause and add a regression test.
 
 ## Evidence order
 
@@ -44,8 +47,8 @@ The Provider's `d.SetId(...)`, `ParseResourceId(...)`, Import docs, and Import t
 
 Choose exactly one primary `InitResources` pattern:
 
-- **A. Direct full List:** the List API enumerates resources without parent scope.
-- **B. One List returns every composite-ID segment:** one response includes all parent and child ID pieces.
+- **A. Direct full List with a single-field Import ID:** the List API enumerates resources without parent scope and each item exposes the one Provider ID field.
+- **B. One List returns every multipart-ID segment:** one response includes every segment required by the Provider's multipart Import ID.
 - **C. Parent-child traversal:** the child List API requires a parent ID, so enumerate parents and then children; reset pagination for each parent.
 - **D. Complete enumeration is unavailable:** use an existing explicit scope/filter input or report the unsupported boundary.
 
@@ -53,7 +56,7 @@ A multipart Import ID does not imply pattern C. A Data Source may require a pare
 
 ## Change only applicable files
 
-- Always add or repair `providers/alicloud/resource_alicloud_<name>.go`.
+- Add `providers/alicloud/resource_alicloud_<name>.go` for a new resource; repair it when the demonstrated defect is resource-specific.
 - Update `providers/alicloud/alicloud_provider.go` only when registration in `SupportedResourceByProduct` or the global-resource list is required.
 - Add client/service or endpoint support only when the current product client cannot issue the required API call.
 - Add resource-level tests that lock Import ID construction, pagination, empty results, and error propagation.

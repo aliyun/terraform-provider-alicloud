@@ -13,7 +13,7 @@
 
 ## 1. Runtime architecture
 
-`Generator.InitResources()` loads the Alicloud client, calls one or more read-only APIs, converts each discovered object into `terraformutils.Resource`, and appends it to `g.Resources`. Terraformer then delegates Import/Read to the installed Provider through `ProviderWrapper.Refresh`; `ConvertTFstate` converts the returned Provider state to state and HCL.
+`Generator.InitResources()` loads the Alicloud client, calls one or more read-only APIs, converts each discovered object into `terraformutils.Resource`, and appends it to `g.Resources`. `ProviderWrapper.Refresh` normally seeds prior state with that ID and calls the installed Provider's `ReadResource`; the implementation also contains an `ImportResourceState` fallback path. `ConvertTFstate` converts the returned Provider state to state and HCL.
 
 Keep `InitResources` limited to discovery and Provider-compatible IDs. Do not reproduce Create, Update, Delete, schema flattening, or drift logic from the Provider.
 
@@ -33,11 +33,11 @@ When sources conflict, Provider Import/Read behavior wins for the ID contract. R
 
 ## 3. InitResources discovery patterns
 
-### A. Direct full List
+### A. Direct full List with a single-field Import ID
 
-Use when one List API enumerates all resources without a parent identifier. Paginate until the API's explicit completion signal, or until a short page when no stronger signal exists. Build each final ID from fields returned by that same item.
+Use when one List API enumerates all resources without a parent identifier and each item exposes the Provider's single ID field. Paginate until the API's explicit completion signal, or until a short page when no stronger signal exists.
 
-### B. One List returns every composite-ID segment
+### B. One List returns every multipart-ID segment
 
 Use when one response item contains every segment required by the Provider Import ID. Preserve the Provider-defined order and delimiter. Do not add a parent List merely because the ID has multiple segments.
 
@@ -58,11 +58,10 @@ The following is pseudocode for the loop shape, not a copy-ready SDK call:
 
 ```go
 for _, parentID := range parentIDs {
-    pageNumber := 1
     nextToken := ""
 
     for {
-        children, page, err := listChildren(parentID, pageNumber, nextToken, pageSize)
+        children, returnedNextToken, err := listChildren(parentID, nextToken, pageSize)
         if err != nil {
             return nil, fmt.Errorf("list children for parent %s: %w", parentID, err)
         }
@@ -73,16 +72,15 @@ for _, parentID := range parentIDs {
             }
             ids = append(ids, importID)
         }
-        if page.NextToken == "" && len(children) < pageSize {
+        if returnedNextToken == "" {
             break
         }
-        pageNumber++
-        nextToken = page.NextToken
+        nextToken = returnedNextToken
     }
 }
 ```
 
-In real code, choose either the API's token contract or page-number contract; do not combine both unless that API actually returns both.
+This example is token-only. For token pagination, stop when the returned next token is empty regardless of page length. For page-number pagination, increment the page number and stop using the API's explicit total/page metadata or a short page when no stronger signal exists. Do not combine token and page-number contracts unless the API actually defines both.
 
 ### D. Complete enumeration is unavailable
 
@@ -124,6 +122,8 @@ Implementation rules:
 | Unified relationship consumer | The shared artifact explicitly declares this resource |
 
 Do not produce or infer connections from Provider schema, Data Source arguments, or API field names. The unified producer owns relationship semantics.
+
+If the unified artifact has no matching declaration, leave the relationship consumer unchanged and record the gap. That absence does not block core discovery and Import ID support unless relationship delivery is itself an explicit acceptance requirement.
 
 Do not modify `cmd`, module entrypoints, README, Provider source, or unrelated shared code unless repository evidence proves the resource cannot work without that change.
 

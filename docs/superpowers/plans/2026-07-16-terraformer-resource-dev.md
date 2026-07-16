@@ -64,11 +64,14 @@ for rel in \
   diff -u "$expected" "$claude_file"
 done
 
-for unexpected in \
-  "$repo_root/.claude/skills/terraformer-resource-dev/agents/openai.yaml" \
-  "$repo_root/.agents/skills/terraformer-resource-dev/agents/openai.yaml"; do
-  if [[ -e "$unexpected" ]]; then
-    echo "terraformer_resource_dev_skill_rules_test: unexpected optional metadata $unexpected" >&2
+expected_layout=$'SKILL.md\nreferences/alicloud-resource-development.md'
+for skill_root in \
+  "$repo_root/.claude/skills/terraformer-resource-dev" \
+  "$repo_root/.agents/skills/terraformer-resource-dev"; do
+  actual_layout="$(find "$skill_root" -type f | sed "s#^$skill_root/##" | LC_ALL=C sort)"
+  if [[ "$actual_layout" != "$expected_layout" ]]; then
+    echo "terraformer_resource_dev_skill_rules_test: unexpected layout in $skill_root" >&2
+    diff -u <(printf '%s\n' "$expected_layout") <(printf '%s\n' "$actual_layout") >&2 || true
     exit 1
   fi
 done
@@ -79,6 +82,13 @@ for skill in \
   for term in \
     "description: Use when developing, diagnosing, or fixing an Alibaba Cloud resource in Terraformer" \
     "bootstrap/workspace.sh dir terraformer" \
+    "stop and escalate missing_capability" \
+    "aone-triage" \
+    "loops/adhoc-intake.md" \
+    "bootstrap/claim.sh claim" \
+    "bootstrap/wrap.sh sync <id>" \
+    "bootstrap/wrap.sh done" \
+    "bootstrap/claim.sh release" \
     "references/alicloud-resource-development.md" \
     "terraform-rd" \
     "terraform-qa" \
@@ -95,8 +105,8 @@ for reference in \
   "$repo_root/.claude/skills/terraformer-resource-dev/references/alicloud-resource-development.md" \
   "$repo_root/.agents/skills/terraformer-resource-dev/references/alicloud-resource-development.md"; do
   for term in \
-    "A. Direct full List" \
-    "B. One List returns every composite-ID segment" \
+    "A. Direct full List with a single-field Import ID" \
+    "B. One List returns every multipart-ID segment" \
     "C. Parent-child traversal" \
     "D. Complete enumeration is unavailable" \
     'd.SetId(...)' \
@@ -104,7 +114,10 @@ for reference in \
     "A multipart Import ID does not by itself require parent traversal" \
     "A Data Source may require the parent ID" \
     "Reset pagination for every parent" \
+    "For token pagination, stop when the returned next token is empty regardless of page length" \
+    "For page-number pagination" \
     "Do not produce or infer connections" \
+    "does not block core discovery and Import ID support" \
     "go test ./providers/alicloud" \
     "go test ./..." \
     "/tmp/terraformer"; do
@@ -113,6 +126,18 @@ for reference in \
       exit 1
     fi
   done
+done
+
+evaluation_report="$repo_root/docs/superpowers/reports/2026-07-16-terraformer-resource-dev-forward-evaluation.md"
+test -f "$evaluation_report"
+for term in \
+  "Scenario A — PASS" \
+  "Scenario B — PASS" \
+  "Scenario C — PASS"; do
+  if ! grep -Fq -- "$term" "$evaluation_report"; then
+    echo "terraformer_resource_dev_skill_rules_test: missing '$term' in $evaluation_report" >&2
+    exit 1
+  fi
 done
 
 echo "terraformer_resource_dev_skill_rules_test: PASS"
@@ -164,7 +189,8 @@ Treat a Terraformer resource as a discovery adapter, not a second Terraform Prov
 ```text
 InitResources
   -> enumerate remote objects and emit Provider-compatible Import IDs
-  -> ProviderWrapper.Refresh uses the installed Alicloud Provider Import/Read
+  -> ProviderWrapper.Refresh seeds prior state and calls Provider ReadResource
+     (the implementation also contains an ImportResourceState fallback path)
   -> ConvertTFstate produces Terraform state and HCL
 ```
 
@@ -172,11 +198,13 @@ Diagnose failures at the correct layer: discovery, Import ID, Provider Read, or 
 
 ## Start every task
 
-1. Resolve the repository with `bash bootstrap/workspace.sh dir terraformer`; resolve Provider evidence with `bash bootstrap/workspace.sh dir terraform_provider`.
-2. Preserve dirty files in the Terraformer checkout and create an isolated worktree before modifying tracked files.
-3. Use the existing Aone claim/bookend flow. Assign implementation to `terraform-rd` and acceptance verification to `terraform-qa`.
-4. Read [references/alicloud-resource-development.md](references/alicloud-resource-development.md) before choosing an API or writing code.
-5. Classify the request as a new resource or a repair. For a repair, change only files required by the demonstrated root cause and add a regression test.
+1. Resolve the repository with `bash bootstrap/workspace.sh dir terraformer`; resolve Provider evidence with `bash bootstrap/workspace.sh dir terraform_provider`. If either resolver fails or returns a path that is not an existing directory, stop and escalate missing_capability; do not invent or use a path. Read `bash bootstrap/workspace.sh config <key>` for the registered repository, remote, and default branch before cloning or synchronizing.
+2. Preserve dirty files in the Terraformer checkout. Pull the registered default branch, then create an isolated worktree before modifying tracked files.
+3. For an Aone URL or ID, invoke [aone-triage](../aone-triage/SKILL.md) before repository inspection. If tracked files will change and no work item exists, follow [loops/adhoc-intake.md](../../../loops/adhoc-intake.md) to create or reuse one before development; pure read-only inspection may use the repository's documented exemption.
+4. Start work with `bash bootstrap/claim.sh claim <id> <pool-project>`. After opening a CR/MR, post its Markdown link with `bash bootstrap/wrap.sh sync <id> "<progress with [CR](url)>"`. Finish unmerged work with `bash bootstrap/wrap.sh done <id> "<summary>" --no-status` and `bash bootstrap/claim.sh release <id> <pool-project>`.
+5. Assign implementation to `terraform-rd` and acceptance verification to `terraform-qa`.
+6. Read [references/alicloud-resource-development.md](references/alicloud-resource-development.md) before choosing an API or writing code.
+7. Classify the request as a new resource or a repair. For a repair, change only files required by the demonstrated root cause and add a regression test.
 
 ## Evidence order
 
@@ -196,8 +224,8 @@ The Provider's `d.SetId(...)`, `ParseResourceId(...)`, Import docs, and Import t
 
 Choose exactly one primary `InitResources` pattern:
 
-- **A. Direct full List:** the List API enumerates resources without parent scope.
-- **B. One List returns every composite-ID segment:** one response includes all parent and child ID pieces.
+- **A. Direct full List with a single-field Import ID:** the List API enumerates resources without parent scope and each item exposes the one Provider ID field.
+- **B. One List returns every multipart-ID segment:** one response includes every segment required by the Provider's multipart Import ID.
 - **C. Parent-child traversal:** the child List API requires a parent ID, so enumerate parents and then children; reset pagination for each parent.
 - **D. Complete enumeration is unavailable:** use an existing explicit scope/filter input or report the unsupported boundary.
 
@@ -205,7 +233,7 @@ A multipart Import ID does not imply pattern C. A Data Source may require a pare
 
 ## Change only applicable files
 
-- Always add or repair `providers/alicloud/resource_alicloud_<name>.go`.
+- Add `providers/alicloud/resource_alicloud_<name>.go` for a new resource; repair it when the demonstrated defect is resource-specific.
 - Update `providers/alicloud/alicloud_provider.go` only when registration in `SupportedResourceByProduct` or the global-resource list is required.
 - Add client/service or endpoint support only when the current product client cannot issue the required API call.
 - Add resource-level tests that lock Import ID construction, pagination, empty results, and error propagation.
@@ -250,7 +278,7 @@ Create `.claude/skills/terraformer-resource-dev/references/alicloud-resource-dev
 
 ## 1. Runtime architecture
 
-`Generator.InitResources()` loads the Alicloud client, calls one or more read-only APIs, converts each discovered object into `terraformutils.Resource`, and appends it to `g.Resources`. Terraformer then delegates Import/Read to the installed Provider through `ProviderWrapper.Refresh`; `ConvertTFstate` converts the returned Provider state to state and HCL.
+`Generator.InitResources()` loads the Alicloud client, calls one or more read-only APIs, converts each discovered object into `terraformutils.Resource`, and appends it to `g.Resources`. `ProviderWrapper.Refresh` normally seeds prior state with that ID and calls the installed Provider's `ReadResource`; the implementation also contains an `ImportResourceState` fallback path. `ConvertTFstate` converts the returned Provider state to state and HCL.
 
 Keep `InitResources` limited to discovery and Provider-compatible IDs. Do not reproduce Create, Update, Delete, schema flattening, or drift logic from the Provider.
 
@@ -270,11 +298,11 @@ When sources conflict, Provider Import/Read behavior wins for the ID contract. R
 
 ## 3. InitResources discovery patterns
 
-### A. Direct full List
+### A. Direct full List with a single-field Import ID
 
-Use when one List API enumerates all resources without a parent identifier. Paginate until the API's explicit completion signal, or until a short page when no stronger signal exists. Build each final ID from fields returned by that same item.
+Use when one List API enumerates all resources without a parent identifier and each item exposes the Provider's single ID field. Paginate until the API's explicit completion signal, or until a short page when no stronger signal exists.
 
-### B. One List returns every composite-ID segment
+### B. One List returns every multipart-ID segment
 
 Use when one response item contains every segment required by the Provider Import ID. Preserve the Provider-defined order and delimiter. Do not add a parent List merely because the ID has multiple segments.
 
@@ -295,11 +323,10 @@ The following is pseudocode for the loop shape, not a copy-ready SDK call:
 
 ```go
 for _, parentID := range parentIDs {
-    pageNumber := 1
     nextToken := ""
 
     for {
-        children, page, err := listChildren(parentID, pageNumber, nextToken, pageSize)
+        children, returnedNextToken, err := listChildren(parentID, nextToken, pageSize)
         if err != nil {
             return nil, fmt.Errorf("list children for parent %s: %w", parentID, err)
         }
@@ -310,16 +337,15 @@ for _, parentID := range parentIDs {
             }
             ids = append(ids, importID)
         }
-        if page.NextToken == "" && len(children) < pageSize {
+        if returnedNextToken == "" {
             break
         }
-        pageNumber++
-        nextToken = page.NextToken
+        nextToken = returnedNextToken
     }
 }
 ```
 
-In real code, choose either the API's token contract or page-number contract; do not combine both unless that API actually returns both.
+This example is token-only. For token pagination, stop when the returned next token is empty regardless of page length. For page-number pagination, increment the page number and stop using the API's explicit total/page metadata or a short page when no stronger signal exists. Do not combine token and page-number contracts unless the API actually defines both.
 
 ### D. Complete enumeration is unavailable
 
@@ -361,6 +387,8 @@ Implementation rules:
 | Unified relationship consumer | The shared artifact explicitly declares this resource |
 
 Do not produce or infer connections from Provider schema, Data Source arguments, or API field names. The unified producer owns relationship semantics.
+
+If the unified artifact has no matching declaration, leave the relationship consumer unchanged and record the gap. That absence does not block core discovery and Import ID support unless relationship delivery is itself an explicit acceptance requirement.
 
 Do not modify `cmd`, module entrypoints, README, Provider source, or unrelated shared code unless repository evidence proves the resource cannot work without that change.
 
@@ -477,6 +505,7 @@ git commit -m "feat: add terraformer resource development skill"
 - Modify only if forward tests expose a concrete gap: `.claude/skills/terraformer-resource-dev/SKILL.md`
 - Modify only if forward tests expose a concrete gap: `.claude/skills/terraformer-resource-dev/references/alicloud-resource-development.md`
 - Regenerate after any canonical edit: `.agents/skills/terraformer-resource-dev/**`
+- Create: `docs/superpowers/reports/2026-07-16-terraformer-resource-dev-forward-evaluation.md`
 
 **Interfaces:**
 - Consumes: Task 1 Skill, `/Users/shanye/programs/terraformer` as read-only evidence, three evaluation prompts below.
@@ -487,7 +516,7 @@ git commit -m "feat: add terraformer resource development skill"
 Use fresh `terraform-rd` evaluation agents. Each agent must read the Skill first and must not modify Terraformer:
 
 ```text
-Scenario A: A new resource has a global List API whose items contain the complete Provider Import ID. Explain the InitResources approach and files to inspect.
+Scenario A: A new resource has a global List API whose items contain every segment of a two-part Provider Import ID. Explain the InitResources approach and files to inspect.
 
 Scenario B: A child List API requires workspace_id; Provider Import ID is workspace_id:member_id. Explain discovery, pagination, and ID construction.
 
@@ -496,7 +525,7 @@ Scenario C: Provider schema implies a parent relation, but the unified relations
 
 Expected:
 
-- Scenario A selects pattern A or B and does not add parent traversal.
+- Scenario A selects pattern B and does not add parent traversal.
 - Scenario B selects pattern C, discovers parents, resets child pagination per parent, and uses Provider evidence for `workspace_id:member_id`.
 - Scenario C refuses to infer a relationship and records/consumes only unified producer output.
 

@@ -144,8 +144,8 @@ resource.InitResources
 
 | 模式 | 适用条件 | 实现要点 |
 |---|---|---|
-| A. 直接全量 List | List API 不需要父上下文，可直接枚举资源 | 完整处理分页；从响应构造 Provider Import ID |
-| B. 单次 List 含复合 ID 全部片段 | API 返回的每条记录已包含父、子等所有 ID 片段 | 按 Provider 顺序组装；不得丢失父片段 |
+| A. 直接全量 List + 单字段 ID | List API 不需要父上下文，响应项提供 Provider 的单个 ID 字段 | 完整处理分页；直接使用该字段构造 Import ID |
+| B. 单次 List 返回多段 ID 全部片段 | 同一个响应项已经包含多段 Import ID 所需全部字段 | 按 Provider 顺序和分隔符组合；不额外调用父 List |
 | C. 父子遍历 | 子资源 List 必须提供父 ID，且 Terraformer 需要全量发现 | 先列父资源，再逐父列子资源；每个父资源独立重置分页 |
 | D. 无法完整枚举 | API 只支持精确查询、缺少父资源枚举或受权限/区域限制 | 使用明确的 scoped/filter 能力；否则报告能力边界，不伪造“全量支持” |
 
@@ -209,7 +209,7 @@ Data Source 在同一场景中可以把父 ID 声明为 Required，因为用户�
 2. 读取其中与本资源明确匹配的声明；
 3. 按既有消费方式补入本次改动并验证格式。
 
-产物不存在、资源未声明或语义不清时，只记录缺口，不从 Provider schema、Data Source 参数或 API 字段反向推导关系。
+产物不存在、资源未声明或语义不清时，只记录缺口，不从 Provider schema、Data Source 参数或 API 字段反向推导关系。除非关联关系本身是明确验收项，这不阻塞资源的核心 discovery 和 Import ID 接入。
 
 ## 10. 文件变更矩阵
 
@@ -296,7 +296,7 @@ Data Source 在同一场景中可以把父 ID 声明为 Required，因为用户�
 
 增加三组前向场景用于人工或自动评估：
 
-1. 直接全量 List 的新资源，应选择模式 A，不引入父资源遍历；
+1. 直接全量 List 且使用单字段 ID 的新资源，应选择模式 A，不引入父资源遍历；同一响应返回多段 ID 全部片段时应选择模式 B；
 2. 子 List 需要 workspace/project ID 的资源，应选择模式 C，并逐父重置分页；
 3. 已有资源的复合 ID 顺序错误，应从 Provider 取证，只修改 ID 与回归测试所需文件。
 
