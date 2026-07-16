@@ -1624,6 +1624,10 @@ class BufferedRunnerCmdTest(unittest.TestCase):
     def setUp(self):
         self._orig_popen = b.subprocess.Popen
         self._orig_cmd = b.jarvis_cmd
+        # run_claude_buffered now starts Claude through the pre-exec fence wrapper.
+        # Keep these focused argv tests on the underlying Claude command.
+        self._orig_wrap = b._headless_exec_command
+        b._headless_exec_command = lambda _sid, command: list(command)
         self._cmd_terraform = []
         # Record the terraform 车道 arg so tests can assert run_claude_buffered forwards it.
         def _fake_cmd(sid=None, terraform=False):
@@ -1634,6 +1638,7 @@ class BufferedRunnerCmdTest(unittest.TestCase):
     def tearDown(self):
         b.subprocess.Popen = self._orig_popen
         b.jarvis_cmd = self._orig_cmd
+        b._headless_exec_command = self._orig_wrap
 
     def _fake_popen(self, captured, out):
         class FakeP:
@@ -2512,6 +2517,9 @@ class RunClaudeStreamTimeoutTest(unittest.TestCase):
         self._orig_popen = b.subprocess.Popen
         self._orig_killpg = b.os.killpg
         self._orig_getpgid = b.os.getpgid
+        # Keep this timeout test focused on the underlying Claude process shape.
+        self._orig_wrap = b._headless_exec_command
+        b._headless_exec_command = lambda _sid, command: list(command)
         self._killpg_calls = []
         b.os.getpgid = lambda pid: pid
         b.os.killpg = lambda pgid, sig: self._killpg_calls.append((pgid, sig))
@@ -2520,6 +2528,7 @@ class RunClaudeStreamTimeoutTest(unittest.TestCase):
         b.subprocess.Popen = self._orig_popen
         b.os.killpg = self._orig_killpg
         b.os.getpgid = self._orig_getpgid
+        b._headless_exec_command = self._orig_wrap
 
     def test_run_claude_stream_timeout_kills(self):
         """Simulate a subprocess that finishes stdout but hangs in wait(): wait

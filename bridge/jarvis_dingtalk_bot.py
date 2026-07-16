@@ -1170,6 +1170,27 @@ def parse_stream_lines(lines):
             yield acc
 
 
+def _headless_exec_command(session_id, command):
+    """Wrap Claude in the fixed worker-fence manager before the first exec.
+
+    The manager atomically publishes local recovery lineage, then execs the real
+    command in-place. PID and process start identity therefore remain stable from
+    pre-registration through Claude's SessionStart and first PreToolUse.  The
+    fixed repo manager and isolated system Python make this a trusted fence path;
+    runtime env files cannot replace the code making the registration decision.
+    """
+    if not session_id:
+        raise ValueError("headless session_id is required")
+    if not command:
+        raise ValueError("headless command is required")
+    manager = Path(__file__).resolve().parents[1] / "bootstrap" / \
+        "jarvis-interactive-worker.py"
+    return [
+        "/usr/bin/python3", "-I", str(manager), "exec-headless",
+        "--session-id", str(session_id), "--client", "claude", "--",
+    ] + list(command)
+
+
 def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, terraform=False):
     """Spawn claude streaming round; yield accumulated answer text as it grows.
 
@@ -1184,7 +1205,9 @@ def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, ter
     deadline = time.time() + timeout
     # stdin</dev/null: claude-start.sh 预检里若 read 等待(IP 不符)会卡死, 喂空输入直放行。
     # banner 等非 JSON 行被 parse_stream_lines 自动跳过。
-    p = subprocess.Popen(cmd, cwd=jarvis_root(), text=True, stdin=subprocess.DEVNULL,
+    p = subprocess.Popen(
+        _headless_exec_command(session_id, cmd),
+        cwd=jarvis_root(), text=True, stdin=subprocess.DEVNULL,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                          start_new_session=True)
     if on_spawn:
@@ -1383,12 +1406,13 @@ def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None,
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
     argv = jarvis_cmd(session_id, terraform=terraform) + ["-p", text, "--output-format", "json"]
     argv += ["--resume", session_id] if resume else ["--session-id", session_id]
+    headless_argv = _headless_exec_command(session_id, argv)
     sentinel_write = None
     if guarded:
         p, sentinel_write = _spawn_guarded_managed_process(
-            argv, jarvis_root(), on_spawn)
+            headless_argv, jarvis_root(), on_spawn)
     else:
-        p = subprocess.Popen(argv, cwd=jarvis_root(), text=True,
+        p = subprocess.Popen(headless_argv, cwd=jarvis_root(), text=True,
                              stdin=subprocess.DEVNULL,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              start_new_session=True)

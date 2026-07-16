@@ -398,7 +398,8 @@ def _register(client: AutomationAgentTaskClient, state: Mapping[str, Any],
 
 def _mark_old_offline(client: AutomationAgentTaskClient,
                       old_state: Mapping[str, Any]) -> None:
-    if not old_state.get("workerKey"):
+    if not all(old_state.get(key) for key in (
+            "workerKey", "host", "bootId", "processUuid")):
         return
     try:
         _heartbeat_worker(client, old_state, "OFFLINE")
@@ -1532,17 +1533,29 @@ def _prompt_aone_ids(event: Mapping[str, Any]) -> set[str]:
 
 def _recovery_pending_claim(old_state: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
     """Convert a dead Codex incarnation into lineage, never reuse its fence."""
-    candidates = (old_state.get("current"), old_state.get("pendingClaim"))
-    for candidate in candidates:
+    candidates = (
+        ("current", old_state.get("current")),
+        ("pendingClaim", old_state.get("pendingClaim")),
+        ("recoveryPending", old_state.get("recoveryPending")),
+    )
+    for source, candidate in candidates:
+        cycle = (candidate.get("cycle")
+                 if isinstance(candidate, Mapping) else None)
+        if cycle is None and source == "recoveryPending":
+            cycle = old_state.get("claimCounter")
+        try:
+            cycle_number = int(cycle) if cycle is not None else 0
+        except (TypeError, ValueError):
+            cycle_number = 0
         if (isinstance(candidate, Mapping)
                 and candidate.get("aoneId") is not None
                 and candidate.get("projectId") is not None
-                and candidate.get("cycle") is not None
+                and cycle_number > 0
                 and candidate.get("runtimeSessionId")):
             recovered = {
                 "aoneId": str(candidate["aoneId"]),
                 "projectId": str(candidate["projectId"]),
-                "cycle": int(candidate["cycle"]),
+                "cycle": cycle_number,
                 "runtimeSessionId": str(candidate["runtimeSessionId"]),
                 "phase": "READY_TO_RECOVER",
             }
@@ -1550,8 +1563,139 @@ def _recovery_pending_claim(old_state: Mapping[str, Any]) -> Optional[Dict[str, 
                 recovered["operationKey"] = str(candidate["operationKey"])
             if candidate.get("receiptUnknown"):
                 recovered["receiptUnknown"] = True
+            pending_operation = old_state.get("pendingOperation")
+            if (isinstance(pending_operation, Mapping)
+                    and str(pending_operation.get("aoneId") or "") ==
+                    recovered["aoneId"]):
+                if pending_operation.get("operationKey"):
+                    recovered["operationKey"] = str(
+                        pending_operation["operationKey"])
+                if str(pending_operation.get("status") or "").upper() != "ACKED":
+                    recovered["receiptUnknown"] = True
+            if (source == "current"
+                    and not candidate.get("heartbeatEnabled", True)):
+                recovered["receiptUnknown"] = True
             return recovered
     return None
+
+
+def _build_incarnation_state(
+        old_state: Mapping[str, Any], *,
+        client_name: str, session_id: str, host_pid: int,
+        host_process_started_at: str, verify_command: bool,
+        cwd: str, transcript_path: Any = None, branch: str = "",
+        source: Any = None, headless: bool = False,
+        now: Optional[int] = None) -> Tuple[Dict[str, Any], bool]:
+    """Build the one canonical local state shape for a host incarnation.
+
+    A replacement process may inherit task lineage, but never the previous
+    process's database fence or in-flight external-operation receipt.  Both a
+    native SessionStart and the bridge's pre-exec headless registration use this
+    constructor so a later SessionStart is an idempotent refresh instead of a
+    second, subtly different recovery transition.
+    """
+    host = socket.gethostname()
+    boot_id = _default_boot_id(host)
+    process_uuid = hashlib.sha256(
+        ("%s|%s|%s|%s|%s" %
+         (client_name, session_id, boot_id, host_pid,
+          host_process_started_at)).encode()
+    ).hexdigest()[:40]
+    worker_key = make_worker_key(host, boot_id, process_uuid)
+    same_incarnation = old_state.get("workerKey") == worker_key
+    recovery_claim = (
+        _recovery_pending_claim(old_state)
+        if old_state and not same_incarnation else None)
+    timestamp = int(time.time()) if now is None else int(now)
+    is_compact = bool(
+        client_name == "codex"
+        and str(source or "") == "compact"
+        and same_incarnation)
+    state: Dict[str, Any] = {
+        "schemaVersion": 1,
+        "client": client_name,
+        "clientSessionId": session_id,
+        "workerKey": worker_key,
+        "host": host,
+        "bootId": boot_id,
+        "processUuid": process_uuid,
+        "hostPid": host_pid,
+        "hostProcessStartedAt": host_process_started_at,
+        "verifyHostCommand": bool(verify_command),
+        "cwd": str(cwd),
+        "transcriptPath": transcript_path,
+        "branch": branch,
+        "source": source,
+        "version": os.environ.get(
+            "JARVIS_INTERACTIVE_WORKER_VERSION", "interactive-v1"),
+        "claimCounter": int(old_state.get("claimCounter") or 0),
+        "current": old_state.get("current") if same_incarnation else None,
+        "pendingClaim": (old_state.get("pendingClaim")
+                         if same_incarnation else recovery_claim),
+        # A complete recovery claim absorbs an uncertain operation into
+        # receiptUnknown/operationKey.  If lineage is too partial to construct
+        # that claim, retain the operation as an explicit fail-closed tombstone
+        # instead of silently turning the replacement into an idle worker.
+        "pendingOperation": (
+            old_state.get("pendingOperation")
+            if same_incarnation or recovery_claim is None else None),
+        # As with an orphan operation, an incomplete suspend is a durable
+        # uncertainty boundary.  A reconstructable recovery claim supersedes
+        # it; otherwise retain it so the replacement cannot appear idle.
+        "pendingSuspend": (
+            old_state.get("pendingSuspend")
+            if same_incarnation or recovery_claim is None else None),
+        "subagentRevision": (int(old_state.get("subagentRevision") or 0)
+                             if same_incarnation else 0),
+        "subagentRegistry": (old_state.get("subagentRegistry", {})
+                             if same_incarnation else {}),
+        "subagentEpochs": (old_state.get("subagentEpochs", {})
+                           if same_incarnation else {}),
+        "subagentLifecycles": (old_state.get("subagentLifecycles", {})
+                               if same_incarnation else {}),
+        "subagentSpawnPermits": (old_state.get("subagentSpawnPermits", {})
+                                 if same_incarnation else {}),
+        "subagentInteractionPermits": (
+            old_state.get("subagentInteractionPermits", {})
+            if same_incarnation else {}),
+        "stopped": not verify_command,
+        "turnActive": (bool(old_state.get("turnActive", True))
+                       if is_compact else True),
+        "activeTurnId": (old_state.get("activeTurnId")
+                         if is_compact else None),
+        "lastTurnActivityAt": timestamp,
+        "registeredAt": timestamp,
+    }
+    if headless:
+        state["headlessRegistered"] = True
+    if is_compact and old_state.get("turnStoppedAt"):
+        state["turnStoppedAt"] = old_state.get("turnStoppedAt")
+    if ((same_incarnation or recovery_claim is None)
+            and old_state.get("lastAutoSuspended")):
+        state["lastAutoSuspended"] = old_state.get("lastAutoSuspended")
+    # Losing ownership is itself durable fail-closed lineage.  It must survive
+    # every replacement incarnation until an exact standard claim reconciles it.
+    if old_state.get("lostOwnership"):
+        state["lostOwnership"] = old_state.get("lostOwnership")
+    if same_incarnation and old_state.get("recoveryPending"):
+        state["recoveryPending"] = old_state.get("recoveryPending")
+    elif recovery_claim:
+        state["recoveryPending"] = {
+            "aoneId": recovery_claim["aoneId"],
+            "projectId": recovery_claim["projectId"],
+            "cycle": recovery_claim["cycle"],
+            "runtimeSessionId": recovery_claim["runtimeSessionId"],
+            "oldWorkerKey": old_state.get("workerKey"),
+        }
+    if not verify_command:
+        state["stoppedAt"] = timestamp
+        state["lastError"] = (
+            "headless host pid could not be verified"
+            if headless else "Codex/Claude host process could not be verified")
+    if same_incarnation and old_state.get("daemonPid"):
+        state["daemonPid"] = old_state.get("daemonPid")
+        state["daemonStartedAt"] = old_state.get("daemonStartedAt")
+    return state, same_incarnation
 
 
 def _resume_codex_turn(store: StateStore,
@@ -1825,18 +1969,6 @@ def hook(client_name: str, event: Mapping[str, Any]) -> int:
                 _process_start_identity(host_pid) if verify_command_value else "")
             verify_command = bool(
                 verify_command_value and host_process_started_at)
-            host = socket.gethostname()
-            boot_id = _default_boot_id(host)
-            process_uuid = hashlib.sha256(
-                ("%s|%s|%s|%s|%s" %
-                 (client_name, session_id, boot_id, host_pid,
-                  host_process_started_at)).encode()
-            ).hexdigest()[:40]
-            worker_key = make_worker_key(host, boot_id, process_uuid)
-            same_incarnation = old_state.get("workerKey") == worker_key
-            recovery_claim = (
-                _recovery_pending_claim(old_state)
-                if old_state and not same_incarnation else None)
             branch = ""
             try:
                 branch = subprocess.run(
@@ -1846,79 +1978,18 @@ def hook(client_name: str, event: Mapping[str, Any]) -> int:
                     check=False).stdout.strip()
             except (OSError, subprocess.SubprocessError):
                 pass
-            now = int(time.time())
-            is_compact = bool(
-                client_name == "codex"
-                and str(event.get("source") or "") == "compact"
-                and same_incarnation)
-            state = {
-                "schemaVersion": 1,
-                "client": client_name,
-                "clientSessionId": session_id,
-                "workerKey": worker_key,
-                "host": host,
-                "bootId": boot_id,
-                "processUuid": process_uuid,
-                "hostPid": host_pid,
-                "hostProcessStartedAt": host_process_started_at,
-                "verifyHostCommand": verify_command,
-                "cwd": str(event.get("cwd") or os.getcwd()),
-                "transcriptPath": event.get("transcript_path"),
-                "branch": branch,
-                "source": event.get("source"),
-                "version": os.environ.get(
-                    "JARVIS_INTERACTIVE_WORKER_VERSION", "interactive-v1"),
-                "claimCounter": int(old_state.get("claimCounter") or 0),
-                "current": old_state.get("current") if same_incarnation else None,
-                "pendingClaim": (old_state.get("pendingClaim")
-                                 if same_incarnation else recovery_claim),
-                "pendingOperation": (old_state.get("pendingOperation")
-                                     if same_incarnation else None),
-                "pendingSuspend": (old_state.get("pendingSuspend")
-                                   if same_incarnation else None),
-                "subagentRevision": (int(old_state.get("subagentRevision") or 0)
-                                     if same_incarnation else 0),
-                "subagentRegistry": (old_state.get("subagentRegistry", {})
-                                     if same_incarnation else {}),
-                "subagentEpochs": (old_state.get("subagentEpochs", {})
-                                   if same_incarnation else {}),
-                "subagentLifecycles": (old_state.get("subagentLifecycles", {})
-                                       if same_incarnation else {}),
-                "subagentSpawnPermits": (old_state.get("subagentSpawnPermits", {})
-                                         if same_incarnation else {}),
-                "subagentInteractionPermits": (
-                    old_state.get("subagentInteractionPermits", {})
-                    if same_incarnation else {}),
-                "stopped": not verify_command,
-                "turnActive": (bool(old_state.get("turnActive", True))
-                               if is_compact else True),
-                "activeTurnId": (old_state.get("activeTurnId")
-                                 if is_compact else None),
-                "lastTurnActivityAt": now,
-                "registeredAt": now,
-            }
-            if is_compact and old_state.get("turnStoppedAt"):
-                state["turnStoppedAt"] = old_state.get("turnStoppedAt")
-            if same_incarnation and old_state.get("lastAutoSuspended"):
-                state["lastAutoSuspended"] = old_state.get("lastAutoSuspended")
-            if old_state.get("lostOwnership"):
-                state["lostOwnership"] = old_state.get("lostOwnership")
-            if same_incarnation and old_state.get("recoveryPending"):
-                state["recoveryPending"] = old_state.get("recoveryPending")
-            elif recovery_claim:
-                state["recoveryPending"] = {
-                    "aoneId": recovery_claim["aoneId"],
-                    "projectId": recovery_claim["projectId"],
-                    "runtimeSessionId": recovery_claim["runtimeSessionId"],
-                    "oldWorkerKey": old_state.get("workerKey"),
-                }
-            if not verify_command:
-                state["stoppedAt"] = now
-                state["lastError"] = (
-                    "Codex/Claude host process could not be verified")
-            if same_incarnation and old_state.get("daemonPid"):
-                state["daemonPid"] = old_state.get("daemonPid")
-                state["daemonStartedAt"] = old_state.get("daemonStartedAt")
+            state, same_incarnation = _build_incarnation_state(
+                old_state,
+                client_name=client_name,
+                session_id=session_id,
+                host_pid=host_pid,
+                host_process_started_at=host_process_started_at,
+                verify_command=verify_command,
+                cwd=str(event.get("cwd") or os.getcwd()),
+                transcript_path=event.get("transcript_path"),
+                branch=branch,
+                source=event.get("source"))
+            worker_key = str(state["workerKey"])
             cp = _client()
             _retry_unavailable(lambda: _register(
                 cp, state, "ACTIVE" if verify_command else "OFFLINE"))
@@ -1986,6 +2057,90 @@ def hook(client_name: str, event: Mapping[str, Any]) -> int:
             "警告：无法校验 Codex/Claude 宿主进程，Worker 已按 OFFLINE 注册且不会启动 sidecar。"
             "为避免幽灵续租，bootstrap/claim.sh 将 fail-closed。")
     return 0
+
+
+def register_headless(session_id: str, host_pid: int,
+                      client_name: str = "claude") -> Dict[str, Any]:
+    """Pre-register one trusted wrapper incarnation before it execs Claude.
+
+    SessionEnd keeps a stopped tombstone rather than deleting the state file.
+    A retry/resume must carry that tombstone's task lineage into
+    READY_TO_RECOVER, while dropping the dead process's database fence and
+    uncertain external-operation state.
+
+    The local atomic write is authoritative for the tool fence and always occurs
+    before any network call.  Remote worker registration is deliberately a
+    short-timeout, best-effort hint outside the state lock; native SessionStart
+    performs the authoritative retried registration after Claude starts.
+    """
+    session_id = _nonblank(session_id, "session_id")
+    host_pid = int(host_pid)
+    if host_pid <= 0:
+        raise ValueError("host_pid must be a positive integer")
+    if client_name not in ("claude", "codex"):
+        raise ValueError("client must be claude or codex")
+    store = StateStore(_state_path(client_name, session_id))
+    old_state: Dict[str, Any] = {}
+    with store.locked():
+        old_state = store.load_unlocked()
+        host_process_started_at = _process_start_identity(host_pid)
+        verify_command = bool(_pid_alive(host_pid) and host_process_started_at)
+        state, same_incarnation = _build_incarnation_state(
+            old_state,
+            client_name=client_name,
+            session_id=session_id,
+            host_pid=host_pid,
+            host_process_started_at=host_process_started_at,
+            verify_command=verify_command,
+            cwd=str(old_state.get("cwd") or os.getcwd()),
+            transcript_path=old_state.get("transcriptPath"),
+            branch=str(old_state.get("branch") or ""),
+            source="headless",
+            headless=True)
+        # Land local lineage FIRST.  No control-plane call may hold this lock.
+        store.save_unlocked(state)
+
+    remote_registered = False
+    if verify_command:
+        try:
+            timeout = max(0.05, float(os.environ.get(
+                "JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT", "0.5")))
+            cp = _client(timeout_override=timeout)
+            _register(cp, state, "ACTIVE")
+            remote_registered = True
+            if old_state and not same_incarnation:
+                _mark_old_offline(cp, old_state)
+        except Exception:
+            # Best-effort only.  The local recovery fence remains in force and
+            # SessionStart retries the authoritative registration.
+            pass
+    result = {
+        "workerKey": state["workerKey"],
+        "hostPid": host_pid,
+        "verifyHostCommand": verify_command,
+        "sameIncarnation": same_incarnation,
+        "remoteRegistered": remote_registered,
+        "statePath": str(store.path),
+    }
+    return result
+
+
+def exec_headless(session_id: str, command: list[str],
+                  client_name: str = "claude") -> None:
+    """Atomically publish the fence state, then replace this process with Claude.
+
+    ``exec`` preserves PID and process start time, so the pre-registered
+    incarnation exactly matches the later SessionStart and every PreToolUse.
+    """
+    if not command:
+        raise ValueError("headless command must not be empty")
+    result = register_headless(session_id, os.getpid(), client_name=client_name)
+    if not result.get("verifyHostCommand"):
+        raise RuntimeError("headless wrapper process could not be verified")
+    env = os.environ.copy()
+    env["JARVIS_INTERACTIVE_CLIENT"] = client_name
+    env["JARVIS_INTERACTIVE_SESSION_ID"] = session_id
+    os.execvpe(command[0], list(command), env)
 
 
 def offline(store: StateStore, client: Optional[AutomationAgentTaskClient] = None,
@@ -2648,6 +2803,16 @@ def _parser() -> argparse.ArgumentParser:
     complete_parser = sub.add_parser("complete")
     complete_parser.add_argument("aone_id")
     complete_parser.add_argument("detail", nargs="?", default="completed")
+    register_parser = sub.add_parser("register-headless")
+    register_parser.add_argument("--session-id", required=True)
+    register_parser.add_argument("--pid", required=True, type=int)
+    register_parser.add_argument("--client", choices=("claude", "codex"),
+                                 default="claude")
+    exec_parser = sub.add_parser("exec-headless")
+    exec_parser.add_argument("--session-id", required=True)
+    exec_parser.add_argument("--client", choices=("claude", "codex"),
+                             default="claude")
+    exec_parser.add_argument("headless_command", nargs=argparse.REMAINDER)
     sub.add_parser("status")
     return parser
 
@@ -2698,6 +2863,14 @@ def main(argv: Optional[list[str]] = None) -> int:
             _print_json(transition(args.aone_id, "suspend", args.detail))
         elif args.command == "complete":
             _print_json(transition(args.aone_id, "complete", args.detail))
+        elif args.command == "register-headless":
+            _print_json(register_headless(
+                args.session_id, args.pid, client_name=args.client))
+        elif args.command == "exec-headless":
+            command = list(args.headless_command)
+            if command[:1] == ["--"]:
+                command = command[1:]
+            exec_headless(args.session_id, command, client_name=args.client)
         elif args.command == "status":
             _print_json(worker_status())
         return 0

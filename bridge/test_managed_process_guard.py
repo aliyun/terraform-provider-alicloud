@@ -47,7 +47,9 @@ class ManagedProcessGuardTest(unittest.TestCase):
 
             with mock.patch.object(bot, "jarvis_cmd",
                                    return_value=[sys.executable, "-c", script]), \
-                    mock.patch.object(bot, "jarvis_root", return_value=Path(directory)):
+                    mock.patch.object(bot, "jarvis_root", return_value=Path(directory)), \
+                    mock.patch.object(bot, "_headless_exec_command",
+                                      side_effect=lambda _sid, command: command):
                 result = bot.run_claude_buffered(
                     "prompt", "session", False, timeout=5,
                     on_spawn=bind, guarded=True)
@@ -67,7 +69,9 @@ class ManagedProcessGuardTest(unittest.TestCase):
 
             with mock.patch.object(bot, "jarvis_cmd",
                                    return_value=[sys.executable, "-c", script]), \
-                    mock.patch.object(bot, "jarvis_root", return_value=Path(directory)):
+                    mock.patch.object(bot, "jarvis_root", return_value=Path(directory)), \
+                    mock.patch.object(bot, "_headless_exec_command",
+                                      side_effect=lambda _sid, command: command):
                 with self.assertRaisesRegex(RuntimeError, "stale fence"):
                     bot.run_claude_buffered(
                         "prompt", "session", False, timeout=5,
@@ -96,6 +100,8 @@ class ManagedProcessGuardTest(unittest.TestCase):
             with mock.patch.object(bot, "jarvis_cmd",
                                    return_value=[sys.executable, "-c", command]), \
                     mock.patch.object(bot, "jarvis_root", return_value=Path(directory)), \
+                    mock.patch.object(bot, "_headless_exec_command",
+                                      side_effect=lambda _sid, argv: argv), \
                     mock.patch.dict(os.environ,
                                     {"JARVIS_MANAGED_GUARD_GRACE_SEC": "0.1"}):
                 result = bot.run_claude_buffered(
