@@ -938,16 +938,15 @@ def _record_codex_turn(store: StateStore, event_name: str,
         store.save_unlocked(state)
 
 
-def _exact_standard_claim(event: Mapping[str, Any]) -> Optional[Tuple[str, str]]:
-    """Recognize the one command allowed to recover a fenced local Worker.
+def _standalone_bash_tokens(event: Mapping[str, Any]) -> Optional[list]:
+    """Tokenize a Bash tool command iff it is a single standalone invocation.
 
-    A failed-closed PreToolUse hook must still leave one escape hatch: the
-    standard database-first ``claim.sh claim`` flow.  Parse a deliberately
-    narrow command shape and reject shell composition/substitution so this
-    exception cannot be used to append an unrelated mutation.
+    Rejects shell composition/substitution (newlines, backticks, ``$(``,
+    unquoted ``;&|<>``) so a recovery escape hatch cannot be used to append an
+    unrelated mutation. Returns None for non-Bash tools and composite shapes.
     """
     # Both Codex 0.144.x and Claude expose their real shell tool as ``Bash``.
-    # Never grant this exception to an MCP/custom tool that merely carries a
+    # Never grant an escape hatch to an MCP/custom tool that merely carries a
     # command-looking input.
     if str(event.get("tool_name") or "").strip() != "Bash":
         return None
@@ -970,6 +969,20 @@ def _exact_standard_claim(event: Mapping[str, Any]) -> Optional[Tuple[str, str]]
         return None
     if not tokens or any(re.fullmatch(r"[;&|<>]+", token) for token in tokens):
         return None
+    return tokens
+
+
+def _exact_standard_claim(event: Mapping[str, Any]) -> Optional[Tuple[str, str]]:
+    """Recognize the one command allowed to recover a fenced local Worker.
+
+    A failed-closed PreToolUse hook must still leave one escape hatch: the
+    standard database-first ``claim.sh claim`` flow.  Parse a deliberately
+    narrow command shape and reject shell composition/substitution so this
+    exception cannot be used to append an unrelated mutation.
+    """
+    tokens = _standalone_bash_tokens(event)
+    if tokens is None:
+        return None
 
     expected_script = str((REPO_ROOT / "bootstrap" / "claim.sh").resolve())
     # A fixed shell path and exact absolute script path prevent PATH, BASH_ENV,
@@ -982,6 +995,72 @@ def _exact_standard_claim(event: Mapping[str, Any]) -> Optional[Tuple[str, str]]
             or not remaining[1].isdigit() or not remaining[2].isdigit()):
         return None
     return remaining[1], remaining[2]
+
+
+def _external_receipt_recovery_target(
+        state: Mapping[str, Any]) -> Optional[Tuple[str, str]]:
+    """(aone_id, project_id) when the pending op is a frozen external-write
+    receipt (kind∈comment/status/release-tag/finish-tag, UNKNOWN/RETRY_WAIT)
+    on the CURRENT assignment — the only shape whose convergence rerun
+    (wrap.sh / claim.sh release|finish) may pass the PreToolUse fence.
+    AONE_CLAIM receipts have no ``kind`` and keep the claim-only escape hatch.
+    """
+    if state.get("stopped"):
+        return None
+    pending = state.get("pendingOperation")
+    current = state.get("current")
+    if not isinstance(pending, Mapping) or not isinstance(current, Mapping):
+        return None
+    if str(pending.get("kind") or "") not in OPERATION_TYPE_BY_KIND:
+        return None
+    if str(pending.get("status") or "").upper() not in ("UNKNOWN", "RETRY_WAIT"):
+        return None
+    aone_id = str(pending.get("aoneId") or "").strip()
+    if not aone_id or aone_id != str(current.get("aoneId") or "").strip():
+        return None
+    return aone_id, str(current.get("projectId") or "").strip()
+
+
+def _exact_receipt_recovery(
+        event: Mapping[str, Any]) -> Optional[Tuple[str, str, Optional[str]]]:
+    """Recognize the exact standalone wrap.sh / claim.sh commands allowed to
+    converge a frozen external-write receipt.
+
+    Same narrowness as _exact_standard_claim: fixed ``/bin/bash``, exact
+    absolute script path inside THIS repository, exact subcommand and Aone id.
+    wrap.sh keeps free TRAILING arguments (--summary-file/--summary-stdin/
+    status …) because the comment body is data, not shell — composition is
+    already rejected by _standalone_bash_tokens. Returns
+    ("wrap"|"claim", aone_id, project_id_or_None).
+    """
+    tokens = _standalone_bash_tokens(event)
+    if tokens is None or len(tokens) < 4 or tokens[0] != "/bin/bash":
+        return None
+    wrap_script = str((REPO_ROOT / "bootstrap" / "wrap.sh").resolve())
+    claim_script = str((REPO_ROOT / "bootstrap" / "claim.sh").resolve())
+    if tokens[1] == wrap_script:
+        if tokens[2] not in ("sync", "done", "done-no-status"):
+            return None
+        if not tokens[3].isdigit():
+            return None
+        return "wrap", tokens[3], None
+    if tokens[1] == claim_script:
+        if (len(tokens) != 5 or tokens[2] not in ("release", "finish")
+                or not tokens[3].isdigit() or not tokens[4].isdigit()):
+            return None
+        return "claim", tokens[3], tokens[4]
+    return None
+
+
+def _receipt_recovery_hint(state: Mapping[str, Any]) -> str:
+    target = _external_receipt_recovery_target(state)
+    wrap_script = shlex.quote(str((REPO_ROOT / "bootstrap" / "wrap.sh").resolve()))
+    claim_script = shlex.quote(str((REPO_ROOT / "bootstrap" / "claim.sh").resolve()))
+    aone = target[0] if target else "<aone-id>"
+    project = target[1] if target and target[1] else "<project-id>"
+    return ("/bin/bash %s sync|done|done-no-status %s … 或 "
+            "/bin/bash %s release|finish %s %s" %
+            (wrap_script, aone, claim_script, aone, project))
 
 
 def _standard_claim_hint(state: Mapping[str, Any]) -> str:
@@ -1020,6 +1099,10 @@ def _local_tool_block_reason(state: Mapping[str, Any]) -> Optional[str]:
                 "唯一允许的恢复命令：%s" %
                 (str(pending_claim.get("phase") or "UNKNOWN"), claim_hint))
     if state.get("pendingOperation"):
+        if _external_receipt_recovery_target(state):
+            return ("Jarvis 存在未收敛的外部写回执（UNKNOWN/RETRY_WAIT）；"
+                    "当前工具调用已阻断。仅允许重跑收敛命令：%s" %
+                    _receipt_recovery_hint(state))
         return ("Jarvis 存在未确定化的外部操作回执；当前工具调用已阻断。"
                 "唯一允许的恢复命令：%s" % claim_hint)
     if state.get("pendingSuspend"):
@@ -1181,6 +1264,23 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
             return None
         return ("Jarvis 只允许对当前挂起/失权的同一 Aone 单独重试 claim.sh；"
                 "当前 claim 目标不匹配，工具调用已阻断。")
+    # Frozen external-write receipts (wrap comment/status, release/finish tag,
+    # UNKNOWN/RETRY_WAIT) would otherwise brick the session: the only way to
+    # converge them is rerunning wrap.sh / claim.sh release|finish, which is
+    # itself a fenced Bash tool call. Allow exactly those two standalone
+    # command shapes, only for the SAME Aone id as the current assignment;
+    # the actual convergence is still fail-closed inside the worker CLI's
+    # begin/readback/reconcile path.
+    recovery_command = _exact_receipt_recovery(event)
+    if recovery_command and local_reason:
+        if binding is None:
+            recovery_target = _external_receipt_recovery_target(state)
+            if (recovery_target is not None
+                    and recovery_command[1] == recovery_target[0]
+                    and (recovery_command[2] is None
+                         or recovery_command[2] == recovery_target[1])):
+                return None
+        # 不匹配（subagent / 别的 aone / 无可恢复回执）→ 维持原有阻断语义。
     if local_reason:
         return local_reason
     current = state.get("current")
@@ -2986,6 +3086,282 @@ def fail_claim(aone_id: str, message: str, *, unknown: bool = False) -> None:
         raise first_error
 
 
+# Generalized mid-task external-write receipts (docs/aone-operation-receipts.md).
+# Unlike prepare-claim these never create/resume a session: they attach a receipt
+# to the CURRENT fenced assignment for wrap.sh comment/status writes and
+# claim.sh release/finish tag writes.
+OPERATION_TYPE_BY_KIND = {
+    "comment": "AONE_COMMENT",
+    "status": "AONE_STATUS",
+    "release-tag": "AONE_RELEASE",
+    "finish-tag": "AONE_RELEASE",
+}
+
+
+def _pending_operation(state: Mapping[str, Any]) -> Mapping[str, Any]:
+    pending = state.get("pendingOperation")
+    if not isinstance(pending, Mapping):
+        raise RuntimeError("no pending external operation receipt")
+    return pending
+
+
+def operation_begin(aone_id: str, kind: str, material: str, *,
+                    payload_json: Optional[str] = None,
+                    required: bool = True,
+                    replay_safe: bool = False) -> Dict[str, Any]:
+    aone_id = _nonblank(aone_id, "aone_id")
+    material = _nonblank(material, "material")
+    operation_type = OPERATION_TYPE_BY_KIND.get(kind)
+    if operation_type is None:
+        raise ValueError("unknown operation kind %s" % kind)
+    if payload_json is not None:
+        payload = json.loads(payload_json)
+        if not isinstance(payload, Mapping):
+            raise ValueError("--payload-json must be a JSON object")
+        payload = dict(payload)
+    else:
+        payload = {"kind": kind, "material": material}
+    store = _current_store()
+    cp = _client()
+    state = store.load()
+    if state.get("stopped"):
+        raise RuntimeError("interactive worker is not active")
+    current = _matching_current(state, aone_id)
+    task_id = current["taskId"]
+    generation = current["generation"]
+    operation_key = "%s:%s:%s:%s" % (
+        kind, task_id, generation,
+        hashlib.sha256(material.encode("utf-8")).hexdigest()[:12])
+    operation_request = {
+        "taskId": task_id,
+        "sessionId": current["sessionId"],
+        "generation": generation,
+        "workerKey": state["workerKey"],
+        "fenceToken": current["fenceToken"],
+        "operationKey": operation_key,
+        "operationType": operation_type,
+        "target": aone_id,
+        "requestPayload": payload,
+        "required": bool(required),
+        "maxRetries": 3,
+    }
+    # Persist intent before sending begin — the same durable-resume proof as the
+    # claim receipt: a lost begin response leaves a local record that authorizes
+    # a safe retry with the same operationKey.
+    unknown_short_circuit: Optional[Dict[str, Any]] = None
+    with store.locked():
+        latest = store.load_unlocked()
+        if not _same_current_assignment(latest, state["workerKey"], current):
+            raise ControlPlaneConflict(
+                "interactive worker changed before operation receipt")
+        existing_pending = latest.get("pendingOperation")
+        had_local_intent = isinstance(existing_pending, Mapping)
+        if (isinstance(existing_pending, Mapping)
+                and str(existing_pending.get("operationKey")) != operation_key):
+            # 单槽约束：任一时刻至多一个在途外部写回执。
+            raise ControlPlaneConflict(
+                "another external operation is pending for this worker")
+        if (isinstance(existing_pending, Mapping)
+                and str(existing_pending.get("status") or "").upper() == "UNKNOWN"):
+            # 上轮 abort --unknown 留下的槽：副作用不可证，绝不盲 begin/重放，
+            # 短路到 readback→reconcile 收敛路径（服务端 UNKNOWN begin 也会 409）。
+            unknown_short_circuit = {
+                "accepted": True,
+                "proceed": False,
+                "needsReadback": True,
+                "operationId": existing_pending.get("operationId"),
+                "operationStatus": "UNKNOWN",
+            }
+        elif not isinstance(existing_pending, Mapping):
+            latest["pendingOperation"] = {
+                "operationId": None,
+                "operationKey": operation_key,
+                "aoneId": aone_id,
+                "kind": kind,
+                "proceed": False,
+                "status": "BEGINNING",
+            }
+            store.save_unlocked(latest)
+    if unknown_short_circuit is not None:
+        return unknown_short_circuit
+    begun = cp.begin_operation(
+        operation_request,
+        request_id="jarvis-interactive-operation-begin-%s" %
+        hashlib.sha256(operation_key.encode()).hexdigest()[:24])
+    operation = begun.get("operation") if isinstance(begun, Mapping) else None
+    if not isinstance(operation, Mapping):
+        raise RuntimeError("operation begin returned no receipt")
+    operation_id = _field(operation, "id", "operationId", "operation_id")
+    if operation_id is None:
+        raise RuntimeError("operation receipt has no id")
+    operation_status = str(
+        _field(operation, "status", "operationStatus") or "").upper()
+    server_proceed = bool(begun.get("proceed", True))
+    local_retry = (
+        had_local_intent
+        and isinstance(existing_pending, Mapping)
+        and str(existing_pending.get("operationKey")) == operation_key
+        and (existing_pending.get("operationId") is None
+             or str(existing_pending.get("operationId")) == str(operation_id))
+    )
+    with store.locked():
+        latest = store.load_unlocked()
+        pending = latest.get("pendingOperation")
+        if (not _same_current_assignment(latest, state["workerKey"], current)
+                or not isinstance(pending, Mapping)
+                or str(pending.get("operationKey")) != operation_key):
+            raise ControlPlaneConflict(
+                "interactive worker changed while beginning operation receipt")
+        latest["pendingOperation"] = {
+            "operationId": operation_id,
+            "operationKey": operation_key,
+            "aoneId": aone_id,
+            "kind": kind,
+            "proceed": False,
+            "status": operation_status or "SENDING",
+        }
+        store.save_unlocked(latest)
+    needs_readback = False
+    if operation_status == "ACKED":
+        proceed = False
+    elif server_proceed:
+        proceed = True
+    elif operation_status == "SENDING" and local_retry and replay_safe:
+        # 幂等写（tag/status）：上一进程已持久化意图，直接重放后 ACK 是安全的。
+        proceed = True
+    elif operation_status == "SENDING" and local_retry:
+        # 不幂等写（comment）：必须 readback 后走 reconcile 收敛，不能盲重放。
+        proceed = False
+        needs_readback = True
+    else:
+        # A SENDING receipt without a local intent record can be a lost begin
+        # response from another incarnation; the external effect cannot be
+        # proven either way, so fail closed.
+        raise ControlPlaneConflict(
+            "%s receipt is %s without resumable local intent" %
+            (operation_type, operation_status or "UNKNOWN"))
+
+    with store.locked():
+        latest = store.load_unlocked()
+        pending_latest = latest.get("pendingOperation")
+        if (not _same_current_assignment(latest, state["workerKey"], current)
+                or not isinstance(pending_latest, Mapping)
+                or str(pending_latest.get("operationId")) != str(operation_id)
+                or str(pending_latest.get("operationKey")) != operation_key):
+            raise ControlPlaneConflict(
+                "interactive worker changed while committing operation receipt")
+        # mid-task 回执不动 heartbeatEnabled：session 本来就在跑（区别于 claim 期
+        # 间"ACK 前不许续租"），刻意为之，见 docs/aone-operation-receipts.md。
+        latest["pendingOperation"] = (None if operation_status == "ACKED" else {
+            "operationId": operation_id,
+            "operationKey": operation_key,
+            "aoneId": aone_id,
+            "kind": kind,
+            "proceed": proceed,
+            "status": operation_status or "SENDING",
+        })
+        store.save_unlocked(latest)
+    return {
+        "accepted": True,
+        "proceed": proceed,
+        "needsReadback": needs_readback,
+        "operationId": operation_id,
+        "operationStatus": operation_status,
+    }
+
+
+def operation_abort(aone_id: str, message: str, *,
+                    unknown: bool = False) -> Dict[str, Any]:
+    """终结当前外部写回执，但不 fail session、不写 pendingClaim（区别于 fail_claim）。"""
+    store = _current_store()
+    cp = _client()
+    state = store.load()
+    current = _matching_current(state, aone_id)
+    pending = _pending_operation(state)
+    error = {"errorType": "AoneOperationFailed", "message": str(message)[:500]}
+    if pending.get("operationId") is not None:
+        cp.fail_operation({
+            "operationId": pending["operationId"],
+            "workerKey": state["workerKey"],
+            "fenceToken": current["fenceToken"],
+            "error": error,
+            "unknown": bool(unknown),
+            "retryAllowed": not unknown,
+            "retryAfterSeconds": 0,
+        }, request_id="jarvis-interactive-operation-abort-%s" %
+        hashlib.sha256(str(pending["operationId"]).encode()).hexdigest()[:24])
+    with store.locked():
+        latest = store.load_unlocked()
+        latest_pending = latest.get("pendingOperation")
+        if (not _same_current_assignment(latest, state["workerKey"], current)
+                or not isinstance(latest_pending, Mapping)
+                or str(latest_pending.get("operationKey")) !=
+                str(pending.get("operationKey"))):
+            raise ControlPlaneConflict(
+                "interactive worker changed while aborting operation receipt")
+        if unknown:
+            # 保留本地槽（status=UNKNOWN），供下轮 operation-begin 短路到
+            # readback/reconcile；UNKNOWN 永不盲重放。
+            frozen = dict(latest_pending)
+            frozen["proceed"] = False
+            frozen["status"] = "UNKNOWN"
+            latest["pendingOperation"] = frozen
+        else:
+            # 定性失败：服务端进 RETRY_WAIT，本地清槽，下轮重新 begin 重试。
+            latest["pendingOperation"] = None
+        store.save_unlocked(latest)
+    return {"aborted": True, "unknown": bool(unknown)}
+
+
+def operation_reconcile(aone_id: str, *, found: bool,
+                        external_ref: Optional[str] = None,
+                        retry_allowed: bool = True) -> Dict[str, Any]:
+    store = _current_store()
+    cp = _client()
+    state = store.load()
+    current = _matching_current(state, aone_id)
+    pending = _pending_operation(state)
+    if pending.get("operationId") is None:
+        raise RuntimeError("pending operation receipt has no operationId to reconcile")
+    request: Dict[str, Any] = {
+        "operationId": pending["operationId"],
+        "workerKey": state["workerKey"],
+        "fenceToken": current["fenceToken"],
+        "found": bool(found),
+        "retryAllowed": bool(retry_allowed) and not found,
+        "retryAfterSeconds": 0,
+    }
+    if found:
+        request["externalRef"] = _nonblank(external_ref, "external_ref")
+    _retry_unavailable(lambda: cp.reconcile_operation(
+        request, request_id="jarvis-interactive-operation-reconcile-%s" %
+        hashlib.sha256(str(pending["operationId"]).encode()).hexdigest()[:24]))
+    with store.locked():
+        latest = store.load_unlocked()
+        latest_pending = latest.get("pendingOperation")
+        if (not _same_current_assignment(latest, state["workerKey"], current)
+                or not isinstance(latest_pending, Mapping)
+                or str(latest_pending.get("operationId")) !=
+                str(pending.get("operationId"))):
+            raise ControlPlaneConflict(
+                "interactive worker changed while reconciling operation receipt")
+        if found or not retry_allowed:
+            # found：副作用已在，服务端 ACKED，恰好一次收敛；no-retry：服务端 DEAD。
+            latest["pendingOperation"] = None
+        else:
+            # not-found+retry：保留 key（status=RETRY_WAIT），调用方随后重新
+            # operation-begin 拿 proceed 重发。
+            kept = dict(latest_pending)
+            kept["proceed"] = False
+            kept["status"] = "RETRY_WAIT"
+            latest["pendingOperation"] = kept
+        store.save_unlocked(latest)
+    result: Dict[str, Any] = {"proceed": False, "found": bool(found)}
+    if not found and retry_allowed:
+        result["retryScheduled"] = True
+    return result
+
+
 def has_current(aone_id: str) -> bool:
     try:
         state = _current_store().load()
@@ -3072,6 +3448,23 @@ def _parser() -> argparse.ArgumentParser:
     fail_parser.add_argument("aone_id")
     fail_parser.add_argument("message")
     fail_parser.add_argument("--unknown", action="store_true")
+    begin_parser = sub.add_parser("operation-begin")
+    begin_parser.add_argument("aone_id")
+    begin_parser.add_argument("kind", choices=sorted(OPERATION_TYPE_BY_KIND))
+    begin_parser.add_argument("material")
+    begin_parser.add_argument("--payload-json")
+    begin_parser.add_argument("--not-required", action="store_true")
+    begin_parser.add_argument("--replay-safe", action="store_true")
+    abort_parser = sub.add_parser("operation-abort")
+    abort_parser.add_argument("aone_id")
+    abort_parser.add_argument("message")
+    abort_parser.add_argument("--unknown", action="store_true")
+    reconcile_parser = sub.add_parser("operation-reconcile")
+    reconcile_parser.add_argument("aone_id")
+    reconcile_group = reconcile_parser.add_mutually_exclusive_group(required=True)
+    reconcile_group.add_argument("--found", metavar="external_ref")
+    reconcile_group.add_argument("--not-found", action="store_true")
+    reconcile_parser.add_argument("--no-retry", action="store_true")
     current_parser = sub.add_parser("has-current")
     current_parser.add_argument("aone_id")
     suspend_parser = sub.add_parser("suspend")
@@ -3134,6 +3527,21 @@ def main(argv: Optional[list[str]] = None) -> int:
         elif args.command == "operation-fail":
             fail_claim(args.aone_id, args.message, unknown=args.unknown)
             _print_json({"failed": True})
+        elif args.command == "operation-begin":
+            _print_json(operation_begin(
+                args.aone_id, args.kind, args.material,
+                payload_json=args.payload_json,
+                required=not args.not_required,
+                replay_safe=args.replay_safe))
+        elif args.command == "operation-abort":
+            _print_json(operation_abort(
+                args.aone_id, args.message, unknown=args.unknown))
+        elif args.command == "operation-reconcile":
+            _print_json(operation_reconcile(
+                args.aone_id,
+                found=args.found is not None,
+                external_ref=args.found,
+                retry_allowed=not args.no_retry))
         elif args.command == "has-current":
             return 0 if has_current(args.aone_id) else 1
         elif args.command == "suspend":

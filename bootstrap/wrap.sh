@@ -98,6 +98,143 @@ claim_prefix_pop() {
     rm -f "$f"
 }
 
+# fenced（回执）路径用：只读不删。回执收敛前删掉 prefix 会让失败重跑生成不同正文
+# → 不同 operationKey → 与遗留槽 conflict；成功后由 claim_prefix_clear 清理。
+claim_prefix_peek() {
+    local tid="$1"; local dir="${JARVIS_ROOT:-$jarvis_root}/.my-day"
+    local f="$dir/claim-prefix-$tid.txt"
+    [ -f "$f" ] || return 0
+    cat "$f"
+}
+
+claim_prefix_clear() {
+    local tid="$1"; local dir="${JARVIS_ROOT:-$jarvis_root}/.my-day"
+    rm -f "$dir/claim-prefix-$tid.txt"
+}
+
+# --- Aone 外部写 operation receipt（docs/aone-operation-receipts.md） ---
+# fenced = database-fenced 交互会话且持有该工单（has-current）；其余上下文（含
+# bookend 顺带回填的非当前工单）完全走原有裸写路径。
+
+_receipt_fenced() {
+    local tid="$1"
+    jarvis_interactive_context || return 1
+    jarvis_interactive_worker_cli has-current "$tid" >/dev/null 2>&1
+}
+
+# 规范化（去 \r、去每行尾空白、去末尾空白）后 sha256。begin 的 material 与
+# readback 匹配必须用同一实现，故收敛在这一个 python 前缀里。
+_norm_digest_py='
+import hashlib, sys
+def norm_digest(text):
+    text = text.replace("\r", "")
+    text = "\n".join(line.rstrip() for line in text.split("\n")).rstrip()
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+'
+
+_normalized_digest() {
+    printf '%s' "$1" | python3 -c "${_norm_digest_py}
+print(norm_digest(sys.stdin.read()))"
+}
+
+# 在评论流里按规范化 digest 找我们那条评论；命中输出 comment id，未命中输出空。
+_find_comment_by_digest() {
+    local tid="$1" digest="$2"
+    $A1 project workitem comment list "$tid" -f json 2>/dev/null | python3 -c "${_norm_digest_py}
+import json
+want = sys.argv[1]
+try:
+    comments = json.loads(sys.stdin.read())
+except Exception:
+    comments = []
+for c in comments if isinstance(comments, list) else []:
+    if isinstance(c, dict) and norm_digest(str(c.get(\"content\") or \"\")) == want:
+        print(c.get(\"id\") or \"\")
+        break
+" "$digest" 2>/dev/null
+}
+
+# 带回执发评论（fenced 专用）。协议：begin →（ACKED 跳过 / needsReadback 按 digest
+# 匹配评论流走 reconcile / proceed 发送）→ ack。返回 0=已确认恰好一次落地；非 0=
+# fail-closed，调用方必须阻断退出。
+_receipted_comment() {
+    local tid="$1" text="$2"
+    local digest payload begin_json needs_readback proceed cid out rc
+    digest="$(_normalized_digest "$text")"
+    payload="$(printf '%s' "$text" | python3 -c "
+import json, sys
+print(json.dumps({\"digest\": sys.argv[1], \"preview\": sys.stdin.read()[:120]},
+                 ensure_ascii=False))" "$digest")"
+    if ! begin_json="$(jarvis_interactive_worker_cli operation-begin "$tid" comment "$digest" --payload-json "$payload")"; then
+        echo "wrap.sh: comment 回执 begin 失败（id=$tid），fail-closed 不写 Aone" >&2
+        return 2
+    fi
+    needs_readback="$(printf '%s' "$begin_json" | jq -r '.needsReadback // false' 2>/dev/null)"
+    proceed="$(printf '%s' "$begin_json" | jq -r '.proceed // false' 2>/dev/null)"
+    if [ "$needs_readback" = "true" ]; then
+        # SENDING/UNKNOWN 存量回执：comment 不幂等，先 readback 再 reconcile 收敛。
+        cid="$(_find_comment_by_digest "$tid" "$digest")"
+        if [ -n "$cid" ]; then
+            jarvis_interactive_worker_cli operation-reconcile "$tid" --found "aone:$tid:comment:$cid" >/dev/null || return 2
+            return 0
+        fi
+        jarvis_interactive_worker_cli operation-reconcile "$tid" --not-found >/dev/null || return 2
+        if ! begin_json="$(jarvis_interactive_worker_cli operation-begin "$tid" comment "$digest" --payload-json "$payload")"; then
+            echo "wrap.sh: comment 回执重试 begin 失败（id=$tid），fail-closed 不写 Aone" >&2
+            return 2
+        fi
+        proceed="$(printf '%s' "$begin_json" | jq -r '.proceed // false' 2>/dev/null)"
+    fi
+    if [ "$proceed" != "true" ]; then
+        # ACKED：上轮已恰好一次落地，跳过发送。
+        return 0
+    fi
+    out="$($A1 project workitem comment create "$tid" -m "$text" -f json 2>/dev/null)"
+    rc=$?
+    if [ "$rc" -ne 0 ]; then
+        jarvis_interactive_worker_cli operation-abort "$tid" "a1 comment create failed (rc=$rc)" >/dev/null 2>&1 || true
+        echo "wrap.sh: a1 comment 失败（id=$tid, rc=$rc），回执已终结（可重试）" >&2
+        return 1
+    fi
+    cid="$(printf '%s' "$out" | jq -r '.id // empty' 2>/dev/null)"
+    [ -n "$cid" ] || cid="$(printf '%s' "$out" | sed -n '1s/^ID:[[:space:]]*\([0-9][0-9]*\).*/\1/p')"
+    if [ -z "$cid" ]; then
+        # 退出码 0 但拿不到 comment id → 结果不明：冻结 UNKNOWN，等重跑 readback 收敛。
+        jarvis_interactive_worker_cli operation-abort "$tid" "comment result indeterminate (no id)" --unknown >/dev/null 2>&1 || true
+        echo "wrap.sh: 评论结果不明（id=$tid），回执已冻结 UNKNOWN，重跑 wrap 收敛" >&2
+        return 1
+    fi
+    if ! jarvis_interactive_worker_cli operation-ack "$tid" "aone:$tid:comment:$cid" >/dev/null; then
+        echo "wrap.sh: 评论已落 Aone 但回执 ACK 失败（id=$tid），重跑 wrap 收敛" >&2
+        return 1
+    fi
+    return 0
+}
+
+# 带回执改状态（fenced 专用）。status 是幂等 set → --replay-safe，SENDING+本地意图
+# 直接重放，无需 readback。返回值语义同 _receipted_comment。
+_receipted_status() {
+    local tid="$1" status="$2" begin_json proceed
+    if ! begin_json="$(jarvis_interactive_worker_cli operation-begin "$tid" status "$status" --replay-safe)"; then
+        echo "wrap.sh: status 回执 begin 失败（id=$tid），fail-closed 不写 Aone" >&2
+        return 2
+    fi
+    proceed="$(printf '%s' "$begin_json" | jq -r '.proceed // false' 2>/dev/null)"
+    if [ "$proceed" != "true" ]; then
+        return 0   # ACKED：上轮已落地
+    fi
+    if ! $A1 project workitem update "$tid" --status "$status"; then
+        jarvis_interactive_worker_cli operation-abort "$tid" "a1 status update failed" >/dev/null 2>&1 || true
+        echo "wrap.sh: a1 status 更新失败（id=$tid），回执已终结（可重试）" >&2
+        return 1
+    fi
+    if ! jarvis_interactive_worker_cli operation-ack "$tid" "aone:$tid:status:$status" >/dev/null; then
+        echo "wrap.sh: 状态已落 Aone 但回执 ACK 失败（id=$tid），重跑 wrap 收敛" >&2
+        return 1
+    fi
+    return 0
+}
+
 write_done() {
     local tid="$1"
     local summary="$2"
@@ -110,16 +247,37 @@ write_done() {
     jq -e '.claim' "$pools_cfg" >/dev/null 2>&1 || echo "wrap.sh: pools.json .claim 缺失" >&2
     bash "$script_dir/log.sh" run_done "$tid" "$summary"
     # 2) 回填 Aone 进展评论（带 claim 痕迹前缀 + 代码落点页脚 → 格式化）；失败则 exit 1
+    # fenced 会话（database-fenced 且持有本单）走 operation receipt 协议，其余现状裸写。
+    local fenced=0
+    if _receipt_fenced "$tid"; then fenced=1; fi
     local prefix local_summary
-    prefix="$(claim_prefix_pop "$tid")"
+    if [ "$fenced" = "1" ]; then
+        prefix="$(claim_prefix_peek "$tid")"   # 回执收敛前不消费，保正文可重放
+    else
+        prefix="$(claim_prefix_pop "$tid")"
+    fi
     local_summary="$summary"
     [ -n "$prefix" ] && local_summary="${prefix}"$'\n\n'"${local_summary}"
     local_summary="${local_summary}$(code_footer)"
     local_summary="$(format_comment "$local_summary")"
-    $A1 project workitem comment create "$tid" -m "$local_summary"
+    if [ "$fenced" = "1" ]; then
+        if ! _receipted_comment "$tid" "$local_summary"; then
+            exit 1
+        fi
+        claim_prefix_clear "$tid"
+    else
+        $A1 project workitem comment create "$tid" -m "$local_summary"
+    fi
     # 3) 默认改状态；无状态收尾用于当前状态不可转/无需转时避免半失败
     if [ "$update_status" = "1" ]; then
-        $A1 project workitem update "$tid" --status "$status"
+        if [ "$fenced" = "1" ]; then
+            # comment 与 status 是两个串行回执（单槽约束）；comment 先行。
+            if ! _receipted_status "$tid" "$status"; then
+                exit 1
+            fi
+        else
+            $A1 project workitem update "$tid" --status "$status"
+        fi
     fi
     bash "$script_dir/cache.sh" bust "wi-$tid"  # 收尾改动后详情已变，丢缓存
 }
@@ -154,12 +312,27 @@ case "$cmd" in
         [ -n "$id" ] && [ -n "$text" ] || { echo "Usage: wrap.sh sync <id> \"<progress>\" | --summary-file <path> | --summary-stdin" >&2; exit 1; }
         reject_literal_newline "$text"
         touch_ledger "$id"
-        prefix="$(claim_prefix_pop "$id")"
+        fenced=0
+        if _receipt_fenced "$id"; then fenced=1; fi
+        if [ "$fenced" = "1" ]; then
+            prefix="$(claim_prefix_peek "$id")"   # 回执收敛前不消费，保正文可重放
+        else
+            prefix="$(claim_prefix_pop "$id")"
+        fi
         [ -n "$prefix" ] && text="${prefix}"$'\n\n'"${text}"
         text="${text}$(code_footer)"
         text="$(format_comment "$text")"
-        $A1 project workitem comment create "$id" -m "$text" \
-            || echo "wrap.sh: a1 comment 失败（id=${id}），进展未落 Aone，请人工补" >&2
+        if [ "$fenced" = "1" ]; then
+            # fenced 会话的写必须有回执：begin/发送失败一律阻断（sync 也不降级为告警）。
+            if ! _receipted_comment "$id" "$text"; then
+                echo "wrap.sh: fenced sync 未取得回执（id=${id}），进展未落 Aone，fail-closed" >&2
+                exit 1
+            fi
+            claim_prefix_clear "$id"
+        else
+            $A1 project workitem comment create "$id" -m "$text" \
+                || echo "wrap.sh: a1 comment 失败（id=${id}），进展未落 Aone，请人工补" >&2
+        fi
         bash "$script_dir/cache.sh" bust "wi-$id"  # 评论后详情已变，丢缓存
         ;;
     done)
