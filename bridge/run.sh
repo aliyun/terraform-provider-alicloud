@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # bridge/run.sh — Jarvis DingTalk bridge 单一入口(进程管理器)。
 #
-#   bridge/run.sh <start|stop|restart|status|logs|dry-run>
+#   bridge/run.sh <start|stop|restart|status|logs|dry-run|daemon>
 #
 # start 是唯一点火入口(仓库主人 2026-07-06:「运行 bridge/run.sh start 即可,不需额外点火」):
 #   · 幂等: pidfile 活着则提示已运行并退 0。
@@ -20,6 +20,8 @@
 #   JARVIS_BRIDGE_STATE_DIR(默认 <repo>/.my-day/bridge) JARVIS_BRIDGE_BOOTSTRAP_ENV
 #   JARVIS_BRIDGE_ENV JARVIS_BRIDGE_START_WAIT(默认 2s) JARVIS_BRIDGE_STOP_WAIT / JARVIS_STOP_GRACE
 #   (stop 宽限秒数, 默认 30s) JARVIS_BRIDGE_NO_COORD(=1 跳过 coord/heartbeat 注册)。
+#   JARVIS_BRIDGE_SUPERVISOR=launchd 时 start/stop/restart/status 委托给 launchctl；可覆盖
+#   JARVIS_BRIDGE_LAUNCHCTL、JARVIS_BRIDGE_LAUNCHD_LABEL/DOMAIN/PLIST（测试/定制安装）。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
@@ -104,6 +106,113 @@ _register_coord() {
   id="$(bash "$coord" register dispatch "$pid" 2>/dev/null || true)"
   [ -n "$id" ] && [ -f "$hb" ] && nohup bash "$hb" "$id" "$pid" >/dev/null 2>&1 &
   return 0
+}
+
+# -- launchd supervisor ----------------------------------------------------
+# 配置可以来自 shell，也可以来自 bootstrap/.env / bridge/jarvis.env。所有值都在调用时读取，
+# 避免脚本启动早期固化默认值后漏掉 env 文件中的 JARVIS_BRIDGE_SUPERVISOR。
+_launchd_config() {
+  LAUNCHCTL_BIN="${JARVIS_BRIDGE_LAUNCHCTL:-launchctl}"
+  LAUNCHD_LABEL="${JARVIS_BRIDGE_LAUNCHD_LABEL:-com.jarvis.dingtalk}"
+  LAUNCHD_DOMAIN="${JARVIS_BRIDGE_LAUNCHD_DOMAIN:-gui/$(id -u)}"
+  LAUNCHD_PLIST="${JARVIS_BRIDGE_LAUNCHD_PLIST:-${HOME:-}/Library/LaunchAgents/${LAUNCHD_LABEL}.plist}"
+  LAUNCHD_SERVICE="${LAUNCHD_DOMAIN}/${LAUNCHD_LABEL}"
+}
+
+_launchd_require() {
+  _launchd_config
+  if ! command -v "$LAUNCHCTL_BIN" >/dev/null 2>&1; then
+    err "launchd 模式不可用: 找不到 launchctl ($LAUNCHCTL_BIN)。"
+    return 1
+  fi
+}
+
+_launchd_loaded() {
+  "$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" >/dev/null 2>&1
+}
+
+cmd_launchd_start() {
+  _launchd_require || return 1
+  if [ ! -f "$LAUNCHD_PLIST" ]; then
+    err "launchd plist 不存在: $LAUNCHD_PLIST"
+    err "请先运行: $SCRIPT_DIR/install-launchd.sh"
+    return 1
+  fi
+
+  if ! _launchd_loaded; then
+    say "注册 launchd service: $LAUNCHD_SERVICE"
+    "$LAUNCHCTL_BIN" bootstrap "$LAUNCHD_DOMAIN" "$LAUNCHD_PLIST" || {
+      err "launchd bootstrap 失败: $LAUNCHD_PLIST"
+      return 1
+    }
+  fi
+  "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+  "$LAUNCHCTL_BIN" kickstart -k "$LAUNCHD_SERVICE" || {
+    err "launchd kickstart 失败: $LAUNCHD_SERVICE"
+    return 1
+  }
+  say "bridge 已交由 launchd 启动 ($LAUNCHD_SERVICE)。"
+}
+
+cmd_launchd_stop() {
+  _launchd_require || return 1
+  if ! _launchd_loaded; then
+    say "bridge 未由 launchd 加载 ($LAUNCHD_SERVICE)。"
+    return 0
+  fi
+  "$LAUNCHCTL_BIN" bootout "$LAUNCHD_SERVICE" || {
+    err "launchd bootout 失败: $LAUNCHD_SERVICE"
+    return 1
+  }
+  say "bridge launchd service 已停止并卸载 ($LAUNCHD_SERVICE)。"
+}
+
+cmd_launchd_restart() {
+  _launchd_require || return 1
+  if ! _launchd_loaded; then
+    cmd_launchd_start
+    return
+  fi
+
+  # Keep the job registered and let launchd replace the running process.  A
+  # bootout/bootstrap pair can race the old process' graceful SIGTERM cleanup,
+  # leaving the newly registered job in a transient SIGTERMed state.
+  "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+  "$LAUNCHCTL_BIN" kickstart -k "$LAUNCHD_SERVICE" || {
+    err "launchd restart 失败: $LAUNCHD_SERVICE"
+    return 1
+  }
+  say "bridge 已由 launchd 重启 ($LAUNCHD_SERVICE)。"
+}
+
+cmd_launchd_status() {
+  _launchd_require || return 1
+  local detail state pid
+  if ! detail="$("$LAUNCHCTL_BIN" print "$LAUNCHD_SERVICE" 2>/dev/null)"; then
+    say "bridge: STOPPED  (launchd 未加载 $LAUNCHD_SERVICE)"
+    return 0
+  fi
+  state="$(printf '%s\n' "$detail" | sed -n 's/^[[:space:]]*state = //p' | head -n1)"
+  pid="$(printf '%s\n' "$detail" | sed -n 's/^[[:space:]]*pid = //p' | head -n1)"
+  case "$state" in
+    running) say "bridge: RUNNING  (launchd $LAUNCHD_SERVICE, pid ${pid:-?})" ;;
+    *)       say "bridge: LOADED  (launchd $LAUNCHD_SERVICE, state ${state:-unknown})" ;;
+  esac
+  say "  plist: $LAUNCHD_PLIST"
+  say "  log:   $LOG"
+}
+
+_supervised_command() { # $1 = start|stop|restart|status
+  local command="$1" supervisor
+  _source_env
+  supervisor="${JARVIS_BRIDGE_SUPERVISOR:-local}"
+  case "$supervisor" in
+    local|'') "cmd_${command}" ;;
+    launchd)  "cmd_launchd_${command}" ;;
+    *)
+      err "不支持的 JARVIS_BRIDGE_SUPERVISOR=$supervisor (可选: local, launchd)"
+      return 2 ;;
+  esac
 }
 
 # -- commands --------------------------------------------------------------
@@ -234,17 +343,30 @@ cmd_dryrun() {
   exec "$PYTHON" "$BOT" --dry-run-once
 }
 
+# launchd/systemd 等外部 supervisor 使用的前台入口。这里不 fork、不 nohup、不写 pidfile；
+# exec 后 bot 与 supervisor 看到的是同一 PID，崩溃退出可被 KeepAlive 准确拉起。
+cmd_daemon() {
+  _source_env
+  mkdir -p "$STATE_DIR"
+  local mode
+  if _decide_mode; then mode="full"; else mode="degraded"; fi
+  say "bridge foreground daemon 启动 (mode=$mode, pid=$$): $PYTHON $BOT"
+  _register_coord "$$"
+  exec "$PYTHON" "$BOT"
+}
+
 usage() {
-  err "usage: bridge/run.sh <start|stop|restart|status|logs|dry-run>"
+  err "usage: bridge/run.sh <start|stop|restart|status|logs|dry-run|daemon>"
   return 2
 }
 
 case "${1:-}" in
-  start)          cmd_start ;;
-  stop)           cmd_stop ;;
-  restart)        cmd_restart ;;
-  status)         cmd_status ;;
+  start)          _supervised_command start ;;
+  stop)           _supervised_command stop ;;
+  restart)        _supervised_command restart ;;
+  status)         _supervised_command status ;;
   logs)           cmd_logs ;;
   dry-run|dryrun) cmd_dryrun ;;
+  daemon)         cmd_daemon ;;
   *)              usage ;;
 esac

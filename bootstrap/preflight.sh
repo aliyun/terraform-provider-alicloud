@@ -26,21 +26,23 @@ if [ -f "$repo_root/CLAUDE.md" ] && [ -f "$script_dir/skills-mirror-lib.sh" ]; t
 fi
 
 record_codex_stop_hook_root() {
-    local codex_home state_dir roots_dir runner
+    local codex_home state_dir roots_dir runner tmp_runner
     codex_home="${CODEX_HOME:-$HOME/.codex}"
     state_dir="$codex_home/jarvis"
     roots_dir="$state_dir/session-roots"
     runner="$state_dir/run-stop-hook.sh"
 
     mkdir -p "$roots_dir" || return 1
-    printf '%s\n' "$repo_root" > "$state_dir/repo-root"
+    printf '%s\n' "$repo_root" > "$state_dir/repo-root" || return 1
     if [ -n "${CODEX_THREAD_ID:-}" ]; then
-        printf '%s\n' "$repo_root" > "$roots_dir/$CODEX_THREAD_ID"
+        printf '%s\n' "$repo_root" > "$roots_dir/$CODEX_THREAD_ID" || return 1
     fi
 
-    cat > "$runner" <<'EOF'
+    tmp_runner="$(mktemp "$state_dir/.run-stop-hook.XXXXXX")" || return 1
+    if ! cat > "$tmp_runner" <<'EOF'
 #!/usr/bin/env bash
 set -uo pipefail
+JARVIS_CODEX_HOOK_RUNNER_VERSION=2
 
 codex_home="${CODEX_HOME:-$HOME/.codex}"
 state_dir="$codex_home/jarvis"
@@ -76,15 +78,26 @@ fi
 
 if [ -z "$repo" ]; then
     echo "stop-hook: cannot resolve repo root from cwd=$PWD" >&2
-    exit 127
+    exit 2
 fi
 
-exec bash "$repo/bootstrap/run-stop-hook.sh"
+if [ "${1:-}" = "prompt" ]; then
+    exec bash "$repo/bootstrap/run-interactive-worker-hook.sh" codex UserPromptSubmit
+fi
+exec bash "$repo/bootstrap/run-stop-hook.sh" "$@"
 EOF
-    chmod +x "$runner"
+    then
+        rm -f "$tmp_runner"
+        return 1
+    fi
+    chmod +x "$tmp_runner" || { rm -f "$tmp_runner"; return 1; }
+    mv -f "$tmp_runner" "$runner" || { rm -f "$tmp_runner"; return 1; }
 }
 
-record_codex_stop_hook_root
+if ! record_codex_stop_hook_root; then
+    echo "preflight: failed to install Codex hook runner" >&2
+    exit 1
+fi
 
 ttl="${JARVIS_PREFLIGHT_TTL:-86400}"   # 24h
 [ "${1:-}" = "--force" ] && ttl=0
@@ -92,7 +105,9 @@ ttl="${JARVIS_PREFLIGHT_TTL:-86400}"   # 24h
 # Always sweep stale claims / dead-owner orphans / ledger drift on preflight,
 # regardless of fresh-cache. Timeout/中断 in batch bookend 会遗留 jarvis-claimed
 # 标签,不清理会导致下一轮 lost race。--quiet 保持 preflight 输出精简。
-bash "$script_dir/reconcile.sh" stale >/dev/null 2>&1 || true
+if [ "${JARVIS_PREFLIGHT_SKIP_RECONCILE:-0}" != "1" ]; then
+    bash "$script_dir/reconcile.sh" stale >/dev/null 2>&1 || true
+fi
 
 if bash "$script_dir/cache.sh" fresh "preflight.ok" "$ttl"; then
     echo "preflight: skip (verified < $((ttl/3600))h ago)"

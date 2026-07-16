@@ -400,19 +400,82 @@ _update_tags_merged() {
     _run_tag_update $A1 project workitem update "$id" --tag "$to_write" "$@"
 }
 
+# Interactive Claude/Codex sessions use the database fence as the sole mutex.
+# The wrapper loads the same gitignored control-plane environment as bridge/run.sh.
+_is_interactive_context() {
+    [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ] || \
+        { case "${JARVIS_INTERACTIVE_CLIENT:-}" in claude|codex) true ;; *) false ;; esac \
+          && [ -n "${JARVIS_INTERACTIVE_SESSION_ID:-}" ]; }
+}
+
+_interactive_worker() {
+    local runner="${JARVIS_INTERACTIVE_WORKER_RUNNER:-$script_dir/run-interactive-worker-hook.sh}"
+    bash "$runner" cli "$@"
+}
+
+_interactive_fail_claim() {
+    local id="$1" message="$2" unknown="${3:-0}"
+    if [ "$unknown" = "1" ]; then
+        _interactive_worker operation-fail "$id" "$message" --unknown >/dev/null 2>&1 || \
+            echo "claim.sh: warning: failed to persist interactive claim failure for $id" >&2
+    else
+        _interactive_worker operation-fail "$id" "$message" >/dev/null 2>&1 || \
+            echo "claim.sh: warning: failed to persist interactive claim failure for $id" >&2
+    fi
+}
+
 case "$cmd" in
     claim)
+        interactive_claim=0
+        interactive_prepare=""
+        if _is_interactive_context; then
+            interactive_prepare="$(_interactive_worker prepare-claim "$workitem_id" "$project_id")"
+            interactive_rc=$?
+            if [ "$interactive_rc" -ne 0 ]; then
+                if [ "$interactive_rc" -eq 10 ]; then
+                    echo "claim.sh: workitem $workitem_id is already owned by another worker" >&2
+                    exit 1
+                fi
+                echo "claim.sh: interactive control-plane claim failed closed for $workitem_id (rc=$interactive_rc)" >&2
+                exit 2
+            fi
+            if ! printf '%s' "$interactive_prepare" | jq -e '
+                (.accepted == true) and (.proceed == true or .operationStatus == "ACKED")
+            ' >/dev/null 2>&1; then
+                echo "claim.sh: invalid interactive claim receipt for $workitem_id" >&2
+                exit 2
+            fi
+            interactive_claim=1
+            if [ "$(printf '%s' "$interactive_prepare" | jq -r '.proceed')" != "true" ]; then
+                # ACKED means a prior invocation already completed the exact Aone
+                # effect. Rebuild only local bookends; never write Aone again.
+                utcnow=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                host="${JARVIS_SELF_HOST:-$(scutil --get ComputerName 2>/dev/null || hostname -s 2>/dev/null || hostname)}"
+                mkdir -p "$myday_dir"
+                [ -f "$(_claim_prefix_path "$workitem_id")" ] || \
+                    printf 'jarvis-claim %s %s' "$host" "$utcnow" > "$(_claim_prefix_path "$workitem_id")"
+                _advance_status "$workitem_id" "$project_id"
+                _ledger_upsert "$workitem_id" false
+                echo "claim.sh: interactive claim for workitem $workitem_id already acknowledged"
+                exit 0
+            fi
+        fi
+
         # 1. Tag as claimed, preserving any pre-existing tags: existing ∪ {claimed} − {idle}
         _update_tags_merged "$workitem_id" "$CLAIM_TAG" "$IDLE_TAG"
         tag_rc=$?
         if [ "$tag_rc" -eq 3 ]; then
             # The tag never landed, so no prefix/ledger cleanup is needed. The caller must
             # inspect aone-fields.sh missing, choose a legal value, fill it, and retry claim.
+            [ "$interactive_claim" = "1" ] && \
+                _interactive_fail_claim "$workitem_id" "Aone rejected claim tag: missing required field"
             exit 3
         elif [ "$tag_rc" -ne 0 ]; then
             # Transport/auth/other validation failures are not races. Preserve the original
             # rc and stop before readback, which could otherwise mistake a stale tag for ours.
             # rc=1 is reserved by claim for an actual lost race, so remap an a1 rc=1 to rc=2.
+            [ "$interactive_claim" = "1" ] && \
+                _interactive_fail_claim "$workitem_id" "Aone claim tag update failed (rc=$tag_rc)"
             [ "$tag_rc" -eq 1 ] && tag_rc=2
             exit "$tag_rc"
         fi
@@ -442,8 +505,22 @@ case "$cmd" in
         if [ -z "$claimed_ok" ]; then
             # 抢锁失败：清理本机 prefix 痕迹（不留给别人）
             rm -f "$(_claim_prefix_path "$workitem_id")"
+            [ "$interactive_claim" = "1" ] && \
+                _interactive_fail_claim "$workitem_id" "Aone claim tag readback was inconclusive" 1
             echo "claim.sh: lost race for workitem $workitem_id (claimed tag not visible in point-read readback)" >&2
             exit 1
+        fi
+
+        if [ "$interactive_claim" = "1" ]; then
+            external_ref="aone:$project_id:$workitem_id:tag:$CLAIM_TAG"
+            if ! _interactive_worker operation-ack "$workitem_id" "$external_ref" >/dev/null; then
+                echo "claim.sh: Aone tag landed but control-plane ACK failed for $workitem_id; stopping fail-closed" >&2
+                exit 2
+            fi
+            echo "claim.sh: claimed workitem $workitem_id in project $project_id (database fenced)"
+            _advance_status "$workitem_id" "$project_id"
+            _ledger_upsert "$workitem_id" false
+            exit 0
         fi
 
         # 4. Cross-machine arbitration — ONLY when JARVIS_CLAIM_SETTLE>0. settle<=0 (default)
@@ -520,9 +597,29 @@ if cands:
         ;;
 
     release)
+        interactive_release=0
+        if _is_interactive_context; then
+            if ! _interactive_worker has-current "$workitem_id" >/dev/null 2>&1; then
+                echo "claim.sh: refusing interactive release for $workitem_id without its database-fenced session" >&2
+                exit 2
+            fi
+            interactive_release=1
+        fi
         # Tag as idle, preserving other tags: existing − {claimed} ∪ {idle}
         # 本轮 jarvis 处理完，释放锁；后续等待人或下一个 jarvis 接手（不动 Aone status）
         _update_tags_merged "$workitem_id" "$IDLE_TAG" "$CLAIM_TAG"
+        release_tag_rc=$?
+        if [ "$interactive_release" = "1" ] && [ "$release_tag_rc" -ne 0 ]; then
+            echo "claim.sh: Aone release write failed; keeping database session active for $workitem_id" >&2
+            [ "$release_tag_rc" -eq 1 ] && release_tag_rc=2
+            exit "$release_tag_rc"
+        fi
+        if [ "$interactive_release" = "1" ]; then
+            if ! _interactive_worker suspend "$workitem_id" "released by interactive worker" >/dev/null; then
+                echo "claim.sh: Aone is idle but database session suspend failed for $workitem_id; retry release" >&2
+                exit 2
+            fi
+        fi
         # 兜底：如果整个 jarvis 周期没发过业务评论，prefix 文件仍在，此处清理
         rm -f "$(_claim_prefix_path "$workitem_id")"
         echo "claim.sh: released workitem $workitem_id in project $project_id"
@@ -538,6 +635,15 @@ if cands:
             echo "claim.sh: use 'claim.sh release' instead to hand off for merge review," >&2
             echo "claim.sh: or set JARVIS_SKIP_MR_GATE=1 to override this gate." >&2
             exit 2
+        fi
+
+        interactive_finish=0
+        if _is_interactive_context; then
+            if ! _interactive_worker has-current "$workitem_id" >/dev/null 2>&1; then
+                echo "claim.sh: refusing interactive finish for $workitem_id without its database-fenced session" >&2
+                exit 2
+            fi
+            interactive_finish=1
         fi
 
         # Tag as done, preserving other tags: existing − {claimed, idle} ∪ {done}.
@@ -557,6 +663,12 @@ if cands:
         # already-terminal short-circuit + downgrade black-hole guard below stay intact.
         [ -n "$STATUS_OVERRIDE" ] && eff_status="$STATUS_OVERRIDE"
         _update_tags_merged "$workitem_id" "$DONE_TAG" "$CLAIM_TAG,$IDLE_TAG"
+        finish_tag_rc=$?
+        if [ "$interactive_finish" = "1" ] && [ "$finish_tag_rc" -ne 0 ]; then
+            echo "claim.sh: Aone finish tag write failed; keeping database session active for $workitem_id" >&2
+            [ "$finish_tag_rc" -eq 1 ] && finish_tag_rc=2
+            exit "$finish_tag_rc"
+        fi
         rm -f "$(_claim_prefix_path "$workitem_id")"
         cur_status="$(_get_status "$workitem_id")"
         status_ok=0   # 1 = Aone status 已落到合法完成态，jarvis-done 与真源一致
@@ -581,10 +693,27 @@ if cands:
         if [ "$status_ok" != "1" ]; then
             # 状态未落到合法完成态 → 不留 jarvis-done 黑洞：降级为 jarvis-idle + escalate。
             _update_tags_merged "$workitem_id" "$IDLE_TAG" "$DONE_TAG"
+            downgrade_tag_rc=$?
+            if [ "$interactive_finish" = "1" ] && [ "$downgrade_tag_rc" -ne 0 ]; then
+                echo "claim.sh: failed to downgrade Aone to idle; keeping database session active for $workitem_id" >&2
+                [ "$downgrade_tag_rc" -eq 1 ] && downgrade_tag_rc=2
+                exit "$downgrade_tag_rc"
+            fi
             bash "$script_dir/log.sh" escalate "$workitem_id" \
                 "finish_status_unresolved: done_status='${eff_status:-<none>}' 未落地(当前='${cur_status:-<unknown>}',workitemType='${wtype:-?}')；已降级 jarvis-done→jarvis-idle，请人工设正确完成态或摘标签" \
                 "" >/dev/null 2>&1 || true
             echo "claim.sh: finish $workitem_id — 状态未落合法完成态，已降级 jarvis-done→jarvis-idle 并 escalate（交 Revisit 兜底）" >&2
+        fi
+        if [ "$interactive_finish" = "1" ]; then
+            if [ "$status_ok" = "1" ]; then
+                if ! _interactive_worker complete "$workitem_id" "Aone reached terminal state" >/dev/null; then
+                    echo "claim.sh: Aone is complete but database session completion failed for $workitem_id; retry finish" >&2
+                    exit 2
+                fi
+            elif ! _interactive_worker suspend "$workitem_id" "finish downgraded to jarvis-idle" >/dev/null; then
+                echo "claim.sh: finish downgraded to idle but database session suspend failed for $workitem_id" >&2
+                exit 2
+            fi
         fi
         _ledger_upsert "$workitem_id" true
         exit 0

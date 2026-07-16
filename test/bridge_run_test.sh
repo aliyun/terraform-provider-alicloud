@@ -16,6 +16,7 @@ set -uo pipefail
 test_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$test_dir/.." && pwd)"
 RUNSH="$repo_root/bridge/run.sh"
+INSTALLER="$repo_root/bridge/install-launchd.sh"
 
 if [ ! -f "$RUNSH" ]; then
   echo "SKIP bridge_run_test: $RUNSH not found"
@@ -28,7 +29,11 @@ FAKEPY="$TMP/fakepy"
 BOTFILE="$TMP/bot.py"       # dummy path handed to the fake python; content unused
 BSENV="$TMP/bootstrap.env"  # stand-in for bootstrap/.env
 JENV="$TMP/jarvis.env"      # stand-in for bridge/jarvis.env
+FAKECTL="$TMP/launchctl"
+FAKECTL_STATE="$TMP/launchctl-state"
+LPLIST="$TMP/com.jarvis.test.plist"
 : >"$BOTFILE"; : >"$BSENV"; : >"$JENV"
+printf '%s\n' '<?xml version="1.0"?><plist version="1.0"><dict><key>Label</key><string>com.jarvis.test</string></dict></plist>' >"$LPLIST"
 
 pass=0; fail=0
 ok() { echo "PASS $1"; pass=$((pass+1)); }
@@ -59,6 +64,9 @@ case "${FAKE_BOT_MODE:-stay}" in
     trap '' TERM
     echo "$ts INFO [MainThread] deaf fake bot (ignores SIGTERM)"
     while true; do sleep 1; done ;;
+  once)
+    echo "$ts INFO [MainThread] foreground once JARVIS_NO_DINGTALK=${JARVIS_NO_DINGTALK:-0}"
+    exit 0 ;;
   *)
     # Mirror the real bot's dual-line startup: the degraded bot prefixes EVERY line with
     # [NO-DINGTALK]; both modes log "scan scheduler started" (an ambiguous non-discriminator).
@@ -74,6 +82,33 @@ esac
 FAKE
 chmod +x "$FAKEPY"
 
+# Minimal launchctl state machine. Every call is recorded and scoped to TMP; it never
+# touches the host's launchd domain.
+cat >"$FAKECTL" <<'FAKE'
+#!/usr/bin/env bash
+set -u
+state="${FAKE_LAUNCHCTL_STATE:?}"
+mkdir -p "$state"
+printf '%s\n' "$*" >>"$state/calls"
+case "${1:-}" in
+  print)
+    [ -f "$state/loaded" ] || exit 113
+    printf '%s\n' '{' '    state = running' '    pid = 4242' '}' ;;
+  bootstrap)
+    touch "$state/loaded" ;;
+  bootout)
+    rm -f "$state/loaded" ;;
+  enable)
+    : ;;
+  kickstart)
+    [ -f "$state/loaded" ] || exit 1 ;;
+  *)
+    echo "unexpected fake launchctl command: $*" >&2
+    exit 2 ;;
+esac
+FAKE
+chmod +x "$FAKECTL"
+
 # Invoke run.sh with all state/env/deps redirected into the hermetic tmp sandbox.
 run() {
   env JARVIS_BRIDGE_PYTHON="$FAKEPY" \
@@ -84,6 +119,12 @@ run() {
       JARVIS_BRIDGE_START_WAIT="1.0" \
       JARVIS_BRIDGE_STOP_WAIT="1" \
       JARVIS_BRIDGE_NO_COORD="1" \
+      JARVIS_BRIDGE_SUPERVISOR="${TEST_SUPERVISOR-}" \
+      JARVIS_BRIDGE_LAUNCHCTL="$FAKECTL" \
+      JARVIS_BRIDGE_LAUNCHD_LABEL="com.jarvis.test" \
+      JARVIS_BRIDGE_LAUNCHD_DOMAIN="gui/4242" \
+      JARVIS_BRIDGE_LAUNCHD_PLIST="$LPLIST" \
+      FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
       DINGTALK_APP_KEY="${TEST_KEY-}" \
       DINGTALK_APP_SECRET="${TEST_SECRET-}" \
       JARVIS_NO_DINGTALK="" \
@@ -104,6 +145,7 @@ trap cleanup EXIT
 
 # --- T0: syntax ------------------------------------------------------------
 if bash -n "$RUNSH" 2>/dev/null; then ok "bash -n: run.sh syntax clean"; else no "bash -n: run.sh syntax clean"; fi
+if bash -n "$INSTALLER" 2>/dev/null; then ok "bash -n: install-launchd.sh syntax clean"; else no "bash -n: install-launchd.sh syntax clean"; fi
 
 # --- T1: degraded start (no creds) -----------------------------------------
 fresh
@@ -215,6 +257,77 @@ fout="$(run stop 2>&1)"; rc=$?
 has "forced" "$fout" "stop(deaf): 忽略 TERM → 宽限后 SIGKILL forced 兜底"
 kill -0 "$p1" 2>/dev/null && no "stop(deaf): process gone after SIGKILL" || ok "stop(deaf): process gone after SIGKILL"
 [ ! -f "$STATE/bot.pid" ] && ok "stop(deaf): pidfile removed" || no "stop(deaf): pidfile removed"
+
+# --- T13: daemon is a true foreground entrypoint ---------------------------
+fresh
+out="$(TEST_BOT_MODE=once TEST_KEY=k TEST_SECRET=s run daemon 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "daemon: foreground child exit is propagated" || no "daemon: foreground child exit is propagated (got $rc)"
+has "foreground daemon" "$out" "daemon: reports foreground mode"
+has "JARVIS_NO_DINGTALK=0" "$out" "daemon: sources env and keeps full mode"
+[ ! -f "$STATE/bot.pid" ] && ok "daemon: does not write local pidfile" || no "daemon: does not write local pidfile"
+
+# --- T14: launchd-supervised lifecycle uses only fake launchctl ------------
+fresh
+rm -rf "$FAKECTL_STATE"; mkdir -p "$FAKECTL_STATE"
+out="$(TEST_SUPERVISOR=launchd run start 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "launchd start: exit 0" || no "launchd start: exit 0 (got $rc)"
+calls="$(cat "$FAKECTL_STATE/calls" 2>/dev/null)"
+has "bootstrap gui/4242 $LPLIST" "$calls" "launchd start: bootstraps configured plist"
+has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd start: kickstarts service"
+[ ! -f "$STATE/bot.pid" ] && ok "launchd start: no local bot process/pidfile" || no "launchd start: no local pidfile"
+st="$(TEST_SUPERVISOR=launchd run status 2>&1)"
+has "RUNNING" "$st" "launchd status: parses fake launchctl state"
+has "pid 4242" "$st" "launchd status: reports launchd pid"
+: >"$FAKECTL_STATE/calls"
+out="$(TEST_SUPERVISOR=launchd run restart 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "launchd restart: exit 0" || no "launchd restart: exit 0 (got $rc)"
+calls="$(cat "$FAKECTL_STATE/calls")"
+has "enable gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service enabled"
+has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd restart: replaces running process"
+hasnot "bootout gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service registered"
+out="$(TEST_SUPERVISOR=launchd run stop 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "launchd stop: exit 0" || no "launchd stop: exit 0 (got $rc)"
+st="$(TEST_SUPERVISOR=launchd run status 2>&1)"
+has "STOPPED" "$st" "launchd status: reports stopped after bootout"
+
+# --- T15: installer renders absolute plist and converges idempotently -------
+rm -rf "$FAKECTL_STATE" "$TMP/home"; mkdir -p "$FAKECTL_STATE" "$TMP/home"
+INSTALLED_PLIST="$TMP/home/Library/LaunchAgents/com.jarvis.test.plist"
+install_fake() {
+  env HOME="$TMP/home" \
+      JARVIS_LAUNCHD_ALLOW_NON_DARWIN=1 \
+      JARVIS_BRIDGE_LAUNCHCTL="$FAKECTL" \
+      JARVIS_BRIDGE_LAUNCHD_LABEL="com.jarvis.test" \
+      JARVIS_BRIDGE_LAUNCHD_DOMAIN="gui/4242" \
+      JARVIS_BRIDGE_LAUNCHD_PLIST="$INSTALLED_PLIST" \
+      JARVIS_BRIDGE_STATE_DIR="$TMP/install-state" \
+      JARVIS_BRIDGE_ENV="$JENV" \
+      FAKE_LAUNCHCTL_STATE="$FAKECTL_STATE" \
+      bash "$INSTALLER"
+}
+iout="$(install_fake 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "install-launchd: first install exits 0" || no "install-launchd: first install exits 0 (got $rc)"
+[ -f "$INSTALLED_PLIST" ] && ok "install-launchd: plist created" || no "install-launchd: plist created"
+rendered="$(cat "$INSTALLED_PLIST" 2>/dev/null)"
+has "<string>$RUNSH</string>" "$rendered" "install-launchd: renders absolute run.sh path"
+has "<string>daemon</string>" "$rendered" "install-launchd: plist invokes daemon"
+has "<key>Umask</key>" "$rendered" "install-launchd: launchd child uses private umask"
+has "<integer>63</integer>" "$rendered" "install-launchd: private umask is 0077"
+hasnot "__RUN_SH_PATH__" "$rendered" "install-launchd: no unresolved path placeholder"
+state_mode="$(python3 - "$TMP/install-state" <<'PY'
+import os
+import stat
+import sys
+print(oct(stat.S_IMODE(os.stat(sys.argv[1]).st_mode)))
+PY
+)"
+[ "$state_mode" = "0o700" ] && ok "install-launchd: state directory is 0700" || no "install-launchd: state directory is 0700 (got $state_mode)"
+calls="$(cat "$FAKECTL_STATE/calls")"
+has "bootstrap gui/4242 $INSTALLED_PLIST" "$calls" "install-launchd: bootstraps rendered plist"
+has "kickstart -k gui/4242/com.jarvis.test" "$calls" "install-launchd: kickstarts rendered service"
+iout2="$(install_fake 2>&1)"; rc=$?
+[ "$rc" = 0 ] && ok "install-launchd: repeat install exits 0" || no "install-launchd: repeat install exits 0 (got $rc)"
+has "unchanged" "$iout2" "install-launchd: repeat render is idempotent"
 
 echo ""
 echo "bridge_run_test: $pass passed, $fail failed"
