@@ -2,7 +2,7 @@
 
 > Aone: [84375416](https://project.aone.alibaba-inc.com/v2/project/2100304/req/84375416)
 >
-> 状态：初版范围与关键技术边界已由用户确认；本文只固化设计，不在本阶段实现 Skill。
+> 状态：初版范围与关键技术边界已由用户确认；Skill v0.1 已按本文实现。
 
 ## 1. 背景
 
@@ -311,4 +311,4 @@ Data Source 在同一场景中可以把父 ID 声明为 Required，因为用户�
 - 文档明确关联关系只消费统一产物；
 - Jarvis 的 Aone、workspace、worktree、数字人和 QA 流程均有可执行入口。
 
-设计评审通过后，再单独产出实现计划；本阶段不创建 Skill 文件。
+设计评审通过后已单独产出实现计划，并据此创建 Skill v0.1。

@@ -22,11 +22,14 @@ for rel in \
   diff -u "$expected" "$claude_file"
 done
 
-for unexpected in \
-  "$repo_root/.claude/skills/terraformer-resource-dev/agents/openai.yaml" \
-  "$repo_root/.agents/skills/terraformer-resource-dev/agents/openai.yaml"; do
-  if [[ -e "$unexpected" ]]; then
-    echo "terraformer_resource_dev_skill_rules_test: unexpected optional metadata $unexpected" >&2
+expected_layout=$'SKILL.md\nreferences/alicloud-resource-development.md'
+for skill_root in \
+  "$repo_root/.claude/skills/terraformer-resource-dev" \
+  "$repo_root/.agents/skills/terraformer-resource-dev"; do
+  actual_layout="$(find "$skill_root" -type f | sed "s#^$skill_root/##" | LC_ALL=C sort)"
+  if [[ "$actual_layout" != "$expected_layout" ]]; then
+    echo "terraformer_resource_dev_skill_rules_test: unexpected layout in $skill_root" >&2
+    diff -u <(printf '%s\n' "$expected_layout") <(printf '%s\n' "$actual_layout") >&2 || true
     exit 1
   fi
 done
