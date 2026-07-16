@@ -17,6 +17,15 @@
       "delivery": "delivery-aliyun-automation-agent.md",
       "ops": {}
     },
+    "auto_wonder": {
+      "repo": "auto-wonder",
+      "git_url": "git@gitlab.alibaba-inc.com:sdlc-autopilot/auto-wonder.git",
+      "app": 341827,
+      "project": 2087214,
+      "default_branch": "master",
+      "ops": {},
+      "desc": "AutoWonder 自驱研发平台"
+    },
     "mcp_server": {
       "repo": "cloudspec",
       "git_url": "git@gitlab.alibaba-inc.com:cloudspec-mcp/cloudspec.git",

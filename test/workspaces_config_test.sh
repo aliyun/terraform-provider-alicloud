@@ -15,6 +15,25 @@ jq -e '.workspaces.jarvis.git_url=="git@gitlab.alibaba-inc.com:terraflow/jarvis-
 jq -e '.workspaces.jarvis.default_branch=="master"' \
   "$repo_root/config/workspaces.json" >/dev/null
 
+# AutoWonder 项目事实坐标及默认分支。
+jq -e '
+  .workspaces.auto_wonder.repo == "auto-wonder" and
+  .workspaces.auto_wonder.git_url == "git@gitlab.alibaba-inc.com:sdlc-autopilot/auto-wonder.git" and
+  .workspaces.auto_wonder.app == 341827 and
+  .workspaces.auto_wonder.project == 2087214 and
+  .workspaces.auto_wonder.default_branch == "master" and
+  .workspaces.auto_wonder.ops == {} and
+  .workspaces.auto_wonder.desc == "AutoWonder 自驱研发平台"
+' "$repo_root/config/workspaces.json" >/dev/null
+
+mkdir -p "$tmpdir/auto-wonder"
+resolved_auto_wonder="$(JARVIS_WORKSPACES_LOCAL=none JARVIS_WORKSPACE_ROOT="$tmpdir" \
+  bash "$repo_root/bootstrap/workspace.sh" dir auto_wonder)"
+if [ "$resolved_auto_wonder" != "$tmpdir/auto-wonder" ]; then
+  echo "auto_wonder: expected $tmpdir/auto-wonder, got $resolved_auto_wonder" >&2
+  exit 1
+fi
+
 # 自动化服务台六个交付仓库：事实坐标、默认分支和池归属必须完整登记。
 jq -e '
   def platform_workspace($key; $repo; $url):
