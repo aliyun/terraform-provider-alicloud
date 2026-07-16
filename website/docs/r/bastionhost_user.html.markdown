@@ -124,7 +124,9 @@ The following arguments are supported:
   * LDAP: LDAP-authenticated User
 -> **NOTE:** From version 1.199.0, `source` can be set to `AD`, `LDAP`.
 * `source_user_id` - (Optional, ForceNew) Specify the Newly Created User Is Uniquely Identified. Indicates That the Parameter Is a Bastion Host Corresponding to the User with the Ram User's Unique Identifier. The Newly Created User Source Grant Permission to a RAM User (That Is, Source Used as a Ram), this Parameter Is Required. You Can Call Access Control of Listusers Interface from the Return Data Userid to Obtain the Parameters.
-* `status` - (Optional) The status of the resource. Valid values: `Frozen`, `Normal`.
+* `status` - (Optional) The status of the resource. Valid values: `Frozen`, `Normal`, `RemoteDNChanged`.
+
+  -> **NOTE:** Set to `Frozen` to lock the account, or `Normal` to unlock it. `RemoteDNChanged` is only returned by the API to indicate that the user's remote DN (Distinguished Name) setting is incorrect; configuring it takes no effect.
 * `user_name` - (Required, ForceNew) Specify the New User Name. This Parameter Is Only by Letters, Lowercase Letters, Numbers, and Underscores (_), Supports up to 128 Characters.
 
 ## Attributes Reference

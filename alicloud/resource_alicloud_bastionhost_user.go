@@ -74,7 +74,7 @@ func resourceAlicloudBastionhostUser() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Frozen", "Normal"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Frozen", "Normal", "RemoteDNChanged"}, false),
 			},
 			"user_id": {
 				Type:     schema.TypeString,
