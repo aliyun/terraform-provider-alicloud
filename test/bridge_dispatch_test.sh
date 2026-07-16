@@ -2633,6 +2633,403 @@ class PrWatchPersonaPromptTest(unittest.TestCase):
         self.assertIn("pr-watch.sh add 123 <pr_url> 1086837", p)
 
 
+class _MultiRouteRunner:
+    """按 REST path 分派假 subprocess.run 覆盖 _gh_pr_comments 三路合流。仅拦截
+    ``bootstrap/github-identity.sh gh api repos/<o>/<r>/(issues/<n>/comments |
+    pulls/<n>/comments | pulls/<n>/reviews)``。其他调用（claim.sh/wrap.sh/log.sh/aone-get.sh
+    / gh pr view --json state,mergedAt）返回稳定 stub 让 _tick 顺跑至 _maybe_dispatch_comment_reply。
+
+    fail_routes = 集合，元素 ∈ {"issues","pr","reviews"}，命中即 rc!=0。
+    """
+
+    def __init__(self, issues=None, pr_lines=None, reviews=None, fail_routes=None):
+        self.issues = list(issues or [])
+        self.pr_lines = list(pr_lines or [])
+        self.reviews = list(reviews or [])
+        self.fail_routes = set(fail_routes or [])
+        self.dispatch_reply_calls = []   # for compat with _maybe_dispatch_comment_reply audit
+
+    def __call__(self, cmd, *a, **k):
+        argv = [str(x) for x in cmd]
+        head = argv[0]
+        if "github-identity.sh" in head:
+            # sub-cmd: gh api <path>  OR  gh pr view <url> ...
+            if len(argv) >= 3 and argv[1] == "gh" and argv[2] == "api":
+                path = argv[3] if len(argv) > 3 else ""
+                if "/issues/" in path and path.endswith("/comments"):
+                    if "issues" in self.fail_routes:
+                        return _Proc(1, "", "boom-issues")
+                    return _Proc(0, json.dumps(self.issues), "")
+                if "/pulls/" in path and path.endswith("/comments"):
+                    if "pr" in self.fail_routes:
+                        return _Proc(1, "", "boom-pr")
+                    return _Proc(0, json.dumps(self.pr_lines), "")
+                if "/pulls/" in path and path.endswith("/reviews"):
+                    if "reviews" in self.fail_routes:
+                        return _Proc(1, "", "boom-reviews")
+                    return _Proc(0, json.dumps(self.reviews), "")
+                return _Proc(0, "[]", "")
+            # gh pr view / pr list / anything else → stub OPEN state, empty CI, empty PR list
+            if len(argv) >= 4 and argv[1] == "gh" and argv[2] == "pr" and argv[3] == "view":
+                # decide by --json field
+                if "--json" in argv:
+                    idx = argv.index("--json")
+                    fields = argv[idx + 1] if idx + 1 < len(argv) else ""
+                    if "statusCheckRollup" in fields:
+                        return _Proc(0, json.dumps({"headRefOid": "abc", "statusCheckRollup": []}), "")
+                    if "state" in fields:
+                        return _Proc(0, json.dumps({"state": "OPEN", "mergedAt": None}), "")
+                return _Proc(0, "{}", "")
+            if len(argv) >= 4 and argv[1] == "gh" and argv[2] == "pr" and argv[3] == "list":
+                return _Proc(0, "[]", "")
+            return _Proc(0, "", "")
+        if "aone-get.sh" in head:
+            return _Proc(1, "", "no-guard")  # 没走到 guard 路径也没关系
+        return _Proc(0, "", "")
+
+
+class _RecordingPool:
+    """记录 pool.submit 调用，模拟“派发成功”。用于 dispatch_comment_reply 断言：
+    submit 有没有被调、以什么 kind 派、force 是否为 True。"""
+
+    def __init__(self, ok=True, reason="dispatched"):
+        self._ok = ok
+        self._reason = reason
+        self.calls = []
+
+    def submit(self, iid, work, *, notify=None, force=False, kind="ticket", project=None):
+        self.calls.append({"id": str(iid), "kind": kind, "force": force, "project": project})
+        return self._ok, self._reason
+
+
+class PrWatchCommentsMultiRouteTest(_PrWatchBase):
+    """三路合流 + 结构化 last_seen_comment + 白名单动态化 + 老基线兼容。
+
+    ─ 单元测 `_gh_pr_comments`（三路 fetch/过滤/排序 + key 前缀）
+    ─ 集成测 `_maybe_dispatch_comment_reply`（baseline / new / legacy / dispatch 决策）
+    """
+
+    _PR = "https://github.com/aliyun/terraform-provider-alicloud/pull/9978"
+
+    # 便捷工厂 ------------------------------------------------------------------
+
+    @staticmethod
+    def _issue(iid, login, body="hi", created="2026-07-16T04:38:00Z"):
+        return {"id": iid, "user": {"login": login}, "body": body,
+                "created_at": created}
+
+    @staticmethod
+    def _pr_line(iid, login, body="line", created="2026-07-16T05:03:00Z"):
+        return {"id": iid, "user": {"login": login}, "body": body,
+                "created_at": created}
+
+    @staticmethod
+    def _review(rid, login, body="looks good", state="COMMENTED",
+                submitted="2026-07-16T05:07:00Z", created=None):
+        # accept ``created`` alias for convenience; reviews sort key is submitted_at.
+        return {"id": rid, "user": {"login": login}, "body": body, "state": state,
+                "submitted_at": created or submitted}
+
+    def _run_dispatch(self, runner, entry, tid="9978"):
+        """Run _maybe_dispatch_comment_reply with a recording pool; return (pool, entry_after)."""
+        b._prwatch_add(tid, entry.get("pr_url", self._PR), entry.get("project", "528766"))
+        if any(k not in ("pr_url", "project") for k in entry):
+            b._prwatch_update(tid, **{k: v for k, v in entry.items()
+                                     if k not in ("pr_url", "project")})
+        b.subprocess.run = runner
+        pool = _RecordingPool()
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        # feed the current entry (as production does via _check_one)
+        ent = b._prwatch_load()[tid]
+        sch._maybe_dispatch_comment_reply(tid, ent)
+        return pool, b._prwatch_load().get(tid, {})
+
+    # 1. issue-only baseline + new -------------------------------------------
+
+    def test_1_issue_only_baseline_and_new(self):
+        r = _MultiRouteRunner(issues=[self._issue(4988236273, "SomeReviewer",
+                                                  body="please clarify",
+                                                  created="2026-07-16T04:38:00Z")])
+        # first tick → baseline-seed, no dispatch
+        pool, ent = self._run_dispatch(r, {"pr_url": self._PR, "project": "528766"})
+        self.assertEqual(pool.calls, [], "首轮只 baseline-seed，不派")
+        self.assertEqual(ent.get("last_seen_comment"), "issue-4988236273")
+
+        # 2nd tick: same comment → skip
+        b.subprocess.run = r
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=_RecordingPool())
+        sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(pool.calls, [], "同一 key → 不重派")
+
+        # 3rd tick: an additional issue comment newer → dispatch + ledger upgrade
+        r2 = _MultiRouteRunner(issues=[
+            self._issue(4988236273, "SomeReviewer", body="please clarify",
+                        created="2026-07-16T04:38:00Z"),
+            self._issue(4999999999, "OtherReviewer", body="another q",
+                        created="2026-07-16T06:00:00Z"),
+        ])
+        b.subprocess.run = r2
+        pool2 = _RecordingPool()
+        sch2 = b.PrWatchScheduler(_FakeHandler(), pool=pool2)
+        sch2._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(len(pool2.calls), 1, "新 issue 评论 → 派 pr_comment_reply")
+        self.assertEqual(pool2.calls[0]["kind"], "pr_comment_reply")
+        self.assertTrue(pool2.calls[0]["force"])
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"],
+                         "issue-4999999999", "台账升级到最新 key")
+
+    # 2. PR line comment (the triggering scenario, LCLSpring 05:03) ------------
+
+    def test_2_pr_line_comment_perceived(self):
+        # 复刻 PR#9978 那条 review line comment 场景（website/alicloud.erb L1）。作者不能
+        # 用真人 LCLSpring —— 已在 contacts.json 的 github 字段加入白名单，会被当作“我方”过滤。
+        # 这里用一个外部化名 ExternalReviewer 复现 line-comment 感知路径。
+        r = _MultiRouteRunner(pr_lines=[self._pr_line(3592756908, "ExternalReviewer",
+                                                     body="这个文档为什么要更改？",
+                                                     created="2026-07-16T05:03:00Z")])
+        b._prwatch_add("9978", self._PR, "528766")
+        b._prwatch_update("9978", last_seen_comment="issue-1000")  # 已有基线 = 已见 issue
+        b.subprocess.run = r
+        pool = _RecordingPool()
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(len(pool.calls), 1, "line comment 必须触发 dispatch（本次修的核心场景）")
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "pr-3592756908")
+
+    # 3. review body (COMMENTED with text) ------------------------------------
+
+    def test_3_review_body_perceived(self):
+        r = _MultiRouteRunner(reviews=[self._review(555001, "SomeReviewer",
+                                                    body="Please add docs",
+                                                    state="COMMENTED")])
+        b._prwatch_add("9978", self._PR, "528766")
+        b._prwatch_update("9978", last_seen_comment="issue-1000")
+        b.subprocess.run = r
+        pool = _RecordingPool()
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(len(pool.calls), 1, "review body 非空 → 触发")
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "review-555001")
+
+    # 4. review COMMENTED with EMPTY body (LCLSpring 05:07 那条) -- no signal --
+
+    def test_4_review_empty_body_ignored(self):
+        r = _MultiRouteRunner(reviews=[self._review(555002, "LCLSpring", body="",
+                                                    state="COMMENTED"),
+                                       self._review(555003, "LCLSpring", body="   \n  ",
+                                                    state="COMMENTED")])
+        b._prwatch_add("9978", self._PR, "528766")
+        b._prwatch_update("9978", last_seen_comment="issue-1000")
+        b.subprocess.run = r
+        pool = _RecordingPool()
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(pool.calls, [], "review 空 body（含纯空白）→ 忽略，无触发")
+        # ledger 不变
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "issue-1000")
+
+    # 5. mixed sources — latest time wins -------------------------------------
+
+    def test_5_mixed_takes_latest_by_time(self):
+        r = _MultiRouteRunner(
+            issues=[self._issue(1, "R1", created="2026-07-16T04:00:00Z")],
+            pr_lines=[self._pr_line(2, "R2", created="2026-07-16T06:00:00Z")],  # latest
+            reviews=[self._review(3, "R3", created="2026-07-16T05:00:00Z",
+                                  submitted="2026-07-16T05:00:00Z")])
+        b._prwatch_add("9978", self._PR, "528766")
+        b._prwatch_update("9978", last_seen_comment="issue-0")  # legacy? no, starts with issue-
+        b.subprocess.run = r
+        pool = _RecordingPool()
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(len(pool.calls), 1)
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "pr-2",
+                         "最新时间的 pr line 胜出")
+
+    # 6. self + bot filtered; a real reviewer wins ----------------------------
+
+    def test_6_self_and_bot_filtered(self):
+        r = _MultiRouteRunner(
+            issues=[self._issue(1, "api-tool-agent", created="2026-07-16T04:00:00Z"),
+                    self._issue(2, "dependabot[bot]", created="2026-07-16T05:00:00Z"),
+                    self._issue(3, "SomeReviewer", body="hi", created="2026-07-16T03:00:00Z")],
+            pr_lines=[self._pr_line(11, "API-Tool-Agent",  # 大小写不敏感也过滤
+                                    created="2026-07-16T07:00:00Z")],
+            reviews=[self._review(21, "somebot[bot]", body="LGTM",
+                                  submitted="2026-07-16T06:00:00Z")])
+        b._prwatch_add("9978", self._PR, "528766")
+        b._prwatch_update("9978", last_seen_comment="issue-0")
+        b.subprocess.run = r
+        pool = _RecordingPool()
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(len(pool.calls), 1)
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "issue-3",
+                         "唯一非自己非 bot → issue-3 触发")
+
+    # 7. contacts.json github field → additional self whitelist ---------------
+
+    def test_7_contacts_github_whitelist(self):
+        # 造一个 tmp REPO_ROOT，写 config/contacts.json，人手指定 github: HumanReviewer
+        orig_root = b.REPO_ROOT
+        tmp_root = Path(tempfile.mkdtemp())
+        (tmp_root / "config").mkdir(parents=True)
+        (tmp_root / "config" / "contacts.json").write_text(json.dumps({
+            "contacts": [
+                {"name": "H", "flower": "R", "id": "1", "github": "HumanReviewer"},
+                {"name": "N", "flower": None, "id": "2"},  # no github → 不入
+                {"name": "M", "flower": "F", "id": "3", "github": ""},  # 空串 → 不入
+            ]
+        }))
+        try:
+            b.REPO_ROOT = tmp_root
+            logins = b._load_self_github_logins()
+            self.assertIn("api-tool-agent", logins, "内置兜底必须保留")
+            self.assertIn("humanreviewer", logins, "contacts 里的 github 必须并入（小写）")
+            self.assertEqual(sum(1 for x in logins if x in
+                                 ("humanreviewer", "api-tool-agent")), 2)
+
+            # 端到端过滤：HumanReviewer 的评论应被判为“我方”过滤掉
+            r = _MultiRouteRunner(issues=[
+                self._issue(1, "HumanReviewer", created="2026-07-16T05:00:00Z"),
+                self._issue(2, "OutsideReviewer", body="hi",
+                            created="2026-07-16T03:00:00Z"),
+            ])
+            b._prwatch_add("9978", self._PR, "528766")
+            b._prwatch_update("9978", last_seen_comment="issue-0")
+            b.subprocess.run = r
+            pool = _RecordingPool()
+            sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+            sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+            self.assertEqual(len(pool.calls), 1)
+            self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "issue-2",
+                             "HumanReviewer 被当作我方过滤 → OutsideReviewer 胜出")
+        finally:
+            b.REPO_ROOT = orig_root
+
+    def test_7b_contacts_missing_falls_back_to_builtin(self):
+        # 无 contacts.json → 仍应只保留内置 api-tool-agent
+        orig_root = b.REPO_ROOT
+        tmp_root = Path(tempfile.mkdtemp())
+        try:
+            b.REPO_ROOT = tmp_root
+            logins = b._load_self_github_logins()
+            self.assertEqual(logins, {"api-tool-agent"},
+                             "缺 contacts.json → 只保留内置兜底")
+        finally:
+            b.REPO_ROOT = orig_root
+
+    def test_7c_contacts_corrupt_falls_back_to_builtin(self):
+        # 损坏 JSON → warning + 内置兜底不失守
+        orig_root = b.REPO_ROOT
+        tmp_root = Path(tempfile.mkdtemp())
+        (tmp_root / "config").mkdir(parents=True)
+        (tmp_root / "config" / "contacts.json").write_text("{ this is not json")
+        try:
+            b.REPO_ROOT = tmp_root
+            logins = b._load_self_github_logins()
+            self.assertIn("api-tool-agent", logins,
+                          "contacts.json 损坏 → 兜底集元素必须在")
+        finally:
+            b.REPO_ROOT = orig_root
+
+    # 8. legacy baseline matches → migrate, no dispatch -----------------------
+
+    def test_8_legacy_baseline_migration(self):
+        # 旧台账形态之一：完整 URL，尾巴数字 = 4988236273
+        r = _MultiRouteRunner(issues=[
+            self._issue(4988236273, "SomeReviewer", body="pre-existing",
+                        created="2026-07-16T04:38:00Z")])
+        b._prwatch_add("9978", self._PR, "528766")
+        b._prwatch_update("9978", last_seen_comment=(
+            "https://github.com/aliyun/terraform-provider-alicloud/pull/9978"
+            "#issuecomment-4988236273"))
+        b.subprocess.run = r
+        pool = _RecordingPool()
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(pool.calls, [],
+                         "老基线尾巴数字 == 当前 issue-<id> → 视作同一条，不派")
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "issue-4988236273",
+                         "台账 silent 升级到新格式")
+
+        # 另一种老格式：#issuecomment-<id> 裸片段
+        b._prwatch_update("9978", last_seen_comment="#issuecomment-4988236273")
+        b.subprocess.run = r
+        pool2 = _RecordingPool()
+        sch2 = b.PrWatchScheduler(_FakeHandler(), pool=pool2)
+        # 手动把新格式还原成 legacy 用来断言迁移逻辑
+        b._prwatch_update("9978", last_seen_comment="#issuecomment-4988236273")
+        sch2._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(pool2.calls, [], "#issuecomment-<id> 裸片段格式 → 同上，兼容")
+
+    # 9. legacy baseline + new key (different id) → dispatch + upgrade --------
+
+    def test_9_legacy_baseline_new_comment(self):
+        # 老台账 = issue tail 4988236273；新出现的评论是 pr-3592756908（不同 id 空间）。
+        # 同 test_2：actor 用外部化名 ExternalReviewer 避开白名单过滤。
+        r = _MultiRouteRunner(pr_lines=[self._pr_line(3592756908, "ExternalReviewer",
+                                                     body="这个文档为什么要更改？",
+                                                     created="2026-07-16T05:03:00Z")])
+        b._prwatch_add("9978", self._PR, "528766")
+        b._prwatch_update("9978", last_seen_comment=(
+            "https://github.com/aliyun/terraform-provider-alicloud/pull/9978"
+            "#issuecomment-4988236273"))
+        b.subprocess.run = r
+        pool = _RecordingPool()
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(len(pool.calls), 1, "老基线 + 新评论(异空间) → 派")
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "pr-3592756908",
+                         "派后台账升级到新格式 pr-<id>")
+
+    # 10. one route fails, others succeed → still returns latest --------------
+
+    def test_10_one_route_fails_others_succeed(self):
+        r = _MultiRouteRunner(
+            pr_lines=[self._pr_line(2, "R2", created="2026-07-16T06:00:00Z")],
+            reviews=[self._review(3, "R3", body="ok", submitted="2026-07-16T05:00:00Z")],
+            fail_routes={"issues"})
+        b._prwatch_add("9978", self._PR, "528766")
+        b._prwatch_update("9978", last_seen_comment="issue-0")
+        b.subprocess.run = r
+        pool = _RecordingPool()
+        sch = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        sch._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(len(pool.calls), 1)
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "pr-2",
+                         "issue 路失败不影响其他两路，pr_line 最新胜出")
+
+    # 11. all three routes fail → (None,None,None) → early return -------------
+
+    def test_11_all_routes_fail_returns_none(self):
+        r = _MultiRouteRunner(fail_routes={"issues", "pr", "reviews"})
+        sch = b.PrWatchScheduler(_FakeHandler())
+        b.subprocess.run = r
+        key, login, snippet = sch._gh_pr_comments(self._PR)
+        self.assertEqual((key, login, snippet), (None, None, None))
+
+        # 集成层：_maybe_dispatch_comment_reply 收到 None → 不动
+        b._prwatch_add("9978", self._PR, "528766")
+        b._prwatch_update("9978", last_seen_comment="issue-1")
+        pool = _RecordingPool()
+        sch2 = b.PrWatchScheduler(_FakeHandler(), pool=pool)
+        b.subprocess.run = r
+        sch2._maybe_dispatch_comment_reply("9978", b._prwatch_load()["9978"])
+        self.assertEqual(pool.calls, [], "三路全失败 → 不派")
+        self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"], "issue-1",
+                         "三路全失败 → 台账不变")
+
+    # 12. bad pr_url shape → (None,None,None), no shell call ------------------
+
+    def test_12_unparseable_pr_url_returns_none(self):
+        sch = b.PrWatchScheduler(_FakeHandler())
+        for bad in ("", "http://not-github.com/x/y/pull/1", "https://github.com/only/one/pull",
+                    None):
+            self.assertEqual(sch._gh_pr_comments(bad), (None, None, None),
+                             "非法 pr_url=%r → (None,None,None)" % bad)
+
+
 def _run():
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])
