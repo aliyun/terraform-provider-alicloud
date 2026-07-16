@@ -522,6 +522,49 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 16c: 当前 status 已等于 per-pool done_status → 短路,不重推 status,不 escalate。
+# Bug 现场:tf_provider 池 done_status="待发布" 不在全局 .claim.done_statuses 里(全局只
+# 收录"已发布"/"已完成"/"已拒绝"等,不含 per-池"待发布"),导致 wrap.sh done 已推到"待发布"
+# 后立刻 finish 时,_in_done_statuses 命中不了,走 elif 再推一次 "待发布" 触发 workflow
+# 空转拒绝,status_ok=0 降级 jarvis-done→jarvis-idle + escalate,把已完成态工单误判为
+# 未完成。修复:finish 分支加短路 `cur_status == eff_status` = 已终态。
+# 与 donecheck 的「合法完成态 = 全局 ∪ 各池 done_status」并集判据一致
+# (loops/aone-triage.md §三)。
+# ---------------------------------------------------------------------------
+echo "=== Test 16c: cur_status already at per-pool done_status → shortcut, no reject/escalate ==="
+printf 'jarvis-claimed' > "$tmpstate"; : > "$tmpstatuscap"
+rm -f "$tmpconfig/escalation/$WORKITEM_ID.md"
+unset A1_GET_FAIL A1_UPDATE_NOOP A1_REJECT_STATUS COORD_ID
+# 当前状态已到 project 2100304 的 done_status "已完成"("已完成" 也不在全局 done_statuses,
+# 仅在 per-池 done_status),模拟 wrap.sh done 后立刻 finish 的收尾链路
+export A1_STATUS="已完成"
+out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" bash "$proj_root/bootstrap/claim.sh" finish "$WORKITEM_ID" 2100304 2>&1); rc=$?
+cap=$(cat "$tmpstatuscap" 2>/dev/null); state=$(cat "$tmpstate" 2>/dev/null)
+unset A1_STATUS
+echo "rc=$rc status_set='$cap' tags='$state'"; echo "out: $out"
+if [ "$rc" = "0" ]; then assert_pass "already-at-per-pool-done: finish exits 0"; else assert_fail "already-at-per-pool-done: exit $rc"; fi
+if [ -z "$cap" ]; then
+    assert_pass "already-at-per-pool-done: no --status write (short-circuited)"
+else
+    assert_fail "already-at-per-pool-done: unexpected --status write to '$cap'"
+fi
+if printf '%s' "$state" | grep -q "jarvis-done" && ! printf '%s' "$state" | grep -q "jarvis-idle"; then
+    assert_pass "already-at-per-pool-done: jarvis-done preserved, no downgrade ($state)"
+else
+    assert_fail "already-at-per-pool-done: should keep jarvis-done without idle, got '$state'"
+fi
+if [ -f "$tmpconfig/escalation/$WORKITEM_ID.md" ]; then
+    assert_fail "already-at-per-pool-done: unexpected escalation file written"
+else
+    assert_pass "already-at-per-pool-done: no escalation (bug fix vs pre-patch behavior)"
+fi
+if printf '%s' "$out" | grep -qi "already terminal: 已完成"; then
+    assert_pass "already-at-per-pool-done: log says already terminal"
+else
+    assert_fail "already-at-per-pool-done: expected 'already terminal' log line, got: $out"
+fi
+
+# ---------------------------------------------------------------------------
 # Test 17: per-category done_status — bug (功能缺陷) → Fixed
 # The pool's done_status is an object keyed by workitem type; finish must read the
 # workitem type (fields[] identifier==workitemType displayValue) and select its status.
