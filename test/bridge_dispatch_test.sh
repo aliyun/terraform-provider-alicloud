@@ -1703,19 +1703,19 @@ class BufferedRunnerCmdTest(unittest.TestCase):
         self.assertNotEqual(child_env.get("JARVIS_A1_IDENTITY"), "terraform-rd")
 
     def test_terraform_identity_and_post_pr_policy_reach_child_env(self):
-        captured = {}
-        out = json.dumps({"type": "result", "is_error": False,
-                          "subtype": "success", "result": "ok"})
-        b.subprocess.Popen = self._fake_popen(captured, out)
-        b.run_claude_buffered(
-            "hi", "sid-tf-policy", False, timeout=10, terraform=True,
+        child_env = b._a1_command_env(
+            terraform=True,
             aone_write_policy=b.POST_PR_AONE_WRITE_POLICY)
-        child_env = captured["kwargs"]["env"]
         self.assertEqual(child_env.get("JARVIS_A1_IDENTITY"), "terraform-rd")
         self.assertEqual(child_env.get("JARVIS_A1_STRICT"), "1")
         self.assertEqual(
             child_env.get("JARVIS_AONE_WRITE_POLICY"),
             b.POST_PR_AONE_WRITE_POLICY)
+        with self.assertRaisesRegex(
+                ValueError, "bridge-owned headless lineage"):
+            b.run_claude_buffered(
+                "hi", "sid-tf-policy", False, timeout=10, terraform=True,
+                aone_write_policy=b.POST_PR_AONE_WRITE_POLICY)
 
     def test_non_terraform_child_does_not_inherit_rd_identity(self):
         captured = {}

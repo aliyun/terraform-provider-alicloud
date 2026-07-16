@@ -101,7 +101,7 @@ class ManagedProcessGuardTest(unittest.TestCase):
                                    return_value=[sys.executable, "-c", script]), \
                     mock.patch.object(bot, "jarvis_root", return_value=Path(directory)), \
                     mock.patch.object(bot, "_headless_exec_command",
-                                      side_effect=lambda _sid, command: command), \
+                                      side_effect=lambda _sid, command, **_kw: command), \
                     mock.patch.object(bot, "_claim_workitem",
                                       side_effect=RuntimeError("claim lost")), \
                     mock.patch.object(bot, "_release_post_pr_claim") as release, \
@@ -118,6 +118,41 @@ class ManagedProcessGuardTest(unittest.TestCase):
             self.assertFalse(marker.exists(), "guard must kill before command exec")
             self.assertFalse(cursor.exists(), "claim failure must not advance PR cursor")
             release.assert_not_called()
+
+    def test_live_argv_restricts_after_state_and_marker_are_deleted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state_dir = Path(directory) / "state"
+            helper = Path(bot.__file__).resolve().parents[1] / \
+                "bootstrap" / "post-pr-context.sh"
+            script = (
+                "rm -f %s/*.json; "
+                "unset JARVIS_AONE_WRITE_POLICY; "
+                "source %s; "
+                "jarvis_post_pr_context_active"
+            ) % (state_dir, helper)
+            policy = {
+                "policyRevision": bot.HEADLESS_POLICY_REVISION,
+                "aoneWritePolicy": bot.POST_PR_AONE_WRITE_POLICY,
+                "kind": "pr_ci_fix",
+                "aoneId": "84362517",
+                "projectId": "2100304",
+            }
+            argv = bot._headless_exec_command(
+                "state-deleted-post-pr", ["/bin/bash", "-c", script],
+                headless_policy=policy)
+            env = os.environ.copy()
+            env.update({
+                "JARVIS_INTERACTIVE_STATE_DIR": str(state_dir),
+                "JARVIS_CONTROL_PLANE_BASE_URL": "http://127.0.0.1:1",
+                "JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT": "0.05",
+            })
+            process, sentinel_write = bot._spawn_guarded_managed_process(
+                argv, directory, lambda _process: None, env)
+            try:
+                _stdout, stderr = process.communicate(timeout=10)
+            finally:
+                os.close(sentinel_write)
+            self.assertEqual(process.returncode, 0, stderr)
 
     def test_legacy_on_spawn_is_also_gated_before_command(self):
         with tempfile.TemporaryDirectory() as directory:

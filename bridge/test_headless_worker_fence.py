@@ -77,6 +77,36 @@ class HeadlessWorkerFenceTest(unittest.TestCase):
         self.assertEqual(wrapped[9:],
                          ["/opt/claude", "--resume", "runtime-session"])
 
+    def test_post_pr_wrapper_carries_complete_lineage_policy_before_exec(self):
+        policy = {
+            "policyRevision": bot.HEADLESS_POLICY_REVISION,
+            "aoneWritePolicy": bot.POST_PR_AONE_WRITE_POLICY,
+            "kind": "pr_comment_reply",
+            "aoneId": "84362517",
+            "projectId": "2100304",
+        }
+        wrapped = bot._headless_exec_command(
+            "runtime-session", ["/opt/claude"], headless_policy=policy)
+        separator = wrapped.index("--")
+        manager_args = wrapped[3:separator]
+        self.assertEqual(manager_args[0], "exec-headless")
+        self.assertEqual(
+            manager_args[manager_args.index("--policy-revision") + 1],
+            bot.HEADLESS_POLICY_REVISION)
+        self.assertEqual(
+            manager_args[manager_args.index("--aone-write-policy") + 1],
+            bot.POST_PR_AONE_WRITE_POLICY)
+        self.assertEqual(
+            manager_args[manager_args.index("--headless-kind") + 1],
+            "pr_comment_reply")
+        self.assertEqual(
+            manager_args[manager_args.index("--aone-id") + 1],
+            "84362517")
+        self.assertEqual(
+            manager_args[manager_args.index("--project-id") + 1],
+            "2100304")
+        self.assertEqual(wrapped[separator + 1:], ["/opt/claude"])
+
     def test_real_wrapper_publishes_same_pid_state_before_exec(self):
         with tempfile.TemporaryDirectory() as directory:
             script = (

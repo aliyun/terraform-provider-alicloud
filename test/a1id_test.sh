@@ -777,24 +777,91 @@ assert_post_pr_allowed "field options" project workitem field options status --p
 context_dir="/tmp/jarvis-headless-context-$(id -u)"
 context_pgid="$(ps -o pgid= -p $$ | tr -d '[:space:]')"
 context_marker="$context_dir/$context_pgid.json"
+lineage_dir="$(mktemp -d)"
+manager="$proj_root/bootstrap/jarvis-interactive-worker.py"
 mkdir -p "$context_dir"
-printf '%s' \
-    '{"kind":"pr_comment_reply","policy_revision":"terraform-rd-single-writer-v3"}' \
-    > "$context_marker"
+rm -f "$context_marker"
+JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+JARVIS_CONTROL_PLANE_BASE_URL="http://127.0.0.1:1" \
+JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
+    /usr/bin/python3 -I "$manager" register-headless \
+    --session-id "a1id-lineage-$$" --pid "$$" --client claude \
+    --policy-revision terraform-rd-single-writer-v4 \
+    --aone-write-policy post-pr-read-only \
+    --headless-kind pr_comment_reply --aone-id 123 --project-id 528766 \
+    >/dev/null
 : > "$CAP"; : > "$ERR"
 env -u JARVIS_AONE_WRITE_POLICY \
     JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
     A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
     bash "$A1ID" -- project workitem update 123 --status Closed \
     >/dev/null 2>"$ERR"
 rc=$?
-rm -f "$context_marker"
 if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
-    pass "env -u 后仍由 headless process provenance 阻断 Aone 写"
+    pass "marker 缺失 + env -u 后仍由 canonical worker lineage 阻断 Aone 写"
 else
-    fail "env -u 绕过了 post-PR provenance: rc=$rc capture=$(cat "$CAP")"
+    fail "marker 缺失时 lineage 未阻断写: rc=$rc capture=$(cat "$CAP")"
 fi
-rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+printf '%s' '{broken-json' > "$context_marker"
+: > "$CAP"; : > "$ERR"
+env -u JARVIS_AONE_WRITE_POLICY \
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+    A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" -- project workitem comment create 123 -m no \
+    >/dev/null 2>"$ERR"
+rc=$?
+if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
+    pass "marker 损坏 + env 清空后 post-PR Aone 写仍被拒绝"
+else
+    fail "损坏 marker 绕过 lineage: rc=$rc capture=$(cat "$CAP")"
+fi
+
+: > "$CAP"; : > "$ERR"
+env -u JARVIS_AONE_WRITE_POLICY \
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+    A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" -- project workitem get 123 \
+    >/dev/null 2>"$ERR"
+rc=$?
+if [ "$rc" = "0" ] && grep -qF "ARGS=project workitem get 123" "$CAP"; then
+    pass "marker 损坏 + env 清空后明确 Aone 读仍允许"
+else
+    fail "post-PR lineage 误拦只读: rc=$rc err=$(cat "$ERR")"
+fi
+
+rm -f "$context_marker" "$lineage_dir"/*.json
+sleep 30 &
+ended_pid=$!
+JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+JARVIS_CONTROL_PLANE_BASE_URL="http://127.0.0.1:1" \
+JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
+    /usr/bin/python3 -I "$manager" register-headless \
+    --session-id "a1id-ended-$$" --pid "$ended_pid" --client claude \
+    --policy-revision terraform-rd-single-writer-v4 \
+    --aone-write-policy post-pr-read-only \
+    --headless-kind pr_ci_fix --aone-id 123 --project-id 528766 \
+    >/dev/null
+kill "$ended_pid" 2>/dev/null || true
+wait "$ended_pid" 2>/dev/null || true
+: > "$CAP"; : > "$ERR"
+env -u JARVIS_AONE_WRITE_POLICY \
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    JARVIS_INTERACTIVE_STATE_DIR="$lineage_dir" \
+    A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" -- project workitem update 123 --status Closed \
+    >/dev/null 2>"$ERR"
+rc=$?
+if [ "$rc" = "0" ] && grep -qF \
+        "ARGS=project workitem update 123 --status Closed" "$CAP"; then
+    pass "已结束 worker 的 tombstone 不误伤正常交互写"
+else
+    fail "已结束 worker 仍误拦当前进程: rc=$rc err=$(cat "$ERR")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR" "$lineage_dir"
 
 # ===========================================================================
 # Test 20: 两份活跃 aone-triage Skill 的个人身份纪律枚举保持一致

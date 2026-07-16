@@ -65,8 +65,8 @@ mkdir -p "$STORE"
 die(){ echo "a1id: $*" >&2; exit 1; }
 
 guard_aone_write(){
-  jarvis_post_pr_context_active || return 0
   [ "${1:-}" = "project" ] && [ "${2:-}" = "workitem" ] || return 0
+  jarvis_post_pr_context_active || return 0
 
   case "${3:-}:${4:-}" in
     get:*|list:*|activity:*|comment:list|relation:list|attachment:list|attachment:download|field:list|field:options)

@@ -155,7 +155,7 @@ MAX_REPLY = 2000          # bytes; keep card under the 2KB cap
 CARD_KEY = "content"      # streaming variable name in the AI card template
 PUT_MIN_INTERVAL = 0.4    # seconds between card PUTs (throttle)
 PUT_MIN_GROWTH = 40       # chars of growth that also triggers a PUT
-HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v3"
+HEADLESS_POLICY_REVISION = "terraform-rd-single-writer-v4"
 POST_PR_HEADLESS_KINDS = frozenset(("pr_ci_fix", "pr_comment_reply"))
 POST_PR_AONE_WRITE_POLICY = "post-pr-read-only"
 POST_PR_CONTEXT_DIR = Path("/tmp") / ("jarvis-headless-context-%d" % os.getuid())
@@ -1370,11 +1370,11 @@ def _dispatch_process_binder(pool, item_id, on_bound=None):
 
 
 def _post_pr_context_register(process, item_id, kind, session_id):
-    """Register immutable post-PR provenance before the guarded command is released.
+    """Register the compatibility process-group cache before command release.
 
-    Aone-facing shell entrypoints inspect this fixed per-user process-group registry in
-    addition to the child environment.  Removing ``JARVIS_AONE_WRITE_POLICY`` therefore
-    does not turn a descendant command into an Aone writer.
+    The authoritative restriction is carried by the managed guard's immutable argv and
+    persisted by exec-headless into canonical worker lineage/control-plane capabilities.
+    This /tmp record only accelerates rollout compatibility and is never the sole fence.
     """
     POST_PR_CONTEXT_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(POST_PR_CONTEXT_DIR, 0o700)
@@ -1474,6 +1474,15 @@ class _PostPrProcessBinder:
         self.context_path = None
         self.claimed = False
         self._lock = threading.Lock()
+
+    def lineage_policy(self):
+        return {
+            "policyRevision": HEADLESS_POLICY_REVISION,
+            "aoneWritePolicy": POST_PR_AONE_WRITE_POLICY,
+            "kind": self.kind,
+            "aoneId": self.item_id,
+            "projectId": self.project,
+        }
 
     def _cleanup_context(self):
         path = self.context_path
@@ -2219,7 +2228,7 @@ def parse_stream_lines(lines):
             yield acc
 
 
-def _headless_exec_command(session_id, command):
+def _headless_exec_command(session_id, command, headless_policy=None):
     """Wrap Claude in the fixed worker-fence manager before the first exec.
 
     The manager atomically publishes local recovery lineage, then execs the real
@@ -2234,10 +2243,26 @@ def _headless_exec_command(session_id, command):
         raise ValueError("headless command is required")
     manager = Path(__file__).resolve().parents[1] / "bootstrap" / \
         "jarvis-interactive-worker.py"
-    return [
+    wrapped = [
         "/usr/bin/python3", "-I", str(manager), "exec-headless",
         "--session-id", str(session_id), "--client", "claude", "--",
-    ] + list(command)
+    ]
+    if headless_policy is not None:
+        required = (
+            ("policyRevision", "--policy-revision"),
+            ("aoneWritePolicy", "--aone-write-policy"),
+            ("kind", "--headless-kind"),
+            ("aoneId", "--aone-id"),
+            ("projectId", "--project-id"),
+        )
+        values = []
+        for key, option in required:
+            value = str(headless_policy.get(key) or "").strip()
+            if not value:
+                raise ValueError("headless policy missing %s" % key)
+            values.extend((option, value))
+        wrapped[-1:-1] = values
+    return wrapped + list(command)
 
 
 def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, terraform=False):
@@ -2465,7 +2490,17 @@ def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None,
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
     argv = jarvis_cmd(session_id, terraform=terraform) + ["-p", text, "--output-format", "json"]
     argv += ["--resume", session_id] if resume else ["--session-id", session_id]
-    headless_argv = _headless_exec_command(session_id, argv)
+    headless_policy = (
+        on_spawn.lineage_policy()
+        if isinstance(on_spawn, _PostPrProcessBinder) else None)
+    if aone_write_policy and headless_policy is None:
+        raise ValueError(
+            "Aone write policy requires bridge-owned headless lineage")
+    headless_argv = (
+        _headless_exec_command(
+            session_id, argv, headless_policy=headless_policy)
+        if headless_policy is not None
+        else _headless_exec_command(session_id, argv))
     command_env = _a1_command_env(
         terraform=terraform, aone_write_policy=aone_write_policy)
     sentinel_write = None
