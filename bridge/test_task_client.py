@@ -94,6 +94,42 @@ class TaskEnvelopeTest(unittest.TestCase):
         self.assertNotEqual(first, env.request_id("direct-claim"))
         self.assertTrue(first.startswith("jarvis-upsert-"))
 
+    def test_canonical_aone_key_carries_aone_id_for_non_aone_source(self):
+        env = TaskEnvelope(
+            task_key="aone:2100304:84345050",
+            source_type="GITHUB",
+            source_ref={"prUrl": "https://example.test/pull/1"},
+            task_type="pr_ci_fix",
+            desired_revision="pr-ci:abc",
+            payload={"itemId": "84345050", "prompt": "fix ci"},
+        )
+        self.assertEqual(env.aone_id, "84345050")
+        self.assertEqual(env.to_dict()["aoneId"], "84345050")
+
+    def test_canonical_aone_key_rejects_conflicting_explicit_aone_id(self):
+        with self.assertRaisesRegex(ValueError, "conflicts with canonical task_key"):
+            TaskEnvelope(
+                task_key="aone:2100304:84345050",
+                source_type="GITHUB",
+                source_ref={},
+                task_type="pr_comment_reply",
+                desired_revision="pr-comment:1",
+                payload={"itemId": "84345050", "prompt": "reply"},
+                aone_id="84399999",
+            )
+
+    def test_noncanonical_local_key_does_not_infer_aone_id(self):
+        env = TaskEnvelope(
+            task_key="aone:unknown:adhoc",
+            source_type="LOCAL",
+            source_ref={"localId": "adhoc"},
+            task_type="ticket",
+            desired_revision="local:1",
+            payload={"itemId": "adhoc", "prompt": "run"},
+        )
+        self.assertIsNone(env.aone_id)
+        self.assertNotIn("aoneId", env.to_dict())
+
     def test_rejects_missing_identity_or_non_mapping_payload(self):
         with self.assertRaises(ValueError):
             TaskEnvelope("", "AONE", {}, "ticket", "r1", {})

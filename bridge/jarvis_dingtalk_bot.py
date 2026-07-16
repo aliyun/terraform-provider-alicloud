@@ -75,6 +75,7 @@ Env:
   JARVIS_CONTROL_PLANE_TIMEOUT             HTTP timeout seconds (default 10).
   JARVIS_CONTROL_PLANE_RETRY_SEC           retry interval while data plane is unavailable (default 5).
   JARVIS_LEASE_SECONDS                     session lease TTL requested from data plane (default 300).
+  JARVIS_LEASE_SAFETY_MARGIN_SEC           local fail-closed margin before lease expiry (default 90).
   JARVIS_WORKER_HEARTBEAT_SEC              worker heartbeat interval (default 30).
   JARVIS_SESSION_HEARTBEAT_SEC             leased session heartbeat interval (default 30).
   JARVIS_LEASE_POLL_SEC                    task lease poll interval (default 2).
@@ -242,7 +243,6 @@ def _task_envelope(*, item_id, project, task_type, source_type, source_ref,
         recovery_policy=recovery_policy,
         persona=persona,
         priority=priority,
-        aone_id=(str(item_id) if str(source_type).upper() == "AONE" else None),
         comment_cursor=comment_cursor,
         required_capabilities=required_capabilities,
         max_retries=max_retries,
@@ -6218,6 +6218,8 @@ class JarvisHandler(AsyncChatbotHandler):
             self._stop_task_process,
             capabilities={"kinds": kinds},
             lease_seconds=int(os.environ.get("JARVIS_LEASE_SECONDS", "300")),
+            lease_safety_margin=float(
+                os.environ.get("JARVIS_LEASE_SAFETY_MARGIN_SEC", "90")),
             lease_interval=float(os.environ.get("JARVIS_LEASE_POLL_SEC", "2")),
             worker_heartbeat_interval=float(
                 os.environ.get("JARVIS_WORKER_HEARTBEAT_SEC", "30")),

@@ -76,6 +76,8 @@ class HandlerWiringTest(unittest.TestCase):
         self.assertIsNotNone(handler.persistence_executor)
         self.assertEqual(_FakePersistenceExecutor.instances[-1].kwargs["capabilities"],
                          {"kinds": sorted(handler.execution_router.task_types)})
+        self.assertEqual(
+            _FakePersistenceExecutor.instances[-1].kwargs["lease_safety_margin"], 90)
         self.assertIs(_FakePersistenceExecutor.instances[-1].args[1],
                       handler.ephemeral_executor.capacity_manager)
         self.assertIs(handler.execution_runtime,
@@ -317,6 +319,40 @@ class TaskExecutionTest(unittest.TestCase):
         add.assert_not_called()
 
 
+class TaskAoneAssociationTest(unittest.TestCase):
+    def test_association_survives_every_trigger_source_transition(self):
+        cases = (
+            ("ticket", "AONE", "SCAN"),
+            ("pr_comment_reply", "GITHUB", "PR_COMMENT"),
+            ("pr_ci_fix", "GITHUB", "PR_CI_FAILED"),
+            ("wake", "AONE", "WAKE"),
+            ("persona", "AONE", "PERSONA"),
+            ("revisit", "AONE", "REVISIT"),
+        )
+        envelopes = [
+            bot._task_envelope(
+                item_id="84345050",
+                project="2100304",
+                task_type=task_type,
+                source_type=source_type,
+                source_ref={"sequence": index},
+                desired_revision="sequence:%d" % index,
+                trigger=trigger,
+                prompt="step %d" % index,
+            )
+            for index, (task_type, source_type, trigger) in enumerate(cases)
+        ]
+        self.assertEqual(
+            {envelope.task_key for envelope in envelopes},
+            {"aone:2100304:84345050"})
+        self.assertEqual(
+            [envelope.aone_id for envelope in envelopes],
+            ["84345050"] * len(cases))
+        self.assertTrue(all(
+            envelope.to_dict().get("aoneId") == "84345050"
+            for envelope in envelopes))
+
+
 class WakeRoutingTest(unittest.TestCase):
     def _handler(self, accepted=True):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
@@ -349,6 +385,7 @@ class WakeRoutingTest(unittest.TestCase):
         self.assertTrue(accepted)
         envelope = captured["envelope"]
         self.assertEqual(envelope.task_key, "aone:2100304:843")
+        self.assertEqual(envelope.aone_id, "843")
         self.assertEqual(envelope.desired_revision, "comment:9")
         handler._quick_card.assert_called_once()
 

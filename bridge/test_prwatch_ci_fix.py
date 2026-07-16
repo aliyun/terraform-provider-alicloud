@@ -271,6 +271,9 @@ class MaybeDispatchCiFixTest(_DispatchBase):
         self.assertTrue(self.pool.submitted[0]["force"], "CI-fix 应 force=True 越过 24h 去重")
         self.assertEqual(self.pool.submitted[0]["kind"], "pr_ci_fix")
         self.assertTrue(self.pool.submitted[0]["terraform"])
+        self.assertEqual(
+            self.pool.submitted[0]["envelope"].aone_id, TID,
+            "GITHUB PR CI trigger must retain the canonical Aone association")
         e = self._entry()
         self.assertEqual((e["ci_fix_sha"], e["ci_fix_attempts"]), ("sha1", 1))
         self.assertEqual(self.events, [], "单次 CI 修复派发不更新 Aone")
@@ -348,6 +351,9 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
         self.assertEqual(self.pool.submitted[0]["kind"], "pr_comment_reply")
         self.assertTrue(self.pool.submitted[0]["force"])
         self.assertTrue(self.pool.submitted[0]["terraform"])
+        self.assertEqual(
+            self.pool.submitted[0]["envelope"].aone_id, TID,
+            "GITHUB PR comment trigger must retain the canonical Aone association")
         self.assertEqual(self._entry().get("last_seen_comment"), "pr-2")
         self.assertEqual(self.events, [], "普通 reviewer comment 仅在 GitHub 内处理")
 

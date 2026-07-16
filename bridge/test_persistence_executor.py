@@ -161,7 +161,13 @@ class SessionControllerTest(unittest.TestCase):
     def make(self, client=None, **kwargs):
         return SessionController(
             client or FakeClient(), "mac:boot:proc", lease_response(),
-            lease_seconds=45, logger=LOG, **kwargs)
+            lease_seconds=45, lease_safety_margin=10, logger=LOG, **kwargs)
+
+    def test_lease_safety_margin_must_be_smaller_than_ttl(self):
+        with self.assertRaisesRegex(ValueError, "less than lease_seconds"):
+            SessionController(
+                FakeClient(), "mac:boot:proc", lease_response(),
+                lease_seconds=300, lease_safety_margin=300, logger=LOG)
 
     def test_start_and_heartbeat_renew_the_fenced_lease(self):
         client = FakeClient()
@@ -187,6 +193,7 @@ class SessionControllerTest(unittest.TestCase):
 
         controller = SessionController(
             FakeClient(), "mac:boot:proc", lease, lease_seconds=45,
+            lease_safety_margin=10,
             runtime_session_id_factory=must_not_generate, logger=LOG)
         self.assertTrue(controller.resumed)
         self.assertEqual(controller.runtime_session_id, "runtime-existing")
@@ -236,6 +243,63 @@ class SessionControllerTest(unittest.TestCase):
         self.assertEqual(stopped, [(process, "stale_fence:heartbeat")])
         self.assertEqual(client.named("complete_session"), [])
         self.assertEqual(client.named("fail_session"), [])
+
+    def test_transient_heartbeat_503_keeps_running_then_renews(self):
+        clock = FakeClock()
+        client = FakeClient(heartbeat_session=[
+            ControlPlaneUnavailable("deploying"),
+            {"leaseExpireAt": "2026-07-17T06:00:00Z"},
+        ])
+        stopped = []
+        lifecycle = SessionController(
+            client, "mac:boot:proc", lease_response(),
+            lease_seconds=300, lease_safety_margin=90, clock=clock,
+            stop_process=lambda current, reason: stopped.append(
+                (current.process, reason)), logger=LOG)
+        self.assertTrue(lifecycle.start())
+        process = FakeProcess(4321)
+        lifecycle.bind_process(process)
+        first_deadline = lifecycle.lease_deadline
+
+        clock.advance(30)
+        self.assertTrue(lifecycle.heartbeat())
+        self.assertFalse(lifecycle.ownership_lost)
+        self.assertEqual(stopped, [])
+        self.assertEqual(lifecycle.lease_deadline, first_deadline)
+
+        clock.advance(30)
+        self.assertTrue(lifecycle.heartbeat())
+        self.assertFalse(lifecycle.ownership_lost)
+        self.assertEqual(lifecycle.lease_deadline, 360)
+        self.assertEqual(lifecycle.session["leaseExpireAt"],
+                         "2026-07-17T06:00:00Z")
+
+    def test_sustained_heartbeat_503_stops_at_safety_boundary(self):
+        clock = FakeClock()
+        client = FakeClient(heartbeat_session=[
+            ControlPlaneUnavailable("deploying") for _ in range(7)
+        ])
+        stopped = []
+        lifecycle = SessionController(
+            client, "mac:boot:proc", lease_response(),
+            lease_seconds=300, lease_safety_margin=90, clock=clock,
+            stop_process=lambda current, reason: stopped.append(
+                (current.process, reason)), logger=LOG)
+        self.assertTrue(lifecycle.start())
+        process = FakeProcess(4321)
+        lifecycle.bind_process(process)
+
+        for _ in range(6):
+            clock.advance(30)
+            self.assertTrue(lifecycle.heartbeat())
+        self.assertEqual(clock(), 180)
+        self.assertEqual(stopped, [])
+
+        clock.advance(30)
+        self.assertFalse(lifecycle.heartbeat())
+        self.assertTrue(lifecycle.ownership_lost)
+        self.assertEqual(stopped, [
+            (process, "lease_proof_expiring:heartbeat")])
 
     def test_bind_process_persists_pid_with_a_distinct_fenced_start(self):
         client = FakeClient()
@@ -310,9 +374,11 @@ class PersistenceExecutorTest(unittest.TestCase):
     def make(self, client, execute, stop_process, *, executor=None, clock=None,
              capacity=2, capacity_manager=None, **kwargs):
         manager = capacity_manager or CapacityManager(capacity)
+        lease_safety_margin = kwargs.pop("lease_safety_margin", 10)
         return PersistenceExecutor(
             client, manager, execute, stop_process,
             worker_key="mac:boot:proc", lease_seconds=45,
+            lease_safety_margin=lease_safety_margin,
             executor=executor or ManualExecutor(inline=True),
             clock=clock or FakeClock(), logger=LOG, **kwargs)
 
@@ -404,33 +470,31 @@ class PersistenceExecutorTest(unittest.TestCase):
             "waitExpireAt": "2026-07-17T00:00:00Z",
         })
 
-    def test_session_heartbeat_is_independent_and_renewal_loss_stops_only_lease(self):
-        for error in (StaleFence("old"), ControlPlaneUnavailable("offline")):
-            with self.subTest(error=type(error).__name__):
-                client = FakeClient(
-                    lease_task=[lease_response()], heartbeat_session=[{}, error])
-                executor = ManualExecutor()
-                executed, stopped = [], []
-                worker = self.make(
-                    client, lambda *_args: executed.append(True),
-                    lambda lifecycle, reason: stopped.append(
-                        (lifecycle.session_id, reason)), executor=executor)
-                self.assertTrue(worker.run_once())
-                self.assertEqual(worker.active_session_ids(), ["s1"])
+    def test_session_stale_fence_stops_only_its_lease_immediately(self):
+        client = FakeClient(
+            lease_task=[lease_response()],
+            heartbeat_session=[{}, StaleFence("old")])
+        executor = ManualExecutor()
+        executed, stopped = [], []
+        worker = self.make(
+            client, lambda *_args: executed.append(True),
+            lambda lifecycle, reason: stopped.append(
+                (lifecycle.session_id, reason)), executor=executor)
+        self.assertTrue(worker.run_once())
+        self.assertEqual(worker.active_session_ids(), ["s1"])
 
-                worker.heartbeat_sessions_once()
-                self.assertEqual(stopped, [])
-                worker.heartbeat_sessions_once()
-                self.assertEqual(stopped[0][0], "s1")
-                self.assertIn("heartbeat", stopped[0][1])
-                self.assertEqual(executed, [])
-                terminal_names = {"complete_session", "fail_session", "suspend_session"}
-                self.assertFalse(any(call["name"] in terminal_names
-                                     for call in client.calls))
+        worker.heartbeat_sessions_once()
+        self.assertEqual(stopped, [])
+        worker.heartbeat_sessions_once()
+        self.assertEqual(stopped, [("s1", "stale_fence:heartbeat")])
+        self.assertEqual(executed, [])
+        terminal_names = {"complete_session", "fail_session", "suspend_session"}
+        self.assertFalse(any(call["name"] in terminal_names
+                             for call in client.calls))
 
-                executor.run_all()
-                self.assertEqual(executed, [], "lost queued work must never start")
-                self.assertEqual(worker.active_count(), 0)
+        executor.run_all()
+        self.assertEqual(executed, [], "lost queued work must never start")
+        self.assertEqual(worker.active_count(), 0)
 
     def test_network_failure_pauses_leasing_until_register_recovers(self):
         client = FakeClient(

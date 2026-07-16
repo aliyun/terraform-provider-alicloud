@@ -174,9 +174,10 @@ class SessionController:
     """Fenced session transitions passed to the injected execution callback.
 
     A terminal transition that cannot reach AutomationAgent remains pending and
-    can be retried with the same idempotency key.  A failed lease heartbeat is
-    different: ownership is no longer provable, so the corresponding process is
-    stopped and every terminal ACK is suppressed.
+    can be retried with the same idempotency key.  A stale fence immediately
+    revokes ownership.  A transient heartbeat transport failure may keep running
+    only while the last successful fenced renewal still proves enough local lease
+    margin; crossing that boundary stops the process fail-closed.
     """
 
     TERMINAL_ACTIONS = {"complete", "fail", "suspend"}
@@ -184,9 +185,11 @@ class SessionController:
     def __init__(self, client: ControlPlaneClient, worker_key: str,
                  lease: Mapping[str, Any], *,
                  lease_seconds: int = 300,
+                 lease_safety_margin: float = 90.0,
                  runtime_session_id_factory: Callable[[], str] = _new_runtime_session_id,
                  stop_process: Optional[StopProcess] = None,
                  on_network_failure: Optional[NetworkFailure] = None,
+                 clock: Callable[[], float] = time.monotonic,
                  logger: Optional[logging.Logger] = None):
         self.client = client
         self.worker_key = _nonblank(worker_key, "worker_key")
@@ -201,6 +204,14 @@ class SessionController:
         self.lease_seconds = int(lease_seconds)
         if self.lease_seconds <= 0:
             raise ValueError("lease_seconds must be positive")
+        self.lease_safety_margin = float(lease_safety_margin)
+        if self.lease_safety_margin < 0:
+            raise ValueError("lease_safety_margin must not be negative")
+        if self.lease_safety_margin >= self.lease_seconds:
+            raise ValueError("lease_safety_margin must be less than lease_seconds")
+        if not callable(clock):
+            raise TypeError("clock must be callable")
+        self.clock = clock
         existing_runtime_id = _field(
             self.session, "runtimeSessionId", "runtime_session_id")
         if existing_runtime_id is None or not str(existing_runtime_id).strip():
@@ -226,6 +237,11 @@ class SessionController:
         self._stop_requested = False
         self._stop_hook_called = False
         self._stop_reason: Optional[str] = None
+        # Monotonic local proof, refreshed only after a successful fenced
+        # start/heartbeat.  The server also returns leaseExpireAt; it is retained
+        # in ``session`` for diagnostics, while the deadline uses request-start +
+        # TTL so wall-clock skew cannot extend ownership.
+        self._lease_deadline: Optional[float] = None
 
     @property
     def started(self) -> bool:
@@ -257,6 +273,35 @@ class SessionController:
         with self._lock:
             return self._stop_requested
 
+    @property
+    def lease_deadline(self) -> Optional[float]:
+        with self._lock:
+            return self._lease_deadline
+
+    @staticmethod
+    def _response_session(response: Any) -> Optional[Mapping[str, Any]]:
+        if not isinstance(response, Mapping):
+            return None
+        nested = response.get("session")
+        return nested if isinstance(nested, Mapping) else response
+
+    def _refresh_lease_proof(self, response: Any, request_started_at: float) -> None:
+        response_session = self._response_session(response)
+        lease_expire_at = (_field(
+            response_session, "leaseExpireAt", "leaseExpiresAt", "lease_expire_at")
+            if response_session is not None else None)
+        with self._lock:
+            self._lease_deadline = float(request_started_at) + self.lease_seconds
+            if lease_expire_at is not None:
+                self.session["leaseExpireAt"] = lease_expire_at
+                self.lease["session"] = self.session
+
+    def _lease_proof_has_margin(self) -> bool:
+        with self._lock:
+            deadline = self._lease_deadline
+        return (deadline is not None
+                and self.clock() < deadline - self.lease_safety_margin)
+
     def bind_process(self, process: Any) -> Any:
         """Bind and durably publish the owned process-group leader.
 
@@ -285,6 +330,7 @@ class SessionController:
                 return process
 
             try:
+                request_started_at = self.clock()
                 pid = int(getattr(process, "pid", 0))
                 if pid <= 0:
                     raise ValueError("bound process must expose a positive pid")
@@ -323,6 +369,7 @@ class SessionController:
                 self.session["pid"] = pid
                 self.lease["session"] = self.session
                 self._started = True
+            self._refresh_lease_proof(response, request_started_at)
             return process
 
     def _request_id(self, action: str) -> str:
@@ -388,6 +435,7 @@ class SessionController:
                 if self._ownership_lost:
                     return False
             try:
+                request_started_at = self.clock()
                 response = self.client.start_session(
                     self.session_id, self.worker_key, self.fence_token,
                     self._start_detail(detail), request_id=self._request_id("start"))
@@ -416,6 +464,7 @@ class SessionController:
                     self.session["runtimeSessionId"] = self.runtime_session_id
                     self.lease["session"] = self.session
                 self._started = True
+            self._refresh_lease_proof(response, request_started_at)
             return True
 
     def heartbeat(self, detail: Optional[Mapping[str, Any]] = None) -> bool:
@@ -426,17 +475,35 @@ class SessionController:
                 if self._ownership_lost or self._pending_terminal is not None:
                     return False
             try:
-                self.client.heartbeat_session(
+                request_started_at = self.clock()
+                response = self.client.heartbeat_session(
                     self.session_id, self.worker_key, self.fence_token,
                     self._lease_detail(detail),
                     request_id="jarvis-session-heartbeat-%s" % uuid.uuid4().hex)
+                self._refresh_lease_proof(response, request_started_at)
                 return True
+            except StaleFence:
+                self._lose_ownership("stale_fence:heartbeat")
+                return False
+            except ControlPlaneUnavailable as exc:
+                self._notify_network_failure(exc)
+                if self._lease_proof_has_margin():
+                    self.log.warning(
+                        "session heartbeat temporarily unavailable session=%s; "
+                        "retaining ownership within lease proof",
+                        self.session_id)
+                    return True
+                self._lose_ownership("lease_proof_expiring:heartbeat")
+                self.log.warning("session heartbeat failed session=%s error=%s",
+                                 self.session_id, type(exc).__name__)
+                return False
+            except ControlPlaneError as exc:
+                self._lose_ownership("heartbeat_rejected")
+                self.log.warning("session heartbeat rejected session=%s code=%s",
+                                 self.session_id, getattr(exc, "code", ""))
+                return False
             except Exception as exc:
-                if isinstance(exc, ControlPlaneUnavailable):
-                    self._notify_network_failure(exc)
-                self._lose_ownership(
-                    "stale_fence:heartbeat" if isinstance(exc, StaleFence)
-                    else "heartbeat_failed")
+                self._lose_ownership("heartbeat_failed")
                 self.log.warning("session heartbeat failed session=%s error=%s",
                                  self.session_id, type(exc).__name__)
                 return False
@@ -539,6 +606,7 @@ class PersistenceExecutor:
                  process_uuid: Optional[str] = None, worker_key: Optional[str] = None,
                  capabilities: Optional[Mapping[str, Any]] = None,
                  lease_seconds: int = 300,
+                 lease_safety_margin: float = 90.0,
                  runtime_session_id_factory: Callable[[], str] = _new_runtime_session_id,
                  lease_interval: float = 2.0, worker_heartbeat_interval: float = 30.0,
                  session_heartbeat_interval: float = 30.0, retry_interval: float = 5.0,
@@ -577,6 +645,11 @@ class PersistenceExecutor:
         self.lease_seconds = int(lease_seconds)
         if self.lease_seconds <= 0:
             raise ValueError("lease_seconds must be positive")
+        self.lease_safety_margin = float(lease_safety_margin)
+        if self.lease_safety_margin < 0:
+            raise ValueError("lease_safety_margin must not be negative")
+        if self.lease_safety_margin >= self.lease_seconds:
+            raise ValueError("lease_safety_margin must be less than lease_seconds")
         if not callable(runtime_session_id_factory):
             raise TypeError("runtime_session_id_factory must be callable")
         self._runtime_session_id_factory = runtime_session_id_factory
@@ -766,9 +839,11 @@ class PersistenceExecutor:
         controller = SessionController(
             self.client, self.worker_key, lease,
             lease_seconds=self.lease_seconds,
+            lease_safety_margin=self.lease_safety_margin,
             runtime_session_id_factory=self._runtime_session_id_factory,
             stop_process=self.stop_process,
             on_network_failure=self._mark_network_failure,
+            clock=self.clock,
             logger=self.log,
         )
         with self._lock:

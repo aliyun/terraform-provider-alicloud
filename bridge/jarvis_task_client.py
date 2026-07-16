@@ -57,6 +57,20 @@ def _nonblank(value: Any, name: str) -> str:
     return text
 
 
+def _aone_id_from_task_key(task_key: Any) -> Optional[str]:
+    """Return the work-item id encoded by a canonical Aone task key.
+
+    Aone project and work-item ids are numeric.  Requiring both components keeps
+    local keys such as ``aone:unknown:adhoc`` from being misclassified merely
+    because they share the prefix.
+    """
+    parts = str(task_key or "").split(":")
+    if (len(parts) == 3 and parts[0] == "aone"
+            and parts[1].isdigit() and parts[2].isdigit()):
+        return parts[2]
+    return None
+
+
 def _camel_key(key: Any) -> Any:
     """Translate Python-style request field names to the API's camelCase."""
     if not isinstance(key, str) or "_" not in key:
@@ -111,6 +125,15 @@ class TaskEnvelope:
             raise TypeError("source_ref must be a mapping")
         if not isinstance(self.payload, Mapping):
             raise TypeError("payload must be a mapping")
+        canonical_aone_id = _aone_id_from_task_key(self.task_key)
+        explicit_aone_id = str(self.aone_id or "").strip() or None
+        if (canonical_aone_id and explicit_aone_id
+                and explicit_aone_id != canonical_aone_id):
+            raise ValueError(
+                "aone_id %s conflicts with canonical task_key %s"
+                % (explicit_aone_id, self.task_key))
+        if canonical_aone_id and not explicit_aone_id:
+            object.__setattr__(self, "aone_id", canonical_aone_id)
 
     def to_dict(self) -> Dict[str, Any]:
         data: Dict[str, Any] = {
@@ -127,11 +150,8 @@ class TaskEnvelope:
             data["persona"] = self.persona
         if self.priority:
             data["priority"] = self.priority
-        aone_id = self.aone_id
-        if not aone_id and str(self.source_type).upper() == "AONE":
-            aone_id = self.source_ref.get("aoneId") or self.payload.get("itemId")
-        if aone_id:
-            data["aoneId"] = str(aone_id)
+        if self.aone_id:
+            data["aoneId"] = str(self.aone_id)
         if self.comment_cursor is not None:
             data["commentCursor"] = self.comment_cursor
         if self.required_capabilities is not None:

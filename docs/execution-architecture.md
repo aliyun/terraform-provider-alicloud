@@ -43,9 +43,14 @@ Tata/chat presentation, and subcommands already enclosed by a Task Session.
 
 Every Task is persisted by the control plane and can only be executed by a
 `PersistenceExecutor`.  A control-plane failure is fail-closed: Task work stays
-unstarted instead of falling back to an untracked local process.  Pausing a
-rollout means stopping PersistenceExecutors so Tasks remain queued; it does not
-introduce another execution mode.
+unstarted instead of falling back to an untracked local process.  An already
+running Session tolerates transient heartbeat transport/5xx failures while its
+last successful fenced renewal proves more than the 90-second safety margin.
+Heartbeat retries remain on the 30-second Session loop; a stale fence stops
+immediately, and continued unavailability stops the process when the proof
+reaches the safety boundary.  Pausing a rollout means stopping
+PersistenceExecutors so Tasks remain queued; it does not introduce another
+execution mode.
 
 ## Interactive Session ownership
 
