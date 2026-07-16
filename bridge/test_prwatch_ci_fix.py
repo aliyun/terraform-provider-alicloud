@@ -32,10 +32,61 @@ PR = "https://github.com/aliyun/terraform-provider-alicloud/pull/9972"
 PROJ = "528766"
 
 
+class FakeFenceClient:
+    def __init__(self):
+        self.acked = set()
+
+    def register_worker(self, *_a, **_k):
+        return {}
+
+    def claim_task(self, *_a, **_k):
+        return {
+            "task": {"id": "task-prwatch", "generation": 3},
+            "session": {
+                "id": "session-prwatch",
+                "generation": 3,
+                "fenceToken": "fence-prwatch",
+            },
+        }
+
+    def start_session(self, *_a, **_k):
+        return {}
+
+    def heartbeat_session(self, *_a, **_k):
+        return {}
+
+    def begin_operation(self, operation, **_k):
+        action = operation["operationType"]
+        return {
+            "operation": {
+                "id": "operation-" + action.lower(),
+                "status": "ACKED" if action in self.acked else "SENDING",
+            },
+            "proceed": action not in self.acked,
+        }
+
+    def ack_operation(self, operation, **_k):
+        self.acked.add(
+            "AONE_RELEASE"
+            if "release" in str(operation.get("operationId") or "") else
+            "AONE_CLAIM")
+        return {}
+
+    def fail_operation(self, *_a, **_k):
+        return {}
+
+    def fail_session(self, *_a, **_k):
+        return {}
+
+    def complete_session(self, *_a, **_k):
+        return {}
+
+
 class FakeHandler:
     def __init__(self):
         self.broadcasts = []
         self.dispatched = []
+        self.task_client = FakeFenceClient()
 
     def _broadcast(self, text):
         self.broadcasts.append(text)
@@ -235,18 +286,31 @@ class _DispatchBase(unittest.TestCase):
         self._orig_publish = bot._aone_event_publish
         self._orig_claim = bot._claim_workitem
         self._orig_release = bot._release_post_pr_claim
+        self._orig_visible = bot._post_pr_claim_visible
+        self._orig_inflight_path = bot.INFLIGHT_PATH
         bot.PRWATCH_PATH = Path(self.tmp)
         bot.AONE_EVENT_PATH = Path(self.tmp + ".events")
+        bot.INFLIGHT_PATH = Path(self.tmp + ".inflight")
         bot.broadcast_target = lambda: "t"
         bot.broadcast_type = lambda: "ty"
         self.events = []
         self.claims = []
         self.releases = []
+        self.claimed = False
         bot._aone_event_publish = lambda *a: self.events.append(a) or True
-        bot._claim_workitem = lambda iid, project, terraform=False: self.claims.append(
-            (str(iid), str(project), terraform)) or True
-        bot._release_post_pr_claim = lambda iid, project, terraform=False: self.releases.append(
-            (str(iid), str(project), terraform)) or True
+        def _claim(iid, project, terraform=False):
+            self.claims.append((str(iid), str(project), terraform))
+            self.claimed = True
+            return True
+
+        def _release(iid, project, terraform=False):
+            self.releases.append((str(iid), str(project), terraform))
+            self.claimed = False
+            return True
+
+        bot._claim_workitem = _claim
+        bot._release_post_pr_claim = _release
+        bot._post_pr_claim_visible = lambda *_a, **_k: self.claimed
         self.handler = FakeHandler()
         self.pool = FakePool()
         self.sched = bot.PrWatchScheduler(self.handler, self.pool)
@@ -261,11 +325,14 @@ class _DispatchBase(unittest.TestCase):
         bot._aone_event_publish = self._orig_publish
         bot._claim_workitem = self._orig_claim
         bot._release_post_pr_claim = self._orig_release
+        bot._post_pr_claim_visible = self._orig_visible
+        bot.INFLIGHT_PATH = self._orig_inflight_path
         os.unlink(self.tmp)
-        try:
-            os.unlink(self.tmp + ".events")
-        except FileNotFoundError:
-            pass
+        for suffix in (".events", ".inflight", ".inflight.lock"):
+            try:
+                os.unlink(self.tmp + suffix)
+            except FileNotFoundError:
+                pass
 
     def _entry(self):
         return bot._prwatch_list()[TID]
@@ -324,6 +391,14 @@ class MaybeDispatchCiFixTest(_DispatchBase):
         self.assertEqual(len(self.pool.submitted), 0, "pending 不派修复")
         self.assertTrue(active, "pending → 快档等结果")
         self.assertEqual(self.events, [], "CI pending 不更新 Aone")
+
+    def test_unconfigured_claim_fence_does_not_fake_dispatch(self):
+        self.handler.task_client = None
+        self._ci = ("sha1", ["Compile"], False)
+        active = self.sched._maybe_dispatch_ci_fix(TID, self._entry())
+        self.assertTrue(active)
+        self.assertEqual(self.pool.submitted, [])
+        self.assertIsNone(self._entry().get("ci_fix_sha"))
 
     def test_queued_ci_fix_does_not_consume_attempt_before_process_bind(self):
         class QueuedPool(FakePool):
@@ -388,6 +463,15 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
         self.assertEqual(self.claims, [(TID, PROJ, True)])
         self.assertEqual(self.releases, [(TID, PROJ, True)])
         self.assertEqual(self.events, [], "普通 reviewer comment 仅在 GitHub 内处理")
+
+    def test_unconfigured_claim_fence_keeps_comment_cursor_for_retry(self):
+        self.handler.task_client = None
+        bot._prwatch_update(TID, last_seen_comment="issue-1")
+        self._c = ("pr-2", "reviewer2", "please change Y")
+        self.sched._maybe_dispatch_comment_reply(TID, self._entry())
+        self.assertEqual(self.pool.submitted, [])
+        self.assertEqual(
+            self._entry().get("last_seen_comment"), "issue-1")
 
     def test_bridge_releases_claim_when_worker_reports_failure(self):
         class FailingHandler(FakeHandler):

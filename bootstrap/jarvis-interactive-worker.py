@@ -2096,7 +2096,8 @@ def hook(client_name: str, event: Mapping[str, Any]) -> int:
 def _normalize_headless_policy(
         *, policy_revision: Any = None, aone_write_policy: Any = None,
         headless_kind: Any = None, aone_id: Any = None,
-        project_id: Any = None) -> Optional[Dict[str, str]]:
+        project_id: Any = None,
+        claim_attempt_id: Any = None) -> Optional[Dict[str, str]]:
     """Validate the bridge-owned policy persisted with a headless incarnation."""
     values = {
         "policyRevision": str(policy_revision or "").strip(),
@@ -2104,6 +2105,7 @@ def _normalize_headless_policy(
         "kind": str(headless_kind or "").strip(),
         "aoneId": str(aone_id or "").strip(),
         "projectId": str(project_id or "").strip(),
+        "claimAttemptId": str(claim_attempt_id or "").strip(),
     }
     if not any(values.values()):
         return None
@@ -2113,7 +2115,8 @@ def _normalize_headless_policy(
         raise ValueError("unsupported headless Aone write policy")
     if values["kind"] not in POST_PR_HEADLESS_KINDS:
         raise ValueError("unsupported post-PR headless kind")
-    if not values["aoneId"] or not values["projectId"]:
+    if (not values["aoneId"] or not values["projectId"]
+            or not values["claimAttemptId"]):
         raise ValueError("post-PR headless policy requires Aone lineage")
     return values
 
@@ -2127,7 +2130,8 @@ def _is_post_pr_policy(value: Any) -> bool:
         POST_PR_AONE_WRITE_POLICY
         and str(value.get("kind") or "") in POST_PR_HEADLESS_KINDS
         and bool(str(value.get("aoneId") or "").strip())
-        and bool(str(value.get("projectId") or "").strip()))
+        and bool(str(value.get("projectId") or "").strip())
+        and bool(str(value.get("claimAttemptId") or "").strip()))
 
 
 def _post_pr_exec_lineage(command: str) -> bool:
@@ -2160,6 +2164,7 @@ def _post_pr_exec_lineage(command: str) -> bool:
         "kind": options.get("--headless-kind"),
         "aoneId": options.get("--aone-id"),
         "projectId": options.get("--project-id"),
+        "claimAttemptId": options.get("--claim-attempt-id"),
     })
 
 
@@ -2244,7 +2249,8 @@ def register_headless(session_id: str, host_pid: int,
             aone_write_policy=headless_policy.get("aoneWritePolicy"),
             headless_kind=headless_policy.get("kind"),
             aone_id=headless_policy.get("aoneId"),
-            project_id=headless_policy.get("projectId"))
+            project_id=headless_policy.get("projectId"),
+            claim_attempt_id=headless_policy.get("claimAttemptId"))
     store = StateStore(_state_path(client_name, session_id))
     old_state: Dict[str, Any] = {}
     with store.locked():
@@ -2983,6 +2989,7 @@ def _parser() -> argparse.ArgumentParser:
     register_parser.add_argument("--headless-kind")
     register_parser.add_argument("--aone-id")
     register_parser.add_argument("--project-id")
+    register_parser.add_argument("--claim-attempt-id")
     exec_parser = sub.add_parser("exec-headless")
     exec_parser.add_argument("--session-id", required=True)
     exec_parser.add_argument("--client", choices=("claude", "codex"),
@@ -2992,6 +2999,7 @@ def _parser() -> argparse.ArgumentParser:
     exec_parser.add_argument("--headless-kind")
     exec_parser.add_argument("--aone-id")
     exec_parser.add_argument("--project-id")
+    exec_parser.add_argument("--claim-attempt-id")
     exec_parser.add_argument("headless_command", nargs=argparse.REMAINDER)
     context_parser = sub.add_parser("post-pr-context")
     context_parser.add_argument("--pid", type=int, default=os.getppid())
@@ -3051,7 +3059,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                 aone_write_policy=args.aone_write_policy,
                 headless_kind=args.headless_kind,
                 aone_id=args.aone_id,
-                project_id=args.project_id)
+                project_id=args.project_id,
+                claim_attempt_id=args.claim_attempt_id)
             _print_json(register_headless(
                 args.session_id, args.pid, client_name=args.client,
                 headless_policy=policy))
@@ -3064,7 +3073,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                 aone_write_policy=args.aone_write_policy,
                 headless_kind=args.headless_kind,
                 aone_id=args.aone_id,
-                project_id=args.project_id)
+                project_id=args.project_id,
+                claim_attempt_id=args.claim_attempt_id)
             exec_headless(
                 args.session_id, command, client_name=args.client,
                 headless_policy=policy)

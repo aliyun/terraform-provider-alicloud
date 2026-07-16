@@ -92,7 +92,8 @@ class RegisterHeadlessTest(unittest.TestCase):
             aone_write_policy=m.POST_PR_AONE_WRITE_POLICY,
             headless_kind="pr_comment_reply",
             aone_id="84362517",
-            project_id="2100304")
+            project_id="2100304",
+            claim_attempt_id="attempt-comment")
         m.register_headless(
             sid, os.getpid(), client_name="claude",
             headless_policy=policy)
@@ -111,7 +112,8 @@ class RegisterHeadlessTest(unittest.TestCase):
             aone_write_policy=m.POST_PR_AONE_WRITE_POLICY,
             headless_kind="pr_ci_fix",
             aone_id="84362517",
-            project_id="2100304")
+            project_id="2100304",
+            claim_attempt_id="attempt-ci")
         original, _same = m._build_incarnation_state(
             {}, client_name="claude", session_id="sess-refresh",
             host_pid=1234, host_process_started_at="birth",
@@ -130,7 +132,7 @@ class RegisterHeadlessTest(unittest.TestCase):
         policy_args = (
             "--policy-revision %s --aone-write-policy %s "
             "--headless-kind pr_ci_fix --aone-id 84362517 "
-            "--project-id 2100304" %
+            "--project-id 2100304 --claim-attempt-id attempt-live" %
             (m.HEADLESS_POLICY_REVISION, m.POST_PR_AONE_WRITE_POLICY))
         command = (
             "/usr/bin/python3 /repo/bridge/managed_process_guard.py -- "

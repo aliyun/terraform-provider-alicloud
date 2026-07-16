@@ -789,6 +789,7 @@ JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
     --policy-revision terraform-rd-single-writer-v4 \
     --aone-write-policy post-pr-read-only \
     --headless-kind pr_comment_reply --aone-id 123 --project-id 528766 \
+    --claim-attempt-id a1id-lineage-attempt \
     >/dev/null
 : > "$CAP"; : > "$ERR"
 env -u JARVIS_AONE_WRITE_POLICY \
@@ -844,6 +845,7 @@ JARVIS_HEADLESS_REMOTE_REGISTER_TIMEOUT="0.05" \
     --policy-revision terraform-rd-single-writer-v4 \
     --aone-write-policy post-pr-read-only \
     --headless-kind pr_ci_fix --aone-id 123 --project-id 528766 \
+    --claim-attempt-id a1id-ended-attempt \
     >/dev/null
 kill "$ended_pid" 2>/dev/null || true
 wait "$ended_pid" 2>/dev/null || true

@@ -117,16 +117,23 @@ import logging
 import subprocess
 import signal
 import threading
+import fcntl
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from collections import defaultdict, namedtuple
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
-from jarvis_task_client import AutomationAgentTaskClient, TaskEnvelope
+from jarvis_task_client import (
+    AutomationAgentTaskClient,
+    ControlPlaneConflict,
+    StaleFence,
+    TaskEnvelope,
+)
 from jarvis_task_router import EnqueueResult, TaskRouter
-from jarvis_local_worker import LocalWorker
+from jarvis_local_worker import LocalWorker, make_worker_key
 
 # The DingTalk SDK is only needed by the live WebSocket path in main(). Guard the
 # import so the module still loads for the hermetic test suite and --dry-run-once
@@ -281,7 +288,24 @@ INFLIGHT_PATH = Path(REPO_ROOT) / ".my-day/bridge/inflight.json"
 _inflight_lock = threading.Lock()
 
 
-def _inflight_load():
+def _inflight_transaction_hook(_operation, _item_id):
+    """No-op seam for deterministic cross-process journal tests."""
+
+
+@contextmanager
+def _inflight_file_locked():
+    """Cross-process lock for inflight load/CAS/write transactions."""
+    INFLIGHT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = INFLIGHT_PATH.parent / (INFLIGHT_PATH.name + ".lock")
+    with open(lock_path, "a+b") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _inflight_load(strict=False):
     """Load the registry (id -> record). Best-effort: any failure → {} + warning."""
     try:
         if INFLIGHT_PATH.exists():
@@ -290,20 +314,48 @@ def _inflight_load():
                 return {str(k): v for k, v in raw.items()}
     except Exception as e:  # noqa: BLE001
         log.warning("inflight: could not load %s: %s", INFLIGHT_PATH, e)
+        if strict:
+            raise
     return {}
 
 
-def _inflight_write(recs):
+def _inflight_write(recs, strict=False):
     """Persist the registry atomically (tmp write + os.replace). Caller holds
     ``_inflight_lock`` (mirrors DispatchPool._persist_ledger's caller-locked pattern);
-    best-effort — I/O failures only warn, never raise."""
+    best-effort by default.  Post-PR claim intents pass ``strict=True`` because an
+    Aone write is forbidden until the recovery record and its containing directory
+    have both reached stable storage."""
+    tmp = None
     try:
         INFLIGHT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        tmp = INFLIGHT_PATH.parent / (INFLIGHT_PATH.name + ".tmp")
-        tmp.write_text(json.dumps(recs, default=str))
+        tmp = INFLIGHT_PATH.parent / (
+            "%s.tmp.%s.%s" %
+            (INFLIGHT_PATH.name, os.getpid(), threading.get_ident()))
+        payload = json.dumps(recs, default=str).encode("utf-8")
+        with open(tmp, "wb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
         os.replace(str(tmp), str(INFLIGHT_PATH))
+        try:
+            directory_fd = os.open(str(INFLIGHT_PATH.parent), os.O_RDONLY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        except OSError:
+            # Some filesystems do not support directory fsync.  The file itself
+            # is still durable; preserve the historical cross-platform behavior.
+            pass
     except Exception as e:  # noqa: BLE001
+        if tmp is not None:
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError:
+                pass
         log.warning("inflight: could not persist %s: %s", INFLIGHT_PATH, e)
+        if strict:
+            raise
 
 
 def _inflight_add(item_id, sid, project, kind, prompt, terraform=False,
@@ -314,24 +366,72 @@ def _inflight_add(item_id, sid, project, kind, prompt, terraform=False,
     ``terraform`` persists the model 车道 so _resume_inflight re-selects the SAME lane
     after a bridge restart — a --resume on the wrong lane lands on a different gateway."""
     with _inflight_lock:
-        recs = _inflight_load()
-        recs[str(item_id)] = {"sid": sid, "project": project, "kind": kind,
-                              "prompt": prompt, "started_at": time.time(),
-                              "terraform": bool(terraform),
-                              "policy_revision": str(policy_revision or "")}
-        _inflight_write(recs)
+        with _inflight_file_locked():
+            recs = _inflight_load()
+            _inflight_transaction_hook("add", str(item_id))
+            recs[str(item_id)] = {"sid": sid, "project": project, "kind": kind,
+                                  "prompt": prompt, "started_at": time.time(),
+                                  "terraform": bool(terraform),
+                                  "policy_revision": str(policy_revision or "")}
+            _inflight_write(recs)
 
 
 def _inflight_remove(item_id):
     """Drop a worker's record on any terminal outcome (no-op if already absent)."""
     with _inflight_lock:
-        recs = _inflight_load()
-        recs.pop(str(item_id), None)
-        _inflight_write(recs)
+        with _inflight_file_locked():
+            recs = _inflight_load()
+            _inflight_transaction_hook("remove", str(item_id))
+            recs.pop(str(item_id), None)
+            _inflight_write(recs)
 
 
 def _inflight_has(item_id):
     return str(item_id) in _inflight_load()
+
+
+def _post_pr_attempt_store(item_id, record, expected_attempt=None):
+    """Strictly replace one post-PR recovery record.
+
+    ``expected_attempt`` is a local CAS: an old binder/recovery callback must not
+    overwrite a newer generation for the same Aone item after the pool slot has
+    been recycled.
+    """
+    iid = str(item_id)
+    with _inflight_lock:
+        with _inflight_file_locked():
+            recs = _inflight_load(strict=True)
+            _inflight_transaction_hook("post_pr_store", iid)
+            current = recs.get(iid)
+            if expected_attempt is not None:
+                current_attempt = (
+                    (current or {}).get("claim_attempt", {}).get("attempt_id")
+                    if isinstance(current, dict) else None)
+                if str(current_attempt or "") != str(expected_attempt):
+                    raise ControlPlaneConflict(
+                        "post-PR local attempt changed for #%s" % iid)
+            recs[iid] = dict(record)
+            _inflight_write(recs, strict=True)
+
+
+def _post_pr_attempt_remove(item_id, expected_attempt):
+    """Strictly remove only the exact local attempt, never a successor."""
+    iid = str(item_id)
+    with _inflight_lock:
+        with _inflight_file_locked():
+            recs = _inflight_load(strict=True)
+            _inflight_transaction_hook("post_pr_remove", iid)
+            current = recs.get(iid)
+            current_attempt = (
+                (current or {}).get("claim_attempt", {}).get("attempt_id")
+                if isinstance(current, dict) else None)
+            if current is None:
+                return False
+            if str(current_attempt or "") != str(expected_attempt):
+                return False
+            recs.pop(iid, None)
+            _inflight_write(recs, strict=True)
+            return True
 
 
 # ── PR-watch registry (方案A) ─────────────────────────────────────────────────
@@ -1455,10 +1555,688 @@ def _release_post_pr_claim(iid, project, terraform=False):
     return True
 
 
+def _post_pr_claim_visible(iid, terraform=True):
+    """Point-read whether the shared claimed tag is currently visible.
+
+    The result is only used while the exact control-plane fence is live.  A read
+    failure is not equivalent to "not claimed": recovery must retain the receipt
+    and retry rather than risk dropping an ambiguous Aone write.
+    """
+    proc = subprocess.run(
+        [str(REPO_ROOT / "bin" / "a1id"), "--", "project", "workitem",
+         "get", str(iid), "-f", "json"],
+        cwd=str(REPO_ROOT), timeout=60, capture_output=True, text=True,
+        env=_a1_command_env(terraform=terraform))
+    if getattr(proc, "returncode", 0) != 0:
+        detail = ((getattr(proc, "stderr", "") or
+                   getattr(proc, "stdout", "") or "").strip())[-300:]
+        raise RuntimeError(
+            "bridge claim readback failed for #%s (rc=%s): %s" %
+            (iid, proc.returncode, detail or "no detail"))
+    try:
+        payload = json.loads(proc.stdout or "{}")
+        if not isinstance(payload, dict):
+            raise ValueError("workitem payload is not an object")
+        fields = payload.get("fields")
+        if not isinstance(fields, list):
+            raise ValueError("workitem fields are not a list")
+        tag_value = next(
+            (field.get("displayValue") for field in fields
+             if isinstance(field, dict) and field.get("identifier") == "tag"),
+            "")
+        tags = {
+            value.strip() for value in
+            str(tag_value or "").replace("，", ",").split(",")
+            if value.strip()
+        }
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(
+            "bridge claim readback returned invalid JSON for #%s" % iid) from exc
+    return "jarvis-claimed" in tags
+
+
+def _post_pr_fault_inject(_point):
+    """No-op seam used by deterministic crash-boundary tests."""
+
+
+class _PostPrClaimAttempt:
+    """Bridge-owned exact fence and operation receipts for one post-PR run.
+
+    The Claude child never owns this Aone bookend session.  It starts only after
+    ``prepare`` has durably committed CLAIMED, and its immutable headless policy
+    carries ``claimAttemptId`` for lineage correlation.  This avoids transferring
+    the claim fence across the exec-headless incarnation boundary.
+    """
+
+    SCHEMA_VERSION = 1
+    LEASE_SECONDS = 300
+
+    def __init__(self, item_id, project, kind, runtime_sid, prompt, *,
+                 client=None, attempt_id=None):
+        self.item_id = str(item_id)
+        self.project = str(project)
+        self.kind = str(kind)
+        self.runtime_sid = str(runtime_sid)
+        self.prompt = str(prompt)
+        self.client = client
+        self.attempt_id = str(attempt_id or uuid.uuid4())
+        self.worker_key = make_worker_key(
+            process_uuid="post_pr_" +
+            hashlib.sha256(self.attempt_id.encode()).hexdigest()[:32])
+        self._heartbeat_stop = threading.Event()
+        self._heartbeat_thread = None
+        self._ownership_lost = False
+        self._lock = threading.RLock()
+
+    @classmethod
+    def from_record(cls, item_id, record, *, client=None):
+        attempt = (record or {}).get("claim_attempt")
+        if not isinstance(attempt, dict):
+            raise ValueError("post-PR recovery record has no claim_attempt")
+        obj = cls(
+            item_id,
+            record.get("project"),
+            record.get("kind"),
+            record.get("sid"),
+            record.get("prompt"),
+            client=client,
+            attempt_id=attempt.get("attempt_id"))
+        obj.worker_key = str(attempt.get("worker_key") or obj.worker_key)
+        return obj
+
+    def _client(self):
+        client = self.client or _task_client_from_env()
+        if client is None:
+            raise RuntimeError(
+                "post-PR Aone claim requires JARVIS_CONTROL_PLANE_BASE_URL")
+        self.client = client
+        return client
+
+    def _base_record(self, process_pid):
+        now = time.time()
+        return {
+            "sid": self.runtime_sid,
+            "project": self.project,
+            "kind": self.kind,
+            "prompt": self.prompt,
+            "started_at": now,
+            "terraform": True,
+            "policy_revision": HEADLESS_POLICY_REVISION,
+            "claim_attempt": {
+                "schema_version": self.SCHEMA_VERSION,
+                "attempt_id": self.attempt_id,
+                "runtime_session_id": (
+                    "post-pr:%s:%s" %
+                    (self.runtime_sid, self.attempt_id.replace("-", "")[:16])
+                )[:191],
+                "worker_key": self.worker_key,
+                "guard_pid": int(process_pid),
+                "phase": "INTENT",
+                "policy_revision": HEADLESS_POLICY_REVISION,
+                "aone_write_policy": POST_PR_AONE_WRITE_POLICY,
+                "created_at": now,
+            },
+        }
+
+    def _load(self):
+        record = _inflight_load(strict=True).get(self.item_id)
+        attempt = (record or {}).get("claim_attempt")
+        if (not isinstance(record, dict) or not isinstance(attempt, dict)
+                or str(attempt.get("attempt_id") or "") != self.attempt_id):
+            raise ControlPlaneConflict(
+                "post-PR attempt is no longer current for #%s" % self.item_id)
+        return record
+
+    def _save_attempt(self, record, **changes):
+        attempt = dict(record.get("claim_attempt") or {})
+        attempt.update(changes)
+        updated = dict(record)
+        updated["claim_attempt"] = attempt
+        _post_pr_attempt_store(
+            self.item_id, updated, expected_attempt=self.attempt_id)
+        return updated
+
+    @staticmethod
+    def _field(value, *names):
+        if not isinstance(value, dict):
+            return None
+        for name in names:
+            if name in value:
+                return value[name]
+        return None
+
+    def _register_worker(self, record):
+        client = self._client()
+        parts = self.worker_key.split(":", 2)
+        payload = {
+            "workerKey": self.worker_key,
+            "host": parts[0] if len(parts) == 3 else "post-pr",
+            "bootId": parts[1] if len(parts) == 3 else "bridge",
+            "processUuid": parts[2] if len(parts) == 3 else self.attempt_id,
+            "status": "ACTIVE",
+            "maxSlots": 1,
+            "activeSessions": 0,
+            "freeSlots": 1,
+            "capabilities": {
+                "kinds": [self.kind],
+                "postPrClaimAttempt": self.attempt_id,
+            },
+        }
+        client.register_worker(
+            payload,
+            request_id="jarvis-post-pr-worker-" +
+            hashlib.sha256(self.worker_key.encode()).hexdigest()[:32])
+        return record
+
+    def _claim_envelope(self):
+        desired_revision = "post-pr:%s:%s:%s" % (
+            HEADLESS_POLICY_REVISION, self.kind, self.attempt_id)
+        return _task_envelope(
+            item_id=self.item_id,
+            project=self.project,
+            task_type=self.kind,
+            source_type="AONE",
+            source_ref={"aoneId": self.item_id, "projectId": self.project},
+            desired_revision=desired_revision,
+            trigger="PR_WATCH",
+            prompt=self.prompt,
+            recovery_policy="REPLAY_SAFE",
+            required_capabilities={"workerKey": self.worker_key},
+            claimAttemptId=self.attempt_id,
+            aoneWritePolicy=POST_PR_AONE_WRITE_POLICY,
+        )
+
+    def _claim_fence(self, record, *, recovery=False):
+        client = self._client()
+        attempt = record["claim_attempt"]
+        request_material = self.worker_key + "|" + attempt["runtime_session_id"]
+        if recovery:
+            request_material += "|recover|%s" % (
+                attempt.get("generation") or "unassigned")
+        request_id = (
+            "jarvis-post-pr-recover-" if recovery else
+            "jarvis-post-pr-claim-") + hashlib.sha256(
+                request_material.encode()).hexdigest()[:32]
+        lease = client.claim_task(
+            self.worker_key, self._claim_envelope(),
+            runtime_session_id=attempt["runtime_session_id"],
+            lease_seconds=self.LEASE_SECONDS,
+            free_slots=1,
+            request_id=request_id)
+        task = lease.get("task") if isinstance(lease, dict) else None
+        session = lease.get("session") if isinstance(lease, dict) else None
+        task_id = self._field(task, "id", "taskId", "task_id")
+        session_id = self._field(session, "id", "sessionId", "session_id")
+        generation = (
+            self._field(session, "generation")
+            or self._field(task, "generation"))
+        fence_token = self._field(session, "fenceToken", "fence_token")
+        if any(value is None for value in
+               (task_id, session_id, generation, fence_token)):
+            raise RuntimeError("post-PR direct claim response is incomplete")
+        old_task_id = attempt.get("task_id")
+        if old_task_id is not None and str(task_id) != str(old_task_id):
+            raise ControlPlaneConflict(
+                "post-PR recovery returned a different task")
+        returned_runtime = self._field(
+            session, "runtimeSessionId", "runtime_session_id")
+        if (returned_runtime is not None
+                and str(returned_runtime) !=
+                str(attempt["runtime_session_id"])):
+            raise ControlPlaneConflict(
+                "post-PR recovery returned a different runtime session")
+        start_detail = {
+            "runtimeSessionId": attempt["runtime_session_id"],
+            "workspaceRef": str(REPO_ROOT),
+            "leaseSeconds": self.LEASE_SECONDS,
+            "claimAttemptId": self.attempt_id,
+            "policyRevision": HEADLESS_POLICY_REVISION,
+        }
+        if not recovery:
+            start_detail["pid"] = int(attempt["guard_pid"])
+        client.start_session(
+            str(session_id), self.worker_key, fence_token, start_detail,
+            request_id="jarvis-post-pr-start-" + hashlib.sha256(
+                ("%s|%s|%s" % (
+                    session_id, fence_token,
+                    "recover" if recovery else "initial")).encode()
+            ).hexdigest()[:32])
+        changes = {
+            "phase": "FENCED",
+            "task_id": task_id,
+            "session_id": session_id,
+            "generation": generation,
+            "fence_token": fence_token,
+            "attempt_no": self._field(
+                session, "attemptNo", "attempt_no") or 1,
+            "lease_seconds": self.LEASE_SECONDS,
+        }
+        if recovery:
+            changes.update({
+                "recovered_from_session_id": attempt.get("session_id"),
+                "recovered_from_generation": attempt.get("generation"),
+                "recovered_at": time.time(),
+                # Preserve the interrupted phase.  Only the exact assignment
+                # tuple changes; the receipt state still determines whether an
+                # Aone effect happened and what must be reconciled next.
+                "phase": attempt.get("phase"),
+            })
+        return self._save_attempt(record, **changes)
+
+    def _operation_spec(self, record, action):
+        attempt = record["claim_attempt"]
+        if action == "claim":
+            operation_type = "AONE_CLAIM"
+            request_payload = {
+                "aoneId": self.item_id,
+                "projectId": self.project,
+                "addTag": "jarvis-claimed",
+                "removeTag": "jarvis-idle",
+            }
+        elif action == "release":
+            operation_type = "AONE_RELEASE"
+            request_payload = {
+                "aoneId": self.item_id,
+                "projectId": self.project,
+                "addTag": "jarvis-idle",
+                "removeTag": "jarvis-claimed",
+            }
+        else:
+            raise ValueError("invalid post-PR operation action")
+        existing = attempt.get("%s_operation" % action)
+        key = (
+            str(existing.get("operation_key"))
+            if isinstance(existing, dict) and existing.get("operation_key")
+            else "aone-%s:%s:%s:%s" % (
+                action, attempt["task_id"], attempt["generation"],
+                self.attempt_id))
+        return {
+            "taskId": attempt["task_id"],
+            "sessionId": attempt["session_id"],
+            "generation": attempt["generation"],
+            "workerKey": attempt["worker_key"],
+            "fenceToken": attempt["fence_token"],
+            "operationKey": key,
+            "operationType": operation_type,
+            "target": self.item_id,
+            "requestPayload": request_payload,
+            "required": True,
+            "maxRetries": 3,
+        }
+
+    def _begin_operation(self, record, action):
+        client = self._client()
+        attempt = record["claim_attempt"]
+        field_name = "%s_operation" % action
+        existing = attempt.get(field_name)
+        spec = self._operation_spec(record, action)
+        if isinstance(existing, dict):
+            if str(existing.get("operation_key") or "") != spec["operationKey"]:
+                raise ControlPlaneConflict(
+                    "post-PR %s operation key changed" % action)
+        else:
+            existing = {
+                "operation_id": None,
+                "operation_key": spec["operationKey"],
+                "status": "BEGINNING",
+                "proceed": False,
+            }
+        record = self._save_attempt(
+            record,
+            phase=("%s_BEGINNING" % action.upper()),
+            **{field_name: existing})
+        response = client.begin_operation(
+            spec,
+            request_id="jarvis-post-pr-operation-begin-" +
+            hashlib.sha256(
+                ("%s|%s|%s" % (
+                    spec["operationKey"], spec["generation"],
+                    spec["sessionId"])).encode()
+            ).hexdigest()[:32])
+        operation = response.get("operation") if isinstance(response, dict) else None
+        operation_id = self._field(
+            operation, "id", "operationId", "operation_id")
+        if operation_id is None:
+            raise RuntimeError("post-PR operation begin returned no receipt")
+        status = str(
+            self._field(operation, "status", "operationStatus") or "").upper()
+        proceed = bool(response.get("proceed", True))
+        if status == "ACKED":
+            proceed = False
+        elif not proceed and status == "SENDING":
+            # A locally durable BEGINNING/SENDING record proves this is a retry
+            # of the same idempotent effect under the same exact fence.
+            proceed = True
+        receipt = {
+            "operation_id": operation_id,
+            "operation_key": spec["operationKey"],
+            "status": status or "SENDING",
+            "proceed": proceed,
+        }
+        record = self._save_attempt(
+            record,
+            phase=("%s_SENDING" % action.upper()),
+            **{field_name: receipt})
+        return record, status, proceed
+
+    def _ack_operation(self, record, action):
+        attempt = record["claim_attempt"]
+        receipt = attempt.get("%s_operation" % action)
+        if not isinstance(receipt, dict) or receipt.get("operation_id") is None:
+            raise RuntimeError("post-PR %s operation has no receipt" % action)
+        external_ref = (
+            "aone:%s:%s:tag:%s" %
+            (self.project, self.item_id,
+             "jarvis-claimed" if action == "claim" else "jarvis-idle"))
+        self._client().ack_operation(
+            {
+                "operationId": receipt["operation_id"],
+                "workerKey": attempt["worker_key"],
+                "fenceToken": attempt["fence_token"],
+                "externalRef": external_ref,
+            },
+            request_id="jarvis-post-pr-operation-ack-" +
+            hashlib.sha256(
+                ("%s|%s" % (action, receipt["operation_id"])).encode()
+            ).hexdigest()[:32])
+
+    def _verify_fence(self, record):
+        attempt = record["claim_attempt"]
+        self._client().heartbeat_session(
+            str(attempt["session_id"]),
+            attempt["worker_key"],
+            attempt["fence_token"],
+            {
+                "leaseSeconds": int(
+                    attempt.get("lease_seconds") or self.LEASE_SECONDS),
+                "claimAttemptId": self.attempt_id,
+                "generation": attempt["generation"],
+            },
+            request_id="jarvis-post-pr-heartbeat-" + uuid.uuid4().hex)
+        return True
+
+    def _recover_expired_fence(self, record):
+        """Reclaim an expired assignment only for this exact runtime attempt.
+
+        ``claim_task`` is the server-side CAS.  The data plane resumes an expired
+        direct-claim session when the same workerKey/runtimeSessionId requests the
+        same task; an active successor yields ``ControlPlaneConflict``.  We also
+        validate task/runtime lineage before replacing the stored fence.
+        """
+        self._register_worker(record)
+        return self._claim_fence(record, recovery=True)
+
+    def _ensure_fence(self, record):
+        try:
+            self._verify_fence(record)
+            return record
+        except StaleFence:
+            try:
+                recovered = self._recover_expired_fence(record)
+                self._verify_fence(recovered)
+                return recovered
+            except ControlPlaneConflict:
+                self._ownership_lost = True
+                _post_pr_attempt_remove(self.item_id, self.attempt_id)
+                return None
+
+    def _close_without_claim(self, record, reason):
+        attempt = record["claim_attempt"]
+        receipt = attempt.get("claim_operation")
+        first_error = None
+        if isinstance(receipt, dict) and receipt.get("operation_id") is not None:
+            try:
+                self._client().fail_operation(
+                    {
+                        "operationId": receipt["operation_id"],
+                        "workerKey": attempt["worker_key"],
+                        "fenceToken": attempt["fence_token"],
+                        "error": {
+                            "errorType": "PostPrClaimNotObserved",
+                            "message": str(reason)[:500],
+                        },
+                        "unknown": False,
+                        "retryAfterSeconds": 0,
+                    },
+                    request_id="jarvis-post-pr-operation-fail-" +
+                    hashlib.sha256(
+                        str(receipt["operation_id"]).encode()
+                    ).hexdigest()[:32])
+            except Exception as exc:  # noqa: BLE001
+                first_error = exc
+        try:
+            self._client().fail_session(
+                str(attempt["session_id"]),
+                attempt["worker_key"],
+                attempt["fence_token"],
+                {
+                    "error": {
+                        "errorType": "PostPrClaimNotObserved",
+                        "message": str(reason)[:500],
+                    },
+                    "retryAfterSeconds": 0,
+                },
+                request_id="jarvis-post-pr-session-fail-" +
+                hashlib.sha256(self.attempt_id.encode()).hexdigest()[:32])
+        except StaleFence:
+            pass
+        except Exception as exc:  # noqa: BLE001
+            if first_error is None:
+                first_error = exc
+        if first_error is not None:
+            raise first_error
+        _post_pr_attempt_remove(self.item_id, self.attempt_id)
+
+    def prepare(self, process):
+        """Acquire and ACK this attempt's claim before the process gate opens."""
+        with self._lock:
+            record = self._base_record(process.pid)
+            _post_pr_attempt_store(
+                self.item_id, record, expected_attempt="")
+            try:
+                self._register_worker(record)
+                record = self._claim_fence(record)
+                if _post_pr_claim_visible(self.item_id, terraform=True):
+                    self._close_without_claim(
+                        record, "workitem was already claimed before this attempt")
+                    raise ControlPlaneConflict(
+                        "workitem #%s was already claimed" % self.item_id)
+                record, status, proceed = self._begin_operation(record, "claim")
+                self._verify_fence(record)
+                _post_pr_fault_inject("before-claim")
+                if status != "ACKED":
+                    if not proceed:
+                        raise ControlPlaneConflict(
+                            "post-PR AONE_CLAIM receipt is not replayable")
+                    _claim_workitem(
+                        self.item_id, self.project, terraform=True)
+                    self._ack_operation(record, "claim")
+                _post_pr_fault_inject("claim-success-before-mark")
+                record = self._save_attempt(record, phase="CLAIMED")
+                _post_pr_fault_inject("mark-success")
+                return record
+            except Exception:
+                # A real bridge exception gets a best-effort synchronous
+                # reconciliation.  SIGKILL/power loss leaves the strict record
+                # for _resume_inflight, which follows the same method.
+                try:
+                    self.reconcile()
+                except Exception as exc:  # noqa: BLE001
+                    log.warning(
+                        "post-PR prepare reconcile #%s retained: %s",
+                        self.item_id, exc)
+                raise
+
+    def start_heartbeat(self, on_lost=None):
+        """Renew the exact session while the gated child is running."""
+        if self._heartbeat_thread is not None:
+            return
+        interval = max(5.0, min(
+            float(os.environ.get("JARVIS_POST_PR_HEARTBEAT_SEC", "30")),
+            self.LEASE_SECONDS / 3.0))
+
+        def _loop():
+            while not self._heartbeat_stop.wait(interval):
+                try:
+                    if self._ensure_fence(self._load()) is None:
+                        log.warning(
+                            "post-PR claim fence taken over #%s attempt=%s",
+                            self.item_id, self.attempt_id)
+                        if on_lost is not None:
+                            try:
+                                on_lost()
+                            except Exception:  # noqa: BLE001
+                                log.exception(
+                                    "post-PR fence-loss stop hook failed #%s",
+                                    self.item_id)
+                        return
+                except Exception as exc:  # noqa: BLE001
+                    # A transient heartbeat/recovery outage is not permission to
+                    # release or continue forever.  The next interval retries;
+                    # final release still verifies or recovers the exact attempt.
+                    log.warning(
+                        "post-PR claim heartbeat #%s failed: %s",
+                        self.item_id, exc)
+                    continue
+                if self._ownership_lost:
+                    if on_lost is not None:
+                        try:
+                            on_lost()
+                        except Exception:  # noqa: BLE001
+                            log.exception(
+                                "post-PR fence-loss stop hook failed #%s",
+                                self.item_id)
+                    return
+
+        self._heartbeat_thread = threading.Thread(
+            target=_loop,
+            name="post-pr-claim-heartbeat-%s" % self.item_id,
+            daemon=True)
+        self._heartbeat_thread.start()
+
+    def stop_heartbeat(self):
+        self._heartbeat_stop.set()
+        thread = self._heartbeat_thread
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(timeout=2)
+
+    def _complete_release(self, record):
+        attempt = record["claim_attempt"]
+        try:
+            self._client().complete_session(
+                str(attempt["session_id"]),
+                attempt["worker_key"],
+                attempt["fence_token"],
+                {
+                    "result": {
+                        "aoneId": self.item_id,
+                        "claimAttemptId": self.attempt_id,
+                        "released": True,
+                    },
+                },
+                request_id="jarvis-post-pr-session-complete-" +
+                hashlib.sha256(self.attempt_id.encode()).hexdigest()[:32])
+        except StaleFence:
+            # RELEASED is already durably ACKed.  A completed/expired session or
+            # successor generation cannot require another Aone mutation.
+            pass
+        _post_pr_attempt_remove(self.item_id, self.attempt_id)
+
+    def release(self):
+        """Release only while this exact session fence is still authoritative."""
+        with self._lock:
+            self.stop_heartbeat()
+            record = self._load()
+            phase = str(record["claim_attempt"].get("phase") or "")
+            if phase == "RELEASED":
+                self._complete_release(record)
+                return True
+            record = self._ensure_fence(record)
+            if record is None:
+                return False
+            record, status, proceed = self._begin_operation(record, "release")
+            operation_assignment = (
+                str(record["claim_attempt"].get("session_id")),
+                str(record["claim_attempt"].get("generation")),
+                str(record["claim_attempt"].get("fence_token")),
+            )
+            record = self._ensure_fence(record)
+            if record is None:
+                return False
+            current_assignment = (
+                str(record["claim_attempt"].get("session_id")),
+                str(record["claim_attempt"].get("generation")),
+                str(record["claim_attempt"].get("fence_token")),
+            )
+            if current_assignment != operation_assignment:
+                # The operation begin raced lease expiry.  Re-begin the same
+                # operationKey under the recovered exact runtime assignment
+                # before any Aone write or ACK.
+                record, status, proceed = self._begin_operation(
+                    record, "release")
+                record = self._ensure_fence(record)
+                if record is None:
+                    return False
+            if status != "ACKED":
+                if not proceed:
+                    raise ControlPlaneConflict(
+                        "post-PR AONE_RELEASE receipt is not replayable")
+                _release_post_pr_claim(
+                    self.item_id, self.project, terraform=True)
+                self._ack_operation(record, "release")
+            record = self._save_attempt(record, phase="RELEASED")
+            self._complete_release(record)
+            return True
+
+    def reconcile(self):
+        """Restart-safe convergence for an interrupted exact attempt."""
+        with self._lock:
+            record = self._load()
+            attempt = record["claim_attempt"]
+            phase = str(attempt.get("phase") or "")
+            if phase == "INTENT":
+                _post_pr_attempt_remove(self.item_id, self.attempt_id)
+                return "no_claim"
+            record = self._ensure_fence(record)
+            if record is None:
+                return "ownership_lost"
+
+            if phase == "FENCED":
+                self._close_without_claim(record, "claim operation never began")
+                return "no_claim"
+            if phase in {"CLAIM_BEGINNING", "CLAIM_SENDING"}:
+                record, status, proceed = self._begin_operation(record, "claim")
+                visible = _post_pr_claim_visible(
+                    self.item_id, terraform=True)
+                if status == "ACKED":
+                    record = self._save_attempt(record, phase="CLAIMED")
+                elif visible:
+                    self._ack_operation(record, "claim")
+                    record = self._save_attempt(record, phase="CLAIMED")
+                elif proceed:
+                    # The durable receipt exists but the claimed tag does not:
+                    # the gate never crossed the Aone write (before-claim crash).
+                    self._close_without_claim(
+                        record, "claimed tag was not observed during recovery")
+                    return "no_claim"
+                else:
+                    raise ControlPlaneConflict(
+                        "post-PR claim receipt cannot be reconciled")
+                phase = "CLAIMED"
+            if phase in {
+                    "CLAIMED", "RELEASE_BEGINNING",
+                    "RELEASE_SENDING", "RELEASED"}:
+                return "released" if self.release() else "ownership_lost"
+            raise RuntimeError(
+                "unknown post-PR claim phase %r for #%s" %
+                (phase, self.item_id))
+
+
 class _PostPrProcessBinder:
     """Guard binder that owns post-PR claim, cursor commit, provenance and release."""
 
-    def __init__(self, pool, item_id, kind, project, session_id, prompt, on_claimed=None):
+    def __init__(self, pool, item_id, kind, project, session_id, prompt,
+                 on_claimed=None, task_client=None):
         if kind not in POST_PR_HEADLESS_KINDS:
             raise ValueError("post-PR binder requires a post-PR kind")
         if not project:
@@ -1473,6 +2251,9 @@ class _PostPrProcessBinder:
         self.process = None
         self.context_path = None
         self.claimed = False
+        self.claim_attempt = _PostPrClaimAttempt(
+            self.item_id, self.project, self.kind, self.session_id,
+            self.prompt, client=task_client)
         self._lock = threading.Lock()
 
     def lineage_policy(self):
@@ -1482,6 +2263,7 @@ class _PostPrProcessBinder:
             "kind": self.kind,
             "aoneId": self.item_id,
             "projectId": self.project,
+            "claimAttemptId": self.claim_attempt.attempt_id,
         }
 
     def _cleanup_context(self):
@@ -1504,55 +2286,34 @@ class _PostPrProcessBinder:
                 process, self.item_id, self.kind, self.session_id)
             try:
                 if not self.claimed:
-                    _claim_workitem(self.item_id, self.project, terraform=True)
+                    self.claim_attempt.prepare(process)
                     self.claimed = True
-                    _inflight_add(
-                        self.item_id, self.session_id, self.project, self.kind,
-                        self.prompt, terraform=True,
-                        policy_revision=HEADLESS_POLICY_REVISION)
                     if self.on_claimed is not None:
                         self.on_claimed()
+                    self.claim_attempt.start_heartbeat(
+                        on_lost=lambda: self.pool._terminate_worker(self.item_id))
             except Exception:
-                if self.claimed:
-                    released = False
-                    try:
-                        _release_post_pr_claim(
-                            self.item_id, self.project, terraform=True)
-                        released = True
-                    except Exception as exc:  # noqa: BLE001
-                        log.warning(
-                            "post-PR binder rollback release #%s failed: %s",
-                            self.item_id, exc)
-                    if released:
-                        self.claimed = False
-                        _inflight_remove(self.item_id)
-                else:
-                    _inflight_remove(self.item_id)
                 self._cleanup_context()
                 raise
 
     def finish(self):
         """Release only claims acquired by this bridge binder; never by model output."""
         with self._lock:
-            released = not self.claimed
             if self.claimed:
                 try:
-                    _release_post_pr_claim(
-                        self.item_id, self.project, terraform=True)
-                    released = True
+                    self.claim_attempt.release()
                     self.claimed = False
                 except Exception as exc:  # noqa: BLE001
                     # Keep the in-flight record so restart recovery retries release.
                     log.warning("post-PR final release #%s failed: %s", self.item_id, exc)
-            if released:
-                _inflight_remove(self.item_id)
             self._cleanup_context()
 
 
 def _post_pr_process_binder(pool, item_id, kind, project, session_id, prompt,
-                            on_claimed=None):
+                            on_claimed=None, task_client=None):
     return _PostPrProcessBinder(
-        pool, item_id, kind, project, session_id, prompt, on_claimed=on_claimed)
+        pool, item_id, kind, project, session_id, prompt,
+        on_claimed=on_claimed, task_client=task_client)
 
 
 def tata_root():
@@ -2254,6 +3015,7 @@ def _headless_exec_command(session_id, command, headless_policy=None):
             ("kind", "--headless-kind"),
             ("aoneId", "--aone-id"),
             ("projectId", "--project-id"),
+            ("claimAttemptId", "--claim-attempt-id"),
         )
         values = []
         for key, option in required:
@@ -3498,7 +4260,20 @@ class PrWatchScheduler:
         self._autoreg = os.environ.get("JARVIS_PRWATCH_AUTOREG", "1") == "1"
         self._last_autoreg_at = 0.0
         self._autoreg_warned = set()  # 已提示过「无法解析工单号」的 PR url，避免刷屏
+        self._claim_fence_warned = set()
         self._thread = None
+
+    def _claim_fence_ready(self, item_id, kind):
+        if getattr(self.handler, "task_client", None) is not None:
+            return True
+        key = (str(item_id), str(kind))
+        if key not in self._claim_fence_warned:
+            self._claim_fence_warned.add(key)
+            log.error(
+                "PrWatchScheduler: #%s %s not dispatched because the exact "
+                "claim-fence control plane is unconfigured",
+                item_id, kind)
+        return False
 
     def start(self):
         if not self.enabled:
@@ -3758,6 +4533,8 @@ class PrWatchScheduler:
             return bool(pending)  # 绿→慢档；pending→快档等结果，但不派修复
         if entry.get("ci_fix_sha") == head:
             return True  # 本 head 已派过修复 → 不刷屏，但仍失败中 → 快档轮询等修复推新 head
+        if not self._claim_fence_ready(tid, "pr_ci_fix"):
+            return True
         attempts = int(entry.get("ci_fix_attempts") or 0)
         max_attempts = int(os.environ.get("JARVIS_PRWATCH_CI_FIX_MAX", "3"))
         project = entry.get("project")
@@ -3796,7 +4573,8 @@ class PrWatchScheduler:
             last_ci_fix_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
         binder = _post_pr_process_binder(
             self.pool, tid, "pr_ci_fix", project, sid, prompt,
-            on_claimed=mark_started)
+            on_claimed=mark_started,
+            task_client=getattr(self.handler, "task_client", None))
         work = (lambda: self.handler.dispatch_item(
             tid, prompt, sid, False, notify, tgt, ttype,
             on_spawn=binder,
@@ -3965,6 +4743,8 @@ class PrWatchScheduler:
                 return
             # else: fall through — treat as a genuinely new comment, dispatch + upgrade ledger.
         project = entry.get("project")
+        if not self._claim_fence_ready(tid, "pr_comment_reply"):
+            return
         prompt = _pr_comment_reply_prompt(tid, entry.get("pr_url"), project, author, snippet)
         notify = self.handler._broadcast if self.handler else (lambda t: None)
         tgt, ttype = broadcast_target(), broadcast_type()
@@ -3974,7 +4754,8 @@ class PrWatchScheduler:
             last_comment_reply_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
         binder = _post_pr_process_binder(
             self.pool, tid, "pr_comment_reply", project, sid, prompt,
-            on_claimed=mark_started)
+            on_claimed=mark_started,
+            task_client=getattr(self.handler, "task_client", None))
         work = (lambda: self.handler.dispatch_item(
             tid, prompt, sid, False, notify, tgt, ttype,
             on_spawn=binder,
@@ -6723,22 +7504,36 @@ class JarvisHandler(AsyncChatbotHandler):
             try:
                 kind = (rec or {}).get("kind")
                 if kind in POST_PR_HEADLESS_KINDS:
-                    project = (rec or {}).get("project") or ""
-                    tf = bool((rec or {}).get("terraform"))
                     revision = str((rec or {}).get("policy_revision") or "")
                     _post_pr_context_cleanup(iid, (rec or {}).get("sid"))
-                    if project and str(iid).isdigit():
+                    claim_attempt = (rec or {}).get("claim_attempt")
+                    if isinstance(claim_attempt, dict):
                         try:
-                            _release_post_pr_claim(iid, project, terraform=tf)
+                            outcome = _PostPrClaimAttempt.from_record(
+                                iid, rec, client=self.task_client).reconcile()
                         except Exception as e:  # noqa: BLE001
                             log.warning(
-                                "_resume_inflight: post-PR release #%s failed: %s",
+                                "_resume_inflight: post-PR exact attempt #%s retained: %s",
                                 iid, e)
-                    _inflight_remove(iid)
-                    log.warning(
-                        "_resume_inflight: #%s drop interrupted %s generation "
-                        "(policy=%s, current=%s); never recover a pre-policy PR prompt",
-                        iid, kind, revision or "<missing>", HEADLESS_POLICY_REVISION)
+                            continue
+                        log.warning(
+                            "_resume_inflight: #%s reconciled interrupted %s "
+                            "attempt=%s outcome=%s (policy=%s, current=%s); "
+                            "the child prompt is never resumed",
+                            iid, kind,
+                            str(claim_attempt.get("attempt_id") or "")[:12],
+                            outcome, revision or "<missing>",
+                            HEADLESS_POLICY_REVISION)
+                    else:
+                        # Legacy post-PR records contain no owner receipt.  The
+                        # shared jarvis-claimed tag cannot prove which generation
+                        # owns it, so recovery must never perform an unconditional
+                        # release that could clobber a successor.
+                        _inflight_remove(iid)
+                        log.warning(
+                            "_resume_inflight: #%s dropped legacy interrupted %s "
+                            "without an exact claim receipt; Aone left unchanged",
+                            iid, kind)
                     continue
                 if kind != "ticket" or not str(iid).isdigit():
                     _inflight_remove(iid)   # probe/revisit/persona/wake/junk: never resume

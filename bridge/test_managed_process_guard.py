@@ -14,6 +14,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import jarvis_dingtalk_bot as bot
+from test_headless_worker_fence import _FenceClient
 
 
 BRIDGE_DIR = Path(__file__).resolve().parent
@@ -96,7 +97,8 @@ class ManagedProcessGuardTest(unittest.TestCase):
             binder = bot._post_pr_process_binder(
                 pool, "84362517", "pr_comment_reply", "528766",
                 "session-post-pr", "prompt",
-                on_claimed=lambda: cursor.write_text("advanced"))
+                on_claimed=lambda: cursor.write_text("advanced"),
+                task_client=_FenceClient())
             with mock.patch.object(bot, "jarvis_cmd",
                                    return_value=[sys.executable, "-c", script]), \
                     mock.patch.object(bot, "jarvis_root", return_value=Path(directory)), \
@@ -104,9 +106,12 @@ class ManagedProcessGuardTest(unittest.TestCase):
                                       side_effect=lambda _sid, command, **_kw: command), \
                     mock.patch.object(bot, "_claim_workitem",
                                       side_effect=RuntimeError("claim lost")), \
+                    mock.patch.object(bot, "_post_pr_claim_visible",
+                                      return_value=False), \
                     mock.patch.object(bot, "_release_post_pr_claim") as release, \
-                    mock.patch.object(bot, "_inflight_add"), \
-                    mock.patch.object(bot, "_inflight_remove"):
+                    mock.patch.object(
+                        bot, "INFLIGHT_PATH",
+                        Path(directory) / "inflight.json"):
                 with self.assertRaisesRegex(RuntimeError, "claim lost"):
                     bot.run_claude_buffered(
                         "prompt", "session-post-pr", False, timeout=5,
@@ -136,6 +141,7 @@ class ManagedProcessGuardTest(unittest.TestCase):
                 "kind": "pr_ci_fix",
                 "aoneId": "84362517",
                 "projectId": "2100304",
+                "claimAttemptId": "attempt-guard",
             }
             argv = bot._headless_exec_command(
                 "state-deleted-post-pr", ["/bin/bash", "-c", script],
