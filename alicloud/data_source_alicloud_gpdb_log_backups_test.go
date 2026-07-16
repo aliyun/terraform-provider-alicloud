@@ -10,9 +10,8 @@ import (
 )
 
 func TestAccAliCloudGpdbLogbackupDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	rand := acctest.RandIntRange(1000000, 9999999)
-	testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudGpdbLogbackupSourceConfig(rand, map[string]string{

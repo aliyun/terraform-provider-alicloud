@@ -109,7 +109,7 @@ func TestAccAliCloudGpdbDbInstancePlansDataSource(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+		testAccPreCheck(t)
 	}
 	alicloudGpdbDbInstancePlansCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, planScheduleTypeConf, planTypeConf, nameRegexConf, statusConf, allConf)
 }
