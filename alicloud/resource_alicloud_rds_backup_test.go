@@ -41,13 +41,13 @@ func TestAccAliCloudRdsBackup_MySQL(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_id":    "${alicloud_db_instance.default.id}",
-					"backup_method":     "Physical",
+					"backup_method":     "Snapshot",
 					"remove_from_state": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_id": CHECKSET,
-						"backup_method":  "Physical",
+						"backup_method":  "Snapshot",
 						"backup_id":      CHECKSET,
 						"store_status":   CHECKSET,
 					}),
@@ -76,31 +76,22 @@ data "alicloud_db_zones" "default" {
   engine_version           = "8.0"
   instance_charge_type     = "PostPaid"
   category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
-}
-
-data "alicloud_db_instance_classes" "default" {
-  zone_id                  = data.alicloud_db_zones.default.zones.0.id
-  engine                   = "MySQL"
-  engine_version           = "8.0"
-  category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
-  instance_charge_type     = "PostPaid"
+  db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_db_zones.default.ids.0
+	vpc_id = data.alicloud_vpcs.default.ids[0]
+	zone_id      = data.alicloud_db_zones.default.ids[0]
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
+  vpc_id            = data.alicloud_vpcs.default.ids[0]
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_db_zones.default.ids.0
+  zone_id           = data.alicloud_db_zones.default.ids[0]
   vswitch_name      = var.name
 }
 
@@ -116,9 +107,9 @@ resource "alicloud_resource_manager_resource_group" "default" {
 resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
-  db_instance_storage_type = "local_ssd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  db_instance_storage_type = "cloud_essd"
+  instance_type            = "mysql.x2.large.2c"
+  instance_storage         = 20
   vswitch_id               = local.vswitch_id
   instance_name            = var.name
 }
@@ -191,7 +182,7 @@ data "alicloud_db_zones" "default" {
 }
 
 data "alicloud_db_instance_classes" "default" {
-  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  zone_id                  = data.alicloud_db_zones.default.zones[0].id
   engine                   = "PostgreSQL"
   engine_version           = "14.0"
   category                 = "HighAvailability"
@@ -203,15 +194,15 @@ data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_db_zones.default.ids.0
+	vpc_id = data.alicloud_vpcs.default.ids[0]
+	zone_id      = data.alicloud_db_zones.default.ids[0]
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
+  vpc_id            = data.alicloud_vpcs.default.ids[0]
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_db_zones.default.ids.0
+  zone_id           = data.alicloud_db_zones.default.ids[0]
   vswitch_name      = var.name
 }
 
@@ -223,8 +214,8 @@ resource "alicloud_db_instance" "default" {
   engine                   = "PostgreSQL"
   engine_version           = "14.0"
   db_instance_storage_type = "cloud_essd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
   vswitch_id               = local.vswitch_id
   instance_name            = var.name
 }
@@ -340,28 +331,19 @@ data "alicloud_db_zones" "default" {
   db_instance_storage_type = "cloud_essd"
 }
 
-data "alicloud_db_instance_classes" "default" {
-  zone_id                  = data.alicloud_db_zones.default.zones.0.id
-  engine                   = "SQLServer"
-  engine_version           = "2019_ent"
-  category                 = "AlwaysOn"
-  db_instance_storage_type = "cloud_essd"
-  instance_charge_type     = "PostPaid"
-}
-
 data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_db_zones.default.ids.0
+	vpc_id = data.alicloud_vpcs.default.ids[0]
+	zone_id      = data.alicloud_db_zones.default.ids[0]
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
+  vpc_id            = data.alicloud_vpcs.default.ids[0]
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_db_zones.default.ids.0
+  zone_id           = data.alicloud_db_zones.default.ids[0]
   vswitch_name      = var.name
 }
 
@@ -373,8 +355,8 @@ resource "alicloud_db_instance" "default" {
   engine                   = "SQLServer"
   engine_version           = "2019_ent"
   db_instance_storage_type = "cloud_essd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_type            = "mssql.x4.medium.e2"
+  instance_storage         = 20
   vswitch_id               = local.vswitch_id
   instance_name            = var.name
   category                 = "AlwaysOn"
