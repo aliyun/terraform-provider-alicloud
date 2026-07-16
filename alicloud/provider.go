@@ -4303,25 +4303,50 @@ func getClientByCredentialsURI(credentialsURI string) (*CredentialsURIResponse, 
 	return &response, nil
 }
 
+// moduleRecord is a single entry of .terraform/modules/modules.json. Only the
+// fields used to build configuration source metadata are captured.
+type moduleRecord struct {
+	Source  string `json:"Source"`
+	Version string `json:"Version"`
+}
+
+// modulesMeta is the top-level shape of .terraform/modules/modules.json.
+type modulesMeta struct {
+	Modules []moduleRecord `json:"Modules"`
+}
+
+// getModuleAddr appends registry module addresses to the provider configuration
+// source (user-agent metadata). It is invoked during provider configure, so it
+// must never panic nor block startup: any structural anomaly is treated as
+// "no module info" and yields an empty string with a debug log.
 func getModuleAddr() string {
-	moduleMeta := make(map[string]interface{})
-	str, err := os.ReadFile(".terraform/modules/modules.json")
+	return getModuleAddrFromFile(".terraform/modules/modules.json")
+}
+
+// getModuleAddrFromFile parses the modules.json file at the given path and
+// returns the space-prefixed registry module addresses. Malformed structures
+// (truncated JSON, wrong field types, null entries, object-instead-of-array,
+// etc.) are handled gracefully via typed decoding instead of unsafe type
+// assertions that could panic during provider configure.
+func getModuleAddrFromFile(path string) string {
+	str, err := os.ReadFile(path)
 	if err != nil {
 		return ""
 	}
-	err = json.Unmarshal(str, &moduleMeta)
-	if err != nil || len(moduleMeta) < 1 || moduleMeta["Modules"] == nil {
+	var meta modulesMeta
+	if err := json.Unmarshal(str, &meta); err != nil {
+		log.Printf("[DEBUG] getModuleAddr: skip malformed modules.json %q: %v", path, err)
 		return ""
 	}
 	var result string
-	for _, m := range moduleMeta["Modules"].([]interface{}) {
-		module := m.(map[string]interface{})
-		moduleSource := fmt.Sprint(module["Source"])
-		moduleVersion := fmt.Sprint(module["Version"])
-		if strings.HasPrefix(moduleSource, "registry.terraform.io/") {
-			parts := strings.Split(moduleSource, "/")
+	for _, m := range meta.Modules {
+		if m.Source == "" {
+			continue
+		}
+		if strings.HasPrefix(m.Source, "registry.terraform.io/") {
+			parts := strings.Split(m.Source, "/")
 			if len(parts) == 4 {
-				result += " " + "terraform-" + parts[3] + "-" + parts[2] + "/" + moduleVersion
+				result += " " + "terraform-" + parts[3] + "-" + parts[2] + "/" + m.Version
 			}
 		}
 	}
