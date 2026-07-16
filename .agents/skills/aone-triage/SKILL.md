@@ -50,9 +50,12 @@ a1 skill install a1@0.28.0
 bash bootstrap/aone-get.sh <id>                    # 3h 缓存
 bin/a1id -- project workitem comment list <id>
 bin/a1id -- project workitem activity <id>         # 可选,看流转
+bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill 自识别
 ```
 
 从返回 JSON 抽:`workitemType` / `status` / `assignedTo` / `priority` / `space`(= 所属池)/ `涉及云产品(140097)` / `工单ID(104264)` / `description` **全文**(尤其末段,常藏真实诉求)/ `creator` / `计划截止日期(80)`。
+
+**图像内容提取**:`aone-image-extract.sh` 输出 manifest,含图片本地路径(`.my-day/aone-image-ocr/<id>/`)。若 `images>0` 且 `cache=false`,**逐张 `Read` 查看**(Claude 原生 vision),提取错误消息 / API 请求-响应 / CLI 输出 / 控制台字段,整理成结构化文本作为**工单正文的补充上下文**参与后续查证与分诊,并把整理结果写入脚本给出的 `summary_file`(下轮命中缓存直接回显,跳过重复识别);`cache=true` 时脚本已回显 summary,直接用。**图缺失/识别不出不阻断**,退回纯文字流程。客户常粘控制台报错 / next.api 响应 / `aliyun` CLI 截图,漏识别 = 分诊时抽不到真实诉求,易误判 `jarvis-npe` 或路由到错的人。
 
 **归类 = 决定加载哪本 reference**:
 
