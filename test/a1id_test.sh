@@ -715,9 +715,91 @@ fi
 rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
 
 # ===========================================================================
-# Test 19: 两份活跃 aone-triage Skill 的个人身份纪律枚举保持一致
+# Test 19: post-PR 子代理对 Aone 严格只读，且 env -u 不能绕过进程上下文
 # ===========================================================================
-echo "=== Test 19: aone-triage Skill 个人身份枚举包含 shanye ==="
+echo "=== Test 19: post-PR Aone read-only guard ==="
+ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
+seed_login "$ROOT" "terraform-rd"
+CAP=$(mktemp); ERR=$(mktemp)
+
+assert_post_pr_blocked() {
+    local label="$1"; shift
+    : > "$CAP"; : > "$ERR"
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+        JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+        A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+        bash "$A1ID" -- "$@" >/dev/null 2>"$ERR"
+    local rc=$?
+    if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
+        pass "$label 被 a1id fail-closed"
+    else
+        fail "$label 未阻断: rc=$rc capture=$(cat "$CAP")"
+    fi
+}
+
+assert_post_pr_allowed() {
+    local label="$1"; shift
+    : > "$CAP"; : > "$ERR"
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+        JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+        A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+        bash "$A1ID" -- "$@" >/dev/null 2>"$ERR"
+    local rc=$?
+    if [ "$rc" = "0" ] && grep -qF "ARGS=$*" "$CAP"; then
+        pass "$label 明确读操作放行"
+    else
+        fail "$label 被误拦: rc=$rc err=$(cat "$ERR")"
+    fi
+}
+
+assert_post_pr_blocked "update status" project workitem update 123 --status Closed
+assert_post_pr_blocked "update tag" project workitem update 123 --tag post-pr-test-tag
+assert_post_pr_blocked "create" project workitem create --project 528766 --title x
+assert_post_pr_blocked "delete" project workitem delete 123
+assert_post_pr_blocked "comment create" project workitem comment create 123 -m no
+assert_post_pr_blocked "伪造 jarvis-claim marker" project workitem comment create 123 \
+    -m "jarvis-claim host-a 2026-07-16T12:34:56Z deadbeef"
+assert_post_pr_blocked "relation add" project workitem relation add 123 relate:456
+assert_post_pr_blocked "relation remove" project workitem relation remove 123 relate:456
+assert_post_pr_blocked "attachment upload" project workitem attachment upload 123 file.txt
+assert_post_pr_blocked "attachment delete" project workitem attachment delete 123 9
+
+assert_post_pr_allowed "get" project workitem get 123
+assert_post_pr_allowed "list" project workitem list --project 528766
+assert_post_pr_allowed "activity" project workitem activity 123
+assert_post_pr_allowed "comment list" project workitem comment list 123
+assert_post_pr_allowed "relation list" project workitem relation list 123
+assert_post_pr_allowed "attachment list" project workitem attachment list 123
+assert_post_pr_allowed "attachment download" project workitem attachment download 123 9
+assert_post_pr_allowed "field list" project workitem field list --project 528766
+assert_post_pr_allowed "field options" project workitem field options status --project 528766
+
+context_dir="/tmp/jarvis-headless-context-$(id -u)"
+context_pgid="$(ps -o pgid= -p $$ | tr -d '[:space:]')"
+context_marker="$context_dir/$context_pgid.json"
+mkdir -p "$context_dir"
+printf '%s' \
+    '{"kind":"pr_comment_reply","policy_revision":"terraform-rd-single-writer-v3"}' \
+    > "$context_marker"
+: > "$CAP"; : > "$ERR"
+env -u JARVIS_AONE_WRITE_POLICY \
+    JARVIS_A1_IDENTITY=terraform-rd JARVIS_A1_STRICT=1 \
+    A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
+    bash "$A1ID" -- project workitem update 123 --status Closed \
+    >/dev/null 2>"$ERR"
+rc=$?
+rm -f "$context_marker"
+if [ "$rc" != "0" ] && [ ! -s "$CAP" ]; then
+    pass "env -u 后仍由 headless process provenance 阻断 Aone 写"
+else
+    fail "env -u 绕过了 post-PR provenance: rc=$rc capture=$(cat "$CAP")"
+fi
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
+
+# ===========================================================================
+# Test 20: 两份活跃 aone-triage Skill 的个人身份纪律枚举保持一致
+# ===========================================================================
+echo "=== Test 20: aone-triage Skill 个人身份枚举包含 shanye ==="
 for skill in \
     "$proj_root/.agents/skills/aone-triage/SKILL.md" \
     "$proj_root/.claude/skills/aone-triage/SKILL.md"; do

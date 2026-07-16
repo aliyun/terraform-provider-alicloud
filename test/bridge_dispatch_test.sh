@@ -1656,6 +1656,7 @@ class BufferedRunnerCmdTest(unittest.TestCase):
         class FakeP:
             def __init__(s, argv, **kw):
                 captured["argv"] = argv
+                captured["kwargs"] = kw
                 s.pid = 4242
                 s.returncode = 0
 
@@ -1698,6 +1699,48 @@ class BufferedRunnerCmdTest(unittest.TestCase):
         b.run_claude_buffered("hi", "sid-tf", False, timeout=10, terraform=True)
         b.run_claude_buffered("hi", "sid-def", False, timeout=10)
         self.assertEqual(self._cmd_terraform, [True, False])
+        child_env = captured["kwargs"]["env"]
+        self.assertNotEqual(child_env.get("JARVIS_A1_IDENTITY"), "terraform-rd")
+
+    def test_terraform_identity_and_post_pr_policy_reach_child_env(self):
+        captured = {}
+        out = json.dumps({"type": "result", "is_error": False,
+                          "subtype": "success", "result": "ok"})
+        b.subprocess.Popen = self._fake_popen(captured, out)
+        b.run_claude_buffered(
+            "hi", "sid-tf-policy", False, timeout=10, terraform=True,
+            aone_write_policy=b.POST_PR_AONE_WRITE_POLICY)
+        child_env = captured["kwargs"]["env"]
+        self.assertEqual(child_env.get("JARVIS_A1_IDENTITY"), "terraform-rd")
+        self.assertEqual(child_env.get("JARVIS_A1_STRICT"), "1")
+        self.assertEqual(
+            child_env.get("JARVIS_AONE_WRITE_POLICY"),
+            b.POST_PR_AONE_WRITE_POLICY)
+
+    def test_non_terraform_child_does_not_inherit_rd_identity(self):
+        captured = {}
+        out = json.dumps({"type": "result", "is_error": False,
+                          "subtype": "success", "result": "ok"})
+        b.subprocess.Popen = self._fake_popen(captured, out)
+        old_identity = os.environ.get("JARVIS_A1_IDENTITY")
+        old_strict = os.environ.get("JARVIS_A1_STRICT")
+        os.environ["JARVIS_A1_IDENTITY"] = "terraform-rd"
+        os.environ["JARVIS_A1_STRICT"] = "1"
+        try:
+            b.run_claude_buffered(
+                "hi", "sid-non-tf", False, timeout=10, terraform=False)
+        finally:
+            if old_identity is None:
+                os.environ.pop("JARVIS_A1_IDENTITY", None)
+            else:
+                os.environ["JARVIS_A1_IDENTITY"] = old_identity
+            if old_strict is None:
+                os.environ.pop("JARVIS_A1_STRICT", None)
+            else:
+                os.environ["JARVIS_A1_STRICT"] = old_strict
+        child_env = captured["kwargs"]["env"]
+        self.assertNotIn("JARVIS_A1_IDENTITY", child_env)
+        self.assertNotIn("JARVIS_A1_STRICT", child_env)
 
     def test_timeout_kills_group(self):
         killed = {}
@@ -2253,16 +2296,20 @@ class ResumeInflightTest(_InflightBase):
             os.environ.pop(k, None)
         self._orig_sess = b._session_file_exists
         self._orig_release = b._release_claim
+        self._orig_post_pr_release = b._release_post_pr_claim
         self._orig_publish = b._aone_event_publish
         self.released = []
         self.events = []
         b._release_claim = lambda iid, project, terraform=False: self.released.append(
+            (str(iid), project, terraform))
+        b._release_post_pr_claim = lambda iid, project, terraform=False: self.released.append(
             (str(iid), project, terraform))
         b._aone_event_publish = lambda *args: self.events.append(args) or True
 
     def tearDown(self):
         b._session_file_exists = self._orig_sess
         b._release_claim = self._orig_release
+        b._release_post_pr_claim = self._orig_post_pr_release
         b._aone_event_publish = self._orig_publish
         super().tearDown()
 
@@ -2360,6 +2407,17 @@ class ResumeInflightTest(_InflightBase):
         self.assertEqual(self.captured, [], "非 ticket / 非数字 → 丢弃不派")
         self.assertFalse(b._inflight_has("600"))
         self.assertFalse(b._inflight_has("probe-x"))
+
+    def test_pre_policy_post_pr_generation_is_dropped_and_released(self):
+        b._session_file_exists = lambda sid: True
+        b._inflight_add(
+            "605", "sid-old-pr", "528766", "pr_comment_reply", "old prompt",
+            terraform=True, policy_revision="legacy-pre-single-writer")
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(self.captured, [], "旧 post-PR prompt 不得被恢复执行")
+        self.assertEqual(self.released, [("605", "528766", True)])
+        self.assertFalse(b._inflight_has("605"))
 
     def test_empty_registry_noop(self):
         h = self._handler()
@@ -2736,6 +2794,13 @@ class _FakeHandler:
 
     def _broadcast(self, text):
         self.broadcasts.append(text)
+
+    def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type,
+                      **kwargs):
+        binder = kwargs.get("on_spawn")
+        if binder is not None:
+            binder(type("_WorkerProc", (), {"pid": 99123})())
+        return "done"
 
 
 class _FakeRunner:
@@ -3116,15 +3181,22 @@ class _RecordingPool:
     """记录 pool.submit 调用，模拟“派发成功”。用于 dispatch_comment_reply 断言：
     submit 有没有被调、以什么 kind 派、force 是否为 True。"""
 
-    def __init__(self, ok=True, reason="dispatched"):
+    def __init__(self, ok=True, reason="dispatched", start=True):
         self._ok = ok
         self._reason = reason
+        self._start = start
         self.calls = []
+        self.processes = {}
+
+    def set_proc(self, iid, process):
+        self.processes[str(iid)] = process
 
     def submit(self, iid, work, *, notify=None, force=False, kind="ticket", project=None,
                terraform=False):
         self.calls.append({"id": str(iid), "kind": kind, "force": force,
                            "project": project, "terraform": terraform})
+        if self._ok and self._start:
+            work()
         return self._ok, self._reason
 
 

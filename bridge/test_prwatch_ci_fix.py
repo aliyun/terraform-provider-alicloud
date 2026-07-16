@@ -13,8 +13,10 @@ Standalone: `python3 bridge/test_prwatch_ci_fix.py`. 无 gh/a1/网络（monkeypa
 import importlib.util
 import json
 import os
+import signal
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
@@ -39,14 +41,29 @@ class FakeHandler:
         self.broadcasts.append(text)
 
     def dispatch_item(self, item_id, prompt, sid, resume, notify, target, ttype, **kw):
-        self.dispatched.append({"id": item_id, "kind": kw.get("kind"), "prompt": prompt})
-        return "done"
+        binder = kw.get("on_spawn")
+        try:
+            if binder:
+                binder(FakeProcess())
+            self.dispatched.append({"id": item_id, "kind": kw.get("kind"), "prompt": prompt})
+            return "done"
+        finally:
+            if hasattr(binder, "finish"):
+                binder.finish()
+
+
+class FakeProcess:
+    pid = 76543
 
 
 class FakePool:
     def __init__(self, accept=True):
         self.accept = accept
         self.submitted = []
+        self.processes = {}
+
+    def set_proc(self, key, process):
+        self.processes[str(key)] = process
 
     def submit(self, key, work, **kw):
         self.submitted.append({
@@ -216,12 +233,20 @@ class _DispatchBase(unittest.TestCase):
         self._orig_bt = bot.broadcast_target
         self._orig_by = bot.broadcast_type
         self._orig_publish = bot._aone_event_publish
+        self._orig_claim = bot._claim_workitem
+        self._orig_release = bot._release_post_pr_claim
         bot.PRWATCH_PATH = Path(self.tmp)
         bot.AONE_EVENT_PATH = Path(self.tmp + ".events")
         bot.broadcast_target = lambda: "t"
         bot.broadcast_type = lambda: "ty"
         self.events = []
+        self.claims = []
+        self.releases = []
         bot._aone_event_publish = lambda *a: self.events.append(a) or True
+        bot._claim_workitem = lambda iid, project, terraform=False: self.claims.append(
+            (str(iid), str(project), terraform)) or True
+        bot._release_post_pr_claim = lambda iid, project, terraform=False: self.releases.append(
+            (str(iid), str(project), terraform)) or True
         self.handler = FakeHandler()
         self.pool = FakePool()
         self.sched = bot.PrWatchScheduler(self.handler, self.pool)
@@ -234,6 +259,8 @@ class _DispatchBase(unittest.TestCase):
         bot.broadcast_target = self._orig_bt
         bot.broadcast_type = self._orig_by
         bot._aone_event_publish = self._orig_publish
+        bot._claim_workitem = self._orig_claim
+        bot._release_post_pr_claim = self._orig_release
         os.unlink(self.tmp)
         try:
             os.unlink(self.tmp + ".events")
@@ -258,9 +285,16 @@ class MaybeDispatchCiFixTest(_DispatchBase):
         self.assertTrue(self.pool.submitted[0]["force"], "CI-fix 应 force=True 越过 24h 去重")
         self.assertEqual(self.pool.submitted[0]["kind"], "pr_ci_fix")
         self.assertTrue(self.pool.submitted[0]["terraform"])
+        self.assertEqual(self.pool.processes[TID].pid, FakeProcess.pid)
         e = self._entry()
         self.assertEqual((e["ci_fix_sha"], e["ci_fix_attempts"]), ("sha1", 1))
+        self.assertEqual(self.claims, [(TID, PROJ, True)])
+        self.assertEqual(self.releases, [(TID, PROJ, True)])
         self.assertEqual(self.events, [], "单次 CI 修复派发不更新 Aone")
+        dispatched_prompt = self.handler.dispatched[0]["prompt"]
+        self.assertNotIn("bootstrap/claim.sh claim", dispatched_prompt)
+        self.assertNotIn("bootstrap/claim.sh release", dispatched_prompt)
+        self.assertIn("模型进程外托管", dispatched_prompt)
 
     def test_same_head_not_redispatched_but_still_active(self):
         self._ci = ("sha1", ["Compile"], False)
@@ -290,6 +324,20 @@ class MaybeDispatchCiFixTest(_DispatchBase):
         self.assertEqual(len(self.pool.submitted), 0, "pending 不派修复")
         self.assertTrue(active, "pending → 快档等结果")
         self.assertEqual(self.events, [], "CI pending 不更新 Aone")
+
+    def test_queued_ci_fix_does_not_consume_attempt_before_process_bind(self):
+        class QueuedPool(FakePool):
+            def submit(self, key, work, **kw):
+                self.submitted.append({"key": key, "kind": kw.get("kind")})
+                return True, "dispatched"
+
+        pool = QueuedPool()
+        sched = bot.PrWatchScheduler(self.handler, pool)
+        sched._gh_pr_ci = lambda _url: ("queued-sha", ["Compile"], False)
+        sched._maybe_dispatch_ci_fix(TID, self._entry())
+        entry = self._entry()
+        self.assertIsNone(entry.get("ci_fix_sha"))
+        self.assertIsNone(entry.get("ci_fix_attempts"))
 
     def test_query_fail_no_dispatch_not_active(self):
         self._ci = (None, None, False)
@@ -335,8 +383,89 @@ class MaybeDispatchCommentReplyTest(_DispatchBase):
         self.assertEqual(self.pool.submitted[0]["kind"], "pr_comment_reply")
         self.assertTrue(self.pool.submitted[0]["force"])
         self.assertTrue(self.pool.submitted[0]["terraform"])
+        self.assertEqual(self.pool.processes[TID].pid, FakeProcess.pid)
         self.assertEqual(self._entry().get("last_seen_comment"), "pr-2")
+        self.assertEqual(self.claims, [(TID, PROJ, True)])
+        self.assertEqual(self.releases, [(TID, PROJ, True)])
         self.assertEqual(self.events, [], "普通 reviewer comment 仅在 GitHub 内处理")
+
+    def test_bridge_releases_claim_when_worker_reports_failure(self):
+        class FailingHandler(FakeHandler):
+            def dispatch_item(self, item_id, prompt, sid, resume, notify, target, ttype,
+                              **kw):
+                binder = kw["on_spawn"]
+                try:
+                    binder(FakeProcess())
+                    return "error"
+                finally:
+                    binder.finish()
+
+        sched = bot.PrWatchScheduler(FailingHandler(), self.pool)
+        sched._gh_pr_comments = lambda _url: (
+            "pr-2", "reviewer2", "please change Y")
+        bot._prwatch_update(TID, last_seen_comment="issue-1")
+        sched._maybe_dispatch_comment_reply(TID, self._entry())
+        self.assertEqual(self.claims, [(TID, PROJ, True)])
+        self.assertEqual(self.releases, [(TID, PROJ, True)])
+
+    def test_registered_pr_worker_is_killed_by_restart_cleanup(self):
+        ready = threading.Event()
+        release = threading.Event()
+
+        class BlockingHandler(FakeHandler):
+            def dispatch_item(self, item_id, prompt, sid, resume, notify, target, ttype,
+                              **kw):
+                binder = kw["on_spawn"]
+                try:
+                    binder(FakeProcess())
+                    ready.set()
+                    release.wait(2)
+                    return "done"
+                finally:
+                    binder.finish()
+
+        ledger = self.tmp + ".dispatch"
+        pool = bot.DispatchPool(
+            max_workers=1, queue_max=0, ledger_path=ledger)
+        sched = bot.PrWatchScheduler(BlockingHandler(), pool)
+        sched._gh_pr_comments = lambda _url: (
+            "pr-2", "reviewer2", "please change Y")
+        bot._prwatch_update(TID, last_seen_comment="issue-1")
+        kill_calls = []
+        orig_getpgid, orig_killpg = bot.os.getpgid, bot.os.killpg
+        bot.os.getpgid = lambda pid: pid
+        bot.os.killpg = lambda pgid, sig: kill_calls.append((pgid, sig))
+        try:
+            sched._maybe_dispatch_comment_reply(TID, self._entry())
+            self.assertTrue(ready.wait(1), "PR worker must start and bind its Popen")
+            killed = pool.terminate_all(grace=0)
+            self.assertEqual(killed, [TID])
+            self.assertIn((FakeProcess.pid, signal.SIGTERM), kill_calls)
+            self.assertIn((FakeProcess.pid, signal.SIGKILL), kill_calls)
+        finally:
+            release.set()
+            pool.shutdown(wait=True)
+            bot.os.getpgid, bot.os.killpg = orig_getpgid, orig_killpg
+            try:
+                os.unlink(ledger)
+            except FileNotFoundError:
+                pass
+
+    def test_queued_comment_does_not_advance_cursor_before_process_bind(self):
+        class QueuedPool(FakePool):
+            def submit(self, key, work, **kw):
+                self.submitted.append({"key": key, "kind": kw.get("kind")})
+                return True, "dispatched"
+
+        pool = QueuedPool()
+        sched = bot.PrWatchScheduler(FakeHandler(), pool)
+        sched._gh_pr_comments = lambda _url: (
+            "pr-2", "reviewer2", "please change Y")
+        bot._prwatch_update(TID, last_seen_comment="issue-1")
+        sched._maybe_dispatch_comment_reply(TID, self._entry())
+        entry = self._entry()
+        self.assertEqual(entry.get("last_seen_comment"), "issue-1")
+        self.assertNotIn("last_comment_reply_at", entry)
 
     def test_same_comment_not_redispatched(self):
         self._c = ("issue-1", "reviewer1", "c1")

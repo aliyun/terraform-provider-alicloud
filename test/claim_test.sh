@@ -176,6 +176,24 @@ run_claim_prog() {
 }
 
 # ---------------------------------------------------------------------------
+# Test 0: post-PR model context may not call any claim/release/finish bookend
+# ---------------------------------------------------------------------------
+echo "=== Test 0: post-PR policy blocks claim.sh bookends ==="
+for post_pr_cmd in claim release finish; do
+    : > "$tmplog"; : > "$tmpcapture"; : > "$tmpgetcnt"
+    out=$(PATH="$tmpbin:$PATH" JARVIS_ROOT="$tmpconfig" \
+        JARVIS_AONE_WRITE_POLICY=post-pr-read-only \
+        bash "$proj_root/bootstrap/claim.sh" "$post_pr_cmd" \
+        "$WORKITEM_ID" "$PROJECT_ID" 2>&1)
+    rc=$?
+    if [ "$rc" -ne 0 ] && [ ! -s "$tmplog" ]; then
+        assert_pass "post-PR $post_pr_cmd blocked before Aone access"
+    else
+        assert_fail "post-PR $post_pr_cmd was not blocked cleanly (rc=$rc log=$(cat "$tmplog"))"
+    fi
+done
+
+# ---------------------------------------------------------------------------
 # Test 1: readback via point-read (workitem get) sees claimed → exit 0
 # ---------------------------------------------------------------------------
 echo "=== Test 1: point-read readback sees claimed → exit 0 ==="

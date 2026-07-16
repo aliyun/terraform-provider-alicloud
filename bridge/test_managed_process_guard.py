@@ -80,6 +80,66 @@ class ManagedProcessGuardTest(unittest.TestCase):
             time.sleep(0.1)
             self.assertFalse(marker.exists())
 
+    def test_post_pr_claim_failure_never_launches_or_advances_cursor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            marker = Path(directory) / "must-not-start-post-pr"
+            cursor = Path(directory) / "cursor"
+            script = "from pathlib import Path; Path(%r).write_text('bad')" % str(marker)
+
+            class Pool:
+                process = None
+
+                def set_proc(self, _item_id, process):
+                    self.process = process
+
+            pool = Pool()
+            binder = bot._post_pr_process_binder(
+                pool, "84362517", "pr_comment_reply", "528766",
+                "session-post-pr", "prompt",
+                on_claimed=lambda: cursor.write_text("advanced"))
+            with mock.patch.object(bot, "jarvis_cmd",
+                                   return_value=[sys.executable, "-c", script]), \
+                    mock.patch.object(bot, "jarvis_root", return_value=Path(directory)), \
+                    mock.patch.object(bot, "_headless_exec_command",
+                                      side_effect=lambda _sid, command: command), \
+                    mock.patch.object(bot, "_claim_workitem",
+                                      side_effect=RuntimeError("claim lost")), \
+                    mock.patch.object(bot, "_release_post_pr_claim") as release, \
+                    mock.patch.object(bot, "_inflight_add"), \
+                    mock.patch.object(bot, "_inflight_remove"):
+                with self.assertRaisesRegex(RuntimeError, "claim lost"):
+                    bot.run_claude_buffered(
+                        "prompt", "session-post-pr", False, timeout=5,
+                        on_spawn=binder, guarded=True, terraform=True,
+                        aone_write_policy=bot.POST_PR_AONE_WRITE_POLICY)
+
+            time.sleep(0.1)
+            self.assertIsNotNone(pool.process, "set_proc must happen before claim")
+            self.assertFalse(marker.exists(), "guard must kill before command exec")
+            self.assertFalse(cursor.exists(), "claim failure must not advance PR cursor")
+            release.assert_not_called()
+
+    def test_legacy_on_spawn_is_also_gated_before_command(self):
+        with tempfile.TemporaryDirectory() as directory:
+            marker = Path(directory) / "must-not-start-legacy"
+            script = "from pathlib import Path; Path(%r).write_text('bad')" % str(marker)
+
+            def reject(_process):
+                raise RuntimeError("pool registration failed")
+
+            with mock.patch.object(bot, "jarvis_cmd",
+                                   return_value=[sys.executable, "-c", script]), \
+                    mock.patch.object(bot, "jarvis_root", return_value=Path(directory)), \
+                    mock.patch.object(bot, "_headless_exec_command",
+                                      side_effect=lambda _sid, command: command):
+                with self.assertRaisesRegex(RuntimeError, "pool registration failed"):
+                    bot.run_claude_buffered(
+                        "prompt", "session", False, timeout=5,
+                        on_spawn=reject)
+
+            time.sleep(0.1)
+            self.assertFalse(marker.exists())
+
     def test_normal_command_exit_kills_background_grandchildren(self):
         with tempfile.TemporaryDirectory() as directory:
             grandchild_pid_file = Path(directory) / "grandchild.pid"

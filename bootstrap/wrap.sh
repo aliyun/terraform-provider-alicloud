@@ -26,8 +26,14 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib.sh"
+source "$script_dir/post-pr-context.sh"
 jarvis_root="$(jarvis_root)"
 pools_cfg="$jarvis_root/config/pools.json"
+
+if jarvis_post_pr_context_active; then
+    echo "wrap.sh: post-PR 子代理对 Aone 只读；回填仅允许 bridge RD-only publisher 执行" >&2
+    exit 73
+fi
 
 # a1 via bin/a1id → act as the jarvis identity regardless of ambient login (CLAUDE.md #6).
 # Overridable via JARVIS_A1 (tests point it at a stubbed `a1` on PATH).
