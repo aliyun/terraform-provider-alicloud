@@ -2580,7 +2580,9 @@ class PrWatchNeverCrashTest(_PrWatchBase):
         b._prwatch_add("200", self._PR, "528766")
         b.subprocess.run = r
         self._sched()._tick()   # must NOT raise
-        self.assertEqual(r.kinds().count("gh"), 2, "两条都被处理（timeout 不中断 tick）")
+        self.assertEqual(
+            r.kinds().count("gh"), 3,
+            "一次 open-PR 发现 + 两条已登记 PR 都被处理（timeout 不中断 tick）")
         self.assertTrue(b._prwatch_has("100") and b._prwatch_has("200"), "timeout → 保留")
 
     def test_pause_gate_early_return(self):

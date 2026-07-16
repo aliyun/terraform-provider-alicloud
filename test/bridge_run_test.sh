@@ -278,10 +278,13 @@ has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd start: kickstarts 
 st="$(TEST_SUPERVISOR=launchd run status 2>&1)"
 has "RUNNING" "$st" "launchd status: parses fake launchctl state"
 has "pid 4242" "$st" "launchd status: reports launchd pid"
+: >"$FAKECTL_STATE/calls"
 out="$(TEST_SUPERVISOR=launchd run restart 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd restart: exit 0" || no "launchd restart: exit 0 (got $rc)"
 calls="$(cat "$FAKECTL_STATE/calls")"
-has "bootout gui/4242/com.jarvis.test" "$calls" "launchd restart: bootout old service"
+has "enable gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service enabled"
+has "kickstart -k gui/4242/com.jarvis.test" "$calls" "launchd restart: replaces running process"
+hasnot "bootout gui/4242/com.jarvis.test" "$calls" "launchd restart: keeps service registered"
 out="$(TEST_SUPERVISOR=launchd run stop 2>&1)"; rc=$?
 [ "$rc" = 0 ] && ok "launchd stop: exit 0" || no "launchd stop: exit 0 (got $rc)"
 st="$(TEST_SUPERVISOR=launchd run status 2>&1)"

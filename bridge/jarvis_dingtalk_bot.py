@@ -4814,10 +4814,15 @@ class JarvisHandler(AsyncChatbotHandler):
             attempt = 0
             cur_prompt, cur_resume = prompt, resume
             while True:
+                runner_kwargs = {
+                    "timeout": timeout,
+                    "on_spawn": on_spawn,
+                    "terraform": terraform,
+                }
+                if managed_lifecycle is not None:
+                    runner_kwargs["guarded"] = True
                 res = run_claude_buffered(cur_prompt, sid, cur_resume,
-                                          timeout=timeout, on_spawn=on_spawn,
-                                          terraform=terraform,
-                                          guarded=managed_lifecycle is not None)
+                                          **runner_kwargs)
                 if not res.is_error:
                     break  # clean completion or SUSPEND (both is_error=False)
                 if res.subtype in ("timeout", "error_max_turns"):

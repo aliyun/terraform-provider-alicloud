@@ -7,6 +7,7 @@ import io
 import os
 import stat
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -24,6 +25,9 @@ class FakeClient:
         self.calls = []
         self.claim_error = None
         self.begin_error = None
+        self.heartbeat_error = None
+        self.suspend_error = None
+        self.claim_results = []
         self.begin_results = [{
             "proceed": True,
             "operation": {"id": "op-1", "status": "SENDING"},
@@ -40,12 +44,17 @@ class FakeClient:
         return self._record("heartbeat_worker", *args, **kwargs)
 
     def heartbeat_session(self, *args, **kwargs):
-        return self._record("heartbeat_session", *args, **kwargs)
+        self._record("heartbeat_session", *args, **kwargs)
+        if self.heartbeat_error:
+            raise self.heartbeat_error
+        return {"ok": True}
 
     def claim_task(self, *args, **kwargs):
         self._record("claim_task", *args, **kwargs)
         if self.claim_error:
             raise self.claim_error
+        if self.claim_results:
+            return self.claim_results.pop(0)
         return {
             "task": {"id": "task-1", "generation": 4},
             "session": {"id": "session-1", "generation": 4,
@@ -71,7 +80,10 @@ class FakeClient:
         return self._record("fail_session", *args, **kwargs)
 
     def suspend_session(self, *args, **kwargs):
-        return self._record("suspend_session", *args, **kwargs)
+        self._record("suspend_session", *args, **kwargs)
+        if self.suspend_error:
+            raise self.suspend_error
+        return {"ok": True}
 
     def complete_session(self, *args, **kwargs):
         return self._record("complete_session", *args, **kwargs)
@@ -100,6 +112,9 @@ class InteractiveWorkerTest(unittest.TestCase):
     def _store(self):
         return worker.StateStore(worker._state_path("codex", "native-thread-1"))
 
+    def _child_store(self, session_id="agent-child-1"):
+        return worker.StateStore(worker._state_path("codex", session_id))
+
     def _seed(self):
         state = {
             "schemaVersion": 1,
@@ -120,7 +135,10 @@ class InteractiveWorkerTest(unittest.TestCase):
             "current": None,
             "pendingClaim": None,
             "pendingOperation": None,
+            "pendingSuspend": None,
             "stopped": False,
+            "turnActive": True,
+            "activeTurnId": None,
         }
         self._store().save(state)
         return state
@@ -154,6 +172,1140 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertNotIn("lease_task", [c[0] for c in fake.calls])
         self.assertEqual(daemon.call_count, 2)
         self.assertEqual(fake.calls[-1][1][1]["status"], "OFFLINE")
+
+    def test_failed_first_session_registration_persists_fail_closed_tombstone(self):
+        fake = FakeClient()
+        fake.register_worker = mock.Mock(
+            side_effect=worker.ControlPlaneUnavailable("pre unavailable"))
+        event = {
+            "hook_event_name": "SessionStart",
+            "session_id": "native-thread-1",
+            "cwd": self.temp.name,
+            "source": "startup",
+        }
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_find_host_pid", return_value=(os.getpid(), True)), \
+                mock.patch.object(worker, "_default_boot_id", return_value="boot"), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.hook("codex", event), 0)
+        state = self._store().load()
+        self.assertTrue(state["stopped"])
+        self.assertTrue(state["registrationFailed"])
+        self.assertEqual(state["clientSessionId"], "native-thread-1")
+
+    def test_subagent_start_binds_exact_spawn_and_followup_reauthorizes_epoch(self):
+        parent_transcript = Path(self.temp.name) / "parent.jsonl"
+        child_transcript = Path(self.temp.name) / "child.jsonl"
+        parent_transcript.write_text(
+            "\n".join((
+                '{"type":"response_item","payload":{"type":"function_call",'
+                '"name":"spawn_agent","call_id":"call-spawn",'
+                '"internal_chat_message_metadata_passthrough":{"turn_id":"root-turn"}}}',
+                '{"type":"event_msg","payload":{"type":"sub_agent_activity",'
+                '"kind":"started","agent_thread_id":"agent-child-1",'
+                '"event_id":"call-spawn"}}',
+            )) + "\n", encoding="utf-8")
+        child_transcript.write_text(
+            '{"type":"session_meta","payload":{"id":"agent-child-1",'
+            '"session_id":"native-thread-1",'
+            '"cwd":"/workspace","source":{"subagent":{"thread_spawn":{'
+            '"parent_thread_id":"native-thread-1",'
+            '"agent_path":"/root/child"}}}}}\n', encoding="utf-8")
+        state = self._seed()
+        state["activeTurnId"] = "root-turn"
+        state["transcriptPath"] = str(parent_transcript)
+        self._store().save(state)
+        spawn_event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "root-turn",
+            "tool_use_id": "call-spawn",
+            "tool_name": "spawn_agent",
+            "tool_input": {"task_name": "child", "message": "review"},
+        }
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True):
+            self.assertIsNone(worker._guard_pre_tool_use(
+                self._store(), "codex", spawn_event))
+        self.assertIn("call-spawn", self._store().load()["subagentSpawnPermits"])
+
+        start_event = {
+            "hook_event_name": "SubagentStart",
+            "session_id": "native-thread-1",
+            "turn_id": "child-turn-1",
+            "agent_id": "agent-child-1",
+            "agent_type": "subagent",
+            "cwd": "/workspace",
+            "transcript_path": str(child_transcript),
+        }
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", start_event), 0)
+        child = self._child_store().load()
+        self.assertEqual(child["subagentBinding"]["rootSessionId"], "native-thread-1")
+        root = self._store().load()
+        self.assertEqual(
+            root["subagentRegistry"]["/root/child"]["agentId"], "agent-child-1")
+        self.assertEqual(root["subagentEpochs"]["agent-child-1"]["rootTurnId"],
+                         "root-turn")
+
+        root["activeTurnId"] = "root-next"
+        self._store().save(root)
+        child_tool = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "child-turn-2",
+            "agent_id": "agent-child-1",
+            "agent_type": "subagent",
+            "tool_use_id": "tool-child-next",
+            "tool_name": "apply_patch",
+            "tool_input": {},
+        }
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True):
+            self.assertIn("不属于当前根 turn/任务 fence",
+                          worker._guard_pre_tool_use(
+                              self._child_store(), "codex", child_tool))
+
+        followup_event = {
+            "session_id": "native-thread-1",
+            "turn_id": "root-next",
+            "tool_use_id": "call-followup",
+            "tool_name": "collaborationfollowup_task",
+            "tool_input": {"target": "/root/child", "message": "continue"},
+        }
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True):
+            self.assertIsNone(worker._guard_pre_tool_use(
+                self._store(), "codex",
+                {**followup_event, "hook_event_name": "PreToolUse"}))
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                **followup_event,
+                "hook_event_name": "PostToolUse",
+                "tool_response": {"ok": True},
+            }), 0)
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True):
+            self.assertIsNone(worker._guard_pre_tool_use(
+                self._child_store(), "codex", child_tool))
+
+        root = self._store().load()
+        root["current"] = {
+            "aoneId": "84399999", "projectId": "2100304", "taskId": "task-new",
+            "sessionId": "session-new", "fenceToken": 17, "generation": 8,
+            "cycle": 1, "runtimeSessionId": "interactive:new",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(root)
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                mock.patch.object(worker, "_client",
+                                  side_effect=AssertionError("must block before heartbeat")):
+            self.assertIn("不属于当前根 turn/任务 fence",
+                          worker._guard_pre_tool_use(
+                              self._child_store(), "codex", child_tool))
+
+    def test_subagent_stop_blocks_delayed_tool_until_successful_followup(self):
+        state = self._seed()
+        state["activeTurnId"] = "root-turn"
+        state["subagentRevision"] = 1
+        state["subagentRegistry"] = {
+            "/root/child": {
+                "agentId": "agent-child-1",
+                "bindingRevision": 1,
+                "sourceToolUseId": "call-spawn",
+            },
+        }
+        state["subagentLifecycles"] = {
+            "agent-child-1": {"status": "ACTIVE", "revision": 1},
+        }
+        state["subagentEpochs"] = {
+            "agent-child-1": {
+                "rootTurnId": "root-turn",
+                "assignmentEpoch": worker._assignment_epoch(state),
+                "authorizedRevision": 1,
+            },
+        }
+        self._store().save(state)
+        self._child_store().save({
+            "schemaVersion": 1,
+            "client": "codex",
+            "clientSessionId": "native-thread-1",
+            "transcriptPath": "/tmp/child.jsonl",
+            "subagentBinding": {
+                "agentId": "agent-child-1",
+                "agentType": "subagent",
+                "agentPath": "/root/child",
+                "parentThreadId": "native-thread-1",
+                "rootSessionId": "native-thread-1",
+                "bindingRevision": 1,
+            },
+            "stopped": False,
+        })
+        child_tool = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "child-turn",
+            "agent_id": "agent-child-1",
+            "agent_type": "subagent",
+            "tool_use_id": "tool-delayed",
+            "tool_name": "apply_patch",
+            "tool_input": {},
+        }
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "SubagentStop",
+                "session_id": "native-thread-1",
+                "turn_id": "child-turn",
+                "agent_id": "agent-child-1",
+                "agent_type": "subagent",
+                "agent_transcript_path": "/tmp/child.jsonl",
+            }), 0)
+        stopped = self._child_store().load()
+        self.assertTrue(stopped["stopped"])
+        self.assertEqual(stopped["transcriptPath"], "/tmp/child.jsonl")
+        self.assertNotIn(
+            "agent-child-1", self._store().load()["subagentEpochs"])
+
+        stderr = io.StringIO()
+        with mock.patch.object(
+                worker, "_client",
+                side_effect=AssertionError("must block before heartbeat")), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", child_tool), 2)
+        self.assertIn("不属于当前根 turn/任务 fence", stderr.getvalue())
+
+        followup = {
+            "session_id": "native-thread-1",
+            "turn_id": "root-turn",
+            "tool_use_id": "call-followup-after-stop",
+            "tool_name": "collaborationfollowup_task",
+            "tool_input": {"target": "/root/child", "message": "continue"},
+        }
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True):
+            self.assertIsNone(worker._guard_pre_tool_use(
+                self._store(), "codex",
+                {**followup, "hook_event_name": "PreToolUse"}))
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                **followup,
+                "hook_event_name": "PostToolUse",
+                "tool_response": {"ok": True},
+            }), 0)
+        self.assertFalse(self._child_store().load()["stopped"])
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True):
+            self.assertIsNone(worker._guard_pre_tool_use(
+                self._child_store(), "codex",
+                {**child_tool, "tool_use_id": "tool-after-followup"}))
+
+    def test_followup_post_tool_cannot_authorize_across_assignment_epoch(self):
+        state = self._seed()
+        state["activeTurnId"] = "root-turn"
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        state["subagentRevision"] = 2
+        state["subagentRegistry"] = {
+            "/root/child": {
+                "agentId": "agent-child-1",
+                "bindingRevision": 1,
+            },
+        }
+        state["subagentLifecycles"] = {
+            "agent-child-1": {"status": "STOPPED", "revision": 2},
+        }
+        self._store().save(state)
+        self._child_store().save({
+            "schemaVersion": 1,
+            "client": "codex",
+            "clientSessionId": "native-thread-1",
+            "subagentBinding": {
+                "agentId": "agent-child-1",
+                "agentPath": "/root/child",
+                "parentThreadId": "native-thread-1",
+                "rootSessionId": "native-thread-1",
+                "bindingRevision": 1,
+            },
+            "stopped": True,
+            "subagentStoppedRevision": 2,
+        })
+        followup = {
+            "session_id": "native-thread-1",
+            "turn_id": "root-turn",
+            "tool_use_id": "call-old-followup",
+            "tool_name": "collaborationsend_message",
+            "tool_input": {"target": "/root/child", "message": "continue"},
+        }
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True):
+            self.assertIsNone(worker._guard_pre_tool_use(
+                self._store(), "codex",
+                {**followup, "hook_event_name": "PreToolUse"}))
+        changed = self._store().load()
+        changed["current"] = {
+            **changed["current"],
+            "fenceToken": 10,
+        }
+        self._store().save(changed)
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                **followup,
+                "hook_event_name": "PostToolUse",
+                "tool_response": {"ok": True},
+            }), 0)
+        latest = self._store().load()
+        self.assertNotIn("agent-child-1", latest.get("subagentEpochs", {}))
+        self.assertEqual(
+            latest["subagentLifecycles"]["agent-child-1"]["status"], "STOPPED")
+        self.assertTrue(self._child_store().load()["stopped"])
+
+    def test_delayed_old_bind_cannot_reclaim_reused_agent_path(self):
+        parent_transcript = Path(self.temp.name) / "parent-rebind.jsonl"
+        parent_transcript.write_text(
+            "\n".join((
+                '{"type":"response_item","payload":{"type":"function_call",'
+                '"name":"spawn_agent","call_id":"call-a",'
+                '"internal_chat_message_metadata_passthrough":{"turn_id":"root-turn"}}}',
+                '{"type":"event_msg","payload":{"type":"sub_agent_activity",'
+                '"kind":"started","agent_thread_id":"agent-a",'
+                '"event_id":"call-a"}}',
+                '{"type":"response_item","payload":{"type":"function_call",'
+                '"name":"spawn_agent","call_id":"call-b",'
+                '"internal_chat_message_metadata_passthrough":{"turn_id":"root-turn"}}}',
+                '{"type":"event_msg","payload":{"type":"sub_agent_activity",'
+                '"kind":"started","agent_thread_id":"agent-b",'
+                '"event_id":"call-b"}}',
+            )) + "\n", encoding="utf-8")
+        child_paths = {}
+        for agent_id in ("agent-a", "agent-b"):
+            path = Path(self.temp.name) / ("%s.jsonl" % agent_id)
+            path.write_text(
+                '{"type":"session_meta","payload":{"id":"%s",'
+                '"session_id":"native-thread-1","cwd":"/workspace",'
+                '"source":{"subagent":{"thread_spawn":{'
+                '"parent_thread_id":"native-thread-1",'
+                '"agent_path":"/root/reused"}}}}}\n' % agent_id,
+                encoding="utf-8")
+            child_paths[agent_id] = path
+        state = self._seed()
+        state["activeTurnId"] = "root-turn"
+        state["transcriptPath"] = str(parent_transcript)
+        self._store().save(state)
+        for call_id in ("call-a", "call-b"):
+            with mock.patch.object(worker, "_calling_process_matches",
+                                   return_value=True):
+                self.assertIsNone(worker._guard_pre_tool_use(
+                    self._store(), "codex", {
+                        "hook_event_name": "PreToolUse",
+                        "session_id": "native-thread-1",
+                        "turn_id": "root-turn",
+                        "tool_use_id": call_id,
+                        "tool_name": "collaborationspawn_agent",
+                        "tool_input": {
+                            "task_name": call_id,
+                            "message": "review",
+                        },
+                    }))
+
+        def start(agent_id):
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(worker.hook("codex", {
+                    "hook_event_name": "SubagentStart",
+                    "session_id": "native-thread-1",
+                    "turn_id": "%s-turn" % agent_id,
+                    "agent_id": agent_id,
+                    "agent_type": "subagent",
+                    "cwd": "/workspace",
+                    "transcript_path": str(child_paths[agent_id]),
+                }), 0)
+
+        start("agent-a")
+        start("agent-b")
+        start("agent-a")
+        root = self._store().load()
+        self.assertEqual(
+            root["subagentRegistry"]["/root/reused"]["agentId"], "agent-b")
+        self.assertEqual(
+            root["subagentLifecycles"]["agent-a"]["status"], "STOPPED")
+
+        followup = {
+            "session_id": "native-thread-1",
+            "turn_id": "root-turn",
+            "tool_use_id": "call-followup-reused",
+            "tool_name": "collaborationfollowup_task",
+            "tool_input": {"target": "/root/reused", "message": "continue"},
+        }
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True):
+            self.assertIsNone(worker._guard_pre_tool_use(
+                self._store(), "codex",
+                {**followup, "hook_event_name": "PreToolUse"}))
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                **followup,
+                "hook_event_name": "PostToolUse",
+                "tool_response": {"ok": True},
+            }), 0)
+        root = self._store().load()
+        self.assertNotIn("agent-a", root["subagentEpochs"])
+        self.assertIn("agent-b", root["subagentEpochs"])
+
+    def test_session_start_serializes_with_concurrent_assignment_mutation(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        register_entered = threading.Event()
+        allow_register = threading.Event()
+        mutation_done = threading.Event()
+
+        def blocking_register(*args, **kwargs):
+            register_entered.set()
+            self.assertTrue(allow_register.wait(3))
+            return fake._record("register_worker", *args, **kwargs)
+
+        fake.register_worker = blocking_register
+        hook_result = []
+
+        def run_session_start():
+            hook_result.append(worker.hook("codex", {
+                "hook_event_name": "SessionStart",
+                "session_id": "native-thread-1",
+                "cwd": self.temp.name,
+                "source": "resume",
+            }))
+
+        def write_new_assignment():
+            with self._store().locked():
+                latest = self._store().load_unlocked()
+                latest["current"]["fenceToken"] = 10
+                latest["pendingOperation"] = {
+                    "operationKey": "new-op", "fenceToken": 10,
+                }
+                self._store().save_unlocked(latest)
+            mutation_done.set()
+
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_find_host_pid",
+                                  return_value=(os.getpid(), True)), \
+                mock.patch.object(worker, "_process_start_identity",
+                                  return_value="birth-serialized"), \
+                mock.patch.object(worker, "make_worker_key",
+                                  return_value=state["workerKey"]), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                mock.patch.object(worker, "_hook_output"):
+            session_thread = threading.Thread(target=run_session_start)
+            session_thread.start()
+            self.assertTrue(register_entered.wait(3))
+            mutation_thread = threading.Thread(target=write_new_assignment)
+            mutation_thread.start()
+            self.assertFalse(mutation_done.wait(0.1))
+            allow_register.set()
+            session_thread.join(3)
+            mutation_thread.join(3)
+
+        self.assertFalse(session_thread.is_alive())
+        self.assertFalse(mutation_thread.is_alive())
+        self.assertEqual(hook_result, [0])
+        after = self._store().load()
+        self.assertEqual(after["current"]["fenceToken"], 10)
+        self.assertEqual(after["pendingOperation"]["operationKey"], "new-op")
+
+    def test_codex_turn_hooks_are_local_and_ignore_delayed_stop(self):
+        self._seed()
+        with mock.patch.object(worker, "_client",
+                               side_effect=AssertionError("network must not be used")), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-new",
+            }), 0)
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "Stop",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-old",
+            }), 0)
+        active = self._store().load()
+        self.assertTrue(active["turnActive"])
+        self.assertEqual(active["activeTurnId"], "turn-new")
+        self.assertNotIn("turnStoppedAt", active)
+
+        with mock.patch.object(worker, "_client",
+                               side_effect=AssertionError("network must not be used")), \
+                mock.patch.object(worker.time, "time", return_value=1234), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "Stop",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-new",
+            }), 0)
+        stopped = self._store().load()
+        self.assertFalse(stopped["turnActive"])
+        self.assertEqual(stopped["turnStoppedAt"], 1234)
+
+    def test_session_heartbeat_uses_codex_stop_grace_but_not_for_claude(self):
+        state = self._seed()
+        state["turnActive"] = False
+        state["turnStoppedAt"] = 100
+        with mock.patch.dict(os.environ, {
+            "JARVIS_INTERACTIVE_STOP_GRACE_SEC": "60",
+        }, clear=False):
+            self.assertTrue(worker._session_heartbeat_allowed(state, now=159.9))
+            self.assertFalse(worker._session_heartbeat_allowed(state, now=160))
+        state["client"] = "claude"
+        self.assertTrue(worker._session_heartbeat_allowed(state, now=10000))
+
+    def test_missing_stop_has_active_turn_ttl_before_auto_suspend(self):
+        state = self._seed()
+        state["turnActive"] = True
+        state["lastTurnActivityAt"] = 100
+        with mock.patch.dict(os.environ, {
+            "JARVIS_INTERACTIVE_ACTIVE_TURN_TTL_SEC": "60",
+        }, clear=False):
+            self.assertTrue(worker._session_heartbeat_allowed(state, now=159.9))
+            self.assertFalse(worker._session_heartbeat_allowed(state, now=160))
+        with mock.patch.dict(os.environ, {
+            "JARVIS_INTERACTIVE_ACTIVE_TURN_TTL_SEC": "0",
+        }, clear=False):
+            self.assertTrue(worker._session_heartbeat_allowed(state, now=10000))
+
+        self._store().save(state)
+        with mock.patch.object(worker.time, "time", return_value=150), \
+                mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "PostToolUse",
+                "session_id": "native-thread-1",
+                "turn_id": "long-turn",
+                "tool_name": "exec_command",
+            }), 0)
+        touched = self._store().load()
+        self.assertEqual(touched["lastTurnActivityAt"], 150)
+        with mock.patch.dict(os.environ, {
+            "JARVIS_INTERACTIVE_ACTIVE_TURN_TTL_SEC": "60",
+        }, clear=False):
+            self.assertTrue(worker._session_heartbeat_allowed(touched, now=209.9))
+            self.assertFalse(worker._session_heartbeat_allowed(touched, now=210))
+
+        state["lastTurnActivityAt"] = 100
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.dict(os.environ, {
+            "JARVIS_INTERACTIVE_ACTIVE_TURN_TTL_SEC": "60",
+        }, clear=False), \
+                mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", side_effect=[True, False]), \
+                mock.patch.object(worker.time, "time", return_value=1000), \
+                mock.patch.object(worker.time, "sleep", return_value=None):
+            self.assertEqual(worker.daemon(
+                self._store().path, state["workerKey"]), 0)
+        self.assertIn("suspend_session", [c[0] for c in fake.calls])
+        self.assertIsNone(self._store().load()["current"])
+
+    def test_user_prompt_restarts_sidecar_and_confirms_carried_fence(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        event = {
+            "hook_event_name": "UserPromptSubmit",
+            "session_id": "native-thread-1",
+            "turn_id": "turn-resume",
+        }
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon") as ensure, \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", event), 0)
+        ensure.assert_called_once()
+        self.assertEqual(ensure.call_args.args[0].path, self._store().path)
+        self.assertEqual(ensure.call_args.args[1], state["workerKey"])
+        self.assertIn("heartbeat_worker", [c[0] for c in fake.calls])
+        self.assertIn("heartbeat_session", [c[0] for c in fake.calls])
+        self.assertTrue(self._store().load()["turnActive"])
+
+    def test_user_prompt_clears_stale_fence_before_work(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        fake.heartbeat_error = worker.StaleFence("reassigned")
+        output = io.StringIO()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(output):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-stale",
+            }), 0)
+        after = self._store().load()
+        self.assertIsNone(after["current"])
+        self.assertIsNone(after["pendingClaim"])
+        self.assertEqual(after["lostOwnership"]["aoneId"], "84345050")
+        self.assertIn("重新运行 claim.sh", output.getvalue())
+
+        output = io.StringIO()
+        fake.heartbeat_error = None
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(output):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-after-loss",
+                "prompt": "继续",
+            }), 0)
+        self.assertIn("严禁继续", output.getvalue())
+
+    def test_pre_tool_use_verifies_fence_and_blocks_stale_owner(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "turn-tool",
+            "tool_use_id": "tool-1",
+            "tool_name": "Bash",
+            "tool_input": {"command": "bin/a1id -- project workitem get 84345050"},
+        }
+        fake = FakeClient()
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", event), 0)
+        self.assertEqual(stdout.getvalue().strip(), "{}")
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertNotIn("heartbeat_worker", [call[0] for call in fake.calls])
+        self.assertIn("heartbeat_session", [call[0] for call in fake.calls])
+
+        fake.heartbeat_error = worker.StaleFence("reassigned")
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", {**event, "tool_use_id": "tool-2"}), 2)
+        after = self._store().load()
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertIn("当前工具调用已阻断", stderr.getvalue())
+        self.assertIsNone(after["current"])
+        self.assertEqual(after["lostOwnership"]["aoneId"], "84345050")
+
+    def test_pre_tool_use_blocks_lost_claude_worker_too(self):
+        state = self._seed()
+        state["client"] = "claude"
+        state["clientSessionId"] = "claude-session-1"
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        store = worker.StateStore(worker._state_path("claude", "claude-session-1"))
+        store.save(state)
+        worker._clear_lost_current(
+            store, state["workerKey"], "session-1", 9, "reassigned")
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_client",
+                               side_effect=AssertionError("network must not be used")), \
+                mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("claude", {
+                "hook_event_name": "PreToolUse",
+                "session_id": "claude-session-1",
+                "tool_use_id": "tool-claude",
+                "tool_name": "Edit",
+                "tool_input": {"file_path": "/workspace/main.py"},
+            }), 2)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertIn("已失去 Aone 84345050", stderr.getvalue())
+
+    def test_claude_subagent_tool_uses_root_worker_and_assignment(self):
+        store = worker.StateStore(
+            worker._state_path("claude", "claude-session-1"))
+        state = self._seed()
+        state["client"] = "claude"
+        state["clientSessionId"] = "claude-session-1"
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:claude:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        store.save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_calling_process_matches",
+                                  return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.hook("claude", {
+                "hook_event_name": "PreToolUse",
+                "session_id": "claude-session-1",
+                "agent_id": "claude-child-1",
+                "agent_type": "jarvis-hook-probe",
+                "tool_use_id": "tool-child-bash",
+                "tool_name": "Bash",
+                "tool_input": {"command": "git status --short"},
+            }), 0)
+        self.assertIn("heartbeat_session", [call[0] for call in fake.calls])
+        self.assertFalse(
+            worker._state_path("claude", "claude-child-1").exists())
+
+    def test_pre_tool_use_only_allows_exact_standard_claim_recovery(self):
+        state = self._seed()
+        state["lostOwnership"] = {
+            "aoneId": "84345050", "projectId": "2100304",
+            "sessionId": "session-old", "reason": "stale fence",
+        }
+        self._store().save(state)
+        exact_claim = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "turn-recover",
+            "tool_use_id": "tool-claim",
+            "tool_name": "Bash",
+            "tool_input": {"command": "%s %s claim 84345050 2100304" % (
+                "/bin/bash", worker.REPO_ROOT / "bootstrap" / "claim.sh")},
+        }
+        stdout = io.StringIO()
+        with mock.patch.object(worker, "_client",
+                               side_effect=AssertionError("claim gate is local")), \
+                mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(stdout):
+            self.assertEqual(worker.hook("codex", exact_claim), 0)
+        self.assertEqual(stdout.getvalue().strip(), "{}")
+
+        claim_script = worker.REPO_ROOT / "bootstrap" / "claim.sh"
+        rejected = (
+            ("Bash", "/bin/bash %s claim 84345050 2100304; a1 update" % claim_script),
+            ("Bash", "/bin/bash %s claim 84345050 2100304 && a1 update" % claim_script),
+            ("Bash", "/bin/bash %s claim 84345050 2100304 | tee /tmp/x" % claim_script),
+            ("Bash", "/bin/bash %s claim 84345050 2100304\na1 update" % claim_script),
+            ("Bash", "/bin/bash %s claim 84345050 2100304 $(a1 update)" % claim_script),
+            ("Bash", "/bin/bash %s claim 84345051 2100304" % claim_script),
+            ("Bash", "env BASH_ENV=/tmp/pwn /bin/bash %s claim 84345050 2100304" % claim_script),
+            ("Bash", "JARVIS_INTERACTIVE_WORKER_MANAGER=/tmp/fake /bin/bash %s claim 84345050 2100304" % claim_script),
+            ("Bash", "/tmp/bash %s claim 84345050 2100304" % claim_script),
+            ("Bash", "/bin/bash /tmp/evil/bootstrap/claim.sh claim 84345050 2100304"),
+            ("mcp__evil__execute", "/bin/bash %s claim 84345050 2100304" % claim_script),
+        )
+        for index, (tool_name, command) in enumerate(rejected):
+            stderr = io.StringIO()
+            with self.subTest(command=command), \
+                    mock.patch.object(worker, "_calling_process_matches",
+                                      return_value=True), \
+                    contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(stderr):
+                self.assertEqual(worker.hook("codex", {
+                    **exact_claim,
+                    "tool_use_id": "tool-rejected-%d" % index,
+                    "tool_name": tool_name,
+                    "tool_input": {"command": command},
+                }), 2)
+            self.assertIn("工具调用已阻断", stderr.getvalue())
+
+        state = self._store().load()
+        state.pop("lostOwnership", None)
+        state["pendingClaim"] = {
+            "aoneId": "84345050", "projectId": "2100304",
+            "phase": "CLAIMING", "receiptUnknown": True,
+        }
+        self._store().save(state)
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", {
+                **exact_claim,
+                "tool_use_id": "tool-edit",
+                "tool_name": "Write",
+                "tool_input": {"file_path": "/workspace/main.py"},
+            }), 2)
+        self.assertIn("回执处于 UNKNOWN", stderr.getvalue())
+
+    def test_pre_tool_use_blocks_old_turn_process_and_uncertain_state(self):
+        state = self._seed()
+        state["activeTurnId"] = "turn-new"
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "turn-new",
+            "tool_use_id": "tool-guard",
+            "tool_name": "apply_patch",
+            "tool_input": {"patch": "*** Begin Patch"},
+        }
+        for label, process_matches, turn_id in (
+                ("old-process", False, "turn-new"),
+                ("old-turn", True, "turn-old")):
+            stderr = io.StringIO()
+            with self.subTest(label=label), \
+                    mock.patch.object(worker, "_calling_process_matches",
+                                      return_value=process_matches), \
+                    mock.patch.object(worker, "_client",
+                                      side_effect=AssertionError("must block locally")), \
+                    contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(stderr):
+                self.assertEqual(worker.hook("codex", {
+                    **event, "turn_id": turn_id,
+                }), 2)
+            self.assertIn("已阻断", stderr.getvalue())
+
+        state = self._store().load()
+        state["turnActive"] = False
+        state["pendingSuspend"] = {
+            "sessionId": "session-1", "fenceToken": 9,
+        }
+        self._store().save(state)
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", event), 2)
+        self.assertIn("turn 已停止", stderr.getvalue())
+
+    def test_pre_tool_use_allows_subagent_turn_but_rechecks_root_stop(self):
+        state = self._seed()
+        state["activeTurnId"] = "root-turn"
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        state["subagentEpochs"] = {
+            "agent-child-1": {
+                "rootTurnId": "root-turn",
+                "assignmentEpoch": worker._assignment_epoch(state),
+                "authorizedRevision": 1,
+            },
+        }
+        state["subagentLifecycles"] = {
+            "agent-child-1": {"status": "ACTIVE", "revision": 1},
+        }
+        self._store().save(state)
+        self._child_store().save({
+            "schemaVersion": 1,
+            "client": "codex",
+            "clientSessionId": "native-thread-1",
+            "transcriptPath": "/tmp/child.jsonl",
+            "subagentBinding": {
+                "agentId": "agent-child-1",
+                "agentType": "subagent",
+                "agentPath": "/root/child",
+                "parentThreadId": "native-thread-1",
+                "rootSessionId": "native-thread-1",
+                "bindingRevision": 1,
+            },
+            "stopped": False,
+        })
+        subagent_event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "child-turn-context",
+            "agent_id": "agent-child-1",
+            "agent_type": "subagent",
+            "tool_use_id": "tool-child",
+            "tool_name": "Bash",
+            "tool_input": {"command": "git status --short"},
+        }
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.hook("codex", subagent_event), 0)
+        self.assertIn("heartbeat_session", [call[0] for call in fake.calls])
+
+        def stop_during_heartbeat(*args, **kwargs):
+            fake._record("heartbeat_session", *args, **kwargs)
+            with self._store().locked():
+                latest = self._store().load_unlocked()
+                latest["turnActive"] = False
+                latest["turnStoppedAt"] = 1234
+                self._store().save_unlocked(latest)
+            return {"ok": True}
+
+        fake.heartbeat_session = stop_during_heartbeat
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", {
+                **subagent_event,
+                "tool_use_id": "tool-racing-stop",
+            }), 2)
+        self.assertIn("turn 已停止", stderr.getvalue())
+
+    def test_pre_tool_use_blocks_unregistered_session_and_old_subagent_epoch(self):
+        event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "missing-session",
+            "turn_id": "turn-1",
+            "tool_use_id": "tool-unregistered",
+            "tool_name": "a1-update",
+            "tool_input": {},
+        }
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_client",
+                               side_effect=AssertionError("must block locally")), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", event), 2)
+        self.assertIn("SessionStart", stderr.getvalue())
+
+        state = self._seed()
+        state["activeTurnId"] = "root-new"
+        state["current"] = {
+            "aoneId": "84399999", "projectId": "2100304", "taskId": "task-new",
+            "sessionId": "session-new", "fenceToken": 17, "generation": 8,
+            "cycle": 2, "runtimeSessionId": "interactive:cycle:2",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        state["subagentEpochs"] = {
+            "agent-child-1": {
+                "rootTurnId": "root-old",
+                "assignmentEpoch": "session:session-old:9:4",
+                "authorizedRevision": 1,
+            },
+        }
+        state["subagentLifecycles"] = {
+            "agent-child-1": {"status": "ACTIVE", "revision": 1},
+        }
+        self._store().save(state)
+        self._child_store().save({
+            "schemaVersion": 1,
+            "client": "codex",
+            "clientSessionId": "native-thread-1",
+            "transcriptPath": "/tmp/child.jsonl",
+            "subagentBinding": {
+                "agentId": "agent-child-1",
+                "agentType": "subagent",
+                "agentPath": "/root/child",
+                "parentThreadId": "native-thread-1",
+                "rootSessionId": "native-thread-1",
+                "bindingRevision": 1,
+            },
+            "stopped": False,
+        })
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_calling_process_matches", return_value=True), \
+                mock.patch.object(worker, "_client",
+                                  side_effect=AssertionError("must block before heartbeat")), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", {
+                **event,
+                "session_id": "native-thread-1",
+                "turn_id": "child-from-root-old",
+                "agent_id": "agent-child-1",
+                "agent_type": "subagent",
+                "tool_use_id": "tool-old-child",
+                "tool_name": "apply_patch",
+            }), 2)
+        self.assertIn("不属于当前根 turn/任务 fence", stderr.getvalue())
+
+    def test_pre_tool_control_plane_errors_block_without_clearing_newer_state(self):
+        for error in (
+                worker.ControlPlaneConflict("busy"),
+                worker.ControlPlaneUnavailable("timeout")):
+            with self.subTest(error=type(error).__name__):
+                state = self._seed()
+                state["activeTurnId"] = "turn-tool"
+                state["current"] = {
+                    "aoneId": "84345050", "projectId": "2100304",
+                    "taskId": "task-1", "sessionId": "session-1",
+                    "fenceToken": 10, "generation": 4, "cycle": 1,
+                    "runtimeSessionId": "interactive:cycle:1",
+                    "leaseSeconds": 120, "heartbeatEnabled": True,
+                }
+                self._store().save(state)
+                fake = FakeClient()
+                fake.heartbeat_error = error
+                stderr = io.StringIO()
+                with mock.patch.object(worker, "_client", return_value=fake), \
+                        mock.patch.object(worker, "_calling_process_matches",
+                                          return_value=True), \
+                        contextlib.redirect_stdout(io.StringIO()), \
+                        contextlib.redirect_stderr(stderr):
+                    self.assertEqual(worker.hook("codex", {
+                        "hook_event_name": "PreToolUse",
+                        "session_id": "native-thread-1",
+                        "turn_id": "turn-tool",
+                        "tool_use_id": "tool-error",
+                        "tool_name": "McpWrite",
+                        "tool_input": {},
+                    }), 2)
+                after = self._store().load()
+                self.assertEqual(after["current"]["fenceToken"], 10)
+                self.assertNotIn("lostOwnership", after)
+                self.assertIn("已阻断", stderr.getvalue())
+
+    def test_delayed_old_fence_cannot_clear_new_same_session_assignment(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 10, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        worker._clear_lost_current(
+            self._store(), state["workerKey"], "session-1", 9,
+            "delayed stale heartbeat")
+        after = self._store().load()
+        self.assertEqual(after["current"]["fenceToken"], 10)
+        self.assertNotIn("lostOwnership", after)
+
+    def test_session_start_preserves_lost_ownership_across_incarnations(self):
+        fake = FakeClient()
+        event = {
+            "hook_event_name": "SessionStart",
+            "session_id": "native-thread-1",
+            "cwd": self.temp.name,
+            "source": "resume",
+        }
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_find_host_pid", return_value=(os.getpid(), True)), \
+                mock.patch.object(worker, "_process_start_identity", return_value="birth-1"), \
+                mock.patch.object(worker, "_default_boot_id", return_value="boot-1"), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", event), 0)
+            state = self._store().load()
+            state["lostOwnership"] = {
+                "aoneId": "84345050",
+                "projectId": "2100304",
+                "runtimeSessionId": "interactive:cycle:1",
+                "reason": "stale fence",
+            }
+            self._store().save(state)
+            self.assertEqual(worker.hook("codex", event), 0)
+        same = self._store().load()
+        self.assertEqual(same["workerKey"], state["workerKey"])
+        self.assertEqual(same["lostOwnership"]["aoneId"], "84345050")
+
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_find_host_pid", return_value=(os.getpid(), True)), \
+                mock.patch.object(worker, "_process_start_identity", return_value="birth-2"), \
+                mock.patch.object(worker, "_default_boot_id", return_value="boot-2"), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", event), 0)
+        replacement = self._store().load()
+        self.assertNotEqual(replacement["workerKey"], same["workerKey"])
+        self.assertEqual(replacement["lostOwnership"]["aoneId"], "84345050")
+
+        output = io.StringIO()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(output):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-lost-after-restart",
+                "prompt": "继续",
+            }), 0)
+        self.assertIn("严禁继续", output.getvalue())
+
+    def test_idle_codex_worker_offlines_and_next_prompt_reactivates_it(self):
+        state = self._seed()
+        state["lastTurnActivityAt"] = 100
+        state["turnActive"] = False
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.dict(os.environ, {
+            "JARVIS_INTERACTIVE_IDLE_TTL_SEC": "60",
+        }, clear=False), \
+                mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker.time, "time", return_value=200):
+            self.assertEqual(worker.daemon(self._store().path, state["workerKey"]), 0)
+        idle = self._store().load()
+        self.assertTrue(idle["stopped"])
+        self.assertEqual(idle["offlineReason"], "idle_ttl")
+
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon") as ensure, \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-after-idle",
+            }), 0)
+        reactivated = self._store().load()
+        self.assertFalse(reactivated["stopped"])
+        self.assertNotIn("offlineReason", reactivated)
+        ensure.assert_called_once()
+
+    def test_stop_state_write_failure_blocks_stop(self):
+        with mock.patch.object(worker, "_record_codex_turn",
+                               side_effect=OSError("disk full")), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "Stop",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-stop",
+            }), worker.STATE_ERROR_EXIT)
 
     def test_unverified_host_registers_offline_without_sidecar_and_cannot_claim(self):
         fake = FakeClient()
@@ -230,6 +1382,16 @@ class InteractiveWorkerTest(unittest.TestCase):
                                   return_value="replacement-birth"):
             self.assertFalse(worker._host_alive(state))
 
+    def test_next_prompt_can_restart_a_dead_sidecar(self):
+        state = self._seed()
+        state["daemonPid"] = 99999
+        self._store().save(state)
+        with mock.patch.object(worker, "_pid_alive", return_value=False), \
+                mock.patch.object(worker, "_spawn_daemon", return_value=43210) as spawn:
+            worker._ensure_daemon(self._store(), state["workerKey"])
+        spawn.assert_called_once()
+        self.assertEqual(self._store().load()["daemonPid"], 43210)
+
     def test_claim_retry_keeps_cycle_revision_and_resumes_local_sending_receipt(self):
         self._seed()
         fake = FakeClient()
@@ -244,6 +1406,9 @@ class InteractiveWorkerTest(unittest.TestCase):
         fake.claim_error = None
         with mock.patch.object(worker, "_client", return_value=fake):
             first = worker.prepare_claim("84345050", "2100304")
+        claim_calls = [c for c in fake.calls if c[0] == "claim_task"]
+        self.assertEqual(claim_calls[0][2]["request_id"],
+                         claim_calls[1][2]["request_id"])
         first_claim = [c for c in fake.calls if c[0] == "claim_task"][-1]
         first_envelope = first_claim[1][1]
         self.assertEqual(first["runtimeSessionId"], first_runtime)
@@ -264,7 +1429,7 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(retry["runtimeSessionId"], first_runtime)
         self.assertEqual(retry_envelope.desired_revision,
                          first_envelope.desired_revision)
-        self.assertEqual(retry_claim[2]["free_slots"], 0)
+        self.assertEqual(retry_claim[2]["free_slots"], 1)
 
         with mock.patch.object(worker, "_client", return_value=fake):
             worker.acknowledge_claim("84345050", "aone:2100304:84345050:tag")
@@ -281,6 +1446,85 @@ class InteractiveWorkerTest(unittest.TestCase):
             next_claim = worker.prepare_claim("84345050", "2100304")
         self.assertNotEqual(next_claim["runtimeSessionId"], first_runtime)
         self.assertIn("cycle:2", next_claim["runtimeSessionId"])
+
+    def test_different_target_cannot_overwrite_inflight_local_claim(self):
+        state = self._seed()
+        state["pendingClaim"] = {
+            "aoneId": "84345050", "projectId": "2100304",
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "phase": "CLAIMING", "claimRequestId": "claim-inflight",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            with self.assertRaises(worker.ControlPlaneConflict):
+                worker.prepare_claim("84399999", "2100304")
+        self.assertNotIn("claim_task", [c[0] for c in fake.calls])
+        self.assertEqual(self._store().load()["pendingClaim"]["aoneId"],
+                         "84345050")
+
+    def test_receipt_recovery_claim_reports_capacity_for_expired_local_session(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": False,
+        }
+        state["pendingOperation"] = {
+            "operationId": None, "operationKey": "aone-claim:task-1:4:1",
+            "aoneId": "84345050", "proceed": False, "status": "BEGINNING",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        fake.begin_results = [{
+            "proceed": False,
+            "operation": {"id": "op-1", "status": "SENDING"},
+        }]
+        with mock.patch.object(worker, "_client", return_value=fake):
+            resumed = worker.prepare_claim("84345050", "2100304")
+        claim = [c for c in fake.calls if c[0] == "claim_task"][-1]
+        self.assertEqual(claim[2]["free_slots"], 1)
+        self.assertTrue(resumed["proceed"])
+
+    def test_old_ack_response_cannot_mutate_replacement_incarnation(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-old",
+            "sessionId": "session-old", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": False,
+        }
+        state["pendingOperation"] = {
+            "operationId": "op-old", "operationKey": "claim-old",
+            "aoneId": "84345050", "proceed": True, "status": "SENDING",
+        }
+        self._store().save(state)
+        fake = FakeClient()
+
+        def ack_after_replacement(*_args, **_kwargs):
+            replacement = self._store().load()
+            replacement["workerKey"] = "host:boot:replacement"
+            replacement["current"] = {
+                "aoneId": "84399999", "projectId": "2100304",
+                "taskId": "task-new", "sessionId": "session-new",
+                "fenceToken": 20, "heartbeatEnabled": False,
+            }
+            replacement["pendingOperation"] = {
+                "operationId": "op-new", "operationKey": "claim-new",
+                "aoneId": "84399999", "status": "SENDING",
+            }
+            self._store().save(replacement)
+            return {"ok": True}
+
+        fake.ack_operation = ack_after_replacement
+        with mock.patch.object(worker, "_client", return_value=fake):
+            with self.assertRaises(worker.ControlPlaneConflict):
+                worker.acknowledge_claim(
+                    "84345050", "aone:2100304:84345050:tag")
+        replacement = self._store().load()
+        self.assertEqual(replacement["pendingOperation"]["operationId"], "op-new")
+        self.assertFalse(replacement["current"]["heartbeatEnabled"])
 
     def test_lost_begin_response_uses_durable_intent_to_resume_safely(self):
         self._seed()
@@ -358,6 +1602,30 @@ class InteractiveWorkerTest(unittest.TestCase):
             self.assertEqual(worker._runtime_context(),
                              ("claude", "native-claude-current"))
 
+    def test_nested_idea_session_does_not_reuse_outer_codex_worker(self):
+        with mock.patch.dict(os.environ, {
+            "CODEX_THREAD_ID": "outer-codex-thread",
+            "CLAUDE_CODE_SESSION_ID": "",
+            "JARVIS_INTERACTIVE_CLIENT": "claude",
+            "JARVIS_INTERACTIVE_SESSION_ID": "inner-claude-session",
+        }, clear=False), \
+                mock.patch.object(worker, "_nearest_runtime_client",
+                                  return_value="claude"):
+            self.assertEqual(worker._runtime_context(),
+                             ("claude", "inner-claude-session"))
+
+    def test_nested_codex_session_does_not_reuse_outer_claude_worker(self):
+        with mock.patch.dict(os.environ, {
+            "CODEX_THREAD_ID": "inner-codex-thread",
+            "CLAUDE_CODE_SESSION_ID": "outer-claude-session",
+            "JARVIS_INTERACTIVE_CLIENT": "claude",
+            "JARVIS_INTERACTIVE_SESSION_ID": "outer-claude-session",
+        }, clear=False), \
+                mock.patch.object(worker, "_nearest_runtime_client",
+                                  return_value="codex"):
+            self.assertEqual(worker._runtime_context(),
+                             ("codex", "inner-codex-thread"))
+
     def test_control_token_falls_back_to_existing_html_report_token(self):
         with mock.patch.dict(os.environ, {
             "JARVIS_CONTROL_PLANE_BASE_URL": "https://pre.example",
@@ -397,6 +1665,282 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertIn("heartbeat_session", names)
         offline = [c for c in fake.calls if c[0] == "heartbeat_worker"][-1]
         self.assertEqual(offline[1][1]["status"], "OFFLINE")
+
+    def test_sidecar_keeps_worker_alive_but_stops_expired_turn_session_heartbeat(self):
+        state = self._seed()
+        state["turnActive"] = False
+        state["turnStoppedAt"] = 100
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", side_effect=[True, False]), \
+                mock.patch.object(worker.time, "time", return_value=1000), \
+                mock.patch.object(worker.time, "sleep", return_value=None):
+            self.assertEqual(worker.daemon(self._store().path, state["workerKey"]), 0)
+        names = [c[0] for c in fake.calls]
+        self.assertIn("heartbeat_worker", names)
+        self.assertNotIn("heartbeat_session", names)
+        self.assertIn("suspend_session", names)
+        after = self._store().load()
+        self.assertIsNone(after["current"])
+        self.assertEqual(after["pendingClaim"]["cycle"], 1)
+        self.assertEqual(after["pendingClaim"]["runtimeSessionId"],
+                         "interactive:cycle:1")
+        offline = [c for c in fake.calls if c[0] == "heartbeat_worker"][-1]
+        self.assertEqual(offline[1][1]["status"], "OFFLINE")
+
+    def test_lost_suspend_response_is_replayed_before_next_turn(self):
+        state = self._seed()
+        state["turnActive"] = False
+        state["turnStoppedAt"] = 100
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 3, "runtimeSessionId": "interactive:cycle:3",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        fake.suspend_error = worker.ControlPlaneUnavailable("lost response")
+        with mock.patch.object(worker.time, "time", return_value=1000):
+            with self.assertRaises(worker.ControlPlaneUnavailable):
+                worker._auto_suspend_idle_session(
+                    self._store(), fake, state["workerKey"])
+        uncertain = self._store().load()
+        self.assertIsNotNone(uncertain["current"])
+        self.assertIsNotNone(uncertain["pendingSuspend"])
+        first_request = [c for c in fake.calls if c[0] == "suspend_session"][-1]
+
+        fake.suspend_error = None
+        fake.begin_results = [{
+            "proceed": False,
+            "operation": {"id": "op-1", "status": "ACKED"},
+        }]
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-next",
+            }), 0)
+        second_request = [c for c in fake.calls if c[0] == "suspend_session"][-1]
+        self.assertEqual(first_request[1], second_request[1])
+        self.assertEqual(first_request[2], second_request[2])
+        recovered = self._store().load()
+        self.assertIsNotNone(recovered["current"])
+        self.assertIsNone(recovered["pendingSuspend"])
+        self.assertIsNone(recovered["pendingClaim"])
+        self.assertEqual(recovered["current"]["cycle"], 3)
+        self.assertEqual(recovered["current"]["runtimeSessionId"],
+                         "interactive:cycle:3")
+        self.assertTrue(recovered["current"]["heartbeatEnabled"])
+
+    def test_pending_external_receipt_is_not_auto_suspended(self):
+        state = self._seed()
+        state["turnActive"] = False
+        state["turnStoppedAt"] = 100
+        state["pendingOperation"] = {"operationId": "op-1"}
+        state["current"] = {
+            "sessionId": "session-1", "fenceToken": 9,
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker.time, "time", return_value=1000):
+            self.assertFalse(worker._auto_suspend_idle_session(
+                self._store(), fake, state["workerKey"]))
+        self.assertNotIn("suspend_session", [c[0] for c in fake.calls])
+        self.assertIsNotNone(self._store().load()["current"])
+
+    def test_standard_claim_resumes_auto_suspended_cycle_and_runtime(self):
+        state = self._seed()
+        state["claimCounter"] = 5
+        state["turnActive"] = False
+        state["turnStoppedAt"] = 100
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 5, "runtimeSessionId": "interactive:cycle:5",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker.time, "time", return_value=1000):
+            self.assertTrue(worker._auto_suspend_idle_session(
+                self._store(), fake, state["workerKey"]))
+        with mock.patch.object(worker, "_client", return_value=fake):
+            resumed = worker.prepare_claim("84345050", "2100304")
+        self.assertEqual(resumed["runtimeSessionId"], "interactive:cycle:5")
+        claim = [c for c in fake.calls if c[0] == "claim_task"][-1]
+        self.assertEqual(claim[2]["runtime_session_id"], "interactive:cycle:5")
+        self.assertEqual(self._store().load()["claimCounter"], 5)
+
+    def test_next_prompt_auto_resumes_same_fenced_session_with_fresh_ids(self):
+        self._seed()
+        fake = FakeClient()
+        fake.claim_results = [
+            {
+                "task": {"id": "task-1", "generation": 4},
+                "session": {"id": "session-1", "generation": 4,
+                            "fenceToken": 9, "attemptNo": 1},
+            },
+            {
+                "task": {"id": "task-1", "generation": 4},
+                "session": {"id": "session-1", "generation": 4,
+                            "fenceToken": 10, "attemptNo": 2},
+            },
+        ]
+        with mock.patch.object(worker, "_client", return_value=fake):
+            first = worker.prepare_claim("84345050", "2100304")
+            worker.acknowledge_claim(
+                "84345050", "aone:2100304:84345050:tag")
+        state = self._store().load()
+        state["lastTurnActivityAt"] = 100
+        state["turnActive"] = False
+        state["turnStoppedAt"] = 100
+        self._store().save(state)
+        with mock.patch.object(worker.time, "time", return_value=1000):
+            self.assertTrue(worker._auto_suspend_idle_session(
+                self._store(), fake, state["workerKey"]))
+
+        fake.begin_results.append({
+            "proceed": False,
+            "operation": {"id": "op-1", "status": "ACKED"},
+        })
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-continue",
+                "prompt": "继续处理刚才的单",
+            }), 0)
+
+        claims = [c for c in fake.calls if c[0] == "claim_task"]
+        starts = [c for c in fake.calls if c[0] == "start_session"]
+        self.assertEqual(len(claims), 2)
+        self.assertNotEqual(claims[0][2]["request_id"],
+                            claims[1][2]["request_id"])
+        self.assertNotEqual(starts[0][2]["request_id"],
+                            starts[1][2]["request_id"])
+        current = self._store().load()["current"]
+        self.assertEqual(current["runtimeSessionId"], first["runtimeSessionId"])
+        self.assertEqual(current["cycle"], 1)
+        self.assertEqual(current["fenceToken"], 10)
+        self.assertTrue(current["heartbeatEnabled"])
+
+    def test_prompt_for_different_aone_does_not_reacquire_suspended_task(self):
+        state = self._seed()
+        state["turnActive"] = False
+        state["turnStoppedAt"] = 100
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        fake = FakeClient()
+        with mock.patch.object(worker.time, "time", return_value=1000):
+            worker._auto_suspend_idle_session(self._store(), fake, state["workerKey"])
+        output = io.StringIO()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(output):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-other",
+                "prompt": "处理 84399999",
+            }), 0)
+        self.assertNotIn("claim_task", [c[0] for c in fake.calls])
+        self.assertIsNone(self._store().load()["current"])
+        self.assertIn("未自动抢回旧单", output.getvalue())
+
+    def test_codex_restart_preserves_lineage_but_never_old_fence_or_receipt(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-old", "fenceToken": 9, "generation": 4,
+            "cycle": 7, "runtimeSessionId": "interactive:cycle:7",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        state["pendingOperation"] = {"operationId": "op-old"}
+        self._store().save(state)
+        fake = FakeClient()
+        event = {
+            "hook_event_name": "SessionStart",
+            "session_id": "native-thread-1",
+            "cwd": self.temp.name,
+            "source": "resume",
+        }
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_find_host_pid", return_value=(os.getpid(), True)), \
+                mock.patch.object(worker, "_default_boot_id", return_value="new-boot"), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", event), 0)
+        recovered = self._store().load()
+        self.assertIsNone(recovered["current"])
+        self.assertIsNone(recovered["pendingOperation"])
+        self.assertEqual(recovered["pendingClaim"]["phase"], "READY_TO_RECOVER")
+        self.assertEqual(recovered["pendingClaim"]["runtimeSessionId"],
+                         "interactive:cycle:7")
+        self.assertNotEqual(recovered["workerKey"], state["workerKey"])
+
+        fake.claim_error = worker.ControlPlaneConflict("old lease still active")
+        output = io.StringIO()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(output):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-after-restart",
+                "prompt": "继续",
+            }), 0)
+        blocked = self._store().load()
+        self.assertIsNone(blocked["current"])
+        self.assertEqual(blocked["pendingClaim"]["phase"], "READY_TO_RECOVER")
+        self.assertNotIn("claimRequestId", blocked["pendingClaim"])
+        self.assertIn("不得继续该单", output.getvalue())
+
+    def test_idle_ttl_rechecks_active_and_inflight_state_under_lock(self):
+        state = self._seed()
+        state["lastTurnActivityAt"] = 100
+        fake = FakeClient()
+        with mock.patch.dict(os.environ, {
+            "JARVIS_INTERACTIVE_IDLE_TTL_SEC": "60",
+        }, clear=False), mock.patch.object(worker.time, "time", return_value=200):
+            self.assertFalse(worker._worker_idle_expired(state))
+            self.assertFalse(worker.offline(
+                self._store(), fake, state["workerKey"], "idle_ttl"))
+        self.assertFalse(self._store().load()["stopped"])
+        self.assertNotIn("heartbeat_worker", [c[0] for c in fake.calls])
+
+        state = self._store().load()
+        state["lastTurnActivityAt"] = 100
+        state["turnActive"] = False
+        state["pendingClaim"] = {"phase": "CLAIMING"}
+        self._store().save(state)
+        with mock.patch.dict(os.environ, {
+            "JARVIS_INTERACTIVE_IDLE_TTL_SEC": "60",
+        }, clear=False):
+            self.assertFalse(worker._worker_idle_expired(state, now=200))
+            state["pendingClaim"]["phase"] = "READY_TO_RESUME"
+            self.assertTrue(worker._worker_idle_expired(state, now=200))
 
 
 if __name__ == "__main__":
