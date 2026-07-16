@@ -53,8 +53,6 @@ Canonical 文件布局：
 ```text
 .claude/skills/terraformer-resource-dev/
 ├── SKILL.md
-├── agents/
-│   └── openai.yaml
 └── references/
     └── alicloud-resource-development.md
 ```
@@ -64,11 +62,11 @@ Canonical 文件布局：
 ```text
 .agents/skills/terraformer-resource-dev/
 ├── SKILL.md
-├── agents/
-│   └── openai.yaml
 └── references/
     └── alicloud-resource-development.md
 ```
+
+初版不包含可选的 `agents/openai.yaml`；Jarvis 依靠 `SKILL.md` frontmatter 发现和触发该 Skill，后续只有在需要 Codex UI 展示元数据时才单独增加。
 
 同时新增规则测试：
 
@@ -80,7 +78,6 @@ test/terraformer_resource_dev_skill_rules_test.sh
 
 - `SKILL.md`：触发条件、总流程、分支决策、硬门和 Jarvis 编排。
 - `references/alicloud-resource-development.md`：源码定位、四类 `InitResources` 模板、复合 ID、分页、文件矩阵和验证细节。
-- `agents/openai.yaml`：面向用户的展示名、简述与默认提示词。
 - 规则测试：锁定关键语义并校验 `.claude` / `.agents` 镜像一致。
 
 主 `SKILL.md` 保持短而可执行，技术细节集中在 reference，避免将某一种资源发现模式写成整个 Skill 的核心定义。
@@ -296,7 +293,6 @@ Data Source 在同一场景中可以把父 ID 声明为 Required，因为用户�
 - Skill 不生产或推导关联关系；
 - 目标包测试与全仓既有失败的处理方式明确；
 - `.claude` 与 `.agents` 内容一致；
-- `agents/openai.yaml` 可被 Skill 校验工具接受。
 
 增加三组前向场景用于人工或自动评估：
 
@@ -308,7 +304,7 @@ Data Source 在同一场景中可以把父 ID 声明为 Required，因为用户�
 
 初版 Skill 实现完成需同时满足：
 
-- canonical Skill、reference、agent metadata 和 Codex 镜像齐全；
+- canonical Skill、technical reference 和 Codex 镜像齐全；
 - 规则测试与镜像检查通过；
 - 三个前向场景的决策符合本设计；
 - 文档没有把父资源 List、Data Source 父 ID 或复合 Import ID 绑定成错误的全局规则；
