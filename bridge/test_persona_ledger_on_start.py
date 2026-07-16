@@ -69,7 +69,8 @@ def _item():
 
 
 def _dispatch_decision():
-    return {"action": "dispatch", "role": "terraform-rd", "reason": "human_mention",
+    return {"action": "dispatch", "internal_role": "terraform-rd",
+            "public_identity": "terraform-rd", "reason": "human_mention",
             "comment_id": CID, "handoff": {"round": 1}}
 
 

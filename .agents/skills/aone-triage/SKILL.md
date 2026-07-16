@@ -14,8 +14,18 @@ description: >-
 
 ## 前置 · a1 CLI
 
-全流程走 `a1`(封装 `bin/a1id -- <args>`,默认 jarvis 身份;数字人身份 `terraform-pd/terraform-rd/terraform-qa` 由对应子代理按职责用 `a1id as <role> --` 或 `JARVIS_A1_IDENTITY=<role>`;个人身份 `chenyi/guozai/linjun/shanye` 仅当仓库主人当面授权本轮才可 `a1id as <id> -- ...`)。
-先 `bin/a1id -- auth whoami` 验登录;`command not found` 或认证错误 → **征得用户同意后**装:
+全流程走 `a1`。非 Terraform 工单默认 `bin/a1id -- <args>`（jarvis）；Terraform 工单在同一
+headless run 内按 `terraform-pd/rd/qa` subagent 分工，PD/QA 只返回结构化结果、禁止外写，
+开发阶段 RD 也不发工单进展，本次主处理 run 最后由 terraform-rd finalizer 聚合回复一次。
+后续重要生命周期事件由 bridge 继续以 TerraformRD 身份幂等更新；其中开放 Terraform idle 单
+满 8 天无实质进展时固定执行 Aone 评论区 @ + 钉钉私信，两个通道独立补偿，同一
+anchor/owner epoch 各自成功一次后静默。其它无变化和重复事件静默。外写使用
+`bin/a1id as terraform-rd -- ...` 或 `JARVIS_A1_IDENTITY=terraform-rd`。RD 未登录即阻断，
+不回退 jarvis。旧
+`pd/qa/terraform-pd/terraform-qa` 只是一版兼容别名到 RD，会告警且不读取旧 auth。个人身份
+`chenyi/guozai/linjun/shanye` 仅仓库主人当面授权本轮才可临时使用。
+Terraform 线先 `bin/a1id ready terraform-rd`，其它线先 `bin/a1id -- auth whoami` 验登录；
+`command not found` 或认证错误 → **征得用户同意后**装:
 ```
 curl -fsSL https://git.cn-hangzhou.oss-cdn.aliyun-inc.com/aone-cli/install.sh | sh
 a1 skill install a1@0.28.0
@@ -92,7 +102,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 
 **Terraform-specific 领域**详细 branch(专属维护名单 / 类比 API 原生 vs Provider 适配 / 镇元覆盖度 / 生成器 vs 手写)全在 `references/tf-customer-request-routing.md`。tf_customer 域必读,其它域按需借鉴。
 
-5. **可视化截图取证**(查证完成后追加):调 `.Codex/skills/screenshot-evidence` skill,用 Playwright 截取 OpenAPI 文档页、Provider 文档对比、GitHub PR diff 等关键页面,上传 OSS 生成签名 URL,组装 HTML 可视化报告并上传 pre-agent 预览。在回复草稿和工单详情中附上在线报告链接。**评论内 URL/图片渲染规则见下方 §4「Aone 评论渲染 quirk」**;签名图片受 img src query 剥离影响所以只能在 pre-agent 在线报告里展示,评论区没法内嵌。
+5. **可视化截图取证**(查证完成后追加):非 Terraform 流程可调 `.Codex/skills/screenshot-evidence` skill,用 Playwright 截取 OpenAPI 文档页、Provider 文档对比、GitHub PR diff 等关键页面,上传 OSS 生成签名 URL,组装 HTML 可视化报告并上传 pre-agent 预览。在回复草稿和工单详情中附上在线报告链接。**Terraform PD/RD/QA 内部阶段只返回本地证据路径或已有链接，不新上传、不回贴**；最终 RD 可把已有链接纳入唯一聚合回复。**评论内 URL/图片渲染规则见下方 §4「Aone 评论渲染 quirk」**;签名图片受 img src query 剥离影响所以只能在 pre-agent 在线报告里展示,评论区没法内嵌。
 
 ### 4. 回复草稿(结构固定,先给用户过目)
 
@@ -102,7 +112,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 └─ 建议行动(转谁 / 谁 @ / 状态怎么改 / 用户侧要做什么)
 ```
 
-**@ 语法** = `@花名(工号)`。团队常用工号见 `references/team-roster.md`(专属维护名单 + 通用路由)。**同名歧义陷阱**:`a1 comment create -m "@花名"` 的自动解析对**目录里同名的人会挑错工号**(实例:工单 84043785 负责人「刘源」是 `WB01269865`,只写 `@刘源` 被解析成同名同事 `WB01437449`,通知发错人)。**凡要 @ 的人可能同名(尤其外包 WB 工号、常见姓名),一律显式写全 `@花名(工号)`**——a1 对已带工号的形式原样保留、不再重解析;工号从工单 `assignedTo`/评论作者/roster 取,别靠裸名字赌解析。
+**@ 语法** = `@花名(工号)`。以下直接评论规则只适用于非 Terraform；Terraform 的 @内容也必须并入最终 RD 唯一聚合回复。团队常用工号见 `references/team-roster.md`(专属维护名单 + 通用路由)。**同名歧义陷阱**:`a1 comment create -m "@花名"` 的自动解析对**目录里同名的人会挑错工号**(实例:工单 84043785 负责人「刘源」是 `WB01269865`,只写 `@刘源` 被解析成同名同事 `WB01437449`,通知发错人)。**凡要 @ 的人可能同名(尤其外包 WB 工号、常见姓名),一律显式写全 `@花名(工号)`**——a1 对已带工号的形式原样保留、不再重解析;工号从工单 `assignedTo`/评论作者/roster 取,别靠裸名字赌解析。
 **不带 AI 署名**(AGENTS.md 工作纪律 #5):对外产物剥掉「🤖 Generated with Codex」等。
 
 **Aone 评论渲染 quirk(所有评论 URL 都受此规则约束,不只截图链接)**:
@@ -117,7 +127,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 
 | 动作 | 命令 |
 |---|---|
-| 回复评论 | 走 wrap.sh done(见 bookend;多行用 `--summary-stdin`/`--summary-file`),别单独 `a1 comment create`(会与 wrap 里的重复,a1 无 delete) |
+| 回复评论 | 非 Terraform 走 wrap.sh done；Terraform 主处理 run 只由最终 RD 聚合后 done 一次，后续重要事件只走 bridge RD-only event publisher。多行用 `--summary-stdin`/`--summary-file`，别先单独回复 |
 | 转需求(Cloudspec 缺口) | `bin/a1id -- project workitem create --project 2165097 --category req --assignee WORKER_1783326253279 --body-file <path>`;body **必须严格按** `references/templates.md` 的「Cloudspec 关联单 · 镇元 agent 接单硬契约」骨架(`## 背景` / `## 需求` / `## 机读信息` + ```json 代码块 + 7 字段全);缺 marker/字段/JSON 语法错 = agent 无法接单 = 单沉底(不指派谜拟 479782;她做人类兜底 owner 挂在源客户主单上) |
 | 建关联单(自家团队接手) | tf_customer 域走 `references/tf-customer-request-routing.md` 分工表 |
 | 双向关联 | `bin/a1id -- project workitem relation add <A> relate:<B>` **单次即自动双向**(重复调第二次返回 400 已存在) |
@@ -125,7 +135,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 | 更新详情(description) | `bin/a1id -- project workitem update <id> --body-file <path>`(单行小改可 `--body "<text>"`)。**何时必须**:重审/复核推翻了 description 里的根因或方案、方案实施与描述已相左、验收证伪原描述——评论只是过程审计追加在尾部,新读者第一眼看的是详情,详情停在已否决结论=持续误导接手者。重写时开头加一行 `> ⚠️ 本 description 于 <date> 重写:<被否决的旧结论一句话>,演进见评论区`,保住审计链。**边界**:仅限我方创建/维护的工单(tf_provider 关联单/研发单/probe 单);客户主单 description 是客户原声,禁改 |
 | 字段必填缺失 | `bin/a1id -- project workitem field options <field> --project <id>` 查枚举补 `--cfs` |
 | GitHub PR/评论/推分支(Jarvis 身份) | 必须先 `bootstrap/github-identity.sh check`;`gh` 走 `bootstrap/github-identity.sh gh ...`;推分支 `bootstrap/github-identity.sh push`;账号必须 `api-tool-agent`;PR head 必须 `api-tool-agent:<branch>` |
-| **钉钉私信**(所有实质动作补充通知) | `bash bootstrap/notify-dingtalk.sh <staffId> "<title>" "<body>"`;jarvis 做实质动作就私信相关方——转单/补建关联单/分支 F 上游缺口→承接方或提单人;模板 D/F/E→提单人+承接方;仅"观察等待<30 天"不发。**agent 承接方一律用人类 owner 顶替**:凡承接方是镇元 agent(`WORKER_1783326253279`)——`WORKER_` 前缀无 IM 通道,`notify-dingtalk.sh` 传该 id 会 400/静默——分支 E 一律改私信谜拟(479782,agent 归她维护);紧急双单再加私信新山(521957)。缺凭据/`JARVIS_NOTIFY_DINGTALK=0`/opt-out 均静默降级不阻断。详见 `references/tf-customer-request-routing.md` §"钉钉私信 · 通用调用姿势" |
+| **钉钉私信**(所有实质动作补充通知) | 非 Terraform 可按路由规则调用；Terraform 主处理 run 不发阶段通知，需人工关注的内容并入最终 RD 聚合回复。例外仅为 bridge 的满 8 天无实质进展重访催办：与 Aone @ 同事件双通道幂等发送 |
 
 ### 转单/建关联单 body 内容原则
 
@@ -135,24 +145,32 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 - **根因定位含完整代码引用**:引用具体文件:行号(如 `alicloud/provider.go:2273-2286`)+ 完整代码片段(不是省略号或概括)+ 一句话解释每处做什么。承接方一眼能顺着行号跳读,不用自己 grep。
 - **推理链完整**:根因是"A 导致 B 导致 C"时,把每一环写清,不跳步。让承接方能验证 jarvis 的定位对不对,不是被动接受结论。
 - **影响面 + acc test 建议**:影响范围(仅某云产品 / 全局)、客户 tf 兼容性、需要覆盖的 acc test case 列表,承接方能据此评估回归风险。
-- **body 可 update 不必只追加 comment**:分析扩展后走 `a1 update --body-file` 覆盖(见上表"更新详情"),让新读者第一眼看到完整版;evolution 走评论区 audit trail。**追加 comment** 适合 diff-式补充(如"补充方案 Z-C/Z-D"),**update body** 适合完整重写。两者可并用:先追加 comment 让承接方收到通知,再 update body 让详情整洁。
+- **body 可 update 不必只追加 comment**:非 Terraform 分析扩展后可走 `a1 update --body-file` 覆盖(见上表"更新详情"),让新读者第一眼看到完整版;evolution 走评论区 audit trail。**追加 comment** 适合 diff-式补充(如"补充方案 Z-C/Z-D"),**update body** 适合完整重写。Terraform 不执行这类阶段性 comment/update 组合，路由与说明统一由最终 RD 审查后一次落地。
 
 ## Bookend(动工必走)
 
 任何"要写工单"的场景都必须走完整 bookend(AGENTS.md 工作纪律 #3)。纯只读查证可免 claim。
+非 Terraform 使用第一组通用骨架。Terraform 工单先在同一 run 内完成 PD→RD→QA 结构化协作，
+PD/QA 不写外部系统；最后由 RD finalizer 汇总全部证据、MR/CR 链接、路由动作与下一步，按第二组
+显式 RD 身份命令收口。主处理 run 中禁止直接评论、中途同步、阶段状态回填和钉钉通知；后续
+重要事件由 bridge 统一幂等发布，不复用阶段评论通道。
 
 ```bash
-# 1. claim(打 jarvis-claimed 标签,冻结 prefix 到 .my-day/claim-prefix-<id>.txt)
+# 非 Terraform
 bash bootstrap/claim.sh claim <id> <pool-project>
-
-# 2. wrap.sh done —— 一次发完整评论 + run_done + (可选)改状态
 bash bootstrap/wrap.sh done <id> --summary-stdin <status|--no-status> <<'EOF'
 <完整回复>
 EOF
-
-# 3. release / finish 二选一
 bash bootstrap/claim.sh release <id> <pool-project>   # 本轮释放,等对方接手 → jarvis-idle
 bash bootstrap/claim.sh finish  <id> <pool-project>   # 真闭环 → jarvis-done + status = pools.json 里该池 × workitemType 的 done_status
+
+# Terraform：仅最终 RD finalizer 执行，每个本轮处理的工单最多一条聚合回复
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh claim <id> <pool-project>
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done <id> --summary-stdin <status|--no-status> <<'EOF'
+<PD + RD + QA + 路由动作 + 下一步的完整聚合回复>
+EOF
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh release <id> <pool-project>
+JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh finish  <id> <pool-project>
 ```
 
 **claim 退码 3 = 工单缺必填字段，不是 lost race**：Aone 对存量老单执行任意 update 时可能返回
@@ -175,22 +193,38 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 4. 已 tag `jarvis-done` 但 status 卡在中间态时,手动一步:`bin/a1id -- project workitem update <id> --status "<正确终态>"`
 
 **wrap.sh 参数陷阱**:
-- 单行可继续用位置参数: `bash bootstrap/wrap.sh done <id> "<完整回复>" <status|--no-status>`
+- 非 Terraform 单行可继续用位置参数: `bash bootstrap/wrap.sh done <id> "<完整回复>" <status|--no-status>`；Terraform 使用上方显式 RD identity 版本
 - 多行正文用 `--summary-stdin` heredoc 或先写文件再 `--summary-file <path>`;不要把换行写成字面量 `\n`
 - status 可用位置参数(最后一个),也可用 `--status <值>` / `--status=<值>` / `--no-status` 命名参数(任意位置);flag 与位置 status 互斥,二给其一
-- 用之前**先起草完整评论内容**,一次发完(先手动 `a1 comment create` 再 wrap.sh done 会重复,a1 无 comment delete)
+- 非 Terraform 用之前**先起草完整评论内容**,一次发完(先手动 `a1 comment create` 再 wrap.sh done 会重复,a1 无 comment delete)；Terraform 禁止手动 comment
+
+**Terraform 单写者附加门**:
+- PD 的路由动作和 QA 的缺陷/验收结论都只是 `requested_external_actions` 提案，由最终 RD 审查。
+- QA fail 在内部退回 RD 修复并重跑，不对外同步失败过程。
+- normal / close / escalate 的每个主处理 headless run 都最多一条 RD 聚合回复。
+- MR/CR 链接只写入最终聚合；开 MR/CR 后不立即 sync。
+- 后续重要事件（revisit 新结论、满 8 天无实质进展的 Aone @ + 钉钉私信、PR merged/closed/merged+npe、CI 修复达上限、派发
+  retries-exhausted/timeout/max-turns/stale-orphan）允许 RD 更新一次；每次轮询无变化、
+  CI pending/单次 retry/new head、普通 reviewer comment、内部交接和同 key 重复检测静默。
+- 后续事件只能走 bridge 独立 pending/posted ledger + 固定摘要 marker 的发布器；semantic
+  source 经 SHA-256 短摘要后才落盘/出现在 marker。正文统一清理裸/括号 PD/RD/QA
+  分诊/开发/验收头与 handoff，结构化脱敏 RequestId、资源 ID、Authorization、
+  AccessKey/token/secret/password/user/用户名/钉钉密钥并限长；revisit 模型 summary 只接受
+  240 字内单行纯文本，命中内部/敏感/JSON/URL/多行/超长则固定降级。create 返回 comment id
+  即 posted；rc=0 无 id 且 marker 未可见则进入 `post_uncertain`，后续只查 marker、绝不再次
+  create；明确写失败才保留 pending 重试。禁止各调度器自行 `comment create`。
 
 **release vs finish**:默认 release(路由 ≠ 真闭环,需下游响应);仅当查证发现"其实已支持 + 只是客户版本旧"这类无缺口场景走 finish。
 
 **收尾蒸馏钩子(涉及 terraform 云产品的工单必挂)**:工单涉及某个 terraform 产品(客户单/内部研发单/probe 单皆算),在 `wrap.sh done` 之后、`claim.sh release/finish` 之前,按 `.Codex/skills/tf-customer-probe/references/knowledge-distillation.md` 契约把本单学到的产品级事实蒸馏进 `<playground>/<product>/KNOWLEDGE.md`(触发点②aone-triage bookend 收尾——这是评审阻断项,客户单场合的蒸馏钩子必须挂在主流程,不能只挂 probe 侧)。收录判据:可执行 / 跨场景复用 / 非文档已明示;条目格式 `- [YYYY-MM-DD][来源: 工单URL/verdict路径/PR URL] <可执行的产品级事实>`。playground 路径解析走 `bootstrap/workspace.sh dir tf_playground` 或 env `JARVIS_TF_PLAYGROUND`。
 
 **MR/CR 未合并禁 finish**:当 MR/CR 已提交但未合并(PR state ≠ merged / CR 未合入 master)时,**禁止调 `claim.sh finish`**。正确路径:
-- `wrap.sh done <id> "<summary>" --no-status`(多行用 `--summary-stdin --no-status`)—— 发评论记录进展,不改 Aone 状态
-- `claim.sh release <id> <project>` —— 释放为 jarvis-idle,等人工合并验收
-- Aone 评论说明「MR 已提交待合并验收,链接: <PR_URL>」
-- `claim.sh finish` 内置了硬闸门(退码 2),即使遗漏也会拦截
+- `JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/wrap.sh done <id> "<final aggregate>" --no-status`(多行用 `--summary-stdin --no-status`)—— Terraform 由 RD finalizer 一次写完完整结果,不改 Aone 状态
+- `JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh release <id> <project>` —— 释放为 jarvis-idle,等人工合并验收
+- 最终聚合说明「MR 已提交待合并验收,链接: <PR_URL>」
+- `JARVIS_A1_IDENTITY=terraform-rd bash bootstrap/claim.sh finish` 内置了硬闸门(退码 2),即使遗漏也会拦截
 
-**关联单 claim 规则**:指派给过载(484483)的关联单,jarvis 直接 claim 跟进解决,bookend 同时处理客户主单与关联单(研发细节 wrap 关联单,客户主单只 wrap 关键节点,收尾两边各自 done+release);指派其他人(新山/临钧等)或 Cloudspec(2165097)池的关联单(镇元 agent 接单)不 claim,建单 + @ 即可,不 touch 标签。
+**关联单 claim 规则**:指派给过载(484483)的 Terraform 关联单由内部链跟进解决。若同一 run 同时处理客户主单与关联单，每个实际 claim 的工单都只由最终 RD 各执行一次聚合 `done`，不按研发细节/关键节点多次回贴；所有 claim/done/release/finish 都显式使用 `JARVIS_A1_IDENTITY=terraform-rd`。指派其他人(新山/临钧等)或 Cloudspec(2165097)池的关联单(镇元 agent 接单)不 claim，由最终 RD 审查建单、关联、指派等动作并把结果合入主单唯一聚合回复。
 
 ## 自己交付(改自家应用)
 
@@ -206,7 +240,7 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 
 当 Jarvis 由 bridge/Tata 后台委派（无终端交互）且遇到必须等待人类确认/决策的点时：
 
-1. 先在 Aone 工单上评论你的问题，使用 `@花名(工号)` 格式 @需要回答的人
+1. 非 Terraform 先在 Aone 工单上评论问题，使用 `@花名(工号)` 格式 @需要回答的人。Terraform 不先发独立评论；由最终 RD 把问题和 @对象并入本 run 的唯一聚合 `done`
 2. 在**本轮最终回复的末尾**单独一行输出挂起哨兵：
    ```
    [[SUSPEND:{"aone_id":"<工单ID>","wait_for":"<花名>","reason":"<一句话说明等什么>"}]]
@@ -232,7 +266,12 @@ options 为空，脚本会继续查询 field options API，并返回合法候选
 - ❌ 只在 provider 侧仓库改 markdown 就当"文档已修复" —— TF provider docs 从镇元资源文档自动生成,provider PR 只是紧急兜底,不修镇元源头下次发版会覆盖回旧值;文档改造分支必与 528766 过载单 + 2169561 念依单**双建**
 - ❌ 用 next.api 网页 curl 拿 API meta —— SPA 拿不到 JSON,用 `aliyun <product> <Action> --help` 或 MCP `ListApis/GetApiDefinition`
 - ❌ 写操作跳过用户授权(supervised 模式) —— 每一步 comment/create/relation/status 都先给草稿等 yes
-- ❌ 用 wrap.sh done 之前先手动 `a1 comment create` —— 重复评论且 a1 无 delete
+- ❌ 非 Terraform 用 wrap.sh done 之前先手动 `a1 comment create`；Terraform 在 PD/RD/QA 阶段手动 comment —— 都会制造重复评论且 a1 无 delete
+- ❌ 把“内部交接零评论”误解成“Terraform 全生命周期只准一条评论” —— 正确规则是：主处理 run
+  只由 RD 聚合一次；重要生命周期事件由 RD-only 幂等发布器更新；无变化 poll、CI pending/单次
+  retry/new head、普通 reviewer comment、瞬时错误恢复、内部交接与同 key 重复事件静默
+- ❌ Revisit/PrWatch/dispatch failure 各自直接 comment/sync —— 会绕过 pending/posted ledger、
+  摘要 marker、`post_uncertain` 防重与统一 sanitizer；必须提交稳定 semantic source 给 publisher
 - ❌ 多行 wrap 评论写成 `"第一行\n第二行"` —— 字面量 `\n` 会被拦截;用 heredoc 的 `--summary-stdin` 或 `--summary-file`
 - ❌ 给已关联的两单重复 `relation add` —— 单次已自动双向,第二次 400 已存在
 - ❌ jarvis 自行 push master / merge PR / release_prod —— 永久停止项(autonomy.md `stop`)

@@ -29,7 +29,7 @@ done
 
 | 方式 | 说明 |
 |------|------|
-| bridge 定时扫池（自动派发） | bridge ScanScheduler 周期跑 `bootstrap/scan.sh --force`，diff 出**新单 + 外部更新单**(gmtModified 变化)一并投**并发 DispatchPool 起 headless jarvis**（每单一实例、并发上限 `JARVIS_DISPATCH_MAX`、软去重台账 `.my-day/bridge/dispatched.json`；`claim.sh` 仍是竞争互斥真源）。**派发判定**(`_decide`)逐单：终态 / `jarvis-done` / `jarvis-claimed` → skip；`jarvis-npe`（路由不明标记，aone-triage 分支 H jarvis 打或人工打）→ skip（**优先于 idle 门**：idle+npe 就算有人评论也不重派，直到人工澄清路由、摘掉标签，经 gmtModified 更新路径自然恢复派发）；`jarvis-idle` 过**人工介入门**（activity 作者判据 `_human_touched`——人工在 jarvis 上轮动作**之后**介入过才 force 重派，否则 skip 等每日 Revisit）；其余（含新单/外部更新）→ 派发。**灰度安全阀**（`_in_scope`，默认全放；`JARVIS_DISPATCH_POOLS` 池白名单 + `JARVIS_DISPATCH_CREATED_BEFORE` 创建上限可收窄）+ **运行时暂停**（`touch .my-day/bridge/pause` 停扫+派、`rm` 恢复，在跑实例不受影响）。钉钉卡片语义=播报（「已自动派发 #id」）。**授权前置=`JARVIS_AUTO_DISPATCH=0` 的回退模式**（新单入 pending 待钉钉「处理 #id / 全部处理」，更新单仅作「有更新」感知卡片段落）。另有 ProbeScheduler（每日 `JARVIS_PROBE_HOUR` 探测轮，跑 `loops/tf-probe.md`）与 RevisitScheduler（每日 `JARVIS_REVISIT_HOUR` 重访 `jarvis-idle` 人工门工单，**排除 `jarvis-npe`**——路由不明单不投复查）。见 `bridge/jarvis_dingtalk_bot.py`；启动入口统一 **`bridge/run.sh start`**（自动 source `bootstrap/.env`+`bridge/jarvis.env`、判定钉钉/降级模式、缺钉钉凭证干净降级不阻断扫描/派发/调度、pidfile 守护；`bridge/run.sh dry-run` 透传 `--dry-run-once` 离线看派发/跳过决策）。**扫描/派发由 bridge 全权负责，Jarvis 只被动接单**（CLAUDE.md 开局动作 #3） |
+| bridge 定时扫池（自动派发） | bridge ScanScheduler 周期跑 `bootstrap/scan.sh --force`，diff 出**新单 + 外部更新单**(gmtModified 变化)一并投**并发 DispatchPool 起 headless jarvis**（每单一实例、并发上限 `JARVIS_DISPATCH_MAX`、软去重台账 `.my-day/bridge/dispatched.json`；`claim.sh` 仍是竞争互斥真源）。**派发判定**(`_decide`)逐单：终态 / `jarvis-done` / `jarvis-claimed` → skip；`jarvis-npe`（路由不明标记，aone-triage 分支 H jarvis 打或人工打）→ skip（**优先于 idle 门**：idle+npe 就算有人评论也不重派，直到人工澄清路由、摘掉标签，经 gmtModified 更新路径自然恢复派发）；`jarvis-idle` 过**人工介入门**（activity 作者判据 `_human_touched`——人工在 jarvis 上轮动作**之后**介入过才 force 重派，否则 skip 等每日 Revisit）；其余（含新单/外部更新）→ 派发。**灰度安全阀**（`_in_scope`，默认全放；`JARVIS_DISPATCH_POOLS` 池白名单 + `JARVIS_DISPATCH_CREATED_BEFORE` 创建上限可收窄）+ **运行时暂停**（`touch .my-day/bridge/pause` 停扫+派、`rm` 恢复，在跑实例不受影响）。钉钉卡片语义=播报（「已自动派发 #id」）。**授权前置=`JARVIS_AUTO_DISPATCH=0` 的回退模式**（新单入 pending 待钉钉「处理 #id / 全部处理」，更新单仅作「有更新」感知卡片段落）。另有 ProbeScheduler（每日 `JARVIS_PROBE_HOUR` 探测轮，跑 `loops/tf-probe.md`）与 RevisitScheduler（每日 `JARVIS_REVISIT_HOUR` 全量分页扫描开放 `jarvis-idle`；Terraform 单不启动角色 run，按实质进展/assignee anchor 满 `JARVIS_REVISIT_STALE_DAYS`=8 天后由 RD 以固定模板发 Aone @ + 钉钉私信，同 epoch 双通道各自幂等；非 Terraform 维持人工门 headless 重访；均排除 `jarvis-npe`/claimed/终态）。候选用 `.my-day/bridge/revisit-index.json` 的 modified/next_check/last_inspected 公平轮转，避免固定前 N 饥饿。见 `bridge/jarvis_dingtalk_bot.py`；启动入口统一 **`bridge/run.sh start`**（自动 source env、判定钉钉/降级模式、pidfile 守护）。**扫描/派发由 bridge 全权负责，Jarvis 只被动接单**（CLAUDE.md 开局动作 #3） |
 | bridge dispatch | Tata 委派单工单，headless 执行（autonomy.md headless 模式：auto 列表免授权、遇阻 `[[SUSPEND:...]]` 挂起） |
 | 用户指令 | 会话里给 Aone URL / 工单 id → 直接进「二、逐项执行」单条流程 |
 | 手动兜底 | `/aone-triage` 或手动跑 `bootstrap/scan.sh`（排查/对账用；`plan.sh` 供 bridge/serve 流程出计划） |
@@ -49,6 +49,14 @@ done
 
 对每条已授权（或 headless auto）的工作项，按以下顺序处理：
 
+> **Terraform 单写者约束**：PD/RD/QA 只作为同一 headless run 内的 internal subagent。
+> PD/QA 纯内部、禁止外写，开发阶段 RD 也不发工单进展；最后由 terraform-rd finalizer 汇总
+> 全部证据并回复一次。Terraform 主处理 run 不做中途 `wrap.sh sync`，MR/CR 链接放最终聚合
+> 回复；后续重要事件由 bridge 以 TerraformRD 身份幂等更新，semantic source 仅以短摘要
+> 进入 ledger/marker，正文统一 sanitize，Aone `post_uncertain` 只查 marker 不重发。满 8 天
+> 无实质进展的重访催办同时走 Aone 评论区 @ 与钉钉私信，两个通道独立补偿；无变化/重复事件静默。
+> claim/final wrap/release/event 命令必须走严格 RD 身份，RD 未登录即阻断。
+
 ### 2.1 去重检查
 
 ```bash
@@ -61,7 +69,11 @@ bootstrap/log.sh seen <id>
 ### 2.2 认领（并发竞争锁）
 
 ```bash
+# 非 Terraform
 bootstrap/claim.sh claim <id> <pool-project>
+
+# Terraform
+JARVIS_A1_IDENTITY=terraform-rd bootstrap/claim.sh claim <id> <pool-project>
 ```
 
 - 退出码 0 → 认领成功，继续 triage。
@@ -75,9 +87,16 @@ bootstrap/claim.sh claim <id> <pool-project>
 
 调用 `.claude/skills/aone-triage` 技能，传入当前工作项 id。
 
-技能完成：读取工单 → 查证（OpenAPI + Cloudspec 映射 + provider 源码）→ 回复 / 打标 / 建需求 / 建 CR。
+Terraform 线由编排层在同一 run 内依次 Task 起 PD→RD→QA：PD 返回查证和路由提案，RD 开发，
+QA 独立验收；QA fail 内部退回 RD 修复后重跑。最后再 Task 起 RD finalizer，执行允许的路由动作
+并一次性回复。非 Terraform 线仍按技能原流程读取、查证、回复、打标、建需求或建 CR。
 
-若单条工单进入 Terraform Provider 资源开发且不走自动化生成链路，先按 `tf_provider` 池创建或复用 **terraform-alicloud** 内部研发单（项目 `528766`），**指派按 aone-triage skill `references/tf-customer-request-routing.md` 分工表路由到具体人**——即便由 jarvis 代为开发，关联单也挂具体人名下，方便其注意到；与客户主单双向关联。**指派给过载（484483）的关联单，jarvis 直接 claim 跟进解决，bookend 同时处理客户主单与关联单**（研发细节 wrap 关联单、客户主单只 wrap 关键节点，收尾两边各自 done+release）；指派给其他人的关联单不 claim，建单 + @对方等接手。研发细节、验证、PR/CI/验收信息写内部研发单，客户主单仅同步关键节点和卡点。需要 cloudspec_gap 或云产品上游协助时，把详细协作问题同步到对应依赖单。
+若单条工单进入 Terraform Provider 资源开发且不走自动化生成链路，按 `tf_provider` 池创建或复用
+**terraform-alicloud** 内部研发单（项目 `528766`），指派按 aone-triage skill
+`references/tf-customer-request-routing.md` 分工表路由到具体人，并与客户主单双向关联。路由动作由
+最终 RD 审查执行；每个被 claim 的 Terraform 工单在本轮主处理 run 只于最终聚合时回复一次，
+不按 PD/RD/QA 阶段同步。后续 gate/PR/终态失败的重要事件可按 `loops/persona-collab.md`
+§五追加 RD-only 幂等更新。需要 cloudspec_gap 或云产品上游协助时，把详细问题放入最终聚合及对应依赖单。
 
 GitHub PR/评论/推分支的身份纪律见 CLAUDE.md 工作纪律 #6（`bootstrap/github-identity.sh`，账号必须 `api-tool-agent`）。
 
@@ -94,11 +113,13 @@ GitHub PR/评论/推分支的身份纪律见 CLAUDE.md 工作纪律 #6（`bootst
 # 自动走到预发
 # → prestage 完成后记录 run_done，并释放认领
 bootstrap/log.sh run_done <id> "自动部署至预发"
-bootstrap/claim.sh release <id> <pool-project>
+JARVIS_A1_IDENTITY=terraform-rd bootstrap/claim.sh release <id> <pool-project>  # Terraform
+bootstrap/claim.sh release <id> <pool-project>                                # 非 Terraform
 
 # escalate 路径
 bootstrap/log.sh escalate <id> "<reason>"
-bootstrap/claim.sh release <id> <pool-project>
+JARVIS_A1_IDENTITY=terraform-rd bootstrap/claim.sh release <id> <pool-project>  # Terraform
+bootstrap/claim.sh release <id> <pool-project>                                # 非 Terraform
 ```
 
 ---
@@ -152,8 +173,8 @@ Jarvis 不会自动触发 release_prod。预发验收通过后，由工程师手
 | `bootstrap/plan.sh` | 出执行计划；supervised 退码 2 等待授权（bridge/serve 流程用） |
 | `bootstrap/log.sh seen` | 去重检查 |
 | `bootstrap/log.sh run_done` | 记录完成 |
-| `bootstrap/wrap.sh sync/done` | 进展回填 Aone（唯一真源）+收尾审计；多行正文用 `--summary-stdin`/`--summary-file` |
-| `bootstrap/html-report-preview.sh upload/from-aone` | 将 HTML/zip/Aone 附件报告上传到 AutomationAgent，返回在线预览链接；`--comment` 可直接回贴 Aone |
+| `bootstrap/wrap.sh sync/done` | Aone 回填与收尾；Terraform 主处理 run 禁用 sync、只由 RD finalizer done 一次；后续重要事件走 bridge RD-only event publisher |
+| `bootstrap/html-report-preview.sh upload/from-aone` | 仅非 Terraform 流程可上传 HTML/zip/Aone 附件报告；`--comment` 也仅限非 Terraform。Terraform QA 只返回本地路径或已有链接，不上传、不回贴 |
 | `bootstrap/log.sh escalate` | 记录上报 |
 | `bootstrap/claim.sh claim <id> <project>` | 认领工作项；退码 1 = 输了跳过，退码 3 = 缺必填字段，需经 `aone-fields.sh` 挑合法值回填后重试；其它 update 失败直接上抛，不误报 lost race。认领成功还会把 Aone status 从起始态推进到该池进行中状态，best-effort 非阻断 |
 | `bootstrap/aone-fields.sh missing <id>` | 列出当前为空的必填自定义字段；field-list options 为空时补查 field options API，输出合法候选，不自动选值 |
