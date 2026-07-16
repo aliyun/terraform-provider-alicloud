@@ -90,7 +90,7 @@ class HandlerWiringTest(unittest.TestCase):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.persistence_executor = _Starter("worker", calls)
         for name in ("scanner", "reconciler", "board", "prober", "reviser",
-                     "watcher", "personawatch", "prwatch"):
+                     "watcher", "managed_wait_sensor", "personawatch", "prwatch"):
             setattr(handler, name, _Starter(name, calls))
         handler.start_schedulers()
         self.assertEqual(calls[0], "worker")
@@ -113,6 +113,80 @@ class HandlerWiringTest(unittest.TestCase):
         self.assertEqual(client.base_url, "https://pre-agent.aliyun-inc.com")
         self.assertEqual(client.token, "shared-token")
 
+
+class ManagedWaitSensorTest(unittest.TestCase):
+    def _handler(self, pages, comments, wake_result=True):
+        client = mock.Mock()
+        client.list_pending_aone_reply_waits.side_effect = pages
+        handler = SimpleNamespace(
+            task_client=client,
+            watcher=SimpleNamespace(_fetch_comments=mock.Mock(return_value=comments)),
+            _wake=mock.Mock(return_value=wake_result),
+        )
+        return handler
+
+    @staticmethod
+    def _wait(session_id=10, cursor="40"):
+        return {
+            "task": {
+                "taskKey": "aone:2100304:84345050",
+                "aoneId": "84345050",
+                "sourceRef": {"projectId": "2100304"},
+                "payload": {"project": "2100304"},
+            },
+            "session": {
+                "id": session_id,
+                "runtimeSessionId": "runtime-1",
+                "waitType": "AONE_REPLY",
+                "waitKey": "84345050",
+                "waitCursor": cursor,
+                "inputPayload": {
+                    "project": "2100304", "terraform": True,
+                    "target": "staff-1", "targetType": "user",
+                },
+            },
+        }
+
+    def test_rebuilds_wait_from_control_plane_and_wakes_only_new_external_comments(self):
+        page = {"items": [self._wait()], "nextAfterSessionId": 10, "hasMore": False}
+        comments = [
+            {"id": "39", "creator": "human", "content": "old"},
+            {"id": "41", "creator": "open-jarvis", "content": "self"},
+            {"id": "43", "creator": "human", "content": "reply"},
+            {"id": "42", "creator": "human-2", "content": "earlier reply"},
+        ]
+        handler = self._handler([page], comments)
+        sensor = bot.ManagedWaitSensor(handler)
+
+        sensor._tick()
+
+        handler._wake.assert_called_once()
+        aone_id, context, observed = handler._wake.call_args.args
+        self.assertEqual(aone_id, "84345050")
+        self.assertEqual(context["session_id"], "runtime-1")
+        self.assertTrue(context["terraform"])
+        self.assertEqual([int(c["id"]) for c in observed], [42, 43])
+
+    def test_list_failure_keeps_local_throttle_and_retries_without_wake(self):
+        handler = self._handler([RuntimeError("503")], [])
+        sensor = bot.ManagedWaitSensor(handler)
+        sensor._poll_state["10"] = {"first_seen": 1, "last_poll": 2}
+
+        sensor._tick()
+
+        self.assertIn("10", sensor._poll_state)
+        handler._wake.assert_not_called()
+
+    def test_failed_wake_keeps_wait_discovery_retryable(self):
+        page = {"items": [self._wait()], "nextAfterSessionId": 10, "hasMore": False}
+        handler = self._handler([page], [
+            {"id": 41, "creator": "human", "content": "reply"}], wake_result=False)
+        sensor = bot.ManagedWaitSensor(handler)
+
+        sensor._tick()
+
+        self.assertIn("10", sensor._poll_state)
+        handler._wake.assert_called_once()
 
 class TaskExecutionTest(unittest.TestCase):
     def test_process_spawned_after_fence_loss_is_immediately_force_killed(self):

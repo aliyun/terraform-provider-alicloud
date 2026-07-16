@@ -15,7 +15,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Mapping, Optional
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 
@@ -191,6 +191,7 @@ class ControlPlaneClient:
     SESSION_ACTION_PATH = "sessions/{session_id}/{action}"
     TASK_BY_AONE_PATH = "tasks/by-aone/{aone_id}"
     TASK_TIMELINE_PATH = "tasks/{task_id}/timeline"
+    PENDING_AONE_WAITS_PATH = "sessions/waits/aone-reply"
 
     def __init__(self, base_url: str, token: str = "", *, timeout: float = 10.0,
                  api_prefix: str = DEFAULT_PREFIX,
@@ -454,6 +455,17 @@ class ControlPlaneClient:
         path = self.TASK_BY_AONE_PATH.format(
             aone_id=self._path_segment(aone_id, "aone_id"))
         return self._get(path)
+
+    def list_pending_aone_reply_waits(self, *, after_session_id: int = 0,
+                                      limit: int = 100) -> Any:
+        after = int(after_session_id)
+        page_size = int(limit)
+        if after < 0:
+            raise ValueError("after_session_id must not be negative")
+        if page_size <= 0 or page_size > 500:
+            raise ValueError("limit must be between 1 and 500")
+        query = urlencode({"afterSessionId": after, "limit": page_size})
+        return self._get("%s?%s" % (self.PENDING_AONE_WAITS_PATH, query))
 
     def list_workers(self) -> Any:
         """Return every registered worker and its persisted heartbeat state."""

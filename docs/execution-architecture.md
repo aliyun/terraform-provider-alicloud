@@ -40,6 +40,9 @@ Tata/chat presentation, and subcommands already enclosed by a Task Session.
   fenced pre-exec gate.
 - `ControlPlaneClient` covers Task, Session, Worker, Event, and Operation APIs.
 - `SessionController` owns fenced Task Session transitions.
+- `ManagedWaitSensor` reconstructs current `AONE_REPLY` waits from the control
+  plane and publishes comment continuations; `WaitWatcher` remains local-only
+  for EphemeralJobs.
 
 Every Task is persisted by the control plane and can only be executed by a
 `PersistenceExecutor`.  A control-plane failure is fail-closed: Task work stays
@@ -51,6 +54,21 @@ immediately, and continued unavailability stops the process when the proof
 reaches the safety boundary.  Pausing a rollout means stopping
 PersistenceExecutors so Tasks remain queued; it does not introduce another
 execution mode.
+
+## Managed wait wake-up
+
+A managed Session persists `waitType`, `waitKey`, `waitCursor`, and expiry in
+the control plane before relinquishing its Worker slot. The bridge pages over
+current Aone reply waits and polls only comments newer than that durable cursor.
+It advances the Task with a deterministic `comment:<id>` revision only after
+the control plane accepts the observation.
+
+Bridge restart or machine replacement therefore loses only an in-memory poll
+throttle, never a wait. A control-plane 503 or Aone read failure advances no
+cursor and is retried on a later sensor tick. Concurrent sensors are safe
+because Aone wake cursors cannot move backwards. The accepted wake atomically
+changes the suspended Session to `RESUMABLE` and binds its continuation input;
+the next lease reuses the original runtime session and receives the new reply.
 
 ## Interactive Session ownership
 

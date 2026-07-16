@@ -4107,6 +4107,129 @@ class WaitWatcher:
                 log.warning("WaitWatcher: bad persisted file %s", f)
 
 
+class ManagedWaitSensor:
+    """Wake control-plane-owned Sessions from durable Aone wait conditions.
+
+    The control plane is the only current-state authority.  ``_poll_state`` only
+    throttles Aone reads; losing it on bridge restart makes polling temporarily
+    more eager but cannot lose a wait or advance its durable cursor.
+    """
+
+    def __init__(self, handler):
+        self.handler = handler
+        self.interval = max(5, int(os.environ.get(
+            "JARVIS_MANAGED_WAIT_SENSOR_SEC", "30")))
+        self.page_size = max(1, min(500, int(os.environ.get(
+            "JARVIS_MANAGED_WAIT_PAGE_SIZE", "100"))))
+        self._poll_state = {}  # session id -> {first_seen, last_poll}
+        self._thread = None
+
+    def start(self):
+        self._thread = threading.Thread(
+            target=self._loop, daemon=True, name="ManagedWaitSensor")
+        self._thread.start()
+
+    def _loop(self):
+        while True:
+            try:
+                self._tick()
+            except Exception:  # noqa: BLE001
+                log.exception("ManagedWaitSensor tick failed")
+            time.sleep(self.interval)
+
+    def _list_waits(self):
+        after = 0
+        while True:
+            page = self.handler.task_client.list_pending_aone_reply_waits(
+                after_session_id=after, limit=self.page_size)
+            if not isinstance(page, dict) or not isinstance(page.get("items"), list):
+                raise ValueError("control plane pending wait page is invalid")
+            for item in page["items"]:
+                if isinstance(item, dict):
+                    yield item
+            if not page.get("hasMore"):
+                return
+            next_after = page.get("nextAfterSessionId")
+            try:
+                next_after = int(next_after)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("control plane pending wait cursor is invalid") from exc
+            if next_after <= after:
+                raise ValueError("control plane pending wait cursor did not advance")
+            after = next_after
+
+    @staticmethod
+    def _comment_id(comment):
+        try:
+            return int(comment.get("id"))
+        except (AttributeError, TypeError, ValueError):
+            return None
+
+    def _tick(self):
+        now = time.time()
+        seen = set()
+        try:
+            waits = list(self._list_waits())
+        except Exception as exc:  # noqa: BLE001
+            # A 503, timeout, or malformed response leaves every wait untouched in
+            # the control plane.  The next tick reconstructs the complete set.
+            log.warning("ManagedWaitSensor list failed; will retry: %s", exc)
+            return
+        for item in waits:
+            task = item.get("task") if isinstance(item.get("task"), dict) else {}
+            session = (item.get("session")
+                       if isinstance(item.get("session"), dict) else {})
+            session_id = str(session.get("id") or "").strip()
+            aone_id = str(session.get("waitKey") or task.get("aoneId") or "").strip()
+            if not session_id or not aone_id.isdigit():
+                log.warning("ManagedWaitSensor ignored invalid wait task=%s session=%s",
+                            task.get("taskKey"), session_id or "<empty>")
+                continue
+            seen.add(session_id)
+            state = self._poll_state.setdefault(
+                session_id, {"first_seen": now, "last_poll": 0})
+            if now - state["last_poll"] < WaitWatcher._poll_interval({
+                    "suspended_at": state["first_seen"]}):
+                continue
+            state["last_poll"] = now
+            comments = self.handler.watcher._fetch_comments(aone_id)
+            if comments is None:
+                continue
+            try:
+                baseline = int(session.get("waitCursor") or 0)
+            except (TypeError, ValueError):
+                baseline = 0
+            new_comments = []
+            for comment in comments:
+                cid = self._comment_id(comment)
+                creator = str(comment.get("creator") or "").strip()
+                if cid is not None and cid > baseline and creator not in JARVIS_SELF_IDS:
+                    new_comments.append(comment)
+            if not new_comments:
+                continue
+            new_comments.sort(key=lambda comment: self._comment_id(comment) or 0)
+            frozen = session.get("inputPayload")
+            if not isinstance(frozen, dict):
+                frozen = task.get("payload") if isinstance(task.get("payload"), dict) else {}
+            wake_context = {
+                "session_id": session.get("runtimeSessionId"),
+                "terraform": bool(frozen.get("terraform")),
+                "project": str(frozen.get("project") or
+                               (task.get("sourceRef") or {}).get("projectId") or ""),
+                "target": str(frozen.get("target") or broadcast_target()),
+                "target_type": str(frozen.get("targetType") or broadcast_type()),
+            }
+            log.info("ManagedWaitSensor: #%s session=%s got %d reply comment(s)",
+                     aone_id, session_id, len(new_comments))
+            if not self.handler._wake(aone_id, wake_context, new_comments):
+                log.warning("ManagedWaitSensor: wake #%s not durably accepted; will retry",
+                            aone_id)
+        # Entries absent from the complete control-plane snapshot are no longer
+        # waiting.  Removing only throttle metadata has no correctness effect.
+        for session_id in set(self._poll_state) - seen:
+            self._poll_state.pop(session_id, None)
+
+
 class EphemeralExecutor:
     """Bounded executor for disposable local jobs, with soft-dedup.
 
@@ -6234,6 +6357,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.prober = ProbeScheduler(self, self.ephemeral_executor)
         self.reviser = RevisitScheduler(self, self.ephemeral_executor)
         self.watcher = WaitWatcher(self)
+        self.managed_wait_sensor = ManagedWaitSensor(self)
         # 数字人评论区自主协作跨会话补位轮询（loops/persona-collab.md）
         self.personawatch = PersonaScheduler(self, self.ephemeral_executor)
         # PR 观察登记表轮询（方案A）：PR 合并后自动 finish 收尾，与 RevisitScheduler 互为兜底
@@ -6262,6 +6386,7 @@ class JarvisHandler(AsyncChatbotHandler):
         self.prober.start()
         self.reviser.start()
         self.watcher.start()
+        self.managed_wait_sensor.start()
         self.personawatch.start()
         self.prwatch.start()
 
