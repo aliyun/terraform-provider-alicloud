@@ -3,7 +3,7 @@
 
 The runtime deliberately has no Task/Session semantics.  A caller may request
 the fenced ``ProcessGuardian`` launch path, but ownership transitions remain in
-``TaskExecutor``/``SessionLifecycle``.  Ephemeral jobs use the same timeout,
+``PersistenceExecutor``/``SessionController``.  Ephemeral jobs use the same timeout,
 process-group cleanup, stdout/stderr capture, and spawn observability without
 creating control-plane state.
 """
@@ -36,7 +36,7 @@ class ProcessGuardian:
 
     def __init__(self, guard_script: Optional[Path] = None):
         self.guard_script = guard_script or Path(__file__).with_name(
-            "managed_process_guard.py")
+            "task_process_guard.py")
 
     @staticmethod
     def terminate(process: Any, *, wait_seconds: float = 5.0,
@@ -75,7 +75,7 @@ class ProcessGuardian:
                 "--gate-fd", str(gate_read),
                 "--sentinel-fd", str(sentinel_read),
                 "--grace-seconds",
-                os.environ.get("JARVIS_MANAGED_GUARD_GRACE_SEC", "2"),
+                os.environ.get("JARVIS_TASK_GUARD_GRACE_SEC", "2"),
                 "--",
             ] + list(argv)
             process = subprocess.Popen(

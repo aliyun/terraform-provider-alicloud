@@ -15,7 +15,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import jarvis_dingtalk_bot as bot
-from jarvis_local_worker import SessionLifecycle
+from jarvis_persistence_executor import SessionController
 from jarvis_task_router import EnqueueResult
 
 
@@ -28,7 +28,7 @@ class _Starter:
         self.calls.append(self.name)
 
 
-class _FakeLocalWorker:
+class _FakePersistenceExecutor:
     instances = []
 
     def __init__(self, *args, **kwargs):
@@ -49,13 +49,14 @@ class _FakeLocalWorker:
 
 class HandlerWiringTest(unittest.TestCase):
     ENV_KEYS = (
-        "JARVIS_TASK_MODE", "JARVIS_TASK_TYPES", "JARVIS_MANAGED_TASK_TYPES",
         "JARVIS_CONTROL_PLANE_BASE_URL", "JARVIS_CONTROL_PLANE_TOKEN",
+        "JARVIS_HTML_REPORT_BASE_URL",
+        "JARVIS_HTML_REPORT_TOKEN",
     )
 
     def setUp(self):
         self.old_env = {key: os.environ.get(key) for key in self.ENV_KEYS}
-        _FakeLocalWorker.instances.clear()
+        _FakePersistenceExecutor.instances.clear()
 
     def tearDown(self):
         for key, value in self.old_env.items():
@@ -64,59 +65,60 @@ class HandlerWiringTest(unittest.TestCase):
             else:
                 os.environ[key] = value
 
-    def test_task_types_are_not_clamped_and_worker_capability_matches(self):
-        os.environ["JARVIS_TASK_MODE"] = "managed"
-        os.environ["JARVIS_TASK_TYPES"] = "ticket,wake"
+    def test_worker_capability_matches_fixed_task_types(self):
         client = object()
         with mock.patch.object(bot, "_task_client_from_env", return_value=client), \
-                mock.patch.object(bot, "TaskExecutor", _FakeLocalWorker):
+                mock.patch.object(bot, "PersistenceExecutor", _FakePersistenceExecutor):
             handler = bot.JarvisHandler(no_dingtalk=True)
-        self.assertEqual(handler.execution_router.task_types, {"ticket", "wake"})
-        self.assertIsNotNone(handler.local_worker)
-        self.assertEqual(_FakeLocalWorker.instances[-1].kwargs["capabilities"],
-                         {"kinds": ["ticket", "wake"]})
-        self.assertIs(handler.task_executor, handler.local_worker)
-        self.assertIs(handler.ephemeral_executor, handler.dispatch_pool)
-        self.assertIs(_FakeLocalWorker.instances[-1].kwargs["capacity_manager"],
+        self.assertIn("ticket", handler.execution_router.task_types)
+        self.assertIn("wake", handler.execution_router.task_types)
+        self.assertNotIn("probe", handler.execution_router.task_types)
+        self.assertIsNotNone(handler.persistence_executor)
+        self.assertEqual(_FakePersistenceExecutor.instances[-1].kwargs["capabilities"],
+                         {"kinds": sorted(handler.execution_router.task_types)})
+        self.assertIs(_FakePersistenceExecutor.instances[-1].args[1],
                       handler.ephemeral_executor.capacity_manager)
         self.assertIs(handler.execution_runtime,
                       handler.ephemeral_executor.execution_runtime)
-
-    def test_empty_managed_allowlist_stays_empty(self):
-        os.environ["JARVIS_TASK_MODE"] = "managed"
-        os.environ["JARVIS_TASK_TYPES"] = ""
-        with mock.patch.object(bot, "_task_client_from_env", return_value=object()), \
-                mock.patch.object(bot, "TaskExecutor", _FakeLocalWorker):
-            handler = bot.JarvisHandler(no_dingtalk=True)
-        self.assertEqual(handler.execution_router.task_types, set())
+        for obsolete in ("task_router", "local_worker", "dispatch_pool"):
+            self.assertFalse(hasattr(handler, obsolete))
 
     def test_worker_starts_before_every_sensor(self):
         calls = []
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.local_worker = _Starter("worker", calls)
+        handler.persistence_executor = _Starter("worker", calls)
         for name in ("scanner", "reconciler", "board", "prober", "reviser",
                      "watcher", "personawatch", "prwatch"):
             setattr(handler, name, _Starter(name, calls))
-        handler._resume_inflight = lambda: calls.append("legacy-resume")
         handler.start_schedulers()
         self.assertEqual(calls[0], "worker")
-        self.assertEqual(calls[-1], "legacy-resume")
+        self.assertEqual(calls[-1], "prwatch")
 
     def test_stop_helper_forwards_drain_policy(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        worker = _FakeLocalWorker()
-        handler.local_worker = worker
-        self.assertTrue(handler.stop_local_worker(drain=True, timeout=7))
+        worker = _FakePersistenceExecutor()
+        handler.persistence_executor = worker
+        self.assertTrue(handler.stop_persistence_executor(drain=True, timeout=7))
         self.assertEqual(worker.stop_calls, [(True, 7)])
 
+    def test_task_client_defaults_to_pre_and_requires_token(self):
+        for key in self.ENV_KEYS:
+            os.environ.pop(key, None)
+        with self.assertRaisesRegex(RuntimeError, "token is required"):
+            bot._task_client_from_env()
+        os.environ["JARVIS_HTML_REPORT_TOKEN"] = "shared-token"
+        client = bot._task_client_from_env()
+        self.assertEqual(client.base_url, "https://pre-agent.aliyun-inc.com")
+        self.assertEqual(client.token, "shared-token")
 
-class ManagedExecutionTest(unittest.TestCase):
+
+class TaskExecutionTest(unittest.TestCase):
     def test_process_spawned_after_fence_loss_is_immediately_force_killed(self):
-        lifecycle = SessionLifecycle(
+        lifecycle = SessionController(
             object(), "mac:boot:process",
             {"task": {"id": "task-1"},
              "session": {"id": "late-bind-session", "fenceToken": 7}},
-            stop_process=bot.JarvisHandler._stop_managed_process)
+            stop_process=bot.JarvisHandler._stop_task_process)
         # First stop attempt happens before on_spawn has supplied a process.
         lifecycle._lose_ownership("stale_fence:heartbeat")
 
@@ -134,7 +136,7 @@ class ManagedExecutionTest(unittest.TestCase):
         try:
             self.assertEqual(proc.stdout.readline().strip(), "ready")
             with mock.patch.dict(
-                    os.environ, {"JARVIS_MANAGED_STOP_GRACE_SEC": "0.05"}):
+                    os.environ, {"JARVIS_TASK_STOP_GRACE_SEC": "0.05"}):
                 lifecycle.bind_process(proc)
             self.assertEqual(proc.poll(), -signal.SIGKILL)
         finally:
@@ -162,8 +164,8 @@ class ManagedExecutionTest(unittest.TestCase):
             self.assertEqual(proc.stdout.readline().strip(), "ready")
             lifecycle = SimpleNamespace(process=proc, session_id="fenced-session")
             with mock.patch.dict(
-                    os.environ, {"JARVIS_MANAGED_STOP_GRACE_SEC": "0.05"}):
-                bot.JarvisHandler._stop_managed_process(lifecycle, "stale_fence:test")
+                    os.environ, {"JARVIS_TASK_STOP_GRACE_SEC": "0.05"}):
+                bot.JarvisHandler._stop_task_process(lifecycle, "stale_fence:test")
             self.assertEqual(proc.poll(), -signal.SIGKILL)
         finally:
             if proc.poll() is None:
@@ -185,6 +187,7 @@ class ManagedExecutionTest(unittest.TestCase):
             return "done"
 
         handler.dispatch_item = dispatch
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
 
         class Lifecycle:
             runtime_session_id = "runtime-stable"
@@ -204,17 +207,18 @@ class ManagedExecutionTest(unittest.TestCase):
                 "terraform": True, "target": "group-1", "targetType": "group",
             }},
         }
-        self.assertEqual(handler._execute_managed_lease(lease, lifecycle), "done")
+        self.assertEqual(handler._execute_task_lease(lease, lifecycle), "done")
         self.assertEqual(captured["args"][1], "go")
         self.assertEqual(captured["args"][2], "runtime-stable")
         self.assertTrue(captured["args"][3])
         self.assertEqual(captured["kwargs"]["on_spawn"], lifecycle.bind_process)
-        self.assertIs(captured["kwargs"]["managed_lifecycle"], lifecycle)
+        self.assertIs(captured["kwargs"]["session_controller"], lifecycle)
 
     def test_malformed_session_input_snapshot_never_falls_forward_to_current_task(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler._broadcast = lambda _text: None
         handler.dispatch_item = mock.Mock()
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
         lifecycle = SimpleNamespace(runtime_session_id="r", resumed=True,
                                     bind_process=lambda _p: None)
         lease = {
@@ -223,13 +227,14 @@ class ManagedExecutionTest(unittest.TestCase):
             "session": {"inputPayload": "not-json"},
         }
         with self.assertRaisesRegex(ValueError, "payload must be JSON object"):
-            handler._execute_managed_lease(lease, lifecycle)
+            handler._execute_task_lease(lease, lifecycle)
         handler.dispatch_item.assert_not_called()
 
     def test_null_session_input_snapshot_never_falls_forward_to_newer_task(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler._broadcast = lambda _text: None
         handler.dispatch_item = mock.Mock()
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
         lifecycle = SimpleNamespace(runtime_session_id="r", resumed=True,
                                     bind_process=lambda _p: None)
         lease = {
@@ -238,12 +243,12 @@ class ManagedExecutionTest(unittest.TestCase):
             "session": {"inputPayload": None, "processingRevision": "old-revision"},
         }
         with self.assertRaisesRegex(ValueError, "input snapshot is null"):
-            handler._execute_managed_lease(lease, lifecycle)
+            handler._execute_task_lease(lease, lifecycle)
         handler.dispatch_item.assert_not_called()
 
-    def test_managed_dispatch_never_writes_local_inflight_current_state(self):
+    def test_task_dispatch_never_writes_local_inflight_current_state(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.dispatch_pool = SimpleNamespace(_closed=False)
+        handler.ephemeral_executor = SimpleNamespace(_closed=False)
         handler._maybe_suspend = lambda *args, **kwargs: None
         handler._completion_broadcast = lambda _item_id: "done"
         result = SimpleNamespace(text="ok", is_error=False, subtype="success")
@@ -252,8 +257,8 @@ class ManagedExecutionTest(unittest.TestCase):
                 mock.patch.object(bot, "_inflight_add") as add, \
                 mock.patch.object(bot, "_inflight_remove") as remove:
             outcome = handler.dispatch_item(
-                "managed-probe", "go", "runtime-1", False, notices.append,
-                "target", "group", kind="probe", managed_lifecycle=object())
+                "task-probe", "go", "runtime-1", False, notices.append,
+                "target", "group", kind="probe", session_controller=object())
         self.assertEqual(outcome, "done")
         add.assert_not_called()
         remove.assert_not_called()
@@ -262,17 +267,36 @@ class ManagedExecutionTest(unittest.TestCase):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler._broadcast = lambda _text: None
         handler.dispatch_item = mock.Mock()
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
         lifecycle = SimpleNamespace(runtime_session_id="r", resumed=False,
                                     bind_process=lambda _p: None)
         with self.assertRaisesRegex(ValueError, "not enabled"):
-            handler._execute_managed_lease(
+            handler._execute_task_lease(
                 {"task": {"taskType": "probe", "payload": {
-                    "itemId": "probe-1", "kind": "probe", "prompt": "go"}}}, lifecycle)
+                    "itemId": "probe-1", "kind": "probe", "prompt": "go"}},
+                 "session": {"inputPayload": {
+                     "itemId": "probe-1", "kind": "probe", "prompt": "go"}}},
+                lifecycle)
         handler.dispatch_item.assert_not_called()
 
-    def test_managed_suspend_returns_central_wait_state_without_local_watcher(self):
+    def test_task_lease_without_session_snapshot_is_rejected(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
-        handler.dispatch_pool = SimpleNamespace(_closed=False)
+        handler._broadcast = lambda _text: None
+        handler.dispatch_item = mock.Mock()
+        handler.execution_router = SimpleNamespace(task_types={"ticket"})
+        lifecycle = SimpleNamespace(runtime_session_id="r", resumed=False,
+                                    bind_process=lambda _p: None)
+        with self.assertRaisesRegex(ValueError, "input snapshot is missing"):
+            handler._execute_task_lease(
+                {"task": {"taskType": "ticket", "payload": {
+                    "itemId": "84345050", "kind": "ticket", "prompt": "go"}},
+                 "session": {}},
+                lifecycle)
+        handler.dispatch_item.assert_not_called()
+
+    def test_task_suspend_returns_central_wait_state_without_local_watcher(self):
+        handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
+        handler.ephemeral_executor = SimpleNamespace(_closed=False)
         handler.watcher = SimpleNamespace(suspend=mock.Mock())
         handler._last_comment_id = lambda _iid: 41
         handler._workitem_line = lambda iid: "#%s" % iid
@@ -282,8 +306,8 @@ class ManagedExecutionTest(unittest.TestCase):
         with mock.patch.object(bot, "run_claude_buffered", return_value=result), \
                 mock.patch.object(bot, "_inflight_add") as add:
             outcome = handler.dispatch_item(
-                "managed-probe", "go", "runtime-1", False, lambda _text: None,
-                "target", "group", kind="probe", managed_lifecycle=object())
+                "task-probe", "go", "runtime-1", False, lambda _text: None,
+                "target", "group", kind="probe", session_controller=object())
         self.assertEqual(outcome["status"], "suspended")
         self.assertEqual(outcome["waitType"], "AONE_REPLY")
         self.assertEqual(outcome["waitKey"], "843")
@@ -301,17 +325,18 @@ class WakeRoutingTest(unittest.TestCase):
         handler._workitem_line = lambda _iid: "#843"
         handler._workitem_project = lambda _iid: "2100304"
         handler._quick_card = mock.Mock()
-        handler.dispatch_pool = SimpleNamespace(
+        handler.ephemeral_executor = SimpleNamespace(
             submit=lambda *args, **kwargs: (accepted, "dispatched" if accepted else "full"))
         captured = {}
 
         class Router:
-            def enqueue(self, envelope, legacy_submit):
+            def enqueue(self, envelope, local_submit=None):
+                del local_submit
                 captured["envelope"] = envelope
-                ok, reason = legacy_submit()
-                return EnqueueResult(ok, reason)
+                return EnqueueResult(
+                    accepted, "persisted" if accepted else "rejected")
 
-        handler.task_router = Router()
+        handler.execution_router = Router()
         return handler, captured
 
     def test_wake_uses_unified_project_key_and_returns_accepted(self):

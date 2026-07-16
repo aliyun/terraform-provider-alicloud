@@ -56,6 +56,16 @@ _running_pid() {  # echo pid iff pidfile points at a live process
   return 1
 }
 
+_unmanaged_bot_pids() {
+  # A manually launched bridge has no pidfile, so blindly starting another
+  # instance would create duplicate scanners and Task producers.  The default
+  # production bot name is stable; test/custom bots opt out by overriding
+  # JARVIS_BRIDGE_BOT.
+  [ -n "${JARVIS_BRIDGE_BOT:-}" ] && return 0
+  command -v pgrep >/dev/null 2>&1 || return 0
+  pgrep -f '[j]arvis_dingtalk_bot.py' 2>/dev/null || true
+}
+
 _tail_log() {  # $1 = n
   local n="${1:-20}"
   if [ -f "$LOG" ]; then tail -n "$n" "$LOG"; else say "(暂无日志: $LOG)"; fi
@@ -217,10 +227,16 @@ _supervised_command() { # $1 = start|stop|restart|status
 
 # -- commands --------------------------------------------------------------
 cmd_start() {
-  local pid
+  local pid unmanaged
   if pid="$(_running_pid)"; then
     say "bridge 已在运行 (pid $pid) — 无需重复 start。"
     return 0
+  fi
+  unmanaged="$(_unmanaged_bot_pids)"
+  if [ -n "$unmanaged" ]; then
+    err "检测到未被当前 pidfile 管理的 bridge 进程: $(printf '%s' "$unmanaged" | tr '\n' ' ')"
+    err "为避免双 Scanner/双 Task 生产者，拒绝启动。请先确认并停止这些进程。"
+    return 1
   fi
   [ -f "$PIDFILE" ] && rm -f "$PIDFILE"   # stale pidfile
 

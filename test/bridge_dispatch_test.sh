@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test/bridge_dispatch_test.sh — hermetic unit tests for bridge/jarvis_dingtalk_bot.py
-# F2 池调度 dispatcher: DispatchPool 并发/排队/软去重, ScanScheduler auto 决策,
+# F2 池调度 dispatcher: EphemeralExecutor 并发/排队/软去重, ScanScheduler auto 决策,
 # Probe/Revisit 每日门判定。全部 mock(不真起 claude、不连钉钉、不打 Aone)。
 #
 # Wraps a python3 unittest suite. The bridge module guards its dingtalk_stream
@@ -41,8 +41,10 @@ for k in ("JARVIS_AUTO_DISPATCH", "JARVIS_DISPATCH_MAX", "JARVIS_DISPATCH_QUEUE_
           "JARVIS_REVISIT_STALE_DAYS",
           "JARVIS_BACKLOG_DRAIN"):
     os.environ.pop(k, None)
+os.environ["JARVIS_CONTROL_PLANE_TOKEN"] = "test-token"
 
 import jarvis_dingtalk_bot as b
+from jarvis_task_router import EnqueueResult
 
 # Keep the in-flight registry hermetic: default every test's INFLIGHT_PATH to a tmp file
 # so exercising dispatch_item never writes the real repo .my-day/bridge/inflight.json.
@@ -52,6 +54,40 @@ b.INFLIGHT_PATH = Path(tempfile.mkdtemp()) / "inflight.json"
 
 def _ledger(tmp):
     return os.path.join(tmp, "dispatched.json")
+
+
+_LAST_RECORDING_TASK_SINK = None
+
+
+class _RecordingExecutionRouter:
+    """Accept every Task and record its durable envelope without running local work."""
+
+    def __init__(self):
+        self.calls = []
+
+    def is_task(self, envelope):
+        return True
+
+    def route(self, envelope):
+        return b.ExecutionRouter.classify(True)
+
+    def enqueue(self, envelope, local_submit=None):
+        self.calls.append(envelope)
+        # PR-watch tests pass a non-null pool only because the production sensor
+        # uses it as an enabled/disabled sentinel. Record the durable Task in the
+        # matching test sink without invoking local_submit.
+        if _LAST_RECORDING_TASK_SINK is not None:
+            _LAST_RECORDING_TASK_SINK.calls.append({
+                "id": str(envelope.source_ref.get("aoneId")
+                          or envelope.source_ref.get("prUrl")
+                          or envelope.task_key),
+                "kind": envelope.task_type,
+                "force": True,
+                "project": str(envelope.source_ref.get("projectId") or ""),
+                "terraform": bool(envelope.payload.get("terraform")),
+                "envelope": envelope,
+            })
+        return EnqueueResult(True, "task_persisted")
 
 
 class TerminalStatusConfigTest(unittest.TestCase):
@@ -75,10 +111,10 @@ class TerminalStatusConfigTest(unittest.TestCase):
         self.assertIn("已关闭", fallback)
 
 
-class DispatchPoolConcurrencyTest(unittest.TestCase):
+class EphemeralExecutorConcurrencyTest(unittest.TestCase):
     def test_cap_and_queue(self):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(max_workers=2, queue_max=3, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(max_workers=2, queue_max=3, ledger_path=_ledger(tmp))
         gate = threading.Event()
         lock = threading.Lock()
         running = []
@@ -111,10 +147,10 @@ class DispatchPoolConcurrencyTest(unittest.TestCase):
         self.assertEqual(peak[0], 2, "both worker threads should have run concurrently")
 
 
-class DispatchPoolDedupTest(unittest.TestCase):
+class EphemeralExecutorDedupTest(unittest.TestCase):
     def test_active_dedup(self):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(max_workers=2, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(max_workers=2, ledger_path=_ledger(tmp))
         gate = threading.Event()
 
         def work():
@@ -131,7 +167,7 @@ class DispatchPoolDedupTest(unittest.TestCase):
 
     def test_ledger_ttl_window(self):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(dedup_ttl=86400, ledger_path=_ledger(tmp))
         pool._ledger["y"] = time.time()
         ok, reason = pool.status("y")
         self.assertFalse(ok)
@@ -142,7 +178,7 @@ class DispatchPoolDedupTest(unittest.TestCase):
 
     def test_force_overrides_ledger_not_active(self):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(dedup_ttl=86400, ledger_path=_ledger(tmp))
         pool._ledger["z"] = time.time()
         self.assertFalse(pool.status("z")[0])            # deduped without force
         self.assertTrue(pool.status("z", force=True)[0])  # force ignores ledger
@@ -152,14 +188,14 @@ class DispatchPoolDedupTest(unittest.TestCase):
         p = _ledger(tmp)
         with open(p, "w") as f:
             json.dump({"recent": time.time(), "old": time.time() - 90000}, f)
-        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=p)
+        pool = b.EphemeralExecutor(dedup_ttl=86400, ledger_path=p)
         self.assertFalse(pool.status("recent")[0], "recent entry should dedup after restart")
         self.assertTrue(pool.status("old")[0], "expired entry should not dedup")
 
     def test_submit_persists_ledger(self):
         tmp = tempfile.mkdtemp()
         p = _ledger(tmp)
-        pool = b.DispatchPool(max_workers=1, ledger_path=p)
+        pool = b.EphemeralExecutor(max_workers=1, ledger_path=p)
         gate = threading.Event()
         ok, _ = pool.submit("persisted", lambda: gate.wait(5))
         self.assertTrue(ok)
@@ -173,7 +209,7 @@ class DispatchPoolDedupTest(unittest.TestCase):
 class ScanDecideTest(unittest.TestCase):
     def _scanner(self, ledger_recent=()):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(dedup_ttl=86400, ledger_path=_ledger(tmp))
         for iid in ledger_recent:
             pool._ledger[str(iid)] = time.time()
         sc = b.ScanScheduler(handler=None, pool=pool)
@@ -202,7 +238,8 @@ class ScanDecideTest(unittest.TestCase):
         # idle 且无人工介入(_human_touched=False) → 不重启实例，等每日 Revisit
         self.assertEqual(d["id"], ("skip", "idle_no_human"))
         self.assertEqual(d["fr"], ("dispatch", "new"))
-        self.assertEqual(d["dd"], ("skip", "deduped"))
+        self.assertEqual(d["dd"], ("dispatch", "new"),
+                         "Task 去重由控制面 desiredRevision 负责，不读本地 Ephemeral 台账")
 
     def test_updated_no_tag_dispatches(self):
         # 更新单(无 jarvis 标签，pool 允许) → dispatch，force 默认 False
@@ -298,7 +335,7 @@ class ColdStartTest(unittest.TestCase):
 
     def _scanner(self, auto):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(dedup_ttl=86400, ledger_path=_ledger(tmp))
         sc = b.ScanScheduler(handler=None, pool=pool)
         sc.auto = auto
         sc._human_touched = lambda iid: False
@@ -510,7 +547,7 @@ class DailySchedulerRunContractTest(unittest.TestCase):
     def test_probe_ok_returns_truthy(self):
         # submit 接受 → _run_once 返回真值 (mark 本日)
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(max_workers=1, queue_max=5, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(max_workers=1, queue_max=5, ledger_path=_ledger(tmp))
         p = self._probe(pool, os.path.join(tmp, "probe.last"))
         rv = p._run_once()
         self.assertIsNot(rv, False, "submit ok → 非 False, mark 掉本日")
@@ -519,7 +556,7 @@ class DailySchedulerRunContractTest(unittest.TestCase):
     def test_probe_queue_full_returns_false(self):
         # submit 撞 queue_full → 必须返回 False, 让 _loop 本日不 mark, 下 tick 重试
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(max_workers=1, queue_max=5, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(max_workers=1, queue_max=5, ledger_path=_ledger(tmp))
         # 手动灌满 active 直到 cap = max_workers + queue_max = 6
         for i in range(pool.max_workers + pool.queue_max):
             pool._active["filler-%d" % i] = {"started": time.time()}
@@ -531,7 +568,7 @@ class DailySchedulerRunContractTest(unittest.TestCase):
     def test_probe_deduped_returns_truthy(self):
         # 同 rid 已在 24h 台账内 → submit 拒 deduped → 视为成功, 本日 mark
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(max_workers=1, queue_max=5, dedup_ttl=86400,
+        pool = b.EphemeralExecutor(max_workers=1, queue_max=5, dedup_ttl=86400,
                               ledger_path=_ledger(tmp))
         p = self._probe(pool, os.path.join(tmp, "probe.last"))
         rid = p.round_id()
@@ -618,7 +655,7 @@ class ProbeSummaryWriteTest(unittest.TestCase):
         finally:
             b.run_claude_buffered = orig_buf
             b.REPO_ROOT = orig_root
-            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+            h.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
 
     def test_non_probe_prefix_no_summary(self):
         tmp = tempfile.mkdtemp()
@@ -639,7 +676,7 @@ class ProbeSummaryWriteTest(unittest.TestCase):
         finally:
             b.run_claude_buffered = orig_buf
             b.REPO_ROOT = orig_root
-            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+            h.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
 
     def test_write_failure_only_logs(self):
         # runs/probe 落盘失败时 dispatch_item 仍返回 done, 不抛
@@ -670,7 +707,7 @@ class ProbeSummaryWriteTest(unittest.TestCase):
             b.JarvisHandler._write_probe_summary = orig_write
             b.run_claude_buffered = orig_buf
             b.REPO_ROOT = orig_root
-            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+            h.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
 
 
 class ScopeGateTest(unittest.TestCase):
@@ -679,7 +716,7 @@ class ScopeGateTest(unittest.TestCase):
 
     def _scanner(self):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(dedup_ttl=86400, ledger_path=_ledger(tmp))
         sc = b.ScanScheduler(handler=None, pool=pool)
         sc.auto = True
         sc._human_touched = lambda iid: False
@@ -762,7 +799,7 @@ class HumanTouchedTest(unittest.TestCase):
 
     def _scanner(self):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(dedup_ttl=86400, ledger_path=_ledger(tmp))
         sc = b.ScanScheduler(handler=None, pool=pool)
         # Mock whitelist: simulate contacts.json with known human operators
         sc._human_operators = {"辰羿", "陈汉璋", "320687", "马裘", "逄磊", "404709"}
@@ -865,7 +902,7 @@ class HumanCommentedTest(unittest.TestCase):
 
     def _scanner(self):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(dedup_ttl=86400, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(dedup_ttl=86400, ledger_path=_ledger(tmp))
         return b.ScanScheduler(handler=None, pool=pool)
 
     def _fake_run(self, rc, stdout, stderr=""):
@@ -1005,7 +1042,7 @@ class HumanCommentedTest(unittest.TestCase):
 
 class NoDingtalkDegradedTest(unittest.TestCase):
     """无钉钉降级模式(JARVIS_NO_DINGTALK=1, 缺凭证): 调度器照起、TataPool 跳过、
-    卡片/播报降级为 [BROADCAST] 日志行、唤醒走 headless 池 —— 全程绝不触钉钉。"""
+    卡片/播报降级为 [BROADCAST] 日志行、Task 仍进入控制面 —— 全程绝不触钉钉。"""
 
     class _BoomSM:
         """任何被当作 streaming 模块访问的属性都炸 —— 证明降级路径根本没碰钉钉 SDK。"""
@@ -1018,13 +1055,15 @@ class NoDingtalkDegradedTest(unittest.TestCase):
             os.environ.pop(k, None)
         h = b.JarvisHandler(no_dingtalk=True)
         h.sm = self._BoomSM()   # 任何真钉钉调用即触发 AssertionError
+        h.execution_router = _RecordingExecutionRouter()
+        h.scanner.execution_router = h.execution_router
         return h
 
     def test_schedulers_built_tatapool_skipped(self):
         h = self._handler()
         self.assertTrue(h.no_dingtalk)
         self.assertIsNone(h.pool, "TataPool must be skipped in no-dingtalk mode")
-        for name in ("dispatch_pool", "scanner", "reconciler", "board",
+        for name in ("ephemeral_executor", "persistence_executor", "scanner", "reconciler", "board",
                      "prober", "reviser", "watcher"):
             self.assertIsNotNone(getattr(h, name, None), "%s must be constructed" % name)
         self.assertTrue(h.scanner.auto, "auto-dispatch stays on in degraded mode")
@@ -1042,25 +1081,19 @@ class NoDingtalkDegradedTest(unittest.TestCase):
 
     def test_scheduler_broadcast_path_no_dingtalk(self):
         # 调度器 dispatch 汇总播报回调 = handler._broadcast → 降级落 [BROADCAST] 日志, 不触钉钉。
-        # mock submit 免真起 claude(新语义: new/updated 单都过 _decide 派发, 派发汇总即播报)。
+        # Task 持久化成功后派发汇总照常播报，不真起本地 claude。
         h = self._handler()
-        h.dispatch_pool.submit = lambda *a, **k: (True, "dispatched")  # 不真跑 work
         with self.assertLogs("jarvis-bot", level="INFO") as cm:
             h.scanner._tick_auto([{"id": "77", "title": "新单派发", "tag": [],
                                    "pool": "tf_provider", "pool_project": "528766"}], {})
         self.assertIn("[BROADCAST]", "\n".join(cm.output))
+        self.assertEqual(len(h.execution_router.calls), 1)
+        self.assertEqual(h.execution_router.calls[0].task_type, "ticket")
 
-    def test_wake_resumes_via_headless_pool_not_card(self):
+    def test_wake_persists_task_not_local_job(self):
         h = self._handler()
-        captured = {}
-
-        def fake_submit(item_id, work, *, notify=None, force=False, kind="ticket",
-                        project=None, terraform=False):
-            captured.update(id=str(item_id), force=force, kind=kind,
-                            project=project, terraform=terraform)
-            return True, "dispatched"   # 不真跑 work(不起 claude)
-
-        h.dispatch_pool.submit = fake_submit
+        local_calls = []
+        h.ephemeral_executor.submit = lambda *a, **k: local_calls.append((a, k))
         # 若降级唤醒误走卡片路(_submit_card→_stream_round→get_access_token), _BoomSM 会炸。
         task = {
             "target": "grp",
@@ -1071,13 +1104,14 @@ class NoDingtalkDegradedTest(unittest.TestCase):
         }
         with self.assertLogs("jarvis-bot", level="INFO") as cm:
             h._wake("83929676", task, [{"creator": "someone", "content": "继续"}])
-        self.assertEqual(captured.get("id"), "83929676")
-        self.assertTrue(captured.get("force"), "wake must force past the 24h dedup ledger")
-        self.assertEqual(captured.get("kind"), "wake",
-                         "degraded wake must use the headless pool path, not the card path")
-        self.assertEqual(captured.get("project"), "2100304")
-        self.assertTrue(captured.get("terraform"),
-                        "Terraform wake must stay on the Terraform identity lane")
+        self.assertEqual(local_calls, [], "wake Task 不得落入本地 EphemeralExecutor")
+        self.assertEqual(len(h.execution_router.calls), 1)
+        envelope = h.execution_router.calls[0]
+        self.assertEqual(envelope.task_key, "aone:2100304:83929676")
+        self.assertEqual(envelope.task_type, "wake")
+        self.assertEqual(envelope.source_ref["projectId"], "2100304")
+        self.assertTrue(envelope.payload["terraform"],
+                        "Terraform wake 必须保留 Terraform 身份车道")
         self.assertIn("[BROADCAST]", "\n".join(cm.output))  # 「收到回复,唤醒中」通知降级为日志
 
 
@@ -1109,7 +1143,7 @@ class TataResidentModeTest(unittest.TestCase):
             self.assertEqual(calls, [("hi", "staff-1", False)])
         finally:
             b.run_tata_stream = orig
-            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+            h.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
 
     def test_resident_mode_requires_explicit_env(self):
         os.environ["JARVIS_TATA_RESIDENT"] = "1"
@@ -1117,7 +1151,7 @@ class TataResidentModeTest(unittest.TestCase):
         try:
             self.assertIsInstance(h.pool, b.TataPool)
         finally:
-            h.dispatch_pool.shutdown(wait=False, cancel_futures=True)
+            h.ephemeral_executor.shutdown(wait=False, cancel_futures=True)
             h.pool.shutdown()
 
 
@@ -1262,13 +1296,13 @@ class CompletionBroadcastTest(unittest.TestCase):
 
 
 class FreeSlotsTest(unittest.TestCase):
-    """DispatchPool.free_slots() = max_workers - 在飞任务数(含排队)，clamp 到 >=0。
+    """EphemeralExecutor.free_slots() = max_workers - 在飞任务数(含排队)，clamp 到 >=0。
     free_slots>0 蕴含队列必空(在飞数<并发上限时不可能排队)——backlog drain 的核心不变量:
     只填真正空闲的运行槽，绝不把积压单排到未来新单前面。"""
 
     def test_free_slots_tracks_active(self):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(max_workers=2, queue_max=5, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(max_workers=2, queue_max=5, ledger_path=_ledger(tmp))
         self.assertEqual(pool.free_slots(), 2, "empty pool = max_workers free")
         pool._active["a"] = {"started": time.time()}
         self.assertEqual(pool.free_slots(), 1, "one in flight = max_workers-1")
@@ -1302,7 +1336,7 @@ class BacklogDrainTest(unittest.TestCase):
 
     def _scanner(self, max_workers=2):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(max_workers=max_workers, dedup_ttl=86400, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(max_workers=max_workers, dedup_ttl=86400, ledger_path=_ledger(tmp))
         sc = b.ScanScheduler(handler=None, pool=pool)
         sc.auto = True
         sc.backlog_drain = True
@@ -1342,24 +1376,25 @@ class BacklogDrainTest(unittest.TestCase):
         self.assertEqual(auto_calls, [{"nw"}], "only the new item flows to auto dispatch")
         self.assertEqual(drain_calls, [], "a tick with new items must not run backlog drain")
 
-    def test_full_pool_no_drain(self):
+    def test_full_ephemeral_pool_does_not_block_task_drain(self):
         sc, pool = self._scanner(max_workers=2)
         got = self._capture_dispatch(sc)
         pool._active = {"busy1": {"started": time.time()}, "busy2": {"started": time.time()}}
         sc._scan = lambda: [{"id": "bk", "title": "backlog", "tag": []}]
         sc._tick()   # cold seed
-        sc._tick()   # idle tick but free_slots==0 → no drain
-        self.assertEqual(got, [], "no free running slot → backlog not drained")
+        sc._tick()
+        self.assertEqual(got, [("bk", False)],
+                         "Task 持久化不受本地 EphemeralExecutor 容量影响")
 
-    def test_queued_pool_no_drain(self):
-        # 3 在飞 with max_workers=2 → 有排队；free_slots=max(0,2-3)=0 → 不消化。
+    def test_queued_ephemeral_pool_does_not_block_task_drain(self):
         sc, pool = self._scanner(max_workers=2)
         got = self._capture_dispatch(sc)
         pool._active = {"a": {}, "b": {}, "c": {}}
         sc._scan = lambda: [{"id": "bk", "title": "backlog", "tag": []}]
         sc._tick(); sc._tick()
         self.assertEqual(pool.free_slots(), 0, "queue non-empty ⇒ free_slots 0")
-        self.assertEqual(got, [], "queued jobs mean no free slot → never queue backlog ahead of new")
+        self.assertEqual(got, [("bk", False)],
+                         "Task 进入控制面，不在本地排队")
 
     def test_cold_start_no_drain(self):
         sc, _pool = self._scanner()
@@ -1374,46 +1409,46 @@ class BacklogDrainTest(unittest.TestCase):
         self.assertEqual(auto_calls, [], "cold start dispatches nothing")
         self.assertEqual(set(sc._prev_snapshot), {"bk"}, "cold start seeds baseline")
 
-    def test_drain_respects_dedup_ledger(self):
-        # 真 submit + FakeHandler: 消化过一条后同快照再 tick，被去重台账/active 拦下不重复派。
+    def test_drain_uses_control_plane_idempotency_not_local_ledger(self):
         tmp = tempfile.mkdtemp()
-        pool = b.DispatchPool(max_workers=2, dedup_ttl=86400, ledger_path=_ledger(tmp))
+        pool = b.EphemeralExecutor(max_workers=2, dedup_ttl=86400, ledger_path=_ledger(tmp))
 
         class FakeHandler:
+            def __init__(self):
+                self.execution_router = _RecordingExecutionRouter()
+
             def _broadcast(self, text):
                 pass
 
             def dispatch_item(self, *a, **k):
                 return "ok"
 
-        sc = b.ScanScheduler(handler=FakeHandler(), pool=pool)
+        handler = FakeHandler()
+        sc = b.ScanScheduler(handler=handler, pool=pool)
         sc.auto = True
         sc.backlog_drain = True
         sc.dispatch_pools = set()
         sc.dispatch_created_before = ""
         sc._human_touched = lambda iid: False
 
-        submits = []
-        real_submit = pool.submit
-
-        def spy(iid, work, **k):
-            r = real_submit(iid, work, **k)
-            submits.append((str(iid), r[0]))
-            return r
-        pool.submit = spy
+        local_submits = []
+        pool.submit = lambda *a, **k: local_submits.append((a, k))
 
         item = {"id": "bk", "title": "backlog", "tag": [],
                 "pool": "tf_provider", "pool_project": "528766"}
         sc._scan = lambda: [item]
         sc._tick()   # cold seed
-        sc._tick()   # drain #1 → bk dispatched, ledger records it
-        sc._tick()   # drain #2 → bk deduped/active, NOT re-dispatched
+        sc._tick()   # drain #1 → desired Task upsert
+        sc._tick()   # drain #2 → same desiredRevision upsert, server idempotent
         pool.shutdown(wait=True)
 
-        bk = [ok for iid, ok in submits if iid == "bk"]
-        self.assertEqual(bk, [True, False],
-                         "first drain dispatches bk; second rejected by dedup ledger/active")
-        self.assertIn("bk", pool._ledger, "dispatched backlog id recorded in dedup ledger")
+        self.assertEqual(local_submits, [], "Task 不得调用本地 EphemeralExecutor.submit")
+        self.assertEqual(len(handler.execution_router.calls), 2)
+        self.assertEqual(
+            {call.desired_revision for call in handler.execution_router.calls},
+            {"modified:unknown"},
+            "重复扫描依靠控制面 taskKey + desiredRevision 幂等")
+        self.assertNotIn("bk", pool._ledger, "Task 不写 Ephemeral 去重台账")
 
     def test_is_backlog_filters_tags_terminal_scope(self):
         sc, _pool = self._scanner()
@@ -1786,7 +1821,8 @@ class SettingsLaneTest(unittest.TestCase):
 
 class DispatchLanePersistTest(unittest.TestCase):
     """车道随会话持久化：dispatch_item 把 terraform 传进 run_claude_buffered，并写进
-    in-flight 记录，供桥重启后的 _resume_inflight 复原同一车道。"""
+    本地 in-flight 记录供同一 EphemeralJob 生命周期内诊断；可恢复 Task 的车道由
+    Session inputPayload 持久化。"""
 
     def setUp(self):
         self._orig_rcb = b.run_claude_buffered
@@ -2089,8 +2125,7 @@ class _FakeProc:
 
 
 class TerminateAllOptionBTest(_InflightBase):
-    """方案B: terminate_all 对有在飞登记的 ticket 保 claim(不释放); 无登记则释放(兜底);
-    非 ticket(probe) 从不释放。os.killpg/getpgid stub 掉不碰真进程, grace=0 免 sleep。"""
+    """EphemeralExecutor 关停只清理本地临时作业；遗留 ticket 一律释放 claim。"""
 
     def setUp(self):
         super().setUp()
@@ -2103,12 +2138,12 @@ class TerminateAllOptionBTest(_InflightBase):
         super().tearDown()
 
     def _pool_with_active(self, active):
-        pool = b.DispatchPool(max_workers=2, queue_max=3,
+        pool = b.EphemeralExecutor(max_workers=2, queue_max=3,
                               ledger_path=os.path.join(self._tmp, "dispatched.json"))
         pool._active = active
         return pool
 
-    def test_inflight_ticket_kept_others_released(self):
+    def test_all_started_tickets_released(self):
         active = {
             "100": {"proc": _FakeProc(), "project": "528766", "kind": "ticket",
                     "terraform": True},
@@ -2118,12 +2153,13 @@ class TerminateAllOptionBTest(_InflightBase):
                     "terraform": False},
         }
         pool = self._pool_with_active(active)
-        b._inflight_add("100", "s", "528766", "ticket", "p")   # 100 在飞 → 保 claim
+        b._inflight_add("100", "s", "528766", "ticket", "p")
         released = []
         pool.terminate_all(
             release_fn=lambda i, p, terraform=False: released.append((i, terraform)),
             grace=0)
-        self.assertNotIn(("100", True), released, "在飞登记的 ticket 必须留 claim(方案B)")
+        self.assertIn(("100", True), released,
+                      "本地重启恢复已移除，遗留 ticket claim 必须释放")
         self.assertIn(("200", True), released,
                       "无在飞登记的 Terraform ticket 释放时必须保留身份上下文")
         self.assertNotIn(("300", False), released, "probe kind 从不释放")
@@ -2189,7 +2225,7 @@ class _ClosingSelf:
         _closed = True
 
     def __init__(self):
-        self.dispatch_pool = self._Pool()
+        self.ephemeral_executor = self._Pool()
         self.failed_calls = []
 
     def _maybe_suspend(self, final, sid, target, target_type, terraform=False):
@@ -2206,8 +2242,7 @@ class _ClosingSelf:
 
 
 class DispatchItemClosingGuardTest(_InflightBase):
-    """关机短路(方案B): dispatch_pool._closed=True → 返回 error、_dispatch_failed 未调、
-    在飞记录保留(不删), 交给重启 resume。"""
+    """关机短路：返回 error、_dispatch_failed 未调，但本地在飞记录必须清掉。"""
 
     def setUp(self):
         super().setUp()
@@ -2220,7 +2255,7 @@ class DispatchItemClosingGuardTest(_InflightBase):
         b.time.sleep = self._orig_sleep
         super().tearDown()
 
-    def test_closed_pool_keeps_claim_and_record(self):
+    def test_closed_pool_clears_local_record(self):
         b.run_claude_buffered = (
             lambda *a, **k: b.ClaudeResult("done text", False, "success"))
         fs = _ClosingSelf()
@@ -2229,10 +2264,10 @@ class DispatchItemClosingGuardTest(_InflightBase):
             (lambda t: None), "grp", "group", project="528766")
         self.assertEqual(outcome, "error", "停机中短路返回 error")
         self.assertEqual(fs.failed_calls, [], "_dispatch_failed 不得被调(不能误释放 claim)")
-        self.assertTrue(b._inflight_has("888"),
-                        "停机中保留在飞记录, 交给重启 resume")
+        self.assertFalse(b._inflight_has("888"),
+                         "Task 恢复由控制面负责，本地记录不跨重启保留")
 
-    def test_closed_pool_even_on_error_result_keeps_record(self):
+    def test_closed_pool_error_result_clears_local_record(self):
         b.run_claude_buffered = (
             lambda *a, **k: b.ClaudeResult("boom", True, "error"))
         fs = _ClosingSelf()
@@ -2240,158 +2275,32 @@ class DispatchItemClosingGuardTest(_InflightBase):
             fs, "889", "orig prompt", "sid-9b", False,
             (lambda t: None), "grp", "group", project="528766")
         self.assertEqual(outcome, "error")
-        self.assertEqual(fs.failed_calls, [], "短路在 _dispatch_failed 之前, 记录保留")
-        self.assertTrue(b._inflight_has("889"))
+        self.assertEqual(fs.failed_calls, [], "短路在 _dispatch_failed 之前")
+        self.assertFalse(b._inflight_has("889"))
 
-
-class ResumeInflightTest(_InflightBase):
-    """_resume_inflight: 重启后据在飞登记续跑。session 在→resume 原 sid; 缺→全新沿用 sid;
-    stale(age>=timeout)→判失败不派; 非 ticket/非数字→丢弃; 空表→无操作。"""
-
-    def setUp(self):
-        super().setUp()
-        for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
-            os.environ.pop(k, None)
-        self._orig_sess = b._session_file_exists
-        self._orig_release = b._release_claim
-        self._orig_publish = b._aone_event_publish
-        self.released = []
-        self.events = []
-        b._release_claim = lambda iid, project, terraform=False: self.released.append(
-            (str(iid), project, terraform))
-        b._aone_event_publish = lambda *args: self.events.append(args) or True
-
-    def tearDown(self):
-        b._session_file_exists = self._orig_sess
-        b._release_claim = self._orig_release
-        b._aone_event_publish = self._orig_publish
-        super().tearDown()
-
-    def _handler(self):
-        h = b.JarvisHandler(no_dingtalk=True)
-        self.captured = []
-
-        def fake_dispatch(*a, **k):
-            self.captured.append((a, k))
-            return "done"
-
-        def fake_submit(iid, work, **k):
-            work()   # run the closure so dispatch_item(recorder) captures resume/sid/prompt
-            return True, "dispatched"
-
-        h.dispatch_item = fake_dispatch
-        h.dispatch_pool.submit = fake_submit
-        return h
-
-    def test_session_present_resumes_original_sid(self):
-        b._session_file_exists = lambda sid: True
-        b._inflight_add("500", "sid-orig", "528766", "ticket", "stored prompt")
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(len(self.captured), 1)
-        args = self.captured[0][0]
-        # dispatch_item(i, p, s, r, notify, tgt, ttype)
-        self.assertEqual(args[0], "500")
-        self.assertTrue(args[3], "session 在 → resume=True")
-        self.assertEqual(args[2], "sid-orig", "resume 必用原 sid, 不 regenerate")
-        self.assertIn("断点", args[1], "resume 用续跑 prompt")
-        self.assertEqual(self.captured[0][1].get("kind"), "ticket")
-
-    def test_session_missing_drops_record_self_heal(self):
-        """P0 self-heal: session file missing → drop, do NOT fresh-run.
-        Previous behavior fresh-ran with the stored prompt reusing the sid; that
-        silently re-cost a 12h round on a broken session and could re-trigger the
-        same DispatchPool slot leak. New self-heal guard drops the record + releases
-        claim so the item can be re-dispatched from a clean state via scan."""
-        b._session_file_exists = lambda sid: False
-        b._inflight_add("501", "sid-keep", "528766", "ticket", "the stored prompt")
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(self.captured, [], "session missing → drop, do not dispatch")
-        self.assertFalse(b._inflight_has("501"), "session missing → remove record")
-        self.assertEqual(self.released, [("501", "528766", False)],
-                         "session missing → release claim on the recorded identity lane")
-
-    def test_stale_marks_failed_no_resume(self):
-        b._session_file_exists = lambda sid: True
-        b._inflight_add("502", "sid-x", "528766", "ticket", "p")
-        # backdate started_at well past the 12h default timeout.
-        recs = b._inflight_load()
-        recs["502"]["started_at"] = time.time() - 100000
-        with b._inflight_lock:
-            b._inflight_write(recs)
-        h = self._handler()
-        posted = []
-        h._post_death_cause = lambda iid, cause, terraform=False: posted.append(
-            (str(iid), cause, terraform))
-        h._resume_inflight()
-        self.assertEqual(self.captured, [], "stale → 不 resume(不派)")
-        self.assertEqual([i for i, _, _ in posted], ["502"], "stale → post_death_cause")
-        self.assertEqual(self.released, [("502", "528766", False)],
-                         "stale → release_claim")
-        self.assertFalse(b._inflight_has("502"), "stale → remove 记录")
-
-    def test_stale_terraform_publishes_terminal_event(self):
-        b._session_file_exists = lambda sid: True
-        b._inflight_add("503", "sid-tf", "528766", "ticket", "p", terraform=True)
-        recs = b._inflight_load()
-        recs["503"]["started_at"] = time.time() - 100000
-        with b._inflight_lock:
-            b._inflight_write(recs)
-        h = self._handler()
-        posted = []
-        h._post_death_cause = lambda iid, cause, terraform=False: posted.append(
-            (str(iid), cause, terraform))
-        h._resume_inflight()
-        self.assertEqual([tf for _, _, tf in posted], [True])
-        self.assertEqual(len(self.events), 1)
-        self.assertEqual(self.events[0][2], "dispatch:ticket:sid-tf:stale-orphan")
-        self.assertIn("失败类别：stale-orphan", self.events[0][3])
-        self.assertIn("认领释放：已释放", self.events[0][3])
-        self.assertNotIn("派发超时", self.events[0][3])
-        self.assertEqual(self.released, [("503", "528766", True)])
-        self.assertFalse(b._inflight_has("503"))
-
-    def test_non_ticket_and_non_numeric_dropped(self):
-        b._session_file_exists = lambda sid: True
-        b._inflight_add("600", "s", None, "probe", "p")           # kind != ticket
-        b._inflight_add("probe-x", "s", None, "ticket", "p")      # non-numeric id
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(self.captured, [], "非 ticket / 非数字 → 丢弃不派")
-        self.assertFalse(b._inflight_has("600"))
-        self.assertFalse(b._inflight_has("probe-x"))
-
-    def test_empty_registry_noop(self):
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(self.captured, [], "空表 → 无操作")
-        self.assertEqual(self.released, [])
 
 
 class StartSchedulersResumeOnceTest(unittest.TestCase):
-    """start_schedulers(): 8 个 scheduler.start 各一次 + _resume_inflight 恰一次,
-    且 resume 在所有 .start 之后(共享 event log 断序)。"""
+    """start_schedulers(): PersistenceExecutor 先启动，8 个 scheduler.start 各一次。"""
 
     def setUp(self):
         for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
             os.environ.pop(k, None)
 
-    def test_each_start_once_and_resume_last(self):
+    def test_persistence_executor_first_and_each_scheduler_once(self):
         h = b.JarvisHandler(no_dingtalk=True)
         log_events = []
+        h.persistence_executor.start = lambda: log_events.append("persistence_executor")
         for name in ("scanner", "reconciler", "board", "prober",
                      "reviser", "watcher", "personawatch", "prwatch"):
             sched = getattr(h, name)
             sched.start = (lambda n=name: log_events.append("start:%s" % n))
-        h._resume_inflight = lambda: log_events.append("resume")
         h.start_schedulers()
         starts = [e for e in log_events if e.startswith("start:")]
         self.assertEqual(len(starts), 8, "eight schedulers started")
         self.assertEqual(len(set(starts)), 8, "each scheduler started exactly once")
-        self.assertEqual(log_events.count("resume"), 1, "_resume_inflight called once")
-        self.assertEqual(log_events[-1], "resume", "resume is the LAST step")
-        self.assertEqual(log_events.index("resume"), len(log_events) - 1)
+        self.assertEqual(log_events[0], "persistence_executor",
+                         "PersistenceExecutor 必须先注册，之后 sensor 才能发布 Task")
 
 
 class _FakeProcWithPid:
@@ -2405,8 +2314,8 @@ class _FakeProcWithPid:
         return None
 
 
-class DispatchPoolWatchdogTest(unittest.TestCase):
-    """P0 self-heal 层 2: DispatchPoolWatchdog daemon 强制释放老于阈值的 slot,
+class EphemeralExecutorWatchdogTest(unittest.TestCase):
+    """P0 self-heal 层 2: EphemeralExecutorWatchdog daemon 强制释放老于阈值的 slot,
     杀子进程组、cancel future、drop inflight 记录、pop _active。 hermetic:
     os.killpg / getpgid 全 stub, INFLIGHT_PATH tmp, work() 用 threading.Event 挂住。"""
 
@@ -2427,12 +2336,12 @@ class DispatchPoolWatchdogTest(unittest.TestCase):
 
     def _pool(self, threshold=0.5, interval=0.1):
         tmp = tempfile.mkdtemp()
-        # Set the env BEFORE constructing so DispatchPool.__init__ picks it up. The
+        # Set the env BEFORE constructing so EphemeralExecutor.__init__ picks it up. The
         # watchdog thread is a daemon started inside __init__.
         os.environ["JARVIS_DISPATCH_WATCHDOG_THRESHOLD"] = str(threshold)
         os.environ["JARVIS_DISPATCH_WATCHDOG_INTERVAL"] = str(interval)
         try:
-            pool = b.DispatchPool(max_workers=2, queue_max=3,
+            pool = b.EphemeralExecutor(max_workers=2, queue_max=3,
                                   ledger_path=_ledger(tmp))
         finally:
             os.environ.pop("JARVIS_DISPATCH_WATCHDOG_THRESHOLD", None)
@@ -2515,113 +2424,6 @@ class DispatchPoolWatchdogTest(unittest.TestCase):
         pool.shutdown(wait=False)
 
 
-class ResumeInflightSelfHealTest(_InflightBase):
-    """P0 self-heal 层 4: _resume_inflight 三重校验 — 空 sid / session 文件缺失 →
-    drop 记录 + release claim, 不 dispatch。stale 由既有 age>=timeout 分支负责
-    (test_stale_marks_failed_no_resume 已覆盖 death cause + release)。"""
-
-    def setUp(self):
-        super().setUp()
-        for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
-            os.environ.pop(k, None)
-        self._orig_sess = b._session_file_exists
-        self._orig_release = b._release_claim
-        self.released = []
-        b._release_claim = lambda iid, project, terraform=False: self.released.append(
-            (str(iid), project, terraform))
-
-    def tearDown(self):
-        b._session_file_exists = self._orig_sess
-        b._release_claim = self._orig_release
-        super().tearDown()
-
-    def _handler(self):
-        h = b.JarvisHandler(no_dingtalk=True)
-        self.captured = []
-
-        def fake_dispatch(*a, **k):
-            self.captured.append((a, k))
-            return "done"
-
-        def fake_submit(iid, work, **k):
-            work()
-            return True, "dispatched"
-
-        h.dispatch_item = fake_dispatch
-        h.dispatch_pool.submit = fake_submit
-        return h
-
-    def test_resume_drops_empty_sid(self):
-        """The exact zombie scenario: sid='' record survives restart → drop, do not
-        try to re-dispatch with an empty session (would break jarvis_cmd gateway pick)."""
-        b._session_file_exists = lambda sid: True
-        b._inflight_add("801", "", "528766", "ticket", "p")
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(self.captured, [], "empty sid → drop, no dispatch")
-        self.assertFalse(b._inflight_has("801"), "empty sid → remove record")
-        self.assertEqual(self.released, [("801", "528766", False)],
-                         "empty sid → release claim so scan can retry cleanly")
-
-    def test_resume_drops_missing_session_file(self):
-        """session file gone (~/.claude cleanup or session already killed) → drop
-        instead of the old fresh-run path which silently re-cost a 12h round."""
-        b._session_file_exists = lambda sid: False
-        b._inflight_add("802", "sid-gone", "528766", "ticket", "p")
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(self.captured, [], "session file missing → drop, no dispatch")
-        self.assertFalse(b._inflight_has("802"))
-        self.assertEqual(self.released, [("802", "528766", False)])
-
-    def test_resume_drops_terraform_empty_sid_on_terraform_lane(self):
-        b._session_file_exists = lambda sid: True
-        b._inflight_add(
-            "805", "", "528766", "ticket", "p", terraform=True)
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(self.captured, [])
-        self.assertFalse(b._inflight_has("805"))
-        self.assertEqual(self.released, [("805", "528766", True)],
-                         "Terraform empty-sid recovery must release via terraform-rd")
-
-    def test_resume_drops_terraform_missing_session_on_terraform_lane(self):
-        b._session_file_exists = lambda sid: False
-        b._inflight_add(
-            "806", "sid-gone-tf", "528766", "ticket", "p", terraform=True)
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(self.captured, [])
-        self.assertFalse(b._inflight_has("806"))
-        self.assertEqual(self.released, [("806", "528766", True)],
-                         "Terraform missing-session recovery must release via terraform-rd")
-
-    def test_resume_keeps_healthy(self):
-        """All three checks pass → fall through to the existing resume path
-        (session present + sid non-empty + fresh age)."""
-        b._session_file_exists = lambda sid: True
-        b._inflight_add("803", "sid-healthy", "528766", "ticket", "the prompt")
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(len(self.captured), 1,
-                         "healthy record → existing resume path dispatches")
-        args = self.captured[0][0]
-        self.assertEqual(args[0], "803")
-        self.assertEqual(args[2], "sid-healthy", "healthy resume uses original sid")
-        self.assertTrue(args[3], "session present → resume=True")
-
-    def test_resume_drops_empty_sid_without_project(self):
-        """Empty sid + no project (probe/wake ambient state): still drop record,
-        no release_claim call (project is falsy)."""
-        b._session_file_exists = lambda sid: True
-        b._inflight_add("804", "", "", "ticket", "p")
-        h = self._handler()
-        h._resume_inflight()
-        self.assertEqual(self.captured, [])
-        self.assertFalse(b._inflight_has("804"))
-        self.assertEqual(self.released, [],
-                         "no project → skip release_claim")
-
 
 class RunClaudeStreamTimeoutTest(unittest.TestCase):
     """P0 self-heal 层 3: run_claude_stream 的 p.wait() 必须带 timeout, timeout →
@@ -2694,7 +2496,7 @@ class RunClaudeStreamTimeoutTest(unittest.TestCase):
 
 class SourceWiringTest(unittest.TestCase):
     """静态接线校验(inspect): kind 是 dispatch_item 参数; main/_run_no_dingtalk 源码含
-    start_schedulers( 且不再含裸 .scanner.start(); terminate_all 源码含 _inflight_has。"""
+    start_schedulers( 且不再含裸 .scanner.start(); PersistenceExecutor 先于 schedulers 启动。"""
 
     def test_dispatch_item_has_kind_param(self):
         import inspect
@@ -2711,16 +2513,16 @@ class SourceWiringTest(unittest.TestCase):
             self.assertNotIn(".scanner.start()", src,
                              "%s must no longer inline the bare .scanner.start()" % fn.__name__)
 
-    def test_terminate_all_gates_on_inflight(self):
+    def test_terminate_all_does_not_gate_release_on_legacy_inflight(self):
         import inspect
-        src = inspect.getsource(b.DispatchPool.terminate_all)
-        self.assertIn("_inflight_has", src,
-                      "terminate_all must gate claim release on the in-flight registry")
+        src = inspect.getsource(b.EphemeralExecutor.terminate_all)
+        self.assertNotIn("_inflight_has", src,
+                         "本地在飞表不再决定可恢复 Task 的 claim 生命周期")
 
-    def test_start_schedulers_calls_resume_inflight(self):
+    def test_start_schedulers_starts_persistence_executor(self):
         import inspect
         src = inspect.getsource(b.JarvisHandler.start_schedulers)
-        self.assertIn("_resume_inflight", src)
+        self.assertIn("self.persistence_executor.start()", src)
 
 
 # ── PR-watch (方案A) ──────────────────────────────────────────────────────────
@@ -2734,6 +2536,7 @@ class _Proc:
 class _FakeHandler:
     def __init__(self):
         self.broadcasts = []
+        self.execution_router = _RecordingExecutionRouter()
 
     def _broadcast(self, text):
         self.broadcasts.append(text)
@@ -3025,7 +2828,7 @@ class PrWatchNeverCrashTest(_PrWatchBase):
 
 
 class PrWatchWiringTest(unittest.TestCase):
-    """接线冒烟：Handler 有 prwatch；start_schedulers 在 _resume_inflight 之前调 prwatch.start。"""
+    """接线冒烟：Handler 有 prwatch；PersistenceExecutor 先于 prwatch 启动。"""
 
     def setUp(self):
         for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
@@ -3036,17 +2839,16 @@ class PrWatchWiringTest(unittest.TestCase):
         self.assertTrue(hasattr(h, "prwatch"))
         self.assertIsInstance(h.prwatch, b.PrWatchScheduler)
 
-    def test_prwatch_start_before_resume(self):
+    def test_persistence_executor_starts_before_prwatch(self):
         h = b.JarvisHandler(no_dingtalk=True)
         events = []
+        h.persistence_executor.start = lambda: events.append("persistence_executor")
         for name in ("scanner", "reconciler", "board", "prober",
                      "reviser", "watcher", "personawatch", "prwatch"):
             getattr(h, name).start = (lambda n=name: events.append("start:%s" % n))
-        h._resume_inflight = lambda: events.append("resume")
         h.start_schedulers()
         self.assertIn("start:prwatch", events)
-        self.assertLess(events.index("start:prwatch"), events.index("resume"),
-                        "prwatch.start 必须在 _resume_inflight 之前")
+        self.assertLess(events.index("persistence_executor"), events.index("start:prwatch"))
 
 
 class PrWatchPersonaPromptTest(unittest.TestCase):
@@ -3114,19 +2916,18 @@ class _MultiRouteRunner:
 
 
 class _RecordingPool:
-    """记录 pool.submit 调用，模拟“派发成功”。用于 dispatch_comment_reply 断言：
-    submit 有没有被调、以什么 kind 派、force 是否为 True。"""
+    """PR-watch 启用哨兵，同时记录对应的控制面 Task 持久化请求。"""
 
     def __init__(self, ok=True, reason="dispatched"):
+        global _LAST_RECORDING_TASK_SINK
         self._ok = ok
         self._reason = reason
         self.calls = []
+        _LAST_RECORDING_TASK_SINK = self
 
     def submit(self, iid, work, *, notify=None, force=False, kind="ticket", project=None,
                terraform=False):
-        self.calls.append({"id": str(iid), "kind": kind, "force": force,
-                           "project": project, "terraform": terraform})
-        return self._ok, self._reason
+        raise AssertionError("recoverable PR-watch Task must not execute in EphemeralExecutor")
 
 
 class PrWatchCommentsMultiRouteTest(_PrWatchBase):

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Interactive Codex/Claude worker registration and direct-task lifecycle.
 
-The ordinary bridge worker pulls MANAGED work.  An interactive worker must never
-do that: it registers itself and heartbeats, then attaches only to the exact Aone
-task requested by the user through ``POST /tasks/claim``.  A small detached
+The ordinary PersistenceExecutor pulls matching Tasks.  An interactive worker registers
+itself with a unique worker capability, then attaches only to the exact Aone Task
+requested by the user through ``POST /tasks/claim``.  A small detached
 sidecar keeps both the worker and its current fenced session alive while the real
 Codex/Claude host process exists.
 
@@ -37,7 +37,7 @@ REPO_ROOT = HERE.parent
 BRIDGE_DIR = REPO_ROOT / "bridge"
 sys.path.insert(0, str(BRIDGE_DIR))
 
-from jarvis_local_worker import _default_boot_id, make_worker_key  # noqa: E402
+from jarvis_persistence_executor import _default_boot_id, make_worker_key  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneClient,
     ControlPlaneConflict,
@@ -1355,10 +1355,8 @@ def _codex_turn_live(state: Mapping[str, Any],
 
 
 def _interactive_turn_grace_seconds() -> float:
-    """Return the Codex between-turn grace, honoring the legacy env name."""
-    configured = os.environ.get("JARVIS_INTERACTIVE_TURN_GRACE_SEC")
-    if configured is None:
-        configured = os.environ.get("JARVIS_INTERACTIVE_STOP_GRACE_SEC", "600")
+    """Return the Codex between-turn grace."""
+    configured = os.environ.get("JARVIS_INTERACTIVE_TURN_GRACE_SEC", "600")
     try:
         return max(0.0, float(configured))
     except ValueError:
@@ -1618,6 +1616,73 @@ def _clear_lost_current(store: StateStore, expected_worker_key: str,
             latest["pendingOperation"] = None
             latest["pendingSuspend"] = None
             store.save_unlocked(latest)
+
+
+def _is_explicit_admin_cleanup_not_found(exc: BaseException) -> bool:
+    """Recognize deletion of a Worker/Session row, not a transient outage."""
+    return (isinstance(exc, ControlPlaneError)
+            and exc.status == 404
+            and str(exc.code or "").lower() in (
+                "", "notfound.worker", "notfound.session"))
+
+
+def _stop_admin_cleaned_sidecar_unlocked(
+        state: Dict[str, Any], expected_worker_key: str,
+        missing_resource: str, error: BaseException) -> bool:
+    """Tombstone a remotely purged assignment while the daemon owns the lock."""
+    if state.get("workerKey") != expected_worker_key:
+        return False
+    now = int(time.time())
+    current = state.get("current")
+    pending = state.get("pendingClaim")
+    lineage = (current if isinstance(current, Mapping)
+               else pending if isinstance(pending, Mapping)
+               else None)
+    reason = ("admin cleanup removed control-plane %s row"
+              % missing_resource.lower())
+    if isinstance(lineage, Mapping):
+        aone_id = lineage.get("aoneId")
+        project_id = lineage.get("projectId")
+        if aone_id is not None and project_id is not None:
+            state["lostOwnership"] = {
+                "aoneId": aone_id,
+                "projectId": project_id,
+                "taskId": lineage.get("taskId"),
+                "sessionId": lineage.get("sessionId"),
+                "runtimeSessionId": lineage.get("runtimeSessionId"),
+                "lostAt": now,
+                "reason": reason,
+                "cause": "ADMIN_CLEANUP",
+                "missingResource": missing_resource,
+            }
+    state["adminCleanup"] = {
+        "detectedAt": now,
+        "workerKey": expected_worker_key,
+        "missingResource": missing_resource,
+        "reason": reason,
+        "errorCode": str(getattr(error, "code", "") or ""),
+    }
+    state["lastError"] = reason
+    state["current"] = None
+    state.pop("sessionPermit", None)
+    state["pendingClaim"] = None
+    state["pendingOperation"] = None
+    state["pendingSuspend"] = None
+    state.pop("lastAutoSuspended", None)
+    state.pop("recoveryPending", None)
+    state["subagentRegistry"] = {}
+    state["subagentEpochs"] = {}
+    state["subagentLifecycles"] = {}
+    state["subagentSpawnPermits"] = {}
+    state["subagentInteractionPermits"] = {}
+    state["stopped"] = True
+    state["stoppedAt"] = now
+    state["offlineReason"] = "admin_cleanup"
+    state.pop("daemonPid", None)
+    state.pop("daemonStartedAt", None)
+    state.pop("daemonProcessStartedAt", None)
+    state.pop("sidecarHeartbeatAt", None)
+    return True
 
 
 def _finalize_pending_suspend_unlocked(state: Dict[str, Any],
@@ -2417,7 +2482,17 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
                 daemon_started = _process_start_identity(os.getpid())
                 if daemon_started:
                     latest["daemonProcessStartedAt"] = daemon_started
-                _heartbeat_worker(cp, latest, "ACTIVE")
+                try:
+                    _heartbeat_worker(cp, latest, "ACTIVE")
+                except ControlPlaneError as exc:
+                    if not _is_explicit_admin_cleanup_not_found(exc):
+                        raise
+                    _stop_admin_cleaned_sidecar_unlocked(
+                        latest, expected_worker_key, "Worker", exc)
+                    store.save_unlocked(latest)
+                    print("interactive heartbeat stopped: admin cleanup removed Worker",
+                          file=sys.stderr)
+                    return 0
                 heartbeat_at = time.time()
                 latest["sidecarHeartbeatAt"] = heartbeat_at
                 current = latest.get("current")
@@ -2425,15 +2500,27 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
                         and current.get("heartbeatEnabled", True)):
                     heartbeat_current = dict(current)
                     if _session_heartbeat_allowed(latest):
-                        response = cp.heartbeat_session(
-                            str(current["sessionId"]), latest["workerKey"],
-                            current["fenceToken"],
-                            {"leaseSeconds": int(
-                                current.get("leaseSeconds")
-                                or _interactive_lease_seconds())},
-                            request_id="jarvis-interactive-session-heartbeat-%s" %
-                            hashlib.sha256((str(current["sessionId"]) +
-                                            str(time.time_ns())).encode()).hexdigest()[:24])
+                        try:
+                            response = cp.heartbeat_session(
+                                str(current["sessionId"]), latest["workerKey"],
+                                current["fenceToken"],
+                                {"leaseSeconds": int(
+                                    current.get("leaseSeconds")
+                                    or _interactive_lease_seconds())},
+                                request_id="jarvis-interactive-session-heartbeat-%s" %
+                                hashlib.sha256((str(current["sessionId"]) +
+                                                str(time.time_ns())).encode()).hexdigest()[:24])
+                        except ControlPlaneError as exc:
+                            if not _is_explicit_admin_cleanup_not_found(exc):
+                                raise
+                            _stop_admin_cleaned_sidecar_unlocked(
+                                latest, expected_worker_key, "Session", exc)
+                            store.save_unlocked(latest)
+                            print(
+                                "interactive heartbeat stopped: "
+                                "admin cleanup removed Session",
+                                file=sys.stderr)
+                            return 0
                         _refresh_session_permit_locked(
                             latest, current, response,
                             source="sidecar-heartbeat", now=heartbeat_at)

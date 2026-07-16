@@ -35,8 +35,7 @@ cannot delimit one conversation. Its `UserPromptSubmit` and `Stop` hooks therefo
 bracket each turn: the Worker keeps heartbeating while Codex is available, but the
 current task session is explicitly suspended after
 `JARVIS_INTERACTIVE_TURN_GRACE_SEC` (default 600 seconds), without consuming a
-crash retry. The old `JARVIS_INTERACTIVE_STOP_GRACE_SEC` name remains a temporary
-compatibility fallback. If Codex loses the `Stop` event entirely, an active-turn
+crash retry. If Codex loses the `Stop` event entirely, an active-turn
 inactivity limit (`JARVIS_INTERACTIVE_ACTIVE_TURN_TTL_SEC`, default 12 hours) is
 refreshed by tool hooks and prevents the global app-server from renewing an
 abandoned session forever without cutting off a turn that is still making

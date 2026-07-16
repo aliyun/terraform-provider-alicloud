@@ -2,7 +2,7 @@
 """HTTP client primitives for the Jarvis control plane.
 
 This module deliberately contains no scheduler or worker-loop policy.  Sensors
-serialize :class:`TaskEnvelope` values through it and TaskExecutor uses the
+serialize :class:`TaskEnvelope` values through it and PersistenceExecutor uses the
 Task/Session/Worker/Operation methods.  Keeping the HTTP boundary small also
 keeps rollout policy outside the control-plane contract.
 """
@@ -112,7 +112,7 @@ class TaskEnvelope:
         if not isinstance(self.payload, Mapping):
             raise TypeError("payload must be a mapping")
 
-    def to_dict(self, *, execution_mode: Optional[str] = None) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         data: Dict[str, Any] = {
             "taskKey": self.task_key,
             "sourceType": self.source_type,
@@ -127,12 +127,6 @@ class TaskEnvelope:
             data["persona"] = self.persona
         if self.priority:
             data["priority"] = self.priority
-        if execution_mode:
-            mode = _nonblank(execution_mode, "execution_mode").upper()
-            data["executionMode"] = mode
-            # The clean-slate API keeps this compatibility flag explicit so an
-            # older data-plane build can still enforce the non-leaseable invariant.
-            data["shadow"] = mode == "SHADOW"
         aone_id = self.aone_id
         if not aone_id and str(self.source_type).upper() == "AONE":
             aone_id = self.source_ref.get("aoneId") or self.payload.get("itemId")
@@ -146,11 +140,11 @@ class TaskEnvelope:
             data["maxRetries"] = int(self.max_retries)
         return _camelize(data)
 
-    def request_id(self, operation: str, *, execution_mode: Optional[str] = None) -> str:
+    def request_id(self, operation: str) -> str:
         """Return a stable idempotency key for one logical envelope operation."""
         material = {
             "operation": _nonblank(operation, "operation"),
-            "task": self.to_dict(execution_mode=execution_mode),
+            "task": self.to_dict(),
         }
         raw = json.dumps(material, ensure_ascii=False, sort_keys=True,
                          separators=(",", ":"), default=str).encode("utf-8")
@@ -299,18 +293,16 @@ class ControlPlaneClient:
     def _get(self, suffix: str) -> Any:
         return self._request("GET", suffix)
 
-    def upsert_task(self, envelope: TaskEnvelope, *, execution_mode: str,
+    def upsert_task(self, envelope: TaskEnvelope, *,
                     request_id: Optional[str] = None) -> Dict[str, Any]:
-        mode = _nonblank(execution_mode, "execution_mode").upper()
-        rid = request_id or envelope.request_id("upsert", execution_mode=mode)
+        rid = request_id or envelope.request_id("upsert")
         return self._post(self.PATHS["task_upsert"],
-                          envelope.to_dict(execution_mode=mode), request_id=rid)
+                          envelope.to_dict(), request_id=rid)
 
-    def upsert_desired_task(self, envelope: TaskEnvelope, *, execution_mode: str,
+    def upsert_desired_task(self, envelope: TaskEnvelope, *,
                             request_id: Optional[str] = None) -> Dict[str, Any]:
-        """Compatibility name used by the sensor router."""
-        return self.upsert_task(envelope, execution_mode=execution_mode,
-                                request_id=request_id)
+        """Persist the latest desired revision for one recoverable Task."""
+        return self.upsert_task(envelope, request_id=request_id)
 
     def register_worker(self, worker: Mapping[str, Any], *,
                         request_id: Optional[str] = None) -> Dict[str, Any]:
@@ -323,7 +315,7 @@ class ControlPlaneClient:
             worker_key=self._path_segment(worker_key, "worker_key"))
         return self._post(path, payload, request_id=request_id)
 
-    def lease_task(self, worker_key: str, *, lease_seconds: int = 90,
+    def lease_task(self, worker_key: str, *, lease_seconds: int = 300,
                    capabilities: Optional[Any] = None,
                    request_id: Optional[str] = None) -> Dict[str, Any]:
         ttl = int(lease_seconds)
@@ -338,15 +330,15 @@ class ControlPlaneClient:
         return self._post(self.PATHS["task_lease"], payload, request_id=request_id)
 
     def claim_task(self, worker_key: str, envelope: TaskEnvelope, *,
-                   runtime_session_id: str, lease_seconds: int = 90,
+                   runtime_session_id: str, lease_seconds: int = 300,
                    free_slots: int = 1, request_id: Optional[str] = None) -> Dict[str, Any]:
-        """Atomically attach ``worker_key`` to one explicitly named SHADOW task.
+        """Atomically attach ``worker_key`` to one explicitly named Task.
 
         Interactive workers use this endpoint instead of :meth:`lease_task`: the
-        latter pulls from the shared MANAGED queue, while this request carries the
-        complete canonical task envelope and can only claim that exact task.  Keeping
-        the nested task in SHADOW mode lets the bridge continue observing later Aone
-        revisions without silently converting the ticket into an auto-pulled task.
+        latter pulls the next matching Task, while this request carries the complete
+        canonical envelope and can only claim that exact Task.  The envelope's
+        ``requiredCapabilities.workerKey`` keeps targeted interactive work out of
+        unrelated workers without introducing another Task mode.
         """
         if not isinstance(envelope, TaskEnvelope):
             raise TypeError("envelope must be a TaskEnvelope")
@@ -361,9 +353,9 @@ class ControlPlaneClient:
             "runtimeSessionId": _nonblank(runtime_session_id, "runtime_session_id"),
             "leaseSeconds": ttl,
             "freeSlots": slots,
-            "task": envelope.to_dict(execution_mode="SHADOW"),
+            "task": envelope.to_dict(),
         }
-        rid = request_id or envelope.request_id("direct-claim", execution_mode="SHADOW")
+        rid = request_id or envelope.request_id("direct-claim")
         return self._post(self.PATHS["task_claim"], payload, request_id=rid)
 
     @staticmethod
@@ -457,9 +449,3 @@ class ControlPlaneClient:
         path = self.TASK_TIMELINE_PATH.format(
             task_id=self._path_segment(task_id, "task_id"))
         return self._get(path)
-
-
-# One-release compatibility alias.  The client is no longer coupled in name to
-# one service implementation; its contract spans Task, Session, Worker, Event,
-# and Operation APIs.
-AutomationAgentTaskClient = ControlPlaneClient

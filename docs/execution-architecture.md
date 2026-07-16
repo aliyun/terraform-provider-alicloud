@@ -15,8 +15,10 @@ Examples: Aone ticket delivery, revisit/wake continuation, persona handoff, and
 PR CI/comment follow-up.  These triggers update the same Aone Task identity;
 they do not introduce another execution mode.
 
-Recommended Task states are `READY`, `RUNNING`, `RETRY_WAIT`, `WAITING`,
-`PARKED`, `SUCCEEDED`, `FAILED`, and `CANCELLED`.
+Task states are `READY`, `LEASED`, `RUNNING`, `FINALIZING`, `SUSPENDED`,
+`RETRY_WAIT`, `RECOVERY_REQUIRED`, `SUCCEEDED`, `FAILED_FINAL`, and `CANCELED`.
+Session states are `CREATED`, `LEASED`, `RUNNING`, `SUSPENDED`, `RESUMABLE`,
+`CLOSED`, `CORRUPTED`, and `CANCELED`.
 
 ### EphemeralJob
 
@@ -28,10 +30,9 @@ Tata/chat presentation, and subcommands already enclosed by a Task Session.
 ## Components
 
 - `ExecutionRouter` maps `needs_recovery` to `TASK` or `EPHEMERAL_JOB`.
-- `TaskExecutor` leases Tasks, owns `SessionController`, and reports terminal
-  state.  `LocalWorker` is a temporary compatibility alias.
-- `EphemeralExecutor` executes disposable jobs.  `DispatchPool` is a temporary
-  compatibility alias.
+- `PersistenceExecutor` leases Tasks, owns `SessionController`, and reports terminal
+  state.
+- `EphemeralExecutor` executes disposable jobs.
 - `CapacityManager` atomically allocates the shared machine slots before a Task
   lease or EphemeralJob process starts, preventing cross-executor oversubscription.
 - `ExecutionRuntime` and `ProcessGuardian` provide common process launch,
@@ -40,9 +41,11 @@ Tata/chat presentation, and subcommands already enclosed by a Task Session.
 - `ControlPlaneClient` covers Task, Session, Worker, Event, and Operation APIs.
 - `SessionController` owns fenced Task Session transitions.
 
-The old `legacy`, `shadow`, and `managed` values remain only as rollout policies
-under `JARVIS_TASK_MIGRATION_POLICY`.  They must not be used as work kinds.
-`JARVIS_TASK_MODE` and `JARVIS_MANAGED_TASK_TYPES` remain temporary aliases.
+Every Task is persisted by the control plane and can only be executed by a
+`PersistenceExecutor`.  A control-plane failure is fail-closed: Task work stays
+unstarted instead of falling back to an untracked local process.  Pausing a
+rollout means stopping PersistenceExecutors so Tasks remain queued; it does not
+introduce another execution mode.
 
 ## Interactive Session ownership
 

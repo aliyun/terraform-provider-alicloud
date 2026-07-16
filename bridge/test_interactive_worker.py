@@ -25,6 +25,7 @@ class FakeClient:
         self.calls = []
         self.claim_error = None
         self.begin_error = None
+        self.worker_heartbeat_error = None
         self.heartbeat_error = None
         self.suspend_error = None
         self.claim_results = []
@@ -41,7 +42,10 @@ class FakeClient:
         return self._record("register_worker", *args, **kwargs)
 
     def heartbeat_worker(self, *args, **kwargs):
-        return self._record("heartbeat_worker", *args, **kwargs)
+        self._record("heartbeat_worker", *args, **kwargs)
+        if self.worker_heartbeat_error:
+            raise self.worker_heartbeat_error
+        return {"ok": True}
 
     def heartbeat_session(self, *args, **kwargs):
         self._record("heartbeat_session", *args, **kwargs)
@@ -719,12 +723,11 @@ class InteractiveWorkerTest(unittest.TestCase):
         state["client"] = "claude"
         self.assertTrue(worker._session_heartbeat_allowed(state, now=10000))
 
-    def test_interactive_timing_defaults_and_legacy_grace_compatibility(self):
+    def test_interactive_timing_defaults_and_explicit_turn_grace(self):
         keys = (
             "JARVIS_INTERACTIVE_LEASE_SECONDS",
             "JARVIS_INTERACTIVE_HEARTBEAT_SEC",
             "JARVIS_INTERACTIVE_TURN_GRACE_SEC",
-            "JARVIS_INTERACTIVE_STOP_GRACE_SEC",
             "JARVIS_INTERACTIVE_LEASE_SAFETY_MARGIN_SEC",
             "JARVIS_INTERACTIVE_AFFINITY_SEC",
         )
@@ -738,8 +741,6 @@ class InteractiveWorkerTest(unittest.TestCase):
                     worker._interactive_lease_safety_margin_seconds(), 90)
                 self.assertEqual(worker._interactive_affinity_seconds(), 7200)
 
-                os.environ["JARVIS_INTERACTIVE_STOP_GRACE_SEC"] = "45"
-                self.assertEqual(worker._interactive_turn_grace_seconds(), 45)
                 os.environ["JARVIS_INTERACTIVE_TURN_GRACE_SEC"] = "90"
                 self.assertEqual(worker._interactive_turn_grace_seconds(), 90)
                 os.environ[
@@ -890,6 +891,96 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertIsNone(after["current"])
         self.assertIsNone(after["pendingClaim"])
         self.assertEqual(after["lostOwnership"]["aoneId"], "84345050")
+
+    def test_worker_404_tombstones_old_assignment_and_standard_claim_rebuilds(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-old",
+            "sessionId": "session-old", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 300, "heartbeatEnabled": True,
+        }
+        self._add_permit(state)
+        self._store().save(state)
+        fake = FakeClient()
+        fake.worker_heartbeat_error = worker.ControlPlaneError(
+            "Worker not found", status=404, code="NotFound.Worker")
+        stderr = io.StringIO()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.daemon(
+                self._store().path, state["workerKey"]), 0)
+
+        cleaned = self._store().load()
+        self.assertTrue(cleaned["stopped"])
+        self.assertEqual(cleaned["offlineReason"], "admin_cleanup")
+        self.assertIsNone(cleaned["current"])
+        self.assertNotIn("sessionPermit", cleaned)
+        self.assertNotIn("daemonPid", cleaned)
+        self.assertEqual(
+            cleaned["lostOwnership"]["cause"], "ADMIN_CLEANUP")
+        self.assertEqual(
+            cleaned["lostOwnership"]["missingResource"], "Worker")
+        self.assertIn("admin cleanup", cleaned["lostOwnership"]["reason"])
+        self.assertNotIn(
+            "heartbeat_session", [call[0] for call in fake.calls])
+        self.assertIn("admin cleanup removed Worker", stderr.getvalue())
+
+        fake.worker_heartbeat_error = None
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(
+                    worker, "_find_host_pid", return_value=(os.getpid(), True)), \
+                mock.patch.object(
+                    worker, "_process_start_identity",
+                    return_value=state["hostProcessStartedAt"]), \
+                mock.patch.object(
+                    worker, "_default_boot_id", return_value=state["bootId"]), \
+                mock.patch.object(
+                    worker, "make_worker_key", return_value=state["workerKey"]), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "SessionStart",
+                "session_id": "native-thread-1",
+                "cwd": self.temp.name,
+                "source": "resume",
+            }), 0)
+            rebuilt = worker.prepare_claim("84345050", "2100304")
+
+        after = self._store().load()
+        self.assertFalse(after["stopped"])
+        self.assertNotIn("lostOwnership", after)
+        self.assertEqual(after["current"]["sessionId"], rebuilt["sessionId"])
+        self.assertEqual(after["current"]["fenceToken"], rebuilt["fenceToken"])
+
+    def test_session_404_tombstones_old_assignment_and_stops_sidecar(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-old",
+            "sessionId": "session-old", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 300, "heartbeatEnabled": True,
+        }
+        self._add_permit(state)
+        self._store().save(state)
+        fake = FakeClient()
+        fake.heartbeat_error = worker.ControlPlaneError(
+            "Session not found", status=404, code="NotFound.Session")
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_host_alive", return_value=True), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.daemon(
+                self._store().path, state["workerKey"]), 0)
+
+        cleaned = self._store().load()
+        self.assertTrue(cleaned["stopped"])
+        self.assertIsNone(cleaned["current"])
+        self.assertNotIn("sessionPermit", cleaned)
+        self.assertEqual(
+            cleaned["lostOwnership"]["missingResource"], "Session")
+        self.assertEqual(
+            [call[0] for call in fake.calls].count("heartbeat_session"), 1)
 
     def test_pre_tool_use_uses_local_permit_and_blocks_mismatch(self):
         state = self._seed()

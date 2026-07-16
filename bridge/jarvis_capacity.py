@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Shared, thread-safe execution capacity for all local executors.
 
-``TaskExecutor`` and ``EphemeralExecutor`` must acquire from the same manager
+``PersistenceExecutor`` and ``EphemeralExecutor`` must acquire from the same manager
 before starting work.  A successful acquire returns an idempotent permit; when
 no slot is available it returns ``None`` without queuing or blocking.
 """

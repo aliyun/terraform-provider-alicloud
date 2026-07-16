@@ -13,7 +13,6 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from jarvis_task_client import (  # noqa: E402
-    AutomationAgentTaskClient,
     ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneUnavailable,
@@ -77,24 +76,22 @@ def body(req):
 
 
 class TaskEnvelopeTest(unittest.TestCase):
-    def test_formal_client_name_keeps_compatibility_alias(self):
-        self.assertIs(AutomationAgentTaskClient, ControlPlaneClient)
-
     def test_serializes_and_omits_empty_optional_fields(self):
         env = envelope()
-        data = env.to_dict(execution_mode="MANAGED")
+        data = env.to_dict()
         self.assertEqual(data["taskKey"], "aone:2100304:84345050")
-        self.assertEqual(data["executionMode"], "MANAGED")
+        self.assertNotIn("executionMode", data)
+        self.assertNotIn("shadow", data)
         self.assertEqual(data["sourceRef"]["projectId"], "2100304")
         self.assertEqual(data["payload"]["itemId"], "84345050")
         self.assertEqual(data["priority"], "high")
         self.assertNotIn("persona", data)
 
-    def test_request_id_is_stable_and_mode_sensitive(self):
+    def test_request_id_is_stable(self):
         env = envelope()
-        first = env.request_id("upsert", execution_mode="MANAGED")
-        self.assertEqual(first, env.request_id("upsert", execution_mode="MANAGED"))
-        self.assertNotEqual(first, env.request_id("upsert", execution_mode="SHADOW"))
+        first = env.request_id("upsert")
+        self.assertEqual(first, env.request_id("upsert"))
+        self.assertNotEqual(first, env.request_id("direct-claim"))
         self.assertTrue(first.startswith("jarvis-upsert-"))
 
     def test_rejects_missing_identity_or_non_mapping_payload(self):
@@ -106,13 +103,13 @@ class TaskEnvelopeTest(unittest.TestCase):
 
 class ClientContractTest(unittest.TestCase):
     def make(self, opener):
-        return AutomationAgentTaskClient(
+        return ControlPlaneClient(
             "https://pre-agent.example/", "super-secret", timeout=4.5, opener=opener)
 
     def test_authorization_idempotency_and_upsert_body(self):
         opener = RecordingOpener()
         client = self.make(opener)
-        client.upsert_desired_task(envelope(), execution_mode="managed", request_id="req-123")
+        client.upsert_desired_task(envelope(), request_id="req-123")
         req, timeout = opener.calls[0]
         self.assertEqual(req.full_url,
                          "https://pre-agent.example/api/jarvis/v1/tasks/upsert")
@@ -121,7 +118,8 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(hs["authorization"], "Bearer super-secret")
         self.assertEqual(hs["idempotency-key"], "req-123")
         self.assertNotIn("x-request-id", hs)
-        self.assertEqual(body(req)["executionMode"], "MANAGED")
+        self.assertNotIn("executionMode", body(req))
+        self.assertNotIn("shadow", body(req))
         self.assertEqual(body(req)["desiredRevision"],
                          "modified:2026-07-15T01:02:03Z")
 
@@ -193,7 +191,7 @@ class ClientContractTest(unittest.TestCase):
             self.assertIsNone(req.data)
             self.assertNotIn("idempotency-key", headers(req))
 
-    def test_direct_claim_is_targeted_shadow_and_allows_zero_free_slots(self):
+    def test_direct_claim_is_targeted_task_and_allows_zero_free_slots(self):
         opener = RecordingOpener()
         c = self.make(opener)
         c.claim_task("worker:interactive", envelope(),
@@ -206,8 +204,8 @@ class ClientContractTest(unittest.TestCase):
         self.assertEqual(payload["runtimeSessionId"],
                          "interactive:codex:s:aone:p:i:cycle:1")
         self.assertEqual(payload["freeSlots"], 0)
-        self.assertEqual(payload["task"]["executionMode"], "SHADOW")
-        self.assertTrue(payload["task"]["shadow"])
+        self.assertNotIn("executionMode", payload["task"])
+        self.assertNotIn("shadow", payload["task"])
         self.assertEqual(headers(req)["idempotency-key"], "claim-1")
 
         with self.assertRaises(ValueError):
@@ -215,7 +213,7 @@ class ClientContractTest(unittest.TestCase):
 
     def test_bearer_token_is_optional(self):
         opener = RecordingOpener()
-        c = AutomationAgentTaskClient("https://pre-agent.example", opener=opener)
+        c = ControlPlaneClient("https://pre-agent.example", opener=opener)
         c.register_worker({"workerKey": "w1"}, request_id="r1")
         self.assertNotIn("authorization", headers(opener.calls[0][0]))
 

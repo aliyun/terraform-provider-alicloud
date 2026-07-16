@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Single-host worker lifecycle for the persistent Jarvis control plane.
+"""Single-host Task executor for the persistent Jarvis control plane.
 
-The module intentionally knows nothing about the DingTalk bridge.  Integration
-code injects the current capacity function, an ``execute(lease, lifecycle)``
-callback, and a ``stop_process(lifecycle, reason)`` hook.  The two polling loops
-are also exposed as ``run_once`` and ``heartbeat_sessions_once`` so behavior can
-be tested without clocks, sockets, or real processes.
+The module intentionally knows nothing about the DingTalk bridge. Integration
+code injects one shared ``CapacityManager``, an
+``execute(lease, session_controller)`` callback, and a
+``stop_process(session_controller, reason)`` hook. The two polling loops are
+also exposed as ``run_once`` and ``heartbeat_sessions_once`` so behavior can be
+tested without clocks, sockets, or real processes.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Mapping, Optional, Tuple
 
 from jarvis_capacity import CapacityManager, CapacityPermit
 from jarvis_task_client import (
@@ -115,7 +116,7 @@ def parse_lease_response(response: Any) -> Optional[Dict[str, Any]]:
     return canonical
 
 
-StopProcess = Callable[["SessionLifecycle", str], None]
+StopProcess = Callable[["SessionController", str], None]
 NetworkFailure = Callable[[BaseException], None]
 
 
@@ -139,7 +140,7 @@ class _ThreadFuture:
 
 
 class _ThreadExecutor:
-    """Immediate daemon-thread executor with the small API TaskExecutor needs."""
+    """Immediate daemon-thread executor with the small API PersistenceExecutor needs."""
 
     def __init__(self):
         self._lock = threading.Lock()
@@ -182,7 +183,7 @@ class SessionController:
 
     def __init__(self, client: ControlPlaneClient, worker_key: str,
                  lease: Mapping[str, Any], *,
-                 lease_seconds: int = 60,
+                 lease_seconds: int = 300,
                  runtime_session_id_factory: Callable[[], str] = _new_runtime_session_id,
                  stop_process: Optional[StopProcess] = None,
                  on_network_failure: Optional[NetworkFailure] = None,
@@ -215,7 +216,7 @@ class SessionController:
         self.process: Any = None
 
         self._lock = threading.RLock()
-        # RLock lets a stop hook inspect/call lifecycle helpers without
+        # RLock lets a stop hook inspect/call controller helpers without
         # deadlocking the renewal failure path that invoked it.
         self._transition_lock = threading.RLock()
         self._started = False
@@ -519,36 +520,28 @@ class SessionController:
         return self._terminal("suspend", detail)
 
 
-# One-release compatibility alias.  SessionController is the formal owner of
-# Task Session transitions; SessionLifecycle remains importable for extensions.
-SessionLifecycle = SessionController
-
-
 @dataclass
 class _ActiveSession:
-    lifecycle: SessionLifecycle
+    controller: SessionController
     future: Any = None
     capacity_permit: Optional[CapacityPermit] = None
 
 
-Capacity = Union[int, Callable[[], int]]
-Execute = Callable[[Mapping[str, Any], SessionLifecycle], Any]
+Execute = Callable[[Mapping[str, Any], SessionController], Any]
 
 
-class TaskExecutor:
+class PersistenceExecutor:
     """One-machine lease/execute/heartbeat loop with fail-closed networking."""
 
-    def __init__(self, client: ControlPlaneClient, free_slots: Capacity,
+    def __init__(self, client: ControlPlaneClient, capacity_manager: CapacityManager,
                  execute: Execute, stop_process: StopProcess, *,
                  host: Optional[str] = None, boot_id: Optional[str] = None,
                  process_uuid: Optional[str] = None, worker_key: Optional[str] = None,
                  capabilities: Optional[Mapping[str, Any]] = None,
-                 max_slots: Optional[int] = None,
-                 capacity_manager: Optional[CapacityManager] = None,
-                 lease_seconds: int = 60,
+                 lease_seconds: int = 300,
                  runtime_session_id_factory: Callable[[], str] = _new_runtime_session_id,
-                 lease_interval: float = 2.0, worker_heartbeat_interval: float = 10.0,
-                 session_heartbeat_interval: float = 10.0, retry_interval: float = 5.0,
+                 lease_interval: float = 2.0, worker_heartbeat_interval: float = 30.0,
+                 session_heartbeat_interval: float = 30.0, retry_interval: float = 5.0,
                  clock: Callable[[], float] = time.monotonic,
                  executor: Optional[Any] = None,
                  logger: Optional[logging.Logger] = None):
@@ -556,30 +549,12 @@ class TaskExecutor:
             raise TypeError("execute must be callable")
         if not callable(stop_process):
             raise TypeError("stop_process must be callable")
-        if capacity_manager is not None and not isinstance(
-                capacity_manager, CapacityManager):
+        if not isinstance(capacity_manager, CapacityManager):
             raise TypeError("capacity_manager must be a CapacityManager")
         self.capacity_manager = capacity_manager
-        if not callable(free_slots):
-            capacity = int(free_slots)
-            if capacity < 0:
-                raise ValueError("free_slots must not be negative")
-            self._capacity = capacity
-            self._free_slots_fn: Optional[Callable[[], int]] = None
-        else:
-            self._capacity = None
-            self._free_slots_fn = free_slots
-        if max_slots is None:
-            if self._capacity is not None:
-                max_slots = self._capacity
-            else:
-                owner = getattr(free_slots, "__self__", None)
-                max_slots = getattr(owner, "max_workers", None)
-                if max_slots is None:
-                    max_slots = max(1, int(free_slots()))
-        self.max_slots = int(max_slots)
+        self.max_slots = capacity_manager.capacity
         if self.max_slots <= 0:
-            raise ValueError("max_slots must be positive")
+            raise ValueError("capacity_manager.capacity must be positive")
         for name, value in (
             ("lease_interval", lease_interval),
             ("worker_heartbeat_interval", worker_heartbeat_interval),
@@ -654,15 +629,7 @@ class TaskExecutor:
             return len(self._sessions)
 
     def available_slots(self) -> int:
-        if self.capacity_manager is not None:
-            return self.capacity_manager.available_slots()
-        with self._lock:
-            active = len(self._sessions)
-        if self._free_slots_fn is not None:
-            # Compatibility capacity callback for deployments not yet using the
-            # shared CapacityManager.
-            return max(0, int(self._free_slots_fn()) - active)
-        return max(0, int(self._capacity or 0) - active)
+        return self.capacity_manager.available_slots()
 
     def _mark_network_failure(self, exc: BaseException) -> None:
         with self._lock:
@@ -740,18 +707,14 @@ class TaskExecutor:
             return True
         with self._lock:
             has_pending_terminal = any(
-                record.lifecycle.pending_terminal for record in self._sessions.values())
+                record.controller.pending_terminal for record in self._sessions.values())
         if has_pending_terminal:
             # Recover and commit already-finished work before admitting another
             # lease after a partial control-plane outage.
             return True
-        capacity_permit = None
-        if self.capacity_manager is not None:
-            capacity_permit = self.capacity_manager.acquire(
-                "task-executor:%s" % self.worker_key)
-            if capacity_permit is None:
-                return True
-        elif self.available_slots() <= 0:
+        capacity_permit = self.capacity_manager.acquire(
+            "task-executor:%s" % self.worker_key)
+        if capacity_permit is None:
             return True
         try:
             response = self.client.lease_task(
@@ -786,7 +749,7 @@ class TaskExecutor:
         except Exception as exc:
             if capacity_permit is not None:
                 capacity_permit.release()
-            # A lifecycle/client integration bug must fail closed instead of
+            # A controller/client integration bug must fail closed instead of
             # killing the long-running lease-loop thread.
             self._mark_network_failure(exc)
             self.log.exception("leased task setup failed worker=%s error=%s",
@@ -795,12 +758,12 @@ class TaskExecutor:
 
     def _accept_lease(self, lease: Mapping[str, Any], *,
                       capacity_permit: Optional[CapacityPermit] = None) -> bool:
-        if self.capacity_manager is not None and capacity_permit is None:
+        if capacity_permit is None:
             capacity_permit = self.capacity_manager.acquire(
                 "task-executor:%s" % self.worker_key)
             if capacity_permit is None:
                 return False
-        lifecycle = SessionLifecycle(
+        controller = SessionController(
             self.client, self.worker_key, lease,
             lease_seconds=self.lease_seconds,
             runtime_session_id_factory=self._runtime_session_id_factory,
@@ -810,36 +773,36 @@ class TaskExecutor:
         )
         with self._lock:
             if self._draining or self._stopped:
-                self._fail_worker_stopping(lifecycle, "worker_not_accepting")
+                self._fail_worker_stopping(controller, "worker_not_accepting")
                 if capacity_permit is not None:
                     capacity_permit.release()
                 return False
-            if lifecycle.session_id in self._sessions:
-                self.log.warning("duplicate lease ignored session=%s", lifecycle.session_id)
+            if controller.session_id in self._sessions:
+                self.log.warning("duplicate lease ignored session=%s", controller.session_id)
                 if capacity_permit is not None:
                     capacity_permit.release()
                 return False
-        if not lifecycle.start():
+        if not controller.start():
             if capacity_permit is not None:
                 capacity_permit.release()
             return False
-        record = _ActiveSession(lifecycle, capacity_permit=capacity_permit)
+        record = _ActiveSession(controller, capacity_permit=capacity_permit)
         with self._lock:
             if self._draining or self._stopped:
-                self._fail_worker_stopping(lifecycle, "worker_not_accepting")
+                self._fail_worker_stopping(controller, "worker_not_accepting")
                 if capacity_permit is not None:
                     capacity_permit.release()
                 return False
-            self._sessions[lifecycle.session_id] = record
+            self._sessions[controller.session_id] = record
         try:
-            future = self._executor.submit(self._execute_one, lifecycle)
+            future = self._executor.submit(self._execute_one, controller)
         except Exception as exc:
-            if not (lifecycle.terminal or lifecycle.ownership_lost or
-                    lifecycle.stop_requested):
-                lifecycle.fail({"errorType": type(exc).__name__,
+            if not (controller.terminal or controller.ownership_lost or
+                    controller.stop_requested):
+                controller.fail({"errorType": type(exc).__name__,
                                 "message": "execution submission failed"})
-            if lifecycle.terminal or lifecycle.ownership_lost:
-                self._remove_session(lifecycle.session_id)
+            if controller.terminal or controller.ownership_lost:
+                self._remove_session(controller.session_id)
             elif capacity_permit is not None:
                 # Submission failed before a terminal ACK could be accepted.
                 # The Session remains server-owned until lease expiry, but this
@@ -847,13 +810,13 @@ class TaskExecutor:
                 capacity_permit.release()
             return False
         with self._lock:
-            current = self._sessions.get(lifecycle.session_id)
+            current = self._sessions.get(controller.session_id)
             if current is not None:
                 current.future = future
         return True
 
     @staticmethod
-    def _fail_worker_stopping(lifecycle: SessionLifecycle, reason: str) -> None:
+    def _fail_worker_stopping(controller: SessionController, reason: str) -> None:
         """Return an accidentally-held lease to retryable state, never SUSPENDED.
 
         A worker shutdown is not an external wait condition.  Encoding it as a
@@ -863,15 +826,15 @@ class TaskExecutor:
         fast reaper/new worker could start the replacement while the old process is
         still inside its graceful-termination window.
         """
-        lifecycle.request_stop("worker_stopping")
-        if lifecycle.pending_terminal:
+        controller.request_stop("worker_stopping")
+        if controller.pending_terminal:
             # The work already has a stable complete/fail/suspend intent.  Never
             # replace it with WorkerStopping; retry the same idempotent transition
             # once and otherwise let lease expiry preserve the frozen attempt.
-            lifecycle.retry_terminal()
+            controller.retry_terminal()
             return
-        if not lifecycle.terminal and not lifecycle.ownership_lost:
-            lifecycle.fail({
+        if not controller.terminal and not controller.ownership_lost:
+            controller.fail({
                 "error": {
                     "errorType": "WorkerStopping",
                     "message": str(reason),
@@ -887,19 +850,19 @@ class TaskExecutor:
             return dict(result)
         return {"result": str(result)}
 
-    def _execute_one(self, lifecycle: SessionLifecycle) -> None:
+    def _execute_one(self, controller: SessionController) -> None:
         try:
             # A queued callback may not start until after a heartbeat has already
             # invalidated its fence.  Never launch work we no longer own.
-            if lifecycle.ownership_lost or lifecycle.stop_requested:
+            if controller.ownership_lost or controller.stop_requested:
                 return
-            result = self.execute(lifecycle.lease, lifecycle)
-            if lifecycle.terminal or lifecycle.pending_terminal or lifecycle.stop_requested:
+            result = self.execute(controller.lease, controller)
+            if controller.terminal or controller.pending_terminal or controller.stop_requested:
                 return
             detail = self._result_detail(result)
             status = str(detail.get("status") or detail.get("result") or "").lower()
             if status in {"suspend", "suspended"}:
-                lifecycle.suspend({key: value for key, value in detail.items()
+                controller.suspend({key: value for key, value in detail.items()
                                    if key not in {"status", "result"}})
             elif status in {"error", "fail", "failed"} or result is False:
                 retry_after = detail.get("retryAfterSeconds")
@@ -910,19 +873,19 @@ class TaskExecutor:
                     error = {key: value for key, value in detail.items()
                              if key not in {"status", "retryAfterSeconds",
                                             "retry_after_seconds"}}
-                lifecycle.fail(error, retry_after_seconds=retry_after)
+                controller.fail(error, retry_after_seconds=retry_after)
             else:
-                lifecycle.complete(detail)
+                controller.complete(detail)
         except Exception as exc:
-            if not (lifecycle.terminal or lifecycle.pending_terminal or
-                    lifecycle.ownership_lost or lifecycle.stop_requested):
-                lifecycle.fail({
+            if not (controller.terminal or controller.pending_terminal or
+                    controller.ownership_lost or controller.stop_requested):
+                controller.fail({
                     "errorType": type(exc).__name__,
                     "message": str(exc)[:500],
                 })
         finally:
-            if lifecycle.terminal or lifecycle.ownership_lost:
-                self._remove_session(lifecycle.session_id)
+            if controller.terminal or controller.ownership_lost:
+                self._remove_session(controller.session_id)
 
     def _remove_session(self, session_id: str) -> None:
         with self._lock:
@@ -945,14 +908,14 @@ class TaskExecutor:
         with self._lock:
             records = list(self._sessions.values())
         for record in records:
-            lifecycle = record.lifecycle
-            if lifecycle.pending_terminal:
-                lifecycle.retry_terminal()
-            elif not lifecycle.terminal and not lifecycle.ownership_lost:
-                lifecycle.heartbeat()
-            if ((lifecycle.terminal or lifecycle.ownership_lost) and
+            controller = record.controller
+            if controller.pending_terminal:
+                controller.retry_terminal()
+            elif not controller.terminal and not controller.ownership_lost:
+                controller.heartbeat()
+            if ((controller.terminal or controller.ownership_lost) and
                     self._future_done(record)):
-                self._remove_session(lifecycle.session_id)
+                self._remove_session(controller.session_id)
 
     def _lease_loop(self) -> None:
         while not self._stop_event.is_set():
@@ -964,7 +927,7 @@ class TaskExecutor:
         while not self._stop_event.wait(self.session_heartbeat_interval):
             self.heartbeat_sessions_once()
 
-    def start(self) -> "TaskExecutor":
+    def start(self) -> "PersistenceExecutor":
         with self._lock:
             if self._stopped:
                 raise RuntimeError("worker is stopped")
@@ -1012,9 +975,9 @@ class TaskExecutor:
         self._stop_event.set()
         if not drained:
             with self._lock:
-                lifecycles = [record.lifecycle for record in self._sessions.values()]
-            for lifecycle in lifecycles:
-                self._fail_worker_stopping(lifecycle, "worker_stopping")
+                controllers = [record.controller for record in self._sessions.values()]
+            for controller in controllers:
+                self._fail_worker_stopping(controller, "worker_stopping")
         with self._lock:
             self._stopped = True
             threads = list(self._threads)
@@ -1028,8 +991,3 @@ class TaskExecutor:
             except TypeError:  # pragma: no cover - Python <3.9
                 self._executor.shutdown(wait=drained)
         return drained
-
-
-# One-release compatibility alias.  New integrations should use TaskExecutor;
-# the implementation location remains stable to avoid a flag-day module move.
-LocalWorker = TaskExecutor

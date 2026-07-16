@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hermetic tests for bridge/jarvis_local_worker.py."""
+"""Hermetic tests for bridge/jarvis_persistence_executor.py."""
 
 import logging
 import sys
@@ -9,12 +9,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from jarvis_local_worker import (  # noqa: E402
+from jarvis_persistence_executor import (  # noqa: E402
     LeaseProtocolError,
-    LocalWorker,
     SessionController,
-    SessionLifecycle,
-    TaskExecutor,
+    PersistenceExecutor,
     make_worker_key,
     parse_lease_response,
 )
@@ -159,18 +157,18 @@ class WorkerKeyAndLeaseTest(unittest.TestCase):
             parse_lease_response({"task": {"id": "t1"}})
 
 
-class SessionLifecycleTest(unittest.TestCase):
+class SessionControllerTest(unittest.TestCase):
     def make(self, client=None, **kwargs):
-        return SessionLifecycle(
+        return SessionController(
             client or FakeClient(), "mac:boot:proc", lease_response(),
             lease_seconds=45, logger=LOG, **kwargs)
 
     def test_start_and_heartbeat_renew_the_fenced_lease(self):
         client = FakeClient()
-        lifecycle = self.make(client, runtime_session_id_factory=lambda: "runtime-new")
-        self.assertTrue(lifecycle.start())
-        self.assertTrue(lifecycle.heartbeat())
-        self.assertTrue(lifecycle.heartbeat())
+        controller = self.make(client, runtime_session_id_factory=lambda: "runtime-new")
+        self.assertTrue(controller.start())
+        self.assertTrue(controller.heartbeat())
+        self.assertTrue(controller.heartbeat())
         self.assertEqual(client.named("start_session")[0]["args"][3],
                          {"leaseSeconds": 45, "runtimeSessionId": "runtime-new"})
         self.assertEqual(client.named("heartbeat_session")[0]["args"][3],
@@ -178,7 +176,7 @@ class SessionLifecycleTest(unittest.TestCase):
         heartbeats = client.named("heartbeat_session")
         self.assertNotEqual(heartbeats[0]["kwargs"]["request_id"],
                             heartbeats[1]["kwargs"]["request_id"])
-        self.assertEqual(lifecycle.lease["session"]["runtimeSessionId"],
+        self.assertEqual(controller.lease["session"]["runtimeSessionId"],
                          "runtime-new")
 
     def test_resumed_lease_reuses_persisted_runtime_session_id(self):
@@ -187,12 +185,12 @@ class SessionLifecycleTest(unittest.TestCase):
         def must_not_generate():
             raise AssertionError("resumed lease must not mint another runtime session")
 
-        lifecycle = SessionLifecycle(
+        controller = SessionController(
             FakeClient(), "mac:boot:proc", lease, lease_seconds=45,
             runtime_session_id_factory=must_not_generate, logger=LOG)
-        self.assertTrue(lifecycle.resumed)
-        self.assertEqual(lifecycle.runtime_session_id, "runtime-existing")
-        self.assertTrue(lifecycle.start())
+        self.assertTrue(controller.resumed)
+        self.assertEqual(controller.runtime_session_id, "runtime-existing")
+        self.assertTrue(controller.start())
 
     def test_terminal_network_failure_is_pending_then_retried_idempotently(self):
         client = FakeClient(complete_session=[
@@ -308,18 +306,15 @@ class SessionLifecycleTest(unittest.TestCase):
         self.assertTrue(lifecycle.stop_requested)
 
 
-class LocalWorkerTest(unittest.TestCase):
+class PersistenceExecutorTest(unittest.TestCase):
     def make(self, client, execute, stop_process, *, executor=None, clock=None,
-             free_slots=2, **kwargs):
-        return LocalWorker(
-            client, free_slots, execute, stop_process,
+             capacity=2, capacity_manager=None, **kwargs):
+        manager = capacity_manager or CapacityManager(capacity)
+        return PersistenceExecutor(
+            client, manager, execute, stop_process,
             worker_key="mac:boot:proc", lease_seconds=45,
             executor=executor or ManualExecutor(inline=True),
             clock=clock or FakeClock(), logger=LOG, **kwargs)
-
-    def test_formal_executor_name_keeps_compatibility_alias(self):
-        self.assertIs(LocalWorker, TaskExecutor)
-        self.assertIs(SessionLifecycle, SessionController)
 
     def test_shared_capacity_is_reserved_before_lease_and_released_after_run(self):
         manager = CapacityManager(1)
@@ -328,12 +323,11 @@ class LocalWorkerTest(unittest.TestCase):
         executor = ManualExecutor()
         worker = self.make(
             client, lambda *_args: "done", lambda *_args: None,
-            free_slots=manager.available_slots,
-            capacity_manager=manager, max_slots=1, executor=executor)
+            capacity_manager=manager, executor=executor)
 
         self.assertTrue(worker.run_once())
         self.assertEqual(client.named("lease_task"), [],
-                         "TaskExecutor must reserve capacity before leasing")
+                         "PersistenceExecutor must reserve capacity before leasing")
 
         ephemeral.release()
         self.assertTrue(worker.run_once())
@@ -467,7 +461,7 @@ class LocalWorkerTest(unittest.TestCase):
             complete_session=[ControlPlaneUnavailable("offline"), {}, {}],
         )
         worker = self.make(client, lambda *_args: "done", lambda *_args: None,
-                           free_slots=2)
+                           capacity=2)
         self.assertTrue(worker.run_once())
         self.assertFalse(worker.network_healthy)
         self.assertEqual(worker.active_session_ids(), ["s1"])
@@ -480,12 +474,13 @@ class LocalWorkerTest(unittest.TestCase):
         self.assertTrue(worker.run_once())
         self.assertEqual(len(client.named("lease_task")), 2)
 
-    def test_free_slots_is_only_local_gate_and_intervals_are_injectable(self):
+    def test_capacity_manager_is_the_local_gate_and_intervals_are_injectable(self):
         clock = FakeClock()
         client = FakeClient(lease_task=[{}, {}, {}])
+        manager = CapacityManager(3)
         worker = self.make(
             client, lambda *_args: None, lambda *_args: None,
-            free_slots=lambda: 3, clock=clock, worker_heartbeat_interval=10)
+            capacity_manager=manager, clock=clock, worker_heartbeat_interval=10)
         worker.run_once()
         worker.run_once()
         self.assertEqual(len(client.named("heartbeat_worker")), 1)
@@ -498,30 +493,31 @@ class LocalWorkerTest(unittest.TestCase):
         self.assertEqual(client.named("register_worker")[0]["args"][0]["maxSlots"], 3)
 
         no_capacity = FakeClient()
-        gated = self.make(no_capacity, lambda *_args: None, lambda *_args: None,
-                          free_slots=lambda: 0)
+        blocked_manager = CapacityManager(1)
+        ephemeral = blocked_manager.acquire("ephemeral:busy")
+        gated = self.make(
+            no_capacity, lambda *_args: None, lambda *_args: None,
+            capacity_manager=blocked_manager)
         self.assertTrue(gated.run_once())
         self.assertEqual(no_capacity.named("lease_task"), [])
+        ephemeral.release()
 
-    def test_callable_capacity_shares_slots_with_legacy_pool(self):
-        class LegacyPool:
-            max_workers = 3
-
-            def free_slots(self):
-                return 2  # one of three slots is occupied by legacy work
-
+    def test_task_and_ephemeral_execution_share_one_capacity_manager(self):
+        manager = CapacityManager(3)
+        ephemeral = manager.acquire("ephemeral:busy")
         client = FakeClient(lease_task=[
             lease_response("s1"), lease_response("s2"), lease_response("s3")])
         worker = self.make(
             client, lambda *_args: "done", lambda *_args: None,
-            free_slots=LegacyPool().free_slots, executor=ManualExecutor())
+            capacity_manager=manager, executor=ManualExecutor())
         self.assertTrue(worker.run_once())
         self.assertTrue(worker.run_once())
         self.assertTrue(worker.run_once())
         self.assertEqual(worker.active_count(), 2)
         self.assertEqual(len(client.named("lease_task")), 2,
-                         "legacy plus managed work must stay within maxSlots")
+                         "Task plus EphemeralJob work must stay within maxSlots")
         self.assertEqual(client.named("register_worker")[0]["args"][0]["maxSlots"], 3)
+        ephemeral.release()
 
     def test_backend_capacity_conflict_is_not_a_network_failure(self):
         client = FakeClient(lease_task=[
@@ -604,8 +600,8 @@ class LocalWorkerTest(unittest.TestCase):
         self.assertEqual(stopped, [("s1", "worker_stopping")])
         self.assertEqual(len(client.named("complete_session")), 2)
         self.assertEqual(client.named("fail_session"), [])
-        lifecycle = worker._sessions["s1"].lifecycle
-        self.assertEqual(lifecycle.pending_terminal, "complete")
+        controller = worker._sessions["s1"].controller
+        self.assertEqual(controller.pending_terminal, "complete")
 
 
 if __name__ == "__main__":

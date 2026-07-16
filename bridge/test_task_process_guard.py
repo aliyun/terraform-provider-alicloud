@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Crash-boundary tests for managed Claude process guarding."""
+"""Crash-boundary tests for Task process guarding."""
 
 import os
 import signal
@@ -17,7 +17,7 @@ import jarvis_dingtalk_bot as bot
 
 
 BRIDGE_DIR = Path(__file__).resolve().parent
-GUARD = BRIDGE_DIR / "managed_process_guard.py"
+GUARD = BRIDGE_DIR / "task_process_guard.py"
 
 
 def _pid_alive(pid):
@@ -28,7 +28,7 @@ def _pid_alive(pid):
         return False
 
 
-class ManagedProcessGuardTest(unittest.TestCase):
+class TaskProcessGuardTest(unittest.TestCase):
     def test_command_starts_only_after_fenced_bind_returns(self):
         with tempfile.TemporaryDirectory() as directory:
             marker = Path(directory) / "started"
@@ -103,7 +103,7 @@ class ManagedProcessGuardTest(unittest.TestCase):
                     mock.patch.object(bot, "_headless_exec_command",
                                       side_effect=lambda _sid, argv: argv), \
                     mock.patch.dict(os.environ,
-                                    {"JARVIS_MANAGED_GUARD_GRACE_SEC": "0.1"}):
+                                    {"JARVIS_TASK_GUARD_GRACE_SEC": "0.1"}):
                 result = bot.run_claude_buffered(
                     "prompt", "session", False, timeout=5,
                     on_spawn=lambda _process: None, guarded=True)

@@ -12,7 +12,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from jarvis_capacity import CapacityManager  # noqa: E402
-from jarvis_dingtalk_bot import DispatchPool, EphemeralExecutor  # noqa: E402
+from jarvis_dingtalk_bot import EphemeralExecutor  # noqa: E402
 
 
 class EphemeralExecutorTest(unittest.TestCase):
@@ -20,9 +20,6 @@ class EphemeralExecutorTest(unittest.TestCase):
         return EphemeralExecutor(
             max_workers=1, queue_max=2, capacity_manager=manager,
             ledger_path=Path(directory) / "ledger.json")
-
-    def test_formal_name_keeps_compatibility_alias(self):
-        self.assertIs(DispatchPool, EphemeralExecutor)
 
     def test_waits_for_shared_capacity_without_starting_work(self):
         manager = CapacityManager(1)
