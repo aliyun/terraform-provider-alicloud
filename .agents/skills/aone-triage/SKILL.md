@@ -119,6 +119,7 @@ bash bootstrap/aone-image-extract.sh <id>          # 附件截图→本地,skill
 - 裸 URL **不 autolink**——独占一行+前后空行、或行内紧贴文字,统统渲染为不可点的死文本;
 - `<a href>` 锚标签与 `<url>` 尖括号包 URL 也不行——`<...>` 被当 HTML tag 剥掉/转义,不渲染为链接;
 - 走 `wrap.sh done` 的评论正文**同样要写 markdown 链接**——`bootstrap/aone-comment-format.sh` 只管列表项排版空行,不会帮你把裸 URL 转成链接;
+- **含 @mention 的评论会被 a1 错误重写其它 token**——同一评论里反引号包裹的 API 名/文件路径可能被替换成重复 mention 或文档链接(先例:84297352 评论 124950109,`DescribeInstanceAttribute` 被改写成第二个 @mention、SDK 文件路径被改写成链接)。重要技术标识符与 @mention 尽量拆开发,发出后**立即 comment list 回读校验**,坏了补更正评论(a1 无 delete);
 - 详情区(description)同为 markdown 渲染,`[text](url)` 同样适用(评论与详情口径一致)。
 
 ### 5. 写操作(全部先授权 — supervised 默认模式)
