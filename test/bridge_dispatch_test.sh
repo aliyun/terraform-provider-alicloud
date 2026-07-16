@@ -1624,6 +1624,11 @@ class BufferedRunnerCmdTest(unittest.TestCase):
     def setUp(self):
         self._orig_popen = b.subprocess.Popen
         self._orig_cmd = b.jarvis_cmd
+        # run_claude_buffered now also pre-registers the spawned worker with the
+        # fence manager (a second subprocess); neutralize it so these focused argv
+        # tests observe only the claude spawn.
+        self._orig_reg = b._register_headless_worker
+        b._register_headless_worker = lambda *a, **k: None
         self._cmd_terraform = []
         # Record the terraform 车道 arg so tests can assert run_claude_buffered forwards it.
         def _fake_cmd(sid=None, terraform=False):
@@ -1634,6 +1639,7 @@ class BufferedRunnerCmdTest(unittest.TestCase):
     def tearDown(self):
         b.subprocess.Popen = self._orig_popen
         b.jarvis_cmd = self._orig_cmd
+        b._register_headless_worker = self._orig_reg
 
     def _fake_popen(self, captured, out):
         class FakeP:
@@ -2512,6 +2518,10 @@ class RunClaudeStreamTimeoutTest(unittest.TestCase):
         self._orig_popen = b.subprocess.Popen
         self._orig_killpg = b.os.killpg
         self._orig_getpgid = b.os.getpgid
+        # run_claude_stream now pre-registers the spawned worker (a second
+        # subprocess); neutralize it so the timeout path is exercised in isolation.
+        self._orig_reg = b._register_headless_worker
+        b._register_headless_worker = lambda *a, **k: None
         self._killpg_calls = []
         b.os.getpgid = lambda pid: pid
         b.os.killpg = lambda pgid, sig: self._killpg_calls.append((pgid, sig))
@@ -2520,6 +2530,7 @@ class RunClaudeStreamTimeoutTest(unittest.TestCase):
         b.subprocess.Popen = self._orig_popen
         b.os.killpg = self._orig_killpg
         b.os.getpgid = self._orig_getpgid
+        b._register_headless_worker = self._orig_reg
 
     def test_run_claude_stream_timeout_kills(self):
         """Simulate a subprocess that finishes stdout but hangs in wait(): wait

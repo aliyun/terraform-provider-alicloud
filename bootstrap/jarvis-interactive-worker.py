@@ -1988,6 +1988,117 @@ def hook(client_name: str, event: Mapping[str, Any]) -> int:
     return 0
 
 
+def register_headless(session_id: str, host_pid: int,
+                      client_name: str = "claude") -> Dict[str, Any]:
+    """Register a bridge-spawned headless worker BEFORE it issues its first tool.
+
+    The worker-fence keys every PreToolUse on a (client, session_id) state file
+    written by the SessionStart hook.  On a transient retry / bridge restart /
+    WaitWatcher wake the previous attempt's SessionEnd already deleted that file,
+    and the replacement ``claude --resume`` process can race its own SessionStart
+    against the first tool call — so the fence blocks every tool and the retry
+    burns to no effect.
+
+    The bridge is a trusted orchestrator: right after it spawns each attempt it
+    calls this (with the freshly-spawned host pid) so the state file is in place
+    the instant the worker starts.  We deliberately reuse the exact SessionStart
+    worker-key derivation and idle state shape — the fence's decision code is not
+    touched.  The pid is passed explicitly because at register time the caller
+    already holds the real Popen pid; the worker's own SessionStart later resolves
+    the identical host pid via ``_find_host_pid`` and therefore computes the SAME
+    workerKey (same-incarnation), so the two writes are idempotent.
+
+    Fail-open on the remote leg only: the local state file MUST land regardless of
+    control-plane reachability (otherwise the fence would trip on resume). The
+    remote ``register_worker`` is best-effort — the worker's own SessionStart still
+    performs the authoritative retried registration. This does not weaken the
+    fence: an idle worker carries no task, so claim.sh and any claimed-task tool
+    still fail closed against the control plane independently."""
+    session_id = _nonblank(session_id, "session_id")
+    host_pid = int(host_pid)
+    if host_pid <= 0:
+        raise ValueError("host_pid must be a positive integer")
+    if client_name not in ("claude", "codex"):
+        raise ValueError("client must be claude or codex")
+    store = StateStore(_state_path(client_name, session_id))
+    result: Dict[str, Any] = {}
+    with store.locked():
+        old_state = store.load_unlocked()
+        host = socket.gethostname()
+        boot_id = _default_boot_id(host)
+        host_process_started_at = _process_start_identity(host_pid)
+        verify_command = bool(_pid_alive(host_pid) and host_process_started_at)
+        process_uuid = hashlib.sha256(
+            ("%s|%s|%s|%s|%s" %
+             (client_name, session_id, boot_id, host_pid,
+              host_process_started_at)).encode()
+        ).hexdigest()[:40]
+        worker_key = make_worker_key(host, boot_id, process_uuid)
+        same_incarnation = old_state.get("workerKey") == worker_key
+        now = int(time.time())
+        state: Dict[str, Any] = {
+            "schemaVersion": 1,
+            "client": client_name,
+            "clientSessionId": session_id,
+            "workerKey": worker_key,
+            "host": host,
+            "bootId": boot_id,
+            "processUuid": process_uuid,
+            "hostPid": host_pid,
+            "hostProcessStartedAt": host_process_started_at,
+            "verifyHostCommand": verify_command,
+            "cwd": str(old_state.get("cwd") or os.getcwd()),
+            "branch": old_state.get("branch") or "",
+            "source": "headless",
+            "version": os.environ.get(
+                "JARVIS_INTERACTIVE_WORKER_VERSION", "interactive-v1"),
+            "claimCounter": int(old_state.get("claimCounter") or 0),
+            # A retry/resume spawns a NEW pid → new workerKey → not same
+            # incarnation → current cleared so the worker re-runs claim.sh. Only a
+            # same-pid re-register (or the worker's own SessionStart with the
+            # matching pid) preserves an already-attached task.
+            "current": old_state.get("current") if same_incarnation else None,
+            "pendingClaim": (old_state.get("pendingClaim")
+                             if same_incarnation else None),
+            "pendingOperation": (old_state.get("pendingOperation")
+                                 if same_incarnation else None),
+            "pendingSuspend": (old_state.get("pendingSuspend")
+                               if same_incarnation else None),
+            "stopped": not verify_command,
+            "turnActive": True,
+            "activeTurnId": None,
+            "lastTurnActivityAt": now,
+            "registeredAt": now,
+            "headlessRegistered": True,
+        }
+        if not verify_command:
+            state["stoppedAt"] = now
+            state["lastError"] = "headless host pid could not be verified"
+        if same_incarnation and old_state.get("daemonPid"):
+            state["daemonPid"] = old_state.get("daemonPid")
+            state["daemonStartedAt"] = old_state.get("daemonStartedAt")
+        # Land the local state FIRST so a slow/broken control plane can never
+        # leave the fence without a state file.
+        store.save_unlocked(state)
+        if verify_command:
+            try:
+                cp = _client()
+                _register(cp, state, "ACTIVE")
+            except (ControlPlaneError, ControlPlaneUnavailable,
+                    OSError, RuntimeError, ValueError):
+                # Best-effort: the worker's own SessionStart performs the
+                # authoritative retried registration.
+                pass
+        result = {
+            "workerKey": worker_key,
+            "hostPid": host_pid,
+            "verifyHostCommand": verify_command,
+            "sameIncarnation": same_incarnation,
+            "statePath": str(store.path),
+        }
+    return result
+
+
 def offline(store: StateStore, client: Optional[AutomationAgentTaskClient] = None,
             expected_worker_key: Optional[str] = None,
             reason: str = "host_stopped") -> bool:
@@ -2648,6 +2759,11 @@ def _parser() -> argparse.ArgumentParser:
     complete_parser = sub.add_parser("complete")
     complete_parser.add_argument("aone_id")
     complete_parser.add_argument("detail", nargs="?", default="completed")
+    register_parser = sub.add_parser("register-headless")
+    register_parser.add_argument("--session-id", required=True)
+    register_parser.add_argument("--pid", required=True, type=int)
+    register_parser.add_argument("--client", choices=("claude", "codex"),
+                                 default="claude")
     sub.add_parser("status")
     return parser
 
@@ -2698,6 +2814,9 @@ def main(argv: Optional[list[str]] = None) -> int:
             _print_json(transition(args.aone_id, "suspend", args.detail))
         elif args.command == "complete":
             _print_json(transition(args.aone_id, "complete", args.detail))
+        elif args.command == "register-headless":
+            _print_json(register_headless(
+                args.session_id, args.pid, client_name=args.client))
         elif args.command == "status":
             _print_json(worker_status())
         return 0
