@@ -2408,7 +2408,7 @@ class ResumeInflightTest(_InflightBase):
         self.assertFalse(b._inflight_has("600"))
         self.assertFalse(b._inflight_has("probe-x"))
 
-    def test_pre_policy_post_pr_generation_is_dropped_and_released(self):
+    def test_pre_policy_post_pr_generation_is_dropped_without_release(self):
         b._session_file_exists = lambda sid: True
         b._inflight_add(
             "605", "sid-old-pr", "528766", "pr_comment_reply", "old prompt",
@@ -2416,7 +2416,9 @@ class ResumeInflightTest(_InflightBase):
         h = self._handler()
         h._resume_inflight()
         self.assertEqual(self.captured, [], "旧 post-PR prompt 不得被恢复执行")
-        self.assertEqual(self.released, [("605", "528766", True)])
+        self.assertEqual(
+            self.released, [],
+            "旧记录没有 exact owner receipt，禁止无条件释放共享 claim")
         self.assertFalse(b._inflight_has("605"))
 
     def test_empty_registry_noop(self):
@@ -2788,9 +2790,63 @@ class _Proc:
         self.stderr = stderr
 
 
+class _FakeFenceClient:
+    """Exact-fence/operation-receipt stub for PrWatch dispatch tests."""
+
+    def __init__(self):
+        self.acked = set()
+
+    def register_worker(self, *_a, **_k):
+        return {}
+
+    def claim_task(self, *_a, **kwargs):
+        return {
+            "task": {"id": "task-prwatch", "generation": 3},
+            "session": {
+                "id": "session-prwatch",
+                "generation": 3,
+                "fenceToken": "fence-prwatch",
+                "runtimeSessionId": kwargs.get("runtime_session_id"),
+            },
+        }
+
+    def start_session(self, *_a, **_k):
+        return {}
+
+    def heartbeat_session(self, *_a, **_k):
+        return {}
+
+    def begin_operation(self, operation, **_k):
+        action = operation["operationType"]
+        return {
+            "operation": {
+                "id": "operation-" + action.lower(),
+                "status": "ACKED" if action in self.acked else "SENDING",
+            },
+            "proceed": action not in self.acked,
+        }
+
+    def ack_operation(self, operation, **_k):
+        self.acked.add(
+            "AONE_RELEASE"
+            if "release" in str(operation.get("operationId") or "") else
+            "AONE_CLAIM")
+        return {}
+
+    def fail_operation(self, *_a, **_k):
+        return {}
+
+    def fail_session(self, *_a, **_k):
+        return {}
+
+    def complete_session(self, *_a, **_k):
+        return {}
+
+
 class _FakeHandler:
     def __init__(self):
         self.broadcasts = []
+        self.task_client = _FakeFenceClient()
 
     def _broadcast(self, text):
         self.broadcasts.append(text)
@@ -2798,9 +2854,13 @@ class _FakeHandler:
     def dispatch_item(self, item_id, prompt, sid, resume, notify, target, target_type,
                       **kwargs):
         binder = kwargs.get("on_spawn")
-        if binder is not None:
-            binder(type("_WorkerProc", (), {"pid": 99123})())
-        return "done"
+        try:
+            if binder is not None:
+                binder(type("_WorkerProc", (), {"pid": 99123})())
+            return "done"
+        finally:
+            if hasattr(binder, "finish"):
+                binder.finish()
 
 
 class _FakeRunner:
@@ -2863,10 +2923,12 @@ class _PrWatchBase(unittest.TestCase):
     def setUp(self):
         self._orig_path = b.PRWATCH_PATH
         self._orig_event_path = b.AONE_EVENT_PATH
+        self._orig_inflight_path = b.INFLIGHT_PATH
         self._orig_publish = b._aone_event_publish
         self._tmp = tempfile.mkdtemp()
         b.PRWATCH_PATH = Path(self._tmp) / "pr-watch.json"
         b.AONE_EVENT_PATH = Path(self._tmp) / "aone-events.json"
+        b.INFLIGHT_PATH = Path(self._tmp) / "inflight.json"
         self.events = []
         b._aone_event_publish = lambda *args: self.events.append(args) or True
         self._orig_run = b.subprocess.run
@@ -2874,6 +2936,7 @@ class _PrWatchBase(unittest.TestCase):
     def tearDown(self):
         b.PRWATCH_PATH = self._orig_path
         b.AONE_EVENT_PATH = self._orig_event_path
+        b.INFLIGHT_PATH = self._orig_inflight_path
         b._aone_event_publish = self._orig_publish
         b.subprocess.run = self._orig_run
 
@@ -3174,6 +3237,12 @@ class _MultiRouteRunner:
             return _Proc(0, "", "")
         if "aone-get.sh" in head:
             return _Proc(1, "", "no-guard")  # 没走到 guard 路径也没关系
+        if head.endswith("/a1id") or head == "a1id":
+            return _Proc(0, json.dumps({
+                "fields": [
+                    {"identifier": "tag", "displayValue": ""},
+                ],
+            }), "")
         return _Proc(0, "", "")
 
 
