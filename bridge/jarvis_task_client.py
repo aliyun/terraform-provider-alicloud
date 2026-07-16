@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""HTTP client primitives for the AutomationAgent Jarvis data plane.
+"""HTTP client primitives for the Jarvis control plane.
 
 This module deliberately contains no scheduler or worker-loop policy.  Sensors
-serialize :class:`TaskEnvelope` values through it and the Local Worker uses the
-worker/session methods.  Keeping the HTTP boundary small makes the
-legacy, shadow, and managed execution paths independently testable.
+serialize :class:`TaskEnvelope` values through it and TaskExecutor uses the
+Task/Session/Worker/Operation methods.  Keeping the HTTP boundary small also
+keeps rollout policy outside the control-plane contract.
 """
 
 from __future__ import annotations
@@ -157,8 +157,8 @@ class TaskEnvelope:
         return "jarvis-%s-%s" % (operation, hashlib.sha256(raw).hexdigest()[:32])
 
 
-class AutomationAgentTaskClient:
-    """Small JSON-over-HTTP client for the AutomationAgent task APIs."""
+class ControlPlaneClient:
+    """Small JSON-over-HTTP client for Jarvis control-plane APIs."""
 
     DEFAULT_PREFIX = "/api/jarvis/v1"
     PATHS = {
@@ -457,3 +457,9 @@ class AutomationAgentTaskClient:
         path = self.TASK_TIMELINE_PATH.format(
             task_id=self._path_segment(task_id, "task_id"))
         return self._get(path)
+
+
+# One-release compatibility alias.  The client is no longer coupled in name to
+# one service implementation; its contract spans Task, Session, Worker, Event,
+# and Operation APIs.
+AutomationAgentTaskClient = ControlPlaneClient

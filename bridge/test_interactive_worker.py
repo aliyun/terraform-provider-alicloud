@@ -47,7 +47,16 @@ class FakeClient:
         self._record("heartbeat_session", *args, **kwargs)
         if self.heartbeat_error:
             raise self.heartbeat_error
-        return {"ok": True}
+        detail = args[3] if len(args) > 3 and isinstance(args[3], dict) else {}
+        return {
+            "session": {
+                "id": args[0],
+                "fenceToken": args[2],
+                "status": "RUNNING",
+                "leaseExpireAt": worker.time.time() + int(
+                    detail.get("leaseSeconds") or 300),
+            },
+        }
 
     def claim_task(self, *args, **kwargs):
         self._record("claim_task", *args, **kwargs)
@@ -62,7 +71,17 @@ class FakeClient:
         }
 
     def start_session(self, *args, **kwargs):
-        return self._record("start_session", *args, **kwargs)
+        self._record("start_session", *args, **kwargs)
+        detail = args[3] if len(args) > 3 and isinstance(args[3], dict) else {}
+        return {
+            "session": {
+                "id": args[0],
+                "fenceToken": args[2],
+                "status": "RUNNING",
+                "leaseExpireAt": worker.time.time() + int(
+                    detail.get("leaseSeconds") or 300),
+            },
+        }
 
     def begin_operation(self, *args, **kwargs):
         self._record("begin_operation", *args, **kwargs)
@@ -142,8 +161,27 @@ class InteractiveWorkerTest(unittest.TestCase):
             "stopped": False,
             "turnActive": True,
             "activeTurnId": None,
+            "daemonPid": os.getpid(),
+            "daemonStartedAt": worker.time.time(),
+            "sidecarHeartbeatAt": worker.time.time(),
         }
         self._store().save(state)
+        return state
+
+    def _add_permit(self, state, *, now=None, status="RUNNING",
+                    lease_seconds=300):
+        current = state.get("current")
+        self.assertIsInstance(current, dict)
+        issued_at = worker.time.time() if now is None else float(now)
+        state["daemonPid"] = os.getpid()
+        state["sidecarHeartbeatAt"] = issued_at
+        state["sessionPermit"] = worker._session_permit(
+            state, current, {
+                "session": {
+                    "status": status,
+                    "leaseExpireAt": issued_at + lease_seconds,
+                },
+            }, source="test", now=issued_at)
         return state
 
     def test_session_hook_registers_private_non_pulling_worker_and_offlines(self):
@@ -415,6 +453,7 @@ class InteractiveWorkerTest(unittest.TestCase):
             "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
             "leaseSeconds": 120, "heartbeatEnabled": True,
         }
+        self._add_permit(state)
         state["subagentRevision"] = 2
         state["subagentRegistry"] = {
             "/root/child": {
@@ -575,6 +614,8 @@ class InteractiveWorkerTest(unittest.TestCase):
             "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
             "leaseSeconds": 120, "heartbeatEnabled": True,
         }
+        state["schemaVersion"] = 1
+        state.pop("sidecarHeartbeatAt", None)
         self._store().save(state)
         fake = FakeClient()
         register_entered = threading.Event()
@@ -684,6 +725,8 @@ class InteractiveWorkerTest(unittest.TestCase):
             "JARVIS_INTERACTIVE_HEARTBEAT_SEC",
             "JARVIS_INTERACTIVE_TURN_GRACE_SEC",
             "JARVIS_INTERACTIVE_STOP_GRACE_SEC",
+            "JARVIS_INTERACTIVE_LEASE_SAFETY_MARGIN_SEC",
+            "JARVIS_INTERACTIVE_AFFINITY_SEC",
         )
         with mock.patch.dict(os.environ, {}, clear=False):
             old = {key: os.environ.pop(key, None) for key in keys}
@@ -691,17 +734,58 @@ class InteractiveWorkerTest(unittest.TestCase):
                 self.assertEqual(worker._interactive_lease_seconds(), 300)
                 self.assertEqual(worker._interactive_heartbeat_seconds(), 30)
                 self.assertEqual(worker._interactive_turn_grace_seconds(), 600)
+                self.assertEqual(
+                    worker._interactive_lease_safety_margin_seconds(), 90)
+                self.assertEqual(worker._interactive_affinity_seconds(), 7200)
 
                 os.environ["JARVIS_INTERACTIVE_STOP_GRACE_SEC"] = "45"
                 self.assertEqual(worker._interactive_turn_grace_seconds(), 45)
                 os.environ["JARVIS_INTERACTIVE_TURN_GRACE_SEC"] = "90"
                 self.assertEqual(worker._interactive_turn_grace_seconds(), 90)
+                os.environ[
+                    "JARVIS_INTERACTIVE_LEASE_SAFETY_MARGIN_SEC"] = "75"
+                self.assertEqual(
+                    worker._interactive_lease_safety_margin_seconds(), 75)
+                os.environ["JARVIS_INTERACTIVE_AFFINITY_SEC"] = "3600"
+                self.assertEqual(worker._interactive_affinity_seconds(), 3600)
             finally:
                 for key in keys:
                     os.environ.pop(key, None)
                 for key, value in old.items():
                     if value is not None:
                         os.environ[key] = value
+
+    def test_session_permit_accepts_iso_or_epoch_millis_and_has_safe_fallback(self):
+        state = self._seed()
+        state["current"] = {
+            "taskId": "task-1", "sessionId": "session-1",
+            "fenceToken": 9, "generation": 4,
+            "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 300,
+        }
+        iso = worker._session_permit(
+            state, state["current"], {
+                "session": {
+                    "status": "RUNNING",
+                    "leaseExpireAt": "2026-07-16T12:00:00Z",
+                },
+            }, source="test", now=100)
+        self.assertEqual(
+            iso["leaseExpireAt"],
+            worker._epoch_seconds("2026-07-16T12:00:00Z"))
+        millis = worker._session_permit(
+            state, state["current"], {
+                "session": {
+                    "status": "RUNNING",
+                    "leaseExpireAt": 1_800_000_000_000,
+                },
+            }, source="test", now=100)
+        self.assertEqual(millis["leaseExpireAt"], 1_800_000_000)
+        fallback = worker._session_permit(
+            state, state["current"], {"ok": True},
+            source="test", now=100)
+        self.assertEqual(fallback["leaseExpireAt"], 400)
+        self.assertEqual(fallback["sessionStatus"], "RUNNING")
 
     def test_missing_stop_has_active_turn_ttl_before_auto_suspend(self):
         state = self._seed()
@@ -756,7 +840,7 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertIn("suspend_session", [c[0] for c in fake.calls])
         self.assertIsNone(self._store().load()["current"])
 
-    def test_user_prompt_restarts_sidecar_and_confirms_carried_fence(self):
+    def test_user_prompt_restarts_sidecar_and_uses_local_permit(self):
         state = self._seed()
         state["current"] = {
             "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
@@ -764,6 +848,7 @@ class InteractiveWorkerTest(unittest.TestCase):
             "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
             "leaseSeconds": 120, "heartbeatEnabled": True,
         }
+        self._add_permit(state)
         self._store().save(state)
         fake = FakeClient()
         event = {
@@ -779,11 +864,11 @@ class InteractiveWorkerTest(unittest.TestCase):
         ensure.assert_called_once()
         self.assertEqual(ensure.call_args.args[0].path, self._store().path)
         self.assertEqual(ensure.call_args.args[1], state["workerKey"])
-        self.assertIn("heartbeat_worker", [c[0] for c in fake.calls])
-        self.assertIn("heartbeat_session", [c[0] for c in fake.calls])
+        self.assertNotIn("heartbeat_worker", [c[0] for c in fake.calls])
+        self.assertNotIn("heartbeat_session", [c[0] for c in fake.calls])
         self.assertTrue(self._store().load()["turnActive"])
 
-    def test_user_prompt_clears_stale_fence_before_work(self):
+    def test_sidecar_clears_stale_fence_before_work(self):
         state = self._seed()
         state["current"] = {
             "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
@@ -791,40 +876,22 @@ class InteractiveWorkerTest(unittest.TestCase):
             "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
             "leaseSeconds": 120, "heartbeatEnabled": True,
         }
+        self._add_permit(state)
         self._store().save(state)
         fake = FakeClient()
         fake.heartbeat_error = worker.StaleFence("reassigned")
-        output = io.StringIO()
         with mock.patch.object(worker, "_client", return_value=fake), \
-                mock.patch.object(worker, "_host_alive", return_value=True), \
-                mock.patch.object(worker, "_ensure_daemon"), \
-                contextlib.redirect_stdout(output):
-            self.assertEqual(worker.hook("codex", {
-                "hook_event_name": "UserPromptSubmit",
-                "session_id": "native-thread-1",
-                "turn_id": "turn-stale",
-            }), 0)
+                mock.patch.object(worker, "_host_alive",
+                                  side_effect=[True, False]), \
+                mock.patch.object(worker.time, "sleep", return_value=None):
+            self.assertEqual(worker.daemon(
+                self._store().path, state["workerKey"]), 0)
         after = self._store().load()
         self.assertIsNone(after["current"])
         self.assertIsNone(after["pendingClaim"])
         self.assertEqual(after["lostOwnership"]["aoneId"], "84345050")
-        self.assertIn("重新运行 claim.sh", output.getvalue())
 
-        output = io.StringIO()
-        fake.heartbeat_error = None
-        with mock.patch.object(worker, "_client", return_value=fake), \
-                mock.patch.object(worker, "_host_alive", return_value=True), \
-                mock.patch.object(worker, "_ensure_daemon"), \
-                contextlib.redirect_stdout(output):
-            self.assertEqual(worker.hook("codex", {
-                "hook_event_name": "UserPromptSubmit",
-                "session_id": "native-thread-1",
-                "turn_id": "turn-after-loss",
-                "prompt": "继续",
-            }), 0)
-        self.assertIn("严禁继续", output.getvalue())
-
-    def test_pre_tool_use_verifies_fence_and_blocks_stale_owner(self):
+    def test_pre_tool_use_uses_local_permit_and_blocks_mismatch(self):
         state = self._seed()
         state["current"] = {
             "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
@@ -832,6 +899,7 @@ class InteractiveWorkerTest(unittest.TestCase):
             "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
             "leaseSeconds": 120, "heartbeatEnabled": True,
         }
+        self._add_permit(state)
         self._store().save(state)
         event = {
             "hook_event_name": "PreToolUse",
@@ -841,30 +909,111 @@ class InteractiveWorkerTest(unittest.TestCase):
             "tool_name": "Bash",
             "tool_input": {"command": "bin/a1id -- project workitem get 84345050"},
         }
-        fake = FakeClient()
         stdout = io.StringIO()
         stderr = io.StringIO()
-        with mock.patch.object(worker, "_client", return_value=fake), \
+        with mock.patch.object(
+                worker, "_client",
+                side_effect=AssertionError("PreToolUse must stay local")), \
                 mock.patch.object(worker, "_calling_process_matches", return_value=True), \
                 contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
             self.assertEqual(worker.hook("codex", event), 0)
         self.assertEqual(stdout.getvalue().strip(), "{}")
         self.assertEqual(stderr.getvalue(), "")
-        self.assertNotIn("heartbeat_worker", [call[0] for call in fake.calls])
-        self.assertIn("heartbeat_session", [call[0] for call in fake.calls])
 
-        fake.heartbeat_error = worker.StaleFence("reassigned")
+        changed = self._store().load()
+        changed["sessionPermit"]["fenceToken"] = 8
+        self._store().save(changed)
         stdout = io.StringIO()
         stderr = io.StringIO()
-        with mock.patch.object(worker, "_client", return_value=fake), \
+        with mock.patch.object(
+                worker, "_client",
+                side_effect=AssertionError("PreToolUse must stay local")), \
                 mock.patch.object(worker, "_calling_process_matches", return_value=True), \
                 contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
             self.assertEqual(worker.hook("codex", {**event, "tool_use_id": "tool-2"}), 2)
         after = self._store().load()
         self.assertEqual(stdout.getvalue(), "")
         self.assertIn("当前工具调用已阻断", stderr.getvalue())
-        self.assertIsNone(after["current"])
-        self.assertEqual(after["lostOwnership"]["aoneId"], "84345050")
+        self.assertEqual(after["current"]["fenceToken"], 9)
+        self.assertNotIn("lostOwnership", after)
+
+    def test_local_permit_fails_closed_on_margin_status_and_sidecar_health(self):
+        state = self._seed()
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304", "taskId": "task-1",
+            "sessionId": "session-1", "fenceToken": 9, "generation": 4,
+            "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 300, "heartbeatEnabled": True,
+        }
+        event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": "native-thread-1",
+            "turn_id": "turn-tool",
+            "tool_use_id": "tool-local-proof",
+            "tool_name": "Bash",
+            "tool_input": {"command": "git status --short"},
+        }
+        for label, mutate, expected in (
+                ("safety-margin",
+                 lambda value: value["sessionPermit"].update(
+                     {"leaseExpireAt": 1090}),
+                 "安全边界"),
+                ("session-status",
+                 lambda value: value["sessionPermit"].update(
+                     {"sessionStatus": "SUSPENDED"}),
+                 "SUSPENDED"),
+                ("sidecar-dead",
+                 lambda value: value.update({"daemonPid": 99999999}),
+                 "sidecar 未运行")):
+            with self.subTest(label=label):
+                candidate = dict(state)
+                candidate["current"] = dict(state["current"])
+                self._add_permit(candidate, now=1000, lease_seconds=300)
+                candidate["sessionPermit"] = dict(candidate["sessionPermit"])
+                mutate(candidate)
+                self._store().save(candidate)
+                stderr = io.StringIO()
+                with mock.patch.object(worker.time, "time", return_value=1000), \
+                        mock.patch.object(
+                            worker, "_client",
+                            side_effect=AssertionError(
+                                "PreToolUse must stay local")), \
+                        mock.patch.object(
+                            worker, "_calling_process_matches",
+                            return_value=True), \
+                        contextlib.redirect_stdout(io.StringIO()), \
+                        contextlib.redirect_stderr(stderr):
+                    self.assertEqual(worker.hook("codex", event), 2)
+                self.assertIn(expected, stderr.getvalue())
+
+    def test_claim_start_permit_allows_first_tool_without_remote_heartbeat(self):
+        self._seed()
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake):
+            claimed = worker.prepare_claim("84345050", "2100304")
+            worker.acknowledge_claim(
+                "84345050", "aone:2100304:84345050:tag")
+        state = self._store().load()
+        self.assertEqual(
+            state["sessionPermit"]["sessionId"], claimed["sessionId"])
+        self.assertEqual(state["sessionPermit"]["source"], "session-start")
+        before = len(fake.calls)
+        with mock.patch.object(
+                worker, "_client",
+                side_effect=AssertionError("PreToolUse must stay local")), \
+                mock.patch.object(
+                    worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "PreToolUse",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-tool",
+                "tool_use_id": "tool-first-after-claim",
+                "tool_name": "Bash",
+                "tool_input": {"command": "git status --short"},
+            }), 0)
+        self.assertEqual(len(fake.calls), before)
 
     def test_pre_tool_use_blocks_lost_claude_worker_too(self):
         state = self._seed()
@@ -908,9 +1057,11 @@ class InteractiveWorkerTest(unittest.TestCase):
             "cycle": 1, "runtimeSessionId": "interactive:claude:cycle:1",
             "leaseSeconds": 120, "heartbeatEnabled": True,
         }
+        self._add_permit(state)
         store.save(state)
-        fake = FakeClient()
-        with mock.patch.object(worker, "_client", return_value=fake), \
+        with mock.patch.object(
+                worker, "_client",
+                side_effect=AssertionError("PreToolUse must stay local")), \
                 mock.patch.object(worker, "_calling_process_matches",
                                   return_value=True), \
                 contextlib.redirect_stdout(io.StringIO()), \
@@ -924,7 +1075,6 @@ class InteractiveWorkerTest(unittest.TestCase):
                 "tool_name": "Bash",
                 "tool_input": {"command": "git status --short"},
             }), 0)
-        self.assertIn("heartbeat_session", [call[0] for call in fake.calls])
         self.assertFalse(
             worker._state_path("claude", "claude-child-1").exists())
 
@@ -1056,6 +1206,7 @@ class InteractiveWorkerTest(unittest.TestCase):
             "cycle": 1, "runtimeSessionId": "interactive:cycle:1",
             "leaseSeconds": 120, "heartbeatEnabled": True,
         }
+        self._add_permit(state)
         state["subagentEpochs"] = {
             "agent-child-1": {
                 "rootTurnId": "root-turn",
@@ -1092,26 +1243,29 @@ class InteractiveWorkerTest(unittest.TestCase):
             "tool_name": "Bash",
             "tool_input": {"command": "git status --short"},
         }
-        fake = FakeClient()
-        with mock.patch.object(worker, "_client", return_value=fake), \
+        with mock.patch.object(
+                worker, "_client",
+                side_effect=AssertionError("PreToolUse must stay local")), \
                 mock.patch.object(worker, "_calling_process_matches", return_value=True), \
                 contextlib.redirect_stdout(io.StringIO()), \
                 contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(worker.hook("codex", subagent_event), 0)
-        self.assertIn("heartbeat_session", [call[0] for call in fake.calls])
 
-        def stop_during_heartbeat(*args, **kwargs):
-            fake._record("heartbeat_session", *args, **kwargs)
+        def stop_after_first_permit_check(*args, **kwargs):
             with self._store().locked():
                 latest = self._store().load_unlocked()
                 latest["turnActive"] = False
                 latest["turnStoppedAt"] = 1234
                 self._store().save_unlocked(latest)
-            return {"ok": True}
+            return None
 
-        fake.heartbeat_session = stop_during_heartbeat
         stderr = io.StringIO()
-        with mock.patch.object(worker, "_client", return_value=fake), \
+        with mock.patch.object(
+                worker, "_session_permit_block_reason",
+                side_effect=stop_after_first_permit_check), \
+                mock.patch.object(
+                    worker, "_client",
+                    side_effect=AssertionError("PreToolUse must stay local")), \
                 mock.patch.object(worker, "_calling_process_matches", return_value=True), \
                 contextlib.redirect_stdout(io.StringIO()), \
                 contextlib.redirect_stderr(stderr):
@@ -1189,41 +1343,49 @@ class InteractiveWorkerTest(unittest.TestCase):
             }), 2)
         self.assertIn("不属于当前根 turn/任务 fence", stderr.getvalue())
 
-    def test_pre_tool_control_plane_errors_block_without_clearing_newer_state(self):
-        for error in (
-                worker.ControlPlaneConflict("busy"),
-                worker.ControlPlaneUnavailable("timeout")):
-            with self.subTest(error=type(error).__name__):
-                state = self._seed()
-                state["activeTurnId"] = "turn-tool"
-                state["current"] = {
-                    "aoneId": "84345050", "projectId": "2100304",
-                    "taskId": "task-1", "sessionId": "session-1",
-                    "fenceToken": 10, "generation": 4, "cycle": 1,
-                    "runtimeSessionId": "interactive:cycle:1",
-                    "leaseSeconds": 120, "heartbeatEnabled": True,
-                }
-                self._store().save(state)
-                fake = FakeClient()
-                fake.heartbeat_error = error
-                stderr = io.StringIO()
-                with mock.patch.object(worker, "_client", return_value=fake), \
-                        mock.patch.object(worker, "_calling_process_matches",
-                                          return_value=True), \
-                        contextlib.redirect_stdout(io.StringIO()), \
-                        contextlib.redirect_stderr(stderr):
-                    self.assertEqual(worker.hook("codex", {
-                        "hook_event_name": "PreToolUse",
-                        "session_id": "native-thread-1",
-                        "turn_id": "turn-tool",
-                        "tool_use_id": "tool-error",
-                        "tool_name": "McpWrite",
-                        "tool_input": {},
-                    }), 2)
-                after = self._store().load()
-                self.assertEqual(after["current"]["fenceToken"], 10)
-                self.assertNotIn("lostOwnership", after)
-                self.assertIn("已阻断", stderr.getvalue())
+    def test_legacy_current_without_permit_blocks_locally_until_sidecar_refresh(self):
+        state = self._seed()
+        state["activeTurnId"] = "turn-tool"
+        state["current"] = {
+            "aoneId": "84345050", "projectId": "2100304",
+            "taskId": "task-1", "sessionId": "session-1",
+            "fenceToken": 10, "generation": 4, "cycle": 1,
+            "runtimeSessionId": "interactive:cycle:1",
+            "leaseSeconds": 120, "heartbeatEnabled": True,
+        }
+        self._store().save(state)
+        stderr = io.StringIO()
+        with mock.patch.object(
+                worker, "_client",
+                side_effect=AssertionError("PreToolUse must stay local")), \
+                mock.patch.object(
+                    worker, "_calling_process_matches", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(worker.hook("codex", {
+                "hook_event_name": "PreToolUse",
+                "session_id": "native-thread-1",
+                "turn_id": "turn-tool",
+                "tool_use_id": "tool-legacy-state",
+                "tool_name": "McpWrite",
+                "tool_input": {},
+            }), 2)
+        after = self._store().load()
+        self.assertEqual(after["current"]["fenceToken"], 10)
+        self.assertNotIn("lostOwnership", after)
+        self.assertIn("Lease Proof", stderr.getvalue())
+
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(
+                    worker, "_host_alive", side_effect=[True, False]), \
+                mock.patch.object(worker.time, "sleep", return_value=None):
+            self.assertEqual(worker.daemon(
+                self._store().path, state["workerKey"]), 0)
+        upgraded = self._store().load()
+        self.assertIn("sidecarHeartbeatAt", upgraded)
+        self.assertEqual(
+            upgraded["sessionPermit"]["source"], "sidecar-heartbeat")
 
     def test_delayed_old_fence_cannot_clear_new_same_session_assignment(self):
         state = self._seed()
@@ -2014,6 +2176,9 @@ class InteractiveWorkerTest(unittest.TestCase):
             self.assertEqual(worker.daemon(self._store().path, state["workerKey"]), 0)
         names = [c[0] for c in fake.calls]
         self.assertIn("heartbeat_session", names)
+        refreshed = self._store().load()["sessionPermit"]
+        self.assertEqual(refreshed["source"], "sidecar-heartbeat")
+        self.assertEqual(refreshed["sessionStatus"], "RUNNING")
         offline = [c for c in fake.calls if c[0] == "heartbeat_worker"][-1]
         self.assertEqual(offline[1][1]["status"], "OFFLINE")
 
@@ -2043,6 +2208,15 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertEqual(after["pendingClaim"]["cycle"], 1)
         self.assertEqual(after["pendingClaim"]["runtimeSessionId"],
                          "interactive:cycle:1")
+        suspend = [c for c in fake.calls if c[0] == "suspend_session"][0]
+        self.assertEqual(
+            suspend[1][3]["waitExpireAt"],
+            worker._utc_timestamp(1000 + 7200))
+        self.assertEqual(
+            after["lastAutoSuspended"]["affinityWorkerKey"],
+            state["workerKey"])
+        self.assertEqual(
+            after["lastAutoSuspended"]["affinityExpireAt"], 8200)
         offline = [c for c in fake.calls if c[0] == "heartbeat_worker"][-1]
         self.assertEqual(offline[1][1]["status"], "OFFLINE")
 

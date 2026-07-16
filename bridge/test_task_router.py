@@ -16,7 +16,13 @@ from jarvis_task_client import (  # noqa: E402
     ControlPlaneUnavailable,
     TaskEnvelope,
 )
-from jarvis_task_router import TaskRouter  # noqa: E402
+from jarvis_task_router import (  # noqa: E402
+    EPHEMERAL_JOB,
+    TASK,
+    ExecutionRoute,
+    ExecutionRouter,
+    TaskRouter,
+)
 
 
 @contextmanager
@@ -74,6 +80,42 @@ class LegacyRecorder:
 
 
 class TaskRouterTest(unittest.TestCase):
+    def test_formal_name_and_compatibility_alias_share_one_implementation(self):
+        self.assertIs(TaskRouter, ExecutionRouter)
+
+    def test_route_exposes_only_recovery_domain_kind(self):
+        router = ExecutionRouter("legacy", task_types={"ticket"})
+        self.assertEqual(router.route(envelope("ticket")),
+                         ExecutionRoute(TASK, True))
+        self.assertEqual(router.route(envelope("probe")),
+                         ExecutionRoute(EPHEMERAL_JOB, False))
+
+    def test_classify_maps_only_needs_recovery_to_domain_kind(self):
+        self.assertEqual(ExecutionRouter.classify(True), (TASK, True))
+        self.assertEqual(ExecutionRouter.classify(False), (EPHEMERAL_JOB, False))
+        with self.assertRaises(TypeError):
+            ExecutionRouter.classify("yes")
+
+    def test_formal_migration_policy_constructor_name(self):
+        router = ExecutionRouter(migration_policy="shadow", task_types={"ticket"})
+        self.assertEqual(router.migration_policy, "shadow")
+        self.assertEqual(router.mode, "shadow")
+
+    def test_domain_route_is_independent_of_migration_policy(self):
+        routes = {
+            ExecutionRouter(policy, task_types={"ticket"}).route(envelope("ticket"))
+            for policy in ("legacy", "shadow", "managed")
+        }
+        self.assertEqual(routes, {ExecutionRoute(TASK, True)})
+
+    def test_is_task_is_domain_predicate_is_managed_is_compatibility_ownership(self):
+        legacy = ExecutionRouter("legacy", task_types={"ticket"})
+        managed = ExecutionRouter("managed", task_types={"ticket"})
+        self.assertTrue(legacy.is_task(envelope("ticket")))
+        self.assertFalse(legacy.is_managed(envelope("ticket")))
+        self.assertTrue(managed.is_task(envelope("ticket")))
+        self.assertTrue(managed.is_managed(envelope("ticket")))
+
     def test_legacy_never_touches_control_plane(self):
         client, legacy = FakeClient(), LegacyRecorder()
         result = TaskRouter("legacy", client=client).enqueue(envelope(), legacy)
@@ -83,20 +125,24 @@ class TaskRouterTest(unittest.TestCase):
 
     def test_observe_legacy_is_explicit_noop(self):
         client = FakeClient()
-        result = TaskRouter("legacy", client=client).observe(envelope())
+        result = TaskRouter(
+            "legacy", client=client, task_types={"ticket"}).observe(
+                envelope("ticket", "modified:1"))
         self.assertEqual(result, (True, "legacy_noop"))
         self.assertEqual(client.calls, [])
 
-    def test_observe_shadow_and_unmanaged_managed_are_shadow_upserts(self):
-        for router in (
-            TaskRouter("shadow", client=FakeClient()),
-            TaskRouter("managed", client=FakeClient(), managed_task_types={"probe"}),
-        ):
-            item = envelope("ticket", "modified:2")
-            result = router.observe(item)
-            self.assertEqual(result, (True, "shadowed"))
-            self.assertEqual(len(router.client.calls), 1)
-            self.assertEqual(router.client.calls[0][1], "SHADOW")
+    def test_shadow_task_is_observed_but_ephemeral_job_never_is(self):
+        shadow = TaskRouter(
+            "shadow", client=FakeClient(), task_types={"ticket"})
+        result = shadow.observe(envelope("ticket", "modified:2"))
+        self.assertEqual(result, (True, "shadowed"))
+        self.assertEqual(shadow.client.calls[0][1], "SHADOW")
+
+        managed = TaskRouter(
+            "managed", client=FakeClient(), task_types={"probe"})
+        result = managed.observe(envelope("ticket", "modified:2"))
+        self.assertEqual(result, (True, "ephemeral_noop"))
+        self.assertEqual(managed.client.calls, [])
 
     def test_observe_managed_is_fail_closed(self):
         router = TaskRouter(
@@ -108,7 +154,7 @@ class TaskRouterTest(unittest.TestCase):
 
     def test_observe_refreshes_revision_for_same_task_identity(self):
         client = FakeClient()
-        router = TaskRouter("shadow", client=client)
+        router = TaskRouter("shadow", client=client, task_types={"ticket"})
         router.observe(envelope("ticket", "modified:1"))
         router.observe(envelope("ticket", "modified:2"))
         self.assertEqual([call[0].task_key for call in client.calls],
@@ -119,7 +165,9 @@ class TaskRouterTest(unittest.TestCase):
 
     def test_shadow_upserts_then_runs_legacy(self):
         client, legacy = FakeClient(), LegacyRecorder()
-        result = TaskRouter("shadow", client=client).enqueue(envelope(), legacy)
+        result = TaskRouter(
+            "shadow", client=client, task_types={"ticket"}).enqueue(
+                envelope("ticket", "modified:1"), legacy)
         self.assertTrue(result.accepted)
         self.assertEqual(len(client.calls), 1, "enqueue must not duplicate observe upserts")
         self.assertEqual(client.calls[0][1], "SHADOW")
@@ -128,8 +176,10 @@ class TaskRouterTest(unittest.TestCase):
     def test_shadow_failure_does_not_affect_legacy(self):
         client = FakeClient(error=ControlPlaneUnavailable("down"))
         legacy = LegacyRecorder()
-        result = TaskRouter("shadow", client=client,
-                            logger=logging.getLogger("shadow-test")).enqueue(envelope(), legacy)
+        result = TaskRouter(
+            "shadow", client=client, task_types={"ticket"},
+            logger=logging.getLogger("shadow-test")).enqueue(
+                envelope("ticket", "modified:1"), legacy)
         self.assertEqual(result, (True, "dispatched"))
         self.assertEqual(legacy.calls, 1)
 
@@ -162,18 +212,18 @@ class TaskRouterTest(unittest.TestCase):
         self.assertEqual(result, (False, "control_plane_unconfigured"))
         self.assertEqual(legacy.calls, 0)
 
-    def test_non_allowlisted_kind_shadows_then_uses_legacy(self):
+    def test_ephemeral_kind_never_upserts_and_uses_local_executor(self):
         client, legacy = FakeClient(), LegacyRecorder()
         router = TaskRouter("managed", client=client, managed_task_types={"probe"})
         result = router.enqueue(envelope("ticket", "modified:1"), legacy)
         self.assertEqual(result, (True, "dispatched"))
-        self.assertEqual(client.calls[0][1], "SHADOW")
+        self.assertEqual(client.calls, [])
         self.assertEqual(legacy.calls, 1)
 
     def test_empty_allowlist_manages_nothing_and_wildcard_manages_all(self):
         client, legacy = FakeClient(), LegacyRecorder()
         TaskRouter("managed", client=client).enqueue(envelope("ticket", "r1"), legacy)
-        self.assertEqual(client.calls[-1][1], "SHADOW")
+        self.assertEqual(client.calls, [])
         self.assertEqual(legacy.calls, 1)
 
         client2, legacy2 = FakeClient(), LegacyRecorder()
@@ -199,7 +249,10 @@ class TaskRouterTest(unittest.TestCase):
 
     def test_from_env_defaults_legacy_and_parses_allowlist(self):
         with replaced_environ({}):
-            self.assertEqual(TaskRouter.from_env().mode, "legacy")
+            router = TaskRouter.from_env()
+            self.assertEqual(router.mode, "legacy")
+            self.assertIn("ticket", router.task_types)
+            self.assertNotIn("probe", router.task_types)
         with replaced_environ({
             "JARVIS_TASK_MODE": "managed",
             "JARVIS_MANAGED_TASK_TYPES": "probe, ticket ,",
@@ -208,11 +261,44 @@ class TaskRouterTest(unittest.TestCase):
             self.assertEqual(router.mode, "managed")
             self.assertEqual(router.managed_task_types, {"probe", "ticket"})
 
+    def test_new_task_types_env_takes_precedence_over_compatibility_env(self):
+        with replaced_environ({
+            "JARVIS_TASK_MODE": "managed",
+            "JARVIS_TASK_TYPES": "ticket",
+            "JARVIS_MANAGED_TASK_TYPES": "probe",
+        }):
+            router = ExecutionRouter.from_env(client=FakeClient())
+            self.assertEqual(router.task_types, {"ticket"})
+            self.assertEqual(router.managed_task_types, {"ticket"})
+            self.assertEqual(router.route(envelope("ticket")), (TASK, True))
+            self.assertEqual(router.route(envelope("probe")), (EPHEMERAL_JOB, False))
+
+    def test_new_migration_policy_env_takes_precedence_over_mode_alias(self):
+        with replaced_environ({
+            "JARVIS_TASK_MIGRATION_POLICY": "shadow",
+            "JARVIS_TASK_MODE": "managed",
+        }):
+            self.assertEqual(ExecutionRouter.from_env().migration_policy, "shadow")
+
+    def test_compatibility_allowlist_property_remains_writable(self):
+        router = ExecutionRouter("managed", task_types={"ticket"})
+        router.managed_task_types = {"probe"}
+        self.assertEqual(router.task_types, {"probe"})
+        self.assertFalse(router.is_managed(envelope("ticket")))
+        self.assertTrue(router.is_managed(envelope("probe")))
+
     def test_rejects_invalid_mode_and_non_envelope(self):
         with self.assertRaises(ValueError):
             TaskRouter("dual-run")
         with self.assertRaises(TypeError):
             TaskRouter("legacy").enqueue({})
+        with self.assertRaises(TypeError):
+            ExecutionRouter("legacy").route({})
+        with self.assertRaises(ValueError):
+            ExecutionRouter("managed", task_types={"probe"},
+                            managed_task_types={"ticket"})
+        with self.assertRaises(ValueError):
+            ExecutionRouter("legacy", migration_policy="managed")
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@
 #   JARVIS_ESCALATION_DIR — escalation dir(默认 <root>/escalation)
 #   JARVIS_RUNS_DIR       — runs dir(默认 <root>/runs)
 #   RECONCILE_CLAIM_CMD   — 覆盖 claim.sh 路径(测试用)
-#   JARVIS_RECONCILE_SKIP_IDS — comma-separated IDs to skip (active DispatchPool workers)
+#   JARVIS_RECONCILE_SKIP_IDS — comma-separated IDs to skip (active EphemeralExecutor jobs)
 #
 # Read-mostly;仅 drift 分支可能触发 claim.sh release。
 
@@ -34,7 +34,7 @@ source "$_reconcile_dir/log.sh"
 
 POOLS_JSON="$JARVIS_ROOT/config/pools.json"
 
-# Active DispatchPool worker IDs — reconcile must not touch these.
+# Active EphemeralExecutor job IDs — reconcile must not touch these.
 # bash 3.2 兼容:不用关联数组(declare -A / arr["k"]),把 skip 列表规整为逗号包裹字符串
 # `,id1,id2,`,判定时 case 模式匹 `*",$id,"*`;语义保持:逗号分隔、容忍空白、空值=无跳过。
 _SKIP_IDS_RAW="${JARVIS_RECONCILE_SKIP_IDS:-}"
@@ -149,7 +149,7 @@ _cmd_stale() {
 
         while IFS= read -r item_id; do
             [ -z "$item_id" ] && continue
-            # Skip IDs actively being processed by DispatchPool
+            # Skip IDs actively being processed by EphemeralExecutor
             if _is_active_dispatch "$item_id"; then
                 echo "SKIP(active): $item_id"
                 continue
@@ -225,7 +225,7 @@ _cmd_drift() {
 
         while IFS= read -r item_id; do
             [ -z "$item_id" ] && continue
-            # Skip IDs actively being processed by DispatchPool
+            # Skip IDs actively being processed by EphemeralExecutor
             if _is_active_dispatch "$item_id"; then
                 echo "SKIP(active): $item_id"
                 continue

@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, Mapping, Optional, Tuple, TypeVar
 
@@ -38,7 +39,7 @@ sys.path.insert(0, str(BRIDGE_DIR))
 
 from jarvis_local_worker import _default_boot_id, make_worker_key  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
-    AutomationAgentTaskClient,
+    ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneError,
     ControlPlaneUnavailable,
@@ -160,7 +161,7 @@ class StateStore:
             self.save_unlocked(state)
 
 
-def _client(*, timeout_override: Optional[float] = None) -> AutomationAgentTaskClient:
+def _client(*, timeout_override: Optional[float] = None) -> ControlPlaneClient:
     base_url = (os.environ.get("JARVIS_CONTROL_PLANE_BASE_URL", "").strip()
                 or os.environ.get("JARVIS_HTML_REPORT_BASE_URL", "").strip()
                 or "https://pre-agent.aliyun-inc.com")
@@ -169,7 +170,7 @@ def _client(*, timeout_override: Optional[float] = None) -> AutomationAgentTaskC
     timeout = float(os.environ.get("JARVIS_CONTROL_PLANE_TIMEOUT", "10"))
     if timeout_override is not None:
         timeout = min(timeout, float(timeout_override))
-    return AutomationAgentTaskClient(base_url, token, timeout=timeout)
+    return ControlPlaneClient(base_url, token, timeout=timeout)
 
 
 def _retry_unavailable(call: Callable[[], T]) -> T:
@@ -372,7 +373,7 @@ def _worker_payload(state: Mapping[str, Any], status: str) -> Dict[str, Any]:
     }
 
 
-def _heartbeat_worker(client: AutomationAgentTaskClient,
+def _heartbeat_worker(client: ControlPlaneClient,
                       state: Mapping[str, Any], status: str = "ACTIVE") -> None:
     payload = _worker_payload(state, status)
     # Worker heartbeat DTO does not repeat immutable identity fields.
@@ -388,7 +389,7 @@ def _heartbeat_worker(client: AutomationAgentTaskClient,
         hashlib.sha256((state["workerKey"] + str(time.time_ns())).encode()).hexdigest()[:24])
 
 
-def _register(client: AutomationAgentTaskClient, state: Mapping[str, Any],
+def _register(client: ControlPlaneClient, state: Mapping[str, Any],
               status: str = "ACTIVE") -> None:
     client.register_worker(
         _worker_payload(state, status),
@@ -396,7 +397,7 @@ def _register(client: AutomationAgentTaskClient, state: Mapping[str, Any],
         hashlib.sha256(state["workerKey"].encode()).hexdigest()[:24])
 
 
-def _mark_old_offline(client: AutomationAgentTaskClient,
+def _mark_old_offline(client: ControlPlaneClient,
                       old_state: Mapping[str, Any]) -> None:
     if not all(old_state.get(key) for key in (
             "workerKey", "host", "bootId", "processUuid")):
@@ -437,6 +438,10 @@ def _ensure_daemon(store: StateStore, expected_worker_key: str) -> None:
             return
         state["daemonPid"] = _spawn_daemon(store, expected_worker_key)
         state["daemonStartedAt"] = int(time.time())
+        daemon_started = _process_start_identity(int(state["daemonPid"]))
+        if daemon_started:
+            state["daemonProcessStartedAt"] = daemon_started
+        state.pop("sidecarHeartbeatAt", None)
         store.save_unlocked(state)
 
 
@@ -1202,36 +1207,13 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
     if not worker_key:
         return ("Jarvis Worker 本地状态缺少 workerKey；当前工具调用已阻断，"
                 "请重新启动会话并走 claim.sh。")
-    guard_timeout = max(0.1, float(os.environ.get(
-        "JARVIS_INTERACTIVE_TOOL_GUARD_TIMEOUT", "3")))
-    cp = _client(timeout_override=guard_timeout)
-    request_seed = "%s|%s|%s" % (
-        expected.get("sessionId"), expected.get("fenceToken"),
-        event.get("tool_use_id") or time.time_ns())
-    try:
-        # One short synchronous check is the lease proof for this tool. Do not
-        # retry here: a timeout/5xx must block before any potential side effect.
-        cp.heartbeat_session(
-            str(expected["sessionId"]), worker_key, expected["fenceToken"],
-            {"leaseSeconds": int(expected.get("leaseSeconds") or 120)},
-            request_id="jarvis-interactive-pre-tool-%s" %
-            hashlib.sha256(request_seed.encode()).hexdigest()[:24])
-    except StaleFence:
-        _clear_lost_current(
-            authority_store, worker_key, expected.get("sessionId"),
-            expected.get("fenceToken"), "session ownership lost before tool use")
-        return ("Jarvis 检测到任务数据库 fence 已失效；当前工具调用已阻断。"
-                "唯一允许的恢复命令：%s" %
-                _standard_claim_hint(authority_store.load()))
-    except ControlPlaneConflict:
-        return ("Jarvis 无法确认当前任务归属；当前工具调用已阻断。"
-                "唯一允许的恢复命令：%s" % _standard_claim_hint(state))
-    except ControlPlaneError:
-        return ("Jarvis 控制面暂不可用，无法验证当前任务 fence；"
-                "当前工具调用已阻断。")
+    permit_reason = _session_permit_block_reason(state, expected)
+    if permit_reason:
+        return permit_reason
 
-    # A heartbeat response can race with a local SessionStart/claim/suspend.
-    # Only the exact assignment that was verified may authorize this tool.
+    # PreToolUse is deliberately local-only. The detached sidecar owns all
+    # remote lease renewals; this final locked recheck ensures its permit cannot
+    # race with SessionStart, claim, suspend, Stop or a newer assignment.
     with authority_store.locked():
         latest = authority_store.load_unlocked()
         if not _same_current_assignment(latest, worker_key, expected):
@@ -1247,6 +1229,10 @@ def _guard_pre_tool_use(store: StateStore, client_name: str,
         local_reason = _local_tool_block_reason(latest)
         if local_reason:
             return local_reason
+        permit_reason = _session_permit_block_reason(
+            latest, expected, now=time.time())
+        if permit_reason:
+            return permit_reason
         _record_spawn_permit_locked(latest, event)
         _record_subagent_interaction_permit_locked(latest, event)
         latest["lastTurnActivityAt"] = int(time.time())
@@ -1397,6 +1383,169 @@ def _interactive_lease_seconds() -> int:
         return 300
 
 
+def _interactive_lease_safety_margin_seconds() -> float:
+    """Return the minimum remaining lease required before a tool may start."""
+    try:
+        return max(0.0, float(os.environ.get(
+            "JARVIS_INTERACTIVE_LEASE_SAFETY_MARGIN_SEC", "90")))
+    except ValueError:
+        return 90.0
+
+
+def _interactive_affinity_seconds() -> float:
+    """Return how long an auto-suspended turn remains affined to this Worker."""
+    try:
+        return max(0.0, float(os.environ.get(
+            "JARVIS_INTERACTIVE_AFFINITY_SEC", "7200")))
+    except ValueError:
+        return 7200.0
+
+
+def _epoch_seconds(value: Any) -> Optional[float]:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        numeric = float(value)
+        return numeric / 1000.0 if numeric > 100_000_000_000 else numeric
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        numeric = float(text)
+        return numeric / 1000.0 if numeric > 100_000_000_000 else numeric
+    except ValueError:
+        pass
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def _utc_timestamp(value: float) -> str:
+    return datetime.fromtimestamp(
+        float(value), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _session_response(value: Any) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        return {}
+    session = value.get("session")
+    if isinstance(session, Mapping):
+        return session
+    data = value.get("data")
+    if isinstance(data, Mapping):
+        session = data.get("session")
+        if isinstance(session, Mapping):
+            return session
+    return value
+
+
+def _session_permit(state: Mapping[str, Any],
+                    current: Mapping[str, Any],
+                    response: Any,
+                    *,
+                    source: str,
+                    now: Optional[float] = None) -> Dict[str, Any]:
+    """Bind one successful start/heartbeat response to the exact local fence."""
+    issued_at = time.time() if now is None else float(now)
+    session = _session_response(response)
+    lease_expire_at = _epoch_seconds(_field(
+        session, "leaseExpireAt", "leaseExpiresAt", "lease_expire_at"))
+    if lease_expire_at is None:
+        lease_expire_at = _epoch_seconds(_field(
+            current, "leaseExpireAt", "leaseExpiresAt", "lease_expire_at"))
+    if lease_expire_at is None:
+        # Current control-plane deployments do not consistently echo
+        # leaseExpireAt. A successful fenced start/heartbeat still proves a
+        # fresh lease for the requested duration, so retain a conservative
+        # local deadline until the response contract is upgraded.
+        lease_expire_at = issued_at + int(
+            current.get("leaseSeconds") or _interactive_lease_seconds())
+    status = str(_field(session, "status", "sessionStatus") or "RUNNING").upper()
+    return {
+        "version": 1,
+        "workerKey": str(state.get("workerKey") or ""),
+        "taskId": current.get("taskId"),
+        "sessionId": current.get("sessionId"),
+        "fenceToken": current.get("fenceToken"),
+        "generation": current.get("generation"),
+        "runtimeSessionId": current.get("runtimeSessionId"),
+        "sessionStatus": status,
+        "leaseExpireAt": lease_expire_at,
+        "issuedAt": issued_at,
+        "source": source,
+    }
+
+
+def _refresh_session_permit_locked(state: Dict[str, Any],
+                                   expected: Mapping[str, Any],
+                                   response: Any,
+                                   *,
+                                   source: str,
+                                   now: Optional[float] = None) -> bool:
+    if not _same_current_assignment(state, state.get("workerKey"), expected):
+        return False
+    state["sessionPermit"] = _session_permit(
+        state, expected, response, source=source, now=now)
+    return True
+
+
+def _sidecar_health_block_reason(state: Mapping[str, Any],
+                                 now: float) -> Optional[str]:
+    daemon_pid = state.get("daemonPid")
+    if not _pid_alive(daemon_pid):
+        return ("Jarvis interactive sidecar 未运行；当前工具调用已阻断，"
+                "请重新触发 UserPromptSubmit/SessionStart。")
+    expected_start = str(state.get("daemonProcessStartedAt") or "")
+    if expected_start and _process_start_identity(int(daemon_pid)) != expected_start:
+        return ("Jarvis interactive sidecar incarnation 已变化；当前工具调用已阻断，"
+                "请重新触发 SessionStart。")
+    health_at = _epoch_seconds(
+        state.get("sidecarHeartbeatAt") or state.get("daemonStartedAt"))
+    max_age = max(
+        _interactive_heartbeat_seconds() * 3,
+        _interactive_lease_safety_margin_seconds())
+    if health_at is None or now - health_at > max_age:
+        return ("Jarvis interactive sidecar 健康状态已过期；当前工具调用已阻断，"
+                "请等待 sidecar 恢复或重新触发 SessionStart。")
+    return None
+
+
+def _session_permit_block_reason(state: Mapping[str, Any],
+                                 current: Mapping[str, Any],
+                                 *,
+                                 now: Optional[float] = None) -> Optional[str]:
+    current_time = time.time() if now is None else float(now)
+    permit = state.get("sessionPermit")
+    if not isinstance(permit, Mapping):
+        return ("Jarvis 当前 Session 尚无本地 Lease Proof；当前工具调用已阻断，"
+                "请等待 sidecar 完成一次续租或重新通过 claim.sh 接单。")
+    expected_fields = {
+        "workerKey": state.get("workerKey"),
+        "taskId": current.get("taskId"),
+        "sessionId": current.get("sessionId"),
+        "fenceToken": current.get("fenceToken"),
+        "generation": current.get("generation"),
+        "runtimeSessionId": current.get("runtimeSessionId"),
+    }
+    for key, expected in expected_fields.items():
+        if str(permit.get(key)) != str(expected):
+            return ("Jarvis 本地 Lease Proof 与当前 task/session/fence 不匹配；"
+                    "当前工具调用已阻断，请重新通过 claim.sh 取得归属。")
+    status = str(permit.get("sessionStatus") or "").upper()
+    if status not in ("LEASED", "RUNNING"):
+        return ("Jarvis 当前 Session 状态为 %s；当前工具调用已阻断。"
+                % (status or "UNKNOWN"))
+    lease_expire_at = _epoch_seconds(permit.get("leaseExpireAt"))
+    safety_margin = _interactive_lease_safety_margin_seconds()
+    if lease_expire_at is None:
+        return ("Jarvis 本地 Lease Proof 缺少 leaseExpireAt；当前工具调用已阻断。")
+    if lease_expire_at <= current_time + safety_margin:
+        return ("Jarvis 当前 Session 剩余租约不足 %.0f 秒安全边界；"
+                "当前工具调用已阻断，请等待 sidecar 续租。" % safety_margin)
+    return _sidecar_health_block_reason(state, current_time)
+
+
 def _session_heartbeat_allowed(state: Mapping[str, Any],
                                now: Optional[float] = None) -> bool:
     """Keep Claude process-scoped; bound Codex's global app-server lease."""
@@ -1464,6 +1613,7 @@ def _clear_lost_current(store: StateStore, expected_worker_key: str,
                 "reason": error,
             }
             latest["current"] = None
+            latest.pop("sessionPermit", None)
             latest["pendingClaim"] = None
             latest["pendingOperation"] = None
             latest["pendingSuspend"] = None
@@ -1497,14 +1647,17 @@ def _finalize_pending_suspend_unlocked(state: Dict[str, Any],
         "runtimeSessionId": current.get("runtimeSessionId"),
         "suspendedAt": int(time.time()),
         "reason": "INTERACTIVE_TURN_IDLE",
+        "affinityWorkerKey": state.get("workerKey"),
+        "affinityExpireAt": pending.get("affinityExpireAt"),
     }
     state["current"] = None
+    state.pop("sessionPermit", None)
     state["pendingOperation"] = None
     state["pendingSuspend"] = None
 
 
 def _send_pending_suspend_locked(state: Dict[str, Any],
-                                 cp: AutomationAgentTaskClient) -> bool:
+                                 cp: ControlPlaneClient) -> bool:
     pending = state.get("pendingSuspend")
     if not isinstance(pending, Mapping):
         return False
@@ -1522,7 +1675,7 @@ def _send_pending_suspend_locked(state: Dict[str, Any],
 
 
 def _replay_pending_suspend(store: StateStore,
-                            cp: AutomationAgentTaskClient,
+                            cp: ControlPlaneClient,
                             expected_worker_key: str) -> Optional[str]:
     """Determine a persisted suspend before any daemon can renew its old fence."""
     state = store.load()
@@ -1637,7 +1790,7 @@ def _build_incarnation_state(
         and str(source or "") == "compact"
         and same_incarnation)
     state: Dict[str, Any] = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "client": client_name,
         "clientSessionId": session_id,
         "workerKey": worker_key,
@@ -1655,6 +1808,8 @@ def _build_incarnation_state(
             "JARVIS_INTERACTIVE_WORKER_VERSION", "interactive-v1"),
         "claimCounter": int(old_state.get("claimCounter") or 0),
         "current": old_state.get("current") if same_incarnation else None,
+        "sessionPermit": (
+            old_state.get("sessionPermit") if same_incarnation else None),
         "pendingClaim": (old_state.get("pendingClaim")
                          if same_incarnation else recovery_claim),
         # A complete recovery claim absorbs an uncertain operation into
@@ -1720,19 +1875,22 @@ def _build_incarnation_state(
     if same_incarnation and old_state.get("daemonPid"):
         state["daemonPid"] = old_state.get("daemonPid")
         state["daemonStartedAt"] = old_state.get("daemonStartedAt")
+        state["daemonProcessStartedAt"] = old_state.get(
+            "daemonProcessStartedAt")
+        state["sidecarHeartbeatAt"] = old_state.get("sidecarHeartbeatAt")
     return state, same_incarnation
 
 
 def _resume_codex_turn(store: StateStore,
                        event: Mapping[str, Any]) -> Optional[str]:
-    """Restart the sidecar and synchronously verify any carried task fence."""
+    """Restart the sidecar and validate its local proof for any carried task."""
     state = store.load()
     if not state:
         return "Jarvis Worker 尚未注册；本轮处理 Aone 前必须先恢复 SessionStart 并走 claim.sh。"
     if not _host_alive(state):
         return "Jarvis Worker 宿主进程校验失败；本轮不得绕过 claim.sh 直接处理 Aone。"
 
-    cp: Optional[AutomationAgentTaskClient] = None
+    cp: Optional[ControlPlaneClient] = None
     if state.get("stopped"):
         if state.get("offlineReason") != "idle_ttl":
             return "Jarvis Worker 已离线；请恢复会话注册后再通过 claim.sh 接单。"
@@ -1853,28 +2011,9 @@ def _resume_codex_turn(store: StateStore,
     if not current.get("heartbeatEnabled", True):
         return ("Jarvis 当前任务的外部操作回执尚未确认；本轮必须先通过标准 claim/回执流程恢复，"
                 "不得直接执行 Aone 写操作。")
-
-    cp = cp or _client()
-    try:
-        _retry_unavailable(lambda: _heartbeat_worker(cp, state, "ACTIVE"))
-        _retry_unavailable(lambda: cp.heartbeat_session(
-            str(current["sessionId"]), state["workerKey"], current["fenceToken"],
-            {"leaseSeconds": int(current.get("leaseSeconds") or 120)},
-            request_id="jarvis-interactive-turn-resume-%s" %
-            hashlib.sha256((str(current["sessionId"]) + "|" +
-                            str(state.get("activeTurnId") or "")).encode()).hexdigest()[:24]))
-    except StaleFence:
-        _clear_lost_current(store, str(state["workerKey"]), current["sessionId"],
-                            current["fenceToken"],
-                            "session ownership lost before turn start")
-        return ("Jarvis 检测到上一轮任务 fence 已失效，已清除本地旧归属；"
-                "处理该单前必须重新运行 claim.sh，不能沿用旧会话。")
-    except ControlPlaneConflict:
-        return ("Jarvis 无法确认上一轮任务归属；本轮必须先通过标准 claim 流程恢复，"
-                "不得直接执行 Aone 或代码写操作。")
-    except ControlPlaneError:
-        return ("Jarvis 无法确认上一轮任务 fence；控制面恢复并重新通过 claim.sh 前，"
-                "不得执行 Aone 或代码写操作。")
+    permit_reason = _session_permit_block_reason(state, current)
+    if permit_reason:
+        return permit_reason
     return None
 
 
@@ -1979,7 +2118,7 @@ def hook(client_name: str, event: Mapping[str, Any]) -> int:
     same_incarnation = False
     verify_command = False
     worker_key = ""
-    cp: Optional[AutomationAgentTaskClient] = None
+    cp: Optional[ControlPlaneClient] = None
     registration_error: Optional[BaseException] = None
     # The registration RPC and both success/failure publication happen under
     # one state lock. A failed older SessionStart can therefore never write a
@@ -2168,7 +2307,7 @@ def exec_headless(session_id: str, command: list[str],
     os.execvpe(command[0], list(command), env)
 
 
-def offline(store: StateStore, client: Optional[AutomationAgentTaskClient] = None,
+def offline(store: StateStore, client: Optional[ControlPlaneClient] = None,
             expected_worker_key: Optional[str] = None,
             reason: str = "host_stopped") -> bool:
     cp = client or _client()
@@ -2200,7 +2339,7 @@ def offline(store: StateStore, client: Optional[AutomationAgentTaskClient] = Non
 
 
 def _auto_suspend_idle_session(store: StateStore,
-                               cp: AutomationAgentTaskClient,
+                               cp: ControlPlaneClient,
                                expected_worker_key: str) -> bool:
     """Suspend a settled Codex task after Stop without counting it as a crash."""
     with store.locked():
@@ -2215,14 +2354,17 @@ def _auto_suspend_idle_session(store: StateStore,
             return False
         if not isinstance(state.get("pendingSuspend"), Mapping):
             stopped_at = str(state.get("turnStoppedAt") or "unknown")
+            affinity_expire_at = time.time() + _interactive_affinity_seconds()
             state["pendingSuspend"] = {
                 "sessionId": current["sessionId"],
                 "fenceToken": current["fenceToken"],
+                "affinityExpireAt": affinity_expire_at,
                 "request": {
                     "waitType": "INTERACTIVE_TURN_IDLE",
                     "waitKey": "codex-turn:%s" % hashlib.sha256(
                         (str(state.get("clientSessionId")) + "|" + stopped_at).encode()
                     ).hexdigest()[:24],
+                    "waitExpireAt": _utc_timestamp(affinity_expire_at),
                     "transcriptUri": state.get("transcriptPath"),
                     "branchRef": state.get("branch"),
                     "logUri": str(store.path.with_suffix(".log")),
@@ -2271,21 +2413,33 @@ def daemon(state_path: Path, expected_worker_key: str) -> int:
                 if (latest.get("workerKey") != expected_worker_key
                         or latest.get("stopped")):
                     return 0
+                latest["daemonPid"] = os.getpid()
+                daemon_started = _process_start_identity(os.getpid())
+                if daemon_started:
+                    latest["daemonProcessStartedAt"] = daemon_started
                 _heartbeat_worker(cp, latest, "ACTIVE")
+                heartbeat_at = time.time()
+                latest["sidecarHeartbeatAt"] = heartbeat_at
                 current = latest.get("current")
                 if (isinstance(current, Mapping)
                         and current.get("heartbeatEnabled", True)):
                     heartbeat_current = dict(current)
                     if _session_heartbeat_allowed(latest):
-                        cp.heartbeat_session(
+                        response = cp.heartbeat_session(
                             str(current["sessionId"]), latest["workerKey"],
                             current["fenceToken"],
-                            {"leaseSeconds": int(current.get("leaseSeconds") or 120)},
+                            {"leaseSeconds": int(
+                                current.get("leaseSeconds")
+                                or _interactive_lease_seconds())},
                             request_id="jarvis-interactive-session-heartbeat-%s" %
                             hashlib.sha256((str(current["sessionId"]) +
                                             str(time.time_ns())).encode()).hexdigest()[:24])
+                        _refresh_session_permit_locked(
+                            latest, current, response,
+                            source="sidecar-heartbeat", now=heartbeat_at)
                     else:
                         should_suspend = True
+                store.save_unlocked(latest)
             if should_suspend:
                 _auto_suspend_idle_session(store, cp, expected_worker_key)
         except StaleFence:
@@ -2441,11 +2595,17 @@ def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
         "logUri": str(store.path.with_suffix(".log")),
         "leaseSeconds": lease_seconds,
     }
-    _retry_unavailable(lambda: cp.start_session(
+    start_result = _retry_unavailable(lambda: cp.start_session(
         str(session_id), state["workerKey"], fence, start_detail,
         request_id="jarvis-interactive-session-start-%s" %
         hashlib.sha256((str(session_id) + "|" + str(fence)).encode()).hexdigest()[:24]))
 
+    response_session = _session_response(start_result)
+    lease_expire_at = (
+        _epoch_seconds(_field(
+            response_session, "leaseExpireAt", "leaseExpiresAt", "lease_expire_at"))
+        or _epoch_seconds(_field(
+            session, "leaseExpireAt", "leaseExpiresAt", "lease_expire_at")))
     current = {
         "aoneId": aone_id,
         "projectId": project_id,
@@ -2464,6 +2624,8 @@ def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
         # ACKED. A process loss before that point must age out safely.
         "heartbeatEnabled": False,
     }
+    if lease_expire_at is not None:
+        current["leaseExpireAt"] = lease_expire_at
     with store.locked():
         latest = store.load_unlocked()
         pending_latest = latest.get("pendingClaim")
@@ -2474,6 +2636,9 @@ def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
             raise ControlPlaneConflict(
                 "interactive worker incarnation changed while claiming task")
         latest["current"] = current
+        latest["sessionPermit"] = _session_permit(
+            latest, current, start_result,
+            source="session-start", now=time.time())
         latest["pendingClaim"] = None
         latest.pop("lostOwnership", None)
         store.save_unlocked(latest)
@@ -2714,6 +2879,7 @@ def fail_claim(aone_id: str, message: str, *, unknown: bool = False) -> None:
                 raise ControlPlaneConflict(
                     "interactive worker changed while failing claim")
             latest["current"] = None
+            latest.pop("sessionPermit", None)
             # A failed required receipt remains part of this exact logical
             # claim.  Reuse its cycle/runtime/operation key after RETRY_WAIT;
             # UNKNOWN likewise stays fenced until explicit reconciliation.
@@ -2777,6 +2943,7 @@ def transition(aone_id: str, action: str, detail: Optional[str] = None) -> Dict[
             raise ControlPlaneConflict(
                 "interactive worker changed while committing task transition")
         latest["current"] = None
+        latest.pop("sessionPermit", None)
         latest["pendingClaim"] = None
         latest["pendingOperation"] = None
         latest["pendingSuspend"] = None

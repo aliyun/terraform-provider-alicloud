@@ -12,10 +12,13 @@ sys.path.insert(0, str(HERE))
 from jarvis_local_worker import (  # noqa: E402
     LeaseProtocolError,
     LocalWorker,
+    SessionController,
     SessionLifecycle,
+    TaskExecutor,
     make_worker_key,
     parse_lease_response,
 )
+from jarvis_capacity import CapacityManager  # noqa: E402
 from jarvis_task_client import (  # noqa: E402
     ControlPlaneConflict,
     ControlPlaneUnavailable,
@@ -313,6 +316,32 @@ class LocalWorkerTest(unittest.TestCase):
             worker_key="mac:boot:proc", lease_seconds=45,
             executor=executor or ManualExecutor(inline=True),
             clock=clock or FakeClock(), logger=LOG, **kwargs)
+
+    def test_formal_executor_name_keeps_compatibility_alias(self):
+        self.assertIs(LocalWorker, TaskExecutor)
+        self.assertIs(SessionLifecycle, SessionController)
+
+    def test_shared_capacity_is_reserved_before_lease_and_released_after_run(self):
+        manager = CapacityManager(1)
+        ephemeral = manager.acquire("ephemeral:busy")
+        client = FakeClient(lease_task=[lease_response()])
+        executor = ManualExecutor()
+        worker = self.make(
+            client, lambda *_args: "done", lambda *_args: None,
+            free_slots=manager.available_slots,
+            capacity_manager=manager, max_slots=1, executor=executor)
+
+        self.assertTrue(worker.run_once())
+        self.assertEqual(client.named("lease_task"), [],
+                         "TaskExecutor must reserve capacity before leasing")
+
+        ephemeral.release()
+        self.assertTrue(worker.run_once())
+        self.assertEqual(manager.running_count(), 1)
+        self.assertEqual(worker.active_session_ids(), ["s1"])
+        executor.run_all()
+        self.assertEqual(manager.running_count(), 0)
+        self.assertEqual(worker.active_count(), 0)
 
     def test_register_lease_start_execute_and_complete(self):
         client = FakeClient(lease_task=[lease_response(resumed=True)])

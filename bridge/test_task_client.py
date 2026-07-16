@@ -14,6 +14,7 @@ sys.path.insert(0, str(HERE))
 
 from jarvis_task_client import (  # noqa: E402
     AutomationAgentTaskClient,
+    ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneUnavailable,
     InvalidResponse,
@@ -76,6 +77,9 @@ def body(req):
 
 
 class TaskEnvelopeTest(unittest.TestCase):
+    def test_formal_client_name_keeps_compatibility_alias(self):
+        self.assertIs(AutomationAgentTaskClient, ControlPlaneClient)
+
     def test_serializes_and_omits_empty_optional_fields(self):
         env = envelope()
         data = env.to_dict(execution_mode="MANAGED")

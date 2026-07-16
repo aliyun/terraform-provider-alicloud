@@ -21,8 +21,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Union
 
+from jarvis_capacity import CapacityManager, CapacityPermit
 from jarvis_task_client import (
-    AutomationAgentTaskClient,
+    ControlPlaneClient,
     ControlPlaneConflict,
     ControlPlaneError,
     ControlPlaneUnavailable,
@@ -138,7 +139,7 @@ class _ThreadFuture:
 
 
 class _ThreadExecutor:
-    """Immediate daemon-thread executor with the small API LocalWorker needs."""
+    """Immediate daemon-thread executor with the small API TaskExecutor needs."""
 
     def __init__(self):
         self._lock = threading.Lock()
@@ -168,7 +169,7 @@ class _ThreadExecutor:
                 thread.join()
 
 
-class SessionLifecycle:
+class SessionController:
     """Fenced session transitions passed to the injected execution callback.
 
     A terminal transition that cannot reach AutomationAgent remains pending and
@@ -179,7 +180,7 @@ class SessionLifecycle:
 
     TERMINAL_ACTIONS = {"complete", "fail", "suspend"}
 
-    def __init__(self, client: AutomationAgentTaskClient, worker_key: str,
+    def __init__(self, client: ControlPlaneClient, worker_key: str,
                  lease: Mapping[str, Any], *,
                  lease_seconds: int = 60,
                  runtime_session_id_factory: Callable[[], str] = _new_runtime_session_id,
@@ -518,25 +519,32 @@ class SessionLifecycle:
         return self._terminal("suspend", detail)
 
 
+# One-release compatibility alias.  SessionController is the formal owner of
+# Task Session transitions; SessionLifecycle remains importable for extensions.
+SessionLifecycle = SessionController
+
+
 @dataclass
 class _ActiveSession:
     lifecycle: SessionLifecycle
     future: Any = None
+    capacity_permit: Optional[CapacityPermit] = None
 
 
 Capacity = Union[int, Callable[[], int]]
 Execute = Callable[[Mapping[str, Any], SessionLifecycle], Any]
 
 
-class LocalWorker:
+class TaskExecutor:
     """One-machine lease/execute/heartbeat loop with fail-closed networking."""
 
-    def __init__(self, client: AutomationAgentTaskClient, free_slots: Capacity,
+    def __init__(self, client: ControlPlaneClient, free_slots: Capacity,
                  execute: Execute, stop_process: StopProcess, *,
                  host: Optional[str] = None, boot_id: Optional[str] = None,
                  process_uuid: Optional[str] = None, worker_key: Optional[str] = None,
                  capabilities: Optional[Mapping[str, Any]] = None,
                  max_slots: Optional[int] = None,
+                 capacity_manager: Optional[CapacityManager] = None,
                  lease_seconds: int = 60,
                  runtime_session_id_factory: Callable[[], str] = _new_runtime_session_id,
                  lease_interval: float = 2.0, worker_heartbeat_interval: float = 10.0,
@@ -548,6 +556,10 @@ class LocalWorker:
             raise TypeError("execute must be callable")
         if not callable(stop_process):
             raise TypeError("stop_process must be callable")
+        if capacity_manager is not None and not isinstance(
+                capacity_manager, CapacityManager):
+            raise TypeError("capacity_manager must be a CapacityManager")
+        self.capacity_manager = capacity_manager
         if not callable(free_slots):
             capacity = int(free_slots)
             if capacity < 0:
@@ -642,11 +654,13 @@ class LocalWorker:
             return len(self._sessions)
 
     def available_slots(self) -> int:
+        if self.capacity_manager is not None:
+            return self.capacity_manager.available_slots()
         with self._lock:
             active = len(self._sessions)
         if self._free_slots_fn is not None:
-            # A bound DispatchPool.free_slots() accounts for legacy work only;
-            # managed sessions live here, so both consumers share the cap.
+            # Compatibility capacity callback for deployments not yet using the
+            # shared CapacityManager.
             return max(0, int(self._free_slots_fn()) - active)
         return max(0, int(self._capacity or 0) - active)
 
@@ -731,8 +745,13 @@ class LocalWorker:
             # Recover and commit already-finished work before admitting another
             # lease after a partial control-plane outage.
             return True
-        slots = self.available_slots()
-        if slots <= 0:
+        capacity_permit = None
+        if self.capacity_manager is not None:
+            capacity_permit = self.capacity_manager.acquire(
+                "task-executor:%s" % self.worker_key)
+            if capacity_permit is None:
+                return True
+        elif self.available_slots() <= 0:
             return True
         try:
             response = self.client.lease_task(
@@ -741,6 +760,8 @@ class LocalWorker:
                 request_id="jarvis-worker-lease-%s" % uuid.uuid4().hex)
             lease = parse_lease_response(response)
         except ControlPlaneConflict as exc:
+            if capacity_permit is not None:
+                capacity_permit.release()
             # A concurrent poll or backend max-slot fence is capacity pressure,
             # not a network outage.  Keep the registration healthy and retry on
             # the normal poll cadence.
@@ -749,16 +770,22 @@ class LocalWorker:
                              self.worker_key, getattr(exc, "code", ""))
             return True
         except Exception as exc:
+            if capacity_permit is not None:
+                capacity_permit.release()
             self._mark_network_failure(exc)
             self.log.warning("task lease failed worker=%s error=%s",
                              self.worker_key, type(exc).__name__)
             return False
         self._mark_network_healthy()
         if lease is None:
+            if capacity_permit is not None:
+                capacity_permit.release()
             return True
         try:
-            return self._accept_lease(lease)
+            return self._accept_lease(lease, capacity_permit=capacity_permit)
         except Exception as exc:
+            if capacity_permit is not None:
+                capacity_permit.release()
             # A lifecycle/client integration bug must fail closed instead of
             # killing the long-running lease-loop thread.
             self._mark_network_failure(exc)
@@ -766,7 +793,13 @@ class LocalWorker:
                                self.worker_key, type(exc).__name__)
             return False
 
-    def _accept_lease(self, lease: Mapping[str, Any]) -> bool:
+    def _accept_lease(self, lease: Mapping[str, Any], *,
+                      capacity_permit: Optional[CapacityPermit] = None) -> bool:
+        if self.capacity_manager is not None and capacity_permit is None:
+            capacity_permit = self.capacity_manager.acquire(
+                "task-executor:%s" % self.worker_key)
+            if capacity_permit is None:
+                return False
         lifecycle = SessionLifecycle(
             self.client, self.worker_key, lease,
             lease_seconds=self.lease_seconds,
@@ -778,16 +811,24 @@ class LocalWorker:
         with self._lock:
             if self._draining or self._stopped:
                 self._fail_worker_stopping(lifecycle, "worker_not_accepting")
+                if capacity_permit is not None:
+                    capacity_permit.release()
                 return False
             if lifecycle.session_id in self._sessions:
                 self.log.warning("duplicate lease ignored session=%s", lifecycle.session_id)
+                if capacity_permit is not None:
+                    capacity_permit.release()
                 return False
         if not lifecycle.start():
+            if capacity_permit is not None:
+                capacity_permit.release()
             return False
-        record = _ActiveSession(lifecycle)
+        record = _ActiveSession(lifecycle, capacity_permit=capacity_permit)
         with self._lock:
             if self._draining or self._stopped:
                 self._fail_worker_stopping(lifecycle, "worker_not_accepting")
+                if capacity_permit is not None:
+                    capacity_permit.release()
                 return False
             self._sessions[lifecycle.session_id] = record
         try:
@@ -799,6 +840,11 @@ class LocalWorker:
                                 "message": "execution submission failed"})
             if lifecycle.terminal or lifecycle.ownership_lost:
                 self._remove_session(lifecycle.session_id)
+            elif capacity_permit is not None:
+                # Submission failed before a terminal ACK could be accepted.
+                # The Session remains server-owned until lease expiry, but this
+                # process no longer consumes a local execution slot.
+                capacity_permit.release()
             return False
         with self._lock:
             current = self._sessions.get(lifecycle.session_id)
@@ -880,7 +926,9 @@ class LocalWorker:
 
     def _remove_session(self, session_id: str) -> None:
         with self._lock:
-            self._sessions.pop(str(session_id), None)
+            record = self._sessions.pop(str(session_id), None)
+        if record is not None and record.capacity_permit is not None:
+            record.capacity_permit.release()
 
     @staticmethod
     def _future_done(record: _ActiveSession) -> bool:
@@ -916,7 +964,7 @@ class LocalWorker:
         while not self._stop_event.wait(self.session_heartbeat_interval):
             self.heartbeat_sessions_once()
 
-    def start(self) -> "LocalWorker":
+    def start(self) -> "TaskExecutor":
         with self._lock:
             if self._stopped:
                 raise RuntimeError("worker is stopped")
@@ -980,3 +1028,8 @@ class LocalWorker:
             except TypeError:  # pragma: no cover - Python <3.9
                 self._executor.shutdown(wait=drained)
         return drained
+
+
+# One-release compatibility alias.  New integrations should use TaskExecutor;
+# the implementation location remains stable to avoid a flag-day module move.
+LocalWorker = TaskExecutor

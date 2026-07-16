@@ -1,8 +1,9 @@
 # Interactive Codex / Claude workers
 
 Opening this repository in Codex or Claude registers that native conversation as
-a one-slot `INTERACTIVE` Jarvis worker. The detached sidecar only heartbeats the
-worker and its explicitly claimed session; it never leases the shared queue.
+a one-slot `INTERACTIVE` Jarvis worker. The detached sidecar is the only component
+that sends periodic remote `ACTIVE` Worker and session heartbeats; it never leases
+the shared queue. `PreToolUse` and `UserPromptSubmit` do not renew a remote lease.
 `bootstrap/claim.sh claim <aone-id> <project-id>` performs the database direct
 claim before writing the Aone tag, so a conflict or unavailable control plane
 fails closed without touching Aone. `release` suspends the persisted session and
@@ -43,10 +44,13 @@ progress. If the suspend request cannot reach the control plane, the default
 300-second lease remains the crash fallback. The detached sidecar heartbeats every
 30 seconds by default, so an available control plane continuously renews the
 session while the native conversation remains active. A prompt arriving before
-suspension synchronously renews the same fence. A later continuation prompt
-reclaims the suspended task through the normal control-plane claim/start path,
-reuses the same durable session, and receives a new fence without consuming a
-crash retry. A prompt that
+suspension only restarts/checks the sidecar and validates its local
+`SessionPermit`; it does not synchronously renew the fence. For Codex Desktop,
+after the 10-minute turn grace, automatic suspension includes a `waitExpireAt`
+affinity window of `JARVIS_INTERACTIVE_AFFINITY_SEC` (default 7200 seconds).
+Claude remains process-scoped. A later continuation prompt reclaims the
+suspended task through the normal control-plane claim/start path, reuses the
+same Task lineage, and receives a new fence without consuming a crash retry. A prompt that
 explicitly names a different Aone item leaves the old task suspended so the new
 item can follow its own `claim.sh` path. If another Worker already recovered the
 task, the stale assignment is recorded as lost ownership and every later prompt
@@ -65,11 +69,29 @@ hook persists a fail-closed tombstone; a missing local Worker state is also
 fail-closed. Tools remain blocked until a later trusted `SessionStart` registers
 the conversation successfully.
 
-While a task is attached, every Codex and Claude `PreToolUse` synchronously
-renews the exact session fence before the tool may start. A stale fence,
-control-plane timeout/conflict, delayed old turn, replaced host process, or
-uncertain operation receipt blocks the tool with exit code 2. The only recovery
-exception is the standalone command `/bin/bash
+While a task is attached, every Codex and Claude `PreToolUse` is local-only. It
+atomically rechecks a `SessionPermit` written by a successful fenced
+claim/start or by the sidecar's latest heartbeat response. The permit binds the
+exact Worker, task, session, generation, runtime session and fence token, and
+records the session status plus `leaseExpireAt`. A missing/mismatched permit,
+non-`LEASED`/`RUNNING` status, dead or stale sidecar, less than
+`JARVIS_INTERACTIVE_LEASE_SAFETY_MARGIN_SEC` remaining lease (default 90
+seconds), delayed old turn, replaced host process, or uncertain operation
+receipt blocks the tool with exit code 2. A start response creates the initial
+permit immediately, so the first tool does not have to wait for the next
+30-second sidecar tick. A sidecar heartbeat refreshes the permit and its health
+timestamp in the same atomic state write.
+
+States written before `SessionPermit` was introduced are upgraded
+fail-closed: their carried task/session lineage is preserved, but tools remain
+blocked until the sidecar completes a successful fenced heartbeat and writes a
+fresh permit. If a control-plane deployment does not yet return
+`leaseExpireAt`, the local compatibility path derives a conservative deadline
+from the successful start/heartbeat time plus the requested lease duration;
+an explicit response field (ISO-8601, epoch seconds, or epoch milliseconds)
+always takes precedence.
+
+The only recovery exception is the standalone command `/bin/bash
 <absolute-current-repo>/bootstrap/claim.sh claim <same-aone> <same-project>`;
 composed shell commands, environment prefixes, relative/lookalike scripts,
 custom tools and a different target remain blocked. This closes the interval

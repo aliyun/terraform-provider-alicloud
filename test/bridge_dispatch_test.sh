@@ -596,7 +596,8 @@ class ProbeSummaryWriteTest(unittest.TestCase):
     def _fake_buffered(self, final_text):
         # dispatch_item 迁到 run_claude_buffered 后必须 stub 它;返回 clean 完成态
         # (is_error=False)让主路径进入 completion_broadcast + probe summary 落盘分支。
-        def _one(text, sid, resume, timeout=None, on_spawn=None, terraform=False):
+        def _one(text, sid, resume, timeout=None, on_spawn=None, terraform=False,
+                 execution_runtime=None):
             return b.ClaudeResult(final_text, False, "ok")
         return _one
 

@@ -49,7 +49,7 @@ class _FakeLocalWorker:
 
 class HandlerWiringTest(unittest.TestCase):
     ENV_KEYS = (
-        "JARVIS_TASK_MODE", "JARVIS_MANAGED_TASK_TYPES",
+        "JARVIS_TASK_MODE", "JARVIS_TASK_TYPES", "JARVIS_MANAGED_TASK_TYPES",
         "JARVIS_CONTROL_PLANE_BASE_URL", "JARVIS_CONTROL_PLANE_TOKEN",
     )
 
@@ -64,25 +64,31 @@ class HandlerWiringTest(unittest.TestCase):
             else:
                 os.environ[key] = value
 
-    def test_managed_allowlist_is_probe_only_and_worker_capability_matches(self):
+    def test_task_types_are_not_clamped_and_worker_capability_matches(self):
         os.environ["JARVIS_TASK_MODE"] = "managed"
-        os.environ["JARVIS_MANAGED_TASK_TYPES"] = "*,ticket,wake"
+        os.environ["JARVIS_TASK_TYPES"] = "ticket,wake"
         client = object()
         with mock.patch.object(bot, "_task_client_from_env", return_value=client), \
-                mock.patch.object(bot, "LocalWorker", _FakeLocalWorker):
+                mock.patch.object(bot, "TaskExecutor", _FakeLocalWorker):
             handler = bot.JarvisHandler(no_dingtalk=True)
-        self.assertEqual(handler.task_router.managed_task_types, {"probe"})
+        self.assertEqual(handler.execution_router.task_types, {"ticket", "wake"})
         self.assertIsNotNone(handler.local_worker)
         self.assertEqual(_FakeLocalWorker.instances[-1].kwargs["capabilities"],
-                         {"kinds": ["probe"]})
+                         {"kinds": ["ticket", "wake"]})
+        self.assertIs(handler.task_executor, handler.local_worker)
+        self.assertIs(handler.ephemeral_executor, handler.dispatch_pool)
+        self.assertIs(_FakeLocalWorker.instances[-1].kwargs["capacity_manager"],
+                      handler.ephemeral_executor.capacity_manager)
+        self.assertIs(handler.execution_runtime,
+                      handler.ephemeral_executor.execution_runtime)
 
     def test_empty_managed_allowlist_stays_empty(self):
         os.environ["JARVIS_TASK_MODE"] = "managed"
-        os.environ["JARVIS_MANAGED_TASK_TYPES"] = ""
+        os.environ["JARVIS_TASK_TYPES"] = ""
         with mock.patch.object(bot, "_task_client_from_env", return_value=object()), \
-                mock.patch.object(bot, "LocalWorker", _FakeLocalWorker):
+                mock.patch.object(bot, "TaskExecutor", _FakeLocalWorker):
             handler = bot.JarvisHandler(no_dingtalk=True)
-        self.assertEqual(handler.task_router.managed_task_types, set())
+        self.assertEqual(handler.execution_router.task_types, set())
 
     def test_worker_starts_before_every_sensor(self):
         calls = []
@@ -189,12 +195,12 @@ class ManagedExecutionTest(unittest.TestCase):
 
         lifecycle = Lifecycle()
         lease = {
-            "task": {"taskType": "probe", "payload": {
-                "itemId": "probe-2026-07-15", "kind": "probe",
+            "task": {"taskType": "ticket", "payload": {
+                "itemId": "84345050", "kind": "ticket",
                 "prompt": "newer-current-task-input",
             }},
             "session": {"inputPayload": {
-                "itemId": "probe-2026-07-15", "kind": "probe", "prompt": "go",
+                "itemId": "84345050", "kind": "ticket", "prompt": "go",
                 "terraform": True, "target": "group-1", "targetType": "group",
             }},
         }
@@ -252,7 +258,7 @@ class ManagedExecutionTest(unittest.TestCase):
         add.assert_not_called()
         remove.assert_not_called()
 
-    def test_non_probe_managed_lease_is_rejected_before_execution(self):
+    def test_ephemeral_probe_lease_is_rejected_before_execution(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler._broadcast = lambda _text: None
         handler.dispatch_item = mock.Mock()
@@ -260,8 +266,8 @@ class ManagedExecutionTest(unittest.TestCase):
                                     bind_process=lambda _p: None)
         with self.assertRaisesRegex(ValueError, "not enabled"):
             handler._execute_managed_lease(
-                {"task": {"taskType": "ticket", "payload": {
-                    "itemId": "1", "kind": "ticket", "prompt": "go"}}}, lifecycle)
+                {"task": {"taskType": "probe", "payload": {
+                    "itemId": "probe-1", "kind": "probe", "prompt": "go"}}}, lifecycle)
         handler.dispatch_item.assert_not_called()
 
     def test_managed_suspend_returns_central_wait_state_without_local_watcher(self):
