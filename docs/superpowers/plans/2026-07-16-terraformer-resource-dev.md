@@ -80,9 +80,17 @@ for skill in \
   "$repo_root/.claude/skills/terraformer-resource-dev/SKILL.md" \
   "$repo_root/.agents/skills/terraformer-resource-dev/SKILL.md"; do
   for term in \
-    "description: Use when developing, diagnosing, or fixing an Alibaba Cloud resource in Terraformer" \
+    "description: 用于开发、诊断或修复 Terraformer 中的阿里云资源" \
+    "# Terraformer 资源开发" \
+    "## 核心模型" \
+    "## 每次任务的起始动作" \
+    "## 证据优先级" \
+    "## 选择一种资源发现模式" \
+    "## 只修改适用文件" \
+    "## 验证门禁" \
+    "## 交付" \
     "bootstrap/workspace.sh dir terraformer" \
-    "stop and escalate missing_capability" \
+    "停止并按 missing_capability 升级" \
     "aone-triage" \
     "loops/adhoc-intake.md" \
     "bootstrap/claim.sh claim" \
@@ -93,9 +101,37 @@ for skill in \
     "terraform-rd" \
     "terraform-qa" \
     "InitResources" \
-    "Do not produce or infer resource relationships"; do
+    "禁止生产或推导资源关联关系"; do
     if ! grep -Fq -- "$term" "$skill"; then
       echo "terraformer_resource_dev_skill_rules_test: missing '$term' in $skill" >&2
+      exit 1
+    fi
+  done
+  for old_term in \
+    "description: Use when developing" \
+    "# Terraformer Resource Development" \
+    "## Core model" \
+    "## Start every task" \
+    "## Evidence hierarchy" \
+    "## Evidence order" \
+    "## Select one discovery pattern" \
+    "## Choose one discovery pattern" \
+    "## Change only applicable files" \
+    "## Change only the applicable files" \
+    "## Validation gates" \
+    "## Delivery" \
+    "prior state" \
+    "fallback" \
+    "schema flatten" \
+    "state/HCL" \
+    "Terraformer checkout" \
+    "tracked files" \
+    "scope/filter" \
+    "child List API" \
+    "client/service" \
+    "endpoint"; do
+    if grep -Fq -- "$old_term" "$skill"; then
+      echo "terraformer_resource_dev_skill_rules_test: unexpected English prose '$old_term' in $skill" >&2
       exit 1
     fi
   done
@@ -105,24 +141,70 @@ for reference in \
   "$repo_root/.claude/skills/terraformer-resource-dev/references/alicloud-resource-development.md" \
   "$repo_root/.agents/skills/terraformer-resource-dev/references/alicloud-resource-development.md"; do
   for term in \
-    "A. Direct full List with a single-field Import ID" \
-    "B. One List returns every multipart-ID segment" \
-    "C. Parent-child traversal" \
-    "D. Complete enumeration is unavailable" \
+    "# Alicloud Terraformer 资源开发" \
+    "## 目录" \
+    "## 1. 运行时架构" \
+    "## 2. 证据真源检查清单" \
+    "## 3. InitResources 资源发现模式" \
+    "A. 直接全量 List + 单字段 Import ID" \
+    "B. 单次 List 返回多段 Import ID 的全部片段" \
+    "C. 父子遍历" \
+    "D. 无法完整枚举" \
+    "## 4. 多段式 Import ID" \
+    "## 5. 分页与错误处理" \
+    "## 6. 文件选择" \
+    "## 7. 测试与验证" \
+    "## 8. 常见错误" \
     'd.SetId(...)' \
     'ParseResourceId(...)' \
-    "A multipart Import ID does not by itself require parent traversal" \
-    "A Data Source may require the parent ID" \
-    "Reset pagination for every parent" \
-    "For token pagination, stop when the returned next token is empty regardless of page length" \
-    "For page-number pagination" \
-    "Do not produce or infer connections" \
-    "does not block core discovery and Import ID support" \
+    "多段式 Import ID 本身并不意味着必须遍历父资源" \
+    "Data Source 可以要求父资源 ID" \
+    "每个父资源都必须重置分页状态" \
+    "使用 token 分页时，只要返回的 next token 为空就终止，不受当前页数量影响" \
+    "使用页码分页时" \
+    "禁止从 Provider schema、Data Source 参数或 API 字段名生产或推导关联关系" \
+    "不阻塞核心的资源发现与 Import ID 支持" \
     "go test ./providers/alicloud" \
     "go test ./..." \
     "/tmp/terraformer"; do
     if ! grep -Fq -- "$term" "$reference"; then
       echo "terraformer_resource_dev_skill_rules_test: missing '$term' in $reference" >&2
+      exit 1
+    fi
+  done
+  for old_term in \
+    "# Alicloud Terraformer resource development" \
+    "## Contents" \
+    "## 1. Runtime architecture" \
+    "## 2. Source-of-truth checklist" \
+    "## 3. InitResources discovery patterns" \
+    "### A. Direct full List with a single-field Import ID" \
+    "### B. One List returns every multipart-ID segment" \
+    "### C. Parent-child traversal" \
+    "### D. Complete enumeration is unavailable" \
+    "## 4. Multipart Import IDs" \
+    "## 5. Pagination and errors" \
+    "## 6. File selection" \
+    "## 7. Tests and validation" \
+    "## 8. Common mistakes" \
+    "prior state" \
+    "fallback" \
+    "schema flatten" \
+    "import round trip" \
+    "child List API" \
+    "attachment" \
+    "page size" \
+    "page number" \
+    "action" \
+    "endpoint" \
+    "decode" \
+    "retry helper" \
+    "consumer" \
+    "producer" \
+    "connection map" \
+    "drift"; do
+    if grep -Fq -- "$old_term" "$reference"; then
+      echo "terraformer_resource_dev_skill_rules_test: unexpected English prose '$old_term' in $reference" >&2
       exit 1
     fi
   done
@@ -172,154 +254,154 @@ Expected: initializer succeeds in `/tmp`. Do not copy its optional `agents/opena
 
 - [ ] **Step 4: Write the canonical Skill entrypoint**
 
-Create `.claude/skills/terraformer-resource-dev/SKILL.md` with this content:
+创建 `.claude/skills/terraformer-resource-dev/SKILL.md`，所有说明性内容使用中文，专有标识、命令和文件路径保持原样：
 
 ```markdown
 ---
 name: terraformer-resource-dev
-description: Use when developing, diagnosing, or fixing an Alibaba Cloud resource in Terraformer, including unsupported resources, incomplete discovery, incorrect or multipart Import IDs, parent-scoped listing, pagination defects, endpoint failures, or invalid generated Terraform state or HCL.
+description: 用于开发、诊断或修复 Terraformer 中的阿里云资源，包括资源未支持、资源发现不完整、Import ID 错误或多段式、父级作用域枚举、分页缺陷、端点故障，以及生成的 Terraform 状态或 HCL 无效等场景。
 ---
 
-# Terraformer Resource Development
+# Terraformer 资源开发
 
-## Core model
+## 核心模型
 
-Treat a Terraformer resource as a discovery adapter, not a second Terraform Provider resource implementation:
+把 Terraformer 资源视为“资源发现适配器”，不要把它实现成第二套 Terraform Provider 资源：
 
 ```text
 InitResources
-  -> enumerate remote objects and emit Provider-compatible Import IDs
-  -> ProviderWrapper.Refresh seeds prior state and calls Provider ReadResource
-     (the implementation also contains an ImportResourceState fallback path)
-  -> ConvertTFstate produces Terraform state and HCL
+  -> 枚举远端对象，生成与 Provider 兼容的 Import ID
+  -> ProviderWrapper.Refresh 用该 ID 构造先验状态，并调用 Provider ReadResource
+     （实现中还保留 ImportResourceState 回退路径）
+  -> ConvertTFstate 生成 Terraform 状态和 HCL
 ```
 
-Diagnose failures at the correct layer: discovery, Import ID, Provider Read, or state/HCL conversion. Do not copy Provider CRUD logic into `InitResources`.
+按正确层次诊断问题：资源发现、Import ID、Provider 读取或状态/HCL 转换。禁止把 Provider CRUD 逻辑复制进 `InitResources`。
 
-## Start every task
+## 每次任务的起始动作
 
-1. Resolve the repository with `bash bootstrap/workspace.sh dir terraformer`; resolve Provider evidence with `bash bootstrap/workspace.sh dir terraform_provider`. If either resolver fails or returns a path that is not an existing directory, stop and escalate missing_capability; do not invent or use a path. Read `bash bootstrap/workspace.sh config <key>` for the registered repository, remote, and default branch before cloning or synchronizing.
-2. Preserve dirty files in the Terraformer checkout. Pull the registered default branch, then create an isolated worktree before modifying tracked files.
-3. For an Aone URL or ID, invoke [aone-triage](../aone-triage/SKILL.md) before repository inspection. If tracked files will change and no work item exists, follow [loops/adhoc-intake.md](../../../loops/adhoc-intake.md) to create or reuse one before development; pure read-only inspection may use the repository's documented exemption.
-4. Start work with `bash bootstrap/claim.sh claim <id> <pool-project>`. After opening a CR/MR, post its Markdown link with `bash bootstrap/wrap.sh sync <id> "<progress with [CR](url)>"`. Finish unmerged work with `bash bootstrap/wrap.sh done <id> "<summary>" --no-status` and `bash bootstrap/claim.sh release <id> <pool-project>`.
-5. Assign implementation to `terraform-rd` and acceptance verification to `terraform-qa`.
-6. Read [references/alicloud-resource-development.md](references/alicloud-resource-development.md) before choosing an API or writing code.
-7. Classify the request as a new resource or a repair. For a repair, change only files required by the demonstrated root cause and add a regression test.
+1. 用 `bash bootstrap/workspace.sh dir terraformer` 解析 Terraformer 仓库，用 `bash bootstrap/workspace.sh dir terraform_provider` 解析 Provider 证据仓库。任一命令失败或返回的路径不是现有目录时，停止并按 missing_capability 升级；禁止猜测或直接使用不存在的路径。克隆或同步前，先用 `bash bootstrap/workspace.sh config <key>` 读取登记的仓库、远端和默认分支。
+2. 保留 Terraformer 检出目录中已有的脏文件。先拉取登记的默认分支，再为受 Git 跟踪的文件修改创建独立工作树。
+3. 输入含 Aone URL 或 ID 时，仓库查证前先调用 [aone-triage](../aone-triage/SKILL.md)。没有工作项但需要修改受 Git 跟踪的文件时，先按 [loops/adhoc-intake.md](../../../loops/adhoc-intake.md) 创建或复用工作项；纯只读查证可使用仓库已定义的豁免。
+4. 开工执行 `bash bootstrap/claim.sh claim <id> <pool-project>`。创建 CR/MR 后，用 `bash bootstrap/wrap.sh sync <id> "<包含 [CR](url) 的进展>"` 回填链接。未合并收尾时，依次执行 `bash bootstrap/wrap.sh done <id> "<总结>" --no-status` 和 `bash bootstrap/claim.sh release <id> <pool-project>`。
+5. 将实现工作交给 `terraform-rd`，将验收验证交给 `terraform-qa`。
+6. 选择 API 或写代码前，完整阅读 [references/alicloud-resource-development.md](references/alicloud-resource-development.md)。
+7. 先判断任务是新资源接入还是现有资源修复。修复任务只修改已证明与根因相关的文件，并增加回归测试。
 
-## Evidence order
+## 证据优先级
 
-Use this order and record the decisive evidence:
+按以下顺序查证，并记录决定性证据：
 
-1. Terraform Provider Resource source.
-2. Provider Import documentation and Import acceptance tests.
-3. Provider Data Source source for List/filter/pagination behavior only.
-4. Provider service/client implementation.
-5. Terraformer resources with the same discovery pattern.
-6. OpenAPI metadata or official API documentation.
-7. Read-only live API/export results when credentials and existing resources are available.
+1. Terraform Provider 资源源码。
+2. Provider 导入文档和 Import 验收测试。
+3. Provider Data Source 源码，仅用于参考 List API、过滤和分页行为。
+4. Provider 服务/客户端实现。
+5. Terraformer 中采用相同资源发现模式的资源。
+6. OpenAPI 元数据或官方 API 文档。
+7. 有凭据且已有资源时的只读 API/导出结果。
 
-The Provider's `d.SetId(...)`, `ParseResourceId(...)`, Import docs, and Import tests define the Import ID. Do not infer it from names or Data Source arguments.
+Import ID 由 Provider 的 `d.SetId(...)`、`ParseResourceId(...)`、Import 文档和 Import 测试共同定义。禁止根据名称或 Data Source 参数猜测。
 
-## Select one discovery pattern
+## 选择一种资源发现模式
 
-Choose exactly one primary `InitResources` pattern:
+每个资源只选择一个主要 `InitResources` 模式：
 
-- **A. Direct full List with a single-field Import ID:** the List API enumerates resources without parent scope and each item exposes the one Provider ID field.
-- **B. One List returns every multipart-ID segment:** one response includes every segment required by the Provider's multipart Import ID.
-- **C. Parent-child traversal:** the child List API requires a parent ID, so enumerate parents and then children; reset pagination for each parent.
-- **D. Complete enumeration is unavailable:** use an existing explicit scope/filter input or report the unsupported boundary.
+- **A. 直接全量 List + 单字段 Import ID：** List API 不需要父级作用域，每条记录直接提供 Provider 所需的单个 ID 字段。
+- **B. 单次 List 返回多段 Import ID 的全部片段：** 一条响应记录已包含 Provider 多段式 Import ID 所需的全部片段。
+- **C. 父子遍历：** 子资源 List API 强制要求父资源 ID，因此先枚举父资源，再逐父枚举子资源；每个父资源都重新初始化分页状态。
+- **D. 无法完整枚举：** 使用已有的显式作用域/过滤器输入；若无法表达缺少的作用域，则报告能力边界。
 
-A multipart Import ID does not imply pattern C. A Data Source may require a parent ID because its caller supplies a scope; Terraformer must discover that parent only when the child List API requires it.
+多段式 Import ID 本身不等于模式 C。Data Source 可以要求父资源 ID，因为调用方会提供查询作用域；只有子资源 List API 本身要求父级作用域时，Terraformer 才需要发现父资源。
 
-## Change only applicable files
+## 只修改适用文件
 
-- Add `providers/alicloud/resource_alicloud_<name>.go` for a new resource; repair it when the demonstrated defect is resource-specific.
-- Update `providers/alicloud/alicloud_provider.go` only when registration in `SupportedResourceByProduct` or the global-resource list is required.
-- Add client/service or endpoint support only when the current product client cannot issue the required API call.
-- Add resource-level tests that lock Import ID construction, pagination, empty results, and error propagation.
-- Do not modify Terraform Provider code as part of a Terraformer task; split Provider defects into `provider-resource-dev` work.
-- Do not produce or infer resource relationships. Read the unified relationship artifact and consume only an explicit matching declaration.
+- 新资源增加 `providers/alicloud/resource_alicloud_<name>.go`；只有根因属于资源自身时才修复该文件。
+- 仅在缺少 `SupportedResourceByProduct` 注册或全局资源分类时修改 `providers/alicloud/alicloud_provider.go`。
+- 仅在现有产品客户端无法调用目标 API 时增加客户端、服务层或端点支持。
+- 增加资源级测试，锁定 Import ID 构造、分页、空结果和错误传播。
+- Terraformer 任务中不修改 Terraform Provider；发现 Provider 契约缺陷时，拆分到 `provider-resource-dev` 流程。
+- 禁止生产或推导资源关联关系。只读取统一关系产物，并且仅消费其中明确匹配当前资源的声明。
 
-## Validation gates
+## 验证门禁
 
-Run target checks before broad checks:
+先执行目标检查，再执行广泛检查：
 
-1. Verify `gofmt` reports no target files.
-2. Run the resource regression test and `go test ./providers/alicloud`.
-3. Build the binary to `/tmp/terraformer` so the repository stays clean.
-4. Confirm the resource is visible through the Terraformer CLI registration path.
-5. Run or record `go test ./...`; compare failures with the baseline instead of hiding existing unrelated failures.
-6. When an account and an existing resource are available, perform a read-only export, inspect state/HCL, run `terraform validate`, and run `terraform plan -refresh-only`.
+1. 确认 `gofmt` 没有报告目标文件。
+2. 运行资源回归测试和 `go test ./providers/alicloud`。
+3. 将二进制构建到 `/tmp/terraformer`，保持仓库干净。
+4. 通过 Terraformer CLI 的注册路径确认资源可见。
+5. 运行或记录 `go test ./...`；与基线比较，不隐藏既有无关失败。
+6. 有账号和现有资源时，执行只读导出，检查状态文件和 HCL，并运行 `terraform validate` 和 `terraform plan -refresh-only`。
 
-If live validation is unavailable, report "static validation only" and list the missing acceptance evidence. Never create cloud resources merely to make a Terraformer discovery check possible unless the user explicitly authorizes it.
+无法执行真实验证时，明确报告“仅完成静态验证”，并列出缺少的验收证据。除非用户明确授权，禁止为了验证 Terraformer 资源发现而创建云资源。
 
-## Delivery
+## 交付
 
-Keep the worktree after opening a CR/MR, link it to Aone immediately, and do not merge or release. Report the selected discovery pattern, Import ID evidence, files changed, tests run, existing baseline failures, and any live-validation gap.
+创建 CR/MR 后保留工作树，立即关联 Aone，禁止自行合并或发布。汇报时说明所选资源发现模式、Import ID 证据、修改文件、执行过的测试、既有基线失败，以及真实验证缺口。
 ```
 
-- [ ] **Step 5: Write the technical reference**
+- [ ] **Step 5: Write the Chinese technical reference**
 
-Create `.claude/skills/terraformer-resource-dev/references/alicloud-resource-development.md` with the following required structure and content. Keep the headings and exact contract sentences because the rule test relies on them.
+创建 `.claude/skills/terraformer-resource-dev/references/alicloud-resource-development.md`。所有说明性内容使用中文，并保留契约测试依赖的标题和精确规则句。
 
 ```markdown
-# Alicloud Terraformer resource development
+# Alicloud Terraformer 资源开发
 
-## Contents
+## 目录
 
-1. Runtime architecture
-2. Source-of-truth checklist
-3. InitResources discovery patterns
-4. Multipart Import IDs
-5. Pagination and errors
-6. File selection
-7. Tests and validation
-8. Common mistakes
+1. 运行时架构
+2. 证据真源检查清单
+3. InitResources 资源发现模式
+4. 多段式 Import ID
+5. 分页与错误处理
+6. 文件选择
+7. 测试与验证
+8. 常见错误
 
-## 1. Runtime architecture
+## 1. 运行时架构
 
-`Generator.InitResources()` loads the Alicloud client, calls one or more read-only APIs, converts each discovered object into `terraformutils.Resource`, and appends it to `g.Resources`. `ProviderWrapper.Refresh` normally seeds prior state with that ID and calls the installed Provider's `ReadResource`; the implementation also contains an `ImportResourceState` fallback path. `ConvertTFstate` converts the returned Provider state to state and HCL.
+`Generator.InitResources()` 加载 Alicloud 客户端，调用一个或多个只读 API，把发现的对象转换为 `terraformutils.Resource`，再追加到 `g.Resources`。`ProviderWrapper.Refresh` 通常用该 ID 构造先验状态，并调用已安装 Provider 的 `ReadResource`；实现中还保留 `ImportResourceState` 回退路径。`ConvertTFstate` 把 Provider 返回的状态转换成 Terraform 状态和 HCL。
 
-Keep `InitResources` limited to discovery and Provider-compatible IDs. Do not reproduce Create, Update, Delete, schema flattening, or drift logic from the Provider.
+让 `InitResources` 只负责资源发现和生成与 Provider 兼容的 ID。禁止在其中重复实现 Provider 的 Create、Update、Delete、schema 扁平化或漂移逻辑。
 
-## 2. Source-of-truth checklist
+## 2. 证据真源检查清单
 
-Read sources in this order:
+按以下顺序阅读源码和文档：
 
-1. Provider Resource: find `d.SetId(...)`, every `ParseResourceId(...)`, the Importer, and Read lookup parameters.
-2. Import docs/tests: confirm segment order, delimiter, and import round trip.
-3. Provider Data Source: reuse only the List API choice, filters, response path, and pagination semantics.
-4. Provider service/client: confirm product endpoint, API version, RPC/ROA style, retryable errors, and response normalization.
-5. Terraformer same-pattern resources: reuse repository conventions, not identity assumptions.
-6. OpenAPI: verify request/response fields when Provider code is indirect or generated.
-7. Live read-only call: validate only when credentials and an existing resource are available.
+1. Provider 资源：查找 `d.SetId(...)`、所有 `ParseResourceId(...)`、Importer 和 Read 查询参数。
+2. Import 文档/测试：确认片段顺序、分隔符和导入往返验证。
+3. Provider Data Source：只复用 List API、过滤条件、响应路径和分页语义。
+4. Provider 服务/客户端：确认产品端点、API 版本、RPC/ROA 类型、可重试错误和响应归一化逻辑。
+5. Terraformer 同模式资源：复用仓库代码惯例，不复用未经证明的身份语义。
+6. OpenAPI：Provider 代码间接或由生成器生成时，用它核对请求与响应字段。
+7. 真实只读调用：只有存在凭据和已有资源时才执行。
 
-When sources conflict, Provider Import/Read behavior wins for the ID contract. Record the conflict rather than guessing.
+证据冲突时，以 Provider 导入/读取行为定义 ID 契约；记录冲突，禁止猜测。
 
-## 3. InitResources discovery patterns
+## 3. InitResources 资源发现模式
 
-### A. Direct full List with a single-field Import ID
+### A. 直接全量 List + 单字段 Import ID
 
-Use when one List API enumerates all resources without a parent identifier and each item exposes the Provider's single ID field. Paginate until the API's explicit completion signal, or until a short page when no stronger signal exists.
+适用于一个 List API 无需父资源 ID 就能枚举全部资源，并且每条记录直接提供 Provider 所需的单个 ID 字段。优先使用 API 的显式结束信号完成分页；没有更强信号时才使用短页判断。
 
-### B. One List returns every multipart-ID segment
+### B. 单次 List 返回多段 Import ID 的全部片段
 
-Use when one response item contains every segment required by the Provider Import ID. Preserve the Provider-defined order and delimiter. Do not add a parent List merely because the ID has multiple segments.
+适用于一条响应记录已经包含 Provider Import ID 所需的全部片段。严格保持 Provider 定义的片段顺序和分隔符。禁止仅因为 ID 是多段式就额外调用父资源 List。
 
-### C. Parent-child traversal
+### C. 父子遍历
 
-Use only when the child List API requires parent scope and Terraformer must enumerate the whole account/region scope:
+仅当子资源 List API 要求父级作用域，并且 Terraformer 需要枚举整个账号或地域时使用：
 
-1. List all parents with complete pagination.
-2. For each parent, create a fresh child request.
-3. Reset pagination for every parent.
-4. List every child page.
-5. Join parent and child segments once, at the leaf, using the Provider contract.
-6. Return errors with parent ID and page/token context; never silently skip one parent.
+1. 完整分页列出所有父资源。
+2. 为每个父资源创建新的子资源请求。
+3. 每个父资源都必须重置分页状态。
+4. 完整列出每一页子资源。
+5. 仅在叶子资源处按 Provider 契约拼接一次父、子 ID 片段。
+6. 错误中带上父资源 ID 和页码/token 上下文；禁止静默跳过任一父资源。
 
-A Data Source may require the parent ID because the Terraform caller supplies a query scope. Terraformer cannot impose that Data Source input on a full export; it discovers parents only for this pattern.
+Data Source 可以要求父资源 ID，因为 Terraform 调用方会主动提供查询作用域。Terraformer 的全量导出不能把这个 Data Source 输入直接转嫁给用户；只有在本模式下才自行发现父资源。
 
-The following is pseudocode for the loop shape, not a copy-ready SDK call:
+以下代码仅展示循环结构，不是可直接复制的 SDK 调用：
 
 ```go
 for _, parentID := range parentIDs {
@@ -345,58 +427,58 @@ for _, parentID := range parentIDs {
 }
 ```
 
-This example is token-only. For token pagination, stop when the returned next token is empty regardless of page length. For page-number pagination, increment the page number and stop using the API's explicit total/page metadata or a short page when no stronger signal exists. Do not combine token and page-number contracts unless the API actually defines both.
+以上示例只使用 token。使用 token 分页时，只要返回的 next token 为空就终止，不受当前页数量影响。使用页码分页时，递增页码，并按 API 返回的总数/页码元数据结束；没有更强信号时才使用短页判断。除非 API 明确定义两者同时存在，否则禁止混用 token 和页码契约。
 
-### D. Complete enumeration is unavailable
+### D. 无法完整枚举
 
-Use when the service offers only exact lookup, the parent cannot be enumerated, or permissions make account-wide discovery impossible. Reuse an existing Terraformer scope/filter mechanism when it can express the missing input. Otherwise stop and report the limitation; do not claim complete support or guess IDs.
+适用于服务只提供精确查询、父资源无法枚举，或权限不足以执行账号级发现。已有 Terraformer 作用域/过滤器机制能够表达缺少的输入时，复用该机制；否则停止并报告限制，禁止宣称已支持完整枚举，也禁止猜测 ID。
 
-## 4. Multipart Import IDs
+## 4. 多段式 Import ID
 
-The only valid evidence for segment count, order, and delimiter is the Provider Resource's `d.SetId(...)`, its `ParseResourceId(...)` calls, Import docs, and Import tests.
+片段数量、顺序和分隔符只能由 Provider Resource 的 `d.SetId(...)`、`ParseResourceId(...)`、Import 文档和 Import 测试确定。
 
-A multipart Import ID does not by itself require parent traversal. All segments may already be present in one List response (pattern B), or earlier segments may require parent discovery (pattern C).
+多段式 Import ID 本身并不意味着必须遍历父资源。全部片段可能已由同一个 List 响应返回（模式 B），也可能需要先发现父资源才能得到前置片段（模式 C）。
 
-Implementation rules:
+实现规则：
 
-- Carry parent, child, attachment, or account segments as separate variables while traversing.
-- Validate every required segment before joining.
-- Join exactly once when creating the leaf `terraformutils.Resource` ID.
-- Do not trim, encode, reorder, or change delimiters without Provider evidence.
-- Test the normal ID, missing segment, order, delimiter, and special-character boundary.
+- 遍历期间把父资源、子资源、挂载关系或账号片段保存在独立变量中。
+- 拼接前校验每个必需片段。
+- 创建叶子 `terraformutils.Resource` ID 时只拼接一次。
+- 没有 Provider 证据时，禁止修剪、编码、重排或更换分隔符。
+- 测试正常 ID、缺失片段、顺序、分隔符和特殊字符边界。
 
-## 5. Pagination and errors
+## 5. 分页与错误处理
 
-- Prefer `NextToken`, `TotalCount`, `IsTruncated`, or an equivalent explicit signal.
-- When using returned item count, compare it with the exact page-size value sent in the request.
-- Reset pagination for every parent; initialize page number/token inside the parent loop.
-- Cover empty first page, short last page, exactly full last page, and multiple pages.
-- Include action, resource type, parent ID, page number, or token in wrapped errors.
-- Treat permission, endpoint, decode, and single-parent failures as errors, not empty results.
-- Follow the repository's retry helpers and product client conventions; do not invent a second retry framework.
+- 优先使用 `NextToken`、`TotalCount`、`IsTruncated` 或同类显式信号。
+- 使用返回条目数量判断时，必须与请求实际发送的每页数量比较。
+- 每个父资源都重新初始化页码/token；分页状态放在父资源循环内部。
+- 覆盖空首页、短末页、恰好满页和多页结果。
+- 包装错误时带上操作、资源类型、父资源 ID、页码或 token。
+- 权限、端点、解码和单父资源失败都必须返回错误，禁止转换成空结果。
+- 复用仓库现有重试辅助函数和产品客户端惯例，禁止再实现一套重试框架。
 
-## 6. File selection
+## 6. 文件选择
 
-| File | Change when |
+| 文件 | 何时修改 |
 |---|---|
-| `providers/alicloud/resource_alicloud_<name>.go` | Always for a new resource; normally for a repair |
-| `providers/alicloud/alicloud_provider.go` | Registration or global-resource classification is missing |
-| Product client/service files | No existing client can issue the API call |
-| Endpoint configuration | The current endpoint resolution is proven insufficient |
-| Resource `_test.go` | Lock ID, pagination, empty-result, and error behavior |
-| Unified relationship consumer | The shared artifact explicitly declares this resource |
+| `providers/alicloud/resource_alicloud_<name>.go` | 新资源必加；修复任务仅在根因属于资源自身时修改 |
+| `providers/alicloud/alicloud_provider.go` | 缺少注册或全局资源分类 |
+| 产品客户端/服务层文件 | 现有客户端无法调用目标 API |
+| 端点配置 | 已证明当前端点解析不足 |
+| 资源 `_test.go` | 锁定 ID、分页、空结果和错误处理 |
+| 统一关系消费端 | 共享产物明确声明了当前资源 |
 
-Do not produce or infer connections from Provider schema, Data Source arguments, or API field names. The unified producer owns relationship semantics.
+禁止从 Provider schema、Data Source 参数或 API 字段名生产或推导关联关系。统一生产端负责定义关系语义。
 
-If the unified artifact has no matching declaration, leave the relationship consumer unchanged and record the gap. That absence does not block core discovery and Import ID support unless relationship delivery is itself an explicit acceptance requirement.
+统一产物没有匹配声明时，保持关系消费端不变并记录缺口。除非关联关系本身是明确验收项，否则该缺失不阻塞核心的资源发现与 Import ID 支持。
 
-Do not modify `cmd`, module entrypoints, README, Provider source, or unrelated shared code unless repository evidence proves the resource cannot work without that change.
+除非仓库证据证明资源无法工作，否则不要修改 `cmd`、模块入口、README、Provider 源码或无关共享代码。
 
-## 7. Tests and validation
+## 7. 测试与验证
 
-Use TDD for repairs: demonstrate the current failure, add the smallest regression, then implement the fix.
+修复任务使用 TDD：先复现当前失败并增加最小回归测试，再实现修复。
 
-Static gates:
+静态门禁：
 
 ```bash
 RESOURCE_FILE=providers/alicloud/resource_alicloud_example.go
@@ -405,30 +487,30 @@ go test ./providers/alicloud
 go build -o /tmp/terraformer .
 ```
 
-Confirm registration through the CLI's supported-resource listing or equivalent code path. Run or record `go test ./...`; the current repository has existing unrelated failures, so compare the broad result with the captured baseline while requiring all target-package checks to pass.
+通过 CLI 的支持资源列表或等价代码路径确认注册。运行或记录 `go test ./...`；当前仓库存在既有无关失败，因此用已捕获基线比较广泛测试结果，同时要求目标包测试通过。
 
-When live read-only validation is possible:
+可以执行真实只读验证时：
 
-1. Export only the target product/resource.
-2. Compare discovered count and IDs with the API response.
-3. Inspect generated state and HCL.
-4. Run `terraform init` and `terraform validate` in the generated directory.
-5. Run `terraform plan -refresh-only` and investigate any read/import drift.
+1. 只导出目标产品和资源。
+2. 将发现数量和 ID 与 API 响应比较。
+3. 检查生成的状态文件和 HCL。
+4. 在生成目录运行 `terraform init` 和 `terraform validate`。
+5. 运行 `terraform plan -refresh-only`，排查读取/导入漂移。
 
-When credentials or an existing resource are unavailable, report static validation only and list the unverified live steps.
+缺少凭据或现有资源时，报告“仅完成静态验证”，并列出未验证的真实步骤。
 
-## 8. Common mistakes
+## 8. 常见错误
 
-| Mistake | Correct action |
+| 错误 | 正确做法 |
 |---|---|
-| Treating every multipart ID as parent-child discovery | Select pattern B when one response already contains all segments |
-| Copying a Data Source's required parent argument | Enumerate parents only when the child List API requires it |
-| Initializing page number outside the parent loop | Reset pagination for every parent |
-| Requesting one page size and testing termination with another | Use the same page-size variable for request and termination |
-| Guessing an Import ID from API primary keys | Read Provider `d.SetId(...)`, `ParseResourceId(...)`, and Import evidence |
-| Editing connection maps by inspection | Read only an explicit declaration from the unified relationship artifact |
-| Treating `go test ./...` baseline failures as success or as a new regression | Report the baseline delta and require target tests to pass |
-| Creating cloud resources for convenience | Use existing resources or obtain explicit authorization |
+| 把每个多段式 ID 都当成父子发现 | 同一响应已返回全部片段时选择模式 B |
+| 复制 Data Source 的必填父资源参数 | 只有子资源 List API 要求父作用域时才枚举父资源 |
+| 在父资源循环外初始化页码 | 每个父资源都重新初始化分页状态 |
+| 请求使用一种每页数量，结束判断却使用另一个值 | 请求与结束判断使用同一个每页数量变量 |
+| 根据 API 主键猜 Import ID | 阅读 Provider 的 `d.SetId(...)`、`ParseResourceId(...)` 和 Import 证据 |
+| 根据字段名直接编辑关联映射 | 只读取统一关系产物中的明确声明 |
+| 把 `go test ./...` 的基线失败当成成功或新回归 | 报告相对基线的变化，并要求目标测试通过 |
+| 为了方便验证而创建云资源 | 使用已有资源，或先取得明确授权 |
 ```
 
 - [ ] **Step 6: Remove optional metadata from the approved design**
