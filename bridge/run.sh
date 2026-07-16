@@ -168,8 +168,21 @@ cmd_launchd_stop() {
 }
 
 cmd_launchd_restart() {
-  cmd_launchd_stop || return 1
-  cmd_launchd_start
+  _launchd_require || return 1
+  if ! _launchd_loaded; then
+    cmd_launchd_start
+    return
+  fi
+
+  # Keep the job registered and let launchd replace the running process.  A
+  # bootout/bootstrap pair can race the old process' graceful SIGTERM cleanup,
+  # leaving the newly registered job in a transient SIGTERMed state.
+  "$LAUNCHCTL_BIN" enable "$LAUNCHD_SERVICE" >/dev/null 2>&1 || true
+  "$LAUNCHCTL_BIN" kickstart -k "$LAUNCHD_SERVICE" || {
+    err "launchd restart 失败: $LAUNCHD_SERVICE"
+    return 1
+  }
+  say "bridge 已由 launchd 重启 ($LAUNCHD_SERVICE)。"
 }
 
 cmd_launchd_status() {
