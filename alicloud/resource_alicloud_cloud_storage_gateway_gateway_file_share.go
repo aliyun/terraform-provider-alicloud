@@ -399,7 +399,7 @@ func resourceAlicloudCloudStorageGatewayGatewayFileShareCreate(d *schema.Resourc
 
 	object, err := sgwService.DescribeTasks(fmt.Sprint(request["GatewayId"]), fmt.Sprint(response["TaskId"]))
 	if err != nil {
-		return nil
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_storage_gateway_gateway_file_share", "DescribeTasks", AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["GatewayId"], ":", object["RelatedResourceId"]))
