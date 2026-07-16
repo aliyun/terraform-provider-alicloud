@@ -86,6 +86,37 @@ formatted_footer="$(printf '%s' "$with_footer" | bash "$FORMAT")"
 assert_contains "mention preserved" "$formatted_footer" "@谜拟"
 assert_contains "footer separated" "$formatted_footer" $'\n\n代码：jarvis @ codex/aone-comment-format (abc123)'
 
+echo "Test 4: bare URLs become clickable markdown links (autolink gate)"
+bare=$'PR: https://github.com/aliyun/terraform-provider-alicloud/pull/9977 已提交\n见 https://example.com/path'
+formatted_bare="$(printf '%s' "$bare" | bash "$FORMAT")"
+assert_contains "bare GitHub URL wrapped" "$formatted_bare" '[https://github.com/aliyun/terraform-provider-alicloud/pull/9977](https://github.com/aliyun/terraform-provider-alicloud/pull/9977)'
+assert_contains "bare plain URL wrapped" "$formatted_bare" '[https://example.com/path](https://example.com/path)'
+assert_not_contains "no leftover unwrapped GitHub URL" "$formatted_bare" 'PR: https://github.com'
+
+# existing markdown link must NOT be double-wrapped
+link=$'已有 [文本](https://keep.com) 不重包'
+formatted_link="$(printf '%s' "$link" | bash "$FORMAT")"
+assert_contains "existing link display text intact" "$formatted_link" '[文本](https://keep.com)'
+assert_not_contains "existing link not double-wrapped" "$formatted_link" '[https://keep.com](https://keep.com)'
+
+# URLs inside inline code + fenced code must NOT be touched
+code=$'代码 `https://incode.com` 不动\n```\nhttps://in-fence.com 不动\n```'
+formatted_code="$(printf '%s' "$code" | bash "$FORMAT")"
+assert_not_contains "inline-code URL not wrapped" "$formatted_code" '[https://incode.com]'
+assert_not_contains "fenced-code URL not wrapped" "$formatted_code" '[https://in-fence.com]'
+
+# URL stops at CJK punctuation (not absorbed into the link target)
+cjk=$'尾句 https://end.com。另一条 https://a.com，还有 https://b.com；'
+formatted_cjk="$(printf '%s' "$cjk" | bash "$FORMAT")"
+assert_contains "URL stops before CJK full stop" "$formatted_cjk" '[https://end.com](https://end.com)。'
+assert_contains "URL stops before CJK comma" "$formatted_cjk" '[https://a.com](https://a.com)，'
+assert_not_contains "CJK text not absorbed into URL" "$formatted_cjk" '[https://end.com。另一条]'
+
+# kill switch disables autolink
+off="$(printf '%s' '裸 https://off.com' | JARVIS_COMMENT_URL_AUTOLINK=0 bash "$FORMAT")"
+assert_not_contains "kill switch leaves URL bare" "$off" '[https://off.com]'
+assert_contains "kill switch preserves raw URL text" "$off" 'https://off.com'
+
 echo ""
 echo "Results: $pass_count passed, $fail_count failed"
 if [ "$fail_count" -eq 0 ]; then
