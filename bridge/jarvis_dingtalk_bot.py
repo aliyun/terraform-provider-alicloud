@@ -271,7 +271,34 @@ _CI_FAIL_CONCLUSIONS = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "CANCELLED"}
 
 # GitHub logins that are "us" (our push/PR identity) — their PR comments never count as a
 # reviewer comment worth re-dispatching a reply for. Bots ([bot] 后缀) are excluded separately.
+# 内置兜底集：contacts.json 缺失/损坏也不打开这道白名单闸；`_load_self_github_logins()` 每次
+# 现读文件后**并入**这个内置集(而非替换),运维加/改 github 字段即时生效。
 _PRWATCH_SELF_LOGINS = {"api-tool-agent"}
+
+
+def _load_self_github_logins():
+    """Read ``config/contacts.json`` → set of "our-side" GitHub logins (lowercase). Merges
+    the built-in ``_PRWATCH_SELF_LOGINS`` fallback so a missing/corrupt contacts.json never
+    opens the reviewer-comment gate. Called fresh per ``_gh_pr_comments`` call — the file is
+    tiny (<2KB) and reading it every tick lets a contacts edit take effect without a bridge
+    restart. Any I/O or parse failure → return just the built-in fallback + log warning."""
+    base = {s.lower() for s in _PRWATCH_SELF_LOGINS}
+    try:
+        cp = Path(REPO_ROOT) / "config" / "contacts.json"
+        d = json.loads(cp.read_text())
+        for c in (d.get("contacts") or []):
+            if not isinstance(c, dict):
+                continue
+            gh = c.get("github")
+            if isinstance(gh, str) and gh.strip():
+                base.add(gh.strip().lower())
+    except FileNotFoundError:
+        # normal in test tmpdirs — no need to warn every tick
+        pass
+    except Exception as e:  # noqa: BLE001
+        log.warning("prwatch: could not load %s for self-logins: %s",
+                    Path(REPO_ROOT) / "config" / "contacts.json", e)
+    return base
 
 
 def _prwatch_load():
@@ -2323,45 +2350,131 @@ class PrWatchScheduler:
 
     def _gh_pr_comments(self, pr_url):
         """(latest_key, author_login, snippet) 最近一条**非我方/非机器人**的 PR 评论
-        （#2 评审评论感知）。key = 评论 url（稳定去重键，回退 createdAt）。self = 我方 push 身份
-        (_PRWATCH_SELF_LOGINS)，bot = login 以 '[bot]' 结尾。无此类评论 / 查询失败 → (None,None,None)。
-        best-effort：任何异常不 crash。"""
-        gh_id = str(Path(REPO_ROOT) / "bootstrap" / "github-identity.sh")
-        try:
-            proc = subprocess.run(
-                [gh_id, "gh", "pr", "view", pr_url, "--json", "comments"],
-                capture_output=True, text=True, env=os.environ.copy(), timeout=60)
-        except Exception as e:  # noqa: BLE001
-            log.warning("PrWatchScheduler: gh pr comments raised for %s: %s", pr_url, e)
+        （#2 评审评论感知）。三路合流：`gh pr view --json comments` 只覆盖主讨论区
+        issue comments，**必须**同时拉 REST `pulls/<n>/comments`（review 里的逐行 line
+        comments）与 `pulls/<n>/reviews`（review body：APPROVED / CHANGES_REQUESTED /
+        COMMENTED）——曾漏侦 PR#9978 上 review line comment。
+
+        latest_key 结构化：
+          · ``issue-<id>``  — issue comment
+          · ``pr-<id>``     — pull request review line comment
+          · ``review-<id>`` — review body（state ∈ {APPROVED, CHANGES_REQUESTED, COMMENTED}
+                              且 body 非空/非纯空白；空 body 的 COMMENTED 无实际内容 → 跳）
+
+        过滤：小写不敏感 in ``_load_self_github_logins()`` → 我方；`[bot]` 后缀 → 机器人。
+        排序取 latest：按 `created_at`（review 用 `submitted_at`）升序合并，取最后一条命中者。
+        任何单路 rc!=0 / 异常 / 非 list → log.warning + 跳该路（不影响其他两路）；三路全废 →
+        (None, None, None)（caller 保留观察，下轮重试）。best-effort：任何异常不 crash。"""
+        m = re.match(r"https?://github\.com/([^/]+)/([^/]+)/pull/(\d+)", pr_url or "")
+        if not m:
+            log.warning("PrWatchScheduler: cannot parse owner/repo/n from pr_url=%r", pr_url)
             return (None, None, None)
-        if proc.returncode != 0:
-            log.warning("PrWatchScheduler: gh pr comments rc=%d for %s: %s",
-                        proc.returncode, pr_url, (proc.stderr or "").strip()[:200])
-            return (None, None, None)
-        try:
-            comments = (json.loads(proc.stdout) or {}).get("comments") or []
-        except Exception as e:  # noqa: BLE001
-            log.warning("PrWatchScheduler: gh pr comments non-JSON for %s: %s", pr_url, e)
-            return (None, None, None)
-        cand = None  # comments 按时间升序 → 遍历取最后一条命中者 = 最新
-        for c in comments:
+        owner, repo, num = m.group(1), m.group(2), m.group(3)
+        self_logins = _load_self_github_logins()
+
+        def _fetch(path, label):
+            """Return list from REST or [] on any failure (log warning + swallow)."""
+            gh_id = str(Path(REPO_ROOT) / "bootstrap" / "github-identity.sh")
+            try:
+                proc = subprocess.run(
+                    [gh_id, "gh", "api", path],
+                    capture_output=True, text=True, env=os.environ.copy(), timeout=60)
+            except Exception as e:  # noqa: BLE001
+                log.warning("PrWatchScheduler: gh api %s raised for %s: %s",
+                            label, pr_url, e)
+                return []
+            if proc.returncode != 0:
+                log.warning("PrWatchScheduler: gh api %s rc=%d for %s: %s",
+                            label, proc.returncode, pr_url,
+                            (proc.stderr or "").strip()[:200])
+                return []
+            try:
+                data = json.loads(proc.stdout)
+            except Exception as e:  # noqa: BLE001
+                log.warning("PrWatchScheduler: gh api %s non-JSON for %s: %s",
+                            label, pr_url, e)
+                return []
+            if not isinstance(data, list):
+                log.warning("PrWatchScheduler: gh api %s non-list for %s (type=%s)",
+                            label, pr_url, type(data).__name__)
+                return []
+            return data
+
+        issues = _fetch("repos/%s/%s/issues/%s/comments" % (owner, repo, num), "issue-comments")
+        pr_lines = _fetch("repos/%s/%s/pulls/%s/comments" % (owner, repo, num), "pr-line-comments")
+        reviews = _fetch("repos/%s/%s/pulls/%s/reviews" % (owner, repo, num), "pr-reviews")
+
+        # 三路全失败（每路都是空 list 且是查询失败而非真无评论）——保留原语义：
+        # 若三路都返回 [] 且**因失败**（非真的没评论），下轮重试。我们无法区分空 vs 失败,
+        # 所以采取保守 fallback：只要**任一路**成功（哪怕成功地拉到 []）就认为查询有效果。
+        # 简单实现：只要**任一路非 None**（这里已折叠成 [] 与失败等价）→ 交出 (None,None,None)
+        # 表示 “没新评论”，caller 早退不 dispatch，与旧行为一致。
+        # 但为兼容测试 “三路全失败 → keep watching”（不改 last_seen_comment）——因结果本来就是
+        # (None,None,None)，caller 收到 None 只 return 不 update ledger,天然满足。
+
+        cands = []  # (ts, key, login, body)
+        for c in issues:
             if not isinstance(c, dict):
                 continue
-            login = str((c.get("author") or {}).get("login") or "")
-            if login in _PRWATCH_SELF_LOGINS or login.lower().endswith("[bot]"):
+            login = str((c.get("user") or {}).get("login") or "").strip()
+            if not login:
                 continue
-            cand = c
-        if cand is None:
+            if login.lower() in self_logins or login.lower().endswith("[bot]"):
+                continue
+            body = str(c.get("body") or "")
+            ts = str(c.get("created_at") or "")
+            cid = c.get("id")
+            if cid is None:
+                continue
+            cands.append((ts, "issue-%s" % cid, login, body))
+        for c in pr_lines:
+            if not isinstance(c, dict):
+                continue
+            login = str((c.get("user") or {}).get("login") or "").strip()
+            if not login:
+                continue
+            if login.lower() in self_logins or login.lower().endswith("[bot]"):
+                continue
+            body = str(c.get("body") or "")
+            ts = str(c.get("created_at") or "")
+            cid = c.get("id")
+            if cid is None:
+                continue
+            cands.append((ts, "pr-%s" % cid, login, body))
+        for r in reviews:
+            if not isinstance(r, dict):
+                continue
+            login = str((r.get("user") or {}).get("login") or "").strip()
+            if not login:
+                continue
+            if login.lower() in self_logins or login.lower().endswith("[bot]"):
+                continue
+            body = str(r.get("body") or "")
+            if not body.strip():
+                continue  # empty COMMENTED review body — no signal
+            ts = str(r.get("submitted_at") or "")
+            rid = r.get("id")
+            if rid is None:
+                continue
+            cands.append((ts, "review-%s" % rid, login, body))
+
+        if not cands:
             return (None, None, None)
-        login = str((cand.get("author") or {}).get("login") or "?")
-        key = str(cand.get("url") or cand.get("createdAt") or "")
-        snippet = str(cand.get("body") or "").strip().replace("\n", " ")[:300]
+        cands.sort(key=lambda t: t[0])  # ascending; last = latest
+        _, key, login, body = cands[-1]
+        snippet = body.strip().replace("\n", " ")[:300]
         return (key, login, snippet)
 
     def _maybe_dispatch_comment_reply(self, tid, entry):
         """open PR：出现**新的**评审评论（非我方/非 bot、key 与 last_seen_comment 不同）→ force
         重派一个 pr_comment_reply 实例回应（#2）。首次观察只 baseline-seed last_seen_comment、
-        不回应既有评论（那是提交时已在的/首轮已处理）。pool 空 / 无此类评论 / 查询失败 → 不动。"""
+        不回应既有评论（那是提交时已在的/首轮已处理）。pool 空 / 无此类评论 / 查询失败 → 不动。
+
+        **老台账兼容（三路合流升级）**：早期 last_seen_comment 以裸 URL 或裸 ``#issuecomment-<id>``
+        写入；三路合流后 key 变为 ``issue-<id>`` / ``pr-<id>`` / ``review-<id>``。用尾部数字
+        兜底判定：若老 last 的尾部数字与当前 issue-<id> 一致 → 已见（silently 升级到新格式，
+        不派）；否则 → 视为新评论（升级到新格式 + 正常派发）。这样重启后不会误把老基线判成新
+        评论一次性刷屏。"""
         if self.pool is None:
             return
         key, author, snippet = self._gh_pr_comments(entry.get("pr_url"))
@@ -2371,8 +2484,20 @@ class PrWatchScheduler:
         if last is None:
             _prwatch_update(tid, last_seen_comment=key)  # baseline，不回应既有评论
             return
-        if last == key:
-            return  # 这条最新评论已处理过
+        is_new_format = isinstance(last, str) and (
+            last.startswith("issue-") or last.startswith("pr-") or last.startswith("review-"))
+        if is_new_format:
+            if last == key:
+                return  # 这条最新评论已处理过
+        else:
+            # legacy baseline (raw url or `#issuecomment-<id>`). extract tail id, treat as
+            # an ``issue-<id>`` baseline for compat.
+            m = re.search(r"(\d+)$", str(last))
+            old_id = m.group(1) if m else None
+            if old_id and key == "issue-%s" % old_id:
+                _prwatch_update(tid, last_seen_comment=key)  # silent upgrade, no dispatch
+                return
+            # else: fall through — treat as a genuinely new comment, dispatch + upgrade ledger.
         project = entry.get("project")
         prompt = _pr_comment_reply_prompt(tid, entry.get("pr_url"), project, author, snippet)
         notify = self.handler._broadcast if self.handler else (lambda t: None)
