@@ -1138,7 +1138,27 @@ def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, ter
             pass
         yield "⚠️ 调用失败: %s" % e
         return
-    rc = p.wait()
+    # Hard-cap p.wait(): the stream loop above already enforces a soft deadline per
+    # yielded token, but nothing bounded the terminal wait — a subprocess in weird
+    # state after stdout EOF could block forever, hanging the DispatchPool worker
+    # thread and leaking its slot (root cause of the 20-min zombie deadlock).
+    remaining = max(1, int(deadline - time.time()))
+    try:
+        rc = p.wait(timeout=remaining)
+    except subprocess.TimeoutExpired:
+        log.warning("run_claude_stream: p.wait timeout (%ds), killing process group", remaining)
+        try:
+            os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            try:
+                p.kill()
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            rc = p.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            rc = -9
+        raise TimeoutError("run_claude_stream timeout after %ss" % timeout)
     err = (p.stderr.read() if p.stderr else "") or ""
     if not saw_any:
         if rc != 0:
@@ -2978,11 +2998,26 @@ class DispatchPool:
         self._ledger_path = Path(ledger_path) if ledger_path else (Path(REPO_ROOT) / self.DEFAULT_LEDGER)
         self._executor = ThreadPoolExecutor(max_workers=max(1, self.max_workers),
                                             thread_name_prefix="dispatch")
-        self._active = {}     # id -> {started, kind, future}
+        self._active = {}     # id -> {started, kind, future, project, proc}
         self._ledger = {}     # id -> last-dispatch epoch seconds
         self._lock = threading.Lock()
         self._closed = False
+        # ── DispatchPool P0 slot-leak self-heal ─────────────────────────────
+        # Absolute upper bound on a single worker (12h). If work() hangs beyond this
+        # the watchdog force-releases the slot so the pool never permanently deadlocks.
+        self._hard_ceiling = int(os.environ.get("JARVIS_DISPATCH_HARD_CEILING", "43200"))
+        # Watchdog: periodic scan of _active for entries older than _watchdog_threshold;
+        # kill the child process group, cancel the future, drop the inflight record and
+        # pop the slot. Threshold 3600s = 1h idle worker is already deeply abnormal
+        # (probe/revisit rounds finish in minutes; ticket dispatches see SUSPEND long
+        # before 1h). Daemon thread → dies with the process on bridge stop.
+        # float allows sub-second tick in tests without perturbing prod defaults.
+        self._watchdog_interval = float(os.environ.get("JARVIS_DISPATCH_WATCHDOG_INTERVAL", "60"))
+        self._watchdog_threshold = float(os.environ.get("JARVIS_DISPATCH_WATCHDOG_THRESHOLD", "3600"))
         self._load_ledger()
+        self._watchdog_thread = threading.Thread(
+            target=self._watchdog_loop, daemon=True, name="DispatchPoolWatchdog")
+        self._watchdog_thread.start()
 
     # -- dedup / capacity decision -------------------------------------------
 
@@ -3051,6 +3086,14 @@ class DispatchPool:
                         pass
                 return "error"
             finally:
+                # Defensive kill on work() return/error: if the watchdog is about to
+                # force-release this slot, the child process must not survive as an
+                # orphan. Idempotent — killpg on an already-dead pgid returns ESRCH
+                # and is swallowed.
+                try:
+                    self._terminate_worker(iid)
+                except Exception:  # noqa: BLE001
+                    pass
                 with self._lock:
                     self._active.pop(iid, None)
 
@@ -3067,6 +3110,79 @@ class DispatchPool:
             ent = self._active.get(str(item_id))
             if ent is not None:
                 ent["proc"] = proc
+
+    # ── P0 self-heal: watchdog + defensive kill ─────────────────────────────
+    def _terminate_worker(self, item_id):
+        """SIGKILL the recorded Popen's process group for ``item_id`` if any.
+        Idempotent, best-effort — ESRCH/PermissionError silently swallowed."""
+        iid = str(item_id)
+        with self._lock:
+            ent = self._active.get(iid)
+            proc = ent.get("proc") if ent else None
+        if proc is None:
+            return
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            pass
+
+    def _watchdog_loop(self):
+        """Daemon: every ``_watchdog_interval`` seconds scan _active for entries whose
+        wall-clock age exceeds ``_watchdog_threshold``, then force-release those slots.
+        Exits when ``_closed`` is set (terminate_all / shutdown)."""
+        while not self._closed:
+            try:
+                time.sleep(self._watchdog_interval)
+            except Exception:  # noqa: BLE001 — interpreter shutdown / signal race
+                return
+            if self._closed:
+                return
+            try:
+                self._watchdog_tick()
+            except Exception:  # noqa: BLE001
+                log.exception("DispatchPoolWatchdog tick failed")
+
+    def _watchdog_tick(self):
+        """Single scan pass. Snapshots _active under the lock, then acts outside the
+        lock to avoid holding it during killpg / inflight I/O. Kill child process
+        group, cancel future, drop inflight record, pop slot — in that order so the
+        blocked worker thread (subprocess.wait) unblocks first, then the finally
+        cleanup can no-op safely if it races the watchdog."""
+        now = time.time()
+        victims = []
+        with self._lock:
+            for iid, ent in list(self._active.items()):
+                age = now - ent.get("started", now)
+                if age > self._watchdog_threshold:
+                    victims.append((iid, ent, age))
+        for iid, ent, age in victims:
+            log.warning(
+                "[DispatchPoolWatchdog] slot #%s zombie (age=%ds, kind=%s) → force release",
+                iid, int(age), ent.get("kind", "?"))
+            # 1) Kill the child process group so subprocess.wait in the worker unblocks.
+            proc = ent.get("proc")
+            if proc is not None:
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except (ProcessLookupError, PermissionError, OSError):
+                    pass
+            # 2) Cancel the future (already-running futures cannot be interrupted, but
+            #    cancel clears queued state and signals downstream waiters).
+            fut = ent.get("future")
+            if fut is not None:
+                try:
+                    fut.cancel()
+                except Exception:  # noqa: BLE001
+                    pass
+            # 3) Drop inflight registry entry — the worker's own finally may never run
+            #    (thread stuck in a C call), so we can't rely on dispatch_item's cleanup.
+            try:
+                _inflight_remove(iid)
+            except Exception:  # noqa: BLE001
+                pass
+            # 4) Pop the slot so the pool can accept new submissions.
+            with self._lock:
+                self._active.pop(iid, None)
 
     def terminate_all(self, release_fn=None, grace=3):
         """Immediate-cleanup stop (run.sh stop / SIGTERM): kill every active worker's
@@ -4197,6 +4313,24 @@ class JarvisHandler(AsyncChatbotHandler):
                     continue
                 sid = rec.get("sid")
                 project = rec.get("project") or ""
+                # ── P0 self-heal 三重校验: 空 sid / session 文件缺失 / 超龄 ────────
+                # (the 20-min zombie that motivated this: session_id="" ticket records
+                #  survived a bridge restart and re-entered dispatch with a broken sid).
+                if not sid:
+                    log.warning("_resume_inflight: #%s drop — empty session_id (zombie)", iid)
+                    if project:
+                        try: _release_claim(iid, project)
+                        except Exception: pass  # noqa: BLE001
+                    _inflight_remove(iid)
+                    continue
+                if not _session_file_exists(sid):
+                    log.warning("_resume_inflight: #%s drop — session file missing (sid=%s)",
+                                iid, str(sid)[:8])
+                    if project:
+                        try: _release_claim(iid, project)
+                        except Exception: pass  # noqa: BLE001
+                    _inflight_remove(iid)
+                    continue
                 age = time.time() - float(rec.get("started_at") or 0)
                 if age >= timeout:
                     cause = ("headless 派发在桥重启时仍在飞且已超过派发超时(%ds)，判失败，"

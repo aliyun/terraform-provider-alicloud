@@ -25,8 +25,10 @@ import os
 import sys
 import json
 import time
+import signal
 import tempfile
 import threading
+import subprocess
 import datetime as dt
 import unittest
 from pathlib import Path
@@ -2223,16 +2225,19 @@ class ResumeInflightTest(_InflightBase):
         self.assertIn("断点", args[1], "resume 用续跑 prompt")
         self.assertEqual(self.captured[0][1].get("kind"), "ticket")
 
-    def test_session_missing_fresh_with_stored_prompt(self):
+    def test_session_missing_drops_record_self_heal(self):
+        """P0 self-heal: session file missing → drop, do NOT fresh-run.
+        Previous behavior fresh-ran with the stored prompt reusing the sid; that
+        silently re-cost a 12h round on a broken session and could re-trigger the
+        same DispatchPool slot leak. New self-heal guard drops the record + releases
+        claim so the item can be re-dispatched from a clean state via scan."""
         b._session_file_exists = lambda sid: False
         b._inflight_add("501", "sid-keep", "528766", "ticket", "the stored prompt")
         h = self._handler()
         h._resume_inflight()
-        self.assertEqual(len(self.captured), 1)
-        args = self.captured[0][0]
-        self.assertFalse(args[3], "session 缺 → resume=False")
-        self.assertEqual(args[2], "sid-keep", "全新但沿用 sid 保持粘档")
-        self.assertEqual(args[1], "the stored prompt", "全新 → 沿用存的 prompt")
+        self.assertEqual(self.captured, [], "session missing → drop, do not dispatch")
+        self.assertFalse(b._inflight_has("501"), "session missing → remove record")
+        self.assertEqual(self.released, [("501", "528766")], "session missing → release claim")
 
     def test_stale_marks_failed_no_resume(self):
         b._session_file_exists = lambda sid: True
@@ -2291,6 +2296,277 @@ class StartSchedulersResumeOnceTest(unittest.TestCase):
         self.assertEqual(log_events.count("resume"), 1, "_resume_inflight called once")
         self.assertEqual(log_events[-1], "resume", "resume is the LAST step")
         self.assertEqual(log_events.index("resume"), len(log_events) - 1)
+
+
+class _FakeProcWithPid:
+    """Fake Popen exposing pid + a done sentinel, used by watchdog tests to observe
+    os.killpg calls without spawning a real process."""
+
+    def __init__(self, pid=99001):
+        self.pid = pid
+
+    def poll(self):
+        return None
+
+
+class DispatchPoolWatchdogTest(unittest.TestCase):
+    """P0 self-heal 层 2: DispatchPoolWatchdog daemon 强制释放老于阈值的 slot,
+    杀子进程组、cancel future、drop inflight 记录、pop _active。 hermetic:
+    os.killpg / getpgid 全 stub, INFLIGHT_PATH tmp, work() 用 threading.Event 挂住。"""
+
+    def setUp(self):
+        self._orig_killpg = b.os.killpg
+        self._orig_getpgid = b.os.getpgid
+        self._killpg_calls = []
+        b.os.getpgid = lambda pid: pid
+        b.os.killpg = lambda pgid, sig: self._killpg_calls.append((pgid, sig))
+        self._orig_inflight_path = b.INFLIGHT_PATH
+        tmp = tempfile.mkdtemp()
+        b.INFLIGHT_PATH = Path(tmp) / "inflight.json"
+
+    def tearDown(self):
+        b.os.killpg = self._orig_killpg
+        b.os.getpgid = self._orig_getpgid
+        b.INFLIGHT_PATH = self._orig_inflight_path
+
+    def _pool(self, threshold=0.5, interval=0.1):
+        tmp = tempfile.mkdtemp()
+        # Set the env BEFORE constructing so DispatchPool.__init__ picks it up. The
+        # watchdog thread is a daemon started inside __init__.
+        os.environ["JARVIS_DISPATCH_WATCHDOG_THRESHOLD"] = str(threshold)
+        os.environ["JARVIS_DISPATCH_WATCHDOG_INTERVAL"] = str(interval)
+        try:
+            pool = b.DispatchPool(max_workers=2, queue_max=3,
+                                  ledger_path=_ledger(tmp))
+        finally:
+            os.environ.pop("JARVIS_DISPATCH_WATCHDOG_THRESHOLD", None)
+            os.environ.pop("JARVIS_DISPATCH_WATCHDOG_INTERVAL", None)
+        # Assert the watchdog daemon is actually spinning.
+        self.assertTrue(pool._watchdog_thread.is_alive(),
+                        "watchdog daemon must be running post-init")
+        return pool
+
+    def _wait_for(self, cond, timeout=3.0):
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if cond():
+                return True
+            time.sleep(0.05)
+        return False
+
+    def test_watchdog_releases_zombie(self):
+        """A slot older than the threshold is popped, its inflight record removed,
+        and free_slots reflects the release."""
+        pool = self._pool(threshold=0.5, interval=0.1)
+        gate = threading.Event()
+        submitted = pool.submit("z1", lambda: gate.wait(30))
+        self.assertEqual(submitted, (True, "dispatched"))
+        # Register an inflight record so we can prove the watchdog removes it.
+        b._inflight_add("z1", "sid-z1", "528766", "ticket", "prompt-z1")
+        # Backdate the started so the age exceeds threshold immediately.
+        with pool._lock:
+            if "z1" in pool._active:
+                pool._active["z1"]["started"] = time.time() - 10
+        # Wait for the watchdog tick to fire.
+        popped = self._wait_for(lambda: "z1" not in pool._active, timeout=3.0)
+        gate.set()  # unblock the work regardless of outcome so shutdown is clean
+        pool._closed = True
+        pool.shutdown(wait=False)
+        self.assertTrue(popped, "watchdog must pop the zombie slot within timeout")
+        self.assertFalse(b._inflight_has("z1"),
+                         "watchdog must remove inflight record for the zombie")
+        self.assertEqual(pool.free_slots(), 2,
+                         "slot must be free after watchdog release")
+
+    def test_watchdog_kills_process_group(self):
+        """The zombie slot's recorded Popen has its pgid SIGKILLed."""
+        pool = self._pool(threshold=0.5, interval=0.1)
+        fake = _FakeProcWithPid(pid=88123)
+        gate = threading.Event()
+        pool.submit("z2", lambda: gate.wait(30))
+        pool.set_proc("z2", fake)
+        with pool._lock:
+            if "z2" in pool._active:
+                pool._active["z2"]["started"] = time.time() - 10
+        killed = self._wait_for(
+            lambda: any(pgid == 88123 and sig == signal.SIGKILL
+                        for pgid, sig in self._killpg_calls),
+            timeout=3.0)
+        gate.set()
+        pool._closed = True
+        pool.shutdown(wait=False)
+        self.assertTrue(killed,
+                        "watchdog must SIGKILL the recorded process group; saw %r"
+                        % self._killpg_calls)
+
+    def test_watchdog_only_kills_zombies(self):
+        """A young slot (age=0) is not touched; only slots older than threshold."""
+        pool = self._pool(threshold=1.0, interval=0.1)
+        gate = threading.Event()
+        pool.submit("zold", lambda: gate.wait(30))
+        pool.submit("znew", lambda: gate.wait(30))
+        with pool._lock:
+            if "zold" in pool._active:
+                pool._active["zold"]["started"] = time.time() - 10
+            # znew stays fresh (started = now).
+        popped = self._wait_for(lambda: "zold" not in pool._active, timeout=3.0)
+        gate.set()
+        self.assertTrue(popped, "old slot must be released by watchdog")
+        # znew survives — it was never zombie.
+        self.assertIn("znew", pool._active,
+                      "young slot must not be touched by watchdog")
+        pool._closed = True
+        pool.shutdown(wait=False)
+
+
+class ResumeInflightSelfHealTest(_InflightBase):
+    """P0 self-heal 层 4: _resume_inflight 三重校验 — 空 sid / session 文件缺失 →
+    drop 记录 + release claim, 不 dispatch。stale 由既有 age>=timeout 分支负责
+    (test_stale_marks_failed_no_resume 已覆盖 death cause + release)。"""
+
+    def setUp(self):
+        super().setUp()
+        for k in ("DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_TEMPLATE_ID"):
+            os.environ.pop(k, None)
+        self._orig_sess = b._session_file_exists
+        self._orig_release = b._release_claim
+        self.released = []
+        b._release_claim = lambda iid, project: self.released.append((str(iid), project))
+
+    def tearDown(self):
+        b._session_file_exists = self._orig_sess
+        b._release_claim = self._orig_release
+        super().tearDown()
+
+    def _handler(self):
+        h = b.JarvisHandler(no_dingtalk=True)
+        self.captured = []
+
+        def fake_dispatch(*a, **k):
+            self.captured.append((a, k))
+            return "done"
+
+        def fake_submit(iid, work, **k):
+            work()
+            return True, "dispatched"
+
+        h.dispatch_item = fake_dispatch
+        h.dispatch_pool.submit = fake_submit
+        return h
+
+    def test_resume_drops_empty_sid(self):
+        """The exact zombie scenario: sid='' record survives restart → drop, do not
+        try to re-dispatch with an empty session (would break jarvis_cmd gateway pick)."""
+        b._session_file_exists = lambda sid: True
+        b._inflight_add("801", "", "528766", "ticket", "p")
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(self.captured, [], "empty sid → drop, no dispatch")
+        self.assertFalse(b._inflight_has("801"), "empty sid → remove record")
+        self.assertEqual(self.released, [("801", "528766")],
+                         "empty sid → release claim so scan can retry cleanly")
+
+    def test_resume_drops_missing_session_file(self):
+        """session file gone (~/.claude cleanup or session already killed) → drop
+        instead of the old fresh-run path which silently re-cost a 12h round."""
+        b._session_file_exists = lambda sid: False
+        b._inflight_add("802", "sid-gone", "528766", "ticket", "p")
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(self.captured, [], "session file missing → drop, no dispatch")
+        self.assertFalse(b._inflight_has("802"))
+        self.assertEqual(self.released, [("802", "528766")])
+
+    def test_resume_keeps_healthy(self):
+        """All three checks pass → fall through to the existing resume path
+        (session present + sid non-empty + fresh age)."""
+        b._session_file_exists = lambda sid: True
+        b._inflight_add("803", "sid-healthy", "528766", "ticket", "the prompt")
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(len(self.captured), 1,
+                         "healthy record → existing resume path dispatches")
+        args = self.captured[0][0]
+        self.assertEqual(args[0], "803")
+        self.assertEqual(args[2], "sid-healthy", "healthy resume uses original sid")
+        self.assertTrue(args[3], "session present → resume=True")
+
+    def test_resume_drops_empty_sid_without_project(self):
+        """Empty sid + no project (probe/wake ambient state): still drop record,
+        no release_claim call (project is falsy)."""
+        b._session_file_exists = lambda sid: True
+        b._inflight_add("804", "", "", "ticket", "p")
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(self.captured, [])
+        self.assertFalse(b._inflight_has("804"))
+        self.assertEqual(self.released, [],
+                         "no project → skip release_claim")
+
+
+class RunClaudeStreamTimeoutTest(unittest.TestCase):
+    """P0 self-heal 层 3: run_claude_stream 的 p.wait() 必须带 timeout, timeout →
+    killpg + raise TimeoutError。修 20 分钟僵尸的直接漏洞 (subprocess.wait 无超时)。"""
+
+    def setUp(self):
+        self._orig_popen = b.subprocess.Popen
+        self._orig_killpg = b.os.killpg
+        self._orig_getpgid = b.os.getpgid
+        self._killpg_calls = []
+        b.os.getpgid = lambda pid: pid
+        b.os.killpg = lambda pgid, sig: self._killpg_calls.append((pgid, sig))
+
+    def tearDown(self):
+        b.subprocess.Popen = self._orig_popen
+        b.os.killpg = self._orig_killpg
+        b.os.getpgid = self._orig_getpgid
+
+    def test_run_claude_stream_timeout_kills(self):
+        """Simulate a subprocess that finishes stdout but hangs in wait(): wait
+        raises TimeoutExpired → run_claude_stream must killpg + raise TimeoutError."""
+
+        class _FakeStdout:
+            def __iter__(self):
+                return iter([])  # empty stream → parse_stream_lines exits immediately
+
+        class _FakeStderr:
+            def read(self):
+                return ""
+
+        class _FakeProc:
+            def __init__(self):
+                self.pid = 77555
+                self.stdout = _FakeStdout()
+                self.stderr = _FakeStderr()
+                self._waits = 0
+
+            def wait(self, timeout=None):
+                self._waits += 1
+                # First wait (bounded): hang → TimeoutExpired.
+                if self._waits == 1:
+                    raise subprocess.TimeoutExpired("claude", timeout or 1)
+                # Second wait (post-kill grace): pretend the SIGKILL took effect.
+                return -9
+
+            def kill(self):
+                pass
+
+        def fake_popen(*a, **k):
+            return _FakeProc()
+
+        b.subprocess.Popen = fake_popen
+
+        gen = b.run_claude_stream("hi", "sid-x", False, timeout=1)
+        with self.assertRaises(TimeoutError):
+            for _ in gen:
+                pass
+
+        # killpg must have hit our fake pid with SIGKILL.
+        self.assertTrue(
+            any(pgid == 77555 and sig == signal.SIGKILL
+                for pgid, sig in self._killpg_calls),
+            "run_claude_stream must SIGKILL the process group on wait timeout; saw %r"
+            % self._killpg_calls)
 
 
 class SourceWiringTest(unittest.TestCase):
