@@ -9,9 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/mitchellh/go-homedir"
 )
 
 // TestProviderCredentials_ExternalMode 测试 External 模式的凭证获取
@@ -1903,5 +1905,139 @@ func TestAdvancedProfileModes_CredentialRetrieval(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestDefaultConfigPath verifies that defaultConfigPath resolves the aliyun
+// CLI config under the real user home directory and never degenerates to the
+// filesystem root (/.aliyun/config.json) when HOME / USERPROFILE are empty.
+//
+// Regression guard for the Windows service-account / minimal-container
+// scenario where an empty USERPROFILE previously made
+// fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("USERPROFILE")) resolve to
+// the current drive root, silently skipping profile loading and surfacing as
+// an opaque authentication failure.
+func TestDefaultConfigPath(t *testing.T) {
+	// Drive homedir from the live environment and reset its cache between
+	// cases so t.Setenv takes effect.
+	origDisableCache := homedir.DisableCache
+	homedir.DisableCache = true
+	defer func() {
+		homedir.DisableCache = origDisableCache
+		homedir.Reset()
+	}()
+
+	// tempHome is a real directory used as a stand-in home for the "env set"
+	// case so the assertion can be exact; it intentionally has no
+	// .aliyun/config.json inside it.
+	tempHome, err := ioutil.TempDir("", "alicloud-default-config-home-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempHome)
+
+	tests := []struct {
+		name    string
+		envHome string // value assigned to HOME (and USERPROFILE, no-op on unix)
+	}{
+		{name: "HOME set to real temp dir", envHome: tempHome},
+		{name: "HOME empty (unix fallback to user db)", envHome: ""},
+		{name: "HOME and USERPROFILE both empty", envHome: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homedir.Reset()
+			t.Setenv("HOME", tt.envHome)
+			t.Setenv("USERPROFILE", tt.envHome)
+
+			got, err := defaultConfigPath()
+
+			// Disk-root regression signatures must never appear, regardless of
+			// whether a home directory could be determined.
+			if got == "/.aliyun/config.json" || strings.HasPrefix(got, "/.aliyun") {
+				t.Fatalf("defaultConfigPath regressed to disk-root path %q (err=%v)", got, err)
+			}
+
+			if err != nil {
+				// When no home can be determined at all, an error is the safe
+				// outcome (callers treat it as "no profile"); the path must
+				// stay empty rather than pointing at the drive root.
+				if got != "" {
+					t.Fatalf("defaultConfigPath returned non-empty path %q alongside error: %v", got, err)
+				}
+				t.Logf("defaultConfigPath returned an error (acceptable, no disk-root): %v", err)
+				return
+			}
+
+			if got == "" {
+				t.Fatalf("defaultConfigPath returned empty path with nil error")
+			}
+			if !strings.HasSuffix(got, filepath.Join(".aliyun", "config.json")) {
+				t.Fatalf("defaultConfigPath result %q does not end with .aliyun/config.json", got)
+			}
+			// For the explicit-temp-home case, assert the exact joined path.
+			if tt.envHome != "" {
+				want := filepath.Join(tt.envHome, ".aliyun", "config.json")
+				if got != want {
+					t.Fatalf("defaultConfigPath = %q, want %q", got, want)
+				}
+			}
+		})
+	}
+}
+
+// TestGetConfigFromProfile_EmptySharedCredentialsFile verifies that with an
+// empty shared_credentials_file, getConfigFromProfile resolves the default
+// path via defaultConfigPath (under the home dir, not the disk root) and
+// degrades gracefully (nil, nil) when that default file does not exist.
+func TestGetConfigFromProfile_EmptySharedCredentialsFile(t *testing.T) {
+	origDisableCache := homedir.DisableCache
+	homedir.DisableCache = true
+	defer func() {
+		homedir.DisableCache = origDisableCache
+		homedir.Reset()
+	}()
+
+	// Empty temp dir as HOME so defaultConfigPath points at a non-existent
+	// path (deterministic, never the operator's real aliyun config).
+	tempHome, err := ioutil.TempDir("", "alicloud-empty-home-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempHome)
+
+	homedir.Reset()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+
+	// Sanity: the default path must live under the temp home, not the disk root.
+	defaultPath, derr := defaultConfigPath()
+	if derr != nil {
+		t.Fatalf("defaultConfigPath error: %v", derr)
+	}
+	if defaultPath == "/.aliyun/config.json" || strings.HasPrefix(defaultPath, "/.aliyun") {
+		t.Fatalf("defaultConfigPath regressed to disk-root %q", defaultPath)
+	}
+	if want := filepath.Join(tempHome, ".aliyun", "config.json"); defaultPath != want {
+		t.Fatalf("defaultConfigPath = %q, want %q", defaultPath, want)
+	}
+
+	raw := map[string]interface{}{
+		"profile":                 "non-existent-profile",
+		"shared_credentials_file": "", // empty -> exercises defaultConfigPath
+		"region":                  "cn-beijing",
+	}
+	resourceData := schema.TestResourceDataRaw(t, Provider().(*schema.Provider).Schema, raw)
+
+	providerConfig = nil
+	val, err := getConfigFromProfile(resourceData, "access_key_id")
+
+	// Default config absent under temp home: profile not loaded -> graceful.
+	if err != nil {
+		t.Fatalf("getConfigFromProfile with empty shared_credentials_file returned unexpected error: %v", err)
+	}
+	if val != nil {
+		t.Errorf("Expected nil value when default config file is absent, got %v", val)
 	}
 }
