@@ -885,6 +885,74 @@ fi
 rm -rf "$tmpcfg13"; rm -f "$cap13"
 
 # ---------------------------------------------------------------------------
+# Test 14: repository automation_platform pool scans project 1091779 using the
+#          fixed open-jarvis assignee and stamps pool metadata on every row.
+# ---------------------------------------------------------------------------
+echo "=== Test 14: automation_platform fixed-assignee scan contract ==="
+cat > "$tmpbin/a1" << 'STUB'
+#!/bin/bash
+if [ "$1" = "auth" ] && [ "$2" = "whoami" ]; then
+    echo "Account:  chenhanzhang.chz"; exit 0
+fi
+if [ "$1" = "project" ] && [ "$2" = "workitem" ] && [ "$3" = "list" ]; then
+    echo "$*" >> "$ARGS_CAP"
+    project=""; category=""; prev=""
+    for arg in "$@"; do
+        [ "$prev" = "--project" ] && project="$arg"
+        [ "$prev" = "--category" ] && category="$arg"
+        prev="$arg"
+    done
+    if [ "$project" = "1091779" ]; then
+        printf '[{"identifier":"AP-%s","subject":"Platform item","categoryIdentifier":"%s","status":"待处理","priority":"medium","tag":[],"gmtModified":"2026-07-13 10:00","gmtCreate":"2026-07-13 09:00"}]\n' "$category" "$category"
+    else
+        echo '[]'
+    fi
+    exit 0
+fi
+exit 1
+STUB
+chmod +x "$tmpbin/a1"
+
+tmpcfg14=$(mktemp -d); mkdir -p "$tmpcfg14/config"
+cp "$proj_root/config/pools.json" "$tmpcfg14/config/pools.json"
+cap14=$(mktemp)
+output14=$(JARVIS_ROOT="$tmpcfg14" JARVIS_SCAN_TTL=0 ARGS_CAP="$cap14" \
+    bash "$proj_root/bootstrap/scan.sh" 2>/dev/null)
+
+platform_calls=$(grep -c 'project 1091779' "$cap14" || true)
+platform_lines=$(grep 'project 1091779' "$cap14" || true)
+fixed_filter_calls=$(printf '%s\n' "$platform_lines" | grep -c 'assignedTo=WORKER_1782379562571' || true)
+platform_categories=$(printf '%s\n' "$platform_lines" | awk '{ for (i=1; i<=NF; i++) if ($i=="--category") print $(i+1) }' | sort | tr '\n' ',')
+
+if [ "$platform_calls" -eq 3 ]; then
+    assert_pass "automation_platform queries req/bug/task in project 1091779"
+else
+    assert_fail "expected 3 project 1091779 calls, got $platform_calls"
+fi
+
+if [ "$platform_categories" = "bug,req,task," ]; then
+    assert_pass "automation_platform category set is exactly req/bug/task"
+else
+    assert_fail "automation_platform category set mismatch: $platform_categories"
+fi
+
+if [ "$fixed_filter_calls" -eq 3 ] && ! printf '%s\n' "$platform_lines" | grep -q -- '--assignee'; then
+    assert_pass "automation_platform uses fixed assignedTo filter without --assignee"
+else
+    assert_fail "automation_platform assignee filter mismatch: $platform_lines"
+fi
+
+if printf '%s' "$output14" | jq -e '
+    length == 3 and all(.[]; .pool=="automation_platform" and .pool_project=="1091779")
+  ' >/dev/null 2>&1; then
+    assert_pass "automation_platform rows carry pool and project metadata"
+else
+    assert_fail "automation_platform output metadata mismatch: $output14"
+fi
+
+rm -rf "$tmpcfg14"; rm -f "$cap14"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

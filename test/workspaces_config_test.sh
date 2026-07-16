@@ -15,6 +15,72 @@ jq -e '.workspaces.jarvis.git_url=="git@gitlab.alibaba-inc.com:terraflow/jarvis-
 jq -e '.workspaces.jarvis.default_branch=="master"' \
   "$repo_root/config/workspaces.json" >/dev/null
 
+# 自动化服务台六个交付仓库：事实坐标、默认分支和池归属必须完整登记。
+jq -e '
+  def platform_workspace($key; $repo; $url):
+    .workspaces[$key] as $w |
+    $w.repo == $repo and
+    $w.git_url == $url and
+    $w.default_branch == "master" and
+    (($w.pools // []) | index("automation_platform") != null);
+
+  platform_workspace("automation_platform"; "aliyun-automation-platform"; "git@gitlab.alibaba-inc.com:aliyun-automation-platform/aliyun-automation-platform.git") and
+  platform_workspace("automation_platform_frontend"; "iac-service"; "git@gitlab.alibaba-inc.com:aliyun-api/iac-service.git") and
+  platform_workspace("automation_platform_runtime"; "iac-service-runtime"; "git@gitlab.alibaba-inc.com:opensource-tools/iac-service-runtime.git") and
+  platform_workspace("automation_platform_function_test"; "automation-function-test"; "git@gitlab.alibaba-inc.com:aliyun-automation-platform/automation-function-test.git") and
+  platform_workspace("automation_platform_api"; "IaCService_pop_IaCService_2021-08-06"; "git@gitlab.alibaba-inc.com:cloudspec-model/IaCService_pop_IaCService_2021-08-06.git") and
+  platform_workspace("automation_platform_api_inner"; "IaCService-inner_pop_IaCService-inner_2021-09-01"; "git@gitlab.alibaba-inc.com:cloudspec-model/IaCService-inner_pop_IaCService-inner_2021-09-01.git") and
+
+  .workspaces.automation_platform.project == 1091779 and
+  .workspaces.automation_platform.app == 172823 and
+  .workspaces.automation_platform.repo_id == 2156624 and
+  .workspaces.automation_platform.pipelines == {"prestage":66,"prod":67} and
+  .workspaces.automation_platform.delivery == "delivery-aliyun-automation-platform.md" and
+
+  .workspaces.automation_platform.ops == {"build":"./mvnw -q -DskipTests package","test":"./mvnw -q test"} and
+  .workspaces.automation_platform_frontend.ops == {"build":"npm run build","test":"npm test -- --runInBand","lint":"npm run lint"} and
+  .workspaces.automation_platform_runtime.ops == {"build":"go build ./...","test":"go test ./..."} and
+  .workspaces.automation_platform_function_test.ops == {"test":"mvn -q test"} and
+  .workspaces.automation_platform_api.ops == {"build":"cloudspec build"} and
+  .workspaces.automation_platform_api_inner.ops == {"build":"cloudspec build"}
+' "$repo_root/config/workspaces.json" >/dev/null
+
+# 池边界必须恰好是六个产品仓库，Agent 仓库不能被误纳入；交付坐标只属于后端。
+jq -e '
+  ([.workspaces | to_entries[] |
+      select(((.value.pools // []) | index("automation_platform")) != null) |
+      .key] | sort) == [
+        "automation_platform",
+        "automation_platform_api",
+        "automation_platform_api_inner",
+        "automation_platform_frontend",
+        "automation_platform_function_test",
+        "automation_platform_runtime"
+      ] and
+  ([.workspaces | to_entries[] |
+      select(.key != "automation_platform") |
+      select(((.value.pools // []) | index("automation_platform")) != null) |
+      .value |
+      has("project") or has("app") or has("repo_id") or has("pipelines") or has("delivery")]
+    | any | not)
+' "$repo_root/config/workspaces.json" >/dev/null
+
+while read -r workspace_key repo_dir; do
+  mkdir -p "$tmpdir/$repo_dir"
+  resolved_platform="$(JARVIS_WORKSPACE_ROOT="$tmpdir" bash "$repo_root/bootstrap/workspace.sh" dir "$workspace_key")"
+  if [ "$resolved_platform" != "$tmpdir/$repo_dir" ]; then
+    echo "$workspace_key: expected $tmpdir/$repo_dir, got $resolved_platform" >&2
+    exit 1
+  fi
+done <<'WORKSPACES'
+automation_platform aliyun-automation-platform
+automation_platform_frontend iac-service
+automation_platform_runtime iac-service-runtime
+automation_platform_function_test automation-function-test
+automation_platform_api IaCService_pop_IaCService_2021-08-06
+automation_platform_api_inner IaCService-inner_pop_IaCService-inner_2021-09-01
+WORKSPACES
+
 # terraform_provider remote registration must reflect the real machine layout:
 # origin = upstream aliyun, fork = api-tool-agent (F1 fix — the old ChenHanZhang /
 # upstream_remote=alicloud registration was stale and contradicted sync-provider.sh).

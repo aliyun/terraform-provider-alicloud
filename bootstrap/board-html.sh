@@ -36,11 +36,17 @@ except Exception: prb={}
 def e(s): return html.escape(str(s or ""))
 PRI={"紧急":("#d92d20","#fef3f2"),"高":("#d92d20","#fef3f2"),"中":("#b54708","#fffaeb"),"低":("#475467","#f2f4f7")}
 COLS=[("任务池","pool"),("待开始","__pre"),("进行中","inflight"),("审核中","done"),("已完成","merged")]
-POOLS=["tf_provider","tf_customer","mcp_server","api_toolkit"]
+cfg=json.load(open(sys.argv[3]))
+POOLS=list(cfg.get("pools",{}).keys())
+NAMES={k:v.get("name",k) for k,v in cfg.get("pools",{}).items()}
+pool_seen=set(POOLS)
+for item in data:
+  pool=item.get("pool")
+  if pool and pool not in pool_seen:
+    POOLS.append(pool); pool_seen.add(pool)
 # key→hue: accent border + tag chip tint + filter swatch share one color per pool
 COLOR={"tf_provider":"#3b82f6","tf_customer":"#f59e0b","mcp_server":"#a855f7","api_toolkit":"#ec4899"}
 CAT={"req":("需求","#0e7090","#ecfdff"),"bug":("缺陷","#b42318","#fef3f2"),"task":("任务","#5925dc","#f4f3ff")}
-cfg=json.load(open(sys.argv[3])); NAMES={k:v.get("name",k) for k,v in cfg.get("pools",{}).items()}
 PCNT={}; PSPLIT={}  # pool key → candidate count + {req,bug,task} split (full, even if cap clipped DOM)
 for x in data:
   if x["state"]=="pool":
@@ -98,7 +104,7 @@ probe_html=probe_strip(prb)
 arun=len([x for x in data if x["state"]=="inflight"])
 def drow(p):
   s=psplit(p)
-  return f'<label class="dr"><input type=checkbox class=pf data-pf="{p}" checked><span class="sw" style="background:{pcol(p)}"></span><span class="nm">{e(pname(p))}</span><span class="cnt">{pcnt(p)} (需{s["req"]}/缺{s["bug"]}/务{s["task"]})</span></label>'
+  return f'<label class="dr"><input type=checkbox class=pf data-pf="{e(p)}" checked><span class="sw" style="background:{pcol(p)}"></span><span class="nm">{e(pname(p))}</span><span class="cnt">{pcnt(p)} (需{s["req"]}/缺{s["bug"]}/务{s["task"]})</span></label>'
 rows="".join(drow(p) for p in POOLS)
 CTOT={c:sum(psplit(p)[c] for p in POOLS) for c in ("req","bug","task")}
 pills="".join(f'<button class="cp" data-cf="{c}" aria-pressed=true><span class="cd" style="background:{CAT[c][1]}"></span>{CAT[c][0]}<span class="ccnt">{CTOT[c]}</span></button>' for c in ("req","bug","task"))

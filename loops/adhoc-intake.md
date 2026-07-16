@@ -34,7 +34,7 @@
 
 1. **找现有工单**：按意图/关键字检索是否已有对应 Aone 工作项。
 2. **命中** → 复用其 id；记录池（`config/pools.json` 路由）。
-3. **未命中** → 选池，候选以 `config/pools.json` 为准（tf_customer / tf_provider / mcp_server / api_toolkit）。supervised：**反问等用户选**（不擅自创建）；unattended/headless：按 autonomy `adhoc_aone` 直建——ad-hoc PR/probe 类默认落 tf_provider (528766)，池不明且无法反问 → escalate（`missing_capability`）或 `[[SUSPEND]]` 问人。
+3. **未命中** → 选池，候选以 `config/pools.json` 为准（tf_customer / tf_provider / mcp_server / automation_platform / api_toolkit）。supervised：**反问等用户选**（不擅自创建）；unattended/headless：按 autonomy `adhoc_aone` 直建——ad-hoc PR/probe 类默认落 tf_provider (528766)，池不明且无法反问 → escalate（`missing_capability`）或 `[[SUSPEND]]` 问人。
 4. **授权后建 + 双向关联**：建工作项 → 工单挂本任务链接，本任务记 Aone id（双向）。
    - **统一建为需求（`--category req`）**：adhoc 接入默认开需求单，不开 task/bug，便于后续走需求→变更→发布链路。确属缺陷再用 bug。
    - ad-hoc PR 无明确归属 → 默认落 **tf_provider (528766)**。
@@ -47,11 +47,11 @@
 
 ## 四、解析工作区 + cd
 
-读 `config/workspaces.json` 取 `workspaces.<key>`（terraform_provider | mcp_server）：`repo` / remotes / `default_branch` / `pools` / `ops`；本地路径不入 base，一律 `bootstrap/workspace.sh dir <key>` 解析（`workspaces.local.json` / `JARVIS_WORKSPACE_ROOT` 覆盖）。
+工作区 key 完全由 `config/workspaces.json` 驱动，不维护手写枚举：先用 `bash bootstrap/workspace.sh list` / `config <key>` 查看 `repo`、remotes、`default_branch`、`pools` 和 `ops`，再用 `bash bootstrap/workspace.sh dir <key>` 解析本机路径。自动化服务台按变更面选择 `automation_platform*` 六个 workspace，边界见 aone-triage 的 `references/delivery-aliyun-automation-platform.md`。
 
 - GitHub 写操作硬门：凡 Jarvis 代表发 PR/评论/推分支，先 `bootstrap/github-identity.sh check`；`gh` 写操作统一用 `bootstrap/github-identity.sh gh ...`，推分支统一用 `bootstrap/github-identity.sh push <owner/repo> <local-ref> <remote-ref>`，账号必须是 `api-tool-agent`，缺 token 或账号不匹配则 escalate。
 - 评审 alicloud PR：实机远端布局 `upstream_remote=origin`（origin=上游 aliyun）、`fork_remote=fork`（api-tool-agent fork）；只读查证读 origin(upstream)，Jarvis 需要提交修复时 push/head 必须落到 `api-tool-agent:<branch>`（经 `bootstrap/github-identity.sh push`），禁止依赖本机 ambient `gh auth` 或个人账号。
-- cd 进 `$(bootstrap/workspace.sh dir <key>)`，dev 先开 worktree 切分支（CLAUDE.md 工作纪律）。
+- cd 进 `bootstrap/workspace.sh dir` 返回的路径，dev 先开 worktree 切分支（CLAUDE.md 工作纪律）。
 
 ---
 
