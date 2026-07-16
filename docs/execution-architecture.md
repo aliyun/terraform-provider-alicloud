@@ -95,6 +95,30 @@ Worker is preferred before ordinary recovery is allowed.  Claude remains
 process-scoped rather than using the Codex between-turn grace.  Explicit wait
 states are not converted to turn-idle failures.
 
+## Dead interactive Session recovery
+
+An interactive Worker that dies without suspending leaves its Task outside
+every queue: `hasInteractiveLineage` permanently blocks a SHADOW→MANAGED
+upgrade, so no PersistenceExecutor can lease it, and the Aone scanner skips
+the still-tagged ticket.  The reaper settles the dead Session as
+SHADOW+RESUMABLE (resume context available) or SHADOW without a current
+Session (CORRUPTED archive), or RECOVERY_REQUIRED when a required Operation
+receipt is unreconciled.
+
+The bridge `RecoveryScheduler` watches `/workers` for STALE/OFFLINE Workers —
+remembering each live Worker's assignments in `.my-day/bridge/recovery.json`,
+because an expired lease immediately drops the assignment from the response —
+and corroborates every candidate through `tasks/by-aone` plus the Task
+timeline.  Recovery then goes through the front door: it spawns a headless
+jarvis as an EphemeralJob (only the process shell, no recovery promise of its
+own) whose `claim.sh claim` performs the fenced targeted `claimTask`.  Under
+`REPLAY_SAFE` the control plane archives the dead Session and issues a new
+fence, so the work is again enclosed by a fenced Task Session.  `RESUME_ONLY`
+and `MANUAL` Tasks and `RECOVERY_REQUIRED` are announced instead of
+re-dispatched; a SUSPENDED Task stays with its wait/affinity flow.
+`JARVIS_RECOVERY_REDISPATCH=0` keeps detection and announcements but spawns
+nothing.
+
 ## External side effects
 
 Operation receipts protect writes that are unsafe to replay blindly, such as

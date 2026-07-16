@@ -90,11 +90,12 @@ class HandlerWiringTest(unittest.TestCase):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
         handler.persistence_executor = _Starter("worker", calls)
         for name in ("scanner", "reconciler", "board", "prober", "reviser",
-                     "watcher", "managed_wait_sensor", "personawatch", "prwatch"):
+                     "watcher", "managed_wait_sensor", "personawatch", "prwatch",
+                     "recovery"):
             setattr(handler, name, _Starter(name, calls))
         handler.start_schedulers()
         self.assertEqual(calls[0], "worker")
-        self.assertEqual(calls[-1], "prwatch")
+        self.assertEqual(calls[-1], "recovery")
 
     def test_stop_helper_forwards_drain_policy(self):
         handler = bot.JarvisHandler.__new__(bot.JarvisHandler)
