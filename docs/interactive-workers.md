@@ -33,17 +33,20 @@ process and currently has no project `SessionEnd` event, so process liveness alo
 cannot delimit one conversation. Its `UserPromptSubmit` and `Stop` hooks therefore
 bracket each turn: the Worker keeps heartbeating while Codex is available, but the
 current task session is explicitly suspended after
-`JARVIS_INTERACTIVE_STOP_GRACE_SEC` (default 60 seconds), without consuming a
-crash retry. If Codex loses the `Stop` event entirely, an active-turn inactivity
-limit (`JARVIS_INTERACTIVE_ACTIVE_TURN_TTL_SEC`, default 12 hours) is refreshed by
-tool hooks and prevents the global app-server from renewing an abandoned session
-forever without cutting off a turn that is still making progress. If the suspend
-request cannot reach the control plane, the default
-120-second lease remains the crash fallback and makes the task recoverable in at
-most about three minutes. A prompt arriving before suspension synchronously
-renews the same fence. A later continuation prompt reclaims the suspended task
-through the normal control-plane claim/start path, reuses the same durable
-session, and receives a new fence without consuming a crash retry. A prompt that
+`JARVIS_INTERACTIVE_TURN_GRACE_SEC` (default 600 seconds), without consuming a
+crash retry. The old `JARVIS_INTERACTIVE_STOP_GRACE_SEC` name remains a temporary
+compatibility fallback. If Codex loses the `Stop` event entirely, an active-turn
+inactivity limit (`JARVIS_INTERACTIVE_ACTIVE_TURN_TTL_SEC`, default 12 hours) is
+refreshed by tool hooks and prevents the global app-server from renewing an
+abandoned session forever without cutting off a turn that is still making
+progress. If the suspend request cannot reach the control plane, the default
+300-second lease remains the crash fallback. The detached sidecar heartbeats every
+30 seconds by default, so an available control plane continuously renews the
+session while the native conversation remains active. A prompt arriving before
+suspension synchronously renews the same fence. A later continuation prompt
+reclaims the suspended task through the normal control-plane claim/start path,
+reuses the same durable session, and receives a new fence without consuming a
+crash retry. A prompt that
 explicitly names a different Aone item leaves the old task suspended so the new
 item can follow its own `claim.sh` path. If another Worker already recovered the
 task, the stale assignment is recorded as lost ownership and every later prompt

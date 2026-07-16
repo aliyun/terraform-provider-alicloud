@@ -1368,6 +1368,35 @@ def _codex_turn_live(state: Mapping[str, Any],
     return current_time - started_at < active_ttl
 
 
+def _interactive_turn_grace_seconds() -> float:
+    """Return the Codex between-turn grace, honoring the legacy env name."""
+    configured = os.environ.get("JARVIS_INTERACTIVE_TURN_GRACE_SEC")
+    if configured is None:
+        configured = os.environ.get("JARVIS_INTERACTIVE_STOP_GRACE_SEC", "600")
+    try:
+        return max(0.0, float(configured))
+    except ValueError:
+        return 600.0
+
+
+def _interactive_heartbeat_seconds() -> float:
+    """Return the detached interactive sidecar heartbeat interval."""
+    try:
+        return max(2.0, float(os.environ.get(
+            "JARVIS_INTERACTIVE_HEARTBEAT_SEC", "30")))
+    except ValueError:
+        return 30.0
+
+
+def _interactive_lease_seconds() -> int:
+    """Return the targeted interactive Task lease duration."""
+    try:
+        return max(30, int(os.environ.get(
+            "JARVIS_INTERACTIVE_LEASE_SECONDS", "300")))
+    except ValueError:
+        return 300
+
+
 def _session_heartbeat_allowed(state: Mapping[str, Any],
                                now: Optional[float] = None) -> bool:
     """Keep Claude process-scoped; bound Codex's global app-server lease."""
@@ -1379,11 +1408,7 @@ def _session_heartbeat_allowed(state: Mapping[str, Any],
         stopped_at = float(state["turnStoppedAt"])
     except (KeyError, TypeError, ValueError):
         return False
-    try:
-        grace = max(0.0, float(os.environ.get(
-            "JARVIS_INTERACTIVE_STOP_GRACE_SEC", "60")))
-    except ValueError:
-        grace = 60.0
+    grace = _interactive_turn_grace_seconds()
     current_time = time.time() if now is None else float(now)
     elapsed = current_time - stopped_at
     return 0.0 <= elapsed < grace
@@ -2216,8 +2241,7 @@ def _auto_suspend_idle_session(store: StateStore,
 
 def daemon(state_path: Path, expected_worker_key: str) -> int:
     store = StateStore(state_path)
-    interval = max(2.0, float(os.environ.get(
-        "JARVIS_INTERACTIVE_HEARTBEAT_SEC", "20")))
+    interval = _interactive_heartbeat_seconds()
     cp = _client()
     while True:
         state = store.load()
@@ -2388,8 +2412,7 @@ def prepare_claim(aone_id: str, project_id: str) -> Dict[str, Any]:
         aone_id=aone_id,
         required_capabilities={"workerKey": state["workerKey"]},
     )
-    lease_seconds = max(30, int(os.environ.get(
-        "JARVIS_INTERACTIVE_LEASE_SECONDS", "120")))
+    lease_seconds = _interactive_lease_seconds()
     # This endpoint is targeted to one exact task. The server checks an active
     # same-runtime assignment before this hint and then enforces real occupied
     # slots transactionally in assignTask. Reporting one lets an expired local

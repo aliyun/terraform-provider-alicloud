@@ -666,17 +666,42 @@ class InteractiveWorkerTest(unittest.TestCase):
         self.assertFalse(stopped["turnActive"])
         self.assertEqual(stopped["turnStoppedAt"], 1234)
 
-    def test_session_heartbeat_uses_codex_stop_grace_but_not_for_claude(self):
+    def test_session_heartbeat_uses_codex_turn_grace_but_not_for_claude(self):
         state = self._seed()
         state["turnActive"] = False
         state["turnStoppedAt"] = 100
         with mock.patch.dict(os.environ, {
-            "JARVIS_INTERACTIVE_STOP_GRACE_SEC": "60",
+            "JARVIS_INTERACTIVE_TURN_GRACE_SEC": "600",
         }, clear=False):
-            self.assertTrue(worker._session_heartbeat_allowed(state, now=159.9))
-            self.assertFalse(worker._session_heartbeat_allowed(state, now=160))
+            self.assertTrue(worker._session_heartbeat_allowed(state, now=699.9))
+            self.assertFalse(worker._session_heartbeat_allowed(state, now=700))
         state["client"] = "claude"
         self.assertTrue(worker._session_heartbeat_allowed(state, now=10000))
+
+    def test_interactive_timing_defaults_and_legacy_grace_compatibility(self):
+        keys = (
+            "JARVIS_INTERACTIVE_LEASE_SECONDS",
+            "JARVIS_INTERACTIVE_HEARTBEAT_SEC",
+            "JARVIS_INTERACTIVE_TURN_GRACE_SEC",
+            "JARVIS_INTERACTIVE_STOP_GRACE_SEC",
+        )
+        with mock.patch.dict(os.environ, {}, clear=False):
+            old = {key: os.environ.pop(key, None) for key in keys}
+            try:
+                self.assertEqual(worker._interactive_lease_seconds(), 300)
+                self.assertEqual(worker._interactive_heartbeat_seconds(), 30)
+                self.assertEqual(worker._interactive_turn_grace_seconds(), 600)
+
+                os.environ["JARVIS_INTERACTIVE_STOP_GRACE_SEC"] = "45"
+                self.assertEqual(worker._interactive_turn_grace_seconds(), 45)
+                os.environ["JARVIS_INTERACTIVE_TURN_GRACE_SEC"] = "90"
+                self.assertEqual(worker._interactive_turn_grace_seconds(), 90)
+            finally:
+                for key in keys:
+                    os.environ.pop(key, None)
+                for key, value in old.items():
+                    if value is not None:
+                        os.environ[key] = value
 
     def test_missing_stop_has_active_turn_ttl_before_auto_suspend(self):
         state = self._seed()
