@@ -560,9 +560,11 @@ if cands:
         rm -f "$(_claim_prefix_path "$workitem_id")"
         cur_status="$(_get_status "$workitem_id")"
         status_ok=0   # 1 = Aone status 已落到合法完成态，jarvis-done 与真源一致
-        if [ -n "$cur_status" ] && _in_done_statuses "$cur_status"; then
-            # Already at a terminal status (已发布/已完成/已拒绝…) — leave it. Writing done_status
-            # here would either no-op-WARN or drag a 已完成/已拒绝 ticket back to 已发布.
+        if [ -n "$cur_status" ] && { _in_done_statuses "$cur_status" || [ "$cur_status" = "$eff_status" ]; }; then
+            # Already at a terminal status — 全局 .claim.done_statuses(已发布/已完成/已拒绝…)
+            # 或 per-池 done_status(如 tf_provider 产品类需求"待发布")。写 done_status 会 no-op-WARN
+            # 或把 已完成/已拒绝 拖回 已发布。与 donecheck 的合法完成态并集判据一致
+            # (loops/aone-triage.md §三:「.claim.done_statuses ∪ 各池 .done_status,含 tf_provider 待发布」)。
             echo "claim.sh: finished workitem $workitem_id in project $project_id (already terminal: $cur_status)"
             status_ok=1
         elif [ -n "$eff_status" ]; then
