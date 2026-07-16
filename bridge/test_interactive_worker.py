@@ -112,6 +112,9 @@ class InteractiveWorkerTest(unittest.TestCase):
     def _store(self):
         return worker.StateStore(worker._state_path("codex", "native-thread-1"))
 
+    def _claude_store(self, session_id="headless-session-1"):
+        return worker.StateStore(worker._state_path("claude", session_id))
+
     def _child_store(self, session_id="agent-child-1"):
         return worker.StateStore(worker._state_path("codex", session_id))
 
@@ -1371,6 +1374,329 @@ class InteractiveWorkerTest(unittest.TestCase):
         ]
         self.assertEqual(len(offline_heartbeats), 1)
         self.assertEqual(offline_heartbeats[0][1][0], old_worker_key)
+
+    def test_headless_preexec_and_session_start_preserve_recovery_fence(self):
+        session_id = "headless-session-1"
+        store = self._claude_store(session_id)
+        old_state = {
+            "schemaVersion": 1,
+            "client": "claude",
+            "clientSessionId": session_id,
+            "workerKey": "host:boot:old-process",
+            "host": "host",
+            "bootId": "boot",
+            "processUuid": "old-process",
+            "hostPid": 101,
+            "hostProcessStartedAt": "old-birth",
+            "verifyHostCommand": True,
+            "cwd": self.temp.name,
+            "branch": "worktree-ticket",
+            "claimCounter": 7,
+            "current": {
+                "aoneId": "84382166",
+                "projectId": "2100304",
+                "taskId": "task-old",
+                "sessionId": "session-old",
+                "fenceToken": 9,
+                "generation": 4,
+                "cycle": 7,
+                "runtimeSessionId": "interactive:cycle:7",
+                "leaseSeconds": 120,
+                "heartbeatEnabled": False,
+            },
+            "pendingClaim": None,
+            "pendingOperation": {
+                "operationId": "operation-old",
+                "operationKey": "claim-operation-old",
+                "aoneId": "84382166",
+                "status": "SENDING",
+            },
+            "pendingSuspend": None,
+            "lostOwnership": {
+                "aoneId": "84382166",
+                "projectId": "2100304",
+                "reason": "stale fence",
+            },
+            "stopped": True,
+            "stoppedAt": 100,
+            "offlineReason": "host_stopped",
+            "turnActive": True,
+        }
+        store.save(old_state)
+        fake = FakeClient()
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_pid_alive", return_value=True), \
+                mock.patch.object(worker, "_process_start_identity",
+                                  return_value="new-birth"), \
+                mock.patch.object(worker, "_default_boot_id", return_value="boot"):
+            registered = worker.register_headless(
+                session_id, 202, client_name="claude")
+
+        prestarted = store.load()
+        self.assertFalse(registered["sameIncarnation"])
+        self.assertIsNone(prestarted["current"])
+        self.assertIsNone(prestarted["pendingOperation"])
+        self.assertEqual(prestarted["pendingClaim"]["phase"], "READY_TO_RECOVER")
+        self.assertEqual(prestarted["pendingClaim"]["runtimeSessionId"],
+                         "interactive:cycle:7")
+        self.assertEqual(prestarted["pendingClaim"]["operationKey"],
+                         "claim-operation-old")
+        self.assertTrue(prestarted["pendingClaim"]["receiptUnknown"])
+        self.assertEqual(prestarted["recoveryPending"]["oldWorkerKey"],
+                         old_state["workerKey"])
+        self.assertEqual(prestarted["lostOwnership"]["reason"], "stale fence")
+
+        start_event = {
+            "hook_event_name": "SessionStart",
+            "session_id": session_id,
+            "cwd": self.temp.name,
+            "source": "resume",
+        }
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_find_host_pid", return_value=(202, True)), \
+                mock.patch.object(worker, "_process_start_identity",
+                                  return_value="new-birth"), \
+                mock.patch.object(worker, "_default_boot_id", return_value="boot"), \
+                mock.patch.object(worker, "_ensure_daemon"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(worker.hook("claude", start_event), 0)
+
+        refreshed = store.load()
+        self.assertEqual(refreshed["workerKey"], prestarted["workerKey"])
+        self.assertEqual(refreshed["pendingClaim"], prestarted["pendingClaim"])
+        self.assertEqual(refreshed["recoveryPending"],
+                         prestarted["recoveryPending"])
+        self.assertEqual(refreshed["lostOwnership"],
+                         prestarted["lostOwnership"])
+
+        ordinary = {
+            "hook_event_name": "PreToolUse",
+            "session_id": session_id,
+            "tool_use_id": "ordinary-tool",
+            "tool_name": "Bash",
+            "tool_input": {"command": "git status --short"},
+        }
+        claim_script = str((worker.REPO_ROOT / "bootstrap" / "claim.sh").resolve())
+        exact_claim = {
+            **ordinary,
+            "tool_use_id": "exact-claim",
+            "tool_input": {
+                "command": "/bin/bash %s claim 84382166 2100304" % claim_script,
+            },
+        }
+        wrong_claim = {
+            **exact_claim,
+            "tool_use_id": "wrong-claim",
+            "tool_input": {
+                "command": "/bin/bash %s claim 84399999 2100304" % claim_script,
+            },
+        }
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.hook("claude", ordinary),
+                             worker.HOOK_BLOCK_EXIT)
+            self.assertEqual(worker.hook("claude", exact_claim), 0)
+            self.assertEqual(worker.hook("claude", wrong_claim),
+                             worker.HOOK_BLOCK_EXIT)
+
+    def test_headless_remote_registration_runs_after_local_lock_is_released(self):
+        session_id = "headless-lock-order"
+        store = self._claude_store(session_id)
+        fake = FakeClient()
+        lock_acquired = threading.Event()
+
+        def register_worker(*args, **kwargs):
+            def probe_lock():
+                with store.locked():
+                    lock_acquired.set()
+
+            probe = threading.Thread(target=probe_lock)
+            probe.start()
+            self.assertTrue(lock_acquired.wait(1))
+            probe.join(timeout=1)
+            return fake._record("register_worker", *args, **kwargs)
+
+        fake.register_worker = register_worker
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_pid_alive", return_value=True), \
+                mock.patch.object(worker, "_process_start_identity",
+                                  return_value="wrapper-birth"), \
+                mock.patch.object(worker, "_default_boot_id", return_value="boot"):
+            result = worker.register_headless(
+                session_id, 303, client_name="claude")
+
+        self.assertTrue(lock_acquired.is_set())
+        self.assertTrue(result["remoteRegistered"])
+        self.assertTrue(store.path.exists())
+
+    def test_headless_partial_recovery_or_receipt_tombstone_never_becomes_idle(self):
+        fake = FakeClient()
+        session_id = "headless-partial-lineage"
+        store = self._claude_store(session_id)
+        store.save({
+            "schemaVersion": 1,
+            "client": "claude",
+            "clientSessionId": session_id,
+            "workerKey": "host:boot:old-process",
+            "claimCounter": 5,
+            "recoveryPending": {
+                "aoneId": "84382166",
+                "projectId": "2100304",
+                "runtimeSessionId": "interactive:cycle:5",
+                "oldWorkerKey": "host:boot:older-process",
+            },
+            "lostOwnership": {
+                "aoneId": "84382166",
+                "projectId": "2100304",
+                "reason": "old owner uncertain",
+            },
+            "pendingOperation": {
+                "operationId": "operation-partial",
+                "operationKey": "operation-key-partial",
+                "aoneId": "84382166",
+                "status": "SENDING",
+            },
+            "stopped": True,
+        })
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_pid_alive", return_value=True), \
+                mock.patch.object(worker, "_process_start_identity",
+                                  return_value="partial-birth"), \
+                mock.patch.object(worker, "_default_boot_id", return_value="boot"):
+            worker.register_headless(session_id, 404, client_name="claude")
+
+        recovered = store.load()
+        self.assertEqual(recovered["pendingClaim"]["phase"],
+                         "READY_TO_RECOVER")
+        self.assertEqual(recovered["pendingClaim"]["cycle"], 5)
+        self.assertEqual(recovered["pendingClaim"]["operationKey"],
+                         "operation-key-partial")
+        self.assertTrue(recovered["pendingClaim"]["receiptUnknown"])
+        self.assertEqual(recovered["recoveryPending"]["oldWorkerKey"],
+                         "host:boot:old-process")
+        self.assertEqual(recovered["lostOwnership"]["reason"],
+                         "old owner uncertain")
+        self.assertIsNone(recovered["pendingOperation"])
+
+        orphan_session = "headless-orphan-receipt"
+        orphan_store = self._claude_store(orphan_session)
+        orphan_store.save({
+            "schemaVersion": 1,
+            "client": "claude",
+            "clientSessionId": orphan_session,
+            "workerKey": "host:boot:orphan-old",
+            "claimCounter": 0,
+            "pendingOperation": {
+                "operationId": "operation-orphan",
+                "operationKey": "operation-key-orphan",
+                "aoneId": "84382166",
+                "status": "SENDING",
+            },
+            "stopped": True,
+        })
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_pid_alive", return_value=True), \
+                mock.patch.object(worker, "_process_start_identity",
+                                  return_value="orphan-birth"), \
+                mock.patch.object(worker, "_default_boot_id", return_value="boot"):
+            worker.register_headless(orphan_session, 405, client_name="claude")
+
+        orphan = orphan_store.load()
+        self.assertIsNone(orphan["current"])
+        self.assertIsNone(orphan["pendingClaim"])
+        self.assertEqual(orphan["pendingOperation"]["operationId"],
+                         "operation-orphan")
+        event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": orphan_session,
+            "tool_use_id": "orphan-tool",
+            "tool_name": "Bash",
+            "tool_input": {"command": "git status --short"},
+        }
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.hook("claude", event),
+                             worker.HOOK_BLOCK_EXIT)
+
+        suspend_session = "headless-orphan-suspend"
+        suspend_store = self._claude_store(suspend_session)
+        suspend_store.save({
+            "schemaVersion": 1,
+            "client": "claude",
+            "clientSessionId": suspend_session,
+            "workerKey": "host:boot:suspend-old",
+            "claimCounter": 0,
+            "pendingSuspend": {
+                "sessionId": "session-unknown",
+                "fenceToken": 19,
+                "request": {"waitType": "UNKNOWN"},
+                "requestId": "suspend-unknown",
+            },
+            "lastAutoSuspended": {
+                "aoneId": "84382166",
+                "projectId": "2100304",
+            },
+            "stopped": True,
+        })
+        with mock.patch.object(worker, "_client", return_value=fake), \
+                mock.patch.object(worker, "_pid_alive", return_value=True), \
+                mock.patch.object(worker, "_process_start_identity",
+                                  return_value="suspend-birth"), \
+                mock.patch.object(worker, "_default_boot_id", return_value="boot"):
+            worker.register_headless(suspend_session, 406, client_name="claude")
+
+        suspend_tombstone = suspend_store.load()
+        self.assertEqual(
+            suspend_tombstone["pendingSuspend"]["requestId"],
+            "suspend-unknown")
+        self.assertEqual(
+            suspend_tombstone["lastAutoSuspended"]["aoneId"],
+            "84382166")
+        self.assertIsNone(suspend_tombstone["current"])
+        self.assertIsNone(suspend_tombstone["pendingClaim"])
+        suspend_event = {
+            "hook_event_name": "PreToolUse",
+            "session_id": suspend_session,
+            "tool_use_id": "suspend-orphan-tool",
+            "tool_name": "Bash",
+            "tool_input": {"command": "git status --short"},
+        }
+        with mock.patch.object(worker, "_calling_process_matches",
+                               return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(worker.hook("claude", suspend_event),
+                             worker.HOOK_BLOCK_EXIT)
+
+    def test_exec_headless_registers_before_exec_with_same_pid_context(self):
+        order = []
+
+        def register(session_id, host_pid, client_name):
+            order.append(("register", session_id, host_pid, client_name))
+            return {"verifyHostCommand": True}
+
+        def execvpe(executable, command, env):
+            order.append(("exec", executable, list(command),
+                          env["JARVIS_INTERACTIVE_SESSION_ID"]))
+            raise RuntimeError("exec intercepted")
+
+        with mock.patch.object(worker, "register_headless",
+                               side_effect=register), \
+                mock.patch.object(worker.os, "execvpe", side_effect=execvpe):
+            with self.assertRaisesRegex(RuntimeError, "exec intercepted"):
+                worker.exec_headless(
+                    "headless-session-1", ["/bin/echo", "ready"],
+                    client_name="claude")
+
+        self.assertEqual(order[0],
+                         ("register", "headless-session-1", os.getpid(), "claude"))
+        self.assertEqual(order[1],
+                         ("exec", "/bin/echo", ["/bin/echo", "ready"],
+                          "headless-session-1"))
 
     def test_pid_reuse_cannot_keep_an_old_worker_alive(self):
         state = self._seed()

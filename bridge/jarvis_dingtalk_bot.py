@@ -1170,37 +1170,25 @@ def parse_stream_lines(lines):
             yield acc
 
 
-def _register_headless_worker(session_id, pid):
-    """Pre-register a bridge-spawned headless claude worker with the trusted
-    interactive-worker manager, so the worker-fence already has its
-    (client, session_id) state file in place before the worker's first tool call.
+def _headless_exec_command(session_id, command):
+    """Wrap Claude in the fixed worker-fence manager before the first exec.
 
-    Why the orchestrator does this: a prior attempt's SessionEnd deletes the state
-    file, and a resumed ``claude --resume`` worker can race its own SessionStart
-    against the first PreToolUse — leaving the fence to block every tool and burn
-    the retry. Because dispatch_item re-spawns on every retry attempt, this runs
-    once per attempt with the fresh host pid.
-
-    Contract: NEVER raises and NEVER blocks dispatch. A registration failure only
-    log.warning-s (the fence may then transiently block that attempt, but the
-    transient retry loop still makes forward progress). Bounded timeout so a slow
-    control plane can't stall the spawn. The manager lands the local state file
-    first, so even a killed/timed-out call still leaves the fence satisfied. The
-    fence's decision code is untouched — this only guarantees the state file the
-    fence already requires."""
-    if not session_id or not pid:
-        return
-    hook = os.path.join(jarvis_root(), "bootstrap", "run-interactive-worker-hook.sh")
-    try:
-        subprocess.run(
-            ["bash", hook, "cli", "register-headless",
-             "--session-id", str(session_id), "--pid", str(pid)],
-            cwd=jarvis_root(), stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            timeout=int(os.environ.get("JARVIS_HEADLESS_REGISTER_TIMEOUT", "20")))
-    except Exception as e:  # noqa: BLE001 — registration must never block dispatch
-        log.warning("_register_headless_worker(sid=%s,pid=%s) failed: %s",
-                    session_id, pid, e)
+    The manager atomically publishes local recovery lineage, then execs the real
+    command in-place. PID and process start identity therefore remain stable from
+    pre-registration through Claude's SessionStart and first PreToolUse.  The
+    fixed repo manager and isolated system Python make this a trusted fence path;
+    runtime env files cannot replace the code making the registration decision.
+    """
+    if not session_id:
+        raise ValueError("headless session_id is required")
+    if not command:
+        raise ValueError("headless command is required")
+    manager = Path(__file__).resolve().parents[1] / "bootstrap" / \
+        "jarvis-interactive-worker.py"
+    return [
+        "/usr/bin/python3", "-I", str(manager), "exec-headless",
+        "--session-id", str(session_id), "--client", "claude", "--",
+    ] + list(command)
 
 
 def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, terraform=False):
@@ -1217,12 +1205,11 @@ def run_claude_stream(text, session_id, resume, timeout=None, on_spawn=None, ter
     deadline = time.time() + timeout
     # stdin</dev/null: claude-start.sh 预检里若 read 等待(IP 不符)会卡死, 喂空输入直放行。
     # banner 等非 JSON 行被 parse_stream_lines 自动跳过。
-    p = subprocess.Popen(cmd, cwd=jarvis_root(), text=True, stdin=subprocess.DEVNULL,
+    p = subprocess.Popen(
+        _headless_exec_command(session_id, cmd),
+        cwd=jarvis_root(), text=True, stdin=subprocess.DEVNULL,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                          start_new_session=True)
-    # Register the fresh worker before it can issue a tool, so the worker-fence
-    # finds its state file even on a --resume (whose SessionEnd already cleaned it).
-    _register_headless_worker(session_id, p.pid)
     if on_spawn:
         try:
             on_spawn(p)
@@ -1419,22 +1406,16 @@ def run_claude_buffered(text, session_id, resume, timeout=None, on_spawn=None,
         timeout = int(os.environ.get("JARVIS_DISPATCH_TIMEOUT", "43200"))
     argv = jarvis_cmd(session_id, terraform=terraform) + ["-p", text, "--output-format", "json"]
     argv += ["--resume", session_id] if resume else ["--session-id", session_id]
+    headless_argv = _headless_exec_command(session_id, argv)
     sentinel_write = None
     if guarded:
         p, sentinel_write = _spawn_guarded_managed_process(
-            argv, jarvis_root(), on_spawn)
+            headless_argv, jarvis_root(), on_spawn)
     else:
-        p = subprocess.Popen(argv, cwd=jarvis_root(), text=True,
+        p = subprocess.Popen(headless_argv, cwd=jarvis_root(), text=True,
                              stdin=subprocess.DEVNULL,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              start_new_session=True)
-        # Register the fresh worker before its first tool call. dispatch_item
-        # re-enters this branch on every retry attempt, so each --resume worker is
-        # re-registered with its new pid and the fence never blocks the retry.
-        # (The guarded/managed branch above is intentionally excluded: p.pid there
-        # is the process-group guard, not claude, and that path reconstructs its
-        # ownership from the control-plane task/session, not this local fence.)
-        _register_headless_worker(session_id, p.pid)
         if on_spawn:
             try:
                 on_spawn(p)

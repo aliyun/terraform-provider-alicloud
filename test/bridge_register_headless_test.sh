@@ -2,10 +2,9 @@
 # test/bridge_register_headless_test.sh — hermetic tests for the bridge side of the
 # headless worker-fence registration fix.
 #
-# Proves: the bridge helper shells out to the trusted manager CLI (best-effort,
-# never raising); run_claude_buffered / run_claude_stream register the freshly
-# spawned worker with (session_id, p.pid); and dispatch_item re-registers on
-# EVERY retry attempt (mock counts calls == spawn count).
+# Proves: the bridge always launches through the fixed isolated manager wrapper;
+# run_claude_buffered / run_claude_stream wrap the complete Claude command; and
+# dispatch_item creates a fresh pre-exec wrapper on EVERY retry attempt.
 #
 # Run: bash test/bridge_register_headless_test.sh
 
@@ -50,64 +49,52 @@ class FakeProc:
 
 
 class HelperTest(unittest.TestCase):
-    def test_helper_invokes_manager_cli_bestexpr(self):
-        calls = {}
+    def test_helper_uses_fixed_isolated_manager(self):
+        argv = b._headless_exec_command(
+            "sid-x", ["/opt/claude", "--resume", "sid-x"])
+        self.assertEqual(argv[:2], ["/usr/bin/python3", "-I"])
+        self.assertTrue(argv[2].endswith(
+            "/bootstrap/jarvis-interactive-worker.py"))
+        self.assertEqual(argv[3:8], [
+            "exec-headless", "--session-id", "sid-x", "--client", "claude"])
+        self.assertEqual(argv[8], "--")
+        self.assertEqual(argv[9:], ["/opt/claude", "--resume", "sid-x"])
 
-        class _R:
-            returncode = 0
-
-        def _run(argv, **kw):
-            calls["argv"] = argv
-            calls["kw"] = kw
-            return _R()
-
-        orig = b.subprocess.run
-        b.subprocess.run = _run
-        try:
-            b._register_headless_worker("sid-x", 4321)
-        finally:
-            b.subprocess.run = orig
-        argv = calls["argv"]
-        self.assertIn("run-interactive-worker-hook.sh", " ".join(str(a) for a in argv))
-        self.assertIn("cli", argv)
-        self.assertIn("register-headless", argv)
-        joined = " ".join(str(a) for a in argv)
-        self.assertIn("sid-x", joined)
-        self.assertIn("4321", joined)
-
-    def test_helper_never_raises_on_failure(self):
-        def _boom(argv, **kw):
-            raise OSError("no such file")
-
-        orig = b.subprocess.run
-        b.subprocess.run = _boom
-        try:
-            # Must swallow: registration failure must never block dispatch.
-            b._register_headless_worker("sid-y", 99)
-        finally:
-            b.subprocess.run = orig
+    def test_helper_rejects_missing_identity_or_command(self):
+        with self.assertRaises(ValueError):
+            b._headless_exec_command("", ["/opt/claude"])
+        with self.assertRaises(ValueError):
+            b._headless_exec_command("sid-y", [])
 
 
 class BufferedRegistersTest(unittest.TestCase):
     def test_buffered_registers_spawned_worker(self):
         seen = []
-        orig_reg = b._register_headless_worker
+        orig_wrap = b._headless_exec_command
         orig_popen = b.subprocess.Popen
-        b._register_headless_worker = lambda sid, pid: seen.append((sid, pid))
+        def _wrap(sid, command):
+            seen.append((sid, list(command)))
+            return list(command)
+        b._headless_exec_command = _wrap
         b.subprocess.Popen = lambda *a, **k: FakeProc(
             7777, '{"type":"result","result":"ok","is_error":false,"subtype":"success"}')
         try:
             b.run_claude_buffered("hi", "sid-buf", False, timeout=5)
         finally:
-            b._register_headless_worker = orig_reg
+            b._headless_exec_command = orig_wrap
             b.subprocess.Popen = orig_popen
-        self.assertEqual(seen, [("sid-buf", 7777)])
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0][0], "sid-buf")
+        self.assertIn("--session-id", seen[0][1])
 
     def test_stream_registers_spawned_worker(self):
         seen = []
-        orig_reg = b._register_headless_worker
+        orig_wrap = b._headless_exec_command
         orig_popen = b.subprocess.Popen
-        b._register_headless_worker = lambda sid, pid: seen.append((sid, pid))
+        def _wrap(sid, command):
+            seen.append((sid, list(command)))
+            return list(command)
+        b._headless_exec_command = _wrap
 
         class _StreamProc(FakeProc):
             def __init__(self):
@@ -121,10 +108,12 @@ class BufferedRegistersTest(unittest.TestCase):
         try:
             list(b.run_claude_stream("hi", "sid-str", False, timeout=5))
         finally:
-            b._register_headless_worker = orig_reg
+            b._headless_exec_command = orig_wrap
             b.subprocess.Popen = orig_popen
             b.parse_stream_lines = orig_parse
-        self.assertEqual(seen, [("sid-str", 8888)])
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0][0], "sid-str")
+        self.assertIn("--session-id", seen[0][1])
 
 
 class DispatchRetryRegistersTest(unittest.TestCase):
@@ -145,9 +134,12 @@ class DispatchRetryRegistersTest(unittest.TestCase):
                 super().__init__(next(pids), next(outs))
                 self.returncode = 0 if "success" in self._out else 1
 
-        orig_reg = b._register_headless_worker
+        orig_wrap = b._headless_exec_command
         orig_popen = b.subprocess.Popen
-        b._register_headless_worker = lambda sid, pid: seen.append(pid)
+        def _wrap(sid, command):
+            seen.append((sid, list(command)))
+            return list(command)
+        b._headless_exec_command = _wrap
         b.subprocess.Popen = lambda *a, **k: _P()
 
         h = b.JarvisHandler(no_dingtalk=True)
@@ -157,13 +149,17 @@ class DispatchRetryRegistersTest(unittest.TestCase):
             rv = h.dispatch_item("84000001", "prompt", "sid-retry", False,
                                  lambda msg: None, "t", "chat", project=None)
         finally:
-            b._register_headless_worker = orig_reg
+            b._headless_exec_command = orig_wrap
             b.subprocess.Popen = orig_popen
             os.environ.pop("JARVIS_DISPATCH_RETRY_MAX", None)
             os.environ.pop("JARVIS_DISPATCH_RETRY_BACKOFF", None)
         self.assertEqual(rv, "done")
-        self.assertEqual(seen, [1001, 1002, 1003],
-                         "each retry attempt must re-register the new pid")
+        self.assertEqual(len(seen), 3,
+                         "each retry attempt must create a fresh pre-exec wrapper")
+        self.assertTrue(all(sid == "sid-retry" for sid, _ in seen))
+        self.assertIn("--session-id", seen[0][1])
+        self.assertIn("--resume", seen[1][1])
+        self.assertIn("--resume", seen[2][1])
 
 
 if __name__ == "__main__":
