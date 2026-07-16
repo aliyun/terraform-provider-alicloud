@@ -683,6 +683,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_users":                                        dataSourceAlicloudEcdUsers(),
 			"alicloud_vpc_traffic_mirror_sessions":                      dataSourceAlicloudVpcTrafficMirrorSessions(),
 			"alicloud_gpdb_accounts":                                    dataSourceAlicloudGpdbAccounts(),
+			"alicloud_gpdb_api_keys":                                    dataSourceAliCloudGpdbApiKeys(),
 			"alicloud_vpc_ipv6_gateways":                                dataSourceAlicloudVpcIpv6Gateways(),
 			"alicloud_vpc_ipv6_egress_rules":                            dataSourceAlicloudVpcIpv6EgressRules(),
 			"alicloud_vpc_ipv6_addresses":                               dataSourceAlicloudVpcIpv6Addresses(),
@@ -939,6 +940,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_gpdb_api_key":                                         resourceAliCloudGpdbApiKey(),
 			"alicloud_apig_plugin":                                          resourceAliCloudApigPlugin(),
 			"alicloud_apig_plugin_class":                                    resourceAliCloudApigPluginClass(),
 			"alicloud_apig_domain":                                          resourceAliCloudApigDomain(),
