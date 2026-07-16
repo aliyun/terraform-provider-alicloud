@@ -1,5 +1,5 @@
 {
-  "_desc": "API 工具团队联系人花名表：姓名/花名/工号。建单时解析指派(assignee)/抄送(tracker)/参与者(participant)。花名为 null 表示该成员无花名(外包/工号 WB 前缀)。id 为 WORKER_ 前缀=agent/机器人身份。注意：bridge _load_human_operators 将 jarvis 自身(open-jarvis)与三个数字人(terraform-pd/rd/qa)排除出「人工介入门」白名单(均为 jarvis 驱动实例,否则其收尾/接力动作触发 idle 单自我重派)；外部 agent(如 镇元agent)仍算人工介入。github: PR 评论 poll 的「我方」白名单来源(为空/缺失=非白名单)。",
+  "_desc": "API 工具团队联系人花名表：姓名/花名/工号。建单时解析指派(assignee)/抄送(tracker)/参与者(participant)。花名为 null 表示该成员无花名(外包/工号 WB 前缀)。id 为 WORKER_ 前缀=agent/机器人身份。agent_fallbacks 用于重访催办：Aone @ 与钉钉私信均改发真人兜底，绝不私信 WORKER_。Terraform 对外唯一数字人是 TerraformRD；PD/RD/QA 仅作为内部 subagent 分诊、研发、验收，旧 PD/QA 身份不得出站。bridge _load_human_operators 将 jarvis 自身与 Terraform 数字人排除出「人工介入门」白名单；外部 agent(如镇元agent)仍算人工介入。github 是 PR 评论 poll 的动态「我方」login 白名单来源，缺失或损坏时仍保留 api-tool-agent 内置兜底。",
   "contacts": [
     {"name": "逄磊",   "flower": "马裘",   "id": "404709"},
     {"name": "徐文平", "flower": null,     "id": "WB01146046"},
@@ -20,8 +20,13 @@
     {"name": "陈闻菲", "flower": "秋雯",   "id": "270513"},
     {"name": "杜亚男", "flower": "南禾",   "id": "257646"},
     {"name": "郭子龙", "flower": "过载",   "id": "484483"},
+    {"name": "谜拟",   "flower": "谜拟",   "id": "479782"},
     {"name": "靳滢",   "flower": "夏节",   "id": "401498"},
     {"name": "镇元agent", "flower": null,  "id": "WORKER_1783326253279"},
     {"name": "open-jarvis", "flower": null, "id": "WORKER_1782379562571"}
-  ]
+  ],
+  "agent_fallbacks": {
+    "WORKER_1782379562571": "484483",
+    "WORKER_1783326253279": "479782"
+  }
 }

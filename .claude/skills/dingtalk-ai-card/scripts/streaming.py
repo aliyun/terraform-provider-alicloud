@@ -58,8 +58,9 @@ def get_access_token(app_key, app_secret):
     return result["accessToken"]
 
 
-def create_and_deliver_card(token, template_id, robot_code, target, target_type="user"):
-    out_track_id = str(uuid.uuid4())
+def create_and_deliver_card(token, template_id, robot_code, target, target_type="user",
+                            out_track_id=None):
+    out_track_id = out_track_id or str(uuid.uuid4())
     body = {
         "cardTemplateId": template_id,
         "outTrackId": out_track_id,
@@ -150,6 +151,9 @@ def main():
     parser.add_argument("--app-key", help="DingTalk app key")
     parser.add_argument("--app-secret", help="DingTalk app secret")
     parser.add_argument("--robot-code", help="Robot code (defaults to appKey)")
+    parser.add_argument(
+        "--out-track-id",
+        help="Stable caller-provided delivery id for idempotent retry/reconciliation")
     args = parser.parse_args()
 
     app_key = args.app_key or os.environ.get("DINGTALK_APP_KEY")
@@ -178,15 +182,16 @@ def main():
     target = args.to or args.to_group
     target_type = "user" if args.to else "group"
 
-    out_track_id = create_and_deliver_card(token, template_id, robot_code, target, target_type)
-    print(json.dumps({"outTrackId": out_track_id, "status": "created"}))
+    out_track_id = create_and_deliver_card(
+        token, template_id, robot_code, target, target_type, args.out_track_id)
+    print(json.dumps({"outTrackId": out_track_id, "status": "created"}), flush=True)
 
     if args.no_stream:
         send_full(token, out_track_id, message, key=args.key)
     else:
         stream_text(token, out_track_id, message, chunk_size=args.chunk_size, delay=args.delay, key=args.key)
 
-    print(json.dumps({"outTrackId": out_track_id, "status": "done"}))
+    print(json.dumps({"outTrackId": out_track_id, "status": "done"}), flush=True)
 
 
 if __name__ == "__main__":

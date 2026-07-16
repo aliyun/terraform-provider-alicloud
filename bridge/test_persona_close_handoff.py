@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
-"""Regression: 明确关单请求的评论，persona 收尾必须走「@提单人 + 钉钉私信人工来关单」，
-而不是静默 release 把「待关单」信息埋没。
+"""Regression: 明确关单请求由内部角色核验，最终 TerraformRD 聚合回复一次请人工关单。
 
-Bug: persona 接力流程只 respond+release，从不 finish（关单人工门）。但遇到有人明确 @数字人
-要求关闭工单时，旧流程核验「可关闭」后仍只是静默 release 成 jarvis-idle，没人被通知去关单，
-工单长期停在待处理（实例：工单 84240297，原根两次要求关闭，terraform-pd 确认可关，但没人关）。
-Fix: 触发评论命中关单关键词 → _decide_persona 给 handoff 注入 close_request 上下文；
-_persona_prompt 收尾步骤改为 @提单人+notify-dingtalk（提单人是数字人则升级辰羿+过载），
-关单本身仍人工（不 finish）。
+旧公开接力只保留入站触发；新 prompt 不生成阶段评论/哨兵/钉钉通知，normal/close/escalate
+都最多一次最终 RD wrap。
 
 Standalone: `python3 bridge/test_persona_close_handoff.py`. No a1/Aone/DingTalk calls.
 """
@@ -59,15 +54,17 @@ class DecideInjectsCloseContextTest(unittest.TestCase):
         return _sched()._decide_persona(item, comments, state=_state())
 
     def test_human_close_request_flags_dispatch(self):
-        ds = self._decide_one("@terraform-pd 关闭这个aone")
+        ds = self._decide_one("@terraform-rd 关闭这个aone")
         d = next(x for x in ds if x["action"] == "dispatch")
         self.assertEqual(d["reason"], "human_mention")
+        self.assertEqual(d["internal_role"], "terraform-pd")
+        self.assertEqual(d["public_identity"], "terraform-rd")
         self.assertTrue(d["handoff"]["close_request"])
         self.assertEqual(d["handoff"]["requester"], "原根")
         self.assertFalse(d["handoff"]["requester_is_digital"])
 
     def test_human_mention_without_close_is_not_flagged(self):
-        ds = self._decide_one("@terraform-pd 帮忙看下根因")
+        ds = self._decide_one("@terraform-rd 帮忙看下根因")
         d = next(x for x in ds if x["action"] == "dispatch")
         self.assertEqual(d["reason"], "human_mention")
         self.assertFalse(d["handoff"]["close_request"])
@@ -94,7 +91,7 @@ class JarvisCloseMentionTest(unittest.TestCase):
     def test_jarvis_close_dispatches_via_pd(self):
         ds = self._decide_one("@jarvis 关闭这个aone")
         d = next(x for x in ds if x["action"] == "dispatch")
-        self.assertEqual(d["role"], "terraform-pd")   # jarvis 无子代理 → 交 pd 代办
+        self.assertEqual(d["internal_role"], "terraform-pd")   # jarvis 无子代理 → 交 pd 代办
         self.assertTrue(d["handoff"]["close_request"])
         self.assertEqual(d["handoff"]["requester"], "原根")
 
@@ -105,6 +102,9 @@ class JarvisCloseMentionTest(unittest.TestCase):
     def test_tracker_watch_includes_jarvis_worker(self):
         watch = bot.PERSONA_WORKER_IDS | {bot.JARVIS_ORCH_WORKER}
         self.assertIn("WORKER_1782379562571", watch)
+        self.assertEqual(bot.PERSONA_WORKER_IDS, {bot.PERSONA_PUBLIC_WORKER})
+        self.assertNotIn("WORKER_1783582374386", watch)
+        self.assertNotIn("WORKER_1783582593461", watch)
 
 
 class PromptCloseHandoffTest(unittest.TestCase):
@@ -114,10 +114,12 @@ class PromptCloseHandoffTest(unittest.TestCase):
                                 requester="原根", requester_is_digital=False)
         self.assertIn("关单请求", p)
         self.assertIn("原根", p)
-        self.assertIn("notify-dingtalk", p)
         self.assertIn("release", p)
         self.assertIn("不 finish", p)          # 关单仍人工
-        self.assertNotIn("wrap.sh done + release", p)  # 不是静默收尾路径
+        self.assertEqual(p.count("wrap.sh done"), 1)
+        self.assertNotIn("notify-dingtalk", p)
+        self.assertNotIn("wrap.sh sync", p)
+        self.assertNotIn("PERSONA-HANDOFF", p)
 
     def test_digital_requester_escalates_to_humans(self):
         p = bot._persona_prompt("84240297", "terraform-pd", "respond", "", 1, "snip",
@@ -127,12 +129,37 @@ class PromptCloseHandoffTest(unittest.TestCase):
         self.assertIn("过载(484483)", p)
         self.assertIn("数字人不能授权关单", p)
         self.assertIn("不 finish", p)
+        self.assertEqual(p.count("wrap.sh done"), 1)
 
     def test_non_close_prompt_unchanged(self):
         p = bot._persona_prompt("111", "terraform-pd", "respond", "", 1, "snip",
                                 close_request=False)
-        self.assertIn("wrap.sh done + release", p)
+        self.assertIn("迁移补位", p)
+        self.assertEqual(p.count("wrap.sh done"), 1)
         self.assertNotIn("关单请求", p)
+
+    def test_prompt_uses_single_public_identity(self):
+        p = bot._persona_prompt("111", "terraform-qa", "acc_verify", "", 1, "snip")
+        self.assertIn("internal_role=terraform-qa", p)
+        self.assertIn("public_identity=terraform-rd", p)
+        self.assertNotIn("as terraform-qa", p)
+        self.assertNotIn("identity_fallback", p)
+        self.assertNotIn("[QA验收]", p)
+
+    def test_normal_close_escalate_each_have_at_most_one_rd_reply(self):
+        prompts = (
+            bot._persona_prompt("111", "terraform-pd", "respond", "", 1, "snip"),
+            bot._persona_prompt("111", "terraform-pd", "respond", "", 1, "snip",
+                                close_request=True, requester="原根"),
+            bot._persona_prompt("111", "terraform-rd", "dev", "", 7, "snip",
+                                escalated=True),
+        )
+        for p in prompts:
+            self.assertEqual(p.count("wrap.sh done"), 1)
+            for forbidden in ("[PD分诊]", "[RD开发]", "[QA验收]",
+                              "PERSONA-HANDOFF", "wrap.sh sync",
+                              "comment create", "notify-dingtalk"):
+                self.assertNotIn(forbidden, p)
 
 
 if __name__ == "__main__":

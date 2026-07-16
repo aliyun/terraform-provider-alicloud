@@ -38,6 +38,7 @@ sys.path.insert(0, os.environ["BRIDGE_DIR"])
 for k in ("JARVIS_AUTO_DISPATCH", "JARVIS_DISPATCH_MAX", "JARVIS_DISPATCH_QUEUE_MAX",
           "JARVIS_DISPATCH_DEDUP_TTL", "JARVIS_PROBE_SCHED", "JARVIS_PROBE_HOUR",
           "JARVIS_REVISIT_SCHED", "JARVIS_REVISIT_HOUR", "JARVIS_REVISIT_MAX",
+          "JARVIS_REVISIT_STALE_DAYS",
           "JARVIS_BACKLOG_DRAIN"):
     os.environ.pop(k, None)
 
@@ -1052,19 +1053,30 @@ class NoDingtalkDegradedTest(unittest.TestCase):
         h = self._handler()
         captured = {}
 
-        def fake_submit(item_id, work, *, notify=None, force=False, kind="ticket"):
-            captured.update(id=str(item_id), force=force, kind=kind)
+        def fake_submit(item_id, work, *, notify=None, force=False, kind="ticket",
+                        project=None, terraform=False):
+            captured.update(id=str(item_id), force=force, kind=kind,
+                            project=project, terraform=terraform)
             return True, "dispatched"   # 不真跑 work(不起 claude)
 
         h.dispatch_pool.submit = fake_submit
         # 若降级唤醒误走卡片路(_submit_card→_stream_round→get_access_token), _BoomSM 会炸。
-        task = {"target": "grp", "target_type": "group", "session_id": "sess-1"}
+        task = {
+            "target": "grp",
+            "target_type": "group",
+            "session_id": "sess-1",
+            "project": "2100304",
+            "terraform": True,
+        }
         with self.assertLogs("jarvis-bot", level="INFO") as cm:
             h._wake("83929676", task, [{"creator": "someone", "content": "继续"}])
         self.assertEqual(captured.get("id"), "83929676")
         self.assertTrue(captured.get("force"), "wake must force past the 24h dedup ledger")
         self.assertEqual(captured.get("kind"), "wake",
                          "degraded wake must use the headless pool path, not the card path")
+        self.assertEqual(captured.get("project"), "2100304")
+        self.assertTrue(captured.get("terraform"),
+                        "Terraform wake must stay on the Terraform identity lane")
         self.assertIn("[BROADCAST]", "\n".join(cm.output))  # 「收到回复,唤醒中」通知降级为日志
 
 
@@ -1554,7 +1566,7 @@ class _RetrySelf:
     def _workitem_line(self, aone_id):
         return "#%s" % aone_id
 
-    def _dispatch_failed(self, item_id, res, notify, project):
+    def _dispatch_failed(self, item_id, res, notify, project, terraform=False, **kwargs):
         self.failed_calls.append((item_id, res, project))
 
 
@@ -1915,14 +1927,16 @@ class _DFSelf:
 
 
 class DispatchFailedTest(unittest.TestCase):
-    """_dispatch_failed: post death cause via wrap.sh sync (numeric id only) + release
-    claim (project set only) + notify. wrap.sh & _release_claim fully stubbed."""
+    """_dispatch_failed: non-TF keeps legacy death-cause comment; Terraform records the
+    local escalation and publishes one idempotent RD important-event update."""
 
     def setUp(self):
         self._orig_run = b.subprocess.run
         self._orig_release = b._release_claim
+        self._orig_publish = b._aone_event_publish
         self.run_calls = []
         self.release_calls = []
+        self.events = []
 
         class R:
             returncode = 0
@@ -1934,20 +1948,25 @@ class DispatchFailedTest(unittest.TestCase):
             return R()
 
         b.subprocess.run = fake_run
-        b._release_claim = lambda iid, project: self.release_calls.append((iid, project))
+        b._release_claim = lambda iid, project, terraform=False: self.release_calls.append(
+            (iid, project, terraform))
+        b._aone_event_publish = lambda *args: self.events.append(args) or True
 
     def tearDown(self):
         b.subprocess.run = self._orig_run
         b._release_claim = self._orig_release
+        b._aone_event_publish = self._orig_publish
 
-    def _fail(self, item_id, project, text="internal tail output"):
+    def _fail(self, item_id, project, text="internal tail output", terraform=False):
         res = b.ClaudeResult(text, True, "error")
         notifies = []
-        b.JarvisHandler._dispatch_failed(_DFSelf(), item_id, res, notifies.append, project)
+        b.JarvisHandler._dispatch_failed(
+            _DFSelf(), item_id, res, notifies.append, project, terraform=terraform,
+            kind="ticket", sid="sid-terminal")
         return notifies
 
     def test_numeric_id_posts_and_releases(self):
-        notifies = self._fail("84080203", "528766")
+        notifies = self._fail("84080203", "2124589")
         self.assertEqual(len(self.run_calls), 1, "one wrap.sh sync")
         argv = self.run_calls[0][0][0]
         self.assertIn(str(b.REPO_ROOT / "bootstrap" / "wrap.sh"), argv)
@@ -1956,7 +1975,7 @@ class DispatchFailedTest(unittest.TestCase):
         self.assertIn("--summary-stdin", argv)
         stdin = self.run_calls[0][1].get("input", "")
         self.assertIn("subtype: error", stdin, "death cause carries the subtype")
-        self.assertEqual(self.release_calls, [("84080203", "528766")])
+        self.assertEqual(self.release_calls, [("84080203", "2124589", False)])
         self.assertTrue(any("失败" in n for n in notifies), "notify carries a failure line")
 
     def test_project_none_posts_but_no_release(self):
@@ -1964,6 +1983,39 @@ class DispatchFailedTest(unittest.TestCase):
         self.assertEqual(len(self.run_calls), 1, "death cause still posted")
         self.assertEqual(self.release_calls, [], "no project → no release")
         self.assertTrue(any("失败" in n for n in notifies))
+
+    def test_terraform_terminal_failure_logs_and_publishes_once(self):
+        unsafe_tail = (
+            "PD阶段 internal\nRequestId=req-secret i-abcde12345 "
+            "AccessKeyId=LTAIabcdefghijklmnop token=secret password=pwd "
+            "username=ram-admin")
+        self._fail("84080203", "528766", text=unsafe_tail, terraform=True)
+        self.assertEqual(len(self.run_calls), 1)
+        argv = self.run_calls[0][0][0]
+        self.assertIn(str(b.REPO_ROOT / "bootstrap" / "log.sh"), argv)
+        self.assertIn("escalate", argv)
+        self.assertNotIn(str(b.REPO_ROOT / "bootstrap" / "wrap.sh"), argv)
+        local = " ".join(str(x) for x in argv)
+        self.assertIn("req-secret", local, "raw tail remains available only in local escalation")
+        self.assertEqual(len(self.events), 1)
+        self.assertEqual(self.events[0][2], "dispatch:ticket:sid-terminal:error")
+        public = self.events[0][3]
+        self.assertIn("任务类型：ticket", public)
+        self.assertIn("失败类别：error", public)
+        self.assertIn("尝试次数：3", public)
+        self.assertIn("认领释放：已释放", public)
+        for leaked in ("PD阶段", "req-secret", "i-abcde12345",
+                       "LTAIabcdefghijklmnop", "secret", "pwd", "ram-admin"):
+            self.assertNotIn(leaked, public)
+        self.assertEqual(self.release_calls, [("84080203", "528766", True)])
+
+    def test_terraform_terminal_summary_reports_release_failure(self):
+        b._release_claim = lambda *_a, **_k: (_ for _ in ()).throw(
+            RuntimeError("release unavailable"))
+        self._fail("84080203", "528766", terraform=True)
+        self.assertEqual(len(self.events), 1)
+        self.assertIn("认领释放：释放失败", self.events[0][3])
+        self.assertNotIn("release unavailable", self.events[0][3])
 
     def test_non_numeric_id_no_subprocess(self):
         self._fail("probe-2026-07-08", "528766")
@@ -2057,24 +2109,33 @@ class TerminateAllOptionBTest(_InflightBase):
 
     def test_inflight_ticket_kept_others_released(self):
         active = {
-            "100": {"proc": _FakeProc(), "project": "528766", "kind": "ticket"},
-            "200": {"proc": _FakeProc(), "project": "528766", "kind": "ticket"},
-            "300": {"proc": _FakeProc(), "project": "528766", "kind": "probe"},
+            "100": {"proc": _FakeProc(), "project": "528766", "kind": "ticket",
+                    "terraform": True},
+            "200": {"proc": _FakeProc(), "project": "528766", "kind": "ticket",
+                    "terraform": True},
+            "300": {"proc": _FakeProc(), "project": "528766", "kind": "probe",
+                    "terraform": False},
         }
         pool = self._pool_with_active(active)
         b._inflight_add("100", "s", "528766", "ticket", "p")   # 100 在飞 → 保 claim
         released = []
-        pool.terminate_all(release_fn=lambda i, p: released.append(i), grace=0)
-        self.assertNotIn("100", released, "在飞登记的 ticket 必须留 claim(方案B)")
-        self.assertIn("200", released, "无在飞登记的 ticket 照旧释放(安全兜底)")
-        self.assertNotIn("300", released, "probe kind 从不释放")
+        pool.terminate_all(
+            release_fn=lambda i, p, terraform=False: released.append((i, terraform)),
+            grace=0)
+        self.assertNotIn(("100", True), released, "在飞登记的 ticket 必须留 claim(方案B)")
+        self.assertIn(("200", True), released,
+                      "无在飞登记的 Terraform ticket 释放时必须保留身份上下文")
+        self.assertNotIn(("300", False), released, "probe kind 从不释放")
 
     def test_no_inflight_all_tickets_released(self):
-        active = {"100": {"proc": _FakeProc(), "project": "528766", "kind": "ticket"}}
+        active = {"100": {"proc": _FakeProc(), "project": "528766", "kind": "ticket",
+                          "terraform": False}}
         pool = self._pool_with_active(active)
         released = []
-        pool.terminate_all(release_fn=lambda i, p: released.append(i), grace=0)
-        self.assertEqual(released, ["100"], "无登记表 → 兜底释放, 不留僵尸 claim")
+        pool.terminate_all(
+            release_fn=lambda i, p, terraform=False: released.append((i, terraform)),
+            grace=0)
+        self.assertEqual(released, [("100", False)], "无登记表 → 兜底释放, 不留僵尸 claim")
 
 
 class DispatchItemWriteThenDeleteTest(_InflightBase):
@@ -2139,7 +2200,7 @@ class _ClosingSelf:
     def _workitem_line(self, aone_id):
         return "#%s" % aone_id
 
-    def _dispatch_failed(self, item_id, res, notify, project):
+    def _dispatch_failed(self, item_id, res, notify, project, terraform=False, **kwargs):
         self.failed_calls.append(item_id)
 
 
@@ -2192,12 +2253,17 @@ class ResumeInflightTest(_InflightBase):
             os.environ.pop(k, None)
         self._orig_sess = b._session_file_exists
         self._orig_release = b._release_claim
+        self._orig_publish = b._aone_event_publish
         self.released = []
-        b._release_claim = lambda iid, project: self.released.append((str(iid), project))
+        self.events = []
+        b._release_claim = lambda iid, project, terraform=False: self.released.append(
+            (str(iid), project, terraform))
+        b._aone_event_publish = lambda *args: self.events.append(args) or True
 
     def tearDown(self):
         b._session_file_exists = self._orig_sess
         b._release_claim = self._orig_release
+        b._aone_event_publish = self._orig_publish
         super().tearDown()
 
     def _handler(self):
@@ -2242,7 +2308,8 @@ class ResumeInflightTest(_InflightBase):
         h._resume_inflight()
         self.assertEqual(self.captured, [], "session missing → drop, do not dispatch")
         self.assertFalse(b._inflight_has("501"), "session missing → remove record")
-        self.assertEqual(self.released, [("501", "528766")], "session missing → release claim")
+        self.assertEqual(self.released, [("501", "528766", False)],
+                         "session missing → release claim on the recorded identity lane")
 
     def test_stale_marks_failed_no_resume(self):
         b._session_file_exists = lambda sid: True
@@ -2254,12 +2321,35 @@ class ResumeInflightTest(_InflightBase):
             b._inflight_write(recs)
         h = self._handler()
         posted = []
-        h._post_death_cause = lambda iid, cause: posted.append((str(iid), cause))
+        h._post_death_cause = lambda iid, cause, terraform=False: posted.append(
+            (str(iid), cause, terraform))
         h._resume_inflight()
         self.assertEqual(self.captured, [], "stale → 不 resume(不派)")
-        self.assertEqual([i for i, _ in posted], ["502"], "stale → post_death_cause")
-        self.assertEqual(self.released, [("502", "528766")], "stale → release_claim")
+        self.assertEqual([i for i, _, _ in posted], ["502"], "stale → post_death_cause")
+        self.assertEqual(self.released, [("502", "528766", False)],
+                         "stale → release_claim")
         self.assertFalse(b._inflight_has("502"), "stale → remove 记录")
+
+    def test_stale_terraform_publishes_terminal_event(self):
+        b._session_file_exists = lambda sid: True
+        b._inflight_add("503", "sid-tf", "528766", "ticket", "p", terraform=True)
+        recs = b._inflight_load()
+        recs["503"]["started_at"] = time.time() - 100000
+        with b._inflight_lock:
+            b._inflight_write(recs)
+        h = self._handler()
+        posted = []
+        h._post_death_cause = lambda iid, cause, terraform=False: posted.append(
+            (str(iid), cause, terraform))
+        h._resume_inflight()
+        self.assertEqual([tf for _, _, tf in posted], [True])
+        self.assertEqual(len(self.events), 1)
+        self.assertEqual(self.events[0][2], "dispatch:ticket:sid-tf:stale-orphan")
+        self.assertIn("失败类别：stale-orphan", self.events[0][3])
+        self.assertIn("认领释放：已释放", self.events[0][3])
+        self.assertNotIn("派发超时", self.events[0][3])
+        self.assertEqual(self.released, [("503", "528766", True)])
+        self.assertFalse(b._inflight_has("503"))
 
     def test_non_ticket_and_non_numeric_dropped(self):
         b._session_file_exists = lambda sid: True
@@ -2436,7 +2526,8 @@ class ResumeInflightSelfHealTest(_InflightBase):
         self._orig_sess = b._session_file_exists
         self._orig_release = b._release_claim
         self.released = []
-        b._release_claim = lambda iid, project: self.released.append((str(iid), project))
+        b._release_claim = lambda iid, project, terraform=False: self.released.append(
+            (str(iid), project, terraform))
 
     def tearDown(self):
         b._session_file_exists = self._orig_sess
@@ -2468,7 +2559,7 @@ class ResumeInflightSelfHealTest(_InflightBase):
         h._resume_inflight()
         self.assertEqual(self.captured, [], "empty sid → drop, no dispatch")
         self.assertFalse(b._inflight_has("801"), "empty sid → remove record")
-        self.assertEqual(self.released, [("801", "528766")],
+        self.assertEqual(self.released, [("801", "528766", False)],
                          "empty sid → release claim so scan can retry cleanly")
 
     def test_resume_drops_missing_session_file(self):
@@ -2480,7 +2571,29 @@ class ResumeInflightSelfHealTest(_InflightBase):
         h._resume_inflight()
         self.assertEqual(self.captured, [], "session file missing → drop, no dispatch")
         self.assertFalse(b._inflight_has("802"))
-        self.assertEqual(self.released, [("802", "528766")])
+        self.assertEqual(self.released, [("802", "528766", False)])
+
+    def test_resume_drops_terraform_empty_sid_on_terraform_lane(self):
+        b._session_file_exists = lambda sid: True
+        b._inflight_add(
+            "805", "", "528766", "ticket", "p", terraform=True)
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(self.captured, [])
+        self.assertFalse(b._inflight_has("805"))
+        self.assertEqual(self.released, [("805", "528766", True)],
+                         "Terraform empty-sid recovery must release via terraform-rd")
+
+    def test_resume_drops_terraform_missing_session_on_terraform_lane(self):
+        b._session_file_exists = lambda sid: False
+        b._inflight_add(
+            "806", "sid-gone-tf", "528766", "ticket", "p", terraform=True)
+        h = self._handler()
+        h._resume_inflight()
+        self.assertEqual(self.captured, [])
+        self.assertFalse(b._inflight_has("806"))
+        self.assertEqual(self.released, [("806", "528766", True)],
+                         "Terraform missing-session recovery must release via terraform-rd")
 
     def test_resume_keeps_healthy(self):
         """All three checks pass → fall through to the existing resume path
@@ -2684,12 +2797,19 @@ class _PrWatchBase(unittest.TestCase):
 
     def setUp(self):
         self._orig_path = b.PRWATCH_PATH
+        self._orig_event_path = b.AONE_EVENT_PATH
+        self._orig_publish = b._aone_event_publish
         self._tmp = tempfile.mkdtemp()
         b.PRWATCH_PATH = Path(self._tmp) / "pr-watch.json"
+        b.AONE_EVENT_PATH = Path(self._tmp) / "aone-events.json"
+        self.events = []
+        b._aone_event_publish = lambda *args: self.events.append(args) or True
         self._orig_run = b.subprocess.run
 
     def tearDown(self):
         b.PRWATCH_PATH = self._orig_path
+        b.AONE_EVENT_PATH = self._orig_event_path
+        b._aone_event_publish = self._orig_publish
         b.subprocess.run = self._orig_run
 
     def _sched(self):
@@ -2755,7 +2875,8 @@ class PrWatchCheckOneTest(_PrWatchBase):
         self.assertEqual(fa[2], "123")
         self.assertEqual(fa[3], "528766")
         self.assertEqual(fa[-1], "已完成")
-        self.assertIn("comment", r.kinds())
+        self.assertNotIn("comment", r.kinds(), "Terraform merged 不走 legacy comment")
+        self.assertEqual(len(self.events), 1, "Terraform merged 走统一幂等 publisher")
         self.assertTrue(h.broadcasts, "merge 收尾必须播报")
         self.assertFalse(b._prwatch_has("123"), "merged+ok → 摘除条目")
 
@@ -2769,9 +2890,10 @@ class PrWatchCheckOneTest(_PrWatchBase):
         r = _FakeRunner(gh={"state": "CLOSED", "mergedAt": None})
         self._run_tick(r)
         self.assertNotIn("finish", r.kinds())
-        self.assertIn("comment", r.kinds())
+        self.assertNotIn("comment", r.kinds(), "Terraform closed PR 不走 legacy comment")
+        self.assertEqual(len(self.events), 1)
         self.assertIn("escalate", r.kinds())
-        self.assertFalse(b._prwatch_has("123"), "closed 未合并 → 评论+escalate+摘除")
+        self.assertFalse(b._prwatch_has("123"), "closed 未合并 → escalate+摘除")
 
     def test_d_gh_rc_nonzero_keeps(self):
         r = _FakeRunner(gh=None)   # rc!=0
@@ -2790,9 +2912,10 @@ class PrWatchCheckOneTest(_PrWatchBase):
                         guard={"status": "开发中", "labels": [{"name": "jarvis-npe"}]})
         self._run_tick(r)
         self.assertNotIn("finish", r.kinds())
-        self.assertIn("comment", r.kinds())
+        self.assertNotIn("comment", r.kinds(), "Terraform NPE 不走 legacy comment")
+        self.assertEqual(len(self.events), 1)
         self.assertIn("escalate", r.kinds())
-        self.assertFalse(b._prwatch_has("123"), "npe → 评论+escalate+摘除，不 finish")
+        self.assertFalse(b._prwatch_has("123"), "npe → escalate+摘除，不 finish")
 
     def test_g_guard_terminal_silent_remove(self):
         r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
@@ -2801,6 +2924,7 @@ class PrWatchCheckOneTest(_PrWatchBase):
         self.assertNotIn("finish", r.kinds())
         self.assertNotIn("comment", r.kinds())
         self.assertNotIn("escalate", r.kinds())
+        self.assertEqual(len(self.events), 1)
         self.assertFalse(b._prwatch_has("123"), "terminal → 静默摘除，不 finish")
 
     # test_f/test_g 用扁平形态驱动 guard；生产 guard 走 aone-get.sh = a1 workitem get -f json
@@ -2812,10 +2936,11 @@ class PrWatchCheckOneTest(_PrWatchBase):
                                           {"identifier": "tag", "displayValue": "jarvis-idle,jarvis-npe"}]})
         self._run_tick(r)
         self.assertNotIn("finish", r.kinds())
-        self.assertIn("comment", r.kinds())
+        self.assertNotIn("comment", r.kinds(), "Terraform NPE fields 路径不走 legacy comment")
+        self.assertEqual(len(self.events), 1)
         self.assertIn("escalate", r.kinds())
         self.assertFalse(b._prwatch_has("123"),
-                         "fields[] 形态 npe → 评论+escalate+摘除，不 finish（生产路径）")
+                         "fields[] 形态 npe → escalate+摘除，不 finish（生产路径）")
 
     def test_g2_guard_terminal_fields_shape(self):
         r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
@@ -2825,6 +2950,7 @@ class PrWatchCheckOneTest(_PrWatchBase):
         self.assertNotIn("finish", r.kinds())
         self.assertNotIn("comment", r.kinds())
         self.assertNotIn("escalate", r.kinds())
+        self.assertEqual(len(self.events), 1)
         self.assertFalse(b._prwatch_has("123"),
                          "fields[] 形态 terminal → 静默摘除，不 finish（生产路径）")
 
@@ -2843,6 +2969,15 @@ class PrWatchCheckOneTest(_PrWatchBase):
         self.assertNotIn("comment", r.kinds(), "rc=2 门未过 → 不评论、不摘除")
         self.assertTrue(b._prwatch_has("123"), "finish rc=2 → 保留重试")
 
+    def test_j_non_terraform_merged_retains_comment(self):
+        r = _FakeRunner(gh={"state": "MERGED", "mergedAt": "2026-07-01T00:00:00Z"},
+                        guard={"status": "开发中"}, finish_rc=0)
+        self._run_tick(r, project="2124589")
+        self.assertIn("finish", r.kinds())
+        self.assertIn("comment", r.kinds(), "非 Terraform 保留原 PrWatch 回贴")
+        self.assertEqual(self.events, [])
+        self.assertFalse(b._prwatch_has("123"))
+
 
 class PrWatchNeverCrashTest(_PrWatchBase):
     """never-crash：finish 抛异常别的条目仍处理；gh TimeoutExpired tick 继续；pause 闸 early-return。"""
@@ -2853,7 +2988,9 @@ class PrWatchNeverCrashTest(_PrWatchBase):
         b._prwatch_add("100", self._PR, "528766")
         b._prwatch_add("200", self._PR, "528766")
         b.subprocess.run = r
-        self._sched()._tick()   # must NOT raise
+        sch = self._sched()
+        sch._autoreg = False
+        sch._tick()   # must NOT raise
         self.assertEqual(r.kinds().count("finish"), 2,
                          "两条都到达 finish → 单条异常未殃及后续")
         self.assertTrue(b._prwatch_has("100") and b._prwatch_has("200"),
@@ -2984,8 +3121,10 @@ class _RecordingPool:
         self._reason = reason
         self.calls = []
 
-    def submit(self, iid, work, *, notify=None, force=False, kind="ticket", project=None):
-        self.calls.append({"id": str(iid), "kind": kind, "force": force, "project": project})
+    def submit(self, iid, work, *, notify=None, force=False, kind="ticket", project=None,
+               terraform=False):
+        self.calls.append({"id": str(iid), "kind": kind, "force": force,
+                           "project": project, "terraform": terraform})
         return self._ok, self._reason
 
 
@@ -3062,6 +3201,8 @@ class PrWatchCommentsMultiRouteTest(_PrWatchBase):
         self.assertEqual(len(pool2.calls), 1, "新 issue 评论 → 派 pr_comment_reply")
         self.assertEqual(pool2.calls[0]["kind"], "pr_comment_reply")
         self.assertTrue(pool2.calls[0]["force"])
+        self.assertTrue(pool2.calls[0]["terraform"],
+                        "Terraform PR 评论回应必须保留 RD 单写者身份通道")
         self.assertEqual(b._prwatch_load()["9978"]["last_seen_comment"],
                          "issue-4999999999", "台账升级到最新 key")
 

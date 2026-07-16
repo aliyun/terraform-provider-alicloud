@@ -5,14 +5,14 @@
 # A1_BIN 指向一个记录 argv+A1_CONFIG_DIR 的 stub。
 #
 # 用例覆盖(见 SUMMARY 一节):
-#   1  as <label> -- args 命中已登录身份 dir
+#   1  旧 terraform-pd label 仅作为兼容别名命中 terraform-rd dir并告警
 #   2  as <label> 未登录 → die + 报 'login <id>'
 #   3  JARVIS_A1_IDENTITY=<label> 且已登录 → -- 走该 dir
-#   4  JARVIS_A1_IDENTITY=<label> 未登录 + jarvis 已登录 → 回退 + 警告
-#   4b JARVIS_A1_STRICT=1 覆盖 → die,不回退
+#   4  旧 terraform-qa auth 不再命中；公共 terraform-rd 未登录时禁止回退 jarvis
+#   4b strict 同样 die
 #   5  v1→v2 迁移:identities/<label>.auth.yaml 存在 → 首跑生成 identities/<label>/auth.yaml
 #   6  ready 已/未登录退码 0/1
-#   7  别名:as pd 等价 as terraform-pd
+#   7  别名:pd/qa/terraform-pd/terraform-qa 全部收口到 terraform-rd
 #   8  login 账号不匹配 → die 且清 auth.yaml
 #   9  并发冒烟:两 as 不同身份后台并跑无串扰
 #   10 JARVIS_A1_IDENTITY=guozai/shanye(个人身份)→ 警告但可执行
@@ -93,28 +93,30 @@ EOF
 }
 
 # ===========================================================================
-# Test 1: as terraform-pd -- <args> 走 pd 目录,argv 正确
+# Test 1: as terraform-pd -- <args> 只走 rd 目录并告警,argv 正确
 # ===========================================================================
-echo "=== Test 1: as terraform-pd -- ... 走 pd 目录 + argv 正确 ==="
+echo "=== Test 1: legacy terraform-pd → terraform-rd dir + warning ==="
 ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
-seed_login "$ROOT" "terraform-pd"
-CAP=$(mktemp)
+seed_login "$ROOT" "terraform-rd"
+CAP=$(mktemp); ERR=$(mktemp)
 A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
-    bash "$A1ID" as terraform-pd -- project foo bar >/dev/null 2>&1
+    bash "$A1ID" as terraform-pd -- project foo bar >/dev/null 2>"$ERR"
 rc=$?
 line=$(cat "$CAP")
 [ "$rc" = "0" ] && pass "as terraform-pd 退 0" || fail "as terraform-pd exit=$rc"
-if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-pd	" "$CAP"; then
-    pass "stub 收到 A1_CONFIG_DIR 指向 terraform-pd dir"
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-rd	" "$CAP"; then
+    pass "legacy terraform-pd 只命中 terraform-rd dir"
 else
-    fail "A1_CONFIG_DIR 未指向 terraform-pd 目录: $line"
+    fail "legacy terraform-pd 未收口到 terraform-rd: $line"
 fi
+grep -qF "兼容别名" "$ERR" && pass "legacy terraform-pd 发出兼容别名告警" \
+    || fail "legacy terraform-pd 缺兼容告警: $(cat "$ERR")"
 if grep -qF "ARGS=project foo bar" "$CAP"; then
     pass "stub 收到 argv 完整"
 else
     fail "argv 传错: $line"
 fi
-rm -rf "$ROOT" "$BIN" "$CAP"
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
 
 # ===========================================================================
 # Test 2: as terraform-rd 未登录 → die + 报错含 'login terraform-rd'
@@ -135,45 +137,48 @@ fi
 rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
 
 # ===========================================================================
-# Test 3: JARVIS_A1_IDENTITY=terraform-qa 且 qa 已登录 → -- 走 qa dir
+# Test 3: JARVIS_A1_IDENTITY=terraform-qa 兼容映射到 rd dir
 # ===========================================================================
-echo "=== Test 3: JARVIS_A1_IDENTITY=terraform-qa (qa 已登录) → -- 走 qa dir ==="
+echo "=== Test 3: JARVIS_A1_IDENTITY=terraform-qa → terraform-rd dir ==="
 ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
-seed_login "$ROOT" "terraform-qa"
+seed_login "$ROOT" "terraform-rd"
 seed_login "$ROOT" "jarvis"
-CAP=$(mktemp)
+CAP=$(mktemp); ERR=$(mktemp)
 JARVIS_A1_IDENTITY=terraform-qa A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
-    STUB_CAPTURE="$CAP" bash "$A1ID" -- y >/dev/null 2>&1
+    STUB_CAPTURE="$CAP" bash "$A1ID" -- y >/dev/null 2>"$ERR"
 rc=$?
 [ "$rc" = "0" ] && pass "-- with qa 退 0" || fail "exit=$rc"
-if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-qa	" "$CAP"; then
-    pass "qa 已登录 → -- 走 qa dir"
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-rd	" "$CAP"; then
+    pass "terraform-qa env 兼容别名 → rd dir"
 else
-    fail "qa 未走对目录: $(cat "$CAP")"
+    fail "terraform-qa env 未走 rd 目录: $(cat "$CAP")"
 fi
-rm -rf "$ROOT" "$BIN" "$CAP"
+grep -qF "兼容别名" "$ERR" && pass "terraform-qa env 发出兼容别名告警" \
+    || fail "terraform-qa env 缺兼容告警: $(cat "$ERR")"
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
 
 # ===========================================================================
-# Test 4: qa 未登录 + jarvis 已登录 → 回退 jarvis + 警告(非 strict 时)
+# Test 4: 只有旧 qa auth + jarvis auth、无 rd auth → die,不得命中旧 auth/回退 jarvis
 # ===========================================================================
-echo "=== Test 4: qa 未登录, jarvis 已登录 → 回退 jarvis + 警告 ==="
+echo "=== Test 4: legacy qa auth 不命中,公共 rd 缺登录时不回退 jarvis ==="
 ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
 seed_login "$ROOT" "jarvis"
+seed_login "$ROOT" "terraform-qa"
 CAP=$(mktemp); ERR=$(mktemp)
 JARVIS_A1_IDENTITY=terraform-qa A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" \
     STUB_CAPTURE="$CAP" bash "$A1ID" -- z >/dev/null 2>"$ERR"
 rc=$?
 err=$(cat "$ERR")
-[ "$rc" = "0" ] && pass "回退退 0" || fail "回退 exit=$rc"
-if printf '%s' "$err" | grep -qF "回退"; then
-    pass "stderr 有回退警告"
+[ "$rc" != "0" ] && pass "公共 rd 未登录时拒绝外写" || fail "应拒绝, exit=$rc"
+if printf '%s' "$err" | grep -qF "terraform-rd"; then
+    pass "stderr 指向唯一公共身份 terraform-rd"
 else
-    fail "stderr 缺回退警告: $err"
+    fail "stderr 未指向 terraform-rd: $err"
 fi
-if grep -qF "A1_CONFIG_DIR=$ROOT/identities/jarvis	" "$CAP"; then
-    pass "capture 走 jarvis dir(回退落地)"
+if [ ! -s "$CAP" ]; then
+    pass "未命中旧 qa auth、未回退 jarvis、未 exec a1"
 else
-    fail "未回退到 jarvis dir: $(cat "$CAP")"
+    fail "不应 exec a1: $(cat "$CAP")"
 fi
 
 echo "=== Test 4b: 同场景 STRICT=1 → die,不回退 ==="
@@ -241,22 +246,23 @@ rc=$?
 rm -rf "$ROOT" "$BIN"
 
 # ===========================================================================
-# Test 7: 别名 as pd == as terraform-pd
+# Test 7: 短别名 pd → terraform-rd
 # ===========================================================================
-echo "=== Test 7: 别名 pd → terraform-pd ==="
+echo "=== Test 7: 别名 pd → terraform-rd ==="
 ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
-seed_login "$ROOT" "terraform-pd"
-CAP=$(mktemp)
+seed_login "$ROOT" "terraform-rd"
+CAP=$(mktemp); ERR=$(mktemp)
 A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP" \
-    bash "$A1ID" as pd -- z >/dev/null 2>&1
+    bash "$A1ID" as pd -- z >/dev/null 2>"$ERR"
 rc=$?
 [ "$rc" = "0" ] && pass "as pd 退 0" || fail "as pd exit=$rc"
-if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-pd	" "$CAP"; then
-    pass "别名 pd 映射到 terraform-pd dir"
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-rd	" "$CAP"; then
+    pass "别名 pd 映射到 terraform-rd dir"
 else
     fail "pd 别名未生效: $(cat "$CAP")"
 fi
-rm -rf "$ROOT" "$BIN" "$CAP"
+grep -qF "兼容别名" "$ERR" && pass "pd 发出兼容告警" || fail "pd 缺兼容告警"
+rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
 
 # ===========================================================================
 # Test 8: login 账号不匹配 → die + 清 auth.yaml
@@ -282,11 +288,10 @@ fi
 rm -rf "$ROOT" "$BIN" "$CAP" "$ERR"
 
 # ===========================================================================
-# Test 9: 并发冒烟 — pd/rd 并行 as,capture 各自正确,无串扰
+# Test 9: 并发冒烟 — legacy pd/rd 并行都只读同一 rd auth,argv 无串扰
 # ===========================================================================
 echo "=== Test 9: 并发冒烟(pd + rd 后台并行) ==="
 ROOT=$(new_root); BIN=$(mktemp -d); make_stub "$BIN"
-seed_login "$ROOT" "terraform-pd"
 seed_login "$ROOT" "terraform-rd"
 CAP_PD=$(mktemp); CAP_RD=$(mktemp)
 A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" STUB_CAPTURE="$CAP_PD" \
@@ -302,9 +307,9 @@ if [ "$rc_pd" = "0" ] && [ "$rc_rd" = "0" ]; then
 else
     fail "并发退码错 pd=$rc_pd rd=$rc_rd"
 fi
-if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-pd	" "$CAP_PD" \
+if grep -qF "A1_CONFIG_DIR=$ROOT/identities/terraform-rd	" "$CAP_PD" \
     && grep -qF "concurrent-pd" "$CAP_PD"; then
-    pass "pd capture 正确"
+    pass "legacy pd capture 使用 rd auth"
 else
     fail "pd capture 错: $(cat "$CAP_PD")"
 fi
@@ -332,8 +337,9 @@ A1ID_ROOT="$ROOT" A1_BIN="$BIN/a1" bash "$A1ID" status >"$OUT" 2>&1
 rc=$?
 out=$(cat "$OUT")
 [ "$rc" = "0" ] && pass "status(无登录)退 0" || fail "status 应退 0, got=$rc; out=$out"
-if printf '%s' "$out" | grep -qF "身份表" && printf '%s' "$out" | grep -qF "terraform-pd"; then
-    pass "status 输出八身份表(含 terraform-pd)"
+if printf '%s' "$out" | grep -qF "身份表" && printf '%s' "$out" | grep -qF "terraform-rd" \
+    && ! printf '%s' "$out" | grep -Eq '^  terraform-(pd|qa) '; then
+    pass "status 只登记 terraform-rd 公共身份"
 else
     fail "status 输出缺表格: $out"
 fi

@@ -32,6 +32,9 @@ sys.path.insert(0, os.environ["BRIDGE_DIR"])
 for k in ("JARVIS_PERSONA_WATCH", "JARVIS_PERSONA_INTERVAL",
           "JARVIS_PERSONA_MAX_ROUNDS", "JARVIS_PERSONA_NICKS"):
     os.environ.pop(k, None)
+# Candidate-query tests stub only the tag source. Disable the production tracker
+# source here so this hermetic suite can never reach Aone.
+os.environ["JARVIS_PERSONA_TRACKER_SCAN"] = "0"
 
 import jarvis_dingtalk_bot as b
 
@@ -53,9 +56,11 @@ def _fresh_scheduler(max_rounds=6, tmp=None, enabled=True, interval=600):
             self.submissions = []
             self.active_keys = []  # allow simulating in-flight
 
-        def submit(self, key, work, notify=None, force=False, kind="ticket", project=None):
+        def submit(self, key, work, notify=None, force=False, kind="ticket", project=None,
+                   terraform=False):
             self.submissions.append({"key": key, "kind": kind, "force": force,
-                                     "project": project})
+                                     "project": project, "terraform": terraform})
+            work()  # 默认模拟 worker 真正拿到槽位；排队未启动由专门回归测试覆盖
             return True, "dispatched"
 
         def set_proc(self, key, proc):
@@ -109,32 +114,33 @@ class DefaultDisabledTest(unittest.TestCase):
 
 # ── 作者识别 (B1) ──────────────────────────────────────────────────────────
 
-class AuthorRoleTest(unittest.TestCase):
-    def test_worker_id_direct_hit(self):
-        # 兼容路径：若 API 返回字面 WORKER id
-        self.assertEqual(b._author_role("WORKER_1783582374386"), "terraform-pd")
-        self.assertEqual(b._author_role("WORKER_1783582458263"), "terraform-rd")
+class AuthorPublicIdentityTest(unittest.TestCase):
+    def test_worker_id_direct_hit_maps_to_single_public_identity(self):
+        # RD 是唯一公共作者；旧 PD/QA worker 仅兼容识别为历史数字作者。
+        for worker in ("WORKER_1783582374386", "WORKER_1783582458263",
+                       "WORKER_1783582593461"):
+            self.assertEqual(b._author_public_identity(worker), "terraform-rd")
 
     def test_role_name_regex_various_forms(self):
         # 显示名含 role 名（大小写不敏感 + 分隔符宽容）
         for name in ("terraform-pd", "Terraform-PD", "TerraformPD",
                      "terraform_rd", "terraform QA", "our terraform-rd bot"):
-            self.assertIsNotNone(b._author_role(name),
-                                 "%r should match a role" % name)
+            self.assertEqual(b._author_public_identity(name), "terraform-rd",
+                             "%r should map to the public identity" % name)
 
     def test_unknown_display_name_returns_none(self):
         for name in ("过载", "辰羿", "陈汉璋", "open-jarvis",
                      "Kelude", "someone", ""):
-            self.assertIsNone(b._author_role(name),
+            self.assertIsNone(b._author_public_identity(name),
                               "%r must not match a persona role" % name)
 
     def test_env_nicks_map_fallback(self):
         os.environ["JARVIS_PERSONA_NICKS"] = ("terraform-pd=产品智能体,"
                                               "terraform-rd=研发智能体")
         try:
-            self.assertEqual(b._author_role("产品智能体"), "terraform-pd")
-            self.assertEqual(b._author_role("研发智能体"), "terraform-rd")
-            self.assertIsNone(b._author_role("质量智能体"))
+            self.assertEqual(b._author_public_identity("产品智能体"), "terraform-rd")
+            self.assertEqual(b._author_public_identity("研发智能体"), "terraform-rd")
+            self.assertIsNone(b._author_public_identity("质量智能体"))
         finally:
             os.environ.pop("JARVIS_PERSONA_NICKS", None)
 
@@ -156,7 +162,8 @@ class DetectMentionTest(unittest.TestCase):
     def test_at_role_hits(self):
         for text, expected in [
             ("@terraform-pd 请分诊", "terraform-pd"),
-            ("@Terraform-RD 补 ForceNew", "terraform-rd"),
+            # 唯一公开 @TerraformRD 是统一入口，内部从 PD 分诊开始。
+            ("@Terraform-RD 补 ForceNew", "terraform-pd"),
             ("@terraform_qa 跑测试", "terraform-qa"),
             ("辛苦 @terraform-qa 验一下", "terraform-qa"),
         ]:
@@ -166,6 +173,7 @@ class DetectMentionTest(unittest.TestCase):
     def test_at_worker_id_hits(self):
         for text, expected in [
             ("@WORKER_1783582374386 请处理", "terraform-pd"),
+            ("@WORKER_1783582458263 请处理", "terraform-pd"),
             ("@WORKER_1783582593461 跑测试", "terraform-qa"),
         ]:
             self.assertEqual(b.PersonaScheduler._detect_mention(text), expected)
@@ -186,7 +194,7 @@ class DetectMentionTest(unittest.TestCase):
         try:
             self.assertEqual(
                 b.PersonaScheduler._detect_mention("@研发智能体 请补一下"),
-                "terraform-rd")
+                "terraform-pd")
         finally:
             os.environ.pop("JARVIS_PERSONA_NICKS", None)
 
@@ -194,7 +202,7 @@ class DetectMentionTest(unittest.TestCase):
         # Aone web UI 会把 `_` 转义成 `\_`；PersonaScheduler 在决策前规整
         raw = "@Terraform\\_RD 请补 ForceNew"
         norm = b._normalize_content(raw)
-        self.assertEqual(b.PersonaScheduler._detect_mention(norm), "terraform-rd")
+        self.assertEqual(b.PersonaScheduler._detect_mention(norm), "terraform-pd")
 
 
 # ── _extract_handoff（S6 action 白名单 + O2 last handoff） ────────────
@@ -208,6 +216,21 @@ class HandoffParseTest(unittest.TestCase):
         self.assertIsNotNone(info)
         self.assertEqual(info["to"], "terraform-rd")
         self.assertEqual(info["action"], "dev")
+
+    def test_from_to_whitespace_is_normalized_and_written_back(self):
+        text = ('[[PERSONA-HANDOFF:{"from":"  terraform-rd  ","to":" terraform-rd ",'
+                '"action":"dev","round":1}]]')
+        info, reason = b.PersonaScheduler._extract_handoff(text)
+        self.assertIsNone(reason)
+        self.assertEqual(info["from"], "terraform-rd")
+        self.assertEqual(info["to"], "terraform-rd")
+        ps = _fresh_scheduler()
+        decisions = ps._decide_persona(
+            {"id": "1", "tag": ["jarvis-idle"]},
+            [_mk_comment(1, "terraform-rd", text)],
+            state={"last_seen": 0, "processed": set(),
+                   "dispatch_count": 0, "escalated": False})
+        self.assertEqual(decisions[0]["reason"], "self_addressed")
 
     def test_bad_json(self):
         info, reason = b.PersonaScheduler._extract_handoff(
@@ -286,15 +309,17 @@ class DecidePersonaTest(unittest.TestCase):
             '结论\n[[PERSONA-HANDOFF:{"to":"terraform-rd","action":"dev","round":1}]]')]
         d = ps._decide_persona(item, comments, state=self._state())
         self.assertEqual(d[0]["action"], "dispatch")
-        self.assertEqual(d[0]["role"], "terraform-rd")
+        self.assertEqual(d[0]["internal_role"], "terraform-rd")
+        self.assertEqual(d[0]["public_identity"], "terraform-rd")
 
     def test_self_addressed_skipped(self):
-        # rd 自问自答 → skip self_addressed（用作者 role 判定，不再靠 WORKER 字面）
+        # 统一 RD 作者下，self_addressed 必须按哨兵 internal from/to 判断。
         ps = _fresh_scheduler()
         item = {"id": "1", "tag": ["jarvis-idle"]}
         comments = [_mk_comment(
             1, "terraform-rd",  # 显示名含 role
-            '[[PERSONA-HANDOFF:{"to":"terraform-rd","action":"dev","round":1}]]')]
+            '[[PERSONA-HANDOFF:{"from":"terraform-rd","to":"terraform-rd",'
+            '"action":"dev","round":1}]]')]
         d = ps._decide_persona(item, comments, state=self._state())
         self.assertEqual(d[0]["action"], "skip")
         self.assertEqual(d[0]["reason"], "self_addressed")
@@ -319,15 +344,27 @@ class DecidePersonaTest(unittest.TestCase):
                          "jarvis 编排层 wrap 评论提到 role 名不得触发 mention")
 
     def test_persona_author_with_sentinel_dispatches(self):
-        # B1 后续：数字人**发**哨兵仍照常派发（正常接力）
+        # 关键回归：统一 RD 作者代表内部 PD 发 PD→RD 哨兵，不能被作者=RD 误杀。
         ps = _fresh_scheduler()
         item = {"id": "1", "tag": ["jarvis-idle"]}
         comments = [_mk_comment(
-            1, "terraform-pd",
-            '[[PERSONA-HANDOFF:{"to":"terraform-rd","action":"dev","round":1}]]')]
+            1, "terraform-rd",
+            '[PD分诊]\n[[PERSONA-HANDOFF:{"from":"terraform-pd",'
+            '"to":"terraform-rd","action":"dev","round":1}]]')]
         d = ps._decide_persona(item, comments, state=self._state())
         self.assertEqual(d[0]["action"], "dispatch")
-        self.assertEqual(d[0]["role"], "terraform-rd")
+        self.assertEqual(d[0]["internal_role"], "terraform-rd")
+        self.assertEqual(d[0]["public_identity"], "terraform-rd")
+
+    def test_public_author_missing_internal_from_is_rejected(self):
+        ps = _fresh_scheduler()
+        item = {"id": "1", "tag": ["jarvis-idle"]}
+        comments = [_mk_comment(
+            1, "terraform-rd",
+            '[[PERSONA-HANDOFF:{"to":"terraform-qa","action":"acc_verify","round":1}]]')]
+        d = ps._decide_persona(item, comments, state=self._state())
+        self.assertEqual(d[0]["action"], "skip")
+        self.assertEqual(d[0]["reason"], "bad_from")
 
     def test_human_mention_dispatches_respond_round1(self):
         # B2：作者非数字人非 jarvis + 显式 @ → dispatch respond round=1
@@ -337,7 +374,8 @@ class DecidePersonaTest(unittest.TestCase):
         d = ps._decide_persona(item, comments, state=self._state())
         self.assertEqual(d[0]["action"], "dispatch")
         self.assertEqual(d[0]["reason"], "human_mention")
-        self.assertEqual(d[0]["role"], "terraform-qa")
+        self.assertEqual(d[0]["internal_role"], "terraform-qa")
+        self.assertEqual(d[0]["public_identity"], "terraform-rd")
         self.assertEqual(d[0]["handoff"]["round"], 1)
         self.assertEqual(d[0]["handoff"]["action"], "respond")
 
@@ -383,7 +421,7 @@ class DecidePersonaTest(unittest.TestCase):
             1, "过载", "辛苦 @Terraform\\_RD 补下 ForceNew")]
         d = ps._decide_persona(item, comments, state=self._state())
         self.assertEqual(d[0]["action"], "dispatch")
-        self.assertEqual(d[0]["role"], "terraform-rd")
+        self.assertEqual(d[0]["internal_role"], "terraform-pd")
 
     def test_done_tag_skipped_all(self):
         ps = _fresh_scheduler()
@@ -547,7 +585,7 @@ class ApplyDecisionsTest(unittest.TestCase):
             active_keys = []
 
             def submit(self, key, work, notify=None, force=False, kind="ticket",
-                       project=None):
+                       project=None, terraform=False):
                 return False, "queue_full"
 
             def set_proc(self, key, proc):
@@ -712,14 +750,16 @@ class PersonaPromptSafetyTest(unittest.TestCase):
 # ── PERSONA_ROLES 常量固化 ─────────────────────────────────────────────
 
 class PersonaRolesTest(unittest.TestCase):
-    def test_three_worker_ids_present(self):
-        self.assertEqual(set(b.PERSONA_ROLES.keys()),
+    def test_internal_roles_are_separate_from_single_public_identity(self):
+        self.assertEqual(set(b.PERSONA_INTERNAL_ROLES),
                          {"terraform-pd", "terraform-rd", "terraform-qa"})
+        self.assertEqual(b.PERSONA_PUBLIC_IDENTITY, "terraform-rd")
+        self.assertEqual(b.PERSONA_PUBLIC_WORKER, "WORKER_1783582458263")
+        self.assertEqual(b.PERSONA_WORKER_IDS, {"WORKER_1783582458263"})
+        self.assertEqual(b.PERSONA_LEGACY_WORKER_IDS,
+                         {"WORKER_1783582374386", "WORKER_1783582593461"})
         self.assertNotIn("WORKER_1782379562571", b.PERSONA_WORKER_IDS,
                          "jarvis 编排层不列入 persona worker id 集")
-        self.assertEqual(b.PERSONA_ROLES["terraform-pd"], "WORKER_1783582374386")
-        self.assertEqual(b.PERSONA_ROLES["terraform-rd"], "WORKER_1783582458263")
-        self.assertEqual(b.PERSONA_ROLES["terraform-qa"], "WORKER_1783582593461")
 
 
 # ── 文档一致性 ─────────────────────────────────────────────────────────
@@ -731,17 +771,61 @@ class DocConsistencyTest(unittest.TestCase):
         p = REPO_ROOT / "loops" / "persona-collab.md"
         self.assertTrue(p.exists())
         self.assertIn(self.SENTINEL_LITERAL, p.read_text())
-
-    def test_three_agent_mds_reference_sentinel(self):
-        for name in ("terraform-pd", "terraform-rd", "terraform-qa"):
-            p = REPO_ROOT / ".claude" / "agents" / ("%s.md" % name)
-            self.assertTrue(p.exists())
-            self.assertIn(self.SENTINEL_LITERAL, p.read_text())
+        self.assertIn("仅入站兼容", p.read_text())
 
     def test_three_agent_mds_reference_loop_doc(self):
         for name in ("terraform-pd", "terraform-rd", "terraform-qa"):
             p = REPO_ROOT / ".claude" / "agents" / ("%s.md" % name)
             self.assertIn("loops/persona-collab.md", p.read_text())
+
+    def test_pd_qa_are_internal_read_only_structured_roles(self):
+        banned = ("comment", "wrap", "notify", "--comment", self.SENTINEL_LITERAL)
+        for name in ("terraform-pd", "terraform-qa"):
+            text = (REPO_ROOT / ".claude" / "agents" / ("%s.md" % name)).read_text()
+            for token in banned:
+                self.assertNotIn(token, text, "%s 不得包含外写契约 %r" % (name, token))
+            for field in ("internal_role", "status", "summary", "evidence",
+                          "requested_external_actions", "next", "reply_fragment"):
+                self.assertIn(field, text)
+            self.assertIn("不得写 Aone", text)
+
+    def test_qa_cannot_upload_or_backpost_reports(self):
+        text = (REPO_ROOT / ".claude" / "agents" / "terraform-qa.md").read_text()
+        self.assertNotIn("html-report-preview", text)
+        self.assertIn("本地路径或现有链接", text)
+
+    def test_rd_is_only_final_aggregate_writer(self):
+        text = (REPO_ROOT / ".claude" / "agents" / "terraform-rd.md").read_text()
+        self.assertIn("finalizer", text)
+        self.assertIn("最终聚合", text)
+        self.assertIn("wrap.sh done", text)
+        self.assertNotIn(self.SENTINEL_LITERAL, text)
+        for header in ("[PD分诊]", "[RD开发]", "[QA验收]"):
+            self.assertNotIn(header, text)
+
+    def test_generated_codex_agents_follow_same_contract(self):
+        for name in ("terraform-pd", "terraform-qa"):
+            text = (REPO_ROOT / ".codex" / "agents" / ("%s.toml" % name)).read_text()
+            for token in ("comment", "wrap", "notify", "--comment", self.SENTINEL_LITERAL):
+                self.assertNotIn(token, text)
+        rd = (REPO_ROOT / ".codex" / "agents" / "terraform-rd.toml").read_text()
+        self.assertIn("finalizer", rd)
+        self.assertIn("最终聚合", rd)
+
+    def test_revisit_docs_allow_only_idempotent_important_updates(self):
+        for root in (".claude", ".agents"):
+            skill = (REPO_ROOT / root / "skills" / "aone-triage" / "SKILL.md").read_text()
+            routing = (REPO_ROOT / root / "skills" / "aone-triage" / "references"
+                       / "tf-customer-request-routing.md").read_text()
+            self.assertIn("revisit 新结论", skill)
+            self.assertIn("pending/posted ledger", skill)
+            self.assertIn("同 key 重复事件静默", skill)
+            self.assertIn("240 字内单行纯文本", skill)
+            self.assertIn("revisit gate 新结论", routing)
+            self.assertIn("稳定 semantic source", routing)
+            self.assertIn("post_uncertain", routing)
+            self.assertIn("固定安全降级", routing)
+            self.assertIn("CI pending/单次 retry/new head", routing)
 
 
 # ── 集成:多轮接力链 + B3 硬停 ─────────────────────────────────────────

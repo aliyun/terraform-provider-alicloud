@@ -15,9 +15,9 @@
 ### headless（Tata 委派 / bridge dispatch）
 - Jarvis 由 bridge 后台 spawn，无终端交互，始终持有一个 Aone 工单。
 - **自主权高**：自动执行项（auto 列表）全部免授权直接执行。
-- **身份约束**：编排层默认 jarvis 身份；数字人子代理按职责用角色身份（terraform-pd/terraform-rd/terraform-qa，未登录回退 jarvis）；需使用 chenyi/guozai/linjun/shanye 等个人身份时，必须在 Aone 工单评论中 @对应人并获得明确授权回复后方可使用。
-- **遇阻挂起**：遇到必须人类确认/决策的点时，在 Aone 工单评论中 @对应人，输出 `[[SUSPEND:...]]` 哨兵信号后退出进程。bridge 的 WaitWatcher 轮询评论，检测到回复后用 `--resume` 唤醒 Jarvis 继续。
-- **外化契约（多机安全）**：SUSPEND 挂起或 release 释放**之前**必须先把上下文与代码外化到远端，否则换一台机器无法续跑——依次执行 `wrap.sh sync`（进展/上下文入 Aone 评论）+ `github-identity.sh push`（代码入远端分支）+ `coord.sh checkpoint <aid> <stage> <wt> <branch> <repo> <pushed_branch>`（把已 push 的远端分支写进 checkpoint）。缺任一即视为 `unexternalized`，`JARVIS_REQUIRE_PUSH=1` 时 wrap-check 会阻断收尾。
+- **身份约束**：非 Terraform 编排默认 jarvis；Terraform 内部按 terraform-pd/rd/qa 三个 subagent 分工，PD/QA 只返回结构化结果、禁止外写，开发阶段 RD 也不发工单进展。本次主处理 run 最后由 terraform-rd finalizer 聚合回复一次；后续重访/PR/终态失败的重要事件由同一 RD 身份幂等更新，无变化与重复事件静默。terraform-rd 未登录即阻断，不回退 jarvis，旧 pd/qa 身份仅兼容别名到 rd。需使用 chenyi/guozai/linjun/shanye 等个人身份时，必须在 Aone 工单评论中 @对应人并获得明确授权回复后方可使用。
+- **遇阻挂起**：非 Terraform 遇到必须人类确认/决策的点时，先在 Aone 工单评论中 @对应人；Terraform 不发独立阶段评论，由最终 terraform-rd 把问题与 @对象并入本 run 的唯一聚合回复。随后输出 `[[SUSPEND:...]]` 哨兵信号并退出进程。bridge 的 WaitWatcher 轮询评论，检测到回复后用 `--resume` 唤醒 Jarvis 继续。
+- **外化契约（多机安全）**：SUSPEND 挂起或 release 释放**之前**必须先把上下文与代码外化到远端，否则换一台机器无法续跑。非 Terraform 依次执行 `wrap.sh sync` + `github-identity.sh push` + `coord.sh checkpoint`；Terraform 主处理 run 不做中途 sync，改由 RD finalizer 的单次 `wrap.sh done` 写入完整上下文，再 push + checkpoint；后续重要事件由 bridge 独立 ledger 补偿，Aone 与钉钉分通道持久化，semantic source 只落短摘要，正文统一 sanitize，Aone `post_uncertain` 只查远端 marker 不重发。满 8 天无实质进展的重访催办固定发 Aone @ + 钉钉私信，同一 anchor/owner epoch 各通道至多成功一次。缺任一即视为 `unexternalized`，`JARVIS_REQUIRE_PUSH=1` 时 wrap-check 会阻断收尾。
 - **超时**：单轮执行上限 12 小时（`JARVIS_DISPATCH_TIMEOUT`）；挂起等待上限 14 天。
 
 ---
@@ -34,7 +34,7 @@
 | `prestage` | 预发部署 |
 | `adhoc_aone` | ad-hoc 建/补单（loops/adhoc-intake.md，PR 默认落 tf_provider） |
 | `pr_review` | 只读 PR 评审（不写不合并） |
-| `wrap_sync` | 中途回填 Aone 进展评论（wrap.sh sync，不改状态） |
+| `wrap_sync` | 非 Terraform 中途回填 Aone 进展；Terraform 主处理 run 禁用，后续重要事件只走 RD-only 幂等发布器 |
 | `wrap_done` | 收尾回填 Aone：评论+run_done+可选改状态（wrap.sh done） |
 | `fork_push` | 推 / 强推（force-push，`+ref`）到**自有 fork** `api-tool-agent:<PR-head 分支>`（经 `bootstrap/github-identity.sh push`）——含为满足公共仓「单提交」CI 门禁而 squash / rebase / 重署名后的 force-update。**仅限自有 fork 的 PR-head 分支**。 |
 | `pr_ci_fix` | PR-open 窗口内 CI 失败，后台 `PrWatchScheduler` 自动重派修复（拉失败日志→high_conf 改码→`fork_push`；per-head 去重、重试上限 `JARVIS_PRWATCH_CI_FIX_MAX` 超限 escalate）。只做技术修复。 |

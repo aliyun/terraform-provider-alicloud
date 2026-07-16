@@ -56,13 +56,26 @@ class IsTerraformTicketTest(unittest.TestCase):
 
 
 class TicketPromptTest(unittest.TestCase):
-    def test_terraform_prompt_is_persona_chain(self):
+    def test_terraform_prompt_is_internal_chain_with_one_rd_finalizer(self):
         p = bot._ticket_prompt("84215653", "[TF] alicloud_x", "tf_customer", "1086837")
-        for tok in ("terraform-pd", "terraform-rd", "terraform-qa", "哨兵",
-                    "identity_fallback"):
+        for tok in ("terraform-pd", "terraform-rd", "terraform-qa",
+                    "internal_role", "finalizer", "requested_external_actions",
+                    "reply_fragment"):
             self.assertIn(tok, p, "terraform prompt 缺 %r" % tok)
         # 编排语义:不自己写码/验收
         self.assertIn("只做编排", p)
+        self.assertIn("同一个 headless run", p)
+        self.assertIn("PD/QA", p)
+        self.assertIn("QA fail", p)
+        self.assertIn("JARVIS_A1_IDENTITY=terraform-rd", p)
+        self.assertNotIn("identity_fallback", p)
+        self.assertNotIn("as terraform-pd", p)
+        self.assertNotIn("as terraform-qa", p)
+        self.assertEqual(p.count("wrap.sh done"), 1)
+        for forbidden in ("[PD分诊]", "[RD开发]", "[QA验收]",
+                          "PERSONA-HANDOFF", "wrap.sh sync",
+                          "comment create", "notify-dingtalk"):
+            self.assertNotIn(forbidden, p)
 
     def test_terraform_prompt_has_pr_ci_gate(self):
         # RD 交 QA 前须 PR CI 全绿(红 CI 的 PR 不该丢给 QA 空跑)
@@ -70,17 +83,18 @@ class TicketPromptTest(unittest.TestCase):
         self.assertIn("PR CI", p)
         self.assertIn("gh pr checks", p)
 
-    def test_terraform_bookend_is_silent(self):
-        # terraform 线:编排层收尾只记 runs + 打标签,不发评论
-        # (prompt 里"wrap.sh done"只出现在"严禁…"禁令里,故断言意图而非裸子串缺失)
+    def test_terraform_bookend_is_one_final_aggregate(self):
         p = bot._ticket_prompt("84215653", "[TF] alicloud_x", "tf_provider", "528766")
         self.assertIn("log.sh run_done", p)
         self.assertIn("claim.sh finish", p)
         self.assertIn("claim.sh release", p)
-        self.assertIn("编排层不发评论", p)
-        self.assertIn("不再落任何总结评论", p)
-        # wrap.sh done/sync 只应作为禁令出现,不应作为收尾指令
-        self.assertIn("严禁 wrap.sh done/sync", p)
+        self.assertIn("本次主处理 run 只允许最终 RD", p)
+        self.assertIn("聚合回复一次", p)
+        self.assertIn("MR/CR 链接只放这条最终回复", p)
+        self.assertIn("后续重访、PR 看守或终态失败", p)
+        self.assertIn("重复事件必须静默", p)
+        self.assertEqual(p.count("wrap.sh done"), 1)
+        self.assertNotIn("wrap.sh sync", p)
 
     def test_non_terraform_prompt_stays_inline(self):
         p = bot._ticket_prompt("999", "agent 门户 bug", "mcp_server", "2124589")
@@ -96,6 +110,51 @@ class TicketPromptTest(unittest.TestCase):
             p = bot._ticket_prompt("42", title, pool, proj)
             for tok in ("log.sh seen", "claim.sh claim", "[[SUSPEND:"):
                 self.assertIn(tok, p, "%s 分支缺 %r" % (pool, tok))
+
+
+class FollowupPromptIdentityTest(unittest.TestCase):
+    def test_terraform_revisit_is_silent_when_unchanged_but_emits_important_event(self):
+        p = bot._revisit_prompt("84215653", "[TF] alicloud_x", "1086837")
+        self.assertIn("ready terraform-rd", p)
+        self.assertIn("JARVIS_A1_IDENTITY=terraform-rd", p)
+        self.assertIn("禁止回退 jarvis", p)
+        self.assertNotIn("wrap.sh done", p)
+        self.assertNotIn("wrap.sh sync", p)
+        self.assertNotIn("comment create", p)
+        self.assertIn("bootstrap/log.sh run_done", p)
+        self.assertIn("bootstrap/log.sh escalate", p)
+        self.assertIn("claim.sh finish", p)
+        self.assertIn("claim.sh release", p)
+        self.assertIn("仍未解锁", p)
+        self.assertIn("AONE-EVENT", p)
+        self.assertIn("semantic_id", p)
+        self.assertIn("最长96字符", p)
+        self.assertIn("不得放URL、正文或敏感ID", p)
+        self.assertIn("每次定时检查无变化时不输出", p)
+        self.assertIn("blocker 语义变化", p)
+
+    def test_non_terraform_revisit_keeps_legacy_sync_behavior(self):
+        p = bot._revisit_prompt("999", "agent 门户 bug", "2124589")
+        self.assertIn("wrap.sh sync", p)
+        self.assertIn("claim.sh finish", p)
+        self.assertIn("claim.sh release", p)
+
+    def test_pr_followups_release_without_any_aone_reply(self):
+        prompts = (
+            bot._pr_ci_fix_prompt(
+                "84215653", "https://github.com/aliyun/example/pull/1", "1086837", ["test"]),
+            bot._pr_comment_reply_prompt(
+                "84215653", "https://github.com/aliyun/example/pull/1", "1086837", "reviewer", "fix"),
+        )
+        for p in prompts:
+            self.assertIn("ready terraform-rd", p)
+            self.assertIn("JARVIS_A1_IDENTITY=terraform-rd", p)
+            self.assertNotIn("as terraform-pd", p)
+            self.assertNotIn("as terraform-qa", p)
+            self.assertNotIn("wrap.sh sync", p)
+            self.assertNotIn("wrap.sh done", p)
+            self.assertIn("bootstrap/log.sh escalate", p)
+            self.assertIn("claim.sh release", p)
 
 
 if __name__ == "__main__":

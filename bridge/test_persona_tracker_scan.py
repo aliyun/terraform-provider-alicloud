@@ -26,7 +26,6 @@ bot = importlib.util.module_from_spec(spec)
 sys.modules["jarvis_dingtalk_bot"] = bot
 spec.loader.exec_module(bot)
 
-PERSONA_WID = sorted(bot.PERSONA_WORKER_IDS)[0]  # 任一 persona worker id
 TERMINAL = "ByDesign"                            # 缺陷流闭环态，来自 pools.json 单真源
 
 
@@ -60,10 +59,12 @@ class TrackerScanTest(unittest.TestCase):
     def setUp(self):
         self._orig = bot.PersonaScheduler._query_pool_filter
         os.environ.pop("JARVIS_PERSONA_TRACKER_SCAN", None)
+        os.environ.pop("JARVIS_PERSONA_LEGACY_TRACKER_SCAN", None)
 
     def tearDown(self):
         bot.PersonaScheduler._query_pool_filter = self._orig
         os.environ.pop("JARVIS_PERSONA_TRACKER_SCAN", None)
+        os.environ.pop("JARVIS_PERSONA_LEGACY_TRACKER_SCAN", None)
 
     def _ids(self, sched):
         return {str(it.get("id")) for it in sched._query_candidates()}
@@ -103,19 +104,41 @@ class TrackerScanTest(unittest.TestCase):
         self.assertIn("111", ids)
         self.assertNotIn("84240297", ids)
 
-    def test_tracker_filter_uses_all_persona_workers(self):
-        """tracker 过滤表达式覆盖全部 3 个 persona worker（多值 OR）。"""
-        captured = {}
+    def test_tracker_filter_uses_rd_as_primary_and_legacy_separately(self):
+        """主扫唯一公共 RD worker；旧 PD/QA worker 只走独立兼容入站查询。"""
+        captured = []
 
         def fake(key, project, filter_expr):
             if filter_expr.startswith("workitem.tracker="):
-                captured["expr"] = filter_expr
+                captured.append(filter_expr)
             return []
         bot.PersonaScheduler._query_pool_filter = staticmethod(fake)
         _make_scheduler()._query_candidates()
-        self.assertIn("expr", captured)
-        for wid in bot.PERSONA_WORKER_IDS:
-            self.assertIn(wid, captured["expr"])
+        primary = next(expr for expr in captured
+                       if bot.PERSONA_PUBLIC_WORKER in expr)
+        self.assertIn(bot.JARVIS_ORCH_WORKER, primary)
+        for wid in bot.PERSONA_LEGACY_WORKER_IDS:
+            self.assertNotIn(wid, primary)
+        legacy = next(expr for expr in captured
+                      if bot.PERSONA_PUBLIC_WORKER not in expr)
+        for wid in bot.PERSONA_LEGACY_WORKER_IDS:
+            self.assertIn(wid, legacy)
+        self.assertNotIn(bot.PERSONA_PUBLIC_WORKER, legacy)
+
+    def test_legacy_tracker_compatibility_can_be_disabled(self):
+        captured = []
+
+        def fake(key, project, filter_expr):
+            if filter_expr.startswith("workitem.tracker="):
+                captured.append(filter_expr)
+            return []
+        os.environ["JARVIS_PERSONA_LEGACY_TRACKER_SCAN"] = "0"
+        bot.PersonaScheduler._query_pool_filter = staticmethod(fake)
+        _make_scheduler()._query_candidates()
+        self.assertTrue(captured)
+        self.assertTrue(all(bot.PERSONA_PUBLIC_WORKER in expr for expr in captured))
+        self.assertTrue(all(all(wid not in expr for wid in bot.PERSONA_LEGACY_WORKER_IDS)
+                            for expr in captured))
 
 
 if __name__ == "__main__":
