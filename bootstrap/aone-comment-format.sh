@@ -116,14 +116,18 @@ def _wrap_bare_urls_line(line: str) -> str:
     url_re = re.compile(r"https?://[^\s)\]<>"
                         r"　-〿一-鿿＀-￯]+")
 
-    def stash(store: list[str], m: re.Match) -> str:
+    # Placeholders carry a per-store tag (C=code span, L=markdown link) so the
+    # two stores never collide: with a shared "\x00%d\x00" pattern, restoring
+    # links first rewrote code-span placeholders of the same index into link
+    # content (e.g. a backticked API name became a duplicated @mention).
+    def stash(tag: str, store: list[str], m: re.Match) -> str:
         store.append(m.group(0))
-        return "\x00%d\x00" % (len(store) - 1)
+        return "\x00%s%d\x00" % (tag, len(store) - 1)
 
     codes: list[str] = []
     links: list[str] = []
-    work = re.sub(r"`[^`]*`", lambda m: stash(codes, m), line)
-    work = re.sub(r"\[[^\]]*\]\([^)]+\)", lambda m: stash(links, m), work)
+    work = re.sub(r"`[^`]*`", lambda m: stash("C", codes, m), line)
+    work = re.sub(r"\[[^\]]*\]\([^)]+\)", lambda m: stash("L", links, m), work)
 
     def wrap(m: re.Match) -> str:
         url = m.group(0).rstrip(".,;:!?。，；：！？）】、》")
@@ -131,13 +135,13 @@ def _wrap_bare_urls_line(line: str) -> str:
 
     work = url_re.sub(wrap, work)
 
-    def restore(store: list[str], s: str) -> str:
+    def restore(tag: str, store: list[str], s: str) -> str:
         for i, val in enumerate(store):
-            s = s.replace("\x00%d\x00" % i, val)
+            s = s.replace("\x00%s%d\x00" % (tag, i), val)
         return s
 
-    work = restore(links, work)
-    work = restore(codes, work)
+    work = restore("L", links, work)
+    work = restore("C", codes, work)
     return work
 
 in_fence_final = False
